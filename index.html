@@ -63,7 +63,8 @@
         <div class="searchWrap">
             <div class="ac">
                 <label for="q" class="sr">Search bus stop</label>
-                <input id="q" class="input" placeholder="Search by bus stop code (e.g. 01019)" autocomplete="off" />
+                <input id="q" class="input" type="tel" placeholder="Search by bus stop code (e.g. 01019)"
+                    autocomplete="off" inputmode="numeric" pattern="[0-9]*" enterkeyhint="search" />
                 <div id="acList" class="acList" hidden></div>
             </div>
             <button id="searchBtn" class="btn">Get Timings</button>
