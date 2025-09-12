@@ -31,6 +31,7 @@
 
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Jua">
     <link rel="stylesheet" href="/style.css">
+    <link rel="preconnect" href="https://data.busrouter.sg">
 
     <!-- Embed Image -->
     <link rel="apple-touch-icon" href="/sgbusicon1.png">
@@ -38,7 +39,7 @@
     <link rel="shortcut icon" href="/favicon.ico">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:image:src" content="/sgbusicon1.png">
-    <meta property="og:image" content="/sgbusicon1.png"/>
+    <meta property="og:image" content="/sgbusicon1.png" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script defer="" src="https://use.fontawesome.com/releases/v6.5.2/js/all.js"></script>
@@ -46,177 +47,66 @@
 
 <body>
     <header>
-        <div class="container">
-            <div class="brand">
-                <div class="logo" aria-hidden="true">
-                    <!-- simple sun glyph -->
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true">
-                        <circle cx="12" cy="12" r="4.5" fill="#fff" stroke="#0a0" stroke-width="1.5" />
-                        <g stroke="#0a0" stroke-width="1.5" stroke-linecap="round">
-                            <path d="M12 2.5v3" />
-                            <path d="M12 18.5v3" />
-                            <path d="M21.5 12h-3" />
-                            <path d="M5.5 12h-3" />
-                            <path d="M18.4 5.6l-2.1 2.1" />
-                            <path d="M7.7 16.3l-2.1 2.1" />
-                            <path d="M18.4 18.4l-2.1-2.1" />
-                            <path d="M7.7 7.7L5.6 5.6" />
-                        </g>
-                    </svg>
-                </div>
+        <div class="bar">
+            <div class="title" id="titleBtn" title="Tap to set your name">
+                <div class="logo" aria-hidden="true"></div>
                 <div>
-                    <h1>SG Bus Timing | UwU Apps</h1>
-                    <small>Made with ❤️ by Augy</small>
+                    <h1 id="greeting">Singapore Bus Timing</h1>
+                    <div class="subtitle">Live bus arrival timings • Made in Singapore • Made with ❤️ by Augy</div>
                 </div>
             </div>
-            <div class="toolbar">
-                <div class="searchbar">
-                    <input id="query" type="search" placeholder="Search city… (e.g. Singapore, Tokyo)"
-                        autocomplete="off" list="suggestions" />
-                    <datalist id="suggestions"></datalist>
-                </div>
-
-                <div class="search-actions">
-                    <button class="btn icon" id="btn-search" title="Search">
-                        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
-                    </button>
-                    <button class="btn icon secondary" id="btn-current" title="Use my location">
-                        <i class="fa-solid fa-location-crosshairs" aria-hidden="true"></i>
-                    </button>
-                    <button class="btn icon" id="btn-units" title="Switch °C/°F">
-                        <i class="fa-solid fa-temperature-half" aria-hidden="true"></i>
-                        <span id="units-label">°C</span>
-                    </button>
-                    <button class="btn icon" id="btn-save" title="Save current location">
-                        <i class="fa-solid fa-star" aria-hidden="true"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="chips" id="saved"></div>
         </div>
     </header>
 
-    <main class="container">
+    <div class="container">
+        <!-- Search / Input -->
+        <div class="searchWrap">
+            <div class="ac">
+                <label for="q" class="sr">Search bus stop</label>
+                <input id="q" class="input" placeholder="Search by bus stop code (e.g. 01019)" autocomplete="off" />
+                <div id="acList" class="acList" hidden></div>
+            </div>
+            <button id="searchBtn" class="btn">Get Timings</button>
+        </div>
+        <div class="hint" style="margin-top:8px">Tip: add your most-used stops to Favourites below.</div>
+
+        <!-- Favourites -->
+        <section class="favBar">
+            <div class="card">
+                <div class="cardHeader">
+                    <div class="cardTitle">Favourites</div>
+                    <div class="actions">
+                        <button id="addFavBtn" class="iconBtn" title="Add current stop to favourites">☆ Save current
+                            stop</button>
+                        <button id="refreshAllBtn" class="iconBtn" title="Refresh favourites">⟳ Refresh</button>
+                    </div>
+                </div>
+                <div class="cardBody">
+                    <div id="favChips" class="favChips"></div>
+                    <div id="favEmpty" class="empty">No favourites yet. Load a bus stop, then click “Save current stop”.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results -->
         <section class="grid">
-            <article class="card" id="card-current">
-                <div class="card-header">
-                    <div class="card-title">Current weather</div>
-                    <div class="muted" id="place-label">—</div>
-                </div>
-                <div class="card-body">
-                    <div class="hero">
-                        <div>
-                            <div class="temp" id="temp">—°</div>
-                            <div class="sub" id="summary">—</div>
-                        </div>
-                        <div class="big" id="icon" aria-label="SG Bus Timing icon">☀️</div>
-                    </div>
-                    <div class="metrics">
-                        <div class="metric"><span class="muted">Feels like</span><b id="apparent">—</b></div>
-                        <div class="metric"><span class="muted">Humidity</span><b id="humidity">—</b></div>
-                        <div class="metric"><span class="muted">Wind</span><b id="wind">—</b></div>
-                        <div class="metric"><span class="muted">Pressure</span><b id="pressure">—</b></div>
+            <div id="resultCard" class="card" hidden>
+                <div class="cardHeader">
+                    <div class="cardTitle"><span id="stopName">—</span> <span class="pill" id="stopCode">—</span></div>
+                    <div class="actions">
+                        <button id="refreshBtn" class="iconBtn" title="Refresh">⟳ Refresh</button>
                     </div>
                 </div>
-            </article>
-
-            <article class="card">
-                <div class="card-header">
-                    <div class="card-title">2‑hour nowcast (15‑min)</div>
-                    <div class="muted" id="nowcast-range">—</div>
+                <div class="cardBody">
+                    <div id="services" class="services"></div>
+                    <div id="emptySvc" class="empty" hidden>No live buses right now.</div>
                 </div>
-                <div class="card-body">
-                    <div id="nowcastPlot" style="height:160px;width:100%"></div>
-                    <div class="muted" style="margin-top:8px">Bars show precip (mm) in the next ~2 hours. Zero bars =
-                        dry.</div>
-                </div>
-            </article>
+            </div>
         </section>
+    </div>
 
-        <section class="row" style="margin-top:18px">
-            <article class="card">
-                <div class="card-header">
-                    <div class="card-title">Next 24 hours</div>
-                </div>
-                <div class="card-body scroller" id="hourly"></div>
-            </article>
-            <article class="card">
-                <div class="card-header">
-                    <div class="card-title">Next 5 days</div>
-                </div>
-                <div class="card-body scroller" id="daily"></div>
-            </article>
-        </section>
-
-        <section class="row" style="margin-top:18px">
-            <article class="card">
-                <div class="card-header">
-                    <div class="card-title">Share</div>
-                </div>
-                <div class="card-body">
-                    <div class="chips">
-                        <button class="btn icon" id="share-device" title="Share via device">
-                            <i class="fa-solid fa-share-nodes" aria-hidden="true"></i>
-                        </button>
-                        <button class="btn icon secondary" data-share="tg" title="Share via Telegram">
-                            <i class="fa-brands fa-telegram" aria-hidden="true"></i>
-                        </button>
-                        <button class="btn icon secondary" data-share="x" title="Share via X">
-                            <i class="fa-brands fa-x-twitter" aria-hidden="true"></i>
-                        </button>
-                        <button class="btn icon secondary" data-share="wa" title="Share via WhatsApp">
-                            <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
-                        </button>
-                        <button class="btn icon secondary" data-share="fb" title="Share via Facebook">
-                            <i class="fa-brands fa-facebook" aria-hidden="true"></i>
-                        </button>
-                        <button class="btn icon" id="save-image" title="Save image">
-                            <i class="fa-solid fa-image" aria-hidden="true"></i>
-                        </button>
-                    </div>
-                </div>
-            </article>
-            <article class="card">
-                <div class="card-header">
-                    <div class="card-title">Share preview</div>
-                </div>
-                <div class="card-body">
-                    <div id="share-card">
-                        <div class="brandline">
-                            <strong>SG Bus Timing | UwU Apps</strong>
-                            <span class="muted" id="share-place">—</span>
-                        </div>
-                        <div id="share-art" aria-hidden="true"></div>
-                        <div>
-                            <div class="bigtemp" id="share-temp">—°</div>
-                            <div class="meta">
-                                <span id="share-summary">—</span>
-                                <span id="share-extra">—</span>
-                            </div>
-                        </div>
-                        <footer>
-                            <span class="muted" id="share-time">—</span>
-                            <span class="muted">Data: Open‑Meteo</span>
-                        </footer>
-                    </div>
-                </div>
-            </article>
-        </section>
-
-        <p class="muted" style="margin-top:22px">Sources: <a class="link"
-                href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open‑Meteo</a> (current, hourly, daily,
-            15‑min precipitation)</p>
-    </main>
-
-    <!-- libs -->
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-    <script>
-        if (typeof navigator.serviceWorker !== 'undefined') {
-            navigator.serviceWorker.register('sw.js')
-        }
-    </script>
-    <script src="/script.js" defer></script>
+    <script src="/script.js"></script>
 </body>
 
 </html>
