@@ -255,13 +255,20 @@ header {
   border-radius: 14px;
   padding: 12px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px
 }
 
+.svcLeft {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
 .svcNo {
-  font-weight: 800;
-  font-size: 18px;
+  font-size: 1.4em;
+  font-weight: 700;
   padding: 10px 14px;
   border-radius: 10px;
   background: #f0fff0
@@ -360,6 +367,10 @@ header {
   background: rgba(0, 0, 0, .35);
   display: grid;
   place-items: center;
+}
+
+.modal[hidden] { 
+  display: none !important; 
 }
 
 .modalBox {
@@ -486,9 +497,10 @@ header {
 .viewRouteBtn {
   border: 1px solid rgba(0, 0, 0, .1);
   background: #fff;
-  padding: 6px 10px;
-  border-radius: 10px;
+  padding: 4px 8px;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 0.85em;
 }
 
 /* Responsive */

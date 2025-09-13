@@ -263,15 +263,15 @@ function renderArrivals(code, data, {
         const n3 = piece(s.next3);
         const svcNo = s.serviceNo || '?';
         return `
-      <div class="svc" data-svc="${svcNo}">
-        <div class="svcNo">${svcNo}</div>
-        <div class="etaWrap">
-          ${n1}${n2}${n3}
-        </div>
-        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
-          <button class="viewRouteBtn" data-view-route="${svcNo}">View Route</button>
-        </div>
-      </div>`;
+  <div class="svc" data-svc="${svcNo}">
+    <div class="svcLeft">
+      <div class="svcNo">${svcNo}</div>
+      <button class="viewRouteBtn" data-view-route="${svcNo}">View Route</button>
+    </div>
+    <div class="etaWrap">
+      ${n1}${n2}${n3}
+    </div>
+  </div>`;
     }).join('');
 
     svcWrap.innerHTML = html;
@@ -470,3 +470,8 @@ function renderRouteList(dir) {
         pushHistory: false
     });
 })();
+
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.querySelector('#svcModal');
+    if (modal) modal.hidden = true;
+});
