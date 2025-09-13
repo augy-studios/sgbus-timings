@@ -63,8 +63,8 @@
         <div class="searchWrap">
             <div class="ac">
                 <label for="q" class="sr">Search bus stop</label>
-                <input id="q" class="input" type="tel" placeholder="Search by bus stop code (e.g. 01019)"
-                    autocomplete="off" inputmode="numeric" pattern="[0-9]*" enterkeyhint="search" />
+                <input id="q" class="input" placeholder="Search by bus stop code (e.g. 01019)"
+                    autocomplete="off" enterkeyhint="search" />
                 <div id="acList" class="acList" hidden></div>
             </div>
             <button id="searchBtn" class="btn">Get Timings</button>
@@ -105,6 +105,24 @@
                 </div>
             </div>
         </section>
+    </div>
+
+    <!-- Bus Service Information Modal -->
+    <div id="svcModal" class="modal" hidden>
+        <div class="modalBox">
+            <div class="modalHeader">
+                <div class="modalTitle">Bus Service Information</div>
+                <button id="modalClose" class="iconBtn" aria-label="Close">✕</button>
+            </div>
+            <div class="modalBody">
+                <div id="svcMeta" class="svcMeta"></div>
+                <div class="dirTabs">
+                    <button class="tab active" data-dir="1">Direction 1</button>
+                    <button class="tab" data-dir="2">Direction 2</button>
+                </div>
+                <div id="routeList" class="routeList"></div>
+            </div>
+        </div>
     </div>
 
     <script src="/script.js"></script>

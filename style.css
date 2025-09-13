@@ -353,6 +353,144 @@ header {
   cursor: pointer
 }
 
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .35);
+  display: grid;
+  place-items: center;
+}
+
+.modalBox {
+  width: min(720px, 92vw);
+  background: var(--card);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(16, 24, 40, .2);
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, .06);
+}
+
+.modalTitle {
+  font-weight: 800;
+}
+
+.modalBody {
+  padding: 12px 14px;
+}
+
+.dirTabs {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.tab {
+  background: #f4fff4;
+  border: 1px solid rgba(0, 0, 0, .06);
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: var(--brand);
+}
+
+.routeList {
+  max-height: 50vh;
+  overflow: auto;
+  border: 1px solid rgba(0, 0, 0, .06);
+  border-radius: 12px;
+  padding: 8px;
+}
+
+.routeStop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px;
+  border-radius: 10px;
+}
+
+.routeStop.me {
+  background: #f8fff8;
+  border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.routeStop .pill {
+  margin-left: auto;
+}
+
+.routeStop .seq {
+  font-weight: 700;
+  width: 2.7em;
+  text-align: right;
+  color: var(--muted);
+}
+
+.svcMeta {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ETA load colouring on the time number itself */
+.eta strong.load-ok {
+  color: var(--ok);
+}
+
+.eta strong.load-warn {
+  color: var(--warn);
+}
+
+.eta strong.load-busy {
+  color: var(--busy);
+}
+
+/* “~rough” italic */
+.eta i {
+  font-style: italic;
+}
+
+/* Little row of badges under each timing */
+.badges {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.badge {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 3px 6px;
+  border: 1px solid rgba(0, 0, 0, .08);
+  border-radius: 999px;
+}
+
+.badge .fa-wheelchair {
+  font-size: 12px;
+}
+
+/* “View Route” button on each service card */
+.viewRouteBtn {
+  border: 1px solid rgba(0, 0, 0, .1);
+  background: #fff;
+  padding: 6px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
 /* Responsive */
 @media (min-width:720px) {
   .svc {

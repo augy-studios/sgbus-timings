@@ -77,6 +77,29 @@ function loadClass(load) {
     }
 }
 
+function haversine(lat1, lon1, lat2, lon2) {
+    if ([lat1, lon1, lat2, lon2].some(v => v == null)) return null;
+    const R = 6371000;
+    const toRad = (d) => d * Math.PI / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+function loadTextClass(load) {
+    switch ((load || '').toUpperCase()) {
+        case 'SEA':
+            return 'load-ok';
+        case 'SDA':
+            return 'load-warn';
+        case 'LSD':
+            return 'load-busy';
+        default:
+            return '';
+    }
+}
+
 // ----------- Stops index (no lat/long shown) -----------
 let stopsIndex = null; // { code -> {n:name} }
 
@@ -99,7 +122,9 @@ async function ensureStopsIndex() {
         const map = {};
         for (const row of raw) {
             map[row[0]] = {
-                n: row[1]
+                n: row[1],
+                lat: row[2],
+                lng: row[3]
             };
         }
         LS.setStops(map);
@@ -183,23 +208,30 @@ function removeFav(code) {
 }
 
 // ----------- Arrivals -----------
-async function fetchArrivals(code) {
-    const u = `https://arrivelah2.busrouter.sg/?id=${encodeURIComponent(code)}&rand=${Date.now()}`;
-    const res = await fetch(u, {
+async function fetchArrivals(code, service) {
+    const qs = new URLSearchParams({
+        stop: code
+    });
+    if (service) qs.set('service', service);
+    const res = await fetch(`/api/bus-arrivals?` + qs.toString(), {
         cache: 'no-store'
     });
     if (!res.ok) throw new Error('Failed to fetch arrivals');
     return await res.json();
 }
 
-function renderArrivals(code, data) {
+function renderArrivals(code, data, {
+    filterService = null
+} = {}) {
     $('#resultCard').hidden = false;
     $('#stopCode').textContent = code;
-    const nm = nameOf(code) || data?.stop_name || '';
+    const nm = nameOf(code) || '';
     $('#stopName').textContent = nm || 'Bus Stop';
 
     const svcWrap = $('#services');
-    const svcs = (data && data.services) || [];
+    let svcs = data?.services || [];
+    if (filterService) svcs = svcs.filter(s => (s.serviceNo || '').toUpperCase() === filterService.toUpperCase());
+
     if (!svcs.length) {
         svcWrap.innerHTML = '';
         $('#emptySvc').hidden = false;
@@ -207,44 +239,64 @@ function renderArrivals(code, data) {
     }
     $('#emptySvc').hidden = true;
 
+    const stopLat = stopsIndex?.[code]?.lat ?? null;
+    const stopLng = stopsIndex?.[code]?.lng ?? null;
+
+    const piece = (bus) => {
+        if (!bus) return `<div class="eta"><strong>—</strong></div>`;
+        const mins = msToMins(bus.eta_ms);
+        const cls = loadTextClass(bus.load);
+        const dist = (bus.lat != null && bus.lng != null && stopLat != null && stopLng != null) ?
+            ` ~ ${haversine(bus.lat,bus.lng,stopLat,stopLng)}m away` : '';
+        const num = `<strong class="${cls}">${mins}</strong>`;
+        const maybeItalicOpen = bus.rough ? '<i>' : '';
+        const maybeItalicClose = bus.rough ? '</i>' : '';
+        const wheelchair = bus.wheelchair ? `<span class="badge"><i class="fa-solid fa-wheelchair"></i> Wheelchair</span>` : '';
+        const deck = `<span class="badge">${bus.deck}</span>`;
+        const info = `<div class="badges">${wheelchair}${deck}${dist ? `<span class="badge">${dist}</span>`:''}</div>`;
+        return `<div class="eta">${maybeItalicOpen}${num}${maybeItalicClose}${info}</div>`;
+    };
+
     const html = svcs.map(s => {
-        const next = s.next || s.next_bus; // different keys in some variants
-        const subs = s.subsequent || s.subsequent_bus;
-        const subs2 = s.subsequent2 || s.subsequent_bus2;
-        const eta1 = next ? msToMins(next.duration_ms) : '—';
-        const eta2 = subs ? msToMins(subs.duration_ms) : '—';
-        const eta3 = subs2 ? msToMins(subs2.duration_ms) : '—';
-        const loadCls = loadClass(next?.load);
+        const n1 = piece(s.next);
+        const n2 = piece(s.next2);
+        const n3 = piece(s.next3);
+        const svcNo = s.serviceNo || '?';
         return `
-        <div class="svc">
-          <div class="svcNo">${s.no || s.service_no || s.ServiceNo || '?'}</div>
-          <div class="etaWrap">
-            <div class="eta"><strong>${eta1}</strong> <span class="tag ${loadCls}">${(next?.load)||''}</span></div>
-            <div class="eta"><strong>${eta2}</strong></div>
-            <div class="eta"><strong>${eta3}</strong></div>
-          </div>
-        </div>`;
+      <div class="svc" data-svc="${svcNo}">
+        <div class="svcNo">${svcNo}</div>
+        <div class="etaWrap">
+          ${n1}${n2}${n3}
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <button class="viewRouteBtn" data-view-route="${svcNo}">View Route</button>
+        </div>
+      </div>`;
     }).join('');
 
     svcWrap.innerHTML = html;
 }
 
 async function loadStop(code, {
+    service = null,
     pushHistory = true
 } = {}) {
     if (!/^\d{5}$/.test(code)) {
         alert('Please enter a valid 5-digit bus stop code.');
         return;
     }
-    $('#q').value = code;
+    $('#q').value = service ? `${code} ${service}` : code;
     $('#acList').hidden = true;
     try {
         $('#services').innerHTML = '<div class="empty">Loading live arrivals…</div>';
-        const data = await fetchArrivals(code);
-        renderArrivals(code, data);
+        const data = await fetchArrivals(code, service);
+        renderArrivals(code, data, {
+            filterService: service
+        });
         if (pushHistory) history.replaceState({
-            code
-        }, '', `#${code}`);
+            code,
+            service
+        }, '', `#${code}${service?','+service:''}`);
     } catch (e) {
         console.error(e);
         $('#services').innerHTML = '<div class="empty">Could not load arrivals. Please try again.</div>';
@@ -258,12 +310,23 @@ async function loadStop(code, {
 $('#titleBtn').addEventListener('click', promptName);
 $('#searchBtn').addEventListener('click', () => {
     const v = $('#q').value.trim();
-    const m = v.match(/\d{5}/);
-    if (m) loadStop(m[0]);
-    else {
+    // Find first 5-digit code
+    const stopMatch = v.match(/\b\d{5}\b/);
+    // Find potential service number like "2", "15", "70A", "971E"
+    const svcMatch = v.match(/\b\d{1,3}[A-Z]?\b/i);
+
+    if (stopMatch) {
+        const code = stopMatch[0];
+        // If svcMatch is same token as code length=5, ignore; else use it
+        const service = (svcMatch && svcMatch[0] !== code) ? svcMatch[0].toUpperCase() : null;
+        loadStop(code, {
+            service
+        });
+    } else {
+        // treat as name search
         const first = matchStops(v)[0];
         if (first) loadStop(first.code);
-        else alert('Type a bus stop code (5 digits).');
+        else alert('Type a bus stop name, a bus number, or a 5-digit bus stop code.');
     }
 });
 $('#refreshBtn').addEventListener('click', () => {
@@ -327,6 +390,69 @@ $('#q').addEventListener('keydown', (e) => {
     }
 });
 
+// ----- Bus Service Info Modal -----
+const modal = $('#svcModal');
+$('#services').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-view-route]');
+    if (!btn) return;
+    const svc = btn.getAttribute('data-view-route');
+
+    // Fetch service info (routes in both directions)
+    const res = await fetch(`/api/bus-service-info?service=${encodeURIComponent(svc)}`);
+    const info = await res.json();
+
+    // Meta (operators + interchanges)
+    const t = info.terminals || {};
+    const nameOfOr = (c) => c ? (nameOf(c) || c) : '—';
+    $('#svcMeta').innerHTML = `
+    <div><strong>Service:</strong> ${svc}</div>
+    <div><strong>Operator(s):</strong> ${(info.operators||[]).join(', ') || '—'}</div>
+    <div><strong>Interchanges:</strong>
+      Dir 1: ${nameOfOr(t.dir1?.first)} → ${nameOfOr(t.dir1?.last)} &nbsp;&nbsp;|&nbsp;&nbsp;
+      Dir 2: ${nameOfOr(t.dir2?.first)} → ${nameOfOr(t.dir2?.last)}
+    </div>
+  `;
+
+    // Store routes in memory for the tab switcher
+    modal._routes = {
+        1: info.route1 || [],
+        2: info.route2 || []
+    };
+    modal._service = svc;
+
+    // Default to Dir 1
+    renderRouteList(1);
+    modal.hidden = false;
+});
+
+$('#modalClose').addEventListener('click', () => modal.hidden = true);
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.hidden = true;
+});
+
+$('.dirTabs').addEventListener('click', (e) => {
+    const b = e.target.closest('.tab');
+    if (!b) return;
+    $$('.tab').forEach(t => t.classList.remove('active'));
+    b.classList.add('active');
+    renderRouteList(Number(b.getAttribute('data-dir')));
+});
+
+function renderRouteList(dir) {
+    const code = $('#stopCode').textContent.trim();
+    const list = modal._routes?. [dir] || [];
+    const html = list.map(row => {
+        const nm = nameOf(row.stopCode) || row.stopCode;
+        const me = (row.stopCode === code) ? ' me' : '';
+        return `<div class="routeStop${me}">
+      <span class="seq">${row.seq}</span>
+      <span class="name">${escapeHtml(nm)}</span>
+      <span class="pill">${row.stopCode}</span>
+    </div>`;
+    }).join('') || '<div class="empty">No route data.</div>';
+    $('#routeList').innerHTML = html;
+}
+
 // ----------- Init -----------
 (async function init() {
     updateGreeting();
@@ -334,8 +460,10 @@ $('#q').addEventListener('keydown', (e) => {
     await buildAc();
     renderFavs();
     // Load stop from hash or last favourite
-    const hashCode = location.hash.replace('#', '');
+    const hash = location.hash.replace('#', '');
+    const [hashCode, hashSvc] = hash.split(',');
     if (/^\d{5}$/.test(hashCode)) loadStop(hashCode, {
+        service: hashSvc || null,
         pushHistory: false
     });
     else if (LS.getFavs()[0]) loadStop(LS.getFavs()[0], {
