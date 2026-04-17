@@ -1,17 +1,21 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="classic">
 
 <head>
+    <!-- Prevent theme flash -->
+    <script>
+        (function () {
+            var t = localStorage.getItem('sgbus_theme') || 'classic';
+            document.documentElement.setAttribute('data-theme', t);
+        })();
+    </script>
+
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-FMCYFTFPEL"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-
-        function gtag() {
-            dataLayer.push(arguments);
-        }
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
-
         gtag('config', 'G-FMCYFTFPEL');
     </script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9715826188316382"
@@ -29,11 +33,12 @@
     <meta property="og:site_name" content="UwU Apps" />
     <meta property="og:description" content="A simple bus timing app; view live bus timings at a glance!" />
 
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Jua">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/style.css">
     <link rel="preconnect" href="https://data.busrouter.sg">
 
-    <!-- Embed Image -->
     <link rel="apple-touch-icon" href="/sgbusicon1.png">
     <link rel="icon" href="/favicon.ico">
     <link rel="shortcut icon" href="/favicon.ico">
@@ -42,7 +47,6 @@
     <meta property="og:image" content="/sgbusicon1.png" />
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-    <script defer="" src="https://use.fontawesome.com/releases/v6.5.2/js/all.js"></script>
 </head>
 
 <body>
@@ -52,8 +56,13 @@
                 <div class="logo" aria-hidden="true"></div>
                 <div>
                     <h1 id="greeting">Singapore Bus Timing</h1>
-                    <div class="subtitle">Live bus arrival timings • Made in Singapore • Made with ❤️ by Augy</div>
+                    <div class="subtitle">Live bus arrivals &bull; Singapore &bull; Made with &#10084;&#65039; by Augy</div>
                 </div>
+            </div>
+            <div class="headerActions">
+                <button id="themeBtn" class="iconBtn" title="Change theme">
+                    <i class="fa-solid fa-palette"></i>
+                </button>
             </div>
         </div>
     </header>
@@ -63,42 +72,63 @@
         <div class="searchWrap">
             <div class="ac">
                 <label for="q" class="sr">Search bus stop</label>
-                <input id="q" class="input" placeholder="Search by bus stop code (e.g. 01019)"
-                    autocomplete="off" enterkeyhint="search" />
+                <input id="q" class="input"
+                    placeholder="Search by name or code (e.g. Bedok Interchange or 84009)"
+                    autocomplete="off" enterkeyhint="search" inputmode="text" />
                 <div id="acList" class="acList" hidden></div>
             </div>
             <button id="searchBtn" class="btn">Get Timings</button>
         </div>
-        <div class="hint" style="margin-top:8px">Tip: add your most-used stops to Favourites below.</div>
+        <div class="hint">Tip: search by stop name (e.g. &ldquo;Orchard&rdquo;) or 5-digit stop code.</div>
 
         <!-- Favourites -->
         <section class="favBar">
             <div class="card">
                 <div class="cardHeader">
-                    <div class="cardTitle">Favourites</div>
+                    <div class="cardTitle">
+                        <i class="fa-solid fa-star" style="color:var(--brand-dark)"></i>
+                        Favourites
+                    </div>
                     <div class="actions">
-                        <button id="addFavBtn" class="iconBtn" title="Add current stop to favourites">☆ Save current
-                            stop</button>
-                        <button id="refreshAllBtn" class="iconBtn" title="Refresh favourites">⟳ Refresh</button>
+                        <button id="addFavBtn" class="iconBtn" title="Save current stop to favourites">
+                            <i class="fa-regular fa-star"></i> Save stop
+                        </button>
+                        <button id="refreshAllBtn" class="iconBtn" title="Refresh">
+                            <i class="fa-solid fa-rotate-right"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="cardBody">
                     <div id="favChips" class="favChips"></div>
-                    <div id="favEmpty" class="empty">No favourites yet. Load a bus stop, then click “Save current stop”.
-                    </div>
+                    <div id="favEmpty" class="empty">No favourites yet. Search a stop then click &ldquo;Save stop&rdquo;.</div>
                 </div>
             </div>
         </section>
 
         <!-- Results -->
-        <section class="grid">
+        <section class="resultsSection">
             <div id="resultCard" class="card" hidden>
                 <div class="cardHeader">
-                    <div class="cardTitle"><span id="stopName">—</span> <span class="pill" id="stopCode">—</span></div>
+                    <div class="cardTitle">
+                        <span id="stopName">—</span>
+                        <span class="pill" id="stopCode">—</span>
+                    </div>
                     <div class="actions">
-                        <button id="refreshBtn" class="iconBtn" title="Refresh">⟳ Refresh</button>
+                        <button id="refreshBtn" class="iconBtn" title="Refresh">
+                            <i class="fa-solid fa-rotate-right"></i> Refresh
+                        </button>
                     </div>
                 </div>
+
+                <!-- Incoming Buses Bar -->
+                <div id="incomingBar" class="incomingBar" hidden>
+                    <div class="incomingHeader">
+                        <span class="incomingTitle">INCOMING BUSES</span>
+                        <span class="incomingNote">*buses might not arrive in exact order</span>
+                    </div>
+                    <div id="incomingBuses" class="incomingBuses"></div>
+                </div>
+
                 <div class="cardBody">
                     <div id="services" class="services"></div>
                     <div id="emptySvc" class="empty" hidden>No live buses right now.</div>
@@ -112,7 +142,7 @@
         <div class="modalBox">
             <div class="modalHeader">
                 <div class="modalTitle">Bus Service Information</div>
-                <button id="modalClose" class="iconBtn" aria-label="Close">✕</button>
+                <button id="modalClose" class="iconBtn" aria-label="Close">&#x2715;</button>
             </div>
             <div class="modalBody">
                 <div id="svcMeta" class="svcMeta"></div>
@@ -121,6 +151,48 @@
                     <button class="tab" data-dir="2">Direction 2</button>
                 </div>
                 <div id="routeList" class="routeList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Picker Modal -->
+    <div id="themeModal" class="modal" hidden>
+        <div class="modalBox themeModalBox">
+            <div class="modalHeader">
+                <div class="modalTitle"><i class="fa-solid fa-palette"></i> Choose Theme</div>
+                <button id="themeModalClose" class="iconBtn" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modalBody">
+                <div class="themeGrid">
+                    <button class="themeOption" data-theme="classic">
+                        <div class="themeSwatch" style="background:#ccffcc"></div>
+                        <span>Classic</span>
+                    </button>
+                    <button class="themeOption" data-theme="notgreen1">
+                        <div class="themeSwatch" style="background:#ffcccc"></div>
+                        <span>Not green 1</span>
+                    </button>
+                    <button class="themeOption" data-theme="notgreen2">
+                        <div class="themeSwatch" style="background:#ccccff"></div>
+                        <span>Not green 2</span>
+                    </button>
+                    <button class="themeOption" data-theme="notgreen3">
+                        <div class="themeSwatch" style="background:#ffffcc"></div>
+                        <span>Not green 3</span>
+                    </button>
+                    <button class="themeOption" data-theme="notgreen4">
+                        <div class="themeSwatch" style="background:#ffccff"></div>
+                        <span>Not green 4</span>
+                    </button>
+                    <button class="themeOption" data-theme="notgreen5">
+                        <div class="themeSwatch" style="background:#ccffff"></div>
+                        <span>Not green 5</span>
+                    </button>
+                    <button class="themeOption" data-theme="verylightgreen">
+                        <div class="themeSwatch" style="background:#ffffff;border:1px solid #ddd"></div>
+                        <span>Really really light green</span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
