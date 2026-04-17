@@ -354,6 +354,11 @@ header {
     white-space: nowrap;
 }
 
+.acItem .name .road {
+    opacity: 0.65;
+    font-size: 11px;
+}
+
 /* ===== Hint ===== */
 .hint {
     font-size: 12px;
