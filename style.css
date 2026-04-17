@@ -847,6 +847,16 @@ header {
     flex-shrink: 0;
 }
 
+/* ===== Inline SVG Icons ===== */
+.icon {
+    display: inline-block;
+    height: 1em;
+    width: auto;
+    vertical-align: -0.125em;
+    overflow: visible;
+    flex-shrink: 0;
+}
+
 /* ===== Misc ===== */
 .empty {
     padding: 28px;
