@@ -310,15 +310,33 @@ $('#services').addEventListener('click', async (e) => {
         const info = await res.json();
         const t    = info.terminals || {};
         const nameOfOr = c => c ? (nameOf(c) || c) : '—';
+
+        // Determine which direction the current stop belongs to
+        const currentStop = $('#stopCode').textContent.trim();
+        const inDir1 = (info.route1 || []).some(r => r.stopCode === currentStop);
+        const inDir2 = (info.route2 || []).some(r => r.stopCode === currentStop);
+        const activeDir = (!inDir1 && inDir2) ? 2 : 1;
+
+        const dir2Exists = !!t.dir2?.first;
+        const dirLine = (dir, terminals) => {
+            const isCurrent = dir === activeDir;
+            return `<div><strong>Dir ${dir}${isCurrent ? ' (current)' : ''}:</strong> ` +
+                `${escapeHtml(nameOfOr(terminals?.first))} &rarr; ${escapeHtml(nameOfOr(terminals?.last))}</div>`;
+        };
+
         $('#svcMeta').innerHTML =
             `<div><strong>Service:</strong> ${escapeHtml(svc)}</div>` +
             `<div><strong>Operator(s):</strong> ${escapeHtml((info.operators || []).join(', ') || '—')}</div>` +
-            `<div><strong>Dir 1:</strong> ${escapeHtml(nameOfOr(t.dir1?.first))} &rarr; ${escapeHtml(nameOfOr(t.dir1?.last))}</div>` +
-            `<div><strong>Dir 2:</strong> ${escapeHtml(nameOfOr(t.dir2?.first))} &rarr; ${escapeHtml(nameOfOr(t.dir2?.last))}</div>`;
+            dirLine(1, t.dir1) +
+            (dir2Exists ? dirLine(2, t.dir2) : '');
+
         modal._routes  = { 1: info.route1 || [], 2: info.route2 || [] };
         modal._service = svc;
-        $$('.tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-dir') === '1'));
-        renderRouteList(1);
+
+        // Show/hide the Direction 2 tab depending on whether that direction exists
+        $$('.tab[data-dir="2"]').forEach(tab => { tab.hidden = !dir2Exists; });
+        $$('.tab').forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-dir') === String(activeDir)));
+        renderRouteList(activeDir);
         modal.hidden = false;
     } catch (e) {
         console.error(e);
