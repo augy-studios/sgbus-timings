@@ -12,64 +12,72 @@ async function dm(path, qs) {
     return r.json();
 }
 
+// LTA DataMall BusRoutes does not support $filter — must paginate and filter client-side.
+async function fetchRoutesForService(service) {
+    const route1 = [];
+    const route2 = [];
+    const BATCH = 5;
+    const MAX_PAGES = 200;
+
+    for (let batchStart = 0; batchStart < MAX_PAGES; batchStart += BATCH) {
+        const results = await Promise.all(
+            Array.from({ length: BATCH }, (_, i) =>
+                dm("BusRoutes", { $skip: String((batchStart + i) * 500), $top: "500" })
+            )
+        );
+
+        let done = false;
+        for (const result of results) {
+            const rows = result?.value || [];
+
+            for (const row of rows) {
+                if (row.ServiceNo !== service) continue;
+                if (row.Direction === 1) {
+                    route1.push({ stopCode: row.BusStopCode, seq: row.StopSequence, dir: 1 });
+                } else if (row.Direction === 2) {
+                    route2.push({ stopCode: row.BusStopCode, seq: row.StopSequence, dir: 2 });
+                }
+            }
+
+            if (rows.length < 500) { done = true; break; }
+        }
+
+        if (done) break;
+    }
+
+    route1.sort((a, b) => a.seq - b.seq);
+    route2.sort((a, b) => a.seq - b.seq);
+    return { route1, route2 };
+}
+
 export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     if (req.method === "OPTIONS") return res.status(204).end();
 
-    const {
-        service
-    } = req.query;
-    if (!service) return res.status(400).json({
-        error: "Missing ?service=15"
-    });
+    const { service } = req.query;
+    if (!service) return res.status(400).json({ error: "Missing ?service=15" });
 
     try {
-        // BusServices: operator, cats, etc.
-        const servicesRaw = await dm("BusServices", {
-            $filter: `ServiceNo eq '${service}'`
-        });
+        const [servicesRaw, { route1, route2 }] = await Promise.all([
+            dm("BusServices", { $filter: `ServiceNo eq '${service}'` }),
+            fetchRoutesForService(service),
+        ]);
+
         const operators = [...new Set(
             (servicesRaw?.value || [])
                 .filter(s => s.ServiceNo === service)
                 .map(s => s.Operator)
         )];
 
-        // BusRoutes for both dir=1 and dir=2
-        const [r1, r2] = await Promise.all([
-            dm("BusRoutes", {
-                $filter: `ServiceNo eq '${service}' and Direction eq 1`,
-                $orderby: "StopSequence asc",
-                $top: 500
-            }),
-            dm("BusRoutes", {
-                $filter: `ServiceNo eq '${service}' and Direction eq 2`,
-                $orderby: "StopSequence asc",
-                $top: 500
-            }),
-        ]);
-
-        function shapeRoute(v, dir) {
-            const rows = (v?.value || []).filter(row => row.Direction === dir);
-            return rows.map(row => ({
-                stopCode: row.BusStopCode,
-                seq: row.StopSequence,
-                dir: row.Direction,
-            }));
-        }
-
-        const route1 = shapeRoute(r1, 1);
-        const route2 = shapeRoute(r2, 2);
-
-        // “Interchanges”: take first/last stop names on each direction (client maps code->name)
         const terms = {
             dir1: {
                 first: route1[0]?.stopCode || null,
-                last: route1[route1.length - 1]?.stopCode || null
+                last: route1[route1.length - 1]?.stopCode || null,
             },
             dir2: {
                 first: route2[0]?.stopCode || null,
-                last: route2[route2.length - 1]?.stopCode || null
+                last: route2[route2.length - 1]?.stopCode || null,
             },
         };
 
@@ -82,8 +90,6 @@ export default async function handler(req, res) {
             terminals: terms,
         });
     } catch (e) {
-        return res.status(502).json({
-            error: String(e)
-        });
+        return res.status(502).json({ error: String(e) });
     }
 }
