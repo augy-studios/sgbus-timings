@@ -5,7 +5,7 @@ const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const LS = {
     nameKey:       'sgbus_name',
     favKey:        'sgbus_favs_v2',
-    stopsCacheKey: 'sgbus_stops_v2',
+    stopsCacheKey: 'sgbus_stops_v3',
     themeKey:      'sgbus_theme',
 
     getName()  { return localStorage.getItem(this.nameKey) || ''; },
@@ -110,12 +110,12 @@ async function ensureStopsIndex() {
     const cached = LS.getStops();
     if (cached) { stopsIndex = cached; return cached; }
     try {
-        const res = await fetch('https://busrouter.sg/data/2/stops.min.json', { cache: 'force-cache' });
+        const res = await fetch('/api/bus-stops');
         if (!res.ok) throw new Error('Failed to load stops');
         const raw = await res.json();
         const map = {};
         for (const row of raw) {
-            map[row[0]] = { n: row[1], lat: row[2], lng: row[3] };
+            map[row.c] = { n: row.n, road: row.r, lat: row.la, lng: row.lo };
         }
         LS.setStops(map);
         stopsIndex = map;
@@ -136,7 +136,7 @@ let acData = [];
 
 async function buildAc() {
     const idx = await ensureStopsIndex();
-    acData = Object.entries(idx).map(([code, v]) => ({ code, name: v.n }));
+    acData = Object.entries(idx).map(([code, v]) => ({ code, name: v.n, road: v.road || '' }));
 }
 
 function matchStops(q) {
@@ -144,7 +144,9 @@ function matchStops(q) {
     if (!q) return [];
     const isCode = /^\d+$/.test(q);
     return acData
-        .filter(it => isCode ? it.code.startsWith(q) : it.name.toLowerCase().includes(q))
+        .filter(it => isCode
+            ? it.code.startsWith(q)
+            : it.name.toLowerCase().includes(q) || it.road.toLowerCase().includes(q))
         .slice(0, 20);
 }
 
@@ -154,7 +156,7 @@ function renderAc(list) {
     box.innerHTML = list.map(it =>
         `<div class="acItem" data-code="${it.code}">` +
         `<span class="code">${it.code}</span>` +
-        `<span class="name">${escapeHtml(it.name)}</span>` +
+        `<span class="name">${escapeHtml(it.name)}${it.road ? `<span class="road"> · ${escapeHtml(it.road)}</span>` : ''}</span>` +
         `</div>`
     ).join('');
     box.hidden = false;
