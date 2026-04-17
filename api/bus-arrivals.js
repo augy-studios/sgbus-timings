@@ -30,17 +30,21 @@ export default async function handler(req, res) {
             busStopCode: raw?.BusStopCode || stop,
             services: (raw?.Services || []).map(s => {
                 const toMs = (iso) => (iso ? Math.max(0, new Date(iso) - new Date()) : null);
-                const slurp = (nb) => nb ? ({
-                    eta_ms: toMs(nb.EstimatedArrival),
-                    load: nb.Load, // SEA / SDA / LSD
-                    wheelchair: nb.Feature === "WAB",
-                    deck: nb.Type === "DD" ? "Double" : "Single", // SD/DD/BD -> Single/Double
-                    lat: nb.Latitude ?? null,
-                    lng: nb.Longitude ?? null,
-                    rough: (nb.Latitude == null || nb.Longitude == null), // italicise if true
-                    origin: nb.OriginCode,
-                    dest: nb.DestinationCode
-                }) : null;
+                const slurp = (nb) => nb ? (() => {
+                    const lat = parseFloat(nb.Latitude) || null;
+                    const lng = parseFloat(nb.Longitude) || null;
+                    return {
+                        eta_ms: toMs(nb.EstimatedArrival),
+                        load: nb.Load, // SEA / SDA / LSD
+                        wheelchair: nb.Feature === "WAB",
+                        deck: nb.Type === "DD" ? "Double" : "Single", // SD/DD/BD -> Single/Double
+                        lat,
+                        lng,
+                        rough: (lat == null || lng == null), // italicise if true
+                        origin: nb.OriginCode,
+                        dest: nb.DestinationCode
+                    };
+                })() : null;
 
                 return {
                     serviceNo: s.ServiceNo,

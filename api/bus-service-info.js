@@ -29,7 +29,11 @@ export default async function handler(req, res) {
         const servicesRaw = await dm("BusServices", {
             $filter: `ServiceNo eq '${service}'`
         });
-        const operators = [...new Set((servicesRaw?.value || []).map(s => s.Operator))];
+        const operators = [...new Set(
+            (servicesRaw?.value || [])
+                .filter(s => s.ServiceNo === service)
+                .map(s => s.Operator)
+        )];
 
         // BusRoutes for both dir=1 and dir=2
         const [r1, r2] = await Promise.all([
@@ -45,8 +49,8 @@ export default async function handler(req, res) {
             }),
         ]);
 
-        function shapeRoute(v) {
-            const rows = v?.value || [];
+        function shapeRoute(v, dir) {
+            const rows = (v?.value || []).filter(row => row.Direction === dir);
             return rows.map(row => ({
                 stopCode: row.BusStopCode,
                 seq: row.StopSequence,
@@ -54,8 +58,8 @@ export default async function handler(req, res) {
             }));
         }
 
-        const route1 = shapeRoute(r1);
-        const route2 = shapeRoute(r2);
+        const route1 = shapeRoute(r1, 1);
+        const route2 = shapeRoute(r2, 2);
 
         // “Interchanges”: take first/last stop names on each direction (client maps code->name)
         const terms = {
