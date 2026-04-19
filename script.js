@@ -310,31 +310,51 @@ $('#services').addEventListener('click', async (e) => {
         const info = await res.json();
         const t    = info.terminals || {};
         const nameOfOr = c => c ? (nameOf(c) || c) : '—';
+        const isLoop = !!info.isLoop;
 
-        // Determine which direction the current stop belongs to
+        // Determine which direction the current stop belongs to, using route membership
+        // as primary signal and OriginCode as tiebreaker (stop at exact origin → dir 1)
         const currentStop = $('#stopCode').textContent.trim();
         const inDir1 = (info.route1 || []).some(r => r.stopCode === currentStop);
         const inDir2 = (info.route2 || []).some(r => r.stopCode === currentStop);
-        const activeDir = (!inDir1 && inDir2) ? 2 : 1;
+        const atOrigin1 = t.dir1?.originCode === currentStop;
+        const activeDir = (!inDir1 && inDir2 && !atOrigin1) ? 2 : 1;
 
-        const dir2Exists = !!t.dir2?.first;
+        const dir2Exists = !isLoop && !!t.dir2;
+        const tabLabel = (terminals, loopLabel) => {
+            if (loopLabel) return escapeHtml(loopLabel);
+            const o = nameOfOr(terminals?.originCode || terminals?.first);
+            const d = nameOfOr(terminals?.destCode   || terminals?.last);
+            return `${escapeHtml(o)} &rarr; ${escapeHtml(d)}`;
+        };
         const dirLine = (dir, terminals) => {
             const isCurrent = dir === activeDir;
             return `<div><strong>Dir ${dir}${isCurrent ? ' (current)' : ''}:</strong> ` +
-                `${escapeHtml(nameOfOr(terminals?.first))} &rarr; ${escapeHtml(nameOfOr(terminals?.last))}</div>`;
+                `${escapeHtml(nameOfOr(terminals?.originCode || terminals?.first))} &rarr; ` +
+                `${escapeHtml(nameOfOr(terminals?.destCode   || terminals?.last))}</div>`;
         };
 
         $('#svcMeta').innerHTML =
             `<div><strong>Service:</strong> ${escapeHtml(svc)}</div>` +
             `<div><strong>Operator(s):</strong> ${escapeHtml((info.operators || []).join(', ') || '—')}</div>` +
+            (info.category ? `<div><strong>Category:</strong> ${escapeHtml(info.category)}</div>` : '') +
+            (isLoop && info.loopDesc ? `<div><strong>Loop via:</strong> ${escapeHtml(info.loopDesc)}</div>` : '') +
             dirLine(1, t.dir1) +
             (dir2Exists ? dirLine(2, t.dir2) : '');
 
         modal._routes  = { 1: info.route1 || [], 2: info.route2 || [] };
         modal._service = svc;
 
-        // Show/hide the Direction 2 tab depending on whether that direction exists
-        $$('.tab[data-dir="2"]').forEach(tab => { tab.hidden = !dir2Exists; });
+        // Update tab labels with origin → destination terminal names
+        $$('.tab[data-dir="1"]').forEach(tab => {
+            tab.innerHTML = isLoop
+                ? (info.loopDesc ? `Loop via ${escapeHtml(info.loopDesc)}` : 'Direction 1')
+                : tabLabel(t.dir1);
+        });
+        $$('.tab[data-dir="2"]').forEach(tab => {
+            tab.hidden = !dir2Exists;
+            if (dir2Exists) tab.innerHTML = tabLabel(t.dir2);
+        });
         $$('.tab').forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-dir') === String(activeDir)));
         renderRouteList(activeDir);
         modal.hidden = false;
