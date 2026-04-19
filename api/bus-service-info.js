@@ -64,27 +64,37 @@ export default async function handler(req, res) {
             fetchRoutesForService(service),
         ]);
 
-        const operators = [...new Set(
-            (servicesRaw?.value || [])
-                .filter(s => s.ServiceNo === service)
-                .map(s => s.Operator)
-        )];
+        const serviceRows = (servicesRaw?.value || []).filter(s => s.ServiceNo === service);
+        const dir1Row = serviceRows.find(s => s.Direction === 1);
+        const dir2Row = serviceRows.find(s => s.Direction === 2);
+
+        const operators = [...new Set(serviceRows.map(s => s.Operator))];
+        const isLoop = !!(dir1Row?.LoopDesc);
+        const loopDesc = dir1Row?.LoopDesc || '';
+        const category = dir1Row?.Category || '';
 
         const terms = {
             dir1: {
-                first: route1[0]?.stopCode || null,
-                last: route1[route1.length - 1]?.stopCode || null,
+                first: route1[0]?.stopCode || dir1Row?.OriginCode || null,
+                last: route1[route1.length - 1]?.stopCode || dir1Row?.DestinationCode || null,
+                originCode: dir1Row?.OriginCode || null,
+                destCode: dir1Row?.DestinationCode || null,
             },
-            dir2: {
-                first: route2[0]?.stopCode || null,
-                last: route2[route2.length - 1]?.stopCode || null,
-            },
+            dir2: dir2Row ? {
+                first: route2[0]?.stopCode || dir2Row?.OriginCode || null,
+                last: route2[route2.length - 1]?.stopCode || dir2Row?.DestinationCode || null,
+                originCode: dir2Row?.OriginCode || null,
+                destCode: dir2Row?.DestinationCode || null,
+            } : null,
         };
 
         res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
         return res.status(200).json({
             serviceNo: service,
             operators,
+            isLoop,
+            loopDesc,
+            category,
             route1,
             route2,
             terminals: terms,
