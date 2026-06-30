@@ -1,0 +1,8 @@
+{
+  "name": "sgbus-timings",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2"
+  }
+}

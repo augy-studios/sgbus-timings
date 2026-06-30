@@ -1,7 +1,14 @@
+import { createClient } from "@supabase/supabase-js";
+import { verifySignedRequest } from "../lib/uwu-request-signing-server.js";
+
 export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     if (req.method === "OPTIONS") return res.status(204).end();
+
+    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+    const { valid, reason } = await verifySignedRequest(req, supabase);
+    if (!valid) return res.status(403).json({ error: "Invalid request signature", reason });
 
     const key = process.env.LTA_ACCOUNT_KEY;
     if (!key) return res.status(500).json({ error: "LTA_ACCOUNT_KEY not configured" });

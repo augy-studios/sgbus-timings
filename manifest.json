@@ -18,10 +18,19 @@
             "sizes": "1920x988"
         }
     ],
-    "start_url": ".",
-    "theme_color": "#ccffcc",
-    "background_color": "#ccffcc",
+    "start_url": "/",
+    "theme_color": "#cfc",
+    "background_color": "#cfc",
     "display": "standalone",
     "display_override": ["fullscreen", "minimal-ui", "window-controls-overlay"],
-    "orientation": "portrait-primary"
+    "orientation": "any",
+    "id": "sgbus",
+    "dir": "ltr",
+    "scope": "/",
+    "lang": "en",
+    "categories": [
+        "productivity",
+        "lifestyle",
+        "utilities"
+    ]
 }
