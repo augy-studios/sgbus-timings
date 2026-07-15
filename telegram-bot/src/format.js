@@ -59,7 +59,7 @@ export function formatArrivalMessage(stop, arrivals, isFavourite) {
 
 /** Label for a bus stop selection button, kept under Telegram's 64-char limit. */
 export function stopButtonLabel(stop, distanceMeters) {
-  let label = `${stop.name} (${stop.code})`;
+  let label = `🚌 ${stop.name} (${stop.code})`;
   if (distanceMeters != null) {
     const distText = distanceMeters >= 1000 ? `${(distanceMeters / 1000).toFixed(1)}km` : `${distanceMeters}m`;
     label += ` - ${distText}`;

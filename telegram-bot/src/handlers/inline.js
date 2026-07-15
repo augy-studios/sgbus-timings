@@ -47,7 +47,7 @@ export function registerInline(bot) {
           text = `*${stop.name}* \\(${stop.code}\\)\nCould not load live timings right now\\.`;
         }
 
-        const favButtonText = isFavourite(userId, stop.code) ? "Remove favourite" : "Add favourite";
+        const favButtonText = isFavourite(userId, stop.code) ? "⭐ Remove favourite" : "⭐ Add favourite";
 
         return {
           type: "article",
@@ -59,7 +59,7 @@ export function registerInline(bot) {
             inline_keyboard: [
               [
                 { text: favButtonText, callback_data: makeButton("fav", { code: stop.code, name: stop.name }) },
-                { text: "Refresh", callback_data: makeButton("refresh", { code: stop.code }) },
+                { text: "🔄 Refresh", callback_data: makeButton("refresh", { code: stop.code }) },
               ],
             ],
           },

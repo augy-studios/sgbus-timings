@@ -19,11 +19,11 @@ export async function buildStopView(code, chatId) {
   const favourite = chatId != null ? isFavourite(chatId, code) : false;
   const text = formatArrivalMessage(stop, arrivals, favourite);
 
-  const favButtonText = favourite ? "Remove favourite" : "Add favourite";
+  const favButtonText = favourite ? "⭐ Remove favourite" : "⭐ Add favourite";
   const keyboard = Markup.inlineKeyboard([
     [
       Markup.button.callback(favButtonText, makeButton("fav", { code, name: stop.name })),
-      Markup.button.callback("Refresh", makeButton("refresh", { code })),
+      Markup.button.callback("🔄 Refresh", makeButton("refresh", { code })),
     ],
   ]);
 

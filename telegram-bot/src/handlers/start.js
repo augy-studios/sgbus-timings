@@ -32,8 +32,8 @@ export function registerStart(bot) {
       ctx,
       aboutFor(ctx),
       Markup.inlineKeyboard([
-        [Markup.button.url("Open web app", config.webAppUrl)],
-        [Markup.button.url("Donate", config.donateUrl)],
+        [Markup.button.url("🌐 Open web app", config.webAppUrl)],
+        [Markup.button.url("💖 Donate", config.donateUrl)],
       ])
     );
   });

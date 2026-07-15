@@ -8,7 +8,7 @@ export function registerNearMe(bot) {
   bot.command("nearme", async (ctx) => {
     await ctx.reply(
       "Tap the button below to share your location and find nearby bus stops.",
-      Markup.keyboard([Markup.button.locationRequest("Share my location")])
+      Markup.keyboard([Markup.button.locationRequest("📍 Share my location")])
         .resize()
         .oneTime()
     );
