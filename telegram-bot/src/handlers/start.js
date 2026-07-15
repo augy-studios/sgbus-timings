@@ -15,10 +15,10 @@ const ABOUT = [
   "• Use this bot inline in any chat: type @BOTUSERNAME then a bus stop number or name",
   "",
   "*Commands*",
-  "start \\- show this message",
-  "nearme \\- find bus stops near your current location",
-  "favs \\- view and jump to your favourite bus stops",
-  "help \\- show this message again",
+  "/start \\- show this message",
+  "/nearme \\- find bus stops near your current location",
+  "/favs \\- view and jump to your favourite bus stops",
+  "/help \\- show this message again",
 ].join("\n");
 
 export function registerStart(bot) {
