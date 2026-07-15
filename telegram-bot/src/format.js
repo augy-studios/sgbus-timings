@@ -53,7 +53,9 @@ export function formatArrivalMessage(stop, arrivals, isFavourite) {
   }
 
   lines.push("");
-  lines.push(`_Updated ${escapeMd(new Date().toLocaleTimeString("en-SG", { hour12: false }))}_`);
+  lines.push(
+    `_Updated ${escapeMd(new Date().toLocaleTimeString("en-SG", { hour12: false, timeZone: "Asia/Singapore" }))}_`
+  );
   return lines.join("\n");
 }
 
