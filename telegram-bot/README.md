@@ -69,8 +69,8 @@ In any chat (not just with the bot), type:
 
 An empty query after the bot's username shows your favourites; anything else
 is treated as a search, same as typing directly into the bot's chat. Picking
-a result posts a live timings message with the same favourite/refresh
-buttons.
+a result posts a live timings message with just a refresh button - no
+favourite toggle, since the message can be posted into any chat.
 
 ## Data source
 

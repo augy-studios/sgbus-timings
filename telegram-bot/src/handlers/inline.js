@@ -10,7 +10,9 @@ const MAX_RESULTS = 8;
 /**
  * Inline mode: "@bot" with no query returns the user's favourites; any text
  * is treated as a bus stop number or name search. Selecting a result posts a
- * live-timings message with the same favourite/refresh buttons as in-chat.
+ * live-timings message with just a refresh button - no favourite toggle,
+ * since inline results can be posted into any chat and whoever taps the
+ * button may not be the user who ran the query, which would be confusing.
  */
 export function registerInline(bot) {
   bot.on("inline_query", async (ctx) => {
@@ -47,8 +49,6 @@ export function registerInline(bot) {
           text = `*${stop.name}* \\(${stop.code}\\)\nCould not load live timings right now\\.`;
         }
 
-        const favButtonText = isFavourite(userId, stop.code) ? "⭐ Remove favourite" : "⭐ Add favourite";
-
         return {
           type: "article",
           id: crypto.randomUUID(),
@@ -56,12 +56,7 @@ export function registerInline(bot) {
           description: stop.road || "Bus stop",
           input_message_content: { message_text: text, parse_mode: "MarkdownV2" },
           reply_markup: {
-            inline_keyboard: [
-              [
-                { text: favButtonText, callback_data: makeButton("fav", { code: stop.code, name: stop.name }) },
-                { text: "🔄 Refresh", callback_data: makeButton("refresh", { code: stop.code }) },
-              ],
-            ],
+            inline_keyboard: [[{ text: "🔄 Refresh", callback_data: makeButton("refresh", { code: stop.code }) }]],
           },
         };
       })
