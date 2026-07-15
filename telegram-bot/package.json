@@ -1,0 +1,20 @@
+{
+  "name": "sgbus-timings-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Telegram bot for Singapore bus arrival timings, backed by LTA DataMall",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "refresh-stops": "node src/refreshStops.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.9.1",
+    "dotenv": "^16.4.5",
+    "telegraf": "^4.16.3"
+  }
+}
