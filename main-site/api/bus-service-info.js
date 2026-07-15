@@ -1,6 +1,3 @@
-import { createClient } from "@supabase/supabase-js";
-import { verifySignedRequest } from "../lib/uwu-request-signing-server.js";
-
 async function dm(path, qs) {
     const url = new URL(`https://datamall2.mytransport.sg/ltaodataservice/${path}`);
     if (qs) Object.entries(qs).forEach(([k, v]) => url.searchParams.set(k, v));
@@ -57,10 +54,6 @@ export default async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     if (req.method === "OPTIONS") return res.status(204).end();
-
-    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-    const { valid, reason } = await verifySignedRequest(req, supabase);
-    if (!valid) return res.status(403).json({ error: "Invalid request signature", reason });
 
     const { service } = req.query;
     if (!service) return res.status(400).json({ error: "Missing ?service=15" });

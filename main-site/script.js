@@ -110,7 +110,7 @@ async function ensureStopsIndex() {
     const cached = LS.getStops();
     if (cached) { stopsIndex = cached; return cached; }
     try {
-        const res = await UwuSigning.signedFetch('/api/bus-stops');
+        const res = await fetch('/api/bus-stops');
         if (!res.ok) throw new Error('Failed to load stops');
         const raw = await res.json();
         const map = {};
@@ -224,7 +224,7 @@ function renderIncomingBar(data) {
 async function fetchArrivals(code, service) {
     const qs = new URLSearchParams({ stop: code });
     if (service) qs.set('service', service);
-    const res = await UwuSigning.signedFetch(`/api/bus-arrivals?${qs}`, { cache: 'no-store' });
+    const res = await fetch(`/api/bus-arrivals?${qs}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('Failed to fetch arrivals');
     return res.json();
 }
@@ -306,7 +306,7 @@ $('#services').addEventListener('click', async (e) => {
     if (!btn) return;
     const svc = btn.getAttribute('data-view-route');
     try {
-        const res  = await UwuSigning.signedFetch(`/api/bus-service-info?service=${encodeURIComponent(svc)}`);
+        const res  = await fetch(`/api/bus-service-info?service=${encodeURIComponent(svc)}`);
         const info = await res.json();
         const t    = info.terminals || {};
         const nameOfOr = c => c ? (nameOf(c) || c) : '—';
@@ -473,10 +473,6 @@ $('#acList').addEventListener('click', e => {
 
     updateGreeting();
     setInterval(updateGreeting, 30_000);
-
-    // No login on this site — every visitor is anonymous, so always get a guest signing key
-    // before any signedFetch() call runs (initGuestKey() no-ops if a key is already stored).
-    await UwuSigning.initGuestKey('sg-bus-timing');
 
     await buildAc();
     renderFavs();
