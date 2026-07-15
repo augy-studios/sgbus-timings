@@ -18,7 +18,6 @@ const ABOUT = [
   "/start \\- show this message",
   "/nearme \\- find bus stops near your current location",
   "/favs \\- view and jump to your favourite bus stops",
-  "/help \\- show this message again",
 ].join("\n");
 
 export function registerStart(bot) {
@@ -36,9 +35,5 @@ export function registerStart(bot) {
         [Markup.button.url("💖 Donate", config.donateUrl)],
       ])
     );
-  });
-
-  bot.help(async (ctx) => {
-    await sendRichMessage(ctx, aboutFor(ctx));
   });
 }

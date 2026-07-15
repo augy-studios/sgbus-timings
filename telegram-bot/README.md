@@ -25,7 +25,6 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/start` | Shows what the bot does, all commands, and buttons for the web app and donations |
 | `/nearme` | Asks for your location, then lists the nearest bus stops as buttons |
 | `/favs` | Lists your favourite bus stops as buttons |
-| `/help` | Same as `/start` |
 
 ### Searching for a bus stop
 

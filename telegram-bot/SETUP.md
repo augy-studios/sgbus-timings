@@ -41,7 +41,6 @@ Send `/setcommands` to BotFather, pick your bot, then paste:
 start - about the bot and how to use it
 nearme - find bus stops near your current location
 favs - view your favourite bus stops
-help - show the about message again
 ```
 
 Note none of these mention the bot's own name, as requested. Users interact
