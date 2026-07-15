@@ -71,7 +71,7 @@ async function promptName() {
 
 // ----------- Helpers -----------
 function msToMins(ms) {
-    if (ms == null) return '—';
+    if (ms == null) return '-';
     const sec = Math.max(0, Math.round(ms / 1000));
     const m = Math.floor(sec / 60), s = sec % 60;
     return m > 0 ? `${m} min${m > 1 ? 's' : ''}${s ? ` ${s}s` : ''}` : `${s}s`;
@@ -252,7 +252,7 @@ function renderArrivals(code, data, { filterService = null } = {}) {
     const stopLng = stopsIndex?.[code]?.lng ?? null;
 
     const piece = (bus) => {
-        if (!bus) return `<div class="eta"><strong>—</strong></div>`;
+        if (!bus) return `<div class="eta"><strong>-</strong></div>`;
         const mins  = msToMins(bus.eta_ms);
         const cls   = loadTextClass(bus.load);
         const dist  = (bus.lat != null && bus.lng != null && stopLat != null && stopLng != null)
@@ -309,7 +309,7 @@ $('#services').addEventListener('click', async (e) => {
         const res  = await fetch(`/api/bus-service-info?service=${encodeURIComponent(svc)}`);
         const info = await res.json();
         const t    = info.terminals || {};
-        const nameOfOr = c => c ? (nameOf(c) || c) : '—';
+        const nameOfOr = c => c ? (nameOf(c) || c) : '-';
         const isLoop = !!info.isLoop;
 
         // Determine which direction the current stop belongs to, using route membership
@@ -336,7 +336,7 @@ $('#services').addEventListener('click', async (e) => {
 
         $('#svcMeta').innerHTML =
             `<div><strong>Service:</strong> ${escapeHtml(svc)}</div>` +
-            `<div><strong>Operator(s):</strong> ${escapeHtml((info.operators || []).join(', ') || '—')}</div>` +
+            `<div><strong>Operator(s):</strong> ${escapeHtml((info.operators || []).join(', ') || '-')}</div>` +
             (info.category ? `<div><strong>Category:</strong> ${escapeHtml(info.category)}</div>` : '') +
             (isLoop && info.loopDesc ? `<div><strong>Loop via:</strong> ${escapeHtml(info.loopDesc)}</div>` : '') +
             dirLine(1, t.dir1) +
@@ -426,21 +426,21 @@ $('#searchBtn').addEventListener('click', () => {
 
 $('#refreshBtn').addEventListener('click', () => {
     const code = $('#stopCode').textContent.trim();
-    if (/^\d{5}$/.test(code) && code !== '—') loadStop(code, { pushHistory: false });
+    if (/^\d{5}$/.test(code) && code !== '-') loadStop(code, { pushHistory: false });
 });
 
 $('#refreshAllBtn').addEventListener('click', () => {
     const favs = LS.getFavs();
     if (!favs.length) return;
     const activeCode = $('#stopCode').textContent.trim();
-    const code = (/^\d{5}$/.test(activeCode) && activeCode !== '—') ? activeCode : favs[0].code;
+    const code = (/^\d{5}$/.test(activeCode) && activeCode !== '-') ? activeCode : favs[0].code;
     loadStop(code, { pushHistory: false });
 });
 
 $('#addFavBtn').addEventListener('click', () => {
     const displayed = $('#stopCode').textContent.trim();
     const fromInput = $('#q').value.trim().match(/\d{5}/)?.[0];
-    const code = (/^\d{5}$/.test(displayed) && displayed !== '—') ? displayed : fromInput;
+    const code = (/^\d{5}$/.test(displayed) && displayed !== '-') ? displayed : fromInput;
     if (code) addFav(code);
     else alert('Search for a bus stop first.');
 });

@@ -13,7 +13,7 @@ and persistent inline buttons.
 - Works inline: type `@your_bot_username` in any chat to search or pull up
   your favourites without switching to the bot's chat.
 
-Data comes directly from [LTA DataMall](https://datamall.lta.gov.sg/) — bus
+Data comes directly from [LTA DataMall](https://datamall.lta.gov.sg/) - bus
 stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 
 ## Using the bot
@@ -43,9 +43,9 @@ there's more than one, tap the bus stop you meant from the list.
 
 Every timings message has two buttons:
 
-- **Add favourite / Remove favourite** — toggle the bus stop in your
+- **Add favourite / Remove favourite** - toggle the bus stop in your
   favourites list.
-- **Refresh** — re-fetch live timings for that stop.
+- **Refresh** - re-fetch live timings for that stop.
 
 These buttons keep working even after the bot restarts, since the button
 actions are stored in SQLite rather than only in memory.

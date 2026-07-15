@@ -12,7 +12,7 @@ async function dm(path, qs) {
     return r.json();
 }
 
-// LTA DataMall BusRoutes does not support $filter — must paginate and filter client-side.
+// LTA DataMall BusRoutes does not support $filter - must paginate and filter client-side.
 async function fetchRoutesForService(service) {
     const route1 = [];
     const route2 = [];

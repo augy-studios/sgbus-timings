@@ -37,7 +37,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Theme preference is saved automatically
 
 ### Personalisation
-- Set your name by clicking the app title — the greeting changes based on time of day
+- Set your name by clicking the app title - the greeting changes based on time of day
 - Name is stored in local storage
 
 ### URL-based Navigation
@@ -50,13 +50,13 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ## How to Use
 
-1. **Search for a bus stop** — type a stop name or 5-digit stop code into the search box. Select a suggestion from the dropdown or press **Enter** / tap **Get Timings**.
-2. **View arrivals** — a card appears showing each bus service and the next 3 arrival times.
-3. **Filter by service** — append a bus service number to your search (e.g. `84009 174`) to show only that service.
-4. **See the full route** — tap **Route** next to any service to open a modal with the complete stop list.
-5. **Save a favourite** — tap **Favourite** on a stop card to pin it as a quick-access chip.
-6. **Switch themes** — tap the theme button in the header to cycle through colour schemes.
-7. **Install as an app** — use your browser's "Add to Home Screen" or "Install" prompt to use the app offline.
+1. **Search for a bus stop** - type a stop name or 5-digit stop code into the search box. Select a suggestion from the dropdown or press **Enter** / tap **Get Timings**.
+2. **View arrivals** - a card appears showing each bus service and the next 3 arrival times.
+3. **Filter by service** - append a bus service number to your search (e.g. `84009 174`) to show only that service.
+4. **See the full route** - tap **Route** next to any service to open a modal with the complete stop list.
+5. **Save a favourite** - tap **Favourite** on a stop card to pin it as a quick-access chip.
+6. **Switch themes** - tap the theme button in the header to cycle through colour schemes.
+7. **Install as an app** - use your browser's "Add to Home Screen" or "Install" prompt to use the app offline.
 
 ## Tech Stack
 
