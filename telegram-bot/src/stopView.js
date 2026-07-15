@@ -10,8 +10,11 @@ import { makeButton } from "./buttons.js";
  * arrivals. Used for chat replies/edits, and for inline query results.
  * `chatId` is only used to mark whether the stop is already a favourite; the
  * favourite/refresh buttons themselves resolve the acting user at click time.
+ * Pass `inlineOnly: true` for messages living in inline mode (no chat of
+ * their own), which get just a refresh button - no favourite toggle, since
+ * whoever taps it may not be the user who ran the query.
  */
-export async function buildStopView(code, chatId) {
+export async function buildStopView(code, chatId, { inlineOnly = false } = {}) {
   const stop = getBusStopByCode(code);
   if (!stop) return null;
 
@@ -19,13 +22,16 @@ export async function buildStopView(code, chatId) {
   const favourite = chatId != null ? isFavourite(chatId, code) : false;
   const text = formatArrivalMessage(stop, arrivals, favourite);
 
-  const favButtonText = favourite ? "⭐ Remove favourite" : "⭐ Add favourite";
-  const keyboard = Markup.inlineKeyboard([
-    [
-      Markup.button.callback(favButtonText, makeButton("fav", { code, name: stop.name })),
-      Markup.button.callback("🔄 Refresh", makeButton("refresh", { code })),
-    ],
-  ]);
+  const buttons = inlineOnly
+    ? [Markup.button.callback("🔄 Refresh", makeButton("refresh", { code }))]
+    : [
+        Markup.button.callback(
+          favourite ? "⭐ Remove favourite" : "⭐ Add favourite",
+          makeButton("fav", { code, name: stop.name })
+        ),
+        Markup.button.callback("🔄 Refresh", makeButton("refresh", { code })),
+      ];
+  const keyboard = Markup.inlineKeyboard([buttons]);
 
   return { stop, text, keyboard };
 }

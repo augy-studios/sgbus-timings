@@ -14,10 +14,11 @@ export function registerCallbacks(bot) {
 
     const userId = ctx.from.id;
     const { action, payload } = resolved;
+    const inlineOnly = Boolean(ctx.callbackQuery.inline_message_id);
 
     try {
       if (action === "stop" || action === "refresh") {
-        const view = await buildStopView(payload.code, userId);
+        const view = await buildStopView(payload.code, userId, { inlineOnly });
         if (!view) {
           await ctx.answerCbQuery("That bus stop could not be found.");
           return;

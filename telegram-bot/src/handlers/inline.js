@@ -1,9 +1,7 @@
 import crypto from "node:crypto";
 import { searchBusStops, getBusStopByCode } from "../busStops.js";
-import { listFavourites, isFavourite } from "../favourites.js";
-import { fetchArrivals } from "../lta.js";
-import { formatArrivalMessage } from "../format.js";
-import { makeButton } from "../buttons.js";
+import { listFavourites } from "../favourites.js";
+import { buildStopView } from "../stopView.js";
 
 const MAX_RESULTS = 8;
 
@@ -42,9 +40,11 @@ export function registerInline(bot) {
     const results = await Promise.all(
       candidates.map(async (stop) => {
         let text;
+        let keyboard;
         try {
-          const arrivals = await fetchArrivals(stop.code);
-          text = formatArrivalMessage(stop, arrivals, isFavourite(userId, stop.code));
+          const view = await buildStopView(stop.code, userId, { inlineOnly: true });
+          text = view.text;
+          keyboard = view.keyboard;
         } catch {
           text = `*${stop.name}* \\(${stop.code}\\)\nCould not load live timings right now\\.`;
         }
@@ -55,9 +55,7 @@ export function registerInline(bot) {
           title: `${stop.name} (${stop.code})`,
           description: stop.road || "Bus stop",
           input_message_content: { message_text: text, parse_mode: "MarkdownV2" },
-          reply_markup: {
-            inline_keyboard: [[{ text: "🔄 Refresh", callback_data: makeButton("refresh", { code: stop.code }) }]],
-          },
+          ...(keyboard ? { reply_markup: keyboard.reply_markup } : {}),
         };
       })
     );
