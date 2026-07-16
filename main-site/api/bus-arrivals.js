@@ -31,8 +31,9 @@ export default async function handler(req, res) {
             services: (raw?.Services || []).map(s => {
                 const toMs = (iso) => (iso ? Math.max(0, new Date(iso) - new Date()) : null);
                 const slurp = (nb) => nb ? (() => {
-                    const lat = parseFloat(nb.Latitude) || null;
-                    const lng = parseFloat(nb.Longitude) || null;
+                    const monitored = nb.Monitored === 1 || nb.Monitored === "1";
+                    const lat = monitored ? (parseFloat(nb.Latitude) || null) : null;
+                    const lng = monitored ? (parseFloat(nb.Longitude) || null) : null;
                     return {
                         eta_ms: toMs(nb.EstimatedArrival),
                         load: nb.Load, // SEA / SDA / LSD
@@ -40,7 +41,7 @@ export default async function handler(req, res) {
                         deck: nb.Type === "DD" ? "Double" : "Single", // SD/DD/BD -> Single/Double
                         lat,
                         lng,
-                        rough: (lat == null || lng == null), // italicise if true
+                        rough: !monitored, // italicise if true (no live GPS tracking)
                         origin: nb.OriginCode,
                         dest: nb.DestinationCode
                     };

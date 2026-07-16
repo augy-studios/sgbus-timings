@@ -619,6 +619,12 @@ header {
     color: var(--muted);
 }
 
+.badge-dist-na {
+    border-style: dashed;
+    background: transparent;
+    opacity: 0.6;
+}
+
 /* ===== Buttons ===== */
 .actions {
     display: flex;
