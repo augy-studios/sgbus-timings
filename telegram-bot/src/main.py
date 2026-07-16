@@ -1,6 +1,9 @@
 import asyncio
+from datetime import datetime, timedelta, timezone
 
 from telethon import TelegramClient
+
+GMT8 = timezone(timedelta(hours=8))
 
 from .bus_stops import bus_stops_count, refresh_bus_stops
 from .config import config
@@ -47,7 +50,8 @@ async def main() -> None:
 
 async def _refresh_job() -> None:
     count = await refresh_bus_stops()
-    print(f"[scheduler] refreshed {count} bus stops")
+    timestamp = datetime.now(GMT8).strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] [scheduler] refreshed bus stop cache: {count} total bus stops")
 
 
 if __name__ == "__main__":
