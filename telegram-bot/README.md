@@ -2,8 +2,10 @@
 
 A Telegram bot for live Singapore bus arrival timings, built on the same
 LTA DataMall data as the [sgbus-timings web app](https://sgbus.uwuapps.org/).
-Written in Node.js with a local SQLite database for favourites, scheduling,
-and persistent inline buttons.
+Written in Python with [Telethon](https://docs.telethon.dev/), using a local
+SQLite database for favourites, scheduling, and persistent inline buttons.
+Timings are sent as real Telegram rich messages (Bot API 10.1+) - proper
+headings and tables, not a Markdown approximation.
 
 ## What it does
 
@@ -81,42 +83,57 @@ refreshed automatically on a schedule (see `BUS_STOPS_REFRESH_HOURS` in
 
 ## Running it
 
-See [SETUP.md](SETUP.md) for full instructions, including registering the
-bot with BotFather. Quick start:
+Registering the bot with BotFather gives you `BOT_TOKEN`. Because this bot
+talks to Telegram over MTProto (via Telethon) rather than only the plain Bot
+API, it also needs an `API_ID`/`API_HASH` pair - get one at
+[my.telegram.org/apps](https://my.telegram.org/apps) (any account can create
+one; it's not tied to the bot account itself). Quick start:
 
 ```bash
 git clone <this-repo-url>
 cd sgbus-timings/telegram-bot
+python -m venv .venv
+source .venv/bin/activate   # .venv\Scripts\activate on Windows
+pip install -r requirements.txt
 cp .env.example .env
-# fill in BOT_TOKEN and LTA_ACCOUNT_KEY in .env
-npm install
-npm start
+# fill in BOT_TOKEN, API_ID, API_HASH, and LTA_ACCOUNT_KEY in .env
+python -m src.main
 ```
 
-For running on a VPS under `tmux`, see the "Running under tmux" section in
-[SETUP.md](SETUP.md).
+The first `python -m src.main` run creates a Telethon session file
+(`data/bot.session`) alongside the SQLite database - keep both around between
+restarts so the bot doesn't have to re-authenticate.
+
+To refresh the cached bus stop list without starting the bot:
+
+```bash
+python -m src.refresh_stops
+```
+
+For running on a VPS, run `python -m src.main` under `tmux`, `screen`, or a
+systemd unit, same as any long-running Python process.
 
 ## Project layout
 
 ```
 telegram-bot/
   src/
-    index.js          entrypoint: wires up handlers, scheduler, launches the bot
-    config.js          reads and validates .env
-    db.js               SQLite connection and schema
-    lta.js               LTA DataMall API client
-    busStops.js         bus stop cache, search, nearest-stop lookup
-    favourites.js         per-user favourites (SQLite)
-    buttons.js            persistent inline-button registry (SQLite)
-    scheduler.js         SQLite-backed periodic job runner
-    format.js             MarkdownV2 message formatting
-    reply.js               MarkdownV2 send/edit helpers with plain-text fallback
-    stopView.js            builds a stop's timings message + keyboard
-    listView.js             builds a list-of-stops keyboard
-    refreshStops.js         one-off script: refresh the bus stop cache
+    main.py               entrypoint: wires up handlers, scheduler, starts the client
+    config.py              reads and validates .env
+    db.py                  SQLite connection and schema
+    lta.py                 LTA DataMall API client (async, httpx)
+    bus_stops.py           bus stop cache, search, nearest-stop lookup
+    favourites.py          per-user favourites (SQLite)
+    buttons.py             persistent inline-button registry (SQLite)
+    scheduler.py           SQLite-backed periodic job runner (asyncio)
+    format.py              rich-message Markdown formatting (headings + tables)
+    reply.py               rich-message send/edit helpers with plain-text fallback
+    stop_view.py           builds a stop's timings message + keyboard
+    list_view.py           builds a list-of-stops keyboard
+    refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
-      start.js, nearme.js, favs.js, search.js, callbacks.js, inline.js
-  data/                   SQLite database file lives here (gitignored)
+      start.py, nearme.py, favs.py, search.py, callbacks.py, inline.py
+  data/                   SQLite database + Telethon session file (gitignored)
 ```
 
 ## License

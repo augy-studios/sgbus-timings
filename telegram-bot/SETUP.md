@@ -79,14 +79,27 @@ Only do this for groups you control the membership of, since a bot with
 privacy mode disabled receives every message sent in the group, not just
 ones addressed to it.
 
-## 2. Get an LTA DataMall API key
+## 2. Get Telegram API credentials (API_ID / API_HASH)
+
+The bot talks to Telegram over MTProto (via the [Telethon](https://docs.telethon.dev/)
+library) rather than only the plain Bot API, so it needs its own `api_id`/`api_hash`
+pair in addition to the bot token above - this is a Telegram-wide requirement for
+any MTProto client, not something specific to this bot.
+
+1. Go to <https://my.telegram.org/apps> and log in with any Telegram account
+   (it doesn't need to be related to the bot account).
+2. Create an application (any name/platform is fine, e.g. "sgbus-timings-bot" / "Server").
+3. Save the `api_id` and `api_hash` shown, these go in `API_ID` and `API_HASH`
+   in your `.env` file. Treat `api_hash` like a password.
+
+## 3. Get an LTA DataMall API key
 
 1. Go to <https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html>.
 2. Register with an email address and request API access. The key is free
    and arrives by email, usually within a few minutes.
 3. Save the key, this goes in `LTA_ACCOUNT_KEY` in your `.env` file.
 
-## 3. Configure the bot
+## 4. Configure the bot
 
 ```bash
 cd telegram-bot
@@ -97,6 +110,8 @@ Edit `.env`:
 
 ```dotenv
 BOT_TOKEN=123456789:AAExampleTokenAbCdEfGhIjKlMnOpQrStUvW
+API_ID=12345678
+API_HASH=your-api-hash-from-my.telegram.org
 LTA_ACCOUNT_KEY=your-lta-account-key
 DB_PATH=./data/bot.db
 WEBAPP_URL=https://sgbus.uwuapps.org/
@@ -104,37 +119,37 @@ DONATE_URL=https://donate.stripe.com/28o2akeAr3hv0DK6oo
 BUS_STOPS_REFRESH_HOURS=24
 ```
 
-## 4. Install and run on a Debian 13 VPS
+## 5. Install and run on a Debian 13 VPS
 
-Node.js 18+ is required (native `fetch`). `better-sqlite3` compiles a native
-module, so a build toolchain and Python are needed the first time you
-install dependencies.
+Python 3.10+ is required.
 
 ```bash
-# System packages (Node.js from NodeSource, plus a build toolchain for better-sqlite3)
+# System packages
 sudo apt update
-sudo apt install -y curl build-essential python3
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+sudo apt install -y python3 python3-venv
 
 # Get the code
 git clone <this-repo-url> sgbus-timings
 cd sgbus-timings/telegram-bot
 cp .env.example .env
-nano .env   # fill in BOT_TOKEN and LTA_ACCOUNT_KEY
+nano .env   # fill in BOT_TOKEN, API_ID, API_HASH, and LTA_ACCOUNT_KEY
 
 # Install dependencies and start
-npm install
-npm start
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m src.main
 ```
 
 On first run, the bot downloads the full LTA bus stop list into
 `data/bot.db` before it starts polling Telegram, which normally takes under
 a minute. After that, it refreshes automatically every
 `BUS_STOPS_REFRESH_HOURS` hours (tracked in SQLite, so a restart doesn't
-force an unnecessary re-download).
+force an unnecessary re-download). The first run also creates a Telethon
+session file at `data/bot.session` - keep it alongside the database between
+restarts.
 
-## 5. Running under tmux
+## 6. Running under tmux
 
 Since you're running this on a VPS without a process manager, `tmux` keeps
 the bot running after you disconnect:
@@ -142,7 +157,8 @@ the bot running after you disconnect:
 ```bash
 tmux new -s sgbus-bot
 cd ~/sgbus-timings/telegram-bot
-npm start
+source .venv/bin/activate
+python -m src.main
 ```
 
 Detach with `Ctrl+b` then `d`. The bot keeps running in the background.
@@ -166,12 +182,13 @@ tmux kill-session -t sgbus-bot
 tmux attach -t sgbus-bot
 # Ctrl+c to stop the running bot
 git pull
-npm install
-npm start
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m src.main
 # Ctrl+b then d to detach again
 ```
 
-## 6. Verifying it works
+## 7. Verifying it works
 
 1. Open a chat with your bot on Telegram and send `/start`. You should see
    the about message with "Open web app" and "Donate" buttons.
