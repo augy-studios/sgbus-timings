@@ -263,7 +263,7 @@ function renderArrivals(code, data, { filterService = null } = {}) {
         const deck  = `<span class="badge">${escapeHtml(bus.deck || '')}</span>`;
         const distBadge = haveCoords
             ? `<span class="badge badge-dist">${dist}</span>`
-            : `<span class="badge badge-dist badge-dist-na">GPS N/A</span>`;
+            : `<span class="badge badge-dist badge-dist-na">~ &#8734;m</span>`;
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         return `<div class="eta">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${badges}</div>`;
     };
