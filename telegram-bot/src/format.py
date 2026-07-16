@@ -149,7 +149,7 @@ def stop_button_label(stop, distance_meters=None) -> str:
         dist_text = "~∞m"
     else:
         dist_text = f"~{distance_meters / 1000:.1f}km" if distance_meters >= 1000 else f"~{distance_meters}m"
-    label += f" - {dist_text}"
+    label += f" {dist_text}"
     if len(label) > 64:
         label = f"{label[:61]}..."
     return label
