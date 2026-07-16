@@ -53,8 +53,9 @@ def _shape_next_bus(nb: Optional[dict]) -> Optional[dict]:
     arrival = datetime.fromisoformat(nb["EstimatedArrival"])
     now = datetime.now(timezone.utc if arrival.tzinfo else None)
     eta_ms = max(0, int((arrival - now).total_seconds() * 1000))
-    lat = float(nb["Latitude"]) if nb.get("Latitude") else None
-    lng = float(nb["Longitude"]) if nb.get("Longitude") else None
+    monitored = nb.get("Monitored") in (1, "1")
+    lat = float(nb["Latitude"]) if monitored and nb.get("Latitude") else None
+    lng = float(nb["Longitude"]) if monitored and nb.get("Longitude") else None
     bus_type = nb.get("Type")
     return {
         "etaMs": eta_ms,
