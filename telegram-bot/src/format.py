@@ -145,9 +145,11 @@ def _build_fallback_text(stop, arrivals, is_favourite, updated) -> str:
 def stop_button_label(stop, distance_meters=None) -> str:
     """Label for a bus stop selection button, kept under Telegram's 64-char limit."""
     label = f"🚌 {stop['name']} ({stop['code']})"
-    if distance_meters is not None:
-        dist_text = f"{distance_meters / 1000:.1f}km" if distance_meters >= 1000 else f"{distance_meters}m"
-        label += f" - {dist_text}"
+    if distance_meters is None:
+        dist_text = "~∞m"
+    else:
+        dist_text = f"~{distance_meters / 1000:.1f}km" if distance_meters >= 1000 else f"~{distance_meters}m"
+    label += f" - {dist_text}"
     if len(label) > 64:
         label = f"{label[:61]}..."
     return label
