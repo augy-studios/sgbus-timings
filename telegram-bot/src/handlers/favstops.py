@@ -5,8 +5,8 @@ from ..list_view import build_stop_list_keyboard
 from ..reply import send_rich_message
 
 
-def register_favs(client):
-    @client.on(events.NewMessage(pattern="/favs"))
+def register_favstops(client):
+    @client.on(events.NewMessage(pattern="/favstops"))
     async def handler(event):
         favs = list_favourites(event.chat_id)
         if not favs:
@@ -16,4 +16,5 @@ def register_favs(client):
             return
 
         rich = {"markdown": "# Your favourite bus stops", "fallback": "Your favourite bus stops"}
-        await send_rich_message(client, event.chat_id, rich, build_stop_list_keyboard(favs))
+        favourite_codes = {f["code"] for f in favs}
+        await send_rich_message(client, event.chat_id, rich, build_stop_list_keyboard(favs, favourite_codes))

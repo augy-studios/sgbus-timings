@@ -1,9 +1,15 @@
 from telethon import events, types
 
 from ..buttons import resolve_button
-from ..favourites import toggle_favourite
+from ..favourite_buses import remove_favourite_bus
+from ..favourite_prefs import set_pref
+from ..favourites import remove_favourite, toggle_favourite
 from ..reply import edit_rich_message
 from ..stop_view import build_stop_view
+from .favbuses import build_favbus_stops_view, build_favbuses_view
+from .favouritepref import build_favouritepref_view
+from .unfavbus import build_unfavbus_view
+from .unfavstop import build_unfavstop_view
 
 
 def register_callbacks(client):
@@ -21,7 +27,9 @@ def register_callbacks(client):
 
         try:
             if action in ("stop", "refresh"):
-                view = await build_stop_view(payload["code"], user_id, inline_only=inline_only)
+                view = await build_stop_view(
+                    payload["code"], user_id, inline_only=inline_only, service_no=payload.get("service_no")
+                )
                 if not view:
                     await event.answer("That bus stop could not be found.")
                     return
@@ -35,6 +43,82 @@ def register_callbacks(client):
                 if view:
                     await edit_rich_message(client, event, view["rich"], view["buttons"])
                 await event.answer("Added to favourites" if now_fav else "Removed from favourites")
+                return
+
+            if action == "favbus_page":
+                rich, buttons, _ = build_favbuses_view(user_id, payload.get("page", 0))
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "favbus_stops":
+                rich, buttons, _ = build_favbus_stops_view(payload["service_no"], payload.get("page", 0))
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "favbus_stop_view":
+                view = await build_stop_view(payload["code"], user_id, service_no=payload["service_no"])
+                if not view:
+                    await event.answer("That bus stop could not be found.")
+                    return
+                await edit_rich_message(client, event, view["rich"], view["buttons"])
+                await event.answer()
+                return
+
+            if action == "unfavbus_page":
+                rich, buttons, _ = build_unfavbus_view(user_id, payload.get("page", 0))
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "unfavbus_remove":
+                remove_favourite_bus(user_id, payload["service_no"])
+                rich, buttons, buses = build_unfavbus_view(user_id, payload.get("page", 0))
+                if buses:
+                    await edit_rich_message(client, event, rich, buttons)
+                else:
+                    await edit_rich_message(
+                        client,
+                        event,
+                        {"markdown": "No favourite buses left.", "fallback": "No favourite buses left."},
+                        None,
+                    )
+                await event.answer(f"Removed {payload['service_no']}")
+                return
+
+            if action == "unfavstop_page":
+                rich, buttons, _ = build_unfavstop_view(user_id, payload.get("page", 0))
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "unfavstop_remove":
+                remove_favourite(user_id, payload["code"])
+                rich, buttons, stops = build_unfavstop_view(user_id, payload.get("page", 0))
+                if stops:
+                    await edit_rich_message(client, event, rich, buttons)
+                else:
+                    await edit_rich_message(
+                        client,
+                        event,
+                        {"markdown": "No favourite bus stops left.", "fallback": "No favourite bus stops left."},
+                        None,
+                    )
+                await event.answer("Removed")
+                return
+
+            if action == "favpref_page":
+                rich, buttons = build_favouritepref_view(user_id, payload.get("page", 0))
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "favpref_set":
+                set_pref(user_id, payload["kind"], payload["position"])
+                rich, buttons = build_favouritepref_view(user_id, payload.get("page", 0))
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Preference saved")
                 return
 
             await event.answer()

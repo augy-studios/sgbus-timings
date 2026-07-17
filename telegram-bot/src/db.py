@@ -27,6 +27,37 @@ db.executescript(
         PRIMARY KEY (chat_id, stop_code)
     );
 
+    CREATE TABLE IF NOT EXISTS favourite_buses (
+        chat_id INTEGER NOT NULL,
+        service_no TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, service_no)
+    );
+
+    CREATE TABLE IF NOT EXISTS bus_services (
+        service_no TEXT PRIMARY KEY,
+        operator TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS bus_routes (
+        service_no TEXT NOT NULL,
+        stop_code TEXT NOT NULL,
+        PRIMARY KEY (service_no, stop_code)
+    );
+
+    CREATE TABLE IF NOT EXISTS favourite_prefs (
+        chat_id INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        position TEXT NOT NULL DEFAULT 'top',
+        PRIMARY KEY (chat_id, kind)
+    );
+
+    CREATE TABLE IF NOT EXISTS user_flows (
+        chat_id INTEGER PRIMARY KEY,
+        flow TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS buttons (
         id TEXT PRIMARY KEY,
         action TEXT NOT NULL,
@@ -42,6 +73,7 @@ db.executescript(
 
     CREATE INDEX IF NOT EXISTS idx_bus_stops_name ON bus_stops(name);
     CREATE INDEX IF NOT EXISTS idx_bus_stops_road ON bus_stops(road);
+    CREATE INDEX IF NOT EXISTS idx_bus_routes_stop_code ON bus_routes(stop_code);
     """
 )
 db.commit()

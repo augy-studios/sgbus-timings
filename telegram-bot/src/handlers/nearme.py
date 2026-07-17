@@ -33,4 +33,4 @@ def register_nearme(client):
             "markdown": "**Nearby bus stops**\nFavourites are shown first.",
             "fallback": "Nearby bus stops\nFavourites are shown first.",
         }
-        await send_rich_message(client, event.chat_id, rich, build_stop_list_keyboard(nearby))
+        await send_rich_message(client, event.chat_id, rich, build_stop_list_keyboard(nearby, fav_codes))

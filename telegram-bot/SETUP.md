@@ -40,7 +40,14 @@ Send `/setcommands` to BotFather, pick your bot, then paste:
 ```
 start - about the bot and how to use it
 nearme - find bus stops near your current location
-favs - view your favourite bus stops
+favstops - view your favourite bus stops
+unfavstop - remove favourite bus stops
+addfavbus - add bus numbers to your favourites
+favbuses - view your favourite buses
+unfavbus - remove favourite buses
+favouritepref - choose top or bottom pin position for favourites
+done - finish adding favourite buses
+cancel - cancel the current operation
 ```
 
 Note none of these mention the bot's own name, as requested. Users interact
@@ -196,7 +203,14 @@ python -m src.main
    come back.
 3. Send `/nearme`, share your location, and confirm nearby stops appear as
    buttons.
-4. Tap a stop's timings, then tap "Add favourite", then send `/favs` and
-   confirm it shows up.
+4. Tap a stop's timings, then tap "Add favourite", then send `/favstops` and
+   confirm it shows up. Confirm `/unfavstop` lists it as a removable button.
 5. In any chat, type `@yourbotusername` followed by a bus stop number or
    name and confirm inline results appear.
+6. Send `/addfavbus`, then a bus number you know serves a stop you tested
+   above (e.g. `22`), then `/done`. Confirm `/favbuses` shows it, tapping it
+   lists stops it serves, and that stop's timings are starred and pinned
+   when you look it up directly. Confirm `/unfavbus` can remove it again.
+7. Send `/favouritepref`, switch a pin position, and confirm it's reflected
+   next time you view a stop or bus list. Confirm `/cancel` aborts an
+   in-progress `/addfavbus` flow without treating further text as flow input.

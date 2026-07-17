@@ -47,6 +47,48 @@ async def fetch_all_bus_stops() -> list[dict]:
     return stops
 
 
+async def fetch_all_bus_services() -> list[dict]:
+    """Fetch the full bus service list from LTA DataMall, paginating 500 records at a time."""
+    services: dict[str, dict] = {}
+    skip = 0
+    async with httpx.AsyncClient(timeout=30) as client:
+        while True:
+            data = await _lta_get(client, "/BusServices", {"$skip": skip})
+            rows = data.get("value") or []
+            if not rows:
+                break
+            for s in rows:
+                service_no = s.get("ServiceNo")
+                if service_no and service_no not in services:
+                    services[service_no] = {"service_no": service_no, "operator": s.get("Operator")}
+            if len(rows) < 500:
+                break
+            skip += 500
+    return list(services.values())
+
+
+async def fetch_all_bus_routes() -> list[dict]:
+    """Fetch the full bus route list from LTA DataMall, paginating 500 records at a time.
+    Reshaped to distinct (service_no, stop_code) pairs, dropping direction/sequence."""
+    pairs: set[tuple[str, str]] = set()
+    skip = 0
+    async with httpx.AsyncClient(timeout=30) as client:
+        while True:
+            data = await _lta_get(client, "/BusRoutes", {"$skip": skip})
+            rows = data.get("value") or []
+            if not rows:
+                break
+            for r in rows:
+                service_no = r.get("ServiceNo")
+                stop_code = r.get("BusStopCode")
+                if service_no and stop_code:
+                    pairs.add((service_no, stop_code))
+            if len(rows) < 500:
+                break
+            skip += 500
+    return [{"service_no": service_no, "stop_code": stop_code} for service_no, stop_code in pairs]
+
+
 def _shape_next_bus(nb: Optional[dict]) -> Optional[dict]:
     if not nb or not nb.get("EstimatedArrival"):
         return None

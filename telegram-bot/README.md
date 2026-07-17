@@ -12,6 +12,11 @@ headings and tables, not a Markdown approximation.
 - Look up live bus arrival timings for any bus stop, by number or by name.
 - Find the bus stops nearest to your current location.
 - Save bus stops as favourites for quick access, from any chat.
+- Save bus numbers as favourites too - they're pinned and starred wherever
+  they show up in a stop's timings, and you can browse straight to the stops
+  they serve.
+- Choose whether favourites (buses or stops) pin to the top or bottom of the
+  list.
 - Works inline: type `@your_bot_username` in any chat to search or pull up
   your favourites without switching to the bot's chat.
 
@@ -26,7 +31,14 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 |---|---|
 | `/start` | Shows what the bot does, all commands, and buttons for the web app and donations |
 | `/nearme` | Asks for your location, then lists the nearest bus stops as buttons |
-| `/favs` | Lists your favourite bus stops as buttons |
+| `/favstops` | Lists your favourite bus stops as buttons |
+| `/unfavstop` | Lists your favourite bus stops as paginated buttons to remove |
+| `/addfavbus` | Starts a flow to add bus numbers to your favourites - send numbers as text, `/done` to finish |
+| `/favbuses` | Lists your favourite bus numbers as paginated buttons; tap one to browse the stops it serves |
+| `/unfavbus` | Lists your favourite bus numbers as paginated buttons to remove |
+| `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
+| `/done` | Finishes the current multi-step flow (e.g. `/addfavbus`) |
+| `/cancel` | Cancels the current multi-step flow |
 
 ### Searching for a bus stop
 
@@ -50,6 +62,25 @@ Every timings message has two buttons:
 
 These buttons keep working even after the bot restarts, since the button
 actions are stored in SQLite rather than only in memory.
+
+Any bus service in the table that's in your favourite buses is starred (⭐)
+and pinned to the top or bottom of the list, per your `/favouritepref`
+setting.
+
+### Favourite buses
+
+Send `/addfavbus`, then type bus numbers (space or comma separated, across
+as many messages as you like) - each one is validated against LTA's live
+service list and confirmed as saved. Send `/done` when finished, or `/cancel`
+to abort.
+
+`/favbuses` shows your favourite buses as paginated buttons; tapping one
+shows the stops it serves as another paginated list, and tapping a stop opens
+a timings view filtered to just that service. `/unfavbus` shows the same
+paginated buttons but tapping one removes it instead.
+
+`/unfavstop` does the paginated-removal equivalent for favourite bus stops
+(the star toggle on a stop's timings view still works too).
 
 ### Nearest stops
 
@@ -76,10 +107,11 @@ favourite toggle, since the message can be posted into any chat.
 
 ## Data source
 
-All bus stop and arrival data comes from LTA DataMall's `BusStops` and
-`v3/BusArrival` endpoints. The bus stop list is cached locally in SQLite and
-refreshed automatically on a schedule (see `BUS_STOPS_REFRESH_HOURS` in
-`.env`); arrival timings are always fetched live.
+All bus stop and arrival data comes from LTA DataMall's `BusStops`,
+`BusServices`, `BusRoutes`, and `v3/BusArrival` endpoints. The bus stop,
+service, and route lists are cached locally in SQLite and refreshed
+automatically on a schedule (see `BUS_STOPS_REFRESH_HOURS` in `.env`, which
+governs all three caches); arrival timings are always fetched live.
 
 ## Running it
 
@@ -123,7 +155,13 @@ telegram-bot/
     db.py                  SQLite connection and schema
     lta.py                 LTA DataMall API client (async, httpx)
     bus_stops.py           bus stop cache, search, nearest-stop lookup
-    favourites.py          per-user favourites (SQLite)
+    bus_services.py        bus service number cache + validation
+    bus_routes.py          bus service <-> stop cache (which stops a service visits)
+    favourites.py          per-user favourite bus stops (SQLite)
+    favourite_buses.py     per-user favourite bus numbers (SQLite)
+    favourite_prefs.py     per-user pin position (top/bottom) per favourite kind
+    flows.py               per-user multi-step flow state (e.g. mid-/addfavbus)
+    pagination.py          generic paginated inline-keyboard helper
     buttons.py             persistent inline-button registry (SQLite)
     scheduler.py           SQLite-backed periodic job runner (asyncio)
     format.py              rich-message Markdown formatting (headings + tables)
@@ -132,7 +170,9 @@ telegram-bot/
     list_view.py           builds a list-of-stops keyboard
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
-      start.py, nearme.py, favs.py, search.py, callbacks.py, inline.py
+      start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,
+      favbuses.py, unfavbus.py, favouritepref.py, flow_control.py,
+      search.py, callbacks.py, inline.py
   data/                   SQLite database + Telethon session file (gitignored)
 ```
 

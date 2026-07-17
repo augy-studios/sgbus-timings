@@ -96,20 +96,32 @@ def _build_service_table(svc, stop) -> "str | None":
     return "\n".join(lines)
 
 
-def format_arrival_message(stop, arrivals, is_favourite) -> dict:
+def _pin_favourite_services(services, favourite_service_nos, pin_position) -> list:
+    """Stable-partitions services into favourited/non-favourited groups, ordering
+    per pin_position ('top' or 'bottom'), preserving each group's existing order."""
+    if not favourite_service_nos:
+        return services
+    fav = [s for s in services if s["serviceNo"] in favourite_service_nos]
+    rest = [s for s in services if s["serviceNo"] not in favourite_service_nos]
+    return [*fav, *rest] if pin_position != "bottom" else [*rest, *fav]
+
+
+def format_arrival_message(stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top") -> dict:
     """Builds the rich-message Markdown body showing live arrivals for a bus stop."""
+    favourite_service_nos = favourite_service_nos or set()
     star = "⭐ " if is_favourite else ""
     lines = [f"# {star}{escape_md(stop['name'])} ({escape_md(stop['code'])})"]
     if stop["road"]:
         lines.append(f"*{escape_md(stop['road'])}*")
     lines.append("")
 
-    services = arrivals["services"]
+    services = _pin_favourite_services(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:
         lines.append("No bus services currently reported for this stop.")
     else:
         for svc in services:
-            lines.append(f"## {escape_md(svc['serviceNo'])} ({escape_md(svc.get('operator') or '?')})")
+            svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
+            lines.append(f"## {svc_star}{escape_md(svc['serviceNo'])} ({escape_md(svc.get('operator') or '?')})")
             table = _build_service_table(svc, stop)
             lines.append(table if table else "No arrival data.")
             lines.append("")
@@ -118,33 +130,35 @@ def format_arrival_message(stop, arrivals, is_favourite) -> dict:
     lines.append(f"_Updated {updated}_")
 
     markdown = "\n".join(lines)
-    fallback = _build_fallback_text(stop, arrivals, is_favourite, updated)
+    fallback = _build_fallback_text(stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated)
     return {"markdown": markdown, "fallback": fallback}
 
 
-def _build_fallback_text(stop, arrivals, is_favourite, updated) -> str:
+def _build_fallback_text(stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated) -> str:
     """Plain-text summary for the required SendMessageRequest.message field / older clients."""
     star = "⭐ " if is_favourite else ""
     lines = [f"{star}{stop['name']} ({stop['code']})"]
     if stop["road"]:
         lines.append(stop["road"])
 
-    services = arrivals["services"]
+    services = _pin_favourite_services(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:
         lines.append("No bus services currently reported for this stop.")
     else:
         for svc in services:
+            svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
             nexts = [n for n in (svc.get("next"), svc.get("next2"), svc.get("next3")) if n]
             etas = ", ".join(_format_eta(n["etaMs"]) for n in nexts) or "no data"
-            lines.append(f"{svc['serviceNo']} ({svc.get('operator') or '?'}): {etas}")
+            lines.append(f"{svc_star}{svc['serviceNo']} ({svc.get('operator') or '?'}): {etas}")
 
     lines.append(f"Updated {updated}")
     return "\n".join(lines)
 
 
-def stop_button_label(stop, distance_meters=None) -> str:
+def stop_button_label(stop, distance_meters=None, is_favourite=False) -> str:
     """Label for a bus stop selection button, kept under Telegram's 64-char limit."""
-    label = f"🚌 {stop['name']} ({stop['code']})"
+    icon = "⭐" if is_favourite else "🚌"
+    label = f"{icon} {stop['name']} ({stop['code']})"
     if distance_meters is None:
         dist_text = "~∞m"
     else:
@@ -153,3 +167,9 @@ def stop_button_label(stop, distance_meters=None) -> str:
     if len(label) > 64:
         label = f"{label[:61]}..."
     return label
+
+
+def bus_button_label(service_no: str, is_favourite=False) -> str:
+    """Label for a bus service number selection button."""
+    icon = "⭐" if is_favourite else "🚌"
+    return f"{icon} {service_no}"
