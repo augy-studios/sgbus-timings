@@ -13,7 +13,10 @@ def build_favbuses_view(chat_id: int, page: int):
     buses = sorted((row["service_no"] for row in list_favourite_buses(chat_id)), key=_natural_sort_key)
     page_items, page, total_pages = paginate(buses, page)
 
-    rich = {"markdown": "# Your favourite buses", "fallback": "Your favourite buses"}
+    rich = {
+        "markdown": "# Your favourite buses\nSelect a bus number to view the bus stops.",
+        "fallback": "Your favourite buses\nSelect a bus number to view the bus stops.",
+    }
     buttons = [
         [Button.inline(bus_button_label(service_no, is_favourite=True), make_button("favbus_stops", {"service_no": service_no, "page": 0}))]
         for service_no in page_items
