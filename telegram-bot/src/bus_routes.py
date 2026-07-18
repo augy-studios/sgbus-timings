@@ -8,7 +8,10 @@ async def refresh_bus_routes() -> int:
     with db:
         db.execute("DELETE FROM bus_routes")
         db.executemany(
-            "INSERT INTO bus_routes (service_no, stop_code) VALUES (:service_no, :stop_code)",
+            """
+            INSERT INTO bus_routes (service_no, direction, stop_sequence, stop_code)
+            VALUES (:service_no, :direction, :stop_sequence, :stop_code)
+            """,
             routes,
         )
     return len(routes)
@@ -19,14 +22,22 @@ def bus_routes_count() -> int:
 
 
 def stops_for_service(service_no: str) -> list:
-    """Bus stops served by a given service, joined with stop details, ordered by name."""
-    return db.execute(
+    """Bus stops served by a given service, joined with stop details, ordered the way the
+    bus travels (direction 1 first, then any stops only served in direction 2)."""
+    rows = db.execute(
         """
         SELECT bus_stops.*
         FROM bus_routes
         JOIN bus_stops ON bus_stops.code = bus_routes.stop_code
         WHERE bus_routes.service_no = ?
-        ORDER BY bus_stops.name
+        ORDER BY bus_routes.direction, bus_routes.stop_sequence
         """,
         (service_no,),
     ).fetchall()
+    seen = set()
+    stops = []
+    for stop in rows:
+        if stop["code"] not in seen:
+            seen.add(stop["code"])
+            stops.append(stop)
+    return stops

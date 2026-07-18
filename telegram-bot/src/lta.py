@@ -69,8 +69,8 @@ async def fetch_all_bus_services() -> list[dict]:
 
 async def fetch_all_bus_routes() -> list[dict]:
     """Fetch the full bus route list from LTA DataMall, paginating 500 records at a time.
-    Reshaped to distinct (service_no, stop_code) pairs, dropping direction/sequence."""
-    pairs: set[tuple[str, str]] = set()
+    Reshaped to (service_no, direction, stop_sequence, stop_code) rows."""
+    routes: dict[tuple[str, int, str], int] = {}
     skip = 0
     async with httpx.AsyncClient(timeout=30) as client:
         while True:
@@ -81,12 +81,18 @@ async def fetch_all_bus_routes() -> list[dict]:
             for r in rows:
                 service_no = r.get("ServiceNo")
                 stop_code = r.get("BusStopCode")
-                if service_no and stop_code:
-                    pairs.add((service_no, stop_code))
+                direction = r.get("Direction")
+                stop_sequence = r.get("StopSequence")
+                if service_no and stop_code and direction is not None and stop_sequence is not None:
+                    key = (service_no, int(direction), stop_code)
+                    routes[key] = min(routes.get(key, stop_sequence), stop_sequence)
             if len(rows) < 500:
                 break
             skip += 500
-    return [{"service_no": service_no, "stop_code": stop_code} for service_no, stop_code in pairs]
+    return [
+        {"service_no": service_no, "direction": direction, "stop_sequence": stop_sequence, "stop_code": stop_code}
+        for (service_no, direction, stop_code), stop_sequence in routes.items()
+    ]
 
 
 def _shape_next_bus(nb: Optional[dict]) -> Optional[dict]:

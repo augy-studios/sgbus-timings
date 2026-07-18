@@ -2,8 +2,11 @@ from telethon import Button, events
 
 from ..bus_routes import stops_for_service
 from ..favourite_buses import list_favourite_buses
+from ..favourite_prefs import get_pref
+from ..favourites import list_favourites
 from ..buttons import make_button
 from ..format import bus_button_label, stop_button_label
+from ..list_view import pin_favourite_stops
 from ..lta import _natural_sort_key
 from ..pagination import nav_row, paginate
 from ..reply import send_rich_message
@@ -25,8 +28,11 @@ def build_favbuses_view(chat_id: int, page: int):
     return rich, buttons, buses
 
 
-def build_favbus_stops_view(service_no: str, page: int):
+def build_favbus_stops_view(chat_id: int, service_no: str, page: int):
     stops = stops_for_service(service_no)
+    fav_codes = {f["code"] for f in list_favourites(chat_id)}
+    pin_position = get_pref(chat_id, "stop")
+    stops = pin_favourite_stops(stops, fav_codes, pin_position)
     page_items, page, total_pages = paginate(stops, page)
 
     rich = {
@@ -36,7 +42,7 @@ def build_favbus_stops_view(service_no: str, page: int):
     buttons = [
         [
             Button.inline(
-                stop_button_label(stop),
+                stop_button_label(stop, is_favourite=stop["code"] in fav_codes),
                 make_button("favbus_stop_view", {"service_no": service_no, "code": stop["code"]}),
             )
         ]

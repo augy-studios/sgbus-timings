@@ -55,7 +55,7 @@ def register_callbacks(client):
                 return
 
             if action == "favbus_stops":
-                rich, buttons, _ = build_favbus_stops_view(payload["service_no"], payload.get("page", 0))
+                rich, buttons, _ = build_favbus_stops_view(user_id, payload["service_no"], payload.get("page", 0))
                 await edit_rich_message(client, event, rich, buttons)
                 await event.answer()
                 return

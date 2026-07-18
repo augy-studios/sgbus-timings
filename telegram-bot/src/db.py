@@ -41,8 +41,10 @@ db.executescript(
 
     CREATE TABLE IF NOT EXISTS bus_routes (
         service_no TEXT NOT NULL,
+        direction INTEGER NOT NULL DEFAULT 1,
+        stop_sequence INTEGER NOT NULL DEFAULT 0,
         stop_code TEXT NOT NULL,
-        PRIMARY KEY (service_no, stop_code)
+        PRIMARY KEY (service_no, direction, stop_code)
     );
 
     CREATE TABLE IF NOT EXISTS favourite_prefs (
@@ -104,4 +106,22 @@ db.executescript(
     CREATE INDEX IF NOT EXISTS idx_routines_chat_id ON routines(chat_id);
     """
 )
+
+_bus_routes_columns = {row["name"] for row in db.execute("PRAGMA table_info(bus_routes)").fetchall()}
+if "stop_sequence" not in _bus_routes_columns:
+    with db:
+        db.execute("DROP TABLE bus_routes")
+        db.execute(
+            """
+            CREATE TABLE bus_routes (
+                service_no TEXT NOT NULL,
+                direction INTEGER NOT NULL DEFAULT 1,
+                stop_sequence INTEGER NOT NULL DEFAULT 0,
+                stop_code TEXT NOT NULL,
+                PRIMARY KEY (service_no, direction, stop_code)
+            )
+            """
+        )
+        db.execute("CREATE INDEX IF NOT EXISTS idx_bus_routes_stop_code ON bus_routes(stop_code)")
+
 db.commit()
