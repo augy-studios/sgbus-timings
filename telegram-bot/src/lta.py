@@ -69,8 +69,9 @@ async def fetch_all_bus_services() -> list[dict]:
 
 async def fetch_all_bus_routes() -> list[dict]:
     """Fetch the full bus route list from LTA DataMall, paginating 500 records at a time.
-    Reshaped to (service_no, direction, stop_sequence, stop_code) rows."""
-    routes: dict[tuple[str, int, str], int] = {}
+    Reshaped to (service_no, direction, stop_sequence, stop_code) rows, each carrying the
+    first/last bus times (HHmm strings) for weekdays, Saturdays and Sundays."""
+    routes: dict[tuple[str, int, str], dict] = {}
     skip = 0
     async with httpx.AsyncClient(timeout=30) as client:
         while True:
@@ -85,13 +86,23 @@ async def fetch_all_bus_routes() -> list[dict]:
                 stop_sequence = r.get("StopSequence")
                 if service_no and stop_code and direction is not None and stop_sequence is not None:
                     key = (service_no, int(direction), stop_code)
-                    routes[key] = min(routes.get(key, stop_sequence), stop_sequence)
+                    existing = routes.get(key)
+                    if existing is None or stop_sequence < existing["stop_sequence"]:
+                        routes[key] = {
+                            "stop_sequence": stop_sequence,
+                            "wd_first": r.get("WD_FirstBus") or None,
+                            "wd_last": r.get("WD_LastBus") or None,
+                            "sat_first": r.get("SAT_FirstBus") or None,
+                            "sat_last": r.get("SAT_LastBus") or None,
+                            "sun_first": r.get("SUN_FirstBus") or None,
+                            "sun_last": r.get("SUN_LastBus") or None,
+                        }
             if len(rows) < 500:
                 break
             skip += 500
     return [
-        {"service_no": service_no, "direction": direction, "stop_sequence": stop_sequence, "stop_code": stop_code}
-        for (service_no, direction, stop_code), stop_sequence in routes.items()
+        {"service_no": service_no, "direction": direction, "stop_code": stop_code, **fields}
+        for (service_no, direction, stop_code), fields in routes.items()
     ]
 
 

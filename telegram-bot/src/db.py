@@ -44,6 +44,12 @@ db.executescript(
         direction INTEGER NOT NULL DEFAULT 1,
         stop_sequence INTEGER NOT NULL DEFAULT 0,
         stop_code TEXT NOT NULL,
+        wd_first TEXT,
+        wd_last TEXT,
+        sat_first TEXT,
+        sat_last TEXT,
+        sun_first TEXT,
+        sun_last TEXT,
         PRIMARY KEY (service_no, direction, stop_code)
     );
 
@@ -108,7 +114,7 @@ db.executescript(
 )
 
 _bus_routes_columns = {row["name"] for row in db.execute("PRAGMA table_info(bus_routes)").fetchall()}
-if "stop_sequence" not in _bus_routes_columns:
+if "stop_sequence" not in _bus_routes_columns or "wd_first" not in _bus_routes_columns:
     with db:
         db.execute("DROP TABLE bus_routes")
         db.execute(
@@ -118,6 +124,12 @@ if "stop_sequence" not in _bus_routes_columns:
                 direction INTEGER NOT NULL DEFAULT 1,
                 stop_sequence INTEGER NOT NULL DEFAULT 0,
                 stop_code TEXT NOT NULL,
+                wd_first TEXT,
+                wd_last TEXT,
+                sat_first TEXT,
+                sat_last TEXT,
+                sun_first TEXT,
+                sun_last TEXT,
                 PRIMARY KEY (service_no, direction, stop_code)
             )
             """

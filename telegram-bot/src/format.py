@@ -3,6 +3,8 @@ import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
+from .bus_routes import first_last_bus_times
+
 _MD_SPECIAL = re.compile(r"([\\*_~`|\[\]#>=])")
 
 
@@ -19,12 +21,35 @@ def _escape_cell(text) -> str:
 def _format_eta(ms) -> str:
     if ms is None:
         return "no data"
-    minutes = round(ms / 60000)
-    if minutes <= 0:
+    total_seconds = round(ms / 1000)
+    if total_seconds <= 0:
         return "arr"
-    if minutes == 1:
-        return "1 min"
-    return f"{minutes} min"
+    minutes, seconds = divmod(total_seconds, 60)
+    if minutes == 0:
+        return f"{seconds}s"
+    return f"{minutes}m {seconds:02d}s"
+
+
+def _format_hhmm(hhmm) -> str:
+    """Formats an LTA-style HHmm string (e.g. "2210") as "HH:MM"."""
+    if not hhmm or len(hhmm) != 4 or not hhmm.isdigit():
+        return "-"
+    return f"{hhmm[:2]}:{hhmm[2:]}"
+
+
+def _first_last_bus_line(service_no, stop_code) -> "str | None":
+    """First/last scheduled bus for today's day-type (weekday/Sat/Sun), Singapore time."""
+    times = first_last_bus_times(service_no, stop_code)
+    if not times:
+        return None
+    weekday = datetime.now(ZoneInfo("Asia/Singapore")).weekday()  # Mon=0 .. Sun=6
+    if weekday == 5:
+        first, last, label = times["sat_first"], times["sat_last"], "Sat"
+    elif weekday == 6:
+        first, last, label = times["sun_first"], times["sun_last"], "Sun"
+    else:
+        first, last, label = times["wd_first"], times["wd_last"], "Weekday"
+    return f"🚏 First bus ({label}): {_format_hhmm(first)}  ·  Last bus: {_format_hhmm(last)}"
 
 
 def _format_distance(meters) -> str:
@@ -124,6 +149,9 @@ def format_arrival_message(stop, arrivals, is_favourite, favourite_service_nos=N
             lines.append(f"## {svc_star}{escape_md(svc['serviceNo'])} ({escape_md(svc.get('operator') or '?')})")
             table = _build_service_table(svc, stop)
             lines.append(table if table else "No arrival data.")
+            first_last = _first_last_bus_line(svc["serviceNo"], stop["code"])
+            if first_last:
+                lines.append(escape_md(first_last))
             lines.append("")
 
     updated = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%H:%M:%S")
@@ -150,6 +178,9 @@ def _build_fallback_text(stop, arrivals, is_favourite, favourite_service_nos, bu
             nexts = [n for n in (svc.get("next"), svc.get("next2"), svc.get("next3")) if n]
             etas = ", ".join(_format_eta(n["etaMs"]) for n in nexts) or "no data"
             lines.append(f"{svc_star}{svc['serviceNo']} ({svc.get('operator') or '?'}): {etas}")
+            first_last = _first_last_bus_line(svc["serviceNo"], stop["code"])
+            if first_last:
+                lines.append(f"  {first_last}")
 
     lines.append(f"Updated {updated}")
     return "\n".join(lines)
