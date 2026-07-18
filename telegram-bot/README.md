@@ -17,6 +17,9 @@ headings and tables, not a Markdown approximation.
   they serve.
 - Choose whether favourites (buses or stops) pin to the top or bottom of the
   list.
+- Set up routines to have a bus stop's timings sent to you automatically at a
+  time and frequency you choose, with a personalised greeting.
+- Set a custom name for the bot to call you by.
 - Works inline: type `@your_bot_username` in any chat to search or pull up
   your favourites without switching to the bot's chat.
 
@@ -37,6 +40,9 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/favbuses` | Lists your favourite bus numbers as paginated buttons; tap one to browse the stops it serves |
 | `/unfavbus` | Lists your favourite bus numbers as paginated buttons to remove |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
+| `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop) that sends you timings on a schedule |
+| `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
+| `/setname` | Sets (or clears) the name the bot calls you by |
 | `/done` | Finishes the current multi-step flow (e.g. `/addfavbus`) |
 | `/cancel` | Cancels the current multi-step flow |
 
@@ -87,8 +93,28 @@ paginated buttons but tapping one removes it instead.
 `/nearme` asks Telegram for your location (via the native "share location"
 button, so your coordinates never go through free text). The bot then shows
 up to 8 nearby bus stops as buttons, each labelled with the stop name,
-number, and distance in metres. Any of those stops that are already in your
-favourites are bumped to the top of the list.
+number, and distance in metres, sorted by distance within your `/favouritepref`
+pin position (favourites first by default, or last if you've set it to
+"bottom").
+
+### Routines
+
+`/addroutine` walks you through three questions, one at a time: what time (24-
+or 12-hour, e.g. `9 AM`, `10 PM`, `0830`, `20:00`, always interpreted as
+GMT+8), how often (`daily`, `weekdays`, `weekends`, or a comma-separated list
+of days like `Mon, Wed, Fri`), and which bus stop - pick one of your
+favourites from the buttons shown, or type a bus stop code or part of its
+name. Send `/cancel` at any point to abort.
+
+`/routines` lists your saved routines as a numbered list of buttons; tapping
+one shows its details with **Edit** and **Delete** buttons. Edit opens a
+sub-menu to change just the time, frequency, or bus stop - editing the time
+lets a routine fire again later the same day even if it already ran once.
+
+When a routine's scheduled time and day arrive, the bot sends that stop's
+live timings automatically, prefixed with a greeting based on the time of day
+("Good morning/afternoon/evening") and your name - either your Telegram first
+name, or a custom one set via `/setname`.
 
 ### Inline mode
 
@@ -161,17 +187,23 @@ telegram-bot/
     favourite_buses.py     per-user favourite bus numbers (SQLite)
     favourite_prefs.py     per-user pin position (top/bottom) per favourite kind
     flows.py               per-user multi-step flow state (e.g. mid-/addfavbus)
+    routines.py             per-user scheduled routines (SQLite)
+    routine_drafts.py       per-user in-progress routine wizard state (SQLite)
+    frequency.py            parses/formats routine frequency (daily/weekdays/weekends/day list)
+    time_of_day.py          parses time-of-day input; time-of-day greeting text
+    user_settings.py        per-user custom display name (SQLite)
     pagination.py          generic paginated inline-keyboard helper
     buttons.py             persistent inline-button registry (SQLite)
     scheduler.py           SQLite-backed periodic job runner (asyncio)
     format.py              rich-message Markdown formatting (headings + tables)
     reply.py               rich-message send/edit helpers with plain-text fallback
     stop_view.py           builds a stop's timings message + keyboard
-    list_view.py           builds a list-of-stops keyboard
+    list_view.py           builds a list-of-stops keyboard (with favourite pinning)
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,
       favbuses.py, unfavbus.py, favouritepref.py, flow_control.py,
+      addroutine.py, routines.py, setname.py,
       search.py, callbacks.py, inline.py
   data/                   SQLite database + Telethon session file (gitignored)
 ```

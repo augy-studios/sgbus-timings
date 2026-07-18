@@ -3,6 +3,7 @@ import re
 from telethon import events
 
 from ..bus_stops import get_bus_stop_by_code, search_bus_stops
+from ..favourite_prefs import get_pref
 from ..favourites import list_favourites
 from ..list_view import build_stop_list_keyboard
 from ..reply import send_rich_message
@@ -33,4 +34,7 @@ def register_search(client):
 
         rich = {"markdown": "**Did you mean**", "fallback": "Did you mean"}
         fav_codes = {f["code"] for f in list_favourites(event.chat_id)}
-        await send_rich_message(client, event.chat_id, rich, build_stop_list_keyboard(matches, fav_codes))
+        pin_position = get_pref(event.chat_id, "stop")
+        await send_rich_message(
+            client, event.chat_id, rich, build_stop_list_keyboard(matches, fav_codes, pin_position)
+        )

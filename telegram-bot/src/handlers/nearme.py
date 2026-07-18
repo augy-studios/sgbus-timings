@@ -1,6 +1,7 @@
 from telethon import Button, events
 
 from ..bus_stops import nearest_bus_stops
+from ..favourite_prefs import get_pref
 from ..favourites import list_favourites
 from ..list_view import build_stop_list_keyboard
 from ..reply import send_rich_message
@@ -27,10 +28,13 @@ def register_nearme(client):
             return
 
         fav_codes = {f["code"] for f in list_favourites(event.chat_id)}
-        nearby.sort(key=lambda s: (0 if s["code"] in fav_codes else 1, s["distance"]))
+        pin_position = get_pref(event.chat_id, "stop")
+        nearby.sort(key=lambda s: s["distance"])
 
         rich = {
-            "markdown": "**Nearby bus stops**\nFavourites are shown first.",
-            "fallback": "Nearby bus stops\nFavourites are shown first.",
+            "markdown": "**Nearby bus stops**",
+            "fallback": "Nearby bus stops",
         }
-        await send_rich_message(client, event.chat_id, rich, build_stop_list_keyboard(nearby, fav_codes))
+        await send_rich_message(
+            client, event.chat_id, rich, build_stop_list_keyboard(nearby, fav_codes, pin_position)
+        )

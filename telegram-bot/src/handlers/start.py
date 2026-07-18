@@ -15,6 +15,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Just send your location (no command needed) to find the nearest bus stops
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
 - Choose whether favourites pin to the top or bottom of the list
+- Set up routines to get a bus stop's timings sent to you automatically at a time you choose
 - Use this bot inline in any chat: type @{username} then a bus stop number or name
 
 ## Commands
@@ -27,6 +28,9 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /favbuses - view your favourite buses and jump to their stops
 - /unfavbus - remove favourite buses
 - /favouritepref - choose whether favourites pin to the top or bottom
+- /addroutine - set up a routine that sends you a bus stop's timings on a schedule
+- /routines - view, edit, or delete your routines
+- /setname - set the name you want the bot to call you by
 - /done - finish adding favourite buses
 - /cancel - cancel the current operation
 """

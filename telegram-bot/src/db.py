@@ -58,6 +58,33 @@ db.executescript(
         updated_at INTEGER NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS user_settings (
+        chat_id INTEGER PRIMARY KEY,
+        display_name TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS routines (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL,
+        hour INTEGER NOT NULL,
+        minute INTEGER NOT NULL,
+        days TEXT NOT NULL,
+        stop_code TEXT NOT NULL,
+        stop_name TEXT NOT NULL,
+        last_fired_key TEXT,
+        created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS routine_drafts (
+        chat_id INTEGER PRIMARY KEY,
+        routine_id INTEGER,
+        step TEXT NOT NULL,
+        hour INTEGER,
+        minute INTEGER,
+        days TEXT,
+        updated_at INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS buttons (
         id TEXT PRIMARY KEY,
         action TEXT NOT NULL,
@@ -74,6 +101,7 @@ db.executescript(
     CREATE INDEX IF NOT EXISTS idx_bus_stops_name ON bus_stops(name);
     CREATE INDEX IF NOT EXISTS idx_bus_stops_road ON bus_stops(road);
     CREATE INDEX IF NOT EXISTS idx_bus_routes_stop_code ON bus_routes(stop_code);
+    CREATE INDEX IF NOT EXISTS idx_routines_chat_id ON routines(chat_id);
     """
 )
 db.commit()

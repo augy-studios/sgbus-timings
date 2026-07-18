@@ -46,6 +46,9 @@ addfavbus - add bus numbers to your favourites
 favbuses - view your favourite buses
 unfavbus - remove favourite buses
 favouritepref - choose top or bottom pin position for favourites
+addroutine - set up a routine that sends bus stop timings on a schedule
+routines - view, edit, or delete your routines
+setname - set the name the bot calls you by
 done - finish adding favourite buses
 cancel - cancel the current operation
 ```
@@ -214,3 +217,12 @@ python -m src.main
 7. Send `/favouritepref`, switch a pin position, and confirm it's reflected
    next time you view a stop or bus list. Confirm `/cancel` aborts an
    in-progress `/addfavbus` flow without treating further text as flow input.
+8. Send `/setname Bob`, confirm `/setname` (no args) reports it back, then
+   `/setname clear` to reset it.
+9. Send `/addroutine`, answer the time/frequency/stop questions (try picking
+   a favourite stop button as well as typing a search), and confirm the
+   confirmation message matches. Send `/routines`, tap the routine, tap
+   **Edit**, change one field, and confirm only that field changed. Tap
+   **Delete** and confirm it's removed. Set a routine a minute or two in the
+   future and confirm it fires once, with a time-of-day greeting using your
+   `/setname` name (or Telegram first name if unset).

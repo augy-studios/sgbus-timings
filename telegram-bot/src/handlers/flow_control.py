@@ -3,6 +3,7 @@ from telethon import events
 from ..favourite_buses import list_favourite_buses
 from ..flows import clear_flow, get_flow
 from ..lta import _natural_sort_key
+from ..routine_drafts import clear_draft
 
 
 def register_flow_control(client):
@@ -28,4 +29,6 @@ def register_flow_control(client):
             return
 
         clear_flow(event.chat_id)
+        if flow == "routine_wizard":
+            clear_draft(event.chat_id)
         await event.respond("Cancelled.")

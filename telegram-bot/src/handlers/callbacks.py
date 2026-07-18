@@ -5,9 +5,12 @@ from ..favourite_buses import remove_favourite_bus
 from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
 from ..reply import edit_rich_message
+from ..routines import delete_routine
 from ..stop_view import build_stop_view
+from .addroutine import finalize_stop
 from .favbuses import build_favbus_stops_view, build_favbuses_view
 from .favouritepref import build_favouritepref_view
+from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
 
@@ -119,6 +122,63 @@ def register_callbacks(client):
                 rich, buttons = build_favouritepref_view(user_id, payload.get("page", 0))
                 await edit_rich_message(client, event, rich, buttons)
                 await event.answer("Preference saved")
+                return
+
+            if action == "routines_page":
+                rich, buttons, routines = build_routines_view(user_id, payload.get("page", 0))
+                if not routines:
+                    await edit_rich_message(
+                        client,
+                        event,
+                        {"markdown": "No routines left.", "fallback": "No routines left."},
+                        None,
+                    )
+                else:
+                    await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "routine_view":
+                view = build_routine_detail_view(payload["id"])
+                if not view:
+                    await event.answer("That routine no longer exists.")
+                    return
+                await edit_rich_message(client, event, view[0], view[1])
+                await event.answer()
+                return
+
+            if action == "routine_edit_menu":
+                view = build_routine_edit_menu_view(payload["id"])
+                if not view:
+                    await event.answer("That routine no longer exists.")
+                    return
+                await edit_rich_message(client, event, view[0], view[1])
+                await event.answer()
+                return
+
+            if action == "routine_edit_field":
+                await start_field_edit(client, user_id, payload["id"], payload["field"])
+                await event.answer()
+                return
+
+            if action == "routine_delete":
+                delete_routine(payload["id"])
+                rich, buttons, routines = build_routines_view(user_id, 0)
+                if not routines:
+                    await edit_rich_message(
+                        client,
+                        event,
+                        {"markdown": "No routines left.", "fallback": "No routines left."},
+                        None,
+                    )
+                else:
+                    await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Routine deleted")
+                return
+
+            if action == "routine_stop_pick":
+                await finalize_stop(client, user_id, payload["code"], payload["name"])
+                await event.answer("Saved")
                 return
 
             await event.answer()
