@@ -124,9 +124,10 @@ name, or a custom one set via `/setname`.
 each one is set:
 
 - **Name** - what the bot calls you (also settable directly via `/setname`).
-- **Birthday** - stored as `YYYY-MM-DD`; tap **Set birthday** and reply with a
-  date, or **Clear birthday** to unset it. If set, the bot sends a "Happy
-  birthday" message at 9 AM GMT+8 on that date every year.
+- **Birthday** - tap **Set birthday** and reply with a date in pretty much any
+  common format (e.g. `1998-04-23`, `23/04/1998`, `23 Apr 1998`, or
+  `Apr 23rd 1998`), or **Clear birthday** to unset it. If set, the bot sends a
+  "Happy birthday" message at 9 AM GMT+8 on that date every year.
 - **Routine notifications** - on by default; toggling it off pauses all
   `/addroutine` deliveries without deleting the routines themselves, and
   toggling it back on resumes them.

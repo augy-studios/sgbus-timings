@@ -222,7 +222,8 @@ python -m src.main
    `/setname clear` to reset it.
 9. Send `/settings` and confirm it lists your name, birthday, and
    notification status. Tap **Set name**, reply with a name, and confirm the
-   view updates. Tap **Set birthday**, reply with a date like `1998-04-23`,
+   view updates. Tap **Set birthday**, reply with a date like `1998-04-23`
+   (also try alternate formats like `23/04/1998` or `Apr 23rd 1998`),
    confirm it's saved, then tap **Clear birthday** and confirm it's removed.
    Tap the notifications toggle and confirm it flips between
    enabled/disabled.
