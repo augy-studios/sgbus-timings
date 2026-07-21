@@ -4,6 +4,9 @@ from datetime import datetime
 from telethon import Button, events
 
 from ..buttons import make_button
+from ..favourite_buses import list_favourite_buses
+from ..favourite_prefs import get_pref
+from ..favourites import list_favourites
 from ..flows import clear_flow, get_flow, set_flow
 from ..format import escape_md
 from ..reply import send_rich_message
@@ -14,6 +17,8 @@ from ..user_settings import (
     set_birthday,
     set_display_name,
 )
+
+_POSITION_LABELS = {"top": "⬆️ Top", "bottom": "⬇️ Bottom"}
 
 FLOW_PREFIX = "settings_edit:"
 
@@ -60,13 +65,32 @@ def build_settings_view(chat_id: int, sender):
     name_is_set = name != fallback
     birthday = get_birthday(chat_id)
     notifications_on = get_notifications_enabled(chat_id)
+    fav_buses = list_favourite_buses(chat_id)
+    fav_stops = list_favourites(chat_id)
+    bus_position = get_pref(chat_id, "bus")
+    stop_position = get_pref(chat_id, "stop")
 
     lines = [
         "# Settings",
         f"- **Name**: {escape_md(name) if name_is_set else '_not set_'}",
         f"- **Birthday**: {birthday if birthday else '_not set_'}",
         f"- **Routine notifications**: {'Enabled' if notifications_on else 'Disabled'}",
+        "",
+        f"## Favourite buses ({_POSITION_LABELS.get(bus_position, bus_position)} pinned)",
     ]
+    if fav_buses:
+        lines.append(", ".join(escape_md(row["service_no"]) for row in fav_buses))
+    else:
+        lines.append("_none set_")
+
+    lines.append("")
+    lines.append(f"## Favourite bus stops ({_POSITION_LABELS.get(stop_position, stop_position)} pinned)")
+    if fav_stops:
+        for row in fav_stops:
+            lines.append(f"- {escape_md(row['name'])} ({escape_md(row['code'])})")
+    else:
+        lines.append("_none set_")
+
     markdown = "\n".join(lines)
     fallback_text = markdown.replace("#", "").replace("*", "").replace("_", "")
     rich = {"markdown": markdown, "fallback": fallback_text}

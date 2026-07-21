@@ -131,6 +131,11 @@ each one is set:
 - **Routine notifications** - on by default; toggling it off pauses all
   `/addroutine` deliveries without deleting the routines themselves, and
   toggling it back on resumes them.
+- **Favourite buses / bus stops** - lists every service number (added via
+  `/addfavbus`) and bus stop (added by tapping "Add favourite" on a stop's
+  timings) you've favourited, along with whether each list is currently
+  pinned to the **top** or **bottom** of arrival views (set via
+  `/favouritepref`).
 
 Tapping **Set name** or **Set birthday** starts a one-message flow, same as
 `/addfavbus` or `/addroutine` - reply with the value, or `/cancel` to abort.
