@@ -65,3 +65,22 @@ def set_notifications_enabled(chat_id: int, enabled: bool) -> None:
             """,
             (chat_id, int(enabled)),
         )
+
+
+def chats_with_birthday_today(month_day: str, today: str) -> list:
+    """Rows for chats whose birthday's MM-DD matches `month_day` (today, GMT+8)
+    and who haven't already been wished on `today` (YYYY-MM-DD)."""
+    return db.execute(
+        """
+        SELECT chat_id, birthday FROM user_settings
+        WHERE birthday IS NOT NULL
+          AND substr(birthday, 6) = ?
+          AND (last_birthday_wish IS NULL OR last_birthday_wish != ?)
+        """,
+        (month_day, today),
+    ).fetchall()
+
+
+def mark_birthday_wished(chat_id: int, today: str) -> None:
+    with db:
+        db.execute("UPDATE user_settings SET last_birthday_wish = ? WHERE chat_id = ?", (today, chat_id))

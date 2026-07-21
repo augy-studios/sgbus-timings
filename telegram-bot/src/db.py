@@ -70,7 +70,8 @@ db.executescript(
         chat_id INTEGER PRIMARY KEY,
         display_name TEXT,
         birthday TEXT,
-        notifications_enabled INTEGER NOT NULL DEFAULT 1
+        notifications_enabled INTEGER NOT NULL DEFAULT 1,
+        last_birthday_wish TEXT
     );
 
     CREATE TABLE IF NOT EXISTS routines (
@@ -145,5 +146,8 @@ if "birthday" not in _user_settings_columns:
 if "notifications_enabled" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 1")
+if "last_birthday_wish" not in _user_settings_columns:
+    with db:
+        db.execute("ALTER TABLE user_settings ADD COLUMN last_birthday_wish TEXT")
 
 db.commit()

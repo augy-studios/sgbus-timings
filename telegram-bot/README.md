@@ -125,7 +125,8 @@ each one is set:
 
 - **Name** - what the bot calls you (also settable directly via `/setname`).
 - **Birthday** - stored as `YYYY-MM-DD`; tap **Set birthday** and reply with a
-  date, or **Clear birthday** to unset it.
+  date, or **Clear birthday** to unset it. If set, the bot sends a "Happy
+  birthday" message at 9 AM GMT+8 on that date every year.
 - **Routine notifications** - on by default; toggling it off pauses all
   `/addroutine` deliveries without deleting the routines themselves, and
   toggling it back on resumes them.
@@ -208,7 +209,7 @@ telegram-bot/
     routine_drafts.py       per-user in-progress routine wizard state (SQLite)
     frequency.py            parses/formats routine frequency (daily/weekdays/weekends/day list)
     time_of_day.py          parses time-of-day input; time-of-day greeting text
-    user_settings.py        per-user custom display name, birthday, notification preference (SQLite)
+    user_settings.py        per-user custom display name, birthday (+ wish tracking), notification preference (SQLite)
     pagination.py          generic paginated inline-keyboard helper
     buttons.py             persistent inline-button registry (SQLite)
     scheduler.py           SQLite-backed periodic job runner (asyncio)

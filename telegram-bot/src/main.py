@@ -31,7 +31,12 @@ from .routines import due_routines, mark_fired
 from .scheduler import register_job, start_scheduler, stop_scheduler
 from .stop_view import build_stop_view
 from .time_of_day import greeting_for_hour
-from .user_settings import get_display_name, get_notifications_enabled
+from .user_settings import (
+    chats_with_birthday_today,
+    get_display_name,
+    get_notifications_enabled,
+    mark_birthday_wished,
+)
 
 SESSION_PATH = config.db_path.parent / "bot"
 
@@ -73,6 +78,7 @@ async def main() -> None:
         _refresh_routes_job,
     )
     register_job("check-routines", 60 * 1000, lambda: _check_routines_job(client))
+    register_job("check-birthdays", 60 * 1000, lambda: _check_birthdays_job(client))
 
     if bus_stops_count() == 0:
         print("Bus stop cache is empty, fetching from LTA DataMall before starting...")
@@ -140,6 +146,26 @@ async def _check_routines_job(client: TelegramClient) -> None:
             print(f"[scheduler] routine {routine['id']} failed to fire: {err}")
         finally:
             mark_fired(routine["id"], now, routine["hour"], routine["minute"])
+
+
+async def _check_birthdays_job(client: TelegramClient) -> None:
+    now = datetime.now(GMT8)
+    if now.hour != 9 or now.minute != 0:
+        return
+
+    today = now.strftime("%Y-%m-%d")
+    month_day = now.strftime("%m-%d")
+    for row in chats_with_birthday_today(month_day, today):
+        chat_id = row["chat_id"]
+        try:
+            entity = await client.get_entity(chat_id)
+            fallback = entity.first_name if entity and entity.first_name else "there"
+            name = get_display_name(chat_id, fallback)
+            await client.send_message(chat_id, f"🎂 Happy birthday, {name}! Hope you have a great day.", parse_mode=None)
+        except Exception as err:
+            print(f"[scheduler] birthday wish for chat {chat_id} failed: {err}")
+        finally:
+            mark_birthday_wished(chat_id, today)
 
 
 if __name__ == "__main__":
