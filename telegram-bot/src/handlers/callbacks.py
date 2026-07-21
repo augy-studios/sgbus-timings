@@ -7,10 +7,12 @@ from ..favourites import remove_favourite, toggle_favourite
 from ..reply import edit_rich_message
 from ..routines import delete_routine
 from ..stop_view import build_stop_view
+from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
 from .addroutine import finalize_stop
 from .favbuses import build_favbus_stops_view, build_favbuses_view
 from .favouritepref import build_favouritepref_view
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
+from .settings import build_settings_view, start_edit_birthday, start_edit_name
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
 
@@ -179,6 +181,34 @@ def register_callbacks(client):
             if action == "routine_stop_pick":
                 await finalize_stop(client, user_id, payload["code"], payload["name"])
                 await event.answer("Saved")
+                return
+
+            if action == "settings_edit_name":
+                await start_edit_name(client, user_id)
+                await event.answer()
+                return
+
+            if action == "settings_edit_birthday":
+                await start_edit_birthday(client, user_id)
+                await event.answer()
+                return
+
+            if action == "settings_clear_birthday":
+                clear_birthday(user_id)
+                sender = await event.get_sender()
+                rich, buttons = build_settings_view(user_id, sender)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Birthday cleared")
+                return
+
+            if action == "settings_toggle_notifications":
+                set_notifications_enabled(user_id, not get_notifications_enabled(user_id))
+                sender = await event.get_sender()
+                rich, buttons = build_settings_view(user_id, sender)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer(
+                    "Notifications " + ("enabled" if get_notifications_enabled(user_id) else "disabled")
+                )
                 return
 
             await event.answer()

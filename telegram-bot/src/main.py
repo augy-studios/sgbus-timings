@@ -22,6 +22,7 @@ from .handlers.nearme import register_nearme
 from .handlers.routines import register_routines
 from .handlers.search import register_search
 from .handlers.setname import register_setname
+from .handlers.settings import register_settings
 from .handlers.start import register_start
 from .handlers.unfavbus import register_unfavbus
 from .handlers.unfavstop import register_unfavstop
@@ -30,7 +31,7 @@ from .routines import due_routines, mark_fired
 from .scheduler import register_job, start_scheduler, stop_scheduler
 from .stop_view import build_stop_view
 from .time_of_day import greeting_for_hour
-from .user_settings import get_display_name
+from .user_settings import get_display_name, get_notifications_enabled
 
 SESSION_PATH = config.db_path.parent / "bot"
 
@@ -48,6 +49,7 @@ async def main() -> None:
     register_unfavstop(client)
     register_favouritepref(client)
     register_setname(client)
+    register_settings(client)  # includes the flow text-interceptor, must come before register_search
     register_addroutine(client)  # includes the flow text-interceptor, must come before register_search
     register_routines(client)
     register_flow_control(client)
@@ -117,6 +119,9 @@ async def _check_routines_job(client: TelegramClient) -> None:
     now = datetime.now(GMT8)
     for routine in due_routines(now):
         try:
+            if not get_notifications_enabled(routine["chat_id"]):
+                continue
+
             entity = await client.get_entity(routine["chat_id"])
             fallback = entity.first_name if entity and entity.first_name else "there"
             name = get_display_name(routine["chat_id"], fallback)

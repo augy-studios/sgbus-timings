@@ -19,7 +19,8 @@ headings and tables, not a Markdown approximation.
   list.
 - Set up routines to have a bus stop's timings sent to you automatically at a
   time and frequency you choose, with a personalised greeting.
-- Set a custom name for the bot to call you by.
+- Set a custom name for the bot to call you by, save your birthday, and
+  toggle routine notifications on or off, all from one `/settings` command.
 - Works inline: type `@your_bot_username` in any chat to search or pull up
   your favourites without switching to the bot's chat.
 
@@ -43,6 +44,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
 | `/setname` | Sets (or clears) the name the bot calls you by |
+| `/settings` | Lists your settings (name, birthday, routine notifications) with buttons to change them |
 | `/done` | Finishes the current multi-step flow (e.g. `/addfavbus`) |
 | `/cancel` | Cancels the current multi-step flow |
 
@@ -115,6 +117,21 @@ When a routine's scheduled time and day arrive, the bot sends that stop's
 live timings automatically, prefixed with a greeting based on the time of day
 ("Good morning/afternoon/evening") and your name - either your Telegram first
 name, or a custom one set via `/setname`.
+
+### Settings
+
+`/settings` shows every custom setting the bot keeps for you, and whether
+each one is set:
+
+- **Name** - what the bot calls you (also settable directly via `/setname`).
+- **Birthday** - stored as `YYYY-MM-DD`; tap **Set birthday** and reply with a
+  date, or **Clear birthday** to unset it.
+- **Routine notifications** - on by default; toggling it off pauses all
+  `/addroutine` deliveries without deleting the routines themselves, and
+  toggling it back on resumes them.
+
+Tapping **Set name** or **Set birthday** starts a one-message flow, same as
+`/addfavbus` or `/addroutine` - reply with the value, or `/cancel` to abort.
 
 ### Inline mode
 
@@ -191,7 +208,7 @@ telegram-bot/
     routine_drafts.py       per-user in-progress routine wizard state (SQLite)
     frequency.py            parses/formats routine frequency (daily/weekdays/weekends/day list)
     time_of_day.py          parses time-of-day input; time-of-day greeting text
-    user_settings.py        per-user custom display name (SQLite)
+    user_settings.py        per-user custom display name, birthday, notification preference (SQLite)
     pagination.py          generic paginated inline-keyboard helper
     buttons.py             persistent inline-button registry (SQLite)
     scheduler.py           SQLite-backed periodic job runner (asyncio)
@@ -203,7 +220,7 @@ telegram-bot/
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,
       favbuses.py, unfavbus.py, favouritepref.py, flow_control.py,
-      addroutine.py, routines.py, setname.py,
+      addroutine.py, routines.py, setname.py, settings.py,
       search.py, callbacks.py, inline.py
   data/                   SQLite database + Telethon session file (gitignored)
 ```

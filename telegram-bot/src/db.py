@@ -68,7 +68,9 @@ db.executescript(
 
     CREATE TABLE IF NOT EXISTS user_settings (
         chat_id INTEGER PRIMARY KEY,
-        display_name TEXT
+        display_name TEXT,
+        birthday TEXT,
+        notifications_enabled INTEGER NOT NULL DEFAULT 1
     );
 
     CREATE TABLE IF NOT EXISTS routines (
@@ -135,5 +137,13 @@ if "stop_sequence" not in _bus_routes_columns or "wd_first" not in _bus_routes_c
             """
         )
         db.execute("CREATE INDEX IF NOT EXISTS idx_bus_routes_stop_code ON bus_routes(stop_code)")
+
+_user_settings_columns = {row["name"] for row in db.execute("PRAGMA table_info(user_settings)").fetchall()}
+if "birthday" not in _user_settings_columns:
+    with db:
+        db.execute("ALTER TABLE user_settings ADD COLUMN birthday TEXT")
+if "notifications_enabled" not in _user_settings_columns:
+    with db:
+        db.execute("ALTER TABLE user_settings ADD COLUMN notifications_enabled INTEGER NOT NULL DEFAULT 1")
 
 db.commit()

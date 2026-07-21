@@ -49,6 +49,7 @@ favouritepref - choose top or bottom pin position for favourites
 addroutine - set up a routine that sends bus stop timings on a schedule
 routines - view, edit, or delete your routines
 setname - set the name the bot calls you by
+settings - view and change your settings
 done - finish adding favourite buses
 cancel - cancel the current operation
 ```
@@ -219,7 +220,13 @@ python -m src.main
    in-progress `/addfavbus` flow without treating further text as flow input.
 8. Send `/setname Bob`, confirm `/setname` (no args) reports it back, then
    `/setname clear` to reset it.
-9. Send `/addroutine`, answer the time/frequency/stop questions (try picking
+9. Send `/settings` and confirm it lists your name, birthday, and
+   notification status. Tap **Set name**, reply with a name, and confirm the
+   view updates. Tap **Set birthday**, reply with a date like `1998-04-23`,
+   confirm it's saved, then tap **Clear birthday** and confirm it's removed.
+   Tap the notifications toggle and confirm it flips between
+   enabled/disabled.
+10. Send `/addroutine`, answer the time/frequency/stop questions (try picking
    a favourite stop button as well as typing a search), and confirm the
    confirmation message matches. Send `/routines`, tap the routine, tap
    **Edit**, change one field, and confirm only that field changed. Tap
