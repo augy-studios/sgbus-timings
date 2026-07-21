@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from telethon import Button, events
@@ -17,14 +18,40 @@ from ..user_settings import (
 FLOW_PREFIX = "settings_edit:"
 
 NAME_PROMPT = "What would you like me to call you? Send a name, or /cancel to stop."
-BIRTHDAY_PROMPT = "When's your birthday? Send it as `YYYY-MM-DD` (e.g. `1998-04-23`), or /cancel to stop."
+BIRTHDAY_PROMPT = (
+    "When's your birthday? Send it in any common format, e.g. `1998-04-23`, "
+    "`23/04/1998`, `23 Apr 1998` or `Apr 23rd 1998`, or /cancel to stop."
+)
+
+_ORDINAL_SUFFIX_RE = re.compile(r"(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
+
+_BIRTHDAY_FORMATS = [
+    "%Y-%m-%d",
+    "%d/%m/%Y",
+    "%m/%d/%Y",
+    "%Y/%m/%d",
+    "%d-%m-%Y",
+    "%m-%d-%Y",
+    "%d %B %Y",
+    "%d %b %Y",
+    "%B %d %Y",
+    "%b %d %Y",
+    "%d %B, %Y",
+    "%d %b, %Y",
+    "%B %d, %Y",
+    "%b %d, %Y",
+]
 
 
 def _parse_birthday(text: str) -> "str | None":
-    try:
-        return datetime.strptime(text, "%Y-%m-%d").strftime("%Y-%m-%d")
-    except ValueError:
-        return None
+    cleaned = _ORDINAL_SUFFIX_RE.sub(r"\1", text.strip())
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    for fmt in _BIRTHDAY_FORMATS:
+        try:
+            return datetime.strptime(cleaned, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+    return None
 
 
 def build_settings_view(chat_id: int, sender):
