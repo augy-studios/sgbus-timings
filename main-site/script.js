@@ -6,7 +6,6 @@ const LS = {
     nameKey:       'sgbus_name',
     favKey:        'sgbus_favs_v2',
     stopsCacheKey: 'sgbus_stops_v3',
-    themeKey:      'sgbus_theme',
 
     getName()  { return localStorage.getItem(this.nameKey) || ''; },
     setName(v) { localStorage.setItem(this.nameKey, v); },
@@ -32,19 +31,9 @@ const LS = {
         catch { return null; }
     },
     setStops(obj) { localStorage.setItem(this.stopsCacheKey, JSON.stringify(obj)); },
-
-    getTheme()  { return localStorage.getItem(this.themeKey) || 'classic'; },
-    setTheme(v) { localStorage.setItem(this.themeKey, v); },
 };
 
-// ----------- Theme -----------
-function applyTheme(themeId) {
-    document.documentElement.setAttribute('data-theme', themeId);
-    LS.setTheme(themeId);
-    $$('.themeOption').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-theme') === themeId);
-    });
-}
+// Theme state lives in js/theme.js, which also wires #themeBtn and #themeModal.
 
 // ----------- Greeting -----------
 function getGreeting(now = new Date()) {
@@ -315,7 +304,7 @@ $('#services').addEventListener('click', async (e) => {
         const isLoop = !!info.isLoop;
 
         // Determine which direction the current stop belongs to, using route membership
-        // as primary signal and OriginCode as tiebreaker (stop at exact origin → dir 1)
+        // as primary signal and OriginCode as tiebreaker (stop at exact origin means dir 1)
         const currentStop = $('#stopCode').textContent.trim();
         const inDir1 = (info.route1 || []).some(r => r.stopCode === currentStop);
         const inDir2 = (info.route2 || []).some(r => r.stopCode === currentStop);
@@ -347,7 +336,7 @@ $('#services').addEventListener('click', async (e) => {
         modal._routes  = { 1: info.route1 || [], 2: info.route2 || [] };
         modal._service = svc;
 
-        // Update tab labels with origin → destination terminal names
+        // Update tab labels with origin to destination terminal names
         $$('.tab[data-dir="1"]').forEach(tab => {
             tab.innerHTML = isLoop
                 ? (info.loopDesc ? `Loop via ${escapeHtml(info.loopDesc)}` : 'Direction 1')
@@ -359,15 +348,12 @@ $('#services').addEventListener('click', async (e) => {
         });
         $$('.tab').forEach(tab => tab.classList.toggle('active', tab.getAttribute('data-dir') === String(activeDir)));
         renderRouteList(activeDir);
-        modal.hidden = false;
+        openModal('svcModal');
     } catch (e) {
         console.error(e);
         alert('Could not load route information.');
     }
 });
-
-$('#modalClose').addEventListener('click', () => { modal.hidden = true; });
-modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
 
 $('.dirTabs').addEventListener('click', e => {
     const b = e.target.closest('.tab');
@@ -390,23 +376,6 @@ function renderRouteList(dir) {
             `</div>`;
     }).join('') || '<div class="empty">No route data.</div>';
 }
-
-// ----------- Theme Modal -----------
-const themeModal = $('#themeModal');
-
-$('#themeBtn').addEventListener('click', () => {
-    applyTheme(LS.getTheme()); // Refresh active state
-    themeModal.hidden = false;
-});
-
-$('#themeModalClose').addEventListener('click', () => { themeModal.hidden = true; });
-themeModal.addEventListener('click', e => { if (e.target === themeModal) themeModal.hidden = true; });
-
-$('.themeGrid').addEventListener('click', e => {
-    const opt = e.target.closest('.themeOption');
-    if (!opt) return;
-    applyTheme(opt.getAttribute('data-theme'));
-});
 
 // ----------- Search / Favourites Events -----------
 $('#titleBtn').addEventListener('click', promptName);
@@ -470,9 +439,6 @@ $('#acList').addEventListener('click', e => {
 
 // ----------- Init -----------
 (async function init() {
-    // Apply stored theme (also done inline in <head> to prevent flash)
-    applyTheme(LS.getTheme());
-
     updateGreeting();
     setInterval(updateGreeting, 30_000);
 

@@ -1,10 +1,13 @@
-const CACHE = "sgbus-v5";
+const CACHE = "sgbus-v6";
 
 const ASSETS = [
   "/",
   "/index.html",
   "/style.css",
   "/script.js",
+  "/js/icons.js",
+  "/js/ui.js",
+  "/js/theme.js",
   "/manifest.json",
   "/favicon.ico",
   "/sgbusicon1.png",

@@ -1,12 +1,28 @@
 <!doctype html>
-<html lang="en" data-theme="classic">
+<html lang="en">
 
 <head>
-    <!-- Prevent theme flash -->
+    <!-- Land the saved theme before first paint. Keep APP_KEY in sync with js/theme.js. -->
     <script>
         (function () {
-            var t = localStorage.getItem('sgbus_theme') || 'classic';
-            document.documentElement.setAttribute('data-theme', t);
+            var k = "sgbus";
+            var legacy = localStorage.getItem("sgbus_theme");
+            if (legacy && !localStorage.getItem(k + ".colorTheme")) {
+                var map = {
+                    classic: "classic",
+                    notgreen1: "not-green-1",
+                    notgreen2: "not-green-2",
+                    notgreen3: "not-green-3",
+                    notgreen4: "not-green-4",
+                    notgreen5: "not-green-5",
+                    verylightgreen: "really-light-green"
+                };
+                if (map[legacy]) localStorage.setItem(k + ".colorTheme", map[legacy]);
+            }
+            var m = localStorage.getItem(k + ".mode") || "light";
+            var c = localStorage.getItem(k + ".colorTheme") || "classic";
+            document.documentElement.setAttribute("data-mode", m);
+            document.documentElement.setAttribute("data-color-theme", c);
         })();
     </script>
 
@@ -27,6 +43,7 @@
     <title>SG Bus Timing | UwU Apps</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="A simple bus timing app; view live bus timings at a glance!">
+    <meta name="theme-color" content="#ccffcc" />
 
     <meta property="og:type" content="website">
     <meta property="og:title" content="SG Bus Timing | UwU Apps" />
@@ -65,8 +82,8 @@
                 <a href="https://donate.stripe.com/28o2akeAr3hv0DK6oo" target="_blank" rel="noopener noreferrer" class="iconBtn coffeeBtn" title="Buy Augy a Coffee">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M192 384h192c53 0 96-43 96-96h32c70.6 0 128-57.4 128-128S582.6 32 512 32H120c-13.3 0-24 10.7-24 24v232c0 53 43 96 96 96zM512 96c35.3 0 64 28.7 64 64s-28.7 64-64 64h-32V96h32zm47.7 384H48.3c-47.6 0-61-64-36-64h583.4c25 0 11.8 64-36 64z"/></svg>
                 </a>
-                <button id="themeBtn" class="iconBtn" title="Change theme">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c2.1 10.2 6.5 20 10.8 29.9c6.1 13.8 12.1 27.5 12.1 42c0 31.8-21.6 60.7-53.4 62c-3.5 .1-7 .2-10.6 .2C114.6 512 0 397.4 0 256S114.6 0 256 0S512 114.6 512 256zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-96a32 32 0 1 0 0-64 32 32 0 1 0 0 64zM288 96a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm96 96a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></svg>
+                <button class="icon-btn small" id="themeBtn" type="button" aria-label="Theme">
+                    <span data-icon="sun"></span>
                 </button>
             </div>
         </div>
@@ -88,10 +105,10 @@
 
         <!-- Favourites -->
         <section class="favBar">
-            <div class="card">
+            <div class="card glass">
                 <div class="cardHeader">
                     <div class="cardTitle">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="icon" style="color:var(--brand-dark)" aria-hidden="true" focusable="false"><path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" class="icon" style="color:var(--brand-ink)" aria-hidden="true" focusable="false"><path fill="currentColor" d="M316.9 18C311.6 7 300.4 0 288.1 0s-23.4 7-28.8 18L195 150.3 51.4 171.5c-12 1.8-22 10.2-25.7 21.7s-.7 24.2 7.9 32.7L137.8 329 113.2 474.7c-2 12 3 24.2 12.9 31.3s23 8 33.8 2.3l128.3-68.5 128.3 68.5c10.8 5.7 23.9 4.9 33.8-2.3s14.9-19.3 12.9-31.3L438.5 329 542.7 225.9c8.6-8.5 11.7-21.2 7.9-32.7s-13.7-19.9-25.7-21.7L381.2 150.3 316.9 18z"/></svg>
                         Favourites
                     </div>
                     <div class="actions">
@@ -112,7 +129,7 @@
 
         <!-- Results -->
         <section class="resultsSection">
-            <div id="resultCard" class="card" hidden>
+            <div id="resultCard" class="card glass" hidden>
                 <div class="cardHeader">
                     <div class="cardTitle">
                         <span id="stopName">-</span>
@@ -143,11 +160,13 @@
     </div>
 
     <!-- Bus Service Information Modal -->
-    <div id="svcModal" class="modal" hidden>
-        <div class="modalBox">
+    <div id="svcModal" class="modal-backdrop hidden">
+        <div class="modal glass wide flush" role="dialog" aria-modal="true" aria-labelledby="svcModalTitle">
             <div class="modalHeader">
-                <div class="modalTitle">Bus Service Information</div>
-                <button id="modalClose" class="iconBtn" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg></button>
+                <div class="modalTitle" id="svcModalTitle">Bus Service Information</div>
+                <button class="icon-btn small" type="button" data-close-modal="svcModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
             </div>
             <div class="modalBody">
                 <div id="svcMeta" class="svcMeta"></div>
@@ -161,47 +180,27 @@
     </div>
 
     <!-- Theme Picker Modal -->
-    <div id="themeModal" class="modal" hidden>
-        <div class="modalBox themeModalBox">
-            <div class="modalHeader">
-                <div class="modalTitle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M512 256c0 .9 0 1.8 0 2.7c-.4 36.5-33.6 61.3-70.1 61.3H344c-26.5 0-48 21.5-48 48c0 3.4 .4 6.7 1 9.9c2.1 10.2 6.5 20 10.8 29.9c6.1 13.8 12.1 27.5 12.1 42c0 31.8-21.6 60.7-53.4 62c-3.5 .1-7 .2-10.6 .2C114.6 512 0 397.4 0 256S114.6 0 256 0S512 114.6 512 256zM128 288a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm0-96a32 32 0 1 0 0-64 32 32 0 1 0 0 64zM288 96a32 32 0 1 0 -64 0 32 32 0 1 0 64 0zm96 96a32 32 0 1 0 0-64 32 32 0 1 0 0 64z"/></svg> Choose Theme</div>
-                <button id="themeModalClose" class="iconBtn" aria-label="Close"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg></button>
+    <div class="modal-backdrop hidden" id="themeModal">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
+            <div class="modal-head">
+                <h2 id="themeModalTitle">Theme</h2>
+                <button class="icon-btn small" type="button" data-close-modal="themeModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
             </div>
-            <div class="modalBody">
-                <div class="themeGrid">
-                    <button class="themeOption" data-theme="classic">
-                        <div class="themeSwatch" style="background:#ccffcc"></div>
-                        <span>Classic</span>
-                    </button>
-                    <button class="themeOption" data-theme="notgreen1">
-                        <div class="themeSwatch" style="background:#ffcccc"></div>
-                        <span>Not green 1</span>
-                    </button>
-                    <button class="themeOption" data-theme="notgreen2">
-                        <div class="themeSwatch" style="background:#ccccff"></div>
-                        <span>Not green 2</span>
-                    </button>
-                    <button class="themeOption" data-theme="notgreen3">
-                        <div class="themeSwatch" style="background:#ffffcc"></div>
-                        <span>Not green 3</span>
-                    </button>
-                    <button class="themeOption" data-theme="notgreen4">
-                        <div class="themeSwatch" style="background:#ffccff"></div>
-                        <span>Not green 4</span>
-                    </button>
-                    <button class="themeOption" data-theme="notgreen5">
-                        <div class="themeSwatch" style="background:#ccffff"></div>
-                        <span>Not green 5</span>
-                    </button>
-                    <button class="themeOption" data-theme="verylightgreen">
-                        <div class="themeSwatch" style="background:#ffffff;border:1px solid #ddd"></div>
-                        <span>Really really light green</span>
-                    </button>
-                </div>
+            <p class="modal-section-label">Mode</p>
+            <div class="mode-toggle" id="modeToggle">
+                <button class="mode-btn" type="button" data-mode="light" aria-pressed="false"><span data-icon="sun"></span>Light</button>
+                <button class="mode-btn" type="button" data-mode="dark" aria-pressed="false"><span data-icon="moon"></span>Dark</button>
             </div>
+            <p class="modal-section-label">Brand colour</p>
+            <div class="swatch-grid" id="swatchGrid"></div>
         </div>
     </div>
 
+    <script src="/js/icons.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/theme.js"></script>
     <script src="/script.js"></script>
 </body>
 
