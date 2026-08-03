@@ -1,4 +1,4 @@
-const CACHE = "sgbus-v6";
+const CACHE = "sgbus-v7";
 
 const ASSETS = [
   "/",
