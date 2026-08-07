@@ -15,6 +15,13 @@ from .pagination import nav_row, paginate_sections
 # Interchanges, bus terminals, MRT/LRT stations and hospitals, as LTA abbreviates them
 # in bus stop names ("Pasir Ris Int", "Opp Tampines Stn/Int", "Tan Tock Seng Hosp").
 _LANDMARK_RE = re.compile(r"\b(?:Int|Ter|Stn|Hosp)\b", re.IGNORECASE)
+# "Stn" is also how LTA abbreviates stations that aren't rail stations at all
+# ("Airport Police Stn", "Central Fire Stn") - those are stripped out before the
+# landmark check, so they never make the list.
+_NOT_A_STATION_RE = re.compile(
+    r"\b(?:police|fire|pumping|power|petrol|radio|coast\s*guard|civil\s*defence|bus)\s+stn\b",
+    re.IGNORECASE,
+)
 # Which side of the road a stop is on doesn't change which landmark it is.
 _SIDE_PREFIX_RE = re.compile(r"^(?:opp|aft|bef|bet|opposite)\s+", re.IGNORECASE)
 MAX_LANDMARKS = 10
@@ -49,19 +56,19 @@ def _landmark_key(name: str) -> str:
     """The landmark a stop name points at, ignoring which side of the road or which exit
     the stop itself sits at: "Opp Tampines Stn/Int" and "Tampines Stn Exit B" both key on
     "tampines stn"."""
-    stripped = _SIDE_PREFIX_RE.sub("", name)
+    stripped = _NOT_A_STATION_RE.sub("", _SIDE_PREFIX_RE.sub("", name))
     match = _LANDMARK_RE.search(stripped)
     return (stripped[: match.end()] if match else stripped).lower()
 
 
 def landmark_stops(stops: list) -> list:
     """The landmark stops along a route in travel order - interchanges, terminals, MRT/LRT
-    stations and hospitals - with consecutive stops for the same landmark collapsed into
-    the first of them."""
+    stations and hospitals, but not police/fire/pumping stations - with consecutive stops
+    for the same landmark collapsed into the first of them."""
     landmarks = []
     for stop in stops:
         name = stop["name"]
-        if not _LANDMARK_RE.search(name):
+        if not _LANDMARK_RE.search(_NOT_A_STATION_RE.sub("", name)):
             continue
         if landmarks and _landmark_key(landmarks[-1]) == _landmark_key(name):
             continue

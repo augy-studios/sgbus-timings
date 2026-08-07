@@ -98,7 +98,9 @@ can see where the bus actually goes at a glance:
 ```
 
 Landmarks are the interchanges, bus terminals, MRT/LRT stations and hospitals
-along the outbound direction, in travel order. Consecutive stops for the same
+along the outbound direction, in travel order - `Stn` stops that aren't rail
+stations (`Airport Police Stn`, `Central Fire Stn`, pumping stations and the
+like) are left out. Consecutive stops for the same
 landmark are collapsed into one (`Opp Tampines Stn/Int` and `Tampines Stn Exit
 B` are the same place), and long routes are thinned down to at most ten
 evenly-spread landmarks, always keeping both ends.
