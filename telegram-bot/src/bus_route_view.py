@@ -110,7 +110,9 @@ def build_bus_stops_view(chat_id: int, service_no: str, page: int):
     )
     detail_lines = [line for line in (route_summary_line(service_no), route_landmarks_line(service_no)) if line]
     rich = {
-        "markdown": "\n".join([f"# {heading}", *(escape_md(line) for line in detail_lines)]),
+        # Blank lines between blocks: a single newline collapses into the previous
+        # paragraph in Telegram's rich-message Markdown.
+        "markdown": "\n\n".join([f"# {heading}", *(escape_md(line) for line in detail_lines)]),
         "fallback": "\n".join([heading, *detail_lines]),
     }
     buttons = [
