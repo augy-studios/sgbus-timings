@@ -14,6 +14,7 @@ from .pagination import nav_row, paginate_sections
 
 # Interchanges, bus terminals, MRT/LRT stations and hospitals, as LTA abbreviates them
 # in bus stop names ("Pasir Ris Int", "Opp Tampines Stn/Int", "Tan Tock Seng Hosp").
+# "Ter" is safe to read as a bus terminal: road names spell Terrace as "Terr".
 _LANDMARK_RE = re.compile(r"\b(?:Int|Ter|Stn|Hosp)\b", re.IGNORECASE)
 # "Stn" is also how LTA abbreviates stations that aren't rail stations at all
 # ("Airport Police Stn", "Central Fire Stn") - those are stripped out before the
