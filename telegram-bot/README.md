@@ -10,6 +10,8 @@ headings and tables, not a Markdown approximation.
 ## What it does
 
 - Look up live bus arrival timings for any bus stop, by number or by name.
+- Send a bus number to browse every stop along its route, with your
+  favourited stops given pages of their own up front.
 - Find the bus stops nearest to your current location.
 - Save bus stops as favourites for quick access, from any chat.
 - Save bus numbers as favourites too - they're pinned and starred wherever
@@ -48,17 +50,37 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/done` | Finishes the current multi-step flow (e.g. `/addfavbus`) |
 | `/cancel` | Cancels the current multi-step flow |
 
-### Searching for a bus stop
+### Searching for a bus stop or a bus
 
 You don't need a command to search. Just type into the chat:
 
-- A bus stop number, e.g. `84009`, to jump straight to it (or see a shortlist
-  if there's more than one match on the prefix).
+- A bus stop number, e.g. `84009`, to jump straight to it.
+- A bus number, e.g. `22`, `971E` or `NR7`, to browse the stops that service
+  visits (see [Bus routes](#bus-routes) below).
 - Part of a bus stop's name or road, e.g. `bedok` or `changi`, to see a list
   of matching stops as buttons.
 
+Bus stop numbers and bus numbers never collide: a bus stop number is always
+exactly 5 digits, while a bus number is shorter and may contain letters, so
+the bot can tell which one you meant without asking. Bus numbers are matched
+against LTA's live service list, and anything that isn't a real service falls
+through to the name search.
+
 If there's exactly one match, the bot shows its live timings immediately. If
 there's more than one, tap the bus stop you meant from the list.
+
+### Bus routes
+
+Sending a bus number - or tapping a bus in `/favbuses` - shows the stops that
+service visits, as a paginated list of buttons. Tapping a stop opens a timings
+view filtered to just that service, with a **All services** button to widen it
+back out to the whole stop.
+
+Your favourited stops along that route get pages of their own, before the rest
+of the list (or after it, if `/favouritepref` is set to "bottom"), so the ones
+you actually use are a tap away on a long route. The pages that follow list the
+entire route in the order the bus travels, with those favourited stops still in
+their proper positions along it, starred (⭐).
 
 ### Viewing timings
 
@@ -82,10 +104,10 @@ as many messages as you like) - each one is validated against LTA's live
 service list and confirmed as saved. Send `/done` when finished, or `/cancel`
 to abort.
 
-`/favbuses` shows your favourite buses as paginated buttons; tapping one
-shows the stops it serves as another paginated list, and tapping a stop opens
-a timings view filtered to just that service. `/unfavbus` shows the same
-paginated buttons but tapping one removes it instead.
+`/favbuses` shows your favourite buses as paginated buttons; tapping one opens
+that service's stops, exactly as sending its bus number does (see
+[Bus routes](#bus-routes)). `/unfavbus` shows the same paginated buttons but
+tapping one removes it instead.
 
 `/unfavstop` does the paginated-removal equivalent for favourite bus stops
 (the star toggle on a stop's timings view still works too).
@@ -216,13 +238,14 @@ telegram-bot/
     frequency.py            parses/formats routine frequency (daily/weekdays/weekends/day list)
     time_of_day.py          parses time-of-day input; time-of-day greeting text
     user_settings.py        per-user custom display name, birthday (+ wish tracking), notification preference (SQLite)
-    pagination.py          generic paginated inline-keyboard helper
+    pagination.py          generic paginated inline-keyboard helper (flat or sectioned)
     buttons.py             persistent inline-button registry (SQLite)
     scheduler.py           SQLite-backed periodic job runner (asyncio)
     format.py              rich-message Markdown formatting (headings + tables)
     reply.py               rich-message send/edit helpers with plain-text fallback
     stop_view.py           builds a stop's timings message + keyboard
     list_view.py           builds a list-of-stops keyboard (with favourite pinning)
+    bus_route_view.py      builds a service's paginated stop keyboard (favourite stops paged first)
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,

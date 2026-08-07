@@ -1,5 +1,6 @@
 from telethon import events, types
 
+from ..bus_route_view import build_bus_stops_view
 from ..buttons import resolve_button
 from ..favourite_buses import remove_favourite_bus
 from ..favourite_prefs import set_pref
@@ -9,7 +10,7 @@ from ..routines import delete_routine
 from ..stop_view import build_stop_view
 from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
 from .addroutine import finalize_stop
-from .favbuses import build_favbus_stops_view, build_favbuses_view
+from .favbuses import build_favbuses_view
 from .favouritepref import build_favouritepref_view
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .settings import build_settings_view, start_edit_birthday, start_edit_name
@@ -56,13 +57,15 @@ def register_callbacks(client):
                 await event.answer()
                 return
 
-            if action == "favbus_stops":
-                rich, buttons, _ = build_favbus_stops_view(user_id, payload["service_no"], payload.get("page", 0))
+            # "favbus_*" are the pre-rename action names, still stored on buttons sent
+            # before this version - they keep working since button rows never expire.
+            if action in ("bus_stops", "favbus_stops"):
+                rich, buttons, _ = build_bus_stops_view(user_id, payload["service_no"], payload.get("page", 0))
                 await edit_rich_message(client, event, rich, buttons)
                 await event.answer()
                 return
 
-            if action == "favbus_stop_view":
+            if action in ("bus_stop_view", "favbus_stop_view"):
                 view = await build_stop_view(payload["code"], user_id, service_no=payload["service_no"])
                 if not view:
                     await event.answer("That bus stop could not be found.")
