@@ -50,6 +50,14 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/done` | Finishes the current multi-step flow (e.g. `/addfavbus`) |
 | `/cancel` | Cancels the current multi-step flow |
 
+### Paginated lists
+
+Any list too long for one screen (bus stops along a route, favourite buses,
+routines, and so on) is split into pages with a **◀ Prev · 2/5 · Next ▶** row
+underneath. The row wraps around, so there's never a dead end: on the first
+page the left button jumps to the last page (**◀ Last**), and on the last page
+the right button jumps back to the first (**First ▶**).
+
 ### Searching for a bus stop or a bus
 
 You don't need a command to search. Just type into the chat:
@@ -75,6 +83,25 @@ Sending a bus number - or tapping a bus in `/favbuses` - shows the stops that
 service visits, as a paginated list of buttons. Tapping a stop opens a timings
 view filtered to just that service, with a **All services** button to widen it
 back out to the whole stop.
+
+Above the buttons, the message names where the service starts and ends: either
+`🚏 Origin → Destination` (with `(and back)` appended if it runs the reverse
+direction too), or, for a loop service, `🔁 Loop service, starting and ending
+at ...` along with the point it loops at. Terminals come from LTA's bus service list, falling back to the ends
+of the cached route if LTA doesn't report them.
+
+Under that is a `🗺` line tracing the route through its landmark stops, so you
+can see where the bus actually goes at a glance:
+
+```
+🗺 Pasir Ris Int → Opp Tampines Stn/Int → Kallang Stn → Aft Farrer Pk Stn → ...
+```
+
+Landmarks are the interchanges, bus terminals, MRT/LRT stations and hospitals
+along the outbound direction, in travel order. Consecutive stops for the same
+landmark are collapsed into one (`Opp Tampines Stn/Int` and `Tampines Stn Exit
+B` are the same place), and long routes are thinned down to at most ten
+evenly-spread landmarks, always keeping both ends.
 
 Your favourited stops along that route get pages of their own, before the rest
 of the list (or after it, if `/favouritepref` is set to "bottom"), so the ones
@@ -227,7 +254,7 @@ telegram-bot/
     db.py                  SQLite connection and schema
     lta.py                 LTA DataMall API client (async, httpx)
     bus_stops.py           bus stop cache, search, nearest-stop lookup
-    bus_services.py        bus service number cache + validation
+    bus_services.py        bus service cache: number validation, terminals, loop info
     bus_routes.py          bus service <-> stop cache (which stops a service visits)
     favourites.py          per-user favourite bus stops (SQLite)
     favourite_buses.py     per-user favourite bus numbers (SQLite)

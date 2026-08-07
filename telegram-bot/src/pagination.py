@@ -38,14 +38,15 @@ def paginate_sections(sections: list, page: int, size: int = PAGE_SIZE):
 def nav_row(action: str, payload_base: dict, page: int, total_pages: int) -> list:
     """Builds a single button row with Prev/page-count/Next, using the given
     action + payload_base (page number is merged in) for each button's callback_data.
+    The row wraps around: on the first page the left button jumps to the last page,
+    and on the last page the right button jumps back to the first.
     Returns [] if there's only one page."""
     if total_pages <= 1:
         return []
 
-    row = []
-    if page > 0:
-        row.append(Button.inline("◀ Prev", make_button(action, {**payload_base, "page": page - 1})))
-    row.append(Button.inline(f"{page + 1}/{total_pages}", make_button(action, {**payload_base, "page": page})))
-    if page < total_pages - 1:
-        row.append(Button.inline("Next ▶", make_button(action, {**payload_base, "page": page + 1})))
-    return [row]
+    def button(label, target):
+        return Button.inline(label, make_button(action, {**payload_base, "page": target}))
+
+    left = button("◀ Prev", page - 1) if page > 0 else button("◀ Last", total_pages - 1)
+    right = button("Next ▶", page + 1) if page < total_pages - 1 else button("First ▶", 0)
+    return [[left, button(f"{page + 1}/{total_pages}", page), right]]

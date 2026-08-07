@@ -43,18 +43,49 @@ def first_last_bus_times(service_no: str, stop_code: str) -> "dict | None":
     ).fetchone()
 
 
-def stops_for_service(service_no: str) -> list:
-    """Bus stops served by a given service, joined with stop details, ordered the way the
-    bus travels (direction 1 first, then any stops only served in direction 2)."""
+def route_terminals(service_no: str) -> dict:
+    """First and last stop code of the outbound direction, plus how many directions the
+    service runs, derived from the cached route. Used to tell a one-way service from a
+    two-way one, and as a fallback when LTA's service list has no origin/destination."""
     rows = db.execute(
         """
+        SELECT direction, stop_code
+        FROM bus_routes
+        WHERE service_no = ?
+        ORDER BY direction, stop_sequence
+        """,
+        (service_no,),
+    ).fetchall()
+    if not rows:
+        return {}
+
+    outbound = [row for row in rows if row["direction"] == rows[0]["direction"]]
+    return {
+        "origin_code": outbound[0]["stop_code"],
+        "destination_code": outbound[-1]["stop_code"],
+        "directions": len({row["direction"] for row in rows}),
+    }
+
+
+def stops_for_service(service_no: str, outbound_only: bool = False) -> list:
+    """Bus stops served by a given service, joined with stop details, ordered the way the
+    bus travels (direction 1 first, then any stops only served in direction 2).
+    Pass `outbound_only=True` for just the outbound direction, i.e. one run of the route
+    from end to end."""
+    direction_filter = (
+        "AND bus_routes.direction = (SELECT MIN(direction) FROM bus_routes WHERE service_no = ?)"
+        if outbound_only
+        else ""
+    )
+    rows = db.execute(
+        f"""
         SELECT bus_stops.*
         FROM bus_routes
         JOIN bus_stops ON bus_stops.code = bus_routes.stop_code
-        WHERE bus_routes.service_no = ?
+        WHERE bus_routes.service_no = ? {direction_filter}
         ORDER BY bus_routes.direction, bus_routes.stop_sequence
         """,
-        (service_no,),
+        (service_no, service_no) if outbound_only else (service_no,),
     ).fetchall()
     seen = set()
     stops = []

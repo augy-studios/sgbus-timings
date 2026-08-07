@@ -48,7 +48,10 @@ async def fetch_all_bus_stops() -> list[dict]:
 
 
 async def fetch_all_bus_services() -> list[dict]:
-    """Fetch the full bus service list from LTA DataMall, paginating 500 records at a time."""
+    """Fetch the full bus service list from LTA DataMall, paginating 500 records at a time.
+    LTA lists one record per direction; we keep the lowest-numbered (outbound) one, whose
+    origin/destination are the service's start and end terminals. `loop_desc` is only set
+    for loop services, which run a single direction back to where they started."""
     services: dict[str, dict] = {}
     skip = 0
     async with httpx.AsyncClient(timeout=30) as client:
@@ -59,12 +62,23 @@ async def fetch_all_bus_services() -> list[dict]:
                 break
             for s in rows:
                 service_no = s.get("ServiceNo")
-                if service_no and service_no not in services:
-                    services[service_no] = {"service_no": service_no, "operator": s.get("Operator")}
+                if not service_no:
+                    continue
+                direction = int(s.get("Direction") or 1)
+                existing = services.get(service_no)
+                if existing is None or direction < existing["direction"]:
+                    services[service_no] = {
+                        "direction": direction,
+                        "service_no": service_no,
+                        "operator": s.get("Operator"),
+                        "origin_code": s.get("OriginCode") or None,
+                        "destination_code": s.get("DestinationCode") or None,
+                        "loop_desc": (s.get("LoopDesc") or "").strip() or None,
+                    }
             if len(rows) < 500:
                 break
             skip += 500
-    return list(services.values())
+    return [{k: v for k, v in svc.items() if k != "direction"} for svc in services.values()]
 
 
 async def fetch_all_bus_routes() -> list[dict]:

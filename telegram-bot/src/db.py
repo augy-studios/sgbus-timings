@@ -36,7 +36,10 @@ db.executescript(
 
     CREATE TABLE IF NOT EXISTS bus_services (
         service_no TEXT PRIMARY KEY,
-        operator TEXT
+        operator TEXT,
+        origin_code TEXT,
+        destination_code TEXT,
+        loop_desc TEXT
     );
 
     CREATE TABLE IF NOT EXISTS bus_routes (
@@ -139,7 +142,17 @@ if "stop_sequence" not in _bus_routes_columns or "wd_first" not in _bus_routes_c
         )
         db.execute("CREATE INDEX IF NOT EXISTS idx_bus_routes_stop_code ON bus_routes(stop_code)")
 
-_user_settings_columns = {row["name"] for row in db.execute("PRAGMA table_info(user_settings)").fetchall()}
+_bus_services_columns = {row["name"] for row in db.execute("PRAGMA table_info(bus_services)").fetchall()}
+if "origin_code" not in _bus_services_columns:
+    # Emptied rather than back-filled, so the startup cache check refetches the whole
+    # service list from LTA with the terminal/loop fields included.
+    with db:
+        db.execute("ALTER TABLE bus_services ADD COLUMN origin_code TEXT")
+        db.execute("ALTER TABLE bus_services ADD COLUMN destination_code TEXT")
+        db.execute("ALTER TABLE bus_services ADD COLUMN loop_desc TEXT")
+        db.execute("DELETE FROM bus_services")
+
+_user_settings_columns ={row["name"] for row in db.execute("PRAGMA table_info(user_settings)").fetchall()}
 if "birthday" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN birthday TEXT")
