@@ -7,7 +7,7 @@ from ..buttons import make_button
 from ..favourite_buses import list_favourite_buses
 from ..favourite_prefs import get_pref
 from ..favourites import list_favourites
-from ..flows import clear_flow, get_flow, set_flow
+from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
 from ..format import escape_md
 from ..reply import send_rich_message
 from ..user_settings import (
@@ -20,7 +20,10 @@ from ..user_settings import (
 
 _POSITION_LABELS = {"top": "⬆️ Top", "bottom": "⬇️ Bottom"}
 
-FLOW_PREFIX = "settings_edit:"
+# One flow covering every field: the field being edited rides along after the colon, which
+# the registry looks past. No `finish` - each edit ends the moment its answer is accepted.
+FLOW = register_flow(Flow(name="settings_edit", description="editing your settings"))
+FLOW_PREFIX = FLOW + ":"
 
 NAME_PROMPT = "What would you like me to call you? Send a name, or /cancel to stop."
 BIRTHDAY_PROMPT = (

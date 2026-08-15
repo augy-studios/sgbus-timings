@@ -5,13 +5,17 @@ from telethon import Button, events
 from ..bus_stops import get_bus_stop_by_code, search_bus_stops
 from ..buttons import make_button
 from ..favourites import list_favourites
-from ..flows import clear_flow, get_flow, set_flow
+from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
 from ..frequency import format_frequency, parse_frequency
 from ..routine_drafts import clear_draft, get_draft, start_draft, update_draft
 from ..routines import add_routine, update_routine_days, update_routine_stop, update_routine_time
 from ..time_of_day import parse_time_of_day
 
-FLOW = "routine_wizard"
+# No `finish`: a routine needs every answer before it can be saved, so there's nothing
+# for /done to wrap up early. The half-built draft goes when the flow does.
+FLOW = register_flow(
+    Flow(name="routine_wizard", description="setting up a routine", cleanup=clear_draft)
+)
 _CODE_RE = re.compile(r"^\d{3,5}$")
 
 TIME_PROMPT = (

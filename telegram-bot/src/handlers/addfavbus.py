@@ -3,12 +3,23 @@ import re
 from telethon import events
 
 from ..bus_services import is_valid_service
-from ..favourite_buses import add_favourite_bus
-from ..flows import get_flow, set_flow
+from ..favourite_buses import add_favourite_bus, list_favourite_buses
+from ..flows import Flow, get_flow, register_flow, set_flow
+from ..lta import _natural_sort_key
 
 _SPLIT_RE = re.compile(r"[,\s]+")
 
-FLOW = "add_fav_bus"
+
+def _finish(chat_id: int) -> str:
+    """What /done replies with: buses are saved as they're sent, so finishing is just a
+    matter of reading back what's there now."""
+    buses = sorted((row["service_no"] for row in list_favourite_buses(chat_id)), key=_natural_sort_key)
+    if not buses:
+        return "Done! You have no favourite buses saved yet."
+    return "Done! Your favourite buses: " + ", ".join(buses) + "\n\nUse /favbuses to view them."
+
+
+FLOW = register_flow(Flow(name="add_fav_bus", description="adding favourite buses", finish=_finish))
 
 
 def register_addfavbus(client):

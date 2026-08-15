@@ -1,34 +1,47 @@
 from telethon import events
 
-from ..favourite_buses import list_favourite_buses
-from ..flows import clear_flow, get_flow
-from ..lta import _natural_sort_key
-from ..routine_drafts import clear_draft
+from ..flows import end_flow, flow_definition, get_flow
 
 
 def register_flow_control(client):
+    """/done and /cancel, for whatever flow the chat happens to be in the middle of.
+    Neither command knows what any individual flow is - they work off what the flow
+    registered about itself, so every command that keeps chat state, now or later, gets
+    both of them for free."""
+
     @client.on(events.NewMessage(pattern="/done"))
     async def done(event):
-        flow = get_flow(event.chat_id)
-        if not flow:
-            await event.respond("You don't have anything in progress. Use /addfavbus to add favourite buses.")
+        name = get_flow(event.chat_id)
+        if not name:
+            await event.respond("You don't have anything in progress.")
             return
 
-        clear_flow(event.chat_id)
-        buses = sorted((row["service_no"] for row in list_favourite_buses(event.chat_id)), key=_natural_sort_key)
-        if buses:
-            await event.respond("Done! Your favourite buses: " + ", ".join(buses) + "\n\nUse /favbuses to view them.")
-        else:
-            await event.respond("Done! You have no favourite buses saved yet.")
+        flow = flow_definition(name)
+        if not flow:
+            # Left behind by an older version of the bot: nothing left that knows how to
+            # finish it, so just clear it rather than stranding the chat mid-flow.
+            end_flow(event.chat_id, name)
+            await event.respond("Done!")
+            return
+
+        if not flow.finish:
+            await event.respond(
+                f"You're in the middle of {flow.description}, which finishes on its own once "
+                "you've answered. Use /cancel if you'd rather stop."
+            )
+            return
+
+        message = flow.finish(event.chat_id)
+        end_flow(event.chat_id, name)
+        await event.respond(message)
 
     @client.on(events.NewMessage(pattern="/cancel"))
     async def cancel(event):
-        flow = get_flow(event.chat_id)
-        if not flow:
+        name = get_flow(event.chat_id)
+        if not name:
             await event.respond("Nothing to cancel.")
             return
 
-        clear_flow(event.chat_id)
-        if flow == "routine_wizard":
-            clear_draft(event.chat_id)
-        await event.respond("Cancelled.")
+        flow = flow_definition(name)
+        end_flow(event.chat_id, name)
+        await event.respond(f"Cancelled {flow.description}." if flow else "Cancelled.")

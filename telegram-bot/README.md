@@ -47,8 +47,8 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
 | `/setname` | Sets (or clears) the name the bot calls you by |
 | `/settings` | Lists your settings (name, birthday, routine notifications) with buttons to change them |
-| `/done` | Finishes the current multi-step flow (e.g. `/addfavbus`) |
-| `/cancel` | Cancels the current multi-step flow |
+| `/done` | Finishes whatever multi-step flow the chat is in the middle of |
+| `/cancel` | Stops whatever multi-step flow the chat is in the middle of |
 
 ### Paginated lists
 
@@ -57,6 +57,41 @@ routines, and so on) is split into pages with a **◀ Prev · 2/5 · Next ▶** 
 underneath. The row wraps around, so there's never a dead end: on the first
 page the left button jumps to the last page (**◀ Last**), and on the last page
 the right button jumps back to the first (**First ▶**).
+
+### Multi-step flows
+
+Some commands ask a question and wait for the reply - `/addfavbus` collecting
+bus numbers, `/addroutine` walking through time, frequency and stop, `/settings`
+asking for a name or birthday. While one of those is in progress the chat is
+"in a flow", and `/done` and `/cancel` apply to whichever one it happens to be:
+
+- `/cancel` always works. It stops the flow and clears anything it had half
+  built (a part-finished routine draft, say), replying with what it stopped -
+  "Cancelled setting up a routine."
+- `/done` works on flows there's something to finish. `/addfavbus` saves buses
+  as you send them, so `/done` reads back the resulting list. The wizards need
+  every answer before they can save anything, so there's nothing to finish
+  early - `/done` says as much and points at `/cancel`.
+- With nothing in progress, both say so and do nothing.
+
+Neither command knows anything about any individual flow. A flow declares
+itself to `src/flows.py` next to its own handler:
+
+```python
+FLOW = register_flow(Flow(
+    name="add_fav_bus",
+    description="adding favourite buses",   # completes "Cancelled ..."
+    finish=_finish,                         # what /done replies; omit if it can't finish early
+    cleanup=clear_draft,                    # other state to drop, whichever way it ends
+))
+```
+
+so any command added later gets both commands' behaviour by registering, with
+nothing to change in `/done` or `/cancel` themselves. A flow name may carry a
+per-step suffix after a colon (`settings_edit:birthday`) when one flow covers
+several fields; the registry looks past it. A flow left in the database by an
+older version of the bot resolves to nothing registered, and both commands just
+clear it rather than leaving the chat stuck mid-flow.
 
 ### Searching for a bus stop or a bus
 
@@ -279,7 +314,7 @@ telegram-bot/
     favourites.py          per-user favourite bus stops (SQLite)
     favourite_buses.py     per-user favourite bus numbers (SQLite)
     favourite_prefs.py     per-user pin position (top/bottom) per favourite kind
-    flows.py               per-user multi-step flow state (e.g. mid-/addfavbus)
+    flows.py               per-user multi-step flow state (SQLite) + the flow registry /done and /cancel work off
     routines.py             per-user scheduled routines (SQLite)
     routine_drafts.py       per-user in-progress routine wizard state (SQLite)
     frequency.py            parses/formats routine frequency (daily/weekdays/weekends/day list)

@@ -33,8 +33,8 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /routines - view, edit, or delete your routines
 - /setname - set the name you want the bot to call you by
 - /settings - view and change your settings (name, birthday, routine notifications)
-- /done - finish adding favourite buses
-- /cancel - cancel the current operation
+- /done - finish whatever you're in the middle of
+- /cancel - stop whatever you're in the middle of
 """
 
 
