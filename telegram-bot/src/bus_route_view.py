@@ -146,11 +146,14 @@ def build_bus_stops_view(chat_id: int, service_no: str, page: int, reverse: bool
         "markdown": "\n\n".join([f"# {heading}", *(escape_md(line) for line in detail_lines)]),
         "fallback": "\n".join([heading, *detail_lines]),
     }
+    # The page and direction ride along on every stop button, so the stop view it opens
+    # can offer a way back to this exact page of this exact direction.
+    here = {**({"page": page} if page else {}), **({"reverse": True} if reverse else {})}
     buttons = [
         [
             Button.inline(
                 stop_button_label(stop, is_favourite=stop["code"] in fav_codes),
-                make_button("bus_stop_view", {"service_no": service_no, "code": stop["code"]}),
+                make_button("bus_stop_view", {"service_no": service_no, "code": stop["code"], **here}),
             )
         ]
         for stop in page_items

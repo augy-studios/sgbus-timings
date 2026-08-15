@@ -34,7 +34,12 @@ def register_callbacks(client):
         try:
             if action in ("stop", "refresh"):
                 view = await build_stop_view(
-                    payload["code"], user_id, inline_only=inline_only, service_no=payload.get("service_no")
+                    payload["code"],
+                    user_id,
+                    inline_only=inline_only,
+                    service_no=payload.get("service_no"),
+                    stops_page=payload.get("page", 0),
+                    stops_reverse=payload.get("reverse", False),
                 )
                 if not view:
                     await event.answer("That bus stop could not be found.")
@@ -45,7 +50,13 @@ def register_callbacks(client):
 
             if action == "fav":
                 now_fav = toggle_favourite(user_id, payload["code"], payload["name"])
-                view = await build_stop_view(payload["code"], user_id)
+                view = await build_stop_view(
+                    payload["code"],
+                    user_id,
+                    service_no=payload.get("service_no"),
+                    stops_page=payload.get("page", 0),
+                    stops_reverse=payload.get("reverse", False),
+                )
                 if view:
                     await edit_rich_message(client, event, view["rich"], view["buttons"])
                 await event.answer("Added to favourites" if now_fav else "Removed from favourites")
@@ -68,7 +79,13 @@ def register_callbacks(client):
                 return
 
             if action in ("bus_stop_view", "favbus_stop_view"):
-                view = await build_stop_view(payload["code"], user_id, service_no=payload["service_no"])
+                view = await build_stop_view(
+                    payload["code"],
+                    user_id,
+                    service_no=payload["service_no"],
+                    stops_page=payload.get("page", 0),
+                    stops_reverse=payload.get("reverse", False),
+                )
                 if not view:
                     await event.answer("That bus stop could not be found.")
                     return

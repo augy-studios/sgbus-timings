@@ -81,8 +81,11 @@ there's more than one, tap the bus stop you meant from the list.
 
 Sending a bus number - or tapping a bus in `/favbuses` - shows the stops that
 service visits, as a paginated list of buttons. Tapping a stop opens a timings
-view filtered to just that service, with a **All services** button to widen it
-back out to the whole stop.
+view filtered to just that service, with a **💯 All services** button to widen
+it back out to the whole stop, and a **🔙 Back to bus stop selection** button
+returning to the stop list - on the same page, and in the same direction, that
+the stop was tapped from. Refreshing or favouriting from that view keeps both
+buttons, so the way back survives.
 
 Above the buttons, the message names where the service starts and ends: either
 `🚏 Origin → Destination` (with `(and back)` appended if it runs the reverse
