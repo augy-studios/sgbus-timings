@@ -23,9 +23,20 @@ _NOT_A_STATION_RE = re.compile(
     r"\b(?:police|fire|pumping|power|petrol|radio|coast\s*guard|civil\s*defence|bus)\s+stn\b",
     re.IGNORECASE,
 )
+# "Hosp" likewise turns up in road names - "Aft Hosp Dr" is Hospital Drive, not a hospital.
+# A landmark abbreviation followed by a road type is naming a street, so it's stripped too.
+_ROAD_NAME_RE = re.compile(
+    r"\bhosp\s+(?:dr|rd|ave|st|cres|blvd|ln|way|link|walk|cl|pl)\b", re.IGNORECASE
+)
 # Which side of the road a stop is on doesn't change which landmark it is.
 _SIDE_PREFIX_RE = re.compile(r"^(?:opp|aft|bef|bet|opposite)\s+", re.IGNORECASE)
 MAX_LANDMARKS = 10
+
+
+def _without_false_landmarks(name: str) -> str:
+    """The stop name with the phrases that merely look like landmark abbreviations removed,
+    so they can't be mistaken for one."""
+    return _ROAD_NAME_RE.sub("", _NOT_A_STATION_RE.sub("", name))
 
 
 def _terminal_label(code: str) -> str:
@@ -53,27 +64,29 @@ def route_summary_line(service_no: str) -> "str | None":
     return f"{line} (and back)" if derived.get("directions", 1) > 1 else line
 
 
-def _landmark_key(name: str) -> str:
-    """The landmark a stop name points at, ignoring which side of the road or which exit
-    the stop itself sits at: "Opp Tampines Stn/Int" and "Tampines Stn Exit B" both key on
-    "tampines stn"."""
-    stripped = _NOT_A_STATION_RE.sub("", _SIDE_PREFIX_RE.sub("", name))
+def _landmark_name(name: str) -> str:
+    """The landmark a stop name points at, with the stop's own details trimmed off - which
+    side of the road it sits on and which exit it serves: "Opp Tampines Stn/Int" and
+    "Tampines Stn Exit B" both name "Tampines Stn"."""
+    stripped = _without_false_landmarks(_SIDE_PREFIX_RE.sub("", name)).strip()
     match = _LANDMARK_RE.search(stripped)
-    return (stripped[: match.end()] if match else stripped).lower()
+    return stripped[: match.end()] if match else stripped
 
 
 def landmark_stops(stops: list) -> list:
-    """The landmark stops along a route in travel order - interchanges, terminals, MRT/LRT
-    stations and hospitals, but not police/fire/pumping stations - with consecutive stops
-    for the same landmark collapsed into the first of them."""
+    """The landmarks a route passes in travel order - interchanges, terminals, MRT/LRT
+    stations and hospitals, but not police/fire/pumping stations - named as the landmark
+    itself rather than as the stop, with consecutive stops for the same landmark collapsed
+    into one."""
     landmarks = []
     for stop in stops:
         name = stop["name"]
-        if not _LANDMARK_RE.search(_NOT_A_STATION_RE.sub("", name)):
+        if not _LANDMARK_RE.search(_without_false_landmarks(name)):
             continue
-        if landmarks and _landmark_key(landmarks[-1]) == _landmark_key(name):
+        landmark = _landmark_name(name)
+        if landmarks and landmarks[-1].lower() == landmark.lower():
             continue
-        landmarks.append(name)
+        landmarks.append(landmark)
     return landmarks
 
 
@@ -87,8 +100,8 @@ def _thin(items: list, limit: int) -> list:
 
 
 def route_landmarks_line(service_no: str) -> "str | None":
-    """One line tracing a service's route through its landmark stops, e.g.
-    "Pasir Ris Int → Opp Tampines Stn/Int → Kallang Stn → ...". Follows the outbound
+    """One line tracing a service's route through its landmarks, e.g.
+    "Pasir Ris Int → Tampines Stn → Kallang Stn → ...". Follows the outbound
     direction only, and thins long routes down to a readable handful of landmarks."""
     landmarks = _thin(landmark_stops(stops_for_service(service_no, outbound_only=True)), MAX_LANDMARKS)
     if len(landmarks) < 2:

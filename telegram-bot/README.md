@@ -90,20 +90,24 @@ direction too), or, for a loop service, `🔁 Loop service, starting and ending
 at ...` along with the point it loops at. Terminals come from LTA's bus service list, falling back to the ends
 of the cached route if LTA doesn't report them.
 
-Under that is a `🗺` line tracing the route through its landmark stops, so you
+Under that is a `🗺` line tracing the route through its landmarks, so you
 can see where the bus actually goes at a glance:
 
 ```
-🗺 Pasir Ris Int → Opp Tampines Stn/Int → Kallang Stn → Aft Farrer Pk Stn → ...
+🗺 Pasir Ris Int → Tampines Stn → Kallang Stn → Farrer Pk Stn → ...
 ```
 
 Landmarks are the interchanges, bus terminals, MRT/LRT stations and hospitals
-along the outbound direction, in travel order - `Stn` stops that aren't rail
-stations (`Airport Police Stn`, `Central Fire Stn`, pumping stations and the
-like) are left out. Consecutive stops for the same
-landmark are collapsed into one (`Opp Tampines Stn/Int` and `Tampines Stn Exit
-B` are the same place), and long routes are thinned down to at most ten
-evenly-spread landmarks, always keeping both ends.
+along the outbound direction, in travel order - stops that only look the part
+are left out, whether they're a `Stn` that isn't a rail station (`Airport Police
+Stn`, `Central Fire Stn`, pumping stations and the like) or a road named after
+one (`Aft Hosp Dr` is Hospital Drive, not a hospital). Each one is named as the
+landmark rather than as the stop
+that serves it, so the side of the road and the exit are trimmed off
+(`Opp Tampines Stn/Int` and `Tampines Stn Exit B` both read as `Tampines Stn`).
+Consecutive stops for the same landmark are collapsed into one, and long routes
+are thinned down to at most ten evenly-spread landmarks, always keeping both
+ends.
 
 Your favourited stops along that route get pages of their own, before the rest
 of the list (or after it, if `/favouritepref` is set to "bottom"), so the ones
