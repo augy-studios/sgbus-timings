@@ -67,14 +67,18 @@ def route_terminals(service_no: str) -> dict:
     }
 
 
-def stops_for_service(service_no: str, outbound_only: bool = False) -> list:
+def stops_for_service(service_no: str, single_direction: bool = False, reverse: bool = False) -> list:
     """Bus stops served by a given service, joined with stop details, ordered the way the
     bus travels (direction 1 first, then any stops only served in direction 2).
-    Pass `outbound_only=True` for just the outbound direction, i.e. one run of the route
-    from end to end."""
+    Pass `reverse=True` to walk the route the other way round, the return direction first -
+    a no-op for the one-directional services, which have nothing to swap to.
+    Pass `single_direction=True` for just the direction the ordering starts with, i.e. one
+    run of the route from end to end."""
+    leading_direction = "MAX" if reverse else "MIN"
     direction_filter = (
-        "AND bus_routes.direction = (SELECT MIN(direction) FROM bus_routes WHERE service_no = ?)"
-        if outbound_only
+        f"AND bus_routes.direction = "
+        f"(SELECT {leading_direction}(direction) FROM bus_routes WHERE service_no = ?)"
+        if single_direction
         else ""
     )
     rows = db.execute(
@@ -83,9 +87,9 @@ def stops_for_service(service_no: str, outbound_only: bool = False) -> list:
         FROM bus_routes
         JOIN bus_stops ON bus_stops.code = bus_routes.stop_code
         WHERE bus_routes.service_no = ? {direction_filter}
-        ORDER BY bus_routes.direction, bus_routes.stop_sequence
+        ORDER BY bus_routes.direction {"DESC" if reverse else "ASC"}, bus_routes.stop_sequence
         """,
-        (service_no, service_no) if outbound_only else (service_no,),
+        (service_no, service_no) if single_direction else (service_no,),
     ).fetchall()
     seen = set()
     stops = []

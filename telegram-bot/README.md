@@ -98,7 +98,7 @@ can see where the bus actually goes at a glance:
 ```
 
 Landmarks are the interchanges, bus terminals, MRT/LRT stations and hospitals
-along the outbound direction, in travel order - stops that only look the part
+along the direction being shown, in travel order - stops that only look the part
 are left out, whether they're a `Stn` that isn't a rail station (`Airport Police
 Stn`, `Central Fire Stn`, pumping stations and the like) or a road named after
 one (`Aft Hosp Dr` is Hospital Drive, not a hospital). Each one is named as the
@@ -114,6 +114,12 @@ of the list (or after it, if `/favouritepref` is set to "bottom"), so the ones
 you actually use are a tap away on a long route. The pages that follow list the
 entire route in the order the bus travels, with those favourited stops still in
 their proper positions along it, starred (⭐).
+
+A service that runs both ways gets an **↔️ Swap Directions** button under the
+pager, which turns the route around: the stop buttons list the return direction
+first, and the `🚏` and `🗺` lines above them describe that direction instead.
+Swapping starts again at page 1, since the two directions don't line up page for
+page. Loop services don't get the button - they only ever run one way.
 
 ### Viewing timings
 

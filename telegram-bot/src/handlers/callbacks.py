@@ -59,10 +59,12 @@ def register_callbacks(client):
 
             # "favbus_*" are the pre-rename action names, still stored on buttons sent
             # before this version - they keep working since button rows never expire.
-            if action in ("bus_stops", "favbus_stops"):
-                rich, buttons, _ = build_bus_stops_view(user_id, payload["service_no"], payload.get("page", 0))
+            if action in ("bus_stops", "favbus_stops", "bus_stops_swap"):
+                rich, buttons, _ = build_bus_stops_view(
+                    user_id, payload["service_no"], payload.get("page", 0), payload.get("reverse", False)
+                )
                 await edit_rich_message(client, event, rich, buttons)
-                await event.answer()
+                await event.answer("Showing the other direction" if action == "bus_stops_swap" else None)
                 return
 
             if action in ("bus_stop_view", "favbus_stop_view"):

@@ -44,16 +44,19 @@ def _terminal_label(code: str) -> str:
     return f"{stop['name']} ({code})" if stop else code
 
 
-def route_summary_line(service_no: str) -> "str | None":
+def route_summary_line(service_no: str, reverse: bool = False) -> "str | None":
     """One line naming a service's start and end terminals - or, for a loop service, the
     single terminal it starts and ends at, and where it turns around. Falls back to the
-    ends of the cached route when LTA's service list has no terminals for the service."""
+    ends of the cached route when LTA's service list has no terminals for the service.
+    With `reverse=True` the two terminals trade places, to match the return direction."""
     info = service_terminals(service_no) or {}
     derived = route_terminals(service_no)
     origin_code = info.get("origin_code") or derived.get("origin_code")
     destination_code = info.get("destination_code") or derived.get("destination_code")
     if not origin_code or not destination_code:
         return None
+    if reverse:
+        origin_code, destination_code = destination_code, origin_code
 
     loop_desc = info.get("loop_desc")
     if loop_desc or origin_code == destination_code:
@@ -99,23 +102,26 @@ def _thin(items: list, limit: int) -> list:
     return [items[round(i * step)] for i in range(limit)]
 
 
-def route_landmarks_line(service_no: str) -> "str | None":
+def route_landmarks_line(service_no: str, reverse: bool = False) -> "str | None":
     """One line tracing a service's route through its landmarks, e.g.
-    "Pasir Ris Int → Tampines Stn → Kallang Stn → ...". Follows the outbound
-    direction only, and thins long routes down to a readable handful of landmarks."""
-    landmarks = _thin(landmark_stops(stops_for_service(service_no, outbound_only=True)), MAX_LANDMARKS)
+    "Pasir Ris Int → Tampines Stn → Kallang Stn → ...". Follows a single direction -
+    the return one if `reverse` is set - and thins long routes down to a readable
+    handful of landmarks."""
+    stops = stops_for_service(service_no, single_direction=True, reverse=reverse)
+    landmarks = _thin(landmark_stops(stops), MAX_LANDMARKS)
     if len(landmarks) < 2:
         return None
     return "🗺 " + " → ".join(landmarks)
 
 
-def build_bus_stops_view(chat_id: int, service_no: str, page: int):
+def build_bus_stops_view(chat_id: int, service_no: str, page: int, reverse: bool = False):
     """Paginated bus stop keyboard for a single service, shared by /favbuses and by
     sending a bus number in chat. The user's favourited stops along the route get
     pages of their own, before (or after, per their favourite preference) the pages
     listing the full route - in which those same stops still appear, in the order the
-    bus travels."""
-    stops = stops_for_service(service_no)
+    bus travels. `reverse` turns the route around, listing the stops (and describing the
+    route) the other way down the line."""
+    stops = stops_for_service(service_no, reverse=reverse)
     fav_codes = {f["code"] for f in list_favourites(chat_id)}
     favourite_stops = [stop for stop in stops if stop["code"] in fav_codes]
 
@@ -129,7 +135,11 @@ def build_bus_stops_view(chat_id: int, service_no: str, page: int):
         if section == "favourites"
         else f"Stops served by {service_no}"
     )
-    detail_lines = [line for line in (route_summary_line(service_no), route_landmarks_line(service_no)) if line]
+    detail_lines = [
+        line
+        for line in (route_summary_line(service_no, reverse), route_landmarks_line(service_no, reverse))
+        if line
+    ]
     rich = {
         # Blank lines between blocks: a single newline collapses into the previous
         # paragraph in Telegram's rich-message Markdown.
@@ -145,5 +155,20 @@ def build_bus_stops_view(chat_id: int, service_no: str, page: int):
         ]
         for stop in page_items
     ]
-    buttons += nav_row("bus_stops", {"service_no": service_no}, page, total_pages)
+    nav_payload = {"service_no": service_no, **({"reverse": True} if reverse else {})}
+    buttons += nav_row("bus_stops", nav_payload, page, total_pages)
+    # Only worth offering on a service that has another direction to swap to, and the swap
+    # restarts at page 1: the two directions don't line up page for page.
+    if route_terminals(service_no).get("directions", 1) > 1:
+        buttons.append(
+            [
+                Button.inline(
+                    "↔️ Swap Directions",
+                    make_button(
+                        "bus_stops_swap",
+                        {"service_no": service_no, "page": 0, **({} if reverse else {"reverse": True})},
+                    ),
+                )
+            ]
+        )
     return rich, buttons, stops
