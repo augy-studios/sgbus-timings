@@ -84,8 +84,13 @@ service visits, as a paginated list of buttons. Tapping a stop opens a timings
 view filtered to just that service, with a **💯 All services** button to widen
 it back out to the whole stop, and a **🔙 Back to bus stop selection** button
 returning to the stop list - on the same page, and in the same direction, that
-the stop was tapped from. Refreshing or favouriting from that view keeps both
-buttons, so the way back survives.
+the stop was tapped from.
+
+Widening the view doesn't throw the first button away: it stays put and turns
+into **🔼 Collapse view**, dropping back to just the one service, so the two
+readings of the stop are a tap apart either way. Refreshing or favouriting keeps
+whichever of the two you're looking at, along with the way back to the stop
+list.
 
 Above the buttons, the message names where the service starts and ends: either
 `🚏 Origin → Destination` (with `(and back)` appended if it runs the reverse

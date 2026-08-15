@@ -38,6 +38,7 @@ def register_callbacks(client):
                     user_id,
                     inline_only=inline_only,
                     service_no=payload.get("service_no"),
+                    expanded=payload.get("expanded", False),
                     stops_page=payload.get("page", 0),
                     stops_reverse=payload.get("reverse", False),
                 )
@@ -54,6 +55,7 @@ def register_callbacks(client):
                     payload["code"],
                     user_id,
                     service_no=payload.get("service_no"),
+                    expanded=payload.get("expanded", False),
                     stops_page=payload.get("page", 0),
                     stops_reverse=payload.get("reverse", False),
                 )

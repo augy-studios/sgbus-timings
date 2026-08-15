@@ -15,6 +15,7 @@ async def build_stop_view(
     *,
     inline_only: bool = False,
     service_no: "str | None" = None,
+    expanded: bool = False,
     stops_page: int = 0,
     stops_reverse: bool = False,
 ):
@@ -28,17 +29,20 @@ async def build_stop_view(
     their own), which get just a refresh button - no favourite toggle, since
     whoever taps it may not be the user who ran the query.
     Pass `service_no` to restrict the view to just that one bus service (used
-    by the /favbuses drill-down), which adds a "back to all services" button
-    and a button back to that service's stop list. `stops_page`/`stops_reverse`
-    say which page of that list, and which direction of the route, the user came
-    from, so going back returns them exactly where they were.
+    by the /favbuses drill-down), which adds a button widening the view out to
+    every service at the stop and a button back to that service's stop list.
+    `expanded=True` is that widened view: the service is still the one the user
+    came in on, so the button reads the other way round and collapses back to it.
+    `stops_page`/`stops_reverse` say which page of the stop list, and which
+    direction of the route, the user came from, so going back returns them
+    exactly where they were.
     """
     stop = get_bus_stop_by_code(code)
     if not stop:
         return None
 
     arrivals = await fetch_arrivals(code)
-    if service_no:
+    if service_no and not expanded:
         arrivals = {**arrivals, "services": [s for s in arrivals["services"] if s["serviceNo"] == service_no]}
 
     favourite = is_favourite(chat_id, code) if chat_id is not None else False
@@ -59,16 +63,29 @@ async def build_stop_view(
             if service_no
             else {}
         )
+        # Whether the view is widened is part of where the user is, so refreshing or
+        # favouriting leaves them looking at the same thing.
+        here = {**from_stops, **({"expanded": True} if expanded else {})}
         row = [
             Button.inline(
                 "⭐ Remove favourite" if favourite else "⭐ Add favourite",
-                make_button("fav", {"code": code, "name": stop["name"], **from_stops}),
+                make_button("fav", {"code": code, "name": stop["name"], **here}),
             ),
-            Button.inline("🔄 Refresh", make_button("refresh", {"code": code, **from_stops})),
+            Button.inline("🔄 Refresh", make_button("refresh", {"code": code, **here})),
         ]
         buttons = [row]
         if service_no:
-            buttons.append([Button.inline("💯 All services", make_button("stop", {"code": code}))])
+            buttons.append(
+                [
+                    Button.inline(
+                        "🔼 Collapse view" if expanded else "💯 All services",
+                        # The same button both ways round, toggling the view it opens.
+                        make_button(
+                            "stop", {"code": code, **from_stops, **({} if expanded else {"expanded": True})}
+                        ),
+                    )
+                ]
+            )
             buttons.append(
                 [Button.inline("🔙 Back to bus stop selection", make_button("bus_stops", from_stops))]
             )
