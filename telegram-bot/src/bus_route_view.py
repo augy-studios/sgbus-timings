@@ -18,9 +18,13 @@ from .pagination import nav_row, paginate, paginate_sections
 _LANDMARK_RE = re.compile(r"\b(?:Int|Ter|Stn|Hosp)\b", re.IGNORECASE)
 # "Stn" is also how LTA abbreviates stations that aren't rail stations at all
 # ("Airport Police Stn", "Central Fire Stn") - those are stripped out before the
-# landmark check, so they never make the list.
+# landmark check, so they never make the list. Petrol kiosks are usually named by
+# their brand rather than as a "Petrol Stn" ("Caltex Stn", "Opp Shell Stn"), so the
+# brands are listed out alongside the generic kinds.
+_PETROL_BRANDS = r"caltex|shell|esso|spc|sinopec|mobil"
 _NOT_A_STATION_RE = re.compile(
-    r"\b(?:police|fire|pumping|power|petrol|radio|coast\s*guard|civil\s*defence|bus)\s+stn\b",
+    r"\b(?:police|fire|pumping|power|petrol|radio|coast\s*guard|civil\s*defence|bus"
+    rf"|{_PETROL_BRANDS})\s+stn\b",
     re.IGNORECASE,
 )
 # "Hosp" likewise turns up in road names - "Aft Hosp Dr" is Hospital Drive, not a hospital.

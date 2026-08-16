@@ -160,8 +160,9 @@ can see where the bus actually goes at a glance:
 Landmarks are the interchanges, bus terminals, MRT/LRT stations and hospitals
 along the direction being shown, in travel order - stops that only look the part
 are left out, whether they're a `Stn` that isn't a rail station (`Airport Police
-Stn`, `Central Fire Stn`, pumping stations and the like) or a road named after
-one (`Aft Hosp Dr` is Hospital Drive, not a hospital). Each one is named as the
+Stn`, `Central Fire Stn`, pumping stations and the like), a petrol kiosk named
+after its brand (`Caltex Stn`, `Opp Shell Stn`, `Bef Esso Stn`), or a road named
+after a landmark (`Aft Hosp Dr` is Hospital Drive, not a hospital). Each one is named as the
 landmark rather than as the stop
 that serves it, so the side of the road and the exit are trimmed off
 (`Opp Tampines Stn/Int` and `Tampines Stn Exit B` both read as `Tampines Stn`).
