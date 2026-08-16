@@ -4,6 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from .bus_routes import first_last_bus_times
+from .favourite_prefs import pin_favourites
 
 _MD_SPECIAL = re.compile(r"([\\*_~`|\[\]#>=])")
 
@@ -122,13 +123,7 @@ def _build_service_table(svc, stop) -> "str | None":
 
 
 def _pin_favourite_services(services, favourite_service_nos, pin_position) -> list:
-    """Stable-partitions services into favourited/non-favourited groups, ordering
-    per pin_position ('top' or 'bottom'), preserving each group's existing order."""
-    if not favourite_service_nos:
-        return services
-    fav = [s for s in services if s["serviceNo"] in favourite_service_nos]
-    rest = [s for s in services if s["serviceNo"] not in favourite_service_nos]
-    return [*fav, *rest] if pin_position != "bottom" else [*rest, *fav]
+    return pin_favourites(services, favourite_service_nos, pin_position, key=lambda s: s["serviceNo"])
 
 
 def format_arrival_message(stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top") -> dict:

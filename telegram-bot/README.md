@@ -12,7 +12,12 @@ headings and tables, not a Markdown approximation.
 - Look up live bus arrival timings for any bus stop, by number or by name.
 - Send a bus number to browse every stop along its route, with your
   favourited stops given pages of their own up front.
-- Find the bus stops nearest to your current location.
+- Narrow any stop's timings down to a single bus, picked from a grid of every
+  service that calls there.
+- Follow a service on from where you are - every stop it still calls at,
+  through to the terminus.
+- Find the bus stops nearest to your current location, by sending your location
+  or with `/nearme`.
 - Save bus stops as favourites for quick access, from any chat.
 - Save bus numbers as favourites too - they're pinned and starred wherever
   they show up in a stop's timings, and you can browse straight to the stops
@@ -36,7 +41,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | Command | What it does |
 |---|---|
 | `/start` | Shows what the bot does, all commands, and buttons for the web app and donations |
-| `/nearme` | Asks for your location, then lists the nearest bus stops as buttons |
+| `/nearme` | Asks for your location, then lists the nearest bus stops as buttons - sending a location does the same thing without the command |
 | `/favstops` | Lists your favourite bus stops as buttons |
 | `/unfavstop` | Lists your favourite bus stops as paginated buttons to remove |
 | `/addfavbus` | Starts a flow to add bus numbers to your favourites - send numbers as text, `/done` to finish |
@@ -112,6 +117,12 @@ through to the name search.
 If there's exactly one match, the bot shows its live timings immediately. If
 there's more than one, tap the bus stop you meant from the list.
 
+Picking one off that list isn't a one-way door: the timings that open carry a
+**🔙 Back** button as the very last row, which puts the same list of matches
+back on screen to pick from again. The list is rebuilt against the current
+cache each time, so names and favourite stars are up to date, and the way back
+survives refreshing, favouriting, or narrowing the view down to a single bus.
+
 ### Bus routes
 
 Sending a bus number - or tapping a bus in `/favbuses` - shows the stops that
@@ -126,6 +137,12 @@ into **🔼 Collapse view**, dropping back to just the one service, so the two
 readings of the stop are a tap apart either way. Refreshing or favouriting keeps
 whichever of the two you're looking at, along with the way back to the stop
 list.
+
+While the view is down to the one service, it also offers **🛣 View route from
+here** - the rest of that service's run onward from the stop you're at (see
+[Following the route on from here](#following-the-route-on-from-here)). Where
+the stop list covers the route end to end, that one covers only what's still
+ahead of you.
 
 Above the buttons, the message names where the service starts and ends: either
 `🚏 Origin → Destination` (with `(and back)` appended if it runs the reverse
@@ -179,6 +196,43 @@ Any bus service in the table that's in your favourite buses is starred (⭐)
 and pinned to the top or bottom of the list, per your `/favouritepref`
 setting.
 
+Underneath those two sit whichever of the buttons below apply to the view you're
+looking at, with any **🔙 Back** always last, so the way out of a screen is
+always in the same place.
+
+#### Picking a single bus at the stop
+
+Unless you arrived from a bus number - in which case the view is already down to
+one service, and **🔙 Back to bus stop selection** is the button on offer - the
+message carries a **🚌 Select Bus Number** button, in the expanded view as well
+as the collapsed one. Tapping it swaps the keyboard for a grid of every service
+that calls at the stop, four across and five rows deep, so even an interchange
+is a page or two rather than a long scroll through them. Favourite buses are
+starred and pinned to the top or bottom per `/favouritepref`, the same way they
+are in the timings themselves.
+
+Tap one and the message comes back showing only that service's timings, with
+**Select Bus Number** still there to pick a different one; **🔙 Back to
+timings** leaves the stop as it was. The grid is built from the cached route
+data rather than from live arrivals, so a service that isn't running right now
+is still there to pick.
+
+#### Following the route on from here
+
+Any timings view narrowed to a single bus carries a **🛣 View route from here**
+button - however you got there, whether from a bus number, from **Select Bus
+Number**, or from another route list. It lists, as paginated buttons, every stop
+that service still calls at: the one you're standing at first, then the rest of
+the run through to the terminus, under a heading counting what's left
+(`🏁 27 stops to go, ending at Changi Village Ter (99009)`).
+
+It follows whichever direction you're already looking at, falling back to the
+other one for a stop that direction doesn't serve. Favourited stops are starred,
+tapping any stop down the line opens its timings for the same service - so you
+can walk the route ahead a stop at a time - and **🔙 Back to timings** returns
+to where you started. At a terminus there's nothing ahead, and the button says
+so rather than opening an empty list.
+
 ### Favourite buses
 
 Send `/addfavbus`, then type bus numbers (space or comma separated, across
@@ -201,7 +255,12 @@ button, so your coordinates never go through free text). The bot then shows
 up to 8 nearby bus stops as buttons, each labelled with the stop name,
 number, and distance in metres, sorted by distance within your `/favouritepref`
 pin position (favourites first by default, or last if you've set it to
-"bottom").
+"bottom"). As with a name search, the timings a stop opens carry a **🔙 Back**
+button returning to the list.
+
+The command is only ever a shortcut to that share button - any location sent to
+the bot is answered with the stops near it, whether `/nearme` asked for it or
+not - so `/nearme` says as much when you use it.
 
 ### Routines
 
@@ -326,8 +385,9 @@ telegram-bot/
     format.py              rich-message Markdown formatting (headings + tables)
     reply.py               rich-message send/edit helpers with plain-text fallback
     stop_view.py           builds a stop's timings message + keyboard
-    list_view.py           builds a list-of-stops keyboard (with favourite pinning)
-    bus_route_view.py      builds a service's paginated stop keyboard (favourite stops paged first)
+    list_view.py           builds a list-of-stops keyboard (with favourite pinning), and the context a stop view goes back by
+    stop_buses_view.py     builds the grid of every bus number serving a stop
+    bus_route_view.py      builds a service's paginated stop keyboards: the whole route, or the rest of the run from one stop
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,

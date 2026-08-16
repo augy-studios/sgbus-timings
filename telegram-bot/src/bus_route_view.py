@@ -2,14 +2,14 @@ import re
 
 from telethon import Button
 
-from .bus_routes import route_terminals, stops_for_service
+from .bus_routes import route_terminals, stops_for_service, stops_onward_from
 from .bus_services import service_terminals
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .favourite_prefs import get_pref
 from .favourites import list_favourites
 from .format import escape_md, stop_button_label
-from .pagination import nav_row, paginate_sections
+from .pagination import nav_row, paginate, paginate_sections
 
 
 # Interchanges, bus terminals, MRT/LRT stations and hospitals, as LTA abbreviates them
@@ -174,4 +174,59 @@ def build_bus_stops_view(chat_id: int, service_no: str, page: int, reverse: bool
                 )
             ]
         )
+    return rich, buttons, stops
+
+
+def build_route_onward_view(chat_id: int, service_no: str, code: str, page: int, reverse: bool, origin: dict):
+    """Paginated keyboard of the rest of a service's run from a given stop: that stop first,
+    then every stop it still calls at, ending at the terminus. Follows the direction the
+    user is already looking at, falling back to the other one for a stop that direction
+    doesn't serve. Tapping a stop opens its timings for this same service.
+    `origin` is the timings view this was opened from, which the back button returns to.
+    Returns (rich, buttons, stops)."""
+    stops, reverse = stops_onward_from(service_no, code, reverse)
+    if not stops:
+        return None
+
+    fav_codes = {f["code"] for f in list_favourites(chat_id)}
+    page_items, page, total_pages = paginate(stops, page)
+
+    heading = f"{service_no} from {stops[0]['name']} ({stops[0]['code']})"
+    detail_lines = [
+        line
+        for line in (
+            f"🏁 {len(stops) - 1} stops to go, ending at {_terminal_label(stops[-1]['code'])}",
+            route_summary_line(service_no, reverse),
+        )
+        if line
+    ]
+    rich = {
+        # Blank lines between blocks: a single newline collapses into the previous
+        # paragraph in Telegram's rich-message Markdown.
+        "markdown": "\n\n".join([f"# {escape_md(heading)}", *(escape_md(line) for line in detail_lines)]),
+        "fallback": "\n".join([heading, *detail_lines]),
+    }
+
+    # Stops down the line are picked at the stop rather than off a service's full stop
+    # list, so they open the same way the current view did - and keep the same way back.
+    back = origin.get("back")
+    buttons = [
+        [
+            Button.inline(
+                stop_button_label(stop, is_favourite=stop["code"] in fav_codes),
+                make_button(
+                    "stop",
+                    {"code": stop["code"], "bus_no": service_no, **({"back": back} if back else {})},
+                ),
+            )
+        ]
+        for stop in page_items
+    ]
+    buttons += nav_row(
+        "route_from",
+        {"service_no": service_no, "code": code, **({"reverse": True} if reverse else {}), "from": origin},
+        page,
+        total_pages,
+    )
+    buttons.append([Button.inline("🔙 Back to timings", make_button("stop", origin))])
     return rich, buttons, stops

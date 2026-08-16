@@ -1,12 +1,14 @@
 from telethon import events, types
 
-from ..bus_route_view import build_bus_stops_view
+from ..bus_route_view import build_bus_stops_view, build_route_onward_view
 from ..buttons import resolve_button
 from ..favourite_buses import remove_favourite_bus
 from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
+from ..list_view import rebuild_stop_list_view
 from ..reply import edit_rich_message
 from ..routines import delete_routine
+from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
 from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
 from .addroutine import finalize_stop
@@ -16,6 +18,21 @@ from .routines import build_routine_detail_view, build_routine_edit_menu_view, b
 from .settings import build_settings_view, start_edit_birthday, start_edit_name
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
+
+
+def _stop_view_args(payload: dict) -> dict:
+    """A stop view's own state, as every button that reopens it carries it: which service
+    the view is narrowed to and which way the user got there, whether it's been widened
+    out to all services, where in the service's stop list they came from, and the list of
+    stops they picked this one off."""
+    return {
+        "service_no": payload.get("service_no"),
+        "picked_service_no": payload.get("bus_no"),
+        "expanded": payload.get("expanded", False),
+        "stops_page": payload.get("page", 0),
+        "stops_reverse": payload.get("reverse", False),
+        "back": payload.get("back"),
+    }
 
 
 def register_callbacks(client):
@@ -34,13 +51,7 @@ def register_callbacks(client):
         try:
             if action in ("stop", "refresh"):
                 view = await build_stop_view(
-                    payload["code"],
-                    user_id,
-                    inline_only=inline_only,
-                    service_no=payload.get("service_no"),
-                    expanded=payload.get("expanded", False),
-                    stops_page=payload.get("page", 0),
-                    stops_reverse=payload.get("reverse", False),
+                    payload["code"], user_id, inline_only=inline_only, **_stop_view_args(payload)
                 )
                 if not view:
                     await event.answer("That bus stop could not be found.")
@@ -51,17 +62,51 @@ def register_callbacks(client):
 
             if action == "fav":
                 now_fav = toggle_favourite(user_id, payload["code"], payload["name"])
-                view = await build_stop_view(
-                    payload["code"],
-                    user_id,
-                    service_no=payload.get("service_no"),
-                    expanded=payload.get("expanded", False),
-                    stops_page=payload.get("page", 0),
-                    stops_reverse=payload.get("reverse", False),
-                )
+                view = await build_stop_view(payload["code"], user_id, **_stop_view_args(payload))
                 if view:
                     await edit_rich_message(client, event, view["rich"], view["buttons"])
                 await event.answer("Added to favourites" if now_fav else "Removed from favourites")
+                return
+
+            if action == "stop_list":
+                rich, buttons = rebuild_stop_list_view(user_id, payload)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "stop_buses":
+                view = build_stop_buses_view(
+                    user_id, payload["code"], payload.get("page", 0), payload["from"]
+                )
+                if not view:
+                    await event.answer("That bus stop could not be found.")
+                    return
+                rich, buttons, services = view
+                if not services:
+                    await event.answer("No bus services are listed for that stop.")
+                    return
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "route_from":
+                view = build_route_onward_view(
+                    user_id,
+                    payload["service_no"],
+                    payload["code"],
+                    payload.get("page", 0),
+                    payload.get("reverse", False),
+                    payload["from"],
+                )
+                if not view:
+                    await event.answer(f"No route is cached for {payload['service_no']} at that stop.")
+                    return
+                rich, buttons, stops = view
+                if len(stops) < 2:
+                    await event.answer(f"This is the last stop on {payload['service_no']}'s route.")
+                    return
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
                 return
 
             if action == "favbus_page":
@@ -81,13 +126,7 @@ def register_callbacks(client):
                 return
 
             if action in ("bus_stop_view", "favbus_stop_view"):
-                view = await build_stop_view(
-                    payload["code"],
-                    user_id,
-                    service_no=payload["service_no"],
-                    stops_page=payload.get("page", 0),
-                    stops_reverse=payload.get("reverse", False),
-                )
+                view = await build_stop_view(payload["code"], user_id, **_stop_view_args(payload))
                 if not view:
                     await event.answer("That bus stop could not be found.")
                     return

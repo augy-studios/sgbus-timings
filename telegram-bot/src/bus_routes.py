@@ -1,5 +1,5 @@
 from .db import db
-from .lta import fetch_all_bus_routes
+from .lta import _natural_sort_key, fetch_all_bus_routes
 
 
 async def refresh_bus_routes() -> int:
@@ -98,3 +98,27 @@ def stops_for_service(service_no: str, single_direction: bool = False, reverse: 
             seen.add(stop["code"])
             stops.append(stop)
     return stops
+
+
+def services_for_stop(stop_code: str) -> list:
+    """Every bus service that visits a given stop, in bus-number order. Comes from the
+    cached route list rather than live arrivals, so a service that isn't running right
+    now is still listed."""
+    rows = db.execute(
+        "SELECT DISTINCT service_no FROM bus_routes WHERE stop_code = ?", (stop_code,)
+    ).fetchall()
+    return sorted((row["service_no"] for row in rows), key=_natural_sort_key)
+
+
+def stops_onward_from(service_no: str, stop_code: str, reverse: bool = False) -> tuple:
+    """The stops a service still has to call at from a given stop, that stop first and its
+    terminus last, following a single direction. `reverse` picks the return direction, as
+    it does everywhere else; if the stop isn't on that direction's run the other one is
+    used instead, since a stop served one way only would otherwise come back empty.
+    Returns (stops, reverse) - the direction actually used, so callers can carry it on."""
+    for direction in (reverse, not reverse):
+        stops = stops_for_service(service_no, single_direction=True, reverse=direction)
+        codes = [stop["code"] for stop in stops]
+        if stop_code in codes:
+            return stops[codes.index(stop_code) :], direction
+    return [], reverse
