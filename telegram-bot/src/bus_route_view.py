@@ -102,16 +102,20 @@ def _thin(items: list, limit: int) -> list:
     return [items[round(i * step)] for i in range(limit)]
 
 
-def route_landmarks_line(service_no: str, reverse: bool = False) -> "str | None":
-    """One line tracing a service's route through its landmarks, e.g.
-    "Pasir Ris Int → Tampines Stn → Kallang Stn → ...". Follows a single direction -
-    the return one if `reverse` is set - and thins long routes down to a readable
-    handful of landmarks."""
-    stops = stops_for_service(service_no, single_direction=True, reverse=reverse)
+def landmarks_line(stops: list) -> "str | None":
+    """One line tracing a run of stops through its landmarks, e.g.
+    "Pasir Ris Int → Tampines Stn → Kallang Stn → ...", thinned down to a readable
+    handful. None when there aren't two landmarks to trace between."""
     landmarks = _thin(landmark_stops(stops), MAX_LANDMARKS)
     if len(landmarks) < 2:
         return None
     return "🗺 " + " → ".join(landmarks)
+
+
+def route_landmarks_line(service_no: str, reverse: bool = False) -> "str | None":
+    """`landmarks_line` for a service's whole route, following a single direction -
+    the return one if `reverse` is set."""
+    return landmarks_line(stops_for_service(service_no, single_direction=True, reverse=reverse))
 
 
 def build_bus_stops_view(chat_id: int, service_no: str, page: int, reverse: bool = False):
@@ -192,11 +196,16 @@ def build_route_onward_view(chat_id: int, service_no: str, code: str, page: int,
     page_items, page, total_pages = paginate(stops, page)
 
     heading = f"{service_no} from {stops[0]['name']} ({stops[0]['code']})"
+    to_go = len(stops) - 1
     detail_lines = [
         line
         for line in (
-            f"🏁 {len(stops) - 1} stops to go, ending at {_terminal_label(stops[-1]['code'])}",
+            f"🏁 {to_go} stop{'' if to_go == 1 else 's'} to go, "
+            f"ending at {_terminal_label(stops[-1]['code'])}",
             route_summary_line(service_no, reverse),
+            # Traced over the stops still ahead rather than the whole route, so it
+            # reads as the journey left to make from here.
+            landmarks_line(stops),
         )
         if line
     ]

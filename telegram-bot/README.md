@@ -226,6 +226,12 @@ that service still calls at: the one you're standing at first, then the rest of
 the run through to the terminus, under a heading counting what's left
 (`🏁 27 stops to go, ending at Changi Village Ter (99009)`).
 
+Above the buttons sit the same `🚏` terminals and `🗺` landmarks lines a bus
+number search shows (see [Bus routes](#bus-routes)) - except the landmarks are
+traced over the stops still ahead rather than the whole route, so the line reads
+as the journey you have left to make. As anywhere else, it's dropped when there
+aren't two landmarks left to trace between.
+
 It follows whichever direction you're already looking at, falling back to the
 other one for a stop that direction doesn't serve. Favourited stops are starred,
 tapping any stop down the line opens its timings for the same service - so you
