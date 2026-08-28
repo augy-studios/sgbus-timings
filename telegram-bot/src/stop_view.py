@@ -97,8 +97,13 @@ async def build_stop_view(
             [
                 Button.inline(
                     "🔼 Collapse view" if expanded else "💯 All services",
-                    # The same button both ways round, toggling the view it opens.
-                    make_button("stop", {**origin, **({} if expanded else {"expanded": True})}),
+                    # The same button both ways round, toggling the view it opens. `origin`
+                    # already carries the current state, so collapsing has to drop the
+                    # `expanded` flag it holds rather than just not adding one.
+                    make_button(
+                        "stop",
+                        {k: v for k, v in origin.items() if k != "expanded"} if expanded else {**origin, "expanded": True},
+                    ),
                 )
             ]
         )
