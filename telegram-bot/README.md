@@ -47,6 +47,8 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/addfavbus` | Starts a flow to add bus numbers to your favourites - send numbers as text, `/done` to finish |
 | `/favbuses` | Lists your favourite bus numbers as paginated buttons; tap one to browse the stops it serves |
 | `/unfavbus` | Lists your favourite bus numbers as paginated buttons to remove |
+| `/newroute` | Starts a flow to build a route between two bus stops, listing every bus that runs the whole way |
+| `/favroutes` | Lists your favourite routes as paginated buttons; tap one to reopen it |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
@@ -239,6 +241,38 @@ tapping any stop down the line opens its timings for the same service - so you
 can walk the route ahead a stop at a time - and **🔙 Back to timings** returns
 to where you started. At a terminus there's nothing ahead, and the button says
 so rather than opening an empty list.
+
+### Routes
+
+`/newroute` answers "which bus gets me from here to there". It posts a panel with
+both ends of the route blank and a **🅰 Set start** / **🅱 Set end** pair of
+buttons, and starts out waiting for the start - so you can reply straight away
+with a bus stop number or part of a name, exactly as you would search for one.
+A name matching several stops brings up the same **Did you mean:** buttons a
+search does. Answer once and the panel comes back asking for the end; answer
+again and the route is complete. The two buttons stay put afterwards, so either
+end can be changed later, and `/cancel` stops the flow at any point.
+
+Each answer arrives as a **new** panel, and the one it replaces has its buttons
+taken away, so there's never a question about which panel is the live one.
+
+A completed route lists every bus that runs the whole way without a change -
+services calling at both stops on the same direction of their route, the start
+before the end - as a grid four across, favourites starred and pinned per
+`/favouritepref` like every other bus grid. Tapping one opens the **start**
+stop's timings narrowed to that service, with all the buttons a single-bus
+timings view normally carries (see [Viewing timings](#viewing-timings)).
+
+Because a route runs one way, **↔️ Swap directions** is a different question
+rather than a different view of the same one, and it re-runs the search from
+scratch. A pair of stops with no single bus between them says so instead of
+showing an empty grid.
+
+**⭐ Add favourite** stars the route, and `/favroutes` lists what you've starred
+as paginated buttons labelled `Start → End`; tapping one reopens its panel, with
+a **🔙 Back to favourite routes** button returning to the list. A route and its
+reverse are two separate favourites. Favourite routes have no pin preference of
+their own - `/favouritepref` covers buses and stops only.
 
 ### Favourite buses
 

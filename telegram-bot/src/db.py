@@ -56,6 +56,16 @@ db.executescript(
         PRIMARY KEY (service_no, direction, stop_code)
     );
 
+    CREATE TABLE IF NOT EXISTS favourite_routes (
+        chat_id INTEGER NOT NULL,
+        start_code TEXT NOT NULL,
+        start_name TEXT NOT NULL,
+        end_code TEXT NOT NULL,
+        end_name TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, start_code, end_code)
+    );
+
     CREATE TABLE IF NOT EXISTS favourite_prefs (
         chat_id INTEGER NOT NULL,
         kind TEXT NOT NULL,
@@ -96,6 +106,15 @@ db.executescript(
         hour INTEGER,
         minute INTEGER,
         days TEXT,
+        updated_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS route_drafts (
+        chat_id INTEGER PRIMARY KEY,
+        field TEXT,
+        start_code TEXT,
+        end_code TEXT,
+        panel_msg_id INTEGER,
         updated_at INTEGER NOT NULL
     );
 

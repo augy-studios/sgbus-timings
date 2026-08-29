@@ -14,6 +14,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Send a bus stop number (5 digits) or name to search for it directly
 - Send a bus number (e.g. 22 or 971E) to browse every stop along its route
 - Just send your location (no command needed) to find the nearest bus stops
+- Build a route between two bus stops to see every bus that runs the whole way without a change
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
 - Choose whether favourites pin to the top or bottom of the list
 - Set up routines to get a bus stop's timings sent to you automatically at a time you choose
@@ -28,6 +29,8 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /addfavbus - add bus numbers to your favourites
 - /favbuses - view your favourite buses and jump to their stops
 - /unfavbus - remove favourite buses
+- /newroute - pick a start and end bus stop to see the buses that run between them
+- /favroutes - view your favourite routes
 - /favouritepref - choose whether favourites pin to the top or bottom
 - /addroutine - set up a routine that sends you a bus stop's timings on a schedule
 - /routines - view, edit, or delete your routines

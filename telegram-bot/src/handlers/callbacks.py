@@ -7,6 +7,8 @@ from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
 from ..list_view import rebuild_stop_list_view
 from ..reply import edit_rich_message
+from ..route_drafts import panel_awaiting, retarget_route_draft
+from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
 from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
@@ -14,6 +16,9 @@ from ..user_settings import clear_birthday, get_notifications_enabled, set_notif
 from .addroutine import finalize_stop
 from .favbuses import build_favbuses_view
 from .favouritepref import build_favouritepref_view
+from .favroutes import build_favroutes_view
+from .newroute import apply_stop as apply_route_stop
+from .newroute import arm_route_field
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .settings import build_settings_view, start_edit_birthday, start_edit_name
 from .unfavbus import build_unfavbus_view
@@ -106,6 +111,75 @@ def register_callbacks(client):
                     await event.answer(f"This is the last stop on {payload['service_no']}'s route.")
                     return
                 await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "route_view":
+                start_code, end_code = payload.get("start"), payload.get("end")
+                rich, buttons = build_route_view(
+                    user_id,
+                    start_code,
+                    end_code,
+                    payload.get("page", 0),
+                    awaiting=panel_awaiting(user_id, event.query.msg_id),
+                    from_fav=payload.get("from_fav"),
+                )
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "route_set":
+                await arm_route_field(client, event, user_id, payload)
+                await event.answer()
+                return
+
+            if action == "route_stop_pick":
+                await apply_route_stop(client, user_id, payload["code"])
+                await event.answer()
+                return
+
+            if action == "route_swap":
+                start_code, end_code = payload.get("end"), payload.get("start")
+                # The panel keeps its place in the flow, now pointed the other way, so a
+                # stop typed after a swap lands in the route on screen.
+                retarget_route_draft(user_id, event.query.msg_id, start_code, end_code)
+                rich, buttons = build_route_view(
+                    user_id,
+                    start_code,
+                    end_code,
+                    awaiting=panel_awaiting(user_id, event.query.msg_id),
+                    from_fav=payload.get("from_fav"),
+                )
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Showing the other direction")
+                return
+
+            if action == "route_fav":
+                start_code, end_code = payload["start"], payload["end"]
+                now_fav = toggle_route_favourite(user_id, start_code, end_code)
+                rich, buttons = build_route_view(
+                    user_id,
+                    start_code,
+                    end_code,
+                    payload.get("page", 0),
+                    awaiting=panel_awaiting(user_id, event.query.msg_id),
+                    from_fav=payload.get("from_fav"),
+                )
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Route added to favourites" if now_fav else "Route removed from favourites")
+                return
+
+            if action == "favroute_page":
+                rich, buttons, routes = build_favroutes_view(user_id, payload.get("page", 0))
+                if not routes:
+                    await edit_rich_message(
+                        client,
+                        event,
+                        {"markdown": "No favourite routes left.", "fallback": "No favourite routes left."},
+                        None,
+                    )
+                else:
+                    await edit_rich_message(client, event, rich, buttons)
                 await event.answer()
                 return
 

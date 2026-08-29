@@ -110,6 +110,27 @@ def services_for_stop(stop_code: str) -> list:
     return sorted((row["service_no"] for row in rows), key=_natural_sort_key)
 
 
+def direct_services_between(start_code: str, end_code: str) -> list:
+    """Every bus that gets from one stop to another without a change: it calls at both
+    stops on the same direction of its route, and calls at the start before the end.
+    Ordered by bus number. A pair of stops no single bus links comes back empty - and so
+    does a pair in the wrong order, which is what makes swapping the two ends meaningful."""
+    rows = db.execute(
+        """
+        SELECT DISTINCT boarding.service_no
+        FROM bus_routes AS boarding
+        JOIN bus_routes AS alighting
+          ON alighting.service_no = boarding.service_no
+         AND alighting.direction = boarding.direction
+        WHERE boarding.stop_code = ?
+          AND alighting.stop_code = ?
+          AND boarding.stop_sequence < alighting.stop_sequence
+        """,
+        (start_code, end_code),
+    ).fetchall()
+    return sorted((row["service_no"] for row in rows), key=_natural_sort_key)
+
+
 def stops_onward_from(service_no: str, stop_code: str, reverse: bool = False) -> tuple:
     """The stops a service still has to call at from a given stop, that stop first and its
     terminus last, following a single direction. `reverse` picks the return direction, as

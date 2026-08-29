@@ -15,10 +15,12 @@ from .handlers.addroutine import register_addroutine
 from .handlers.callbacks import register_callbacks
 from .handlers.favbuses import register_favbuses
 from .handlers.favouritepref import register_favouritepref
+from .handlers.favroutes import register_favroutes
 from .handlers.favstops import register_favstops
 from .handlers.flow_control import register_flow_control
 from .handlers.inline import register_inline
 from .handlers.nearme import register_nearme
+from .handlers.newroute import register_newroute
 from .handlers.routines import register_routines
 from .handlers.search import register_search
 from .handlers.setname import register_setname
@@ -57,6 +59,8 @@ async def main() -> None:
     register_settings(client)  # includes the flow text-interceptor, must come before register_search
     register_addroutine(client)  # includes the flow text-interceptor, must come before register_search
     register_routines(client)
+    register_newroute(client)  # includes the flow text-interceptor, must come before register_search
+    register_favroutes(client)
     register_flow_control(client)
     register_callbacks(client)
     register_inline(client)
