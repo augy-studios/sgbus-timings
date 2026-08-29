@@ -8,7 +8,7 @@ Real-time Singapore bus arrival timings, powered by [LTA DataMall](https://datam
 A Progressive Web App (PWA) for live bus arrival timings, with favourites, route maps, themes, and offline support. See [main-site/README.md](main-site/README.md) for full details.
 
 ### [Telegram Bot](telegram-bot/) — [@UwUsgbus_bot](https://t.me/UwUsgbus_bot)
-"Singapore Bus Timings" — a Telegram bot for looking up live arrivals, finding nearby stops, and saving favourites, right from a chat. See [telegram-bot/README.md](telegram-bot/README.md) for full details.
+"Singapore Bus Timings" — a Telegram bot for looking up live arrivals, finding nearby stops, working out which buses run between two stops, and saving favourites, right from a chat. See [telegram-bot/README.md](telegram-bot/README.md) for full details.
 
 ## License
 

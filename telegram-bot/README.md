@@ -16,6 +16,8 @@ headings and tables, not a Markdown approximation.
   service that calls there.
 - Follow a service on from where you are - every stop it still calls at,
   through to the terminus.
+- Build a route between two bus stops and see every bus that runs the whole
+  way without a change, then save the routes you take often.
 - Find the bus stops nearest to your current location, by sending your location
   or with `/nearme`.
 - Save bus stops as favourites for quick access, from any chat.
@@ -68,8 +70,9 @@ the right button jumps back to the first (**First ▶**).
 ### Multi-step flows
 
 Some commands ask a question and wait for the reply - `/addfavbus` collecting
-bus numbers, `/addroutine` walking through time, frequency and stop, `/settings`
-asking for a name or birthday. While one of those is in progress the chat is
+bus numbers, `/addroutine` walking through time, frequency and stop, `/newroute`
+asking for each end of a route, `/settings` asking for a name or birthday.
+While one of those is in progress the chat is
 "in a flow", and `/done` and `/cancel` apply to whichever one it happens to be:
 
 - `/cancel` always works. It stops the flow and clears anything it had half
@@ -413,10 +416,12 @@ telegram-bot/
     bus_routes.py          bus service <-> stop cache (which stops a service visits)
     favourites.py          per-user favourite bus stops (SQLite)
     favourite_buses.py     per-user favourite bus numbers (SQLite)
+    favourite_routes.py    per-user favourite stop-to-stop routes (SQLite)
     favourite_prefs.py     per-user pin position (top/bottom) per favourite kind
     flows.py               per-user multi-step flow state (SQLite) + the flow registry /done and /cancel work off
     routines.py             per-user scheduled routines (SQLite)
     routine_drafts.py       per-user in-progress routine wizard state (SQLite)
+    route_drafts.py         per-user in-progress route state: which end is being asked for, and the panel asking (SQLite)
     frequency.py            parses/formats routine frequency (daily/weekdays/weekends/day list)
     time_of_day.py          parses time-of-day input; time-of-day greeting text
     user_settings.py        per-user custom display name, birthday (+ wish tracking), notification preference (SQLite)
@@ -429,12 +434,13 @@ telegram-bot/
     list_view.py           builds a list-of-stops keyboard (with favourite pinning), and the context a stop view goes back by
     stop_buses_view.py     builds the grid of every bus number serving a stop
     bus_route_view.py      builds a service's paginated stop keyboards: the whole route, or the rest of the run from one stop
+    route_view.py          builds the route panel: both ends, and the buses running between them
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,
       favbuses.py, unfavbus.py, favouritepref.py, flow_control.py,
-      addroutine.py, routines.py, setname.py, settings.py,
-      search.py, callbacks.py, inline.py
+      addroutine.py, routines.py, newroute.py, favroutes.py,
+      setname.py, settings.py, search.py, callbacks.py, inline.py
   data/                   SQLite database + Telethon session file (gitignored)
 ```
 

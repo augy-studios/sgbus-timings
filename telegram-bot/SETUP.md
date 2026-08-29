@@ -26,8 +26,9 @@ These show on the bot's profile page.
    blurb shown before a user first starts a chat, e.g.:
    > Get live bus arrival timings for any bus stop in Singapore. Type a bus
    > stop number or name to search, share your location to find nearby
-   > stops, or save your regulars as favourites. Also works inline in any
-   > chat, just type @yourbotusername followed by a bus stop.
+   > stops, build a route between two stops to see which buses run it, or
+   > save your regulars as favourites. Also works inline in any chat, just
+   > type @yourbotusername followed by a bus stop.
 
 ### Bot profile picture (optional)
 
@@ -46,6 +47,8 @@ addfavbus - add bus numbers to your favourites
 favbuses - view your favourite buses
 unfavbus - remove favourite buses
 favouritepref - choose top or bottom pin position for favourites
+newroute - build a route between two bus stops and see the buses that run it
+favroutes - view your favourite routes
 addroutine - set up a routine that sends bus stop timings on a schedule
 routines - view, edit, or delete your routines
 setname - set the name the bot calls you by
@@ -234,3 +237,15 @@ python -m src.main
    **Delete** and confirm it's removed. Set a routine a minute or two in the
    future and confirm it fires once, with a time-of-day greeting using your
    `/setname` name (or Telegram first name if unset).
+11. Send `/newroute` and reply with a bus stop you know, then with a second one
+   a bus reaches from the first. Confirm each answer arrives as a **new** panel
+   and that the panel it replaced has lost its buttons. Confirm the finished
+   panel lists the buses that run the whole way, four to a row, and that
+   tapping one opens the **start** stop's timings for just that bus. Tap
+   **↔️ Swap directions** and confirm the list is rebuilt for the return trip
+   (a one-way service should drop out). Tap a setter button, reply with a
+   different stop, and confirm only that end changed.
+12. On a finished route, tap **⭐ Add favourite**, then send `/favroutes` and
+   confirm it's listed as `Start → End`. Tap it, confirm the panel reopens with
+   a **🔙 Back to favourite routes** button that returns to the list, and that
+   **⭐ Remove favourite** takes it off again.
