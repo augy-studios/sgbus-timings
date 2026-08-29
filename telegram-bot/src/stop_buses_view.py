@@ -37,14 +37,15 @@ def build_stop_buses_view(chat_id: int, code: str, page: int, origin: dict):
         "fallback": f"{heading}\n{detail}",
     }
 
-    # The list the user picked this stop from, if any, rides on to the timings view so the
-    # way back to it survives narrowing down to a single bus.
-    back = origin.get("back")
+    # The list the user picked this stop from and the route they picked the bus off, if
+    # either applies, ride on to the timings view so the ways back out of it survive
+    # narrowing down to a single bus.
+    carried = {key: origin[key] for key in ("back", "route") if origin.get(key)}
     buttons = [
         [
             Button.inline(
                 bus_button_label(service_no, is_favourite=service_no in fav_bus_nos),
-                make_button("stop", {"code": code, "bus_no": service_no, **({"back": back} if back else {})}),
+                make_button("stop", {"code": code, "bus_no": service_no, **carried}),
             )
             for service_no in page_items[row : row + GRID_COLUMNS]
         ]

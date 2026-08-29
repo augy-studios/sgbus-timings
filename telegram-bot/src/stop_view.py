@@ -20,6 +20,7 @@ async def build_stop_view(
     stops_page: int = 0,
     stops_reverse: bool = False,
     back: "dict | None" = None,
+    route: "dict | None" = None,
 ):
     """
     Builds the rich-message text + inline keyboard for a bus stop's live
@@ -43,6 +44,8 @@ async def build_stop_view(
     exactly where they were.
     `back` is the list of stops the user picked this one from (a name search or
     /nearme), carried along so they can go back and pick a different one.
+    `route` is the route panel this bus was picked off, carried the same way, so
+    another of the buses running that route is one tap away.
     """
     stop = get_bus_stop_by_code(code)
     if not stop:
@@ -79,6 +82,7 @@ async def build_stop_view(
         **({"bus_no": picked_service_no} if picked_service_no else {}),
         **({"expanded": True} if expanded else {}),
         **({"back": back} if back else {}),
+        **({"route": route} if route else {}),
     }
     # This exact view, as a payload - what the screens opened from here come back to.
     origin = {"code": code, **here}
@@ -132,6 +136,8 @@ async def build_stop_view(
                 )
             ]
         )
+    if route:
+        buttons.append([Button.inline("🔙 Back to route", make_button("route_view", route))])
     if back:
         buttons.append([Button.inline("🔙 Back", make_button("stop_list", back))])
 

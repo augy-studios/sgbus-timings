@@ -240,11 +240,12 @@ python -m src.main
 11. Send `/newroute` and reply with a bus stop you know, then with a second one
    a bus reaches from the first. Confirm each answer arrives as a **new** panel
    and that the panel it replaced has lost its buttons. Confirm the finished
-   panel lists the buses that run the whole way, four to a row, and that
-   tapping one opens the **start** stop's timings for just that bus. Tap
-   **↔️ Swap directions** and confirm the list is rebuilt for the return trip
-   (a one-way service should drop out). Tap a setter button, reply with a
-   different stop, and confirm only that end changed.
+   panel lists the buses linking the two stops, four to a row, and that setting
+   the same pair the other way round lists exactly the same buses. Tap a bus and
+   confirm it opens the **start** stop's timings for just that service, with a
+   **🔙 Back to route** button returning to the panel - check it's still there
+   after tapping **Select Bus Number** and picking a different bus. Tap a setter
+   button, reply with a different stop, and confirm only that end changed.
 12. On a finished route, tap **⭐ Add favourite**, then send `/favroutes` and
    confirm it's listed as `Start → End`. Tap it, confirm the panel reopens with
    a **🔙 Back to favourite routes** button that returns to the list, and that

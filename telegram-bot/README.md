@@ -16,8 +16,8 @@ headings and tables, not a Markdown approximation.
   service that calls there.
 - Follow a service on from where you are - every stop it still calls at,
   through to the terminus.
-- Build a route between two bus stops and see every bus that runs the whole
-  way without a change, then save the routes you take often.
+- Build a route between two bus stops and see every bus that links them without
+  a change, then save the routes you take often.
 - Find the bus stops nearest to your current location, by sending your location
   or with `/nearme`.
 - Save bus stops as favourites for quick access, from any chat.
@@ -259,23 +259,34 @@ end can be changed later, and `/cancel` stops the flow at any point.
 Each answer arrives as a **new** panel, and the one it replaces has its buttons
 taken away, so there's never a question about which panel is the live one.
 
-A completed route lists every bus that runs the whole way without a change -
-services calling at both stops on the same direction of their route, the start
-before the end - as a grid four across, favourites starred and pinned per
-`/favouritepref` like every other bus grid. Tapping one opens the **start**
-stop's timings narrowed to that service, with all the buttons a single-bus
-timings view normally carries (see [Viewing timings](#viewing-timings)).
+A completed route lists every bus that links the two stops without a change - any
+service calling at both of them - as a grid four across, favourites starred and
+pinned per `/favouritepref` like every other bus grid. A pair of stops with no
+single bus between them says so instead of showing an empty grid.
 
-Because a route runs one way, **↔️ Swap directions** is a different question
-rather than a different view of the same one, and it re-runs the search from
-scratch. A pair of stops with no single bus between them says so instead of
-showing an empty grid.
+The list is deliberately **not** narrowed to one direction of each service, and
+there's no swap button, because narrowing it that way is wrong far more often
+than it's right. A service normally serves the two sides of a road as two
+different bus stops, so it calls at any one stop on a single direction only:
+pairing stop A and stop B up direction by direction throws out most of the buses
+that really do run between those two places. Bedok Resvr Stn Exit B to Bedok Int
+is the usual shape of it - 69 and 168 only call at Exit B on the leg heading back
+to the interchange, since the outbound leg uses the stop across the road.
+
+Tapping a bus opens the **start** stop's timings narrowed to that service, with
+all the buttons a single-bus timings view normally carries (see
+[Viewing timings](#viewing-timings)) plus a **🔙 Back to route** button returning
+to the panel to pick a different bus. That button survives drilling further in -
+through **Select Bus Number** or **View route from here** - the same way the
+back button on a stop list does.
 
 **⭐ Add favourite** stars the route, and `/favroutes` lists what you've starred
 as paginated buttons labelled `Start → End`; tapping one reopens its panel, with
-a **🔙 Back to favourite routes** button returning to the list. A route and its
-reverse are two separate favourites. Favourite routes have no pin preference of
-their own - `/favouritepref` covers buses and stops only.
+a **🔙 Back to favourite routes** button returning to the list. Start and end are
+still stored in the order you set them - they decide which stop a bus button
+opens - so a route and its reverse are two separate favourites. Favourite routes
+have no pin preference of their own - `/favouritepref` covers buses and stops
+only.
 
 ### Favourite buses
 

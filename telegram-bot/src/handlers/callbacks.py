@@ -7,7 +7,7 @@ from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
 from ..list_view import rebuild_stop_list_view
 from ..reply import edit_rich_message
-from ..route_drafts import panel_awaiting, retarget_route_draft
+from ..route_drafts import panel_awaiting
 from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
 from ..stop_buses_view import build_stop_buses_view
@@ -28,8 +28,8 @@ from .unfavstop import build_unfavstop_view
 def _stop_view_args(payload: dict) -> dict:
     """A stop view's own state, as every button that reopens it carries it: which service
     the view is narrowed to and which way the user got there, whether it's been widened
-    out to all services, where in the service's stop list they came from, and the list of
-    stops they picked this one off."""
+    out to all services, where in the service's stop list they came from, the list of
+    stops they picked this one off, and the route panel they picked the bus off."""
     return {
         "service_no": payload.get("service_no"),
         "picked_service_no": payload.get("bus_no"),
@@ -37,6 +37,7 @@ def _stop_view_args(payload: dict) -> dict:
         "stops_page": payload.get("page", 0),
         "stops_reverse": payload.get("reverse", False),
         "back": payload.get("back"),
+        "route": payload.get("route"),
     }
 
 
@@ -136,22 +137,6 @@ def register_callbacks(client):
             if action == "route_stop_pick":
                 await apply_route_stop(client, user_id, payload["code"])
                 await event.answer()
-                return
-
-            if action == "route_swap":
-                start_code, end_code = payload.get("end"), payload.get("start")
-                # The panel keeps its place in the flow, now pointed the other way, so a
-                # stop typed after a swap lands in the route on screen.
-                retarget_route_draft(user_id, event.query.msg_id, start_code, end_code)
-                rich, buttons = build_route_view(
-                    user_id,
-                    start_code,
-                    end_code,
-                    awaiting=panel_awaiting(user_id, event.query.msg_id),
-                    from_fav=payload.get("from_fav"),
-                )
-                await edit_rich_message(client, event, rich, buttons)
-                await event.answer("Showing the other direction")
                 return
 
             if action == "route_fav":

@@ -110,21 +110,22 @@ def services_for_stop(stop_code: str) -> list:
     return sorted((row["service_no"] for row in rows), key=_natural_sort_key)
 
 
-def direct_services_between(start_code: str, end_code: str) -> list:
-    """Every bus that gets from one stop to another without a change: it calls at both
-    stops on the same direction of its route, and calls at the start before the end.
-    Ordered by bus number. A pair of stops no single bus links comes back empty - and so
-    does a pair in the wrong order, which is what makes swapping the two ends meaningful."""
+def services_between(start_code: str, end_code: str) -> list:
+    """Every bus that links two stops without a change - one that calls at both of them,
+    whichever direction of its route it does so on. Ordered by bus number.
+
+    Deliberately not narrowed to a single direction with the start ahead of the end: a
+    service usually serves the two sides of a road as two different stops, so it calls at
+    any given stop on one direction only. Pairing those up direction by direction drops
+    most of the buses that really do run between the two places - a bus that picks you up
+    at a stop and later calls at the interchange counts, and so does its opposite number
+    doing the same run the other way round."""
     rows = db.execute(
         """
         SELECT DISTINCT boarding.service_no
         FROM bus_routes AS boarding
-        JOIN bus_routes AS alighting
-          ON alighting.service_no = boarding.service_no
-         AND alighting.direction = boarding.direction
-        WHERE boarding.stop_code = ?
-          AND alighting.stop_code = ?
-          AND boarding.stop_sequence < alighting.stop_sequence
+        JOIN bus_routes AS alighting ON alighting.service_no = boarding.service_no
+        WHERE boarding.stop_code = ? AND alighting.stop_code = ?
         """,
         (start_code, end_code),
     ).fetchall()

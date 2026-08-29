@@ -36,20 +36,6 @@ def panel_awaiting(chat_id: int, panel_msg_id) -> "str | None":
     return draft["field"] if draft and draft["panel_msg_id"] == panel_msg_id else None
 
 
-def retarget_route_draft(chat_id: int, panel_msg_id, start_code, end_code) -> None:
-    """Follows a panel through a change made by its own buttons - a swap - so a stop typed
-    afterwards lands in the route now on screen rather than the one that was there before.
-    Does nothing when the draft belongs to some other panel."""
-    with db:
-        db.execute(
-            """
-            UPDATE route_drafts SET start_code = ?, end_code = ?, updated_at = ?
-            WHERE chat_id = ? AND panel_msg_id = ?
-            """,
-            (start_code, end_code, int(time.time() * 1000), chat_id, panel_msg_id),
-        )
-
-
 def clear_route_draft(chat_id: int) -> None:
     with db:
         db.execute("DELETE FROM route_drafts WHERE chat_id = ?", (chat_id,))

@@ -1,6 +1,6 @@
 from telethon import Button
 
-from .bus_routes import direct_services_between
+from .bus_routes import services_between
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .favourite_buses import list_favourite_buses
@@ -32,8 +32,8 @@ def stop_display(code) -> "str | None":
 
 
 def route_button_label(start_name: str, end_name: str, is_favourite: bool = True) -> str:
-    """Label for a whole route as one button, as /favroutes lists them. The arrow is the
-    point of it: a route runs one way, and the reverse is a route of its own."""
+    """Label for a whole route as one button, as /favroutes lists them. The arrow says
+    which end is the start, which is what decides the stop a bus button opens."""
     icon = "⭐" if is_favourite else "🛣"
     return _truncate(f"{icon} {start_name} → {end_name}", ROUTE_LABEL_LIMIT)
 
@@ -50,9 +50,9 @@ def _status_line(start_code, end_code, services) -> str:
     if not (start_code and end_code):
         return "Set both ends to see the buses that run between them."
     if not services:
-        return "😕 No single bus runs this way. Try swapping directions, or picking other stops."
+        return "😕 No single bus links these two stops. Try picking other stops."
     count = len(services)
-    return f"🚌 {count} direct bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} this way."
+    return f"🚌 {count} bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} between these stops."
 
 
 def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool:
@@ -70,8 +70,8 @@ def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool
 
 
 def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None):
-    """The route panel: where the route starts and ends, and the buses that run the whole
-    way between them without a change, as a paginated grid four across.
+    """The route panel: where the route starts and ends, and the buses that link the two
+    without a change, as a paginated grid four across.
 
     Either end may still be unset - that's how /newroute starts out - and `awaiting` is the
     end the chat is being asked to type ("start" or "end"), which marks its button and puts
@@ -83,7 +83,7 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     Returns (rich, buttons)."""
     start_text = stop_display(start_code)
     end_text = stop_display(end_code)
-    services = direct_services_between(start_code, end_code) if start_code and end_code else []
+    services = services_between(start_code, end_code) if start_code and end_code else []
     status = _status_line(start_code, end_code, services)
 
     lines = [
@@ -139,22 +139,18 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
                 Button.inline(
                     "⭐ Remove favourite" if favourited else "⭐ Add favourite",
                     make_button("route_fav", base),
-                ),
-                # The swap restarts at page 1: the two directions are different sets of buses.
-                Button.inline(
-                    "↔️ Swap directions",
-                    make_button("route_swap", {k: v for k, v in base.items() if k != "page"}),
-                ),
+                )
             ]
         )
 
     # Tapping a bus opens the start stop's timings narrowed to it - the ordinary
-    # single-service view, with the buttons it always carries.
+    # single-service view, with the buttons it always carries, plus this panel as the way
+    # back so another bus on the route is one tap away.
     buttons += [
         [
             Button.inline(
                 bus_button_label(service_no, is_favourite=service_no in fav_bus_nos),
-                make_button("stop", {"code": start_code, "bus_no": service_no}),
+                make_button("stop", {"code": start_code, "bus_no": service_no, "route": base}),
             )
             for service_no in page_items[row : row + GRID_COLUMNS]
         ]

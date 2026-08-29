@@ -221,16 +221,13 @@ def build_route_onward_view(chat_id: int, service_no: str, code: str, page: int,
     }
 
     # Stops down the line are picked at the stop rather than off a service's full stop
-    # list, so they open the same way the current view did - and keep the same way back.
-    back = origin.get("back")
+    # list, so they open the same way the current view did - and keep the same ways back.
+    carried = {key: origin[key] for key in ("back", "route") if origin.get(key)}
     buttons = [
         [
             Button.inline(
                 stop_button_label(stop, is_favourite=stop["code"] in fav_codes),
-                make_button(
-                    "stop",
-                    {"code": stop["code"], "bus_no": service_no, **({"back": back} if back else {})},
-                ),
+                make_button("stop", {"code": stop["code"], "bus_no": service_no, **carried}),
             )
         ]
         for stop in page_items
