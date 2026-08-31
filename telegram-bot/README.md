@@ -252,9 +252,12 @@ both ends of the route blank and a **🅰 Set start** / **🅱 Set end** pair of
 buttons, and starts out waiting for the start - so you can reply straight away
 with a bus stop number or part of a name, exactly as you would search for one.
 A name matching several stops brings up the same **Did you mean:** buttons a
-search does. Answer once and the panel comes back asking for the end; answer
-again and the route is complete. The two buttons stay put afterwards, so either
-end can be changed later, and `/cancel` stops the flow at any point.
+search does. You can also **send your location** instead of typing, which lists
+the bus stops nearest to it with their distances - tapping one sets that end of
+the route rather than opening its timings, the way `/nearme` would. Answer once
+and the panel comes back asking for the end; answer again and the route is
+complete. The two buttons stay put afterwards, so either end can be changed
+later, and `/cancel` stops the flow at any point.
 
 Each answer arrives as a **new** panel, and the one it replaces has its buttons
 taken away, so there's never a question about which panel is the live one.

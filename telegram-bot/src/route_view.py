@@ -15,7 +15,7 @@ from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
 SETTER_LABEL_LIMIT = 32
 ROUTE_LABEL_LIMIT = 64
 
-STOP_PROMPT = "Send a bus stop number, or part of its name, to set the {}."
+STOP_PROMPT = "Send a bus stop number, part of its name, or your location to set the {}."
 
 
 def _truncate(label: str, limit: int) -> str:

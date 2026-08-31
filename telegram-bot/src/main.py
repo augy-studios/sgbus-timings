@@ -48,6 +48,9 @@ async def main() -> None:
     await client.start(bot_token=config.bot_token)
 
     register_start(client)
+    # Both interceptors it carries have to come before the handler they take a message off:
+    # the text one before register_search, the location one before register_nearme.
+    register_newroute(client)
     register_nearme(client)
     register_favstops(client)
     register_addfavbus(client)  # includes the flow text-interceptor, must come before register_search
@@ -59,7 +62,6 @@ async def main() -> None:
     register_settings(client)  # includes the flow text-interceptor, must come before register_search
     register_addroutine(client)  # includes the flow text-interceptor, must come before register_search
     register_routines(client)
-    register_newroute(client)  # includes the flow text-interceptor, must come before register_search
     register_favroutes(client)
     register_flow_control(client)
     register_callbacks(client)
