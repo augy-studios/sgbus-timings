@@ -1,6 +1,7 @@
 from .db import db
 
 DEFAULT_NOTIFICATIONS_ENABLED = True
+DEFAULT_MAP_APP = "google"
 
 
 def get_display_name(chat_id: int, fallback: str) -> str:
@@ -64,6 +65,25 @@ def set_notifications_enabled(chat_id: int, enabled: bool) -> None:
             ON CONFLICT(chat_id) DO UPDATE SET notifications_enabled = excluded.notifications_enabled
             """,
             (chat_id, int(enabled)),
+        )
+
+
+def get_map_app(chat_id: int) -> str:
+    """The map app the user's Navigate buttons open, defaulting to Google Maps."""
+    row = db.execute("SELECT map_app FROM user_settings WHERE chat_id = ?", (chat_id,)).fetchone()
+    if row and row["map_app"]:
+        return row["map_app"]
+    return DEFAULT_MAP_APP
+
+
+def set_map_app(chat_id: int, app: str) -> None:
+    with db:
+        db.execute(
+            """
+            INSERT INTO user_settings (chat_id, map_app) VALUES (?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET map_app = excluded.map_app
+            """,
+            (chat_id, app),
         )
 
 

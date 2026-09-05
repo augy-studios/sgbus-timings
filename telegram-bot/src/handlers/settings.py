@@ -9,10 +9,12 @@ from ..favourite_prefs import get_pref
 from ..favourites import list_favourites
 from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
 from ..format import escape_md
+from ..maps import MAP_APPS, MAP_APP_LABELS
 from ..reply import send_rich_message
 from ..user_settings import (
     get_birthday,
     get_display_name,
+    get_map_app,
     get_notifications_enabled,
     set_birthday,
     set_display_name,
@@ -68,6 +70,7 @@ def build_settings_view(chat_id: int, sender):
     name_is_set = name != fallback
     birthday = get_birthday(chat_id)
     notifications_on = get_notifications_enabled(chat_id)
+    map_app = get_map_app(chat_id)
     fav_buses = list_favourite_buses(chat_id)
     fav_stops = list_favourites(chat_id)
     bus_position = get_pref(chat_id, "bus")
@@ -78,6 +81,7 @@ def build_settings_view(chat_id: int, sender):
         f"- **Name**: {escape_md(name) if name_is_set else '_not set_'}",
         f"- **Birthday**: {birthday if birthday else '_not set_'}",
         f"- **Routine notifications**: {'Enabled' if notifications_on else 'Disabled'}",
+        f"- **Navigate opens**: {escape_md(MAP_APP_LABELS.get(map_app, map_app))}",
         "",
         f"## Favourite buses ({_POSITION_LABELS.get(bus_position, bus_position)} pinned)",
     ]
@@ -110,6 +114,14 @@ def build_settings_view(chat_id: int, sender):
                 "🔕 Disable notifications" if notifications_on else "🔔 Enable notifications",
                 make_button("settings_toggle_notifications", {}),
             )
+        ],
+        # Which app the Navigate button on a stop's timings hands the directions to.
+        [
+            Button.inline(
+                f"{'✅ ' if map_app == app['id'] else ''}{app['button']}",
+                make_button("settings_set_map_app", {"app": app["id"]}),
+            )
+            for app in MAP_APPS
         ],
     ]
     return rich, buttons

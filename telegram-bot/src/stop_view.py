@@ -7,6 +7,22 @@ from .favourite_prefs import get_pref
 from .favourites import is_favourite
 from .format import format_arrival_message
 from .lta import fetch_arrivals
+from .maps import navigate_button
+
+
+def _with_navigate(buttons: list, stop, chat_id) -> list:
+    """Puts the Navigate button on the keyboard's last row. A row holding just a back button
+    is shared with it - back on the left, navigate on the right - so the way out of the view
+    and the way to the stop stay together; anything else gets a row of its own."""
+    navigate = navigate_button(stop, chat_id)
+    if not navigate:
+        return buttons
+    last = buttons[-1] if buttons else None
+    if last and len(last) == 1 and last[0].text.startswith("🔙"):
+        last.append(navigate)
+    else:
+        buttons.append([navigate])
+    return buttons
 
 
 async def build_stop_view(
@@ -29,8 +45,8 @@ async def build_stop_view(
     to look up favourite bus services; the favourite/refresh buttons
     themselves resolve the acting user at click time.
     Pass `inline_only=True` for messages living in inline mode (no chat of
-    their own), which get just a refresh button - no favourite toggle, since
-    whoever taps it may not be the user who ran the query.
+    their own), which get just the refresh and navigate buttons - no favourite
+    toggle, since whoever taps it may not be the user who ran the query.
     Two arguments narrow the view to a single bus service, and which one is used
     says where the user came in from, which decides the way back on offer:
     `service_no` for the bus-first route (a bus number search or the /favbuses
@@ -63,7 +79,8 @@ async def build_stop_view(
     rich = format_arrival_message(stop, arrivals, favourite, fav_bus_nos, bus_pin_position)
 
     if inline_only:
-        return {"stop": stop, "rich": rich, "buttons": [[Button.inline("🔄 Refresh", make_button("refresh", {"code": code}))]]}
+        buttons = [[Button.inline("🔄 Refresh", make_button("refresh", {"code": code}))]]
+        return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, chat_id)}
 
     # Where the user came from, carried along so a refresh doesn't lose the way back.
     from_stops = (
@@ -141,4 +158,4 @@ async def build_stop_view(
     if back:
         buttons.append([Button.inline("🔙 Back", make_button("stop_list", back))])
 
-    return {"stop": stop, "rich": rich, "buttons": buttons}
+    return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, chat_id)}
