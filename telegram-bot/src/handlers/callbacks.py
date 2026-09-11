@@ -12,13 +12,7 @@ from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
 from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
-from ..maps import MAP_APP_LABELS
-from ..user_settings import (
-    clear_birthday,
-    get_notifications_enabled,
-    set_map_app,
-    set_notifications_enabled,
-)
+from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
 from .addroutine import finalize_stop
 from .favbuses import build_favbuses_view
 from .favouritepref import build_favouritepref_view
@@ -61,9 +55,14 @@ def register_callbacks(client):
         inline_only = isinstance(event.query, types.UpdateInlineBotCallbackQuery)
 
         try:
-            if action in ("stop", "refresh"):
+            if action in ("stop", "refresh", "navigate"):
+                # Navigate is the same view again, with the button swapped for a link per map app.
                 view = await build_stop_view(
-                    payload["code"], user_id, inline_only=inline_only, **_stop_view_args(payload)
+                    payload["code"],
+                    user_id,
+                    inline_only=inline_only,
+                    navigate_open=action == "navigate",
+                    **_stop_view_args(payload),
                 )
                 if not view:
                     await event.answer("That bus stop could not be found.")
@@ -337,15 +336,6 @@ def register_callbacks(client):
                 await event.answer(
                     "Notifications " + ("enabled" if get_notifications_enabled(user_id) else "disabled")
                 )
-                return
-
-            if action == "settings_set_map_app":
-                app = payload["app"]
-                set_map_app(user_id, app)
-                sender = await event.get_sender()
-                rich, buttons = build_settings_view(user_id, sender)
-                await edit_rich_message(client, event, rich, buttons)
-                await event.answer(f"Navigate now opens {MAP_APP_LABELS.get(app, app)}")
                 return
 
             await event.answer()

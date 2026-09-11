@@ -7,21 +7,22 @@ from .favourite_prefs import get_pref
 from .favourites import is_favourite
 from .format import format_arrival_message
 from .lta import fetch_arrivals
-from .maps import navigate_button
+from .maps import navigate_buttons
 
 
-def _with_navigate(buttons: list, stop, chat_id) -> list:
-    """Puts the Navigate button on the keyboard's last row. A row holding just a back button
-    is shared with it - back on the left, navigate on the right - so the way out of the view
-    and the way to the stop stay together; anything else gets a row of its own."""
-    navigate = navigate_button(stop, chat_id)
+def _with_navigate(buttons: list, stop, origin: dict, navigate_open: bool) -> list:
+    """Puts the navigation controls on the keyboard's last row. A lone Navigate button shares
+    a row holding just a back button - back on the left, navigate on the right - so the way
+    out of the view and the way to the stop stay together; once tapped open into a button
+    per map app, the pair takes a row of its own so nothing gets squeezed."""
+    navigate = navigate_buttons(stop, origin, navigate_open)
     if not navigate:
         return buttons
     last = buttons[-1] if buttons else None
-    if last and len(last) == 1 and last[0].text.startswith("🔙"):
-        last.append(navigate)
+    if len(navigate) == 1 and last and len(last) == 1 and last[0].text.startswith("🔙"):
+        last.extend(navigate)
     else:
-        buttons.append([navigate])
+        buttons.append(navigate)
     return buttons
 
 
@@ -37,6 +38,7 @@ async def build_stop_view(
     stops_reverse: bool = False,
     back: "dict | None" = None,
     route: "dict | None" = None,
+    navigate_open: bool = False,
 ):
     """
     Builds the rich-message text + inline keyboard for a bus stop's live
@@ -62,6 +64,8 @@ async def build_stop_view(
     /nearme), carried along so they can go back and pick a different one.
     `route` is the route panel this bus was picked off, carried the same way, so
     another of the buses running that route is one tap away.
+    `navigate_open=True` unfolds the Navigate button into a link per map app. It isn't
+    part of where the user is, so a refresh folds it back to the single button.
     """
     stop = get_bus_stop_by_code(code)
     if not stop:
@@ -80,7 +84,7 @@ async def build_stop_view(
 
     if inline_only:
         buttons = [[Button.inline("🔄 Refresh", make_button("refresh", {"code": code}))]]
-        return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, chat_id)}
+        return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, {"code": code}, navigate_open)}
 
     # Where the user came from, carried along so a refresh doesn't lose the way back.
     from_stops = (
@@ -158,4 +162,4 @@ async def build_stop_view(
     if back:
         buttons.append([Button.inline("🔙 Back", make_button("stop_list", back))])
 
-    return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, chat_id)}
+    return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, origin, navigate_open)}

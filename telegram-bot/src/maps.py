@@ -2,14 +2,13 @@ from urllib.parse import quote
 
 from telethon import Button
 
-from .user_settings import DEFAULT_MAP_APP, get_map_app
+from .buttons import make_button
 
-# The map apps a Navigate button can open, in the order /settings offers them.
+# The map apps a tapped Navigate button offers, in the order they appear on the row.
 MAP_APPS = [
-    {"id": "google", "label": "Google Maps", "button": "🗺 Google Maps"},
-    {"id": "citymapper", "label": "Citymapper", "button": "🚇 Citymapper"},
+    {"id": "google", "button": "🗺 Google Maps"},
+    {"id": "citymapper", "button": "🚇 Citymapper"},
 ]
-MAP_APP_LABELS = {app["id"]: app["label"] for app in MAP_APPS}
 
 
 def directions_url(stop, app: str) -> "str | None":
@@ -28,9 +27,13 @@ def directions_url(stop, app: str) -> "str | None":
     return f"https://www.google.com/maps/dir/?api=1&destination={lat}%2C{lng}"
 
 
-def navigate_button(stop, chat_id) -> "Button | None":
-    """The Navigate button every bus stop's timings carry, pointed at the map app the user
-    picked in /settings. None when the stop has no coordinates to navigate to."""
-    app = get_map_app(chat_id) if chat_id is not None else DEFAULT_MAP_APP
-    url = directions_url(stop, app)
-    return Button.url("🧭 Navigate", url) if url else None
+def navigate_buttons(stop, origin: dict, opened: bool) -> list:
+    """The navigation controls every bus stop's timings carry: a single Navigate button
+    until it's tapped, at which point it gives way to one button per map app, each a link
+    to directions there. `origin` is the payload that reopens this exact view, so the
+    swap can rebuild it with the choice unfolded. Empty for a stop with no coordinates."""
+    if stop["lat"] is None or stop["lng"] is None:
+        return []
+    if not opened:
+        return [Button.inline("🧭 Navigate", make_button("navigate", origin))]
+    return [Button.url(app["button"], directions_url(stop, app["id"])) for app in MAP_APPS]

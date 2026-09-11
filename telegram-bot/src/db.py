@@ -84,8 +84,7 @@ db.executescript(
         display_name TEXT,
         birthday TEXT,
         notifications_enabled INTEGER NOT NULL DEFAULT 1,
-        last_birthday_wish TEXT,
-        map_app TEXT
+        last_birthday_wish TEXT
     );
 
     CREATE TABLE IF NOT EXISTS routines (
@@ -182,8 +181,5 @@ if "notifications_enabled" not in _user_settings_columns:
 if "last_birthday_wish" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN last_birthday_wish TEXT")
-if "map_app" not in _user_settings_columns:
-    with db:
-        db.execute("ALTER TABLE user_settings ADD COLUMN map_app TEXT")
 
 db.commit()
