@@ -1,4 +1,5 @@
 from .db import db
+from .journeys import invalidate_network
 from .lta import _natural_sort_key, fetch_all_bus_routes
 
 
@@ -20,6 +21,7 @@ async def refresh_bus_routes() -> int:
             """,
             routes,
         )
+    invalidate_network()
     return len(routes)
 
 

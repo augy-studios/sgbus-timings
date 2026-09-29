@@ -6,6 +6,7 @@ from .favourite_buses import list_favourite_buses
 from .favourite_prefs import get_pref
 from .favourites import is_favourite
 from .format import format_arrival_message
+from .journey_view import stops_left_note
 from .lta import fetch_arrivals
 from .maps import navigate_buttons
 
@@ -63,7 +64,9 @@ async def build_stop_view(
     `back` is the list of stops the user picked this one from (a name search or
     /nearme), carried along so they can go back and pick a different one.
     `route` is the route panel this bus was picked off, carried the same way, so
-    another of the buses running that route is one tap away.
+    another of the buses running that route is one tap away. It holds the journey too
+    when the bus is one leg of a journey with changes, and either way the view says how
+    many stops the bus has left to go.
     `navigate_open=True` unfolds the Navigate button into a link per map app. It isn't
     part of where the user is, so a refresh folds it back to the single button.
     """
@@ -80,7 +83,8 @@ async def build_stop_view(
     favourite = is_favourite(chat_id, code) if chat_id is not None else False
     fav_bus_nos = {row["service_no"] for row in list_favourite_buses(chat_id)} if chat_id is not None else set()
     bus_pin_position = get_pref(chat_id, "bus") if chat_id is not None else "top"
-    rich = format_arrival_message(stop, arrivals, favourite, fav_bus_nos, bus_pin_position)
+    note = stops_left_note(route, code, only_service) if route and only_service else None
+    rich = format_arrival_message(stop, arrivals, favourite, fav_bus_nos, bus_pin_position, note)
 
     if inline_only:
         buttons = [[Button.inline("🔄 Refresh", make_button("refresh", {"code": code}))]]
@@ -158,7 +162,8 @@ async def build_stop_view(
             ]
         )
     if route:
-        buttons.append([Button.inline("🔙 Back to route", make_button("route_view", route))])
+        label = "🔙 Back to journey" if route.get("journey") else "🔙 Back to route"
+        buttons.append([Button.inline(label, make_button("route_view", route))])
     if back:
         buttons.append([Button.inline("🔙 Back", make_button("stop_list", back))])
 

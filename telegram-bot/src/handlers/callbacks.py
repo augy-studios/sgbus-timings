@@ -5,6 +5,7 @@ from ..buttons import resolve_button
 from ..favourite_buses import remove_favourite_bus
 from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
+from ..journey_view import build_journey_view
 from ..list_view import rebuild_stop_list_view
 from ..reply import edit_rich_message
 from ..route_drafts import panel_awaiting
@@ -122,6 +123,12 @@ def register_callbacks(client):
 
             if action == "route_view":
                 start_code, end_code = payload.get("start"), payload.get("end")
+                if payload.get("journey"):
+                    route = {k: v for k, v in payload.items() if k != "journey"}
+                    rich, buttons = await build_journey_view(start_code, end_code, payload["journey"], route)
+                    await edit_rich_message(client, event, rich, buttons)
+                    await event.answer()
+                    return
                 rich, buttons = build_route_view(
                     user_id,
                     start_code,

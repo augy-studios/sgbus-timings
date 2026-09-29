@@ -126,13 +126,19 @@ def _pin_favourite_services(services, favourite_service_nos, pin_position) -> li
     return pin_favourites(services, favourite_service_nos, pin_position, key=lambda s: s["serviceNo"])
 
 
-def format_arrival_message(stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top") -> dict:
-    """Builds the rich-message Markdown body showing live arrivals for a bus stop."""
+def format_arrival_message(
+    stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top", note=None
+) -> dict:
+    """Builds the rich-message Markdown body showing live arrivals for a bus stop.
+    `note` is a line of plain text shown under the stop's name, such as how many stops
+    the bus picked off a route has left to go."""
     favourite_service_nos = favourite_service_nos or set()
     star = "⭐ " if is_favourite else ""
     lines = [f"# {star}{escape_md(stop['name'])} ({escape_md(stop['code'])})"]
     if stop["road"]:
         lines.append(f"*{escape_md(stop['road'])}*")
+    if note:
+        lines += ["", escape_md(note)]
     lines.append("")
 
     services = _pin_favourite_services(arrivals["services"], favourite_service_nos, bus_pin_position)
@@ -153,16 +159,22 @@ def format_arrival_message(stop, arrivals, is_favourite, favourite_service_nos=N
     lines.append(f"_Updated {updated}_")
 
     markdown = "\n".join(lines)
-    fallback = _build_fallback_text(stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated)
+    fallback = _build_fallback_text(
+        stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note
+    )
     return {"markdown": markdown, "fallback": fallback}
 
 
-def _build_fallback_text(stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated) -> str:
+def _build_fallback_text(
+    stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note=None
+) -> str:
     """Plain-text summary for the required SendMessageRequest.message field / older clients."""
     star = "⭐ " if is_favourite else ""
     lines = [f"{star}{stop['name']} ({stop['code']})"]
     if stop["road"]:
         lines.append(stop["road"])
+    if note:
+        lines.append(note)
 
     services = _pin_favourite_services(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:

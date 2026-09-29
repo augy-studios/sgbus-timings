@@ -3,6 +3,7 @@ import sqlite3
 from typing import Optional
 
 from .db import db
+from .journeys import invalidate_network
 from .lta import fetch_all_bus_stops
 
 
@@ -35,6 +36,7 @@ async def refresh_bus_stops() -> int:
             """,
             stops,
         )
+    invalidate_network()
     return len(stops)
 
 

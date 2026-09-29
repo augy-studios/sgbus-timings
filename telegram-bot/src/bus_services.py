@@ -1,4 +1,5 @@
 from .db import db
+from .journeys import invalidate_network
 from .lta import fetch_all_bus_services
 
 
@@ -18,6 +19,7 @@ async def refresh_bus_services() -> int:
             """,
             services,
         )
+    invalidate_network()
     return len(services)
 
 

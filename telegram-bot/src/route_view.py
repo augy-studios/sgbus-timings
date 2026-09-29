@@ -7,6 +7,8 @@ from .favourite_buses import list_favourite_buses
 from .favourite_prefs import get_pref, pin_favourites
 from .favourite_routes import is_favourite_route, toggle_favourite_route
 from .format import bus_button_label, escape_md
+from .journey_view import ESTIMATE_NOTE, journey_button_label, journey_summary
+from .journeys import find_journeys
 from .pagination import nav_row, paginate
 from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
 
@@ -46,11 +48,13 @@ def _setter_label(icon: str, field: str, code, armed: bool) -> str:
     return _truncate(f"{prefix} {field.capitalize()}: {stop['name']}", SETTER_LABEL_LIMIT)
 
 
-def _status_line(start_code, end_code, services) -> str:
+def _status_line(start_code, end_code, services, journeys) -> str:
     if not (start_code and end_code):
         return "Set both ends to see the buses that run between them."
+    if not services and journeys:
+        return "No single bus links these two stops, but these journeys get there with a short walk or a change:"
     if not services:
-        return "😕 No single bus links these two stops. Try picking other stops."
+        return "😕 No single bus links these two stops, even with two changes. Try picking other stops."
     count = len(services)
     return f"🚌 {count} bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} between these stops."
 
@@ -71,7 +75,8 @@ def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool
 
 def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None):
     """The route panel: where the route starts and ends, and the buses that link the two
-    without a change, as a paginated grid four across.
+    without a change, as a paginated grid four across. When there are none, the quickest
+    few journeys with a walk or a change stand in for them, a button each.
 
     Either end may still be unset - that's how /route starts out - and `awaiting` is the
     end the chat is being asked to type ("start" or "end"), which marks its button and puts
@@ -84,7 +89,8 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     start_text = stop_display(start_code)
     end_text = stop_display(end_code)
     services = services_between(start_code, end_code) if start_code and end_code else []
-    status = _status_line(start_code, end_code, services)
+    journeys = find_journeys(start_code, end_code) if start_code and end_code and not services else []
+    status = _status_line(start_code, end_code, services, journeys)
 
     lines = [
         "# Route",
@@ -101,6 +107,12 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
         f"End: {end_text or 'not set'}",
         status,
     ]
+    if journeys:
+        summaries = [
+            f"{number}. {journey_summary(legs, start_code, end_code)}" for number, legs in enumerate(journeys, 1)
+        ]
+        lines += ["", *(escape_md(summary) for summary in summaries), "", f"_{escape_md(ESTIMATE_NOTE)}_"]
+        fallback_lines += [*summaries, ESTIMATE_NOTE]
     if awaiting:
         prompt = "✏️ " + STOP_PROMPT.format(awaiting)
         lines += ["", escape_md(prompt)]
@@ -142,6 +154,18 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
                 )
             ]
         )
+
+    # A journey opens its own view, with live timings for every leg; the panel it came off
+    # rides along as the `route` so its buttons can come back here.
+    buttons += [
+        [
+            Button.inline(
+                journey_button_label(number, legs, start_code, end_code),
+                make_button("route_view", {**base, "journey": legs}),
+            )
+        ]
+        for number, legs in enumerate(journeys, 1)
+    ]
 
     # Tapping a bus opens the start stop's timings narrowed to it - the ordinary
     # single-service view, with the buttons it always carries, plus this panel as the way
