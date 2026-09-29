@@ -1106,7 +1106,24 @@ header {
 .resultsSection,
 .favBar { scroll-margin-top: 84px; }
 
-.plannerSection { margin-top: 18px; }
+/* The stop dropdowns live inside this card. The card's blur makes it a stacking context
+   and .card clips its contents, so without these the dropdowns were cut off at the card's
+   edge and painted under the favourites card below. Nothing in the card fills its corners,
+   so dropping the clip costs nothing. */
+.plannerSection {
+    margin-top: 18px;
+    position: relative;
+    z-index: 5;
+}
+.plannerSection .card { overflow: visible; }
+
+/* Nested inside a blurred card, the dropdown's own blur has nothing to blur, and the
+   translucent surface let the card's text show straight through. Opaque here instead. */
+.plannerSection .acList {
+    background: color-mix(in srgb, var(--brand) 6%, var(--bg));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
 
 .plannerFields {
     display: grid;
