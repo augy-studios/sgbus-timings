@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v9";
+const VERSION = "v10";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -12,6 +12,9 @@ const ASSETS = [
   "/js/icons.js",
   "/js/ui.js",
   "/js/theme.js",
+  "/js/network.js",
+  "/js/journeys.js",
+  "/js/planner.js",
   "/js/sw-update.js",
   "/manifest.json",
   "/favicon.ico",

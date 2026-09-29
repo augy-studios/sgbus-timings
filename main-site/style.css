@@ -11,6 +11,15 @@
 html, body { height: 100%; }
 input, textarea { user-select: text; -webkit-user-select: text; }
 
+/* The attribute wins over any display a class sets, so toggling .hidden on a flex or
+   grid container still hides it. */
+[hidden] { display: none !important; }
+
+/* Icons from js/icons.js in running text and buttons. Rules further down (.icon-btn,
+   .mode-btn) size their own and come later, so they win. */
+[data-icon], .ico { display: inline-flex; align-items: center; flex-shrink: 0; }
+[data-icon] > svg, .ico > svg { width: 1.1em; height: 1.1em; }
+
 :link, :visited { color: var(--brand-ink); }
 a:hover { text-decoration: none; }
 
@@ -343,6 +352,9 @@ header {
     min-width: 0;
 }
 
+/* Lets the greeting shrink and ellipsise rather than run under the header buttons. */
+.title > div { min-width: 0; }
+
 .title h1 {
     font-size: 18px;
     font-weight: 700;
@@ -545,17 +557,33 @@ header {
     gap: 8px;
 }
 
+.favGroup + .favGroup { margin-top: 12px; }
+
+.favGroupLabel {
+    font-size: 12px;
+    color: var(--muted-strong);
+    margin: 0 2px 6px;
+}
+
 .chip {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 12px;
+    padding: 7px 8px 7px 12px;
     border-radius: 999px;
     background: var(--surface-strong);
     border: 1px solid var(--surface-border);
     cursor: pointer;
     transition: transform 0.13s, background 0.13s;
     color: var(--ink);
+    max-width: 100%;
+}
+
+.chipMain {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
 }
 
 .chip:hover {
@@ -572,7 +600,7 @@ header {
 .chip .name {
     font-size: 12px;
     color: var(--muted-strong);
-    max-width: 130px;
+    max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -885,6 +913,8 @@ header {
 }
 
 .routeList {
+    /* The offset parent for its rows, so a row's offsetTop is its place in the list. */
+    position: relative;
     max-height: 50vh;
     overflow: auto;
     border: 1px solid var(--surface-border);
@@ -893,13 +923,50 @@ header {
     background: var(--surface);
 }
 
+/* Buttons: every stop in a list opens its timings. */
 .routeStop {
     display: flex;
     align-items: center;
     gap: 8px;
+    width: 100%;
     padding: 8px 8px;
     border-radius: 10px;
+    text-align: left;
+    font-size: 14px;
     transition: background 0.1s;
+}
+
+.routeStop .name {
+    flex: 1;
+    min-width: 0;
+}
+.routeStop .road {
+    display: block;
+    font-size: 11px;
+    color: var(--muted-strong);
+}
+.routeStop .dist {
+    font-size: 12px;
+    color: var(--muted-strong);
+    white-space: nowrap;
+}
+.routeStop:hover .road,
+.routeStop:hover .dist,
+.routeStop.me .road,
+.routeStop.me .dist { color: var(--on-brand); }
+
+.routeSection {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted-strong);
+    padding: 10px 8px 4px;
+}
+.routeSection:first-child { padding-top: 4px; }
+
+.svcNote {
+    font-size: 13px;
+    color: var(--ink);
+    margin: 0 0 10px;
 }
 
 .routeStop:hover {
@@ -944,6 +1011,249 @@ header {
     margin-bottom: 4px;
 }
 
+/* ===== Favourite toggles and marks ===== */
+/* Pressed star buttons fill their star, so saved reads at a glance. */
+.iconBtn.on .ico svg,
+.iconBtn.on [data-icon] svg { fill: currentColor; }
+.iconBtn.on { background: var(--brand-fill); color: var(--on-brand); }
+
+.favMark {
+    display: inline-flex;
+    vertical-align: -0.1em;
+    margin-right: 3px;
+}
+.favMark svg { width: 0.85em; height: 0.85em; fill: currentColor; }
+
+.iconBtn.busy { opacity: 0.6; cursor: progress; }
+
+/* ===== Quick actions under the search ===== */
+.quickActions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ===== Stop timings: road, context and tools ===== */
+.stopTitle { min-width: 0; }
+.stopTitle .cardTitle { flex-wrap: wrap; }
+
+.stopRoad {
+    font-size: 12px;
+    color: var(--muted-strong);
+    margin-top: 2px;
+}
+.stopRoad:empty { display: none; }
+
+.stopContext {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--surface-border);
+}
+.stopNote {
+    font-size: 13px;
+    flex: 1 1 220px;
+}
+
+.stopTools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--surface-border);
+}
+.stopTools:empty { display: none; }
+
+.svcOp {
+    font-size: 11px;
+    color: var(--muted-strong);
+}
+
+.firstLast {
+    flex-basis: 100%;
+    font-size: 12px;
+    color: var(--muted-strong);
+}
+
+/* ===== Bus grids (pick a bus, buses on a route) ===== */
+.busGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.busBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 6px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    background: var(--brand-fill-strong);
+    color: var(--on-brand);
+    border: 1px solid var(--surface-border);
+    transition: transform 0.13s;
+}
+.busBtn:hover { transform: translateY(-1px); }
+
+/* ===== Route planner ===== */
+.plannerSection,
+.resultsSection,
+.favBar { scroll-margin-top: 84px; }
+
+.plannerSection { margin-top: 18px; }
+
+.plannerFields {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    align-items: end;
+}
+
+.plannerField label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted-strong);
+    margin: 0 2px 6px;
+}
+
+.plannerInputRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+}
+.plannerInputRow .input { padding: 12px 14px; }
+
+/* The icon's arrows run up and down; side by side, the ends swap left and right. */
+.swapBtn { align-self: end; margin-bottom: 6px; }
+.swapBtn .ico,
+.swapBtn [data-icon] { transform: rotate(90deg); }
+
+.plannerBody { margin-top: 14px; }
+
+.plannerStatus {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.plannerNav {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.journeyList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.journeyItem {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 10px;
+    align-items: center;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+    text-align: left;
+    transition: transform 0.13s, box-shadow 0.13s;
+}
+.journeyItem:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+
+.journeyBuses {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+}
+.journeyMeta {
+    font-size: 13px;
+    color: var(--muted-strong);
+    white-space: nowrap;
+}
+.journeyDetail {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    color: var(--muted-strong);
+}
+
+.busChip {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    background: var(--brand-fill-strong);
+    color: var(--on-brand);
+    border: 1px solid var(--surface-border);
+}
+.legArrow { color: var(--muted-strong); }
+
+.estimateNote {
+    font-size: 12px;
+    font-style: italic;
+    color: var(--muted-strong);
+    margin-top: 10px;
+}
+
+.journeyHead {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.journeySteps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.step {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+}
+.stepWalk, .stepArrive { padding: 4px 4px; color: var(--muted-strong); }
+.stepArrive { color: var(--ink); font-size: 14px; }
+
+.stepLeg {
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+}
+.legHead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+}
+.legNote { color: var(--muted-strong); }
+.legEtas s { color: var(--muted-strong); }
+.legEtas strong { color: var(--ok); }
+
+/* ===== Settings ===== */
+.settingsInput { padding: 12px 14px; height: auto; }
+.settingsRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+}
+
+.modalHeader .actions { gap: 6px; }
+
 /* ===== Inline SVG Icons ===== */
 .icon {
     display: inline-block;
@@ -984,6 +1294,18 @@ header {
     .subtitle  { display: none; }
     .btn { padding: 14px 14px; font-size: 13px; }
     .incomingNote { display: none; }
+    .headerActions { gap: 6px; }
+
+    /* The two ends stack, with the swap button between them swapping up and down. */
+    .plannerFields { grid-template-columns: 1fr; align-items: stretch; }
+    .swapBtn { justify-self: center; margin: 0; }
+    .swapBtn .ico,
+    .swapBtn [data-icon] { transform: none; }
+    .cardHeader { flex-wrap: wrap; }
+}
+
+@media (max-width: 360px) {
+    .busGrid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 480px) {

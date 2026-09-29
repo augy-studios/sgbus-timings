@@ -38,7 +38,7 @@ export default async function handler(req, res) {
                         eta_ms: toMs(nb.EstimatedArrival),
                         load: nb.Load, // SEA / SDA / LSD
                         wheelchair: nb.Feature === "WAB",
-                        deck: nb.Type === "DD" ? "Double" : "Single", // SD/DD/BD -> Single/Double
+                        deck: nb.Type === "DD" ? "Double" : nb.Type === "BD" ? "Bendy" : "Single",
                         lat,
                         lng,
                         rough: !monitored, // italicise if true (no live GPS tracking)
