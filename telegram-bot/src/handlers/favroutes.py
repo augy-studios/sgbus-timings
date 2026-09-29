@@ -33,12 +33,12 @@ def build_favroutes_view(chat_id: int, page: int):
 
 
 def register_favroutes(client):
-    @client.on(events.NewMessage(pattern="/favroutes"))
+    @client.on(events.NewMessage(pattern="/myroutes"))
     async def handler(event):
         rich, buttons, routes = build_favroutes_view(event.chat_id, 0)
         if not routes:
             await event.respond(
-                "You have no favourite routes yet. Use /newroute to build one, then star it."
+                "You have no favourite routes yet. Use /route to build one, then star it."
             )
             return
         await send_rich_message(client, event.chat_id, rich, buttons)

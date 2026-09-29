@@ -49,8 +49,8 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/addfavbus` | Starts a flow to add bus numbers to your favourites - send numbers as text, `/done` to finish |
 | `/favbuses` | Lists your favourite bus numbers as paginated buttons; tap one to browse the stops it serves |
 | `/unfavbus` | Lists your favourite bus numbers as paginated buttons to remove |
-| `/newroute` | Starts a flow to build a route between two bus stops, listing every bus that runs the whole way |
-| `/favroutes` | Lists your favourite routes as paginated buttons; tap one to reopen it |
+| `/route` | Starts a flow to build a route between two bus stops, listing every bus that runs the whole way |
+| `/myroutes` | Lists your favourite routes as paginated buttons; tap one to reopen it |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
@@ -70,7 +70,7 @@ the right button jumps back to the first (**First ▶**).
 ### Multi-step flows
 
 Some commands ask a question and wait for the reply - `/addfavbus` collecting
-bus numbers, `/addroutine` walking through time, frequency and stop, `/newroute`
+bus numbers, `/addroutine` walking through time, frequency and stop, `/route`
 asking for each end of a route, `/settings` asking for a name or birthday.
 While one of those is in progress the chat is
 "in a flow", and `/done` and `/cancel` apply to whichever one it happens to be:
@@ -247,7 +247,7 @@ so rather than opening an empty list.
 
 ### Routes
 
-`/newroute` answers "which bus gets me from here to there". It posts a panel with
+`/route` answers "which bus gets me from here to there". It posts a panel with
 both ends of the route blank and a **🅰 Set start** / **🅱 Set end** pair of
 buttons, and starts out waiting for the start - so you can reply straight away
 with a bus stop number or part of a name, exactly as you would search for one.
@@ -283,7 +283,7 @@ to the panel to pick a different bus. That button survives drilling further in -
 through **Select Bus Number** or **View route from here** - the same way the
 back button on a stop list does.
 
-**⭐ Add favourite** stars the route, and `/favroutes` lists what you've starred
+**⭐ Add favourite** stars the route, and `/myroutes` lists what you've starred
 as paginated buttons labelled `Start → End`; tapping one reopens its panel, with
 a **🔙 Back to favourite routes** button returning to the list. Start and end are
 still stored in the order you set them - they decide which stop a bus button

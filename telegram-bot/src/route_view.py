@@ -11,7 +11,7 @@ from .pagination import nav_row, paginate
 from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
 
 # Two setter buttons share a row, so each one has half a row's width to say which stop it
-# holds. The route buttons in /favroutes get a row to themselves and Telegram's full 64.
+# holds. The route buttons in /myroutes get a row to themselves and Telegram's full 64.
 SETTER_LABEL_LIMIT = 32
 ROUTE_LABEL_LIMIT = 64
 
@@ -32,7 +32,7 @@ def stop_display(code) -> "str | None":
 
 
 def route_button_label(start_name: str, end_name: str, is_favourite: bool = True) -> str:
-    """Label for a whole route as one button, as /favroutes lists them. The arrow says
+    """Label for a whole route as one button, as /myroutes lists them. The arrow says
     which end is the start, which is what decides the stop a bus button opens."""
     icon = "⭐" if is_favourite else "🛣"
     return _truncate(f"{icon} {start_name} → {end_name}", ROUTE_LABEL_LIMIT)
@@ -56,7 +56,7 @@ def _status_line(start_code, end_code, services) -> str:
 
 
 def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool:
-    """Stars or unstars the route, storing each end's name as it reads now so /favroutes
+    """Stars or unstars the route, storing each end's name as it reads now so /myroutes
     still says something for a stop that later leaves the cache."""
     start = get_bus_stop_by_code(start_code)
     end = get_bus_stop_by_code(end_code)
@@ -73,9 +73,9 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     """The route panel: where the route starts and ends, and the buses that link the two
     without a change, as a paginated grid four across.
 
-    Either end may still be unset - that's how /newroute starts out - and `awaiting` is the
+    Either end may still be unset - that's how /route starts out - and `awaiting` is the
     end the chat is being asked to type ("start" or "end"), which marks its button and puts
-    the prompt in the body. `from_fav` is the page of /favroutes this was opened from, which
+    the prompt in the body. `from_fav` is the page of /myroutes this was opened from, which
     the back button returns to.
 
     Favourite buses are starred and pinned per the user's `/favouritepref`, as they are in

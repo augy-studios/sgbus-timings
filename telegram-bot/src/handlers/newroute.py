@@ -20,7 +20,7 @@ _CODE_RE = re.compile(r"^\d{3,5}$")
 # As many stops as /nearme lists, so a location means the same thing wherever it's sent.
 NEARBY_LIMIT = 8
 
-EXPIRED = "That route has expired. Use /newroute to start another."
+EXPIRED = "That route has expired. Use /route to start another."
 
 
 def _pick_row(label: str, code: str) -> list:
@@ -69,7 +69,7 @@ async def send_route_panel(client, chat_id, start_code, end_code, awaiting=None,
 async def arm_route_field(client, event, chat_id, payload):
     """Points the chat at one end of the route panel just tapped, so the next thing typed
     fills that end in, and redraws the panel with the prompt on it. Any panel still holding
-    its buttons can be edited this way, including one opened from /favroutes."""
+    its buttons can be edited this way, including one opened from /myroutes."""
     field = payload["field"]
     start_code, end_code = payload.get("start"), payload.get("end")
     start_route_draft(
@@ -85,7 +85,7 @@ async def arm_route_field(client, event, chat_id, payload):
 async def apply_stop(client, chat_id, code):
     """Puts a chosen stop into whichever end of the route the chat is filling in, and posts
     the panel that results. The other end is armed next while it's still empty, so
-    /newroute is two answers and done."""
+    /route is two answers and done."""
     draft = get_route_draft(chat_id)
     if not draft or draft["field"] not in ("start", "end"):
         await client.send_message(chat_id, EXPIRED)
@@ -111,7 +111,7 @@ async def apply_stop(client, chat_id, code):
 
 
 def register_newroute(client):
-    @client.on(events.NewMessage(pattern="/newroute"))
+    @client.on(events.NewMessage(pattern="/route"))
     async def start(event):
         # Starts armed for the start stop, so the panel can be answered straight away; the
         # two setter buttons switch which end an answer lands in.

@@ -30,8 +30,8 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /addfavbus - add bus numbers to your favourites
 - /favbuses - view your favourite buses and jump to their stops
 - /unfavbus - remove favourite buses
-- /newroute - pick a start and end bus stop to see the buses that run between them
-- /favroutes - view your favourite routes
+- /route - pick a start and end bus stop to see the buses that run between them
+- /myroutes - view your favourite routes
 - /favouritepref - choose whether favourites pin to the top or bottom
 - /addroutine - set up a routine that sends you a bus stop's timings on a schedule
 - /routines - view, edit, or delete your routines
