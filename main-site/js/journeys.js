@@ -1,10 +1,10 @@
-// Journeys for route ends that no single bus links: up to two changes of bus, with a short
-// walk allowed at either end and between buses, since the two sides of a road are two
-// different stops and a change often means crossing over. Ported from the Telegram bot's
-// journeys.py, so both find the same journeys.
+// The buses that run from one stop to another, and journeys for route ends that no single
+// bus links: up to two changes of bus, with a short walk allowed at either end and between
+// buses, since the two sides of a road are two different stops and a change often means
+// crossing over. Ported from the Telegram bot's journeys.py, so both find the same journeys.
 //
-// Unlike BusNet.servicesBetween, every bus leg here has to travel forwards, boarding before
-// alighting on one run of the route, or a journey could ride out to a terminus and back.
+// Every bus here has to travel forwards, boarding before alighting on one run of the route,
+// or a bus could ride out to a terminus and back.
 //
 // LTA gives no journey times, so every time here is an estimate from straight-line distance
 // between consecutive stops: good for ranking journeys and a rough "you'd get there around",
@@ -20,6 +20,13 @@
   // journey with fewer changes wins unless it's clearly slower.
   const CHANGE_PENALTY_MIN = 6;
   const MAX_JOURNEYS = 5;
+  // The stop across the road: the other side's stop on the same road, this close. Two stops
+  // on one road within 100 m are nearly always the pair facing each other; stops one after
+  // the other on a route are rarely that close.
+  const ACROSS_ROAD_M = 100;
+  // How much quicker the stop across the road has to be before the one given is called the
+  // wrong side, rather than a stop with slower buses.
+  const WRONG_SIDE_MIN = 5;
   // Grid cells of about 220 m, so every stop within the walk limit is in the 3x3 block of
   // cells around a stop.
   const CELL_DEG = 0.002;
@@ -94,14 +101,38 @@
     return x.length - y.length;
   }
 
+  // Every bus that runs from one stop to the other without a change, heading the right way:
+  // calling at the end after the start on one run of its route. A loop service counts round
+  // to its interchange, not past it. In bus-number order.
+  //
+  // A bus that calls at both stops only the wrong way round isn't one: it would ride out to
+  // its terminus and back. Picking the stop on the wrong side of the road is how that usually
+  // comes about, and it's the journeys, which walk across, that find the bus for it.
+  function directServices(startCode, endCode) {
+    const g = BusNet.graph();
+    const found = new Set();
+    for (const [r, i] of g.at[startCode] || []) {
+      if (g.runs[r].stops.indexOf(endCode, i + 1) !== -1) found.add(g.runs[r].bus);
+    }
+    return [...found].sort(BusNet.byNumber);
+  }
+
   // The quickest few ways from one stop to another with a walk or up to two changes, best
   // first, one per sequence of buses. Each is a list of legs, { bus, dir, from, to }, the
   // walks implied by the gaps between one leg's `to` and the next's `from`.
   function findJourneys(startCode, endCode, limit = MAX_JOURNEYS) {
+    return rankedJourneys(startCode, endCode)
+      .slice(0, limit)
+      .map((item) => item.legs);
+  }
+
+  // Every journey findJourneys weighs up, best first, as { cost, legs }. With `walkStart` or
+  // `walkEnd` off, that end is used as it is, with no walk to or from it.
+  function rankedJourneys(startCode, endCode, { walkStart = true, walkEnd = true } = {}) {
     const g = BusNet.graph();
     ensureGrid(g);
-    const starts = withNear(g, startCode);
-    const ends = withNear(g, endCode);
+    const starts = walkStart ? withNear(g, startCode) : [[startCode, 0]];
+    const ends = walkEnd ? withNear(g, endCode) : [[endCode, 0]];
 
     // Onward: every stop reachable on one bus from the start, best way per (stop, run).
     const onward = new Map();
@@ -206,8 +237,43 @@
 
     return [...best.values()]
       .sort((a, b) => a.cost - b.cost || compareBuses(a.buses, b.buses))
-      .slice(0, limit)
-      .map((item) => item.parts.map(toLeg));
+      .map((item) => ({ cost: item.cost, legs: item.parts.map(toLeg) }));
+  }
+
+  // [stop, metres] for the stops across the road from this one, nearest first.
+  function acrossTheRoad(code) {
+    const g = BusNet.graph();
+    ensureGrid(g);
+    const road = g.roads[code];
+    if (!road) return [];
+    return near(g, code)
+      .filter(([other, metres]) => metres <= ACROSS_ROAD_M && g.roads[other] === road)
+      .sort((a, b) => a[1] - b[1]);
+  }
+
+  // The stop across the road that each end of a route was most likely meant to be, as
+  // { start: { code, metres }, end: { code, metres } }, leaving out an end that looks right.
+  //
+  // An end looks wrong when the quickest journey boards or gets off across the road from it,
+  // and staying put at the end as given is at least WRONG_SIDE_MIN slower, or can't be done
+  // at all: the stop on the side of the road the buses don't go your way from. A minute or
+  // two either way is just a choice of buses, not the wrong stop.
+  function wrongSideEnds(startCode, endCode) {
+    const ranked = rankedJourneys(startCode, endCode);
+    if (!ranked.length) return {};
+    const { cost: bestCost, legs: best } = ranked[0];
+    const fixes = {};
+    for (const [field, code, used, stayPut] of [
+      ['start', startCode, best[0].from, { walkStart: false }],
+      ['end', endCode, best[best.length - 1].to, { walkEnd: false }],
+    ]) {
+      const across = acrossTheRoad(code).find(([other]) => other === used);
+      if (!across) continue;
+      const own = rankedJourneys(startCode, endCode, stayPut);
+      if (own.length && own[0].cost - bestCost < WRONG_SIDE_MIN) continue;
+      fixes[field] = { code: used, metres: across[1] };
+    }
+    return fixes;
   }
 
   // How long a leg is: the stops it rides and roughly how many minutes that takes. Null
@@ -242,5 +308,5 @@
     return total + (walkDetails(here, endCode)?.minutes || 0);
   }
 
-  window.Journeys = { findJourneys, legDetails, walkDetails, journeyMinutes, ESTIMATE_NOTE };
+  window.Journeys = { directServices, findJourneys, wrongSideEnds, legDetails, walkDetails, journeyMinutes, ESTIMATE_NOTE };
 })();

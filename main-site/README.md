@@ -39,8 +39,9 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Tap any stop to open its timings for that bus
 
 ### Route Planner
-- Pick a start and end stop (typed, or near your location) to see every bus that links them without a change
+- Pick a start and end stop (typed, or near your location) to see every bus that runs from one to the other without a change, heading the right way
 - When no single bus does, the quickest five journeys with up to two changes and short walks
+- Picked the stop on the wrong side of the road? When the buses for your trip go from the stop across the road, the planner says so, with a button to swap it in
 - Open a journey leg by leg with live timings, which bus you'd catch at each change, and a rough arrival time
 - A bus opened from a route or journey says how many stops it has left to go
 

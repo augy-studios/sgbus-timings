@@ -1,9 +1,10 @@
-"""Journeys for route ends that no single bus links: up to two changes of bus, with a short
-walk allowed at either end and between buses, since the two sides of a road are two
-different stops and a change often means crossing over.
+"""The buses that run from one stop to another, and journeys for route ends that no single
+bus links: up to two changes of bus, with a short walk allowed at either end and between
+buses, since the two sides of a road are two different stops and a change often means
+crossing over.
 
-Unlike `services_between`, every bus leg here has to travel forwards - boarding before
-alighting on one run of the route - or a journey could ride out to a terminus and back.
+Every bus here has to travel forwards - boarding before alighting on one run of the
+route - or a bus could ride out to a terminus and back.
 
 LTA gives no journey times, so every time here is an estimate from straight-line distance
 between consecutive stops. They are good for ranking journeys against each other and for
@@ -24,6 +25,13 @@ WALK_M_PER_MIN = 60
 # a journey with fewer changes wins unless it's clearly slower.
 CHANGE_PENALTY_MIN = 6
 MAX_JOURNEYS = 5
+# The stop across the road: the other side's stop on the same road, this close. Two stops
+# on one road within 100 m are nearly always the pair facing each other; stops one after
+# the other on a route are rarely that close.
+ACROSS_ROAD_M = 100
+# How much quicker the stop across the road has to be before the one given is called the
+# wrong side, rather than a stop with slower buses.
+WRONG_SIDE_MIN = 5
 
 # Grid cells of about 220 m, so every stop within the walk limit is in the 3x3 block of
 # cells around a stop.
@@ -53,10 +61,12 @@ class _Network:
     the stops a short walk away."""
 
     def __init__(self):
-        self.coords = {
-            row["code"]: (row["lat"], row["lng"])
-            for row in db.execute("SELECT code, lat, lng FROM bus_stops WHERE lat IS NOT NULL AND lng IS NOT NULL")
-        }
+        self.coords = {}
+        self.roads = {}
+        for row in db.execute("SELECT code, road, lat, lng FROM bus_stops WHERE lat IS NOT NULL AND lng IS NOT NULL"):
+            self.coords[row["code"]] = (row["lat"], row["lng"])
+            if row["road"]:
+                self.roads[row["code"]] = row["road"].strip().lower()
         self._near = {}
         self.grid = defaultdict(list)
         for code, (lat, lng) in self.coords.items():
@@ -149,6 +159,19 @@ def _leg(net, run, i, j) -> dict:
     return {"bus": run[0], "dir": run[1], "from": stops[i], "to": stops[j]}
 
 
+def direct_services(start_code: str, end_code: str) -> list:
+    """Every bus that runs from one stop to the other without a change, heading the right
+    way: calling at the end after the start on one run of its route. A loop service counts
+    round to its interchange, not past it. In bus-number order.
+
+    A bus that calls at both stops only the wrong way round isn't one - it would ride out
+    to its terminus and back. Picking the stop on the wrong side of the road is how that
+    usually comes about, and it's the journeys, which walk across, that find the bus for it."""
+    net = _get_network()
+    found = {run[0] for run, i in net.at.get(start_code, ()) if end_code in net.runs[run][i + 1 :]}
+    return sorted(found, key=_natural_sort_key)
+
+
 def find_journeys(start_code: str, end_code: str, limit: int = MAX_JOURNEYS) -> list:
     """The quickest few ways from one stop to another with a walk or up to two changes,
     best first, one per sequence of buses. Each is a list of legs, {bus, dir, from, to},
@@ -156,9 +179,15 @@ def find_journeys(start_code: str, end_code: str, limit: int = MAX_JOURNEYS) -> 
 
     Meant for when no single bus links the two stops, so it doesn't look for one riding
     straight between them - but a bus from the stop across the road does count."""
+    return [legs for _, legs in _ranked_journeys(start_code, end_code)[:limit]]
+
+
+def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, walk_end: bool = True) -> list:
+    """Every journey `find_journeys` weighs up, best first, as (cost, legs). With
+    `walk_start` or `walk_end` off, that end is used as it is, with no walk to or from it."""
     net = _get_network()
-    starts = net.with_near(start_code)
-    ends = net.with_near(end_code)
+    starts = net.with_near(start_code) if walk_start else [(start_code, 0.0)]
+    ends = net.with_near(end_code) if walk_end else [(end_code, 0.0)]
 
     # Onward: every stop reachable on one bus from the start, best way per (stop, run).
     # value = (minutes so far, board index)
@@ -245,8 +274,46 @@ def find_journeys(start_code: str, end_code: str, limit: int = MAX_JOURNEYS) -> 
                 if best_on is None or on_cost < best_on[0]:
                     best_on = (on_cost, index, run1, i1, j1)
 
-    ranked = sorted(best.values(), key=lambda item: (item[0], [_natural_sort_key(leg["bus"]) for leg in item[1]]))
-    return [legs for _, legs in ranked[:limit]]
+    return sorted(best.values(), key=lambda item: (item[0], [_natural_sort_key(leg["bus"]) for leg in item[1]]))
+
+
+def across_the_road(code: str) -> list:
+    """(stop, metres) for the stops across the road from this one, nearest first."""
+    net = _get_network()
+    road = net.roads.get(code)
+    if not road:
+        return []
+    return sorted(
+        ((other, metres) for other, metres in net.near(code) if metres <= ACROSS_ROAD_M and net.roads.get(other) == road),
+        key=lambda item: item[1],
+    )
+
+
+def wrong_side_ends(start_code: str, end_code: str) -> dict:
+    """The stop across the road that each end of a route was most likely meant to be, as
+    {"start": (code, metres), "end": (code, metres)}, leaving out an end that looks right.
+
+    An end looks wrong when the quickest journey boards or gets off across the road from
+    it, and staying put at the end as given is at least WRONG_SIDE_MIN slower, or can't be
+    done at all: the stop on the side of the road the buses don't go your way from. A
+    minute or two either way is just a choice of buses, not the wrong stop."""
+    ranked = _ranked_journeys(start_code, end_code)
+    if not ranked:
+        return {}
+    best_cost, best = ranked[0]
+    fixes = {}
+    for field, code, used, stay_put in (
+        ("start", start_code, best[0]["from"], {"walk_start": False}),
+        ("end", end_code, best[-1]["to"], {"walk_end": False}),
+    ):
+        across = dict(across_the_road(code))
+        if used not in across:
+            continue
+        own = _ranked_journeys(start_code, end_code, **stay_put)
+        if own and own[0][0] - best_cost < WRONG_SIDE_MIN:
+            continue
+        fixes[field] = (used, across[used])
+    return fixes
 
 
 def leg_details(leg: dict) -> "dict | None":

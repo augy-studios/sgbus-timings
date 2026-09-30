@@ -5,7 +5,9 @@
 // Loaded before script.js and uses its helpers ($, LS, loadStop, ...), so nothing here runs
 // until script.js calls initPlanner().
 
-const planner = { start: null, end: null, journey: null, journeys: [], token: 0 };
+// `sideFix` is the route with the stops across the road swapped in, while the planner is
+// suggesting one.
+const planner = { start: null, end: null, journey: null, journeys: [], sideFix: null, token: 0 };
 
 function initPlanner() {
   attachAutocomplete($('#routeStart'), $('#routeStartAc'), { onStop: (code) => setPlannerEnd('start', code) });
@@ -68,6 +70,10 @@ function initPlanner() {
     }
     const action = e.target.closest('[data-planner]')?.dataset.planner;
     if (action === 'back') {
+      planner.journey = null;
+      renderPlanner();
+    } else if (action === 'side-fix' && planner.sideFix) {
+      ({ start: planner.start, end: planner.end } = planner.sideFix);
       planner.journey = null;
       renderPlanner();
     } else if (action === 'refresh') {
@@ -140,10 +146,31 @@ function sgClock(minutesFromNow) {
   });
 }
 
+// A line per end of the route picked on the wrong side of the road, naming the stop across
+// the road that the buses really use, and a button to swap it in.
+function sideFixHtml(fixes) {
+  const lines = [
+    ['start', 'leave from'],
+    ['end', 'stop at'],
+  ]
+    .filter(([field]) => fixes[field])
+    .map(([field, verb]) => {
+      const { code, metres } = fixes[field];
+      return `<p><strong>Wrong side of the road?</strong> The quickest buses for this trip ${verb} ${escapeHtml(stopText(code))}, across the road from your ${field}, ~${Math.round(metres)} m away.</p>`;
+    });
+  const only = fixes.start || fixes.end;
+  const label = fixes.start && fixes.end ? 'Use the stops across the road' : `Use ${nameOf(only.code) || only.code} instead`;
+  return (
+    `<div class="sideHint">${lines.join('')}` +
+    `<button type="button" class="iconBtn" data-planner="side-fix">${ico('swap')} ${escapeHtml(label)}</button></div>`
+  );
+}
+
 async function renderPlanner() {
   const { start, end } = planner;
   const token = ++planner.token;
   const body = $('#plannerBody');
+  planner.sideFix = null;
 
   $('#routeStart').value = start ? stopText(start) : '';
   $('#routeEnd').value = end ? stopText(end) : '';
@@ -181,7 +208,7 @@ async function renderPlanner() {
     return;
   }
 
-  const services = BusNet.servicesBetween(start, end);
+  const services = Journeys.directServices(start, end);
   if (services.length) {
     const favs = new Set(LS.getFavBuses());
     const list = pinFavourites(services, favs, LS.getPin('bus'));
@@ -204,7 +231,13 @@ async function renderPlanner() {
     return;
   }
 
+  const fixes = Journeys.wrongSideEnds(start, end);
+  const fixed = { start: fixes.start?.code || start, end: fixes.end?.code || end };
+  const hasFix = (fixes.start || fixes.end) && fixed.start !== fixed.end;
+  if (hasFix) planner.sideFix = fixed;
+
   body.innerHTML =
+    (hasFix ? sideFixHtml(fixes) : '') +
     plannerStatus('No single bus links these two stops, but these journeys get there with a short walk or a change:') +
     `<div class="journeyList">${journeys
       .map((legs, i) => {

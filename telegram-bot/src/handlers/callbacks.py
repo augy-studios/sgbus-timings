@@ -8,7 +8,7 @@ from ..favourites import remove_favourite, toggle_favourite
 from ..journey_view import build_journey_view
 from ..list_view import rebuild_stop_list_view
 from ..reply import edit_rich_message
-from ..route_drafts import panel_awaiting
+from ..route_drafts import panel_awaiting, start_route_draft
 from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
 from ..stop_buses_view import build_stop_buses_view
@@ -129,12 +129,19 @@ def register_callbacks(client):
                     await edit_rich_message(client, event, rich, buttons)
                     await event.answer()
                     return
+                awaiting = panel_awaiting(user_id, event.query.msg_id)
+                if awaiting:
+                    # The wrong-side button swaps an end in, and a stop typed in answer to
+                    # this panel afterwards has to land on the route as it now stands.
+                    start_route_draft(
+                        user_id, awaiting, start_code=start_code, end_code=end_code, panel_msg_id=event.query.msg_id
+                    )
                 rich, buttons = build_route_view(
                     user_id,
                     start_code,
                     end_code,
                     payload.get("page", 0),
-                    awaiting=panel_awaiting(user_id, event.query.msg_id),
+                    awaiting=awaiting,
                     from_fav=payload.get("from_fav"),
                 )
                 await edit_rich_message(client, event, rich, buttons)

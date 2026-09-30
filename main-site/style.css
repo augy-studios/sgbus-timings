@@ -1158,6 +1158,21 @@ header {
     margin-bottom: 10px;
 }
 
+/* An end picked on the wrong side of the road: the one thing on the panel to act on first. */
+.sideHint {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+    border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
+    background: color-mix(in srgb, var(--warn) 10%, transparent);
+    font-size: 14px;
+}
+.sideHint strong { color: var(--warn); }
+
 .plannerNav {
     display: flex;
     justify-content: space-between;

@@ -262,15 +262,17 @@ later, and `/cancel` stops the flow at any point.
 Each answer arrives as a **new** panel, and the one it replaces has its buttons
 taken away, so there's never a question about which panel is the live one.
 
-A completed route lists every bus that links the two stops without a change - any
-service calling at both of them - as a grid four across, favourites starred and
-pinned per `/favouritepref` like every other bus grid.
+A completed route lists every bus that runs from the start to the end without a
+change, as a grid four across, favourites starred and pinned per `/favouritepref`
+like every other bus grid. Only a bus heading the right way counts: one that
+calls at the end after the start on one run of its route. A loop service counts
+round to its interchange, but not past it.
 
 A pair of stops with no single bus between them gets the quickest five
 **journeys** instead, each listed in the panel (buses, where to change, time on
 the move) and as a **🧭** button. A journey takes up to two changes of bus, and
 may walk up to 200 m - to a stop across the road at either end, or between two
-buses. Unlike the direct-bus list, every bus in a journey has to be heading the
+buses. Like the direct-bus list, every bus in a journey has to be heading the
 right way, boarding before alighting on one run of its route, or a journey could
 ride out to a terminus and back. Journeys are ranked by time riding and walking,
 plus 6 minutes a change, and only the quickest one per sequence of buses is kept.
@@ -287,17 +289,31 @@ still say so.
 
 Whenever a bus is opened off a route or a journey, its timings view says how
 many stops it has left to go: to the route's end, or to where the leg gets off,
-with the stops left in the whole journey. A direct bus that only links the two
-stops by going round via its terminus says so.
+with the stops left in the whole journey.
 
-The list is deliberately **not** narrowed to one direction of each service, and
-there's no swap button, because narrowing it that way is wrong far more often
-than it's right. A service normally serves the two sides of a road as two
-different bus stops, so it calls at any one stop on a single direction only:
-pairing stop A and stop B up direction by direction throws out most of the buses
-that really do run between those two places. Bedok Resvr Stn Exit B to Bedok Int
-is the usual shape of it - 69 and 168 only call at Exit B on the leg heading back
-to the interchange, since the outbound leg uses the stop across the road.
+#### The wrong side of the road
+
+The two sides of a road are two different bus stops, and a bus only calls at the
+one on its side, so it's easy to pick the stop your bus doesn't go your way from:
+Aft Waterfront Waves when the buses to Changi Airport leave from Opp Waterfront
+Waves, across the road. The direct-bus list won't pretend a bus serving the other
+side gets you there, so a route like that gets journeys, which may walk across
+the road at either end. When the quickest journey boards or gets off at the stop
+**across the road** from an end - the other stop on the same road, within 100 m -
+and staying put at that end is at least 5 minutes slower or can't be done at all,
+the panel says so:
+
+> 💡 Wrong side of the road? The quickest buses for this trip leave from Opp
+> Waterfront Waves (84631), across the road from your start, ~27 m away.
+
+with a **🔄 Use Opp Waterfront Waves instead** button (or **🔄 Use the stops across
+the road**, when both ends are wrong) that swaps the stop in, so the route you
+star is the right one. A minute or two either way is just a choice of buses, so
+that doesn't count as the wrong side.
+
+Heading the right way is also why Bedok Int to Bedok Resvr Stn Exit B lists only
+228: 69 and 168 call at Exit B on their way back to the interchange, and on the
+way out they stop at Exit A, across the road.
 
 Tapping a bus opens the **start** stop's timings narrowed to that service, with
 all the buttons a single-bus timings view normally carries (see
@@ -472,7 +488,7 @@ telegram-bot/
     stop_buses_view.py     builds the grid of every bus number serving a stop
     bus_route_view.py      builds a service's paginated stop keyboards: the whole route, or the rest of the run from one stop
     route_view.py          builds the route panel: both ends, and the buses running between them
-    journeys.py            finds journeys with a walk or up to two changes, over an in-memory copy of every route
+    journeys.py            finds direct buses, journeys with a walk or up to two changes, and ends picked on the wrong side of the road, over an in-memory copy of every route
     journey_view.py        builds one journey's leg-by-leg view with live timings, and the stops-left line
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/

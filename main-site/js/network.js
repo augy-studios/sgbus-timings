@@ -93,15 +93,6 @@
     return [...(atStop[code] || [])].sort(byNumber);
   }
 
-  // Every bus that calls at both stops, whichever direction of its route it does so on.
-  // Deliberately not narrowed to one direction: a service usually serves the two sides of
-  // a road as two different stops, so pairing stops up direction by direction drops most
-  // of the buses that really do run between the two places.
-  function servicesBetween(startCode, endCode) {
-    const atEnd = atStop[endCode] || new Set();
-    return [...(atStop[startCode] || [])].filter((no) => atEnd.has(no)).sort(byNumber);
-  }
-
   // The stops a service still calls at from a given stop, that stop first, following one
   // direction; the other direction if the stop isn't on the first one tried.
   function onwardFrom(serviceNo, code, preferDir) {
@@ -217,12 +208,16 @@
   // ---- Graph, for the journey planner and stop counts ----
 
   // Every run of every service held as a list, with the distance ridden to each stop and
-  // where each stop sits on each run. Built on first use, since only the planner needs it.
+  // where each stop sits on each run, plus each stop's road for telling which is across the
+  // road from which. Built on first use, since only the planner needs it.
   function getGraph() {
     if (graph) return graph;
     const coords = {};
+    const roads = {};
     for (const [code, s] of Object.entries(stops)) {
-      if (s.lat != null && s.lng != null) coords[code] = [s.lat, s.lng];
+      if (s.lat == null || s.lng == null) continue;
+      coords[code] = [s.lat, s.lng];
+      if (s.road) roads[code] = s.road.trim().toLowerCase();
     }
     const list = [];
     // In the Telegram bot's order (its SQL sorts service numbers as text, then direction),
@@ -254,7 +249,7 @@
     }
     const at = {};
     list.forEach((run, r) => run.stops.forEach((code, i) => (at[code] ??= []).push([r, i])));
-    graph = { coords, runs: list, at };
+    graph = { coords, roads, runs: list, at };
     return graph;
   }
 
@@ -298,7 +293,6 @@
     directions,
     runStops,
     servicesAtStop,
-    servicesBetween,
     onwardFrom,
     directionAt,
     terminals,

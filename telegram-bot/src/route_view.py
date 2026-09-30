@@ -1,6 +1,5 @@
 from telethon import Button
 
-from .bus_routes import services_between
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .favourite_buses import list_favourite_buses
@@ -8,7 +7,7 @@ from .favourite_prefs import get_pref, pin_favourites
 from .favourite_routes import is_favourite_route, toggle_favourite_route
 from .format import bus_button_label, escape_md
 from .journey_view import ESTIMATE_NOTE, journey_button_label, journey_summary
-from .journeys import find_journeys
+from .journeys import direct_services, find_journeys, wrong_side_ends
 from .pagination import nav_row, paginate
 from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
 
@@ -59,6 +58,28 @@ def _status_line(start_code, end_code, services, journeys) -> str:
     return f"🚌 {count} bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} between these stops."
 
 
+def _wrong_side_lines(fixes: dict) -> list:
+    """A line per end of the route picked on the wrong side of the road, naming the stop
+    across the road that the buses really use."""
+    lines = []
+    for field, verb in (("start", "leave from"), ("end", "stop at")):
+        if field in fixes:
+            code, metres = fixes[field]
+            lines.append(
+                f"💡 Wrong side of the road? The quickest buses for this trip {verb} {stop_display(code)}, "
+                f"across the road from your {field}, ~{round(metres)} m away."
+            )
+    return lines
+
+
+def _wrong_side_button_label(fixes: dict) -> str:
+    if len(fixes) > 1:
+        return "🔄 Use the stops across the road"
+    ((code, _),) = fixes.values()
+    stop = get_bus_stop_by_code(code)
+    return _truncate(f"🔄 Use {stop['name'] if stop else code} instead", ROUTE_LABEL_LIMIT)
+
+
 def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool:
     """Stars or unstars the route, storing each end's name as it reads now so /myroutes
     still says something for a stop that later leaves the cache."""
@@ -74,9 +95,11 @@ def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool
 
 
 def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None):
-    """The route panel: where the route starts and ends, and the buses that link the two
-    without a change, as a paginated grid four across. When there are none, the quickest
-    few journeys with a walk or a change stand in for them, a button each.
+    """The route panel: where the route starts and ends, and the buses that run from one to
+    the other without a change, as a paginated grid four across. When there are none, the
+    quickest few journeys with a walk or a change stand in for them, a button each - and
+    when an end the route was given is clearly slower than the stop across the road from
+    it, the panel says it's on the wrong side and offers a button to swap that stop in.
 
     Either end may still be unset - that's how /route starts out - and `awaiting` is the
     end the chat is being asked to type ("start" or "end"), which marks its button and puts
@@ -88,9 +111,15 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     Returns (rich, buttons)."""
     start_text = stop_display(start_code)
     end_text = stop_display(end_code)
-    services = services_between(start_code, end_code) if start_code and end_code else []
+    services = direct_services(start_code, end_code) if start_code and end_code else []
     journeys = find_journeys(start_code, end_code) if start_code and end_code and not services else []
     status = _status_line(start_code, end_code, services, journeys)
+    fixes = wrong_side_ends(start_code, end_code) if journeys else {}
+    fixed_start = fixes["start"][0] if "start" in fixes else start_code
+    fixed_end = fixes["end"][0] if "end" in fixes else end_code
+    if fixed_start == fixed_end:
+        fixes = {}
+    wrong_side = _wrong_side_lines(fixes)
 
     lines = [
         "# Route",
@@ -98,6 +127,7 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
         f"- **End**: {escape_md(end_text) if end_text else '_not set_'}",
         # Blank lines between blocks: a single newline collapses into the previous
         # paragraph in Telegram's rich-message Markdown.
+        *(item for line in wrong_side for item in ("", f"**{escape_md(line)}**")),
         "",
         escape_md(status),
     ]
@@ -105,6 +135,7 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
         "Route",
         f"Start: {start_text or 'not set'}",
         f"End: {end_text or 'not set'}",
+        *wrong_side,
         status,
     ]
     if journeys:
@@ -143,6 +174,19 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
             ),
         ]
     ]
+
+    # Straight under the ends it changes. The page is left behind: it counted buses on the
+    # route being swapped out.
+    if fixes:
+        swapped = {k: v for k, v in base.items() if k != "page"}
+        buttons.append(
+            [
+                Button.inline(
+                    _wrong_side_button_label(fixes),
+                    make_button("route_view", {**swapped, "start": fixed_start, "end": fixed_end}),
+                )
+            ]
+        )
 
     if start_code and end_code:
         favourited = is_favourite_route(chat_id, start_code, end_code)
