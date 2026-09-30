@@ -115,7 +115,7 @@
             </div>
             <button id="searchBtn" class="btn">Get Timings</button>
         </div>
-        <div class="hint">Tip: search by stop name (e.g. &ldquo;Orchard&rdquo;), 5-digit stop code, or a bus number (e.g. &ldquo;22&rdquo;) to see its route.</div>
+        <div class="hint">Tip: search by stop name (e.g. &ldquo;Orchard&rdquo;), 5-digit stop code, 6-digit postal code for the stops near an address, or a bus number (e.g. &ldquo;22&rdquo;) to see its route.</div>
 
         <div class="quickActions">
             <button id="nearMeBtn" class="iconBtn" type="button"><span data-icon="pin"></span> Stops near me</button>
@@ -138,7 +138,7 @@
                             <label for="routeStart">Start</label>
                             <div class="plannerInputRow">
                                 <div class="ac">
-                                    <input id="routeStart" class="input" placeholder="Stop name or code" autocomplete="off" enterkeyhint="next" />
+                                    <input id="routeStart" class="input" placeholder="Stop name, code or postal code"autocomplete="off" enterkeyhint="next" />
                                     <div id="routeStartAc" class="acList" hidden></div>
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="start" title="Pick a stop near me" aria-label="Pick a start stop near me"><span data-icon="pin"></span></button>
@@ -149,7 +149,7 @@
                             <label for="routeEnd">End</label>
                             <div class="plannerInputRow">
                                 <div class="ac">
-                                    <input id="routeEnd" class="input" placeholder="Stop name or code" autocomplete="off" enterkeyhint="go" />
+                                    <input id="routeEnd" class="input" placeholder="Stop name, code or postal code"autocomplete="off" enterkeyhint="go" />
                                     <div id="routeEndAc" class="acList" hidden></div>
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="end" title="Pick a stop near me" aria-label="Pick an end stop near me"><span data-icon="pin"></span></button>

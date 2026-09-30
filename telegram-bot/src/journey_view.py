@@ -45,7 +45,8 @@ def journey_summary(legs: list, start_code: str, end_code: str) -> str:
         parts.append(f"from {_name(legs[0]['from'])}")
     changes = [_name(leg["to"]) for leg in legs[:-1]]
     if changes:
-        parts.append(f"change{'s' if len(changes) > 1 else ''} at {' and '.join(changes)}")
+        places = f"{', '.join(changes[:-1])} and {changes[-1]}" if len(changes) > 1 else changes[0]
+        parts.append(f"change{'s' if len(changes) > 1 else ''} at {places}")
     if legs[-1]["to"] != end_code:
         parts.append(f"off at {_name(legs[-1]['to'])}")
     return f"{', '.join(parts)} · {_minutes_text(journey_minutes(legs, start_code, end_code))}"

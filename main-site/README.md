@@ -20,6 +20,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Autocomplete dropdown with matching buses and up to 20 stops
 - Filter results to a specific service by appending the bus number (e.g. `84009 174`)
 - **Stops near me** lists the 8 nearest stops to your location
+- A 6-digit postal code (e.g. `519599`) lists the 8 stops nearest that address, in the search box or either end of the route planner
 
 ### Favourites
 - Star bus stops, buses and planned routes; each appears as a one-tap chip
@@ -40,7 +41,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ### Route Planner
 - Pick a start and end stop (typed, or near your location) to see every bus that runs from one to the other without a change, heading the right way
-- When no single bus does, the quickest five journeys with up to two changes and short walks
+- When no single bus does, the quickest five journeys with up to three changes and short walks
 - Picked the stop on the wrong side of the road? When the buses for your trip go from the stop across the road, the planner says so, with a button to swap it in
 - Open a journey leg by leg with live timings, which bus you'd catch at each change, and a rough arrival time
 - A bus opened from a route or journey says how many stops it has left to go

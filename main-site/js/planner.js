@@ -227,7 +227,7 @@ async function renderPlanner() {
   const journeys = Journeys.findJourneys(start, end);
   planner.journeys = journeys;
   if (!journeys.length) {
-    body.innerHTML = plannerStatus('No single bus links these two stops, even with two changes. Try picking other stops.');
+    body.innerHTML = plannerStatus('No single bus links these two stops, even with three changes. Try picking other stops.');
     return;
   }
 
@@ -260,7 +260,10 @@ function journeyDetail(legs, start, end) {
   const parts = [];
   if (legs[0].from !== start) parts.push(`From ${nameOf(legs[0].from) || legs[0].from}`);
   const changes = legs.slice(0, -1).map((l) => nameOf(l.to) || l.to);
-  if (changes.length) parts.push(`change${changes.length > 1 ? 's' : ''} at ${changes.join(' and ')}`);
+  if (changes.length) {
+    const places = changes.length > 1 ? `${changes.slice(0, -1).join(', ')} and ${changes[changes.length - 1]}` : changes[0];
+    parts.push(`change${changes.length > 1 ? 's' : ''} at ${places}`);
+  }
   const last = legs[legs.length - 1];
   if (last.to !== end) parts.push(`off at ${nameOf(last.to) || last.to}`);
   const text = parts.join(', ');

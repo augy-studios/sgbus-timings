@@ -19,7 +19,7 @@ headings and tables, not a Markdown approximation.
 - Build a route between two bus stops and see every bus that links them without
   a change, then save the routes you take often.
 - Find the bus stops nearest to your current location, by sending your location
-  or with `/nearme`.
+  or with `/nearme`, or nearest an address, by sending its 6-digit postal code.
 - Save bus stops as favourites for quick access, from any chat.
 - Save bus numbers as favourites too - they're pinned and starred wherever
   they show up in a stop's timings, and you can browse straight to the stops
@@ -254,7 +254,8 @@ with a bus stop number or part of a name, exactly as you would search for one.
 A name matching several stops brings up the same **Did you mean:** buttons a
 search does. You can also **send your location** instead of typing, which lists
 the bus stops nearest to it with their distances - tapping one sets that end of
-the route rather than opening its timings, the way `/nearme` would. Answer once
+the route rather than opening its timings, the way `/nearme` would. A 6-digit
+postal code does the same for the stops nearest that address. Answer once
 and the panel comes back asking for the end; answer again and the route is
 complete. The two buttons stay put afterwards, so either end can be changed
 later, and `/cancel` stops the flow at any point.
@@ -270,7 +271,7 @@ round to its interchange, but not past it.
 
 A pair of stops with no single bus between them gets the quickest five
 **journeys** instead, each listed in the panel (buses, where to change, time on
-the move) and as a **🧭** button. A journey takes up to two changes of bus, and
+the move) and as a **🧭** button. A journey takes up to three changes of bus, and
 may walk up to 200 m - to a stop across the road at either end, or between two
 buses. Like the direct-bus list, every bus in a journey has to be heading the
 right way, boarding before alighting on one run of its route, or a journey could
@@ -284,7 +285,7 @@ then gives an arrival time for the whole journey. LTA publishes no journey times
 so rides are estimated from the straight-line distance between consecutive stops
 at 15 km/h, and walks at 60 m a minute - fine for comparing journeys, rough as a
 clock. A **🚏** button per leg opens that stop's timings narrowed to the bus, with
-**🔙 Back to journey** to return. Pairs no journey links, even with two changes,
+**🔙 Back to journey** to return. Pairs no journey links, even with three changes,
 still say so.
 
 Whenever a bus is opened off a route or a journey, its timings view says how
@@ -358,6 +359,10 @@ button returning to the list.
 The command is only ever a shortcut to that share button - any location sent to
 the bot is answered with the stops near it, whether `/nearme` asked for it or
 not - so `/nearme` says as much when you use it.
+
+A 6-digit postal code sent as a message lists the stops nearest that address the
+same way. Its whereabouts come from OneMap's address search, which still answers
+without an API token; set `ONEMAP_API_TOKEN` in `.env` should it start to insist.
 
 ### Routines
 
@@ -465,6 +470,7 @@ telegram-bot/
     db.py                  SQLite connection and schema
     lta.py                 LTA DataMall API client (async, httpx)
     bus_stops.py           bus stop cache, search, nearest-stop lookup
+    postal.py              postal code to address and coordinates, via OneMap
     bus_services.py        bus service cache: number validation, terminals, loop info
     bus_routes.py          bus service <-> stop cache (which stops a service visits)
     favourites.py          per-user favourite bus stops (SQLite)
@@ -488,7 +494,7 @@ telegram-bot/
     stop_buses_view.py     builds the grid of every bus number serving a stop
     bus_route_view.py      builds a service's paginated stop keyboards: the whole route, or the rest of the run from one stop
     route_view.py          builds the route panel: both ends, and the buses running between them
-    journeys.py            finds direct buses, journeys with a walk or up to two changes, and ends picked on the wrong side of the road, over an in-memory copy of every route
+    journeys.py            finds direct buses, journeys with a walk or up to three changes, and ends picked on the wrong side of the road, over an in-memory copy of every route
     journey_view.py        builds one journey's leg-by-leg view with live timings, and the stops-left line
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/

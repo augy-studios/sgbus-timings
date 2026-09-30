@@ -7,9 +7,11 @@ from ..buttons import make_button
 from ..favourites import list_favourites
 from ..flows import Flow, end_flow, get_flow, register_flow, set_flow
 from ..format import stop_button_label
+from ..postal import POSTAL_CODE_RE
 from ..reply import edit_rich_message, edit_rich_message_at, send_rich_message, sent_message_id
 from ..route_drafts import clear_route_draft, get_route_draft, start_route_draft
 from ..route_view import build_route_view
+from .search import find_postal_stops
 
 # No `finish`: a route is only worth anything once both ends are set, and it's the panel's
 # own star button that saves it, so there's nothing for /done to wrap up early.
@@ -26,6 +28,21 @@ EXPIRED = "That route has expired. Use /route to start another."
 def _pick_row(label: str, code: str) -> list:
     """One stop, as a button that drops it into whichever end the panel is waiting for."""
     return [Button.inline(label[:64], make_button("route_stop_pick", {"code": code}))]
+
+
+async def _offer_nearby(event, chat_id, nearby, near, field):
+    """The stops near a place, a button each, to fill in the route's `field`. Starred like
+    every other stop list, but left in distance order rather than pinned per
+    /favouritepref: nearest-first is the whole point of answering with a place."""
+    favourite_codes = {f["code"] for f in list_favourites(chat_id)}
+    buttons = [
+        _pick_row(
+            stop_button_label(stop, stop["distance"], is_favourite=stop["code"] in favourite_codes),
+            stop["code"],
+        )
+        for stop in nearby
+    ]
+    await event.respond(f"Bus stops near {near} - pick the {field}:", buttons=buttons)
 
 
 def _armed_draft(chat_id):
@@ -135,17 +152,7 @@ def register_newroute(client):
             )
             raise events.StopPropagation
 
-        # Starred like every other stop list, but left in distance order rather than pinned
-        # per /favouritepref: nearest-first is the whole point of answering with a location.
-        favourite_codes = {f["code"] for f in list_favourites(chat_id)}
-        buttons = [
-            _pick_row(
-                stop_button_label(stop, stop["distance"], is_favourite=stop["code"] in favourite_codes),
-                stop["code"],
-            )
-            for stop in nearby
-        ]
-        await event.respond(f"Bus stops near you - pick the {draft['field']}:", buttons=buttons)
+        await _offer_nearby(event, chat_id, nearby, "you", draft["field"])
         raise events.StopPropagation
 
     @client.on(events.NewMessage(func=lambda e: bool(e.message.text) and not e.message.text.startswith("/")))
@@ -155,6 +162,13 @@ def register_newroute(client):
             return
 
         text = event.message.text.strip()
+        if POSTAL_CODE_RE.match(text):
+            found = await find_postal_stops(event, text)
+            if found:
+                nearby, address = found
+                await _offer_nearby(event, chat_id, nearby, address, get_route_draft(chat_id)["field"])
+            raise events.StopPropagation
+
         exact = get_bus_stop_by_code(text) if _CODE_RE.match(text) else None
         if exact:
             await apply_stop(client, chat_id, exact["code"])
@@ -162,7 +176,7 @@ def register_newroute(client):
 
         matches = search_bus_stops(text, 10)
         if not matches:
-            await event.respond("No bus stops matched that. Try a bus stop number or part of its name.")
+            await event.respond("No bus stops matched that. Try a bus stop number, part of its name, or a postal code.")
             raise events.StopPropagation
         if len(matches) == 1:
             await apply_stop(client, chat_id, matches[0]["code"])

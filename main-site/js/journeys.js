@@ -1,5 +1,5 @@
 // The buses that run from one stop to another, and journeys for route ends that no single
-// bus links: up to two changes of bus, with a short walk allowed at either end and between
+// bus links: up to three changes of bus, with a short walk allowed at either end and between
 // buses, since the two sides of a road are two different stops and a change often means
 // crossing over. Ported from the Telegram bot's journeys.py, so both find the same journeys.
 //
@@ -19,6 +19,8 @@
   // What a change costs over the time spent moving, the wait for the next bus mostly, so a
   // journey with fewer changes wins unless it's clearly slower.
   const CHANGE_PENALTY_MIN = 6;
+  // Changes of bus in one journey, at most: some trips across the island take four buses.
+  const MAX_CHANGES = 3;
   const MAX_JOURNEYS = 5;
   // The stop across the road: the other side's stop on the same road, this close. Two stops
   // on one road within 100 m are nearly always the pair facing each other; stops one after
@@ -117,7 +119,7 @@
     return [...found].sort(BusNet.byNumber);
   }
 
-  // The quickest few ways from one stop to another with a walk or up to two changes, best
+  // The quickest few ways from one stop to another with a walk or up to three changes, best
   // first, one per sequence of buses. Each is a list of legs, { bus, dir, from, to }, the
   // walks implied by the gaps between one leg's `to` and the next's `from`.
   function findJourneys(startCode, endCode, limit = MAX_JOURNEYS) {
@@ -195,49 +197,101 @@
       }
     }
 
-    // Two changes: the best way onto each stop after the first bus, and the best way to the
-    // end from each stop before the last one, joined up by a middle bus between them.
-    const reach = new Map();
-    for (const [stop, entries] of groupByStop(onward.values())) {
-      const e1 = cheapest(entries);
-      for (const [board, walkM] of withNear(g, stop)) {
-        const cost = e1.cost + walkMin(walkM) + CHANGE_PENALTY_MIN;
-        if (!reach.has(board) || cost < reach.get(board).cost) reach.set(board, { cost, e: e1 });
-      }
-    }
-    const finish = new Map();
-    for (const [stop, entries] of inwardAt) {
-      const e3 = cheapest(entries);
-      for (const [alight, walkM] of withNear(g, stop)) {
-        const cost = walkMin(walkM) + CHANGE_PENALTY_MIN + e3.cost;
-        if (!finish.has(alight) || cost < finish.get(alight).cost) finish.set(alight, { cost, e: e3 });
-      }
+    // Two changes or more: the best way onto each stop after the first few buses, and the
+    // best way to the end from each stop before the last few, joined up by a middle bus.
+    // reach[k] and finish[k] map a stop to { cost, parts } with k buses ridden, the walk and
+    // the change onto or off the middle bus counted in.
+    const oneBus = (entriesAt) =>
+      new Map([...entriesAt].map(([stop, entries]) => {
+        const e = cheapest(entries);
+        return [stop, { cost: e.cost, parts: [[g.runs[e.r], e.i, e.j]] }];
+      }));
+    const reach = [null, changeAt(g, oneBus(groupByStop(onward.values())))];
+    const finish = [null, changeAt(g, oneBus(inwardAt))];
+    for (let k = 2; k < MAX_CHANGES; k++) {
+      reach.push(changeAt(g, rideOn(g, reach[k - 1])));
+      finish.push(changeAt(g, rideBack(g, finish[k - 1])));
     }
 
-    for (const run2 of g.runs) {
-      // The cheapest way to be on this bus so far, as minutes before its own ride is
-      // counted, so the ride on to any later stop is just a subtraction away.
-      let bestOn = null;
-      run2.stops.forEach((stop, index) => {
-        if (bestOn && finish.has(stop)) {
-          const f = finish.get(stop);
-          offer(bestOn.cost + run2.cum[index] / BUS_M_PER_MIN + f.cost, [
-            [g.runs[bestOn.e.r], bestOn.e.i, bestOn.e.j],
-            [run2, bestOn.i2, index],
-            [g.runs[f.e.r], f.e.i, f.e.j],
-          ]);
-        }
-        if (reach.has(stop)) {
-          const rc = reach.get(stop);
-          const onCost = rc.cost - run2.cum[index] / BUS_M_PER_MIN;
-          if (!bestOn || onCost < bestOn.cost) bestOn = { cost: onCost, i2: index, e: rc.e };
-        }
-      });
+    for (const run of g.runs) {
+      for (let before = 1; before < MAX_CHANGES; before++) {
+        scanOn(reach[before], run, (index, cost, board, parts) => {
+          for (let after = 1; after <= MAX_CHANGES - before; after++) {
+            const tail = finish[after].get(run.stops[index]);
+            if (tail) offer(cost + tail.cost, [...parts, [run, board, index], ...tail.parts]);
+          }
+        });
+      }
     }
 
     return [...best.values()]
       .sort((a, b) => a.cost - b.cost || compareBuses(a.buses, b.buses))
       .map((item) => ({ cost: item.cost, legs: item.parts.map(toLeg) }));
+  }
+
+  // Calls visit(index, minutes so far, board index, parts before this bus) for every stop
+  // along one run that a journey in `reach` could ride this bus to, boarding wherever is
+  // cheapest before it. A journey that has already ridden this bus doesn't board it again.
+  function scanOn(reach, run, visit) {
+    // The cheapest way to be on this bus so far, as minutes before its own ride is counted,
+    // so the ride on to any later stop is just a subtraction away.
+    let bestOn = null;
+    run.stops.forEach((stop, index) => {
+      if (bestOn) visit(index, bestOn.cost + run.cum[index] / BUS_M_PER_MIN, bestOn.board, bestOn.parts);
+      const label = reach.get(stop);
+      if (label && label.parts.every(([r]) => r.bus !== run.bus)) {
+        const onCost = label.cost - run.cum[index] / BUS_M_PER_MIN;
+        if (!bestOn || onCost < bestOn.cost) bestOn = { cost: onCost, board: index, parts: label.parts };
+      }
+    });
+  }
+
+  // The cheapest way off one more bus at every stop, from the journeys in `reach`.
+  function rideOn(g, reach) {
+    const off = new Map();
+    for (const run of g.runs) {
+      scanOn(reach, run, (index, cost, board, parts) => {
+        const stop = run.stops[index];
+        if (!off.has(stop) || cost < off.get(stop).cost) off.set(stop, { cost, parts: [...parts, [run, board, index]] });
+      });
+    }
+    return off;
+  }
+
+  // rideOn backwards: the cheapest way to the end from every stop, one more bus before the
+  // journeys in `finish`.
+  function rideBack(g, finish) {
+    const on = new Map();
+    for (const run of g.runs) {
+      // The cheapest way on from getting off this bus, as minutes plus its own ride so far.
+      let bestOff = null;
+      for (let index = run.stops.length - 1; index >= 0; index--) {
+        const stop = run.stops[index];
+        if (bestOff) {
+          const cost = bestOff.cost - run.cum[index] / BUS_M_PER_MIN;
+          if (!on.has(stop) || cost < on.get(stop).cost) on.set(stop, { cost, parts: [[run, index, bestOff.alight], ...bestOff.parts] });
+        }
+        const label = finish.get(stop);
+        if (label && label.parts.every(([r]) => r.bus !== run.bus)) {
+          const offCost = label.cost + run.cum[index] / BUS_M_PER_MIN;
+          if (!bestOff || offCost < bestOff.cost) bestOff = { cost: offCost, alight: index, parts: label.parts };
+        }
+      }
+    }
+    return on;
+  }
+
+  // A change of bus at every stop in `at`: the short walk to each stop near it and the wait
+  // there, cheapest per stop, keyed the same way.
+  function changeAt(g, at) {
+    const out = new Map();
+    for (const [stop, { cost, parts }] of at) {
+      for (const [other, walkM] of withNear(g, stop)) {
+        const total = cost + walkMin(walkM) + CHANGE_PENALTY_MIN;
+        if (!out.has(other) || total < out.get(other).cost) out.set(other, { cost: total, parts });
+      }
+    }
+    return out;
   }
 
   // [stop, metres] for the stops across the road from this one, nearest first.

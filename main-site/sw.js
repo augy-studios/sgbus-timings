@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v14";
+const VERSION = "v15";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [

@@ -1,5 +1,5 @@
 """The buses that run from one stop to another, and journeys for route ends that no single
-bus links: up to two changes of bus, with a short walk allowed at either end and between
+bus links: up to three changes of bus, with a short walk allowed at either end and between
 buses, since the two sides of a road are two different stops and a change often means
 crossing over.
 
@@ -24,6 +24,8 @@ WALK_M_PER_MIN = 60
 # What a change costs over the time spent moving - the wait for the next bus, mostly - so
 # a journey with fewer changes wins unless it's clearly slower.
 CHANGE_PENALTY_MIN = 6
+# Changes of bus in one journey, at most: some trips across the island take four buses.
+MAX_CHANGES = 3
 MAX_JOURNEYS = 5
 # The stop across the road: the other side's stop on the same road, this close. Two stops
 # on one road within 100 m are nearly always the pair facing each other; stops one after
@@ -173,7 +175,7 @@ def direct_services(start_code: str, end_code: str) -> list:
 
 
 def find_journeys(start_code: str, end_code: str, limit: int = MAX_JOURNEYS) -> list:
-    """The quickest few ways from one stop to another with a walk or up to two changes,
+    """The quickest few ways from one stop to another with a walk or up to three changes,
     best first, one per sequence of buses. Each is a list of legs, {bus, dir, from, to},
     the walks being implied by the gaps between one leg's `to` and the next's `from`.
 
@@ -215,14 +217,16 @@ def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, wa
     for (stop, run), value in inward.items():
         inward_at[stop].append((run, *value))
 
+    # `parts` is (run, i, j) per leg; the legs themselves are only built for the journeys
+    # that make the list.
     best = {}
 
-    def offer(cost, legs):
-        buses = tuple(leg["bus"] for leg in legs)
+    def offer(cost, parts):
+        buses = tuple(run[0] for run, _, _ in parts)
         if len(set(buses)) < len(buses):
             return
         if buses not in best or cost < best[buses][0]:
-            best[buses] = (cost, legs)
+            best[buses] = (cost, parts)
 
     end_walk = dict(ends)
     onward_at = defaultdict(list)
@@ -230,7 +234,7 @@ def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, wa
         onward_at[stop].append((run, cost, i, j))
         # No change: one bus, with a walk at one end or both.
         if stop in end_walk:
-            offer(cost + _walk_min(end_walk[stop]), [_leg(net, run, i, j)])
+            offer(cost + _walk_min(end_walk[stop]), ((run, i, j),))
 
     # One change: off the first bus, a short walk at most, onto a bus to the end.
     for (stop, run1), (cost1, i1, j1) in onward.items():
@@ -239,42 +243,112 @@ def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, wa
                 if run2[0] == run1[0]:
                     continue
                 cost = cost1 + _walk_min(walk_m) + CHANGE_PENALTY_MIN + cost2
-                offer(cost, [_leg(net, run1, i1, j1), _leg(net, run2, i2, j2)])
+                offer(cost, ((run1, i1, j1), (run2, i2, j2)))
 
-    # Two changes: the best way onto each stop after the first bus, and the best way to
-    # the end from each stop before the last one, joined up by a middle bus between them.
-    reach = {}
-    for stop, entries in onward_at.items():
-        run1, cost1, i1, j1 = min(entries, key=lambda e: e[1])
-        for board, walk_m in net.with_near(stop):
-            cost = cost1 + _walk_min(walk_m) + CHANGE_PENALTY_MIN
-            if board not in reach or cost < reach[board][0]:
-                reach[board] = (cost, run1, i1, j1)
-    finish = {}
-    for stop, entries in inward_at.items():
-        run3, cost3, i3, j3 = min(entries, key=lambda e: e[1])
-        for alight, walk_m in net.with_near(stop):
-            cost = _walk_min(walk_m) + CHANGE_PENALTY_MIN + cost3
-            if alight not in finish or cost < finish[alight][0]:
-                finish[alight] = (cost, run3, i3, j3)
+    # Two changes or more: the best way onto each stop after the first few buses, and the
+    # best way to the end from each stop before the last few, joined up by a middle bus.
+    # reach[k] and finish[k] are {stop: (minutes, parts)} with k buses ridden, the walk and
+    # the change onto or off the middle bus counted in.
+    reach = [None, _change_at(net, _cheapest(onward_at))]
+    finish = [None, _change_at(net, _cheapest(inward_at))]
+    for _ in range(2, MAX_CHANGES):
+        reach.append(_change_at(net, _ride_on(net, reach[-1])))
+        finish.append(_change_at(net, _ride_back(net, finish[-1])))
 
-    for run2, stops in net.runs.items():
-        # The cheapest way to be on this bus so far, as minutes before its own ride is
-        # counted, so the ride on to any later stop is just a subtraction away.
-        best_on = None
-        for index, stop in enumerate(stops):
-            if best_on and stop in finish:
-                on_cost, i2, run1, i1, j1 = best_on
-                tail, run3, i3, j3 = finish[stop]
-                cost = on_cost + net.cum[run2][index] / BUS_M_PER_MIN + tail
-                offer(cost, [_leg(net, run1, i1, j1), _leg(net, run2, i2, index), _leg(net, run3, i3, j3)])
-            if stop in reach:
-                cost, run1, i1, j1 = reach[stop]
-                on_cost = cost - net.cum[run2][index] / BUS_M_PER_MIN
-                if best_on is None or on_cost < best_on[0]:
-                    best_on = (on_cost, index, run1, i1, j1)
+    for run, stops in net.runs.items():
+        for before in range(1, MAX_CHANGES):
+            for index, cost, board, parts in _scan_on(net, reach[before], run):
+                for after in range(1, MAX_CHANGES - before + 1):
+                    tail = finish[after].get(stops[index])
+                    if tail:
+                        offer(cost + tail[0], (*parts, (run, board, index), *tail[1]))
 
-    return sorted(best.values(), key=lambda item: (item[0], [_natural_sort_key(leg["bus"]) for leg in item[1]]))
+    sort_keys = {}
+
+    def bus_key(bus):
+        if bus not in sort_keys:
+            sort_keys[bus] = _natural_sort_key(bus)
+        return sort_keys[bus]
+
+    ranked = sorted(best.values(), key=lambda item: (item[0], [bus_key(run[0]) for run, _, _ in item[1]]))
+    return [(cost, [_leg(net, *part) for part in parts]) for cost, parts in ranked]
+
+
+def _scan_on(net, reach, run):
+    """Every stop along one run that a journey in `reach` could ride this bus to, as
+    (index, minutes so far, board index, parts before this bus), boarding wherever is
+    cheapest before it. A journey that has already ridden this bus doesn't board it again."""
+    stops = net.runs[run]
+    cum = net.cum[run]
+    # The cheapest way to be on this bus so far, as minutes before its own ride is counted,
+    # so the ride on to any later stop is just a subtraction away.
+    best_on = None
+    for index, stop in enumerate(stops):
+        if best_on:
+            on_cost, board, parts = best_on
+            yield index, on_cost + cum[index] / BUS_M_PER_MIN, board, parts
+        label = reach.get(stop)
+        if label and all(r[0] != run[0] for r, _, _ in label[1]):
+            on_cost = label[0] - cum[index] / BUS_M_PER_MIN
+            if best_on is None or on_cost < best_on[0]:
+                best_on = (on_cost, index, label[1])
+
+
+def _ride_on(net, reach) -> dict:
+    """The cheapest way off one more bus at every stop, from the journeys in `reach`, as
+    {stop: (minutes, parts)}."""
+    off = {}
+    for run, stops in net.runs.items():
+        for index, cost, board, parts in _scan_on(net, reach, run):
+            stop = stops[index]
+            if stop not in off or cost < off[stop][0]:
+                off[stop] = (cost, (*parts, (run, board, index)))
+    return off
+
+
+def _ride_back(net, finish) -> dict:
+    """`_ride_on` backwards: the cheapest way to the end from every stop, one more bus
+    before the journeys in `finish`, as {stop: (minutes still to go, parts)}."""
+    on = {}
+    for run, stops in net.runs.items():
+        cum = net.cum[run]
+        # The cheapest way on from getting off this bus, as minutes plus its own ride so far.
+        best_off = None
+        for index in range(len(stops) - 1, -1, -1):
+            stop = stops[index]
+            if best_off:
+                off_cost, alight, parts = best_off
+                cost = off_cost - cum[index] / BUS_M_PER_MIN
+                if stop not in on or cost < on[stop][0]:
+                    on[stop] = (cost, ((run, index, alight), *parts))
+            label = finish.get(stop)
+            if label and all(r[0] != run[0] for r, _, _ in label[1]):
+                off_cost = label[0] + cum[index] / BUS_M_PER_MIN
+                if best_off is None or off_cost < best_off[0]:
+                    best_off = (off_cost, index, label[1])
+    return on
+
+
+def _cheapest(entries_at) -> dict:
+    """The quickest of each stop's (run, minutes, i, j) one-bus entries, as
+    {stop: (minutes, parts)}."""
+    out = {}
+    for stop, entries in entries_at.items():
+        run, cost, i, j = min(entries, key=lambda e: e[1])
+        out[stop] = (cost, ((run, i, j),))
+    return out
+
+
+def _change_at(net, at) -> dict:
+    """A change of bus at every stop in `at`, {stop: (minutes, parts)}: the short walk to
+    each stop near it and the wait there, cheapest per stop, keyed the same way."""
+    out = {}
+    for stop, (cost, parts) in at.items():
+        for other, walk_m in net.with_near(stop):
+            total = cost + _walk_min(walk_m) + CHANGE_PENALTY_MIN
+            if other not in out or total < out[other][0]:
+                out[other] = (total, parts)
+    return out
 
 
 def across_the_road(code: str) -> list:

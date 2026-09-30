@@ -210,9 +210,18 @@ function matchStops(q) {
         .slice(0, 20);
 }
 
-function renderAcList(box, stops, services = []) {
-    if (!stops.length && !services.length) { box.hidden = true; box.innerHTML = ''; return; }
+// A postal code is six digits and a stop code five, so the two never collide.
+const isPostalCode = v => /^\d{6}$/.test(v.trim());
+
+function renderAcList(box, stops, services = [], postal = null) {
+    if (!stops.length && !services.length && !postal) { box.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML =
+        (postal
+            ? `<div class="acItem acService" data-postal="${escapeHtml(postal)}">` +
+              `<span class="code">${ico('pin')} ${escapeHtml(postal)}</span>` +
+              `<span class="name">Bus stops near this postal code</span>` +
+              `</div>`
+            : '') +
         services.map(no =>
             `<div class="acItem acService" data-svc="${escapeHtml(no)}">` +
             `<span class="code">${ico('bus')} Bus ${escapeHtml(no)}</span>` +
@@ -228,12 +237,18 @@ function renderAcList(box, stops, services = []) {
     box.hidden = false;
 }
 
-// Stop suggestions under an input, plus bus numbers with `withServices`. Enter picks the
-// stop typed or the first match, unless `onEnter` takes it over.
-function attachAutocomplete(input, box, { withServices = false, onStop, onService, onEnter }) {
+// Stop suggestions under an input, plus bus numbers with `withServices`, and the stops near
+// a postal code once one is typed. Enter picks the stop typed or the first match, unless
+// `onEnter` takes it over. A postal code goes to `onPostal`, by default a list of the stops
+// near it to pick one from.
+function attachAutocomplete(input, box, { withServices = false, onStop, onService, onEnter, onPostal }) {
+    onPostal ??= code => postalStops(code)
+        .then(({ title, stops }) => openStopList(title, stops, { pin: false, onPick: onStop }))
+        .catch(e => alert(e.message));
     const render = () => {
         const v = input.value;
-        renderAcList(box, matchStops(v), withServices && BusNet.isReady() ? BusNet.matchServices(v, 4) : []);
+        renderAcList(box, matchStops(v), withServices && BusNet.isReady() ? BusNet.matchServices(v, 4) : [],
+            isPostalCode(v) ? v.trim() : null);
     };
     input.addEventListener('input', render);
     input.addEventListener('focus', render);
@@ -243,12 +258,15 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
         box.hidden = true;
         if (onEnter) { onEnter(input.value); return; }
         const v = input.value.trim();
+        if (isPostalCode(v)) { onPostal(v); return; }
         const code = v.match(/\b\d{5}\b/)?.[0];
         const pick = code && stopsIndex?.[code] ? code : matchStops(v)[0]?.code;
         if (pick) onStop(pick);
         else if (v) alert('No bus stops matched that. Try a bus stop number or part of its name.');
     });
     box.addEventListener('click', e => {
+        const postal = e.target.closest('[data-postal]');
+        if (postal) { box.hidden = true; onPostal(postal.getAttribute('data-postal')); return; }
         const svc = e.target.closest('[data-svc]');
         if (svc) { box.hidden = true; onService?.(svc.getAttribute('data-svc')); return; }
         const item = e.target.closest('[data-code]');
@@ -452,7 +470,7 @@ function goBack(ctx) {
     if (ctx.kind === 'route')        openPlanner(ctx.start, ctx.end);
     else if (ctx.kind === 'journey') openPlanner(ctx.start, ctx.end, { journey: ctx.legs });
     else if (ctx.kind === 'service') openService(ctx.service, { fromStop: ctx.fromStop, onward: ctx.onward, dir: ctx.dir });
-    else if (ctx.kind === 'nearby')  openNearbyList(ctx.stops);
+    else if (ctx.kind === 'nearby')  openNearbyList(ctx.stops, ctx.title);
 }
 
 const wheelchairBadge = `<span class="badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M192 96a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM120.5 247.2c12.4-4.7 18.7-18.5 14-30.9s-18.5-18.7-30.9-14C43.1 225.1 0 283.5 0 352c0 88.4 71.6 160 160 160c61.2 0 114.3-34.3 141.2-84.7c6.2-11.7 1.8-26.2-9.9-32.5s-26.2-1.8-32.5 9.9C240 440 202.8 464 160 464C98.1 464 48 413.9 48 352c0-47.9 30.1-88.8 72.5-104.8zM259.8 176l-1.9-9.7c-4.5-22.3-24-38.3-46.8-38.3c-30.1 0-52.7 27.5-46.8 57l23.1 115.5c6 29.9 32.2 51.4 62.8 51.4h5.1c.4 0 .8 0 1.3 0h94.1c6.7 0 12.6 4.1 15 10.4L402 459.2c6 16.1 23.8 24.6 40.1 19.1l48-16c16.8-5.6 25.8-23.7 20.2-40.5s-23.7-25.8-40.5-20.2l-18.7 6.2-25.5-68c-11.7-31.2-41.6-51.9-74.9-51.9H282.2l-9.6-48H336c17.7 0 32-14.3 32-32s-14.3-32-32-32H259.8z"/></svg> Wheelchair</span>`;
@@ -735,6 +753,14 @@ function renderServiceModal() {
 }
 
 // ----------- Nearby stops -----------
+function stopsNear(lat, lng, limit = 8) {
+    return Object.entries(stopsIndex || {})
+        .map(([code, s]) => ({ code, distance: haversine(lat, lng, s.lat, s.lng) }))
+        .filter(s => s.distance != null)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, limit);
+}
+
 function findNearbyStops(limit = 8) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
@@ -742,14 +768,7 @@ function findNearbyStops(limit = 8) {
             return;
         }
         navigator.geolocation.getCurrentPosition(
-            pos => {
-                const { latitude, longitude } = pos.coords;
-                resolve(Object.entries(stopsIndex || {})
-                    .map(([code, s]) => ({ code, distance: haversine(latitude, longitude, s.lat, s.lng) }))
-                    .filter(s => s.distance != null)
-                    .sort((a, b) => a.distance - b.distance)
-                    .slice(0, limit));
-            },
+            pos => resolve(stopsNear(pos.coords.latitude, pos.coords.longitude, limit)),
             err => reject(new Error(err.code === 1
                 ? 'Location access is turned off for this site. Allow it in your browser to find stops near you.'
                 : "Couldn't get your location. Please try again.")),
@@ -788,10 +807,25 @@ function openStopList(title, stops, { pin = true, onPick }) {
     openModal('stopListModal');
 }
 
-function openNearbyList(stops) {
-    openStopList('Nearby bus stops', stops, {
-        onPick: code => loadStop(code, { ctx: { kind: 'nearby', stops }, scroll: true }),
+function openNearbyList(stops, title = 'Nearby bus stops') {
+    openStopList(title, stops, {
+        onPick: code => loadStop(code, { ctx: { kind: 'nearby', stops, title }, scroll: true }),
     });
+}
+
+// The stops nearest the address with a 6-digit postal code, and a title naming it.
+async function postalStops(code) {
+    const [r] = await Promise.all([fetch(`/api/postal-code?code=${encodeURIComponent(code)}`), ensureStopsIndex()]);
+    if (r.status === 404) throw new Error(`No address has the postal code ${code}.`);
+    if (!r.ok) throw new Error("Couldn't look up that postal code. Please try again.");
+    const place = await r.json();
+    return { title: `Stops near ${place.address} (${code})`, stops: stopsNear(place.lat, place.lng) };
+}
+
+function openPostalList(code) {
+    postalStops(code)
+        .then(({ title, stops }) => openNearbyList(stops, title))
+        .catch(e => alert(e.message));
 }
 
 // ----------- Settings -----------
@@ -819,6 +853,8 @@ async function runSearch() {
     $('#acList').hidden = true;
     if (!v) return;
 
+    if (isPostalCode(v)) { openPostalList(v); return; }
+
     // A stop code, optionally followed by a bus to narrow it to: "84009 174".
     const stopMatch = v.match(/\b\d{5}\b/);
     if (stopMatch) {
@@ -837,7 +873,7 @@ async function runSearch() {
 
     const first = matchStops(v)[0];
     if (first) loadStop(first.code);
-    else alert('Type a bus stop name, 5-digit stop code, or bus number.');
+    else alert('Type a bus stop name, 5-digit stop code, 6-digit postal code, or bus number.');
 }
 
 // ----------- Events -----------
@@ -865,6 +901,7 @@ attachAutocomplete($('#q'), $('#acList'), {
     onStop: code => { $('#q').value = code; loadStop(code); },
     onService: svc => openService(svc),
     onEnter: runSearch,
+    onPostal: openPostalList,
 });
 
 $('#nearMeBtn').addEventListener('click', e =>

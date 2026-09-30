@@ -53,7 +53,7 @@ def _status_line(start_code, end_code, services, journeys) -> str:
     if not services and journeys:
         return "No single bus links these two stops, but these journeys get there with a short walk or a change:"
     if not services:
-        return "😕 No single bus links these two stops, even with two changes. Try picking other stops."
+        return "😕 No single bus links these two stops, even with three changes. Try picking other stops."
     count = len(services)
     return f"🚌 {count} bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} between these stops."
 
