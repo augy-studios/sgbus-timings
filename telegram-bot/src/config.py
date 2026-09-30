@@ -25,7 +25,8 @@ class Config:
     webapp_url: str
     donate_url: str
     bus_stops_refresh_hours: float
-    onemap_api_token: str
+    onemap_email: str
+    onemap_password: str
 
 
 config = Config(
@@ -37,5 +38,6 @@ config = Config(
     webapp_url=os.environ.get("WEBAPP_URL", "https://sgbus.uwuapps.org/"),
     donate_url=os.environ.get("DONATE_URL", "https://donate.stripe.com/28o2akeAr3hv0DK6oo"),
     bus_stops_refresh_hours=float(os.environ.get("BUS_STOPS_REFRESH_HOURS", "24")),
-    onemap_api_token=os.environ.get("ONEMAP_API_TOKEN", ""),
+    onemap_email=os.environ.get("ONEMAP_EMAIL", ""),
+    onemap_password=os.environ.get("ONEMAP_PASSWORD", ""),
 )

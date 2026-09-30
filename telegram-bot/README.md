@@ -361,8 +361,10 @@ the bot is answered with the stops near it, whether `/nearme` asked for it or
 not - so `/nearme` says as much when you use it.
 
 A 6-digit postal code sent as a message lists the stops nearest that address the
-same way. Its whereabouts come from OneMap's address search, which still answers
-without an API token; set `ONEMAP_API_TOKEN` in `.env` should it start to insist.
+same way. Its whereabouts come from OneMap's address search. With `ONEMAP_EMAIL`
+and `ONEMAP_PASSWORD` set in `.env`, the bot trades them for an API token and
+reuses it until it runs out, every 3 days; without them it searches tokenless,
+which OneMap still answers.
 
 ### Routines
 

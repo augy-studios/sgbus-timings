@@ -1,8 +1,13 @@
 """Where a 6-digit postal code is, from OneMap's address search, so the stops near an
-address can be found by its postal code. OneMap still answers without a token, if with a
-warning; set ONEMAP_API_TOKEN should it start to insist."""
+address can be found by its postal code.
 
+With ONEMAP_EMAIL and ONEMAP_PASSWORD set, searches carry a OneMap token, fetched with
+them and reused until it runs out - three days, per OneMap. Without them, or when the
+token can't be had, the search goes without one, which OneMap still answers."""
+
+import asyncio
 import re
+import time
 from typing import Optional
 
 import httpx
@@ -12,6 +17,37 @@ from .config import config
 POSTAL_CODE_RE = re.compile(r"^\d{6}$")
 
 _SEARCH_URL = "https://www.onemap.gov.sg/api/common/elastic/search"
+_TOKEN_URL = "https://www.onemap.gov.sg/api/auth/post/getToken"
+# A token is renewed this long before it runs out, so no search goes out on one that
+# lapses on the way.
+_TOKEN_MARGIN_S = 3600
+_TOKEN_LIFETIME_S = 3 * 24 * 3600
+
+_token = {"value": None, "expires": 0.0}
+_token_lock = asyncio.Lock()
+
+
+async def _get_token(client: httpx.AsyncClient, renew: bool = False) -> Optional[str]:
+    """The OneMap token, fetched when there's none yet, it's about to run out, or `renew`
+    says the last one was turned away. None without credentials, or when OneMap won't
+    give one - bad credentials say so in the log, and the search goes on without."""
+    if not (config.onemap_email and config.onemap_password):
+        return None
+    async with _token_lock:
+        if renew or not _token["value"] or time.time() > _token["expires"] - _TOKEN_MARGIN_S:
+            try:
+                r = await client.post(
+                    _TOKEN_URL, json={"email": config.onemap_email, "password": config.onemap_password}
+                )
+                r.raise_for_status()
+                data = r.json()
+                _token["value"] = data["access_token"]
+                # expiry_timestamp is Unix seconds, as a string.
+                _token["expires"] = float(data.get("expiry_timestamp") or time.time() + _TOKEN_LIFETIME_S)
+            except (httpx.HTTPError, KeyError, ValueError) as err:
+                print(f"[onemap] couldn't get a token, searching without one: {err}")
+                _token["value"], _token["expires"] = None, 0.0
+        return _token["value"]
 
 
 def _title_case(text: str) -> str:
@@ -28,12 +64,18 @@ def _address(hit: dict) -> str:
 async def lookup_postal_code(code: str) -> Optional[dict]:
     """{postal, address, lat, lng} for a postal code, or None when no address has it.
     Raises httpx.HTTPError when OneMap can't be reached."""
-    headers = {"accept": "application/json"}
-    if config.onemap_api_token:
-        headers["Authorization"] = config.onemap_api_token
     params = {"searchVal": code, "returnGeom": "Y", "getAddrDetails": "Y", "pageNum": 1}
     async with httpx.AsyncClient(timeout=15) as client:
-        r = await client.get(_SEARCH_URL, params=params, headers=headers)
+
+        async def search(token):
+            headers = {"accept": "application/json", **({"Authorization": token} if token else {})}
+            return await client.get(_SEARCH_URL, params=params, headers=headers)
+
+        token = await _get_token(client)
+        r = await search(token)
+        # A token OneMap has stopped taking before its expiry: one more try on a new one.
+        if token and r.status_code in (401, 403):
+            r = await search(await _get_token(client, renew=True))
         r.raise_for_status()
         data = r.json()
 

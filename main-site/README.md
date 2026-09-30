@@ -20,7 +20,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Autocomplete dropdown with matching buses and up to 20 stops
 - Filter results to a specific service by appending the bus number (e.g. `84009 174`)
 - **Stops near me** lists the 8 nearest stops to your location
-- A 6-digit postal code (e.g. `519599`) lists the 8 stops nearest that address, in the search box or either end of the route planner
+- A 6-digit postal code (e.g. `519599`) lists the 8 stops nearest that address, in the search box or either end of the route planner. Looked up with OneMap; set `ONEMAP_EMAIL` and `ONEMAP_PASSWORD` in Vercel for the API token, renewed every 3 days
 
 ### Favourites
 - Star bus stops, buses and planned routes; each appears as a one-tap chip
