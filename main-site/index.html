@@ -316,6 +316,38 @@
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
                 <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false">Bottom</button>
             </div>
+
+            <!-- Sync favourites with another device: js/sync.js -->
+            <p class="modal-section-label">Sync favourites with another device</p>
+            <p id="syncStatus" class="syncStatus" hidden><span class="statusDot" aria-hidden="true"></span><span id="syncStatusText" role="status"></span></p>
+            <div id="syncStart" class="syncBlock">
+                <p class="mode-note">Show a code on one device and enter it on the other. Both need to be on the same wifi, or one joined to the other&rsquo;s hotspot. Closing Settings ends the sync.</p>
+                <button id="syncHostBtn" class="btn" type="button"><span data-icon="sync"></span> Show a code on this device</button>
+                <div class="settingsRow">
+                    <input id="syncCodeInput" class="input settingsInput syncCodeInput" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="Or enter the other device&rsquo;s code" aria-label="Code from the other device" />
+                    <button id="syncJoinBtn" class="iconBtn" type="button">Connect</button>
+                </div>
+            </div>
+            <div id="syncHost" class="syncBlock" hidden>
+                <button id="syncCode" class="syncCode" type="button" title="Tap to copy the link" aria-label="Sync code. Tap to copy the link">------</button>
+                <div id="syncQr" class="syncQr"></div>
+                <p id="syncLink" class="syncLink"></p>
+            </div>
+            <div id="syncLive" class="syncBlock" hidden>
+                <div id="syncTabs" class="dirTabs" role="tablist">
+                    <button class="tab" type="button" role="tab" data-sync-tab="import">Import</button>
+                    <button class="tab" type="button" role="tab" data-sync-tab="export">Export</button>
+                </div>
+                <p id="syncListNote" class="mode-note"></p>
+                <label class="syncItem syncAll"><input id="syncAll" type="checkbox"> <span>Select all</span></label>
+                <div id="syncList" class="syncList"></div>
+                <button id="syncGo" class="btn" type="button" disabled></button>
+            </div>
+            <p id="syncNote" class="mode-note syncNote" role="status" hidden></p>
+            <div id="syncControls" class="syncControls" hidden>
+                <button id="syncNewCode" class="iconBtn" type="button">New code</button>
+                <button id="syncEnd" class="iconBtn" type="button">Stop</button>
+            </div>
         </div>
     </div>
 
@@ -346,6 +378,9 @@
     <script src="/js/network.js"></script>
     <script src="/js/journeys.js"></script>
     <script src="/js/planner.js"></script>
+    <script src="/js/p2p.js"></script>
+    <script src="/js/qr.js"></script>
+    <script src="/js/sync.js"></script>
     <script src="/script.js"></script>
     <script src="/js/sw-update.js"></script>
 </body>

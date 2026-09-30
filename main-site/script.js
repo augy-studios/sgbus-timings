@@ -345,6 +345,15 @@ function toggleFavBus(no) {
     if (current && lastArrivals) renderArrivals();
 }
 
+// Redraws everything that marks favourites, after they change from outside their own star
+// buttons: a sync with another device (js/sync.js).
+function favouritesChanged() {
+    renderFavs();
+    if (current) renderStopHeader();
+    if (current && lastArrivals) renderArrivals();
+    if (!$('#plannerSection').hidden) renderPlanner();
+}
+
 // ----------- Incoming Buses Bar -----------
 function renderIncomingBar(data) {
     const bar       = $('#incomingBar');
@@ -844,6 +853,7 @@ function openSettings() {
     $('#setName').value = LS.getName();
     $('#setBirthday').value = LS.getBirthday();
     syncPinButtons();
+    prepareSync();
     openModal('settingsModal');
 }
 
@@ -1020,10 +1030,13 @@ $('.favBar').addEventListener('click', e => {
 
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
-// for the route planner.
+// for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with.
 function routeFromHash() {
     const hash = decodeURIComponent(location.hash.replace('#', ''));
     let m;
+    // Opens Settings over the page rather than showing anything in it, so it answers false and
+    // the first favourite stop still loads behind.
+    if ((m = hash.match(/^sync\/([0-9A-Za-z]{6})$/))) { openSyncLink(m[1]); return false; }
     if ((m = hash.match(/^route\/(\d{5})\/(\d{5})$/))) { openPlanner(m[1], m[2], { scroll: false }); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
     const [hashCode, hashSvc] = hash.split(',');
@@ -1041,6 +1054,7 @@ window.addEventListener('hashchange', routeFromHash);
     updateGreeting();
     setInterval(updateGreeting, 30_000);
     initPlanner();
+    initSync();
 
     // Started alongside the stops so it's usually in by the time anything wants it.
     BusNet.load().catch(e => console.warn('Bus routes failed:', e));

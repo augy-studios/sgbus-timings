@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v15";
+const VERSION = "v16";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -15,6 +15,9 @@ const ASSETS = [
   "/js/network.js",
   "/js/journeys.js",
   "/js/planner.js",
+  "/js/p2p.js",
+  "/js/qr.js",
+  "/js/sync.js",
   "/js/sw-update.js",
   "/manifest.json",
   "/favicon.ico",
@@ -94,7 +97,9 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== self.location.origin) {
     if (FONT_HOSTS.includes(url.hostname)) event.respondWith(cacheFirst(request));
-    // Analytics and ads go straight to the network, untouched.
+    // Analytics, ads and PeerJS for syncing (js/p2p.js) go straight to the network,
+    // untouched: an old signalling client talking to the live broker is worse than
+    // a clear "could not load".
     return;
   }
 

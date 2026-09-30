@@ -17,8 +17,11 @@
     document.body.classList.add("modal-open");
   }
 
+  // Fires "modalclose" on the backdrop, for a modal with something to tidy up as it goes.
   function closeModal(id) {
-    document.getElementById(id).classList.add("hidden");
+    var backdrop = document.getElementById(id);
+    backdrop.classList.add("hidden");
+    backdrop.dispatchEvent(new Event("modalclose"));
     if (!document.querySelector(".modal-backdrop:not(.hidden)")) {
       document.body.classList.remove("modal-open");
     }

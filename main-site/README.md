@@ -27,6 +27,9 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Favourite buses are starred and pinned in every stop's timings
 - Choose whether favourite buses and stops pin to the top or bottom of lists
 - Favourites are persisted in your browser's local storage
+- **Sync favourites with another device** from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
+  - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
+  - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
 ### Incoming Buses Bar
 - Visual summary of the next arriving bus across all services at the current stop
@@ -58,6 +61,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### URL-based Navigation
 - Stops and services are reflected in the URL hash (e.g. `#84009` or `#84009,174`)
 - `#bus/22` opens a bus's route and `#route/84009/75009` opens the route planner
+- `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - Bookmark or share a direct link to any stop, service or route
 
 ### PWA / Offline Support

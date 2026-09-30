@@ -1286,6 +1286,139 @@ header {
 
 .modalHeader .actions { gap: 6px; }
 
+/* ---- sync favourites (js/sync.js) ---- */
+.syncBlock {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.syncBlock .mode-note { margin-top: 0; }
+.syncCodeInput { text-transform: uppercase; letter-spacing: 0.08em; }
+.syncCodeInput::placeholder { text-transform: none; letter-spacing: normal; }
+
+/* The code in large type, read off one screen and typed into the other. */
+.syncCode {
+    width: 100%;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--brand-fill);
+    color: var(--on-brand);
+    border: 1px solid var(--surface-border);
+    font-size: 2rem;
+    letter-spacing: 0.22em;
+    text-indent: 0.22em;
+    transition: background 0.15s ease;
+}
+.syncCode:hover { background: var(--brand-fill-strong); }
+
+/* Centred, with its white quiet zone, so a camera pointed at the middle finds it. Fixed
+   black on white in both modes: scanners expect dark modules on a light ground. */
+.syncQr {
+    display: flex;
+    justify-content: center;
+    padding: 12px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+}
+.syncQr svg { width: 168px; height: 168px; }
+.syncQr .qr-bg { fill: #ffffff; }
+.syncQr .qr-fg { fill: #121815; }
+
+.syncLink {
+    font-size: 12px;
+    color: var(--muted-strong);
+    text-align: center;
+    word-break: break-all;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.syncStatus {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+    color: var(--muted-strong);
+}
+.statusDot {
+    width: 9px;
+    height: 9px;
+    margin-top: 0.35em;
+    border-radius: 50%;
+    background: var(--busy);
+    flex: none;
+}
+.statusDot.ok { background: var(--ok); }
+.statusDot.warn { background: var(--warn); }
+.statusDot.error { background: var(--error); }
+
+.syncNote { margin-top: 0; color: var(--muted-strong); }
+.syncNote.error { color: var(--error); }
+
+.syncControls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+#syncLive .dirTabs { margin: 0; }
+
+.syncList {
+    max-height: 40vh;
+    overflow: auto;
+    border: 1px solid var(--surface-border);
+    border-radius: 14px;
+    padding: 6px;
+    background: var(--surface);
+}
+.syncList .favGroupLabel { margin: 8px 6px 4px; }
+.syncList .favGroupLabel:first-child { margin-top: 2px; }
+
+.syncItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.syncItem:hover { background: var(--surface-strong); }
+.syncItem input {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    accent-color: var(--brand-ink);
+    cursor: pointer;
+}
+.syncItem.done { cursor: default; }
+.syncItem.done:hover { background: none; }
+.syncItem.done .syncItemText { opacity: 0.6; }
+/* In line with the list's boxes: its border and padding, then a row's own. */
+.syncAll { padding: 0 15px; }
+
+.syncItemText {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+}
+.syncItemText .name,
+.syncItemText .sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.syncItemText .sub { font-size: 12px; color: var(--muted-strong); }
+
+.syncTag {
+    font-size: 11px;
+    color: var(--muted-strong);
+    white-space: nowrap;
+    flex: none;
+}
+
 /* ===== Inline SVG Icons ===== */
 .icon {
     display: inline-block;
