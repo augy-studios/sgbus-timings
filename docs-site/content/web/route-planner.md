@@ -7,11 +7,6 @@ The route planner answers "which bus gets me from here to there?" Give it a
 start and an end, and it lists every bus that runs from one to the other. When
 no single bus does, it finds the quickest journeys with up to three changes.
 
-<figure>
-<img src="/images/planner-desktop.png" alt="The route planner with Bedok Int as the start and Serangoon Int as the end, listing journeys such as bus 60 then 45, about 34 minutes with 1 change." width="1920" height="988" loading="lazy">
-<figcaption>No single bus runs from Bedok Int to Serangoon Int, so the planner offers journeys with one change.</figcaption>
-</figure>
-
 ## Set the two ends
 
 1. Tap **Plan a route** under the search box.
