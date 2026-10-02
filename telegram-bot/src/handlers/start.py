@@ -15,11 +15,12 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Send a bus number (e.g. 22 or 971E) to browse every stop along its route
 - Just send your location (no command needed) to find the nearest bus stops
 - Build a route between two bus stops to see every bus that runs the whole way without a change
+- Navigate between any two places by bus and train, with every mix of the two to choose from
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
 - Choose whether favourites pin to the top or bottom of the list
-- Tap Navigate on any stop's timings, then pick Google Maps or Citymapper for directions there
+- Tap Directions on any stop's timings, then pick Google Maps or Citymapper to get there
 - Set up routines to get a bus stop's timings sent to you automatically at a time you choose
-- Subscribe to Service Alerts for train disruptions and traffic incidents, all of them or disruptions only
+- Subscribe to Service Alerts: train service alerts and traffic alerts, each all updates or disruptions only
 - Use this bot inline in any chat: type @{username} then a bus stop number or name
 
 ## Commands
@@ -33,12 +34,14 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /unfavbus - remove favourite buses
 - /route - pick a start and end bus stop to see the buses that run between them
 - /myroutes - view your favourite routes
+- /nav - get from any place to any other by bus and train
+- /mynavs - view your favourite navs
 - /favouritepref - choose whether favourites pin to the top or bottom
 - /addroutine - set up a routine that sends you a bus stop's timings on a schedule
 - /routines - view, edit, or delete your routines
 - /alerts - train service alerts and traffic incidents right now
-- /sub - get Service Alerts updates (all, or disruptions only)
-- /unsub - stop those updates
+- /sub - get train and traffic alerts (all, or disruptions only, for each)
+- /unsub - stop those alerts
 - /setname - set the name you want the bot to call you by
 - /settings - view and change your settings (name, birthday, routine notifications)
 - /done - finish whatever you're in the middle of

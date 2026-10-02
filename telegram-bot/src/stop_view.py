@@ -12,7 +12,7 @@ from .maps import navigate_buttons
 
 
 def _with_navigate(buttons: list, stop, origin: dict, navigate_open: bool) -> list:
-    """Puts the navigation controls on the keyboard's last row. A lone Navigate button shares
+    """Puts the navigation controls on the keyboard's last row. A lone Directions button shares
     a row holding just a back button - back on the left, navigate on the right - so the way
     out of the view and the way to the stop stay together; once tapped open into a button
     per map app, the pair takes a row of its own so nothing gets squeezed."""
@@ -71,7 +71,7 @@ async def build_stop_view(
     `services` narrows the view to several buses at once, the ones a routine was set up
     to send. It has no way back of its own, being where the user lands rather than
     somewhere they navigated to, but widens out and collapses back like the others.
-    `navigate_open=True` unfolds the Navigate button into a link per map app. It isn't
+    `navigate_open=True` unfolds the Directions button into a link per map app. It isn't
     part of where the user is, so a refresh folds it back to the single button.
     """
     stop = get_bus_stop_by_code(code)

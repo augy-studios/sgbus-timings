@@ -29,21 +29,25 @@ without a connection it says it couldn't reach LTA instead.
 
 ## Get notified
 
-Under **Notify me, even with the app closed**, pick one:
+Under **Notify me, even with the app closed**, train and traffic alerts are
+chosen separately, each **Off**, **All updates** or **Disruptions only**:
 
-| Option | You're notified of |
-|---|---|
-| **Off** | Nothing. The card still works. |
-| **All updates** | Every change to train services, including new service notices, and every new traffic incident anywhere in Singapore. |
-| **Disruptions only** | A train disruption starting, changing or clearing, and new incidents that can block or reroute a bus. |
+| | All updates | Disruptions only |
+|---|---|---|
+| **Train service alerts** (MRT and LRT) | Every change to train services, including new service notices. | A train disruption starting, changing or clearing. |
+| **Traffic alerts** (roads and buses) | Every new traffic incident anywhere in Singapore. | New incidents that can block or reroute a bus: accidents, breakdowns, road blocks, diversions, obstacles, fires and plant failures. |
+
+So you can, say, hear about every train disruption but only the traffic that can
+hold up a bus, or turn traffic off altogether. LTA publishes no feed of bus
+service changes, so road incidents are how bus disruptions show up.
 
 The first time, your browser asks whether the app may send notifications; allow
 it. The note under the buttons then says what you'll be notified of.
 
 > [!WARNING]
-> **All updates** is busy. Singapore's roads report new incidents all day, so
-> expect many notifications. **Disruptions only** is the quieter choice for most
-> people.
+> Traffic **All updates** is busy. Singapore's roads report new incidents all
+> day, so expect many notifications. **Disruptions only** is the quieter choice
+> for most people.
 
 Tapping a notification opens the app on the Service alerts card. A new alert
 replaces the one before it in your notification tray rather than piling up.
@@ -58,7 +62,7 @@ replaces the one before it in your notification tray rather than piling up.
 
 ## Turn them off
 
-Pick **Off**. The app tells the alerts server to forget this device. To stop the
+Pick **Off** for both. The app tells the alerts server to forget this device. To stop the
 browser asking again, you can also block notifications for sgbus.uwuapps.org in
 your browser's site settings, and the app turns the setting off by itself the
 next time it opens.

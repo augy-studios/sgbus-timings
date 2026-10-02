@@ -51,11 +51,13 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/unfavbus` | Lists your favourite bus numbers as paginated buttons to remove |
 | `/route` | Starts a flow to build a route between two bus stops, listing every bus that runs the whole way |
 | `/myroutes` | Lists your favourite routes as paginated buttons; tap one to reopen it |
+| `/nav` | Starts a flow to get from any place to any other by bus and train, listing every worthwhile mix of the two |
+| `/mynavs` | Lists your favourite navs as paginated buttons; tap one to plan it again |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop, buses) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
 | `/alerts` | Shows train service alerts and traffic incidents right now, with a refresh button |
-| `/sub` | Subscribes to Service Alerts, with buttons to pick **All updates** or **Disruptions only** |
+| `/sub` | Subscribes to Service Alerts, with a row of buttons each for train service alerts and traffic alerts: **All**, **Disruptions** or **Off** |
 | `/unsub` | Stops Service Alerts |
 | `/setname` | Sets (or clears) the name the bot calls you by |
 | `/settings` | Lists your settings (name, birthday, routine notifications) with buttons to change them |
@@ -197,7 +199,7 @@ Every timings message has these buttons:
 - **Add favourite / Remove favourite** - toggle the bus stop in your
   favourites list.
 - **Refresh** - re-fetch live timings for that stop.
-- **🧭 Navigate** - on the last row, beside a lone back button if there is
+- **🧭 Directions** - on the last row, beside a lone back button if there is
   one. Tapping it unfolds into **Google Maps** and **Citymapper** links with
   directions to the stop; a refresh folds it back into the single button.
 
@@ -410,16 +412,19 @@ The same notification feature as sgmrt-alerts' `/sub`, for the two things that
 throw a bus journey off: train disruptions, which put people onto buses and
 bring in free bridging buses, and traffic incidents on the roads the buses use.
 
-`/sub` subscribes the chat and replies with two buttons, **🔔 All updates** and
-**⚠️ Disruptions only**; the one in force is ticked. Sending `/sub` again shows
-the picker without changing anything, and tapping a mode under an old reply
-after `/unsub` subscribes again. `/unsub` stops them.
+Train service alerts and traffic alerts are chosen separately. `/sub` subscribes
+the chat to all of both and replies with two rows of buttons, **🚆** for trains and
+**🚧** for traffic, each **All**, **Disruptions** or **Off**, the choice in force
+ticked. Turning both off unsubscribes. Sending `/sub` again shows the buttons
+without changing anything, and tapping one under an old reply after `/unsub`
+subscribes again. `/unsub` stops both. A subscriber from before the split keeps
+their one mode for each.
 
 Every `SERVICE_ALERT_POLL_SECONDS` (60 by default) the bot polls LTA's
 `TrainServiceAlerts` and `TrafficIncidents`, and sends each subscriber one
-message covering what changed:
+message covering what changed, by their choice for each kind:
 
-| | All updates | Disruptions only |
+| | All | Disruptions |
 |---|---|---|
 | Train service | Every change: a disruption starting, changing or clearing, or a new service notice | Only while a disruption is active either side of the change, so including the update when it clears |
 | Traffic incidents | Every new incident anywhere in Singapore, of any type | Only new incidents that can stop or reroute a bus: accident, vehicle breakdown, road block, diversion, obstacle, fire, plant failure |
@@ -441,6 +446,28 @@ Service Alerts are separate from routine notifications: turning routines off in
 `/settings` doesn't stop them, and `/settings` shows which mode, if any, is on.
 The web app offers the same two modes as notifications, sent by a Vercel cron
 function in [`../main-site/api/push`](../main-site/SERVICE-ALERTS-SETUP.md).
+
+### Navigate
+
+`/nav` gets you from any place to any other by bus and train: an address, a
+building, a postal code, an MRT station, a bus stop, or a shared location, at
+either end. It asks for the start and the end like `/route`, with **Did you
+mean** buttons when a name matches several places, and **🅰 Set start** /
+**🅱 Set end** to change either later.
+
+The journeys come from the site's `/api/nav` (`main-site/api/_nav/`), so the bot
+and the web app's Navigate always agree. That router keeps the best journey for
+every mix of buses and trains, up to four vehicles, so a train then two buses, or
+two trains then a bus, is listed beside the quickest, rather than one answer.
+Each kind (trains only, buses only, a mix) keeps its best option; a mix that's
+clearly slower than another of its kind and no better in changes or walking is
+left out as a detour. Times are estimates (no timetables are published for
+trains), and where OneMap's timetable-based router rides the same way, its time
+is shown too. A line LTA reports a disruption on is marked ⚠️.
+
+Tap a way to see it leg by leg, with the live timings of each bus at the stop
+it's boarded, and a **🚏** button opening that stop's timings for the bus.
+**⭐ Add favourite** stars the nav, and `/mynavs` lists starred navs.
 
 ### Settings
 
@@ -556,6 +583,9 @@ telegram-bot/
     route_view.py          builds the route panel: both ends, and the buses running between them
     journeys.py            finds direct buses, journeys with a walk or up to three changes, and ends picked on the wrong side of the road, over an in-memory copy of every route
     journey_view.py        builds one journey's leg-by-leg view with live timings, and the stops-left line
+    nav_api.py             calls the site's /api/nav and /api/places for /nav's journeys and places
+    navs.py                /nav's draft (the ends being set) and favourite navs (SQLite)
+    nav_view.py            builds the /nav panel, one way leg by leg, and the /mynavs list
     service_alerts.py      Service Alerts subscriptions (SQLite), and what changed in LTA's train alerts and traffic incidents since the last poll
     service_alerts_view.py builds /alerts, the /sub reply and its mode buttons, and the updates sent to subscribers
     mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
@@ -565,7 +595,8 @@ telegram-bot/
       favbuses.py, unfavbus.py, favouritepref.py, flow_control.py,
       addroutine.py, routines.py, newroute.py, favroutes.py,
       setname.py, settings.py, search.py, callbacks.py, inline.py,
-      servicealerts.py (/alerts, /sub, /unsub, and the poll that sends updates)
+      servicealerts.py (/alerts, /sub, /unsub, and the poll that sends updates),
+      nav.py (/nav, /mynavs)
   data/                   SQLite database + Telethon session file (gitignored)
 ```
 

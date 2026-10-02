@@ -13,6 +13,7 @@ const LS = {
     stopsCacheKey: 'sgbus_stops_v3',
     favBusKey:     'sgbus_fav_buses',
     favRouteKey:   'sgbus_fav_routes',
+    favNavKey:     'sgbus_fav_navs',
     pinKey:        'sgbus_pin_prefs',
     birthdayKey:   'sgbus_birthday',
 
@@ -42,6 +43,10 @@ const LS = {
     // [{ start, startName, end, endName }], start and end as stop codes.
     getFavRoutes() { const v = readJson(this.favRouteKey, []); return Array.isArray(v) ? v : []; },
     setFavRoutes(arr) { localStorage.setItem(this.favRouteKey, JSON.stringify(arr)); },
+
+    // [{ from: { label, lat, lng }, to: { label, lat, lng } }], from Navigate (js/nav.js).
+    getFavNavs() { const v = readJson(this.favNavKey, []); return Array.isArray(v) ? v : []; },
+    setFavNavs(arr) { localStorage.setItem(this.favNavKey, JSON.stringify(arr)); },
 
     // Where favourites pin in a list, per kind ("bus" or "stop"): "top" unless set otherwise.
     getPin(kind) { return readJson(this.pinKey, {})?.[kind] === 'bottom' ? 'bottom' : 'top'; },
@@ -317,6 +322,7 @@ function renderFavs() {
     const favs   = LS.getFavs();
     const buses  = LS.getFavBuses();
     const routes = LS.getFavRoutes();
+    const navs   = LS.getFavNavs();
 
     $('#favChips').innerHTML = favs.map(({ code, name }) => {
         const displayName = name || nameOf(code) || 'Bus Stop';
@@ -332,10 +338,16 @@ function renderFavs() {
         return chip(`data-fav-route="${i}"`, `data-remove-route="${i}"`, '', label, label);
     }).join('');
 
+    $('#favNavChips').innerHTML = navs.map((n, i) => {
+        const label = `${n.from.label} → ${n.to.label}`;
+        return chip(`data-fav-nav="${i}"`, `data-remove-nav="${i}"`, '', label, label);
+    }).join('');
+
     $('#favStopsGroup').hidden  = !favs.length;
     $('#favBusesGroup').hidden  = !buses.length;
     $('#favRoutesGroup').hidden = !routes.length;
-    $('#favEmpty').hidden = favs.length + buses.length + routes.length > 0;
+    $('#favNavsGroup').hidden   = !navs.length;
+    $('#favEmpty').hidden = favs.length + buses.length + routes.length + navs.length > 0;
 }
 
 function isFavStop(code) {
@@ -471,7 +483,7 @@ function renderStopTools() {
             ? MAP_APPS.map(app =>
                 `<a class="iconBtn" href="${escapeHtml(directionsUrl(stop, app.id))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
             ).join('')
-            : `<button type="button" class="iconBtn" data-tool="navigate">${ico('navigate')} Navigate</button>`);
+            : `<button type="button" class="iconBtn" data-tool="navigate">${ico('navigate')} Directions</button>`);
     }
     $('#stopTools').innerHTML = parts.join('');
 }
@@ -683,7 +695,9 @@ async function openService(service, { fromStop = null, onward = false, dir = nul
         fromStop: onRoute ? fromStop : null,
         onward: onward && onRoute,
         dir: fits ? dir : (onRoute ? BusNet.directionAt(service, fromStop) : dirs[0]),
+        pickAlight: false,
     };
+    renderGetOffPick();
     renderServiceModal();
     openModal('svcModal');
     $('#svcModal .modalBody').scrollTop = 0;
@@ -1018,9 +1032,49 @@ $('#svcDirTabs').addEventListener('click', e => {
     $('#routeList').scrollTop = 0;
 });
 
+// ----------- Get Off Alert on a bus's route -----------
+// Tap Get Off Alert, then the stop you're getting off at: a trip starts on this bus and this
+// direction, and js/trip.js alerts you two stops before it.
+$('#getOffPickBtn').addEventListener('click', () => {
+    svcState.pickAlight = !svcState.pickAlight;
+    renderGetOffPick();
+});
+
+function renderGetOffPick() {
+    const on = !!svcState?.pickAlight;
+    const btn = $('#getOffPickBtn');
+    btn.setAttribute('aria-pressed', String(on));
+    btn.classList.toggle('on', on);
+    $('#getOffPickNote').hidden = !on;
+    $('#routeList').classList.toggle('picking', on);
+}
+
+// Stop codes as points, and a ride time from distance at the planner's ~15 km/h.
+function tripLegForBus(service, codes, toCode) {
+    const points = codes.map(c => stopsIndex?.[c]).filter(s => s && s.lat != null).map(s => [s.lat, s.lng]);
+    let metres = 0;
+    for (let i = 1; i < points.length; i++) metres += haversine(points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]) || 0;
+    return { kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode, points, minutes: metres / 250, wait: 0 };
+}
+
+function startBusTrip(service, dir, toCode, fromStop) {
+    const stops = BusNet.runStops(service, dir);
+    const end = stops.indexOf(toCode);
+    const start = fromStop && stops.indexOf(fromStop) !== -1 && stops.indexOf(fromStop) < end ? stops.indexOf(fromStop) : 0;
+    if (end < 1) return;
+    Trip.start({ title: `Bus ${service} to ${nameOf(toCode) || toCode}`, legs: [tripLegForBus(service, stops.slice(start, end + 1), toCode)] });
+}
+
 $('#routeList').addEventListener('click', e => {
     const row = e.target.closest('[data-stop]');
     if (!row) return;
+    if (svcState.pickAlight) {
+        startBusTrip(svcState.service, svcState.dir, row.getAttribute('data-stop'), svcState.fromStop);
+        svcState.pickAlight = false;
+        renderGetOffPick();
+        closeModal('svcModal');
+        return;
+    }
     const { service, fromStop, onward, dir } = svcState;
     closeModal('svcModal');
     loadStop(row.getAttribute('data-stop'), {
@@ -1038,7 +1092,7 @@ $('#refreshAllBtn').addEventListener('click', () => {
 });
 
 $('.favBar').addEventListener('click', e => {
-    const t = e.target.closest('[data-remove],[data-fav],[data-remove-bus],[data-fav-bus],[data-remove-route],[data-fav-route]');
+    const t = e.target.closest('[data-remove],[data-fav],[data-remove-bus],[data-fav-bus],[data-remove-route],[data-fav-route],[data-remove-nav],[data-fav-nav]');
     if (!t) return;
     const d = t.dataset;
     if (d.remove) {
@@ -1057,13 +1111,20 @@ $('.favBar').addEventListener('click', e => {
     } else if (d.favRoute) {
         const r = LS.getFavRoutes()[Number(d.favRoute)];
         if (r) openPlanner(r.start, r.end);
+    } else if (d.removeNav) {
+        LS.setFavNavs(LS.getFavNavs().filter((_, i) => i !== Number(d.removeNav)));
+        renderFavs();
+        if (!$('#navSection').hidden) renderNavFav();
+    } else if (d.favNav) {
+        const n = LS.getFavNavs()[Number(d.favNav)];
+        if (n) openNav(n.from, n.to);
     }
 });
 
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
-// "#alerts" for the service alerts card.
+// "#alerts" for the service alerts card, "#nav/lat,lng/lat,lng" for Navigate.
 function routeFromHash() {
     const hash = decodeURIComponent(location.hash.replace('#', ''));
     let m;
@@ -1074,6 +1135,7 @@ function routeFromHash() {
     // favourite stop still loads behind it.
     if (hash === 'alerts') { window.Alerts.open({ scroll: false }); return false; }
     if ((m = hash.match(/^route\/(\d{5})\/(\d{5})$/))) { openPlanner(m[1], m[2], { scroll: false }); return true; }
+    if ((m = hash.match(/^nav\/(-?[\d.]+,-?[\d.]+)\/(-?[\d.]+,-?[\d.]+)$/))) { openNavHash(m[1], m[2]); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
     const [hashCode, hashSvc] = hash.split(',');
     if (/^\d{5}$/.test(hashCode)) {
@@ -1090,6 +1152,7 @@ window.addEventListener('hashchange', routeFromHash);
     updateGreeting();
     setInterval(updateGreeting, 30_000);
     initPlanner();
+    initNav();
     initSync();
 
     // Started alongside the stops so it's usually in by the time anything wants it.

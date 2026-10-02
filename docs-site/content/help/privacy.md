@@ -50,9 +50,28 @@ else: no name, no location, no favourites. The server also keeps a random ID
 this device made up, so it can tell your device apart. It's stored in a database
 run by Upstash for SG Bus Timing. Picking **Off** deletes all of it.
 
+### Navigate
+
+The places you type into **Navigate** are looked up by SG Bus Timing's server and
+OneMap's search, and the two ends of a nav are sent to the server, which asks
+OneMap's journey planner too. Nothing about you goes with them. Saved navs stay
+in your browser, like other favourites.
+
+### Get Off Alert
+
+On a trip, your live location is used in your browser to count the stops left.
+It never leaves your device.
+
+### Weather
+
+The weather button asks SG Bus Timing's server for Singapore's forecast and air
+quality, from Open-Meteo and NEA (data.gov.sg). Nothing about you is sent; the
+forecast is the same for everyone.
+
 ### Directions
 
-**Navigate** opens Google Maps or Citymapper with the stop as the destination.
+The **Directions** button on a stop's timings opens Google Maps or Citymapper with
+the stop as the destination.
 From then on, that app's own privacy policy applies.
 
 ## The Telegram bot
@@ -62,7 +81,8 @@ From then on, that app's own privacy policy applies.
 To work, the bot saves, against your Telegram chat:
 
 - your favourite stops, buses and routes, and where they pin;
-- your routines, and any routine or route you are part way through setting up;
+- your routines, and any routine, route or nav you are part way through setting up;
+- your favourite navs, with the places at each end;
 - the name you set, your birthday, and whether routine notifications are on;
 - whether you've subscribed to Service Alerts, and in which mode;
 - what each button it has sent you does, so buttons keep working after a
@@ -80,7 +100,8 @@ postal code you send is looked up with OneMap to find the address.
 ### Removing your data
 
 Remove favourites with `/unfavstop`, `/unfavbus` and the favourite buttons,
-routines with `/routines`, Service Alerts with `/unsub`, your name with `/setname clear`, and your birthday
+routines with `/routines`, Service Alerts with `/unsub`, favourite navs with
+the star on their panel, your name with `/setname clear`, and your birthday
 with **Clear birthday** in `/settings`. To have everything about you deleted,
 email Augy, who runs the bot, at
 [augy@augystudios.com](mailto:augy@augystudios.com), with your Telegram username.

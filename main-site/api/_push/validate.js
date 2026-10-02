@@ -27,10 +27,15 @@ export function isId(value) {
   return typeof value === 'string' && ID_RE.test(value);
 }
 
+// { subscription, train, traffic }: each mode one of MODES, and at least one on, or the
+// device should have been deleted rather than stored.
 export function parseDevice(body) {
   if (!body || typeof body !== 'object') fail('body must be an object');
-  if (!MODES.includes(body.mode)) fail(`mode must be one of ${MODES.join(', ')}`);
-  return { subscription: parseSubscription(body.subscription), mode: body.mode };
+  for (const kind of ['train', 'traffic']) {
+    if (!MODES.includes(body[kind])) fail(`${kind} must be one of ${MODES.join(', ')}`);
+  }
+  if (body.train === 'off' && body.traffic === 'off') fail('turn at least one kind of alert on, or delete the device');
+  return { subscription: parseSubscription(body.subscription), train: body.train, traffic: body.traffic };
 }
 
 function parseSubscription(sub) {

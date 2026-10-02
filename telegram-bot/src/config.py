@@ -27,6 +27,8 @@ class Config:
     guide_url: str
     bus_stops_refresh_hours: float
     service_alert_poll_seconds: float
+    nav_api_url: str
+    bot_api_token: str
     onemap_email: str
     onemap_password: str
 
@@ -42,6 +44,8 @@ config = Config(
     guide_url=os.environ.get("GUIDE_URL", "https://guide.sgbus.uwuapps.org/bot/start"),
     bus_stops_refresh_hours=float(os.environ.get("BUS_STOPS_REFRESH_HOURS", "24")),
     service_alert_poll_seconds=float(os.environ.get("SERVICE_ALERT_POLL_SECONDS", "60")),
+    nav_api_url=os.environ.get("NAV_API_URL") or os.environ.get("WEBAPP_URL", "https://sgbus.uwuapps.org/"),
+    bot_api_token=os.environ.get("BOT_API_TOKEN", ""),
     onemap_email=os.environ.get("ONEMAP_EMAIL", ""),
     onemap_password=os.environ.get("ONEMAP_PASSWORD", ""),
 )

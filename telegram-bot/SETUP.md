@@ -26,7 +26,8 @@ These show on the bot's profile page.
    blurb shown before a user first starts a chat, e.g.:
    > Get live bus arrival timings for any bus stop in Singapore. Type a bus
    > stop number or name to search, share your location to find nearby
-   > stops, build a route between two stops to see which buses run it, or
+   > stops, build a route between two stops to see which buses run it,
+   > navigate anywhere by bus and train, get train and traffic alerts, or
    > save your regulars as favourites. Also works inline in any chat, just
    > type @yourbotusername followed by a bus stop.
 
@@ -49,6 +50,11 @@ unfavbus - remove favourite buses
 favouritepref - choose top or bottom pin position for favourites
 route - build a route between two bus stops and see the buses that run it
 myroutes - view your favourite routes
+nav - get from any place to any other by bus and train
+mynavs - view your favourite navs
+alerts - train service alerts and traffic incidents right now
+sub - get train service and traffic alerts, all or disruptions only
+unsub - stop train service and traffic alerts
 addroutine - set up a routine that sends bus stop timings on a schedule
 routines - view, edit, or delete your routines
 setname - set the name the bot calls you by
@@ -133,7 +139,15 @@ DONATE_URL=https://donate.stripe.com/28o2akeAr3hv0DK6oo
 GUIDE_URL=https://guide.sgbus.uwuapps.org/bot/start
 BUS_STOPS_REFRESH_HOURS=24
 SERVICE_ALERT_POLL_SECONDS=60
+NAV_API_URL=
+BOT_API_TOKEN=the-same-long-random-string-as-on-vercel
 ```
+
+`/nav` plans its journeys with the site's `/api/nav`, so the bot and the web app
+always agree. `NAV_API_URL` defaults to `WEBAPP_URL`. `BOT_API_TOKEN` is a long
+random string (e.g. from `openssl rand -hex 32`), set to the same value here and in
+the site's Vercel project: without it, every chat's `/nav` shares the site's per-IP
+limit of 30 a minute, since they all come from this one server.
 
 ## 5. Install and run on a Debian 13 VPS
 
@@ -142,13 +156,13 @@ Python 3.10+ is required.
 ```bash
 # System packages
 sudo apt update
-sudo apt install -y python3 python3-venv
+sudo apt install -y python3 python3-venv micro
 
 # Get the code
 git clone <this-repo-url> sgbus-timings
 cd sgbus-timings/telegram-bot
 cp .env.example .env
-nano .env   # fill in BOT_TOKEN, API_ID, API_HASH, and LTA_ACCOUNT_KEY
+micro .env   # fill in BOT_TOKEN, API_ID, API_HASH, LTA_ACCOUNT_KEY and BOT_API_TOKEN; Ctrl+S saves, Ctrl+Q quits
 
 # Install dependencies and start
 python3 -m venv .venv
@@ -254,3 +268,17 @@ python -m src.main
    confirm it's listed as `Start → End`. Tap it, confirm the panel reopens with
    a **🔙 Back to favourite routes** button that returns to the list, and that
    **⭐ Remove favourite** takes it off again.
+13. Send `/alerts` and confirm it shows train service status and a count of
+   traffic incidents, with a **🔄 Refresh** button that updates it in place.
+14. Send `/sub` and confirm the reply lists both kinds with two rows of buttons,
+   **🚆** for trains and **🚧** for traffic. Tap **🚧 Off** and confirm the reply
+   says traffic is off while trains stay on, then tap **🚆 Off** and confirm it
+   says you're unsubscribed. `/settings` should show the choice. Send `/unsub`
+   and confirm both stop.
+15. Send `/nav`, reply with a place (e.g. `bugis`), tap one of the **Did you
+   mean** buttons if they appear, then share your location or send a postal code
+   for the end. Confirm the panel lists several ways, quickest first, mixing
+   buses and trains, and that tapping one opens it leg by leg with live timings
+   for its bus legs. Tap **⭐ Add favourite**, send `/mynavs`, and confirm it's
+   listed and reopens. If `/nav` says it couldn't plan, check `NAV_API_URL` and
+   that `https://sgbus.uwuapps.org/api/nav` answers.

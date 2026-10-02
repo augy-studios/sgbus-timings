@@ -5,10 +5,21 @@
 import { createHash } from 'node:crypto';
 import { lineLabel, stationName } from './mrt-stations.js';
 
-// 'all': every train status change and every new traffic incident.
+// Train service alerts and traffic alerts are chosen separately, each one of:
+// 'all': every train status change / every new traffic incident.
 // 'disruptions': train updates only while a disruption is active (plus the one
-// when it clears), and only the incidents that can stop or reroute a bus.
-export const MODES = ['all', 'disruptions'];
+// when it clears) / only the incidents that can stop or reroute a bus.
+// 'off': none of that kind.
+export const MODES = ['all', 'disruptions', 'off'];
+
+// A device or chat's choice: { train, traffic }. Older ones stored one mode for both.
+export function modesOf(record) {
+  const fallback = MODES.includes(record?.mode) ? record.mode : 'off';
+  return {
+    train: MODES.includes(record?.train) ? record.train : fallback,
+    traffic: MODES.includes(record?.traffic) ? record.traffic : fallback,
+  };
+}
 
 // LTA incident types, lowercased, that can stop or reroute a bus.
 export const BLOCKING_TYPES = new Set([
@@ -75,10 +86,12 @@ export function diffTraffic(state, incidents, now = Date.now()) {
   return fresh;
 }
 
-// What one device hears of this poll.
-export function updateFor(mode, trainUpdate, newIncidents) {
-  const train = trainUpdate && (mode === 'all' || trainUpdate.disruption) ? trainUpdate : null;
-  const incidents = mode === 'all' ? newIncidents : newIncidents.filter(isBlocking);
+// What one device hears of this poll, given its { train, traffic } modes.
+export function updateFor(modes, trainUpdate, newIncidents) {
+  const train =
+    trainUpdate && (modes.train === 'all' || (modes.train === 'disruptions' && trainUpdate.disruption)) ? trainUpdate : null;
+  const incidents =
+    modes.traffic === 'all' ? newIncidents : modes.traffic === 'disruptions' ? newIncidents.filter(isBlocking) : [];
   return { train, incidents };
 }
 

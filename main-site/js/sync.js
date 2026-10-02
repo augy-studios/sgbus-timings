@@ -31,7 +31,12 @@ const FAV_KINDS = [
   { kind: 'stop',  list: 'stops',  label: 'Bus stops', key: (s) => `stop:${s.code}` },
   { kind: 'bus',   list: 'buses',  label: 'Buses',     key: (b) => `bus:${b}` },
   { kind: 'route', list: 'routes', label: 'Routes',    key: (r) => `route:${r.start}>${r.end}` },
+  // Navs, from Navigate (js/nav.js): two places, keyed by where they are. A device from
+  // before navs synced sends none and ignores these, so sync still works between the two.
+  { kind: 'nav',   list: 'navs',   label: 'Navs',      key: (n) => `nav:${navPoint(n.from)}>${navPoint(n.to)}` },
 ];
+
+const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}`;
 
 const sync = {
   role: null,        // 'host' | 'guest' while a session runs
@@ -140,7 +145,7 @@ const syncLink = (code) => `${location.origin}/#sync/${code}`;
 // ---- Favourites ----
 
 function ownFavs() {
-  return { stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes() };
+  return { stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes(), navs: LS.getFavNavs() };
 }
 
 // Every favourite as one flat list, each with a key that names it the same way on both devices.
@@ -161,6 +166,10 @@ function cleanFavs(raw) {
   const text = (v) => (typeof v === 'string' ? v.slice(0, 80) : '');
   const seen = new Set();
   const once = (key) => !seen.has(key) && !!seen.add(key);
+  // A nav's end: a label and a point in Singapore.
+  const isPlace = (p) => p && typeof p === 'object' && Number.isFinite(p.lat) && Number.isFinite(p.lng)
+    && p.lat > 1.15 && p.lat < 1.48 && p.lng > 103.55 && p.lng < 104.1;
+  const place = (p) => ({ label: text(p.label) || 'Place', lat: p.lat, lng: p.lng });
 
   return {
     stops: list(raw.stops)
@@ -171,6 +180,9 @@ function cleanFavs(raw) {
     routes: list(raw.routes)
       .filter((r) => isStop(r?.start) && isStop(r?.end) && once(`route:${r.start}>${r.end}`))
       .map((r) => ({ start: r.start, startName: text(r.startName), end: r.end, endName: text(r.endName) })),
+    navs: list(raw.navs)
+      .filter((n) => isPlace(n?.from) && isPlace(n?.to) && once(`nav:${navPoint(n.from)}>${navPoint(n.to)}`))
+      .map((n) => ({ from: place(n.from), to: place(n.to) })),
   };
 }
 
@@ -181,6 +193,7 @@ function mergeFavs(favs) {
   const stops = LS.getFavs();
   const buses = LS.getFavBuses();
   const routes = LS.getFavRoutes();
+  const navs = LS.getFavNavs();
   let added = 0;
 
   for (const { key, kind, item } of favItems(favs)) {
@@ -191,6 +204,8 @@ function mergeFavs(favs) {
       stops.push({ code: item.code, name: nameOf(item.code) || item.name });
     } else if (kind === 'bus') {
       buses.push(item);
+    } else if (kind === 'nav') {
+      navs.push(item);
     } else {
       routes.push({
         start: item.start, startName: nameOf(item.start) || item.startName || item.start,
@@ -203,6 +218,7 @@ function mergeFavs(favs) {
     LS.setFavs(stops);
     LS.setFavBuses(buses);
     LS.setFavRoutes(routes);
+    LS.setFavNavs(navs);
     favouritesChanged();
   }
   return added;
@@ -526,6 +542,7 @@ function renderSync() {
 function favTitle(kind, item) {
   if (kind === 'stop') return nameOf(item.code) || item.name || 'Bus stop';
   if (kind === 'bus') return `Bus ${item}`;
+  if (kind === 'nav') return `${item.from.label} → ${item.to.label}`;
   return `${nameOf(item.start) || item.startName || item.start} → ${nameOf(item.end) || item.endName || item.end}`;
 }
 
@@ -535,6 +552,7 @@ function favSubtitle(kind, item) {
     return road ? `${item.code} · ${road}` : item.code;
   }
   if (kind === 'bus') return serviceEndsText(item);
+  if (kind === 'nav') return 'By bus and train';
   return `${item.start} → ${item.end}`;
 }
 

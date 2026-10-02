@@ -1,6 +1,6 @@
 ---
 title: Sync favourites between devices
-description: Copy favourite stops, buses and routes from one device to another, directly, with a 6-letter code.
+description: Copy favourite stops, buses, routes and navs from one device to another, directly, with a 6-letter code.
 ---
 
 Your favourites are kept in each browser separately. Sync copies them from one

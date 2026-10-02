@@ -9,7 +9,7 @@ change it:
 - **Name**: what the bot calls you, or "not set".
 - **Birthday**: the date it has saved, or "not set".
 - **Routine notifications**: Enabled or Disabled.
-- **Service Alerts**: All updates, Disruptions only, or Off. Change it with
+- **Service Alerts**: your choice for trains and for traffic, or Off. Change it with
   `/sub` and `/unsub`; see [Service Alerts](service-alerts.md).
 - **Favourite buses** and **Favourite bus stops**: what you have saved, and
   whether each is pinned to the top or bottom.

@@ -29,8 +29,8 @@ still calls at after this one, through to the end of its route. Tap any of them
 to see its timings for the same bus. It is the same list as the
 [From this stop](bus-routes.md#from-this-stop) tab on a bus's route.
 
-## Navigate to the stop
+## Directions to the stop
 
-Tap **Navigate** and it opens into two buttons, **Google Maps** and
+Tap **Directions** and it opens into two buttons, **Google Maps** and
 **Citymapper**. Either one opens walking directions to the stop in that app or
 website.

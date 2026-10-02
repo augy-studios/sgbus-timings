@@ -82,6 +82,17 @@ function initPlanner() {
       renderPlanner();
     } else if (action === 'refresh') {
       renderPlanner();
+    } else if (action === 'trip' && planner.journey) {
+      // The Get Off Alert (js/trip.js), two stops before each change and the end.
+      Trip.start({
+        title: `To ${nameOf(planner.end) || planner.end}`,
+        legs: planner.journey.map((leg) => {
+          const stops = BusNet.runStops(leg.bus, leg.dir);
+          const i = stops.indexOf(leg.from);
+          const j = stops.indexOf(leg.to, i + 1);
+          return tripLegForBus(leg.bus, stops.slice(i, j + 1), leg.to);
+        }),
+      });
     }
   });
 }
@@ -336,6 +347,7 @@ async function renderJourney(token) {
     `<div class="plannerNav">` +
     `<button type="button" class="iconBtn" data-planner="back">${ico('back')} Back to route</button>` +
     `<button type="button" class="iconBtn" data-planner="refresh">Refresh</button>` +
+    `<button type="button" class="btn" data-planner="trip">${ico('bell')} Start trip</button>` +
     `</div>`;
 
   const details = legs.map(Journeys.legDetails);

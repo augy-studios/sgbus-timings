@@ -19,7 +19,7 @@ Your favourite buses are starred in the timings and pinned to the top or bottom
 of the list, as you set with `/favouritepref`.
 
 **Select Bus Number**, **All services**, **View route from here** and
-**Navigate** are covered in [More from a stop](more-from-a-stop.md).
+**Directions** are covered in [More from a stop](more-from-a-stop.md).
 
 ## Back buttons
 

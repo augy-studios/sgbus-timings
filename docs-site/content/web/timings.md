@@ -16,7 +16,7 @@ first.
 | **Refresh** | Fetches the latest timings. They do not refresh by themselves. |
 | **Route** | On each service's row: opens [that bus's route](bus-routes.md). |
 
-**Pick a bus**, **Route from here** and **Navigate** are covered in
+**Pick a bus**, **Route from here** and **Directions** are covered in
 [More from a stop](more-from-a-stop.md).
 
 ## Incoming buses

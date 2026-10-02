@@ -123,8 +123,50 @@
         <div class="quickActions">
             <button id="nearMeBtn" class="iconBtn" type="button"><span data-icon="pin"></span> Stops near me</button>
             <button id="planBtn" class="iconBtn" type="button"><span data-icon="route"></span> Plan a route</button>
+            <button id="navBtn" class="iconBtn" type="button"><span data-icon="navigate"></span> Navigate</button>
             <button id="alertsBtn" class="iconBtn" type="button"><span data-icon="bell"></span> Service alerts</button>
+            <!-- Today's weather and air: js/weather.js -->
+            <button id="weatherBtn" class="iconBtn weatherBtn" type="button" aria-label="Today's weather"><span data-icon="cloud-sun"></span> <span id="weatherBtnText">Weather</span></button>
         </div>
+
+        <!-- Navigate by bus and train between any two places: js/nav.js -->
+        <section id="navSection" class="plannerSection navSection" hidden>
+            <div class="card glass">
+                <div class="cardHeader">
+                    <div class="cardTitle"><span data-icon="navigate"></span> Navigate by bus and train</div>
+                    <div class="actions">
+                        <button id="navFavBtn" class="iconBtn" type="button" aria-pressed="false" hidden><span data-icon="star"></span><span class="lbl">Save nav</span></button>
+                        <button id="navClose" class="icon-btn small" type="button" aria-label="Close Navigate"><span data-icon="close"></span></button>
+                    </div>
+                </div>
+                <div class="cardBody">
+                    <div class="plannerFields navFields">
+                        <div class="plannerField">
+                            <label for="navFrom">From</label>
+                            <div class="plannerInputRow">
+                                <div class="ac">
+                                    <input id="navFrom" class="input" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="next" />
+                                    <div id="navFromAc" class="acList" hidden></div>
+                                </div>
+                                <button class="iconBtn" type="button" data-nav-here="from" title="Start from where I am" aria-label="Start from where I am"><span data-icon="pin"></span></button>
+                            </div>
+                        </div>
+                        <button id="navSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
+                        <div class="plannerField">
+                            <label for="navTo">To</label>
+                            <div class="plannerInputRow">
+                                <div class="ac">
+                                    <input id="navTo" class="input" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="go" />
+                                    <div id="navToAc" class="acList" hidden></div>
+                                </div>
+                                <button class="iconBtn" type="button" data-nav-here="to" title="End where I am" aria-label="End where I am"><span data-icon="pin"></span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="navBody" class="plannerBody"></div>
+                </div>
+            </div>
+        </section>
 
         <!-- Service alerts: train disruptions and traffic incidents, js/alerts.js -->
         <section id="alertsSection" class="alertsSection" hidden>
@@ -137,11 +179,20 @@
                     </div>
                 </div>
                 <div class="cardBody">
-                    <p class="modal-section-label" id="alertModesLabel">Notify me, even with the app closed</p>
-                    <div class="mode-toggle alertModes" id="alertModes" role="group" aria-labelledby="alertModesLabel">
-                        <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false">Off</button>
-                        <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false">All updates</button>
-                        <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false">Disruptions only</button>
+                    <p class="alertsIntro">Notify me, even with the app closed:</p>
+                    <div id="alertModes">
+                        <p class="modal-section-label" id="alertTrainLabel"><span data-icon="train"></span> Train service alerts (MRT and LRT)</p>
+                        <div class="mode-toggle alertModes" data-alert-kind="train" role="group" aria-labelledby="alertTrainLabel">
+                            <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false">Off</button>
+                            <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false">All updates</button>
+                            <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false">Disruptions only</button>
+                        </div>
+                        <p class="modal-section-label" id="alertTrafficLabel"><span data-icon="cone"></span> Traffic alerts (roads and buses)</p>
+                        <div class="mode-toggle alertModes" data-alert-kind="traffic" role="group" aria-labelledby="alertTrafficLabel">
+                            <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false">Off</button>
+                            <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false">All updates</button>
+                            <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false">Disruptions only</button>
+                        </div>
                     </div>
                     <p id="alertsNote" class="mode-note" role="status"></p>
                     <div id="alertsBody" class="alertsBody"></div>
@@ -215,6 +266,10 @@
                         <div class="favGroupLabel">Routes</div>
                         <div id="favRouteChips" class="favChips"></div>
                     </div>
+                    <div id="favNavsGroup" class="favGroup">
+                        <div class="favGroupLabel">Navs</div>
+                        <div id="favNavChips" class="favChips"></div>
+                    </div>
                     <div id="favEmpty" class="empty">No favourites yet. Star a stop&rsquo;s timings, a bus on its route, or a planned route.</div>
                 </div>
             </div>
@@ -270,6 +325,7 @@
             <div class="modalHeader">
                 <div class="modalTitle" id="svcModalTitle">Bus Service Information</div>
                 <div class="actions">
+                    <button id="getOffPickBtn" class="iconBtn" type="button" aria-pressed="false" title="Alert me two stops before I get off"><span data-icon="bell"></span><span class="lbl">Get Off Alert</span></button>
                     <button id="busFavBtn" class="iconBtn" type="button" aria-pressed="false" title="Save this bus to favourites"><span data-icon="star"></span><span class="lbl">Save bus</span></button>
                     <button class="icon-btn small" type="button" data-close-modal="svcModal" aria-label="Close">
                         <span data-icon="close"></span>
@@ -284,6 +340,7 @@
                 </div>
                 <div id="svcDirTabs" class="dirTabs"></div>
                 <div id="svcNote" class="svcNote" hidden></div>
+                <p id="getOffPickNote" class="svcNote getOffPickNote" role="status" hidden>Tap the stop you're getting off at. Keep the site open on the bus, and it alerts you two stops before.</p>
                 <div id="routeList" class="routeList"></div>
             </div>
         </div>
@@ -338,6 +395,12 @@
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
                 <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false">Bottom</button>
             </div>
+            <p class="modal-section-label">Get Off Alert on a trip</p>
+            <div class="mode-toggle">
+                <button class="mode-btn" type="button" data-getoff="on" aria-pressed="false">On</button>
+                <button class="mode-btn" type="button" data-getoff="off" aria-pressed="false">Off</button>
+            </div>
+            <p class="mode-note">Two stops before you get off or change, the phone buzzes in short pulses, beeps and shows a notification. Keep the site open on a trip.</p>
             <p class="modal-section-label">Pin favourite stops in lists</p>
             <div class="mode-toggle" data-pin-kind="stop">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -378,6 +441,33 @@
         </div>
     </div>
 
+    <!-- Today's weather: js/weather.js -->
+    <div id="weatherModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
+            <div class="modal-head">
+                <h2 id="weatherTitle">Today's weather</h2>
+                <button class="icon-btn small" type="button" data-close-modal="weatherModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="weatherBody" class="weatherBody"></div>
+        </div>
+    </div>
+
+    <!-- A trip in progress, and its Get Off Alert: js/trip.js -->
+    <div id="tripBar" class="tripBar hidden" role="region" aria-label="Trip in progress">
+        <div class="tripBarInner">
+            <span class="tripIcon" data-icon="bus"></span>
+            <div class="tripText">
+                <strong id="tripTitle"></strong>
+                <span id="tripStatus" role="status" aria-live="assertive"></span>
+                <span id="tripNote" class="tripNote" hidden></span>
+            </div>
+            <button id="tripNext" class="iconBtn" type="button" hidden>Next leg</button>
+            <button id="tripEnd" class="iconBtn" type="button">End trip</button>
+        </div>
+    </div>
+
     <!-- Theme Picker Modal -->
     <div class="modal-backdrop hidden" id="themeModal">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
@@ -410,6 +500,9 @@
     <script src="/js/sync.js"></script>
     <script src="/js/mrt-stations.js"></script>
     <script src="/js/alerts.js"></script>
+    <script src="/js/weather.js"></script>
+    <script src="/js/trip.js"></script>
+    <script src="/js/nav.js"></script>
     <script src="/script.js"></script>
     <script src="/js/sw-update.js"></script>
 </body>

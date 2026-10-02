@@ -10,22 +10,23 @@ buses, and traffic incidents on the roads.
 ## Subscribe
 
 1. Send `/sub`.
-2. The bot confirms you're subscribed, with two buttons under its reply:
-   **All updates** and **Disruptions only**. The one in force has a tick.
-3. Tap the one you want. You can change it at any time by tapping the other.
+2. The bot confirms you're subscribed, with two rows of buttons under its reply:
+   one for train service alerts and one for traffic alerts, each **All**,
+   **Disruptions** or **Off**. The choice in force has a tick.
+3. Tap what you want for each. You can change either at any time.
 
-| Option | You're sent |
-|---|---|
-| **All updates** | Every change to train services, including new service notices, and every new traffic incident anywhere in Singapore. |
-| **Disruptions only** | A train disruption starting, changing or clearing, and new incidents that can block or reroute a bus: accidents, vehicle breakdowns, road blocks, diversions, obstacles, fires and plant failures. |
+| | All | Disruptions |
+|---|---|---|
+| **Train service alerts** (MRT and LRT) | Every change to train services, including new service notices. | A train disruption starting, changing or clearing. |
+| **Traffic alerts** (roads and buses) | Every new traffic incident anywhere in Singapore. | New incidents that can block or reroute a bus: accidents, vehicle breakdowns, road blocks, diversions, obstacles, fires and plant failures. |
 
-You start on **All updates**. Sending `/sub` again shows the buttons without
-changing anything.
+You start on **All** for both. Sending `/sub` again shows the buttons without
+changing anything, and turning both off unsubscribes you. LTA publishes no feed of
+bus service changes, so road incidents are how bus disruptions show up.
 
 > [!WARNING]
-> **All updates** is busy. Singapore's roads report new incidents all day, so
-> expect many messages. **Disruptions only** is the quieter choice for most
-> people.
+> Traffic **All** is busy. Singapore's roads report new incidents all day, so
+> expect many messages. **Disruptions** is the quieter choice for most people.
 
 ## What arrives
 
@@ -49,11 +50,11 @@ up to date. You don't need to be subscribed.
 ## Unsubscribe
 
 Send `/unsub`. Nothing more is sent until you send `/sub` again. Tapping one of
-the buttons under an old `/sub` reply also subscribes you again, in that mode.
+the buttons under an old `/sub` reply also subscribes you again, with that choice.
 
 Service Alerts are separate from [routines](routines.md): turning **Routine
 notifications** off in `/settings` doesn't stop them. `/settings` shows which
-mode you're on, or Off.
+choice you're on for trains and traffic, or Off.
 
 ## Also on the web
 

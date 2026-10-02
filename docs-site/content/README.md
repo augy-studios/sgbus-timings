@@ -26,6 +26,9 @@ It comes in two forms, built on the same live data from LTA:
   you.
 - **Plan a route** between two stops: every bus that runs the whole way, or the
   quickest journeys with up to three changes when none does.
+- **Navigate** from any place to any other by bus and train, with every
+  worthwhile mix of the two, and a **Get Off Alert** two stops before you get off.
+- **Check the weather**: today's temperature, PSI and PM2.5, in one button.
 - **Save favourites**: bus stops, bus numbers and whole routes, one tap away.
 - **Get timings sent to you** at the same time every day, in the Telegram bot.
 - **Hear about disruptions**: train service alerts and traffic incidents, as
@@ -38,7 +41,8 @@ The web app and the bot each have two sections in the sidebar:
 - **Basics**: finding a stop or a bus, reading its timings, the stops near you,
   favourites and settings. Everything most people need, a tap or two away.
 - **Advanced**: anything that takes more steps, such as narrowing a stop to one
-  bus, planning a route, routines, service alerts and syncing.
+  bus, planning a route, navigating by bus and train, the Get Off Alert,
+  routines, service alerts and syncing.
 
 Start with [Reading bus timings](getting-started/reading-timings.md): it explains
 what the colours and badges mean, in both.

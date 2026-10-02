@@ -12,7 +12,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Estimated distance from the stop to each incoming bus
 - Today's first and last bus for each service at the stop
 - **Pick a bus** to narrow the timings to one service (even one not running right now), and **Show all services** to widen them back out
-- **Navigate** to the stop in Google Maps or Citymapper
+- **Directions** to the stop in Google Maps or Citymapper
 
 ### Bus Stop Search
 - Search by stop name (e.g. `Orchard`) or 5-digit stop code (e.g. `84009`)
@@ -27,7 +27,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Favourite buses are starred and pinned in every stop's timings
 - Choose whether favourite buses and stops pin to the top or bottom of lists
 - Favourites are persisted in your browser's local storage
-- **Sync favourites with another device** from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
+- **Sync favourites with another device** (stops, buses, routes and navs) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
   - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
@@ -52,9 +52,25 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ### Service Alerts
 - **Service alerts** under the search box opens a card with train service alerts (disrupted lines, affected stations, free buses and shuttles, service notices) and traffic incidents across Singapore, the ones that can block or reroute a bus listed first. From `/api/service-alerts`, never served from the offline cache
-- **Notify me** turns on notifications that arrive with the app closed: **All updates** (every train status change and every new traffic incident) or **Disruptions only** (train disruptions, and new accidents, breakdowns, road blocks, diversions and the like). The same two modes as the Telegram bot's `/sub`
+- **Notify me** turns on notifications that arrive with the app closed, chosen separately for **train service alerts** and **traffic alerts**: each **Off**, **All updates**, or **Disruptions only** (train disruptions / accidents, breakdowns, road blocks, diversions and the like). The same choices as the Telegram bot's `/sub`
 - Web Push, sent by a Vercel cron function (`api/push/poll.js`, every minute) with subscriptions kept in Upstash Redis. One-off setup in [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md). On iPhone and iPad, only from the app added to the Home Screen
 - Tapping a notification opens the card, as does `#alerts`
+
+### Navigate
+- **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops or your location, at either end
+- Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
+- Open one leg by leg, with live timings for every bus leg; save it to Favourites (Navs); share it as `#nav/lat,lng/lat,lng`
+- The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
+
+### Get Off Alert
+- On a trip (**Start trip** on a nav or a planned journey, or **Get Off Alert** on a bus's route and then the stop you're getting off at), the site follows your live location and alerts you two stops before each change and the end: short pulsed vibrations, three beeps and a notification
+- Keeps the screen awake while the trip runs, since a website only gets your location while it's open; underground it goes by the expected ride time
+- On by default; Settings turns it off
+
+### Weather
+- The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region
+- Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
+- Open-Meteo for the forecast; NEA's readings from data.gov.sg (`DATA_GOV_KEY`)
 
 ### Themes
 - 7 built-in colour themes: **Classic**, **Not Green 1–5**, **Really Really Light Green**
@@ -70,6 +86,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - `#bus/22` opens a bus's route and `#route/84009/75009` opens the route planner
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - `#alerts` opens the Service alerts card
+- `#nav/1.30050,103.85580/1.33320,103.92920` opens Navigate between two points
 - Bookmark or share a direct link to any stop, service or route
 
 ### PWA / Offline Support

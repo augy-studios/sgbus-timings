@@ -176,39 +176,52 @@ def format_alert_update(train_value, incidents: list) -> dict:
     return doc.build()
 
 
-_SUB_MODE_TEXT = {
-    "all": "You'll get an update here whenever train service status changes, including new "
-    "service notices, and for every new traffic incident reported on Singapore's roads.",
-    "disruptions": "You'll only get an update here when a train disruption starts, changes or "
-    "clears, or when an accident, breakdown, road block, diversion or other incident that can "
-    "block a bus is reported.",
+_TRAIN_TEXT = {
+    "all": "every change to MRT and LRT services, including service notices",
+    "disruptions": "train disruptions starting, changing or clearing",
+}
+_TRAFFIC_TEXT = {
+    "all": "every new traffic incident reported on Singapore's roads",
+    "disruptions": "accidents, breakdowns, road blocks, diversions and other incidents that can block a bus",
 }
 
+MODE_LABELS = {"all": "All updates", "disruptions": "Disruptions only", "off": "Off"}
 
-def format_subscription(mode: str) -> str:
-    """Plain-text reply for /sub and the mode buttons under it."""
+
+def format_subscription(modes: "dict | None") -> str:
+    """Plain-text reply for /sub and the buttons under it. `modes` is None once both kinds
+    are off, which unsubscribes."""
+    if not modes:
+        return (
+            "🔕 Both kinds are off, so you're unsubscribed from Service Alerts.\n\n"
+            "Tap a button below to turn either back on."
+        )
+    parts = [t for t in (_TRAIN_TEXT.get(modes["train"]), _TRAFFIC_TEXT.get(modes["traffic"])) if t]
     return (
-        f"🔔 Subscribed to Service Alerts. {_SUB_MODE_TEXT[mode]}\n\n"
-        "Pick which updates you want below. Send /unsub to stop."
+        f"🔔 Subscribed to Service Alerts. You'll get an update here for {', and for '.join(parts)}.\n\n"
+        f"🚆 Trains: {MODE_LABELS[modes['train']]}\n"
+        f"🚧 Traffic: {MODE_LABELS[modes['traffic']]}\n\n"
+        "Pick for each below. Send /unsub to stop both."
     )
 
 
-def sub_mode_buttons(mode: str) -> list:
-    """The mode picker under the /sub reply; the current mode's icon becomes a tick."""
+def sub_mode_buttons(modes: "dict | None") -> list:
+    """Two rows under the /sub reply, trains and traffic, the choice in force ticked."""
+    modes = modes or {"train": "off", "traffic": "off"}
 
-    def label(value, icon, text):
-        return f"{'✅' if mode == value else icon} {text}"
+    def row(kind, icon):
+        def label(value, text):
+            return f"{'✅' if modes[kind] == value else ''}{icon} {text}"
 
-    return [
-        [
-            Button.inline(label("all", "🔔", "All updates"), make_button("alerts_mode", {"mode": "all"})),
-            Button.inline(label("disruptions", "⚠️", "Disruptions only"), make_button("alerts_mode", {"mode": "disruptions"})),
+        return [
+            Button.inline(label("all", "All"), make_button("alerts_mode", {"kind": kind, "mode": "all"})),
+            Button.inline(label("disruptions", "Disruptions"), make_button("alerts_mode", {"kind": kind, "mode": "disruptions"})),
+            Button.inline(label("off", "Off"), make_button("alerts_mode", {"kind": kind, "mode": "off"})),
         ]
-    ]
+
+    return [row("train", "🚆"), row("traffic", "🚧")]
 
 
 def alerts_buttons() -> list:
     return [[Button.inline("🔄 Refresh", make_button("alerts_refresh", {}))]]
 
-
-MODE_LABELS = {"all": "All updates", "disruptions": "Disruptions only"}

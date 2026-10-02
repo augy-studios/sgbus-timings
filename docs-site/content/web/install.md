@@ -15,8 +15,9 @@ stays in that browser.
   question mark), and the [theme picker](settings.md#themes).
 - **The search box** finds a stop, a bus or an address. See
   [Find a bus stop](search.md).
-- **Stops near me**, **Plan a route** and [**Service alerts**](service-alerts.md)
-  sit under the search box.
+- **Stops near me**, **Plan a route**, [**Navigate**](nav.md) and
+  [**Service alerts**](service-alerts.md) sit under the search box, with the
+  [weather](weather.md) at the right end of the row.
 - **Favourites** lists the stops, buses and routes you have saved, as chips you
   can tap.
 - **The timings card** opens below once you pick a stop.

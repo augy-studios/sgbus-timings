@@ -16,6 +16,9 @@ each, so a stop starred in the app is not starred in the bot.
 | Stops near your location | Yes | Yes |
 | A bus's whole route, and the stops still ahead | Yes | Yes |
 | Plan a route, with up to three changes | Yes | Yes |
+| Navigate between any two places by bus and train | Yes, with [Navigate](../web/nav.md) | Yes, with [/nav](../bot/nav.md) |
+| An alert two stops before you get off | Yes, with the [Get Off Alert](../web/get-off-alert.md) | No |
+| Weather and air quality | Yes, with the [weather button](../web/weather.md) | No |
 | Favourite stops, buses and routes | Yes | Yes |
 | Directions to a stop in Google Maps or Citymapper | Yes | Yes |
 | Today's first and last bus at a stop | Yes | Yes |

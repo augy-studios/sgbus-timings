@@ -30,6 +30,10 @@ environment variables. The code also accepts Upstash's own names,
 `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, if you set the store up
 on upstash.com instead.
 
+Connect it without a prefix, so the names stay as above. One store can serve
+several projects: every key this site writes starts with `sgbus:`, so it never
+touches another project's data.
+
 ## 2. Make the VAPID keys
 
 These identify the site to the browsers' push services. On your computer:
@@ -54,7 +58,7 @@ Preview, if you want to try it there):
 | --- | --- |
 | `VAPID_PUBLIC_KEY` | the Public Key from step 2 |
 | `VAPID_PRIVATE_KEY` | the Private Key from step 2, marked **Sensitive** |
-| `VAPID_SUBJECT` | `mailto:` and an address push services can reach, e.g. `mailto:augybiz@gmail.com` |
+| `VAPID_SUBJECT` | `mailto:` and an address push services can reach, e.g. `mailto:augy@augystudios.com` |
 | `CRON_SECRET` | any long random string, e.g. from `openssl rand -hex 32`, marked **Sensitive** |
 
 `LTA_ACCOUNT_KEY` is already there for the rest of the site.

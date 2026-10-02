@@ -12,9 +12,10 @@ from ..reply import edit_rich_message, edit_rich_message_at
 from ..route_drafts import panel_awaiting, start_route_draft
 from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
+from ..service_alerts import KINDS as ALERT_KINDS
 from ..service_alerts import MODES as ALERT_MODES
 from ..service_alerts import set_mode as set_alert_mode
-from ..service_alerts_view import alerts_buttons, format_alerts_now, format_subscription, sub_mode_buttons
+from ..service_alerts_view import MODE_LABELS, alerts_buttons, format_alerts_now, format_subscription, sub_mode_buttons
 from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
 from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
@@ -26,6 +27,9 @@ from .newroute import apply_stop as apply_route_stop
 from .newroute import arm_route_field
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .servicealerts import fetch_alerts_now
+from .nav import arm_nav_field, open_favourite_nav, set_end as set_nav_end, show_nav, show_option
+from ..nav_view import build_mynavs_view
+from ..navs import toggle_favourite_nav
 from .settings import build_settings_view, start_edit_birthday, start_edit_name
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
@@ -64,7 +68,7 @@ def register_callbacks(client):
 
         try:
             if action in ("stop", "refresh", "navigate"):
-                # Navigate is the same view again, with the button swapped for a link per map app.
+                # Directions is the same view again, with the button swapped for a link per map app.
                 view = await build_stop_view(
                     payload["code"],
                     user_id,
@@ -386,16 +390,63 @@ def register_callbacks(client):
             # Also re-subscribes, so tapping a mode under an old /sub reply after /unsub
             # does what the button says.
             if action == "alerts_mode":
+                # Buttons from before trains and traffic were split carry one mode for both.
+                kinds = [payload["kind"]] if payload.get("kind") in ALERT_KINDS else list(ALERT_KINDS)
                 mode = payload.get("mode")
                 if mode not in ALERT_MODES:
                     await event.answer()
                     return
-                set_alert_mode(event.chat_id, mode)
+                modes = None
+                for kind in kinds:
+                    modes = set_alert_mode(event.chat_id, kind, mode)
                 try:
-                    await event.edit(format_subscription(mode), buttons=sub_mode_buttons(mode))
+                    await event.edit(format_subscription(modes), buttons=sub_mode_buttons(modes))
                 except MessageNotModifiedError:
-                    pass  # the mode already picked, tapped again
-                await event.answer("You'll get all updates" if mode == "all" else "You'll only get disruption updates")
+                    pass  # the choice already picked, tapped again
+                what = "Train alerts" if kinds == ["train"] else "Traffic alerts" if kinds == ["traffic"] else "Alerts"
+                await event.answer(f"{what}: {MODE_LABELS[mode].lower()}")
+                return
+
+            if action == "nav_set":
+                await arm_nav_field(client, event, event.chat_id, payload)
+                await event.answer()
+                return
+
+            if action == "nav_pick":
+                await set_nav_end(client, event.chat_id, payload["field"], payload["place"])
+                await event.answer()
+                return
+
+            if action == "nav_show":
+                await event.answer("Finding ways there…")
+                await show_nav(client, event, payload["from"], payload["to"])
+                return
+
+            if action == "nav_option":
+                await event.answer()
+                await show_option(client, event, payload["from"], payload["to"], payload["option"])
+                return
+
+            if action == "nav_fav":
+                now_fav = toggle_favourite_nav(event.chat_id, payload["from"], payload["to"])
+                await event.answer("Nav added to favourites" if now_fav else "Nav removed from favourites")
+                await show_nav(client, event, payload["from"], payload["to"])
+                return
+
+            if action == "nav_open_fav":
+                if not await open_favourite_nav(client, event.chat_id, payload["id"]):
+                    await event.answer("That nav is no longer in your favourites.")
+                    return
+                await event.answer()
+                return
+
+            if action == "mynavs_page":
+                rich, buttons, navs = build_mynavs_view(event.chat_id, payload.get("page", 0))
+                if not navs:
+                    await edit_rich_message(client, event, {"markdown": "No favourite navs left.", "fallback": "No favourite navs left."}, None)
+                else:
+                    await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
                 return
 
             if action == "alerts_refresh":

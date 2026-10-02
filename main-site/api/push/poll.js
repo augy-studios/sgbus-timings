@@ -1,10 +1,10 @@
 // Run by Vercel Cron every minute (vercel.json): polls LTA's train alerts and traffic
 // incidents, and pushes what changed to every device with Service Alerts on, filtered by
-// its mode. The rules are api/_push/alerts.js, the same as the Telegram bot's
+// its train and traffic modes. The rules are api/_push/alerts.js, the same as the Telegram bot's
 // (telegram-bot/src/service_alerts.py), which polls for its own subscribers.
 
 import webpush from 'web-push';
-import { diffTraffic, diffTrain, notificationFor, updateFor } from '../_push/alerts.js';
+import { diffTraffic, diffTrain, modesOf, notificationFor, updateFor } from '../_push/alerts.js';
 import { fetchTrafficIncidents, fetchTrainAlerts } from '../_push/lta.js';
 import { devices, getState, releaseLock, setState, storeConfigured, takeLock } from '../_push/store.js';
 
@@ -59,13 +59,15 @@ async function poll(accountKey) {
   const sends = [];
   for (const [deviceId, device] of await devices.all()) {
     if (!device) continue;
-    if (!(device.mode in payloads)) {
-      const { train: t, incidents } = updateFor(device.mode, trainUpdate, newIncidents);
-      payloads[device.mode] = t || incidents.length
+    const modes = modesOf(device);
+    const key = `${modes.train}|${modes.traffic}`;
+    if (!(key in payloads)) {
+      const { train: t, incidents } = updateFor(modes, trainUpdate, newIncidents);
+      payloads[key] = t || incidents.length
         ? JSON.stringify({ type: 'service-alert', ...notificationFor(t, incidents), url: '/#alerts' })
         : null;
     }
-    if (payloads[device.mode]) sends.push([deviceId, device, payloads[device.mode]]);
+    if (payloads[key]) sends.push([deviceId, device, payloads[key]]);
   }
 
   let sent = 0;

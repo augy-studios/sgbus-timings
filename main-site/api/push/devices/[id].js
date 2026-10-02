@@ -1,4 +1,4 @@
-// Turn Service Alerts on for a device or change its mode (PUT, sent again on every app
+// Turn Service Alerts on for a device or change its train and traffic modes (PUT, sent again on every app
 // load, which also keeps the subscription fresh), or off (DELETE: the device is forgotten).
 
 import { devices, rateLimited, storeConfigured } from '../../_push/store.js';
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
       }
       const device = parseDevice(req.body);
       await devices.set(id, { ...device, updatedAt: Date.now() });
-      return res.status(200).json({ mode: device.mode });
+      return res.status(200).json({ train: device.train, traffic: device.traffic });
     }
 
     if (req.method === 'DELETE') {

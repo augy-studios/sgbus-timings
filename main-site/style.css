@@ -1199,6 +1199,8 @@ header {
 /* Off, All updates, Disruptions only: three across, where the theme's toggle is two. */
 .alertModes { grid-template-columns: repeat(3, 1fr); }
 .alertModes .mode-btn { text-align: center; line-height: 1.25; }
+.alertsIntro { font-size: 13px; color: var(--muted-strong); }
+#alertModes .modal-section-label { display: flex; align-items: center; gap: 6px; margin-top: 10px; margin-bottom: 6px; }
 
 .alertsBody { margin-top: 6px; }
 .alertsHead {
@@ -1568,3 +1570,113 @@ header {
 @media (max-width: 480px) {
     .swatch-grid { grid-template-columns: 1fr; }
 }
+
+/* ===== Weather button and modal (js/weather.js) ===== */
+/* The last quick action, pushed to the right end of the row; on a narrow screen it wraps
+   onto its own line and stays right-aligned. */
+.weatherBtn { margin-left: auto; }
+.weatherBody { display: flex; flex-direction: column; gap: 10px; }
+.wxNow { display: flex; align-items: center; gap: 12px; }
+.wxNow > .ico svg { width: 44px; height: 44px; color: var(--brand-ink); }
+.wxTemp { font-size: 28px; font-weight: 700; line-height: 1.1; }
+.wxSky, .wxSummary { font-size: 13px; color: var(--muted-strong); }
+.wxSummary { color: var(--ink); line-height: 1.5; }
+.wxFields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px 12px;
+    font-size: 13px;
+}
+.wxFields div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--surface-border); padding-bottom: 4px; }
+.wxFields dt { color: var(--muted-strong); }
+.wxFields dd { text-align: right; }
+.wxHours { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.wxHour {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 52px;
+    padding: 8px 6px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    font-size: 12px;
+}
+.wxHourTime, .wxPop { color: var(--muted-strong); font-size: 11px; }
+.wxNowcast { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+.wxBar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+.wxBar span { width: 100%; border-radius: 6px 6px 2px 2px; background: var(--brand-fill-strong); border: 1px solid var(--surface-border); }
+.wxBar small { font-size: 10px; color: var(--muted-strong); }
+.wxAir { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+.wxAir caption { text-align: left; font-size: 12px; color: var(--muted-strong); padding-bottom: 4px; }
+.wxAir td { padding: 5px 4px; border-bottom: 1px solid var(--surface-border); }
+.wxAir td:last-child { display: flex; align-items: center; gap: 6px; }
+
+/* ===== Navigate (js/nav.js) ===== */
+.navSection { margin-top: 18px; position: relative; z-index: 5; }
+.navSection .card { overflow: visible; }
+.navSection .acList {
+    background: color-mix(in srgb, var(--brand) 6%, var(--bg));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.navSection .acItem .code { display: flex; align-items: center; }
+/* A train line's colour is a fixed meaning, like the footer heart: a dot beside its code,
+   never the text, so contrast stays the theme's. */
+.lineChip { display: inline-flex; align-items: center; gap: 5px; }
+.lineDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--line);
+    border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent);
+    flex: none;
+}
+.journeyItem.disrupted { border-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+.journeyWarn, .legWarn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--warn);
+}
+
+/* ===== Get Off Alert: the trip bar (js/trip.js) ===== */
+.tripBar {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    z-index: 40;
+    max-width: 720px;
+    margin: 0 auto;
+    border-radius: 18px;
+    background: var(--surface-strong);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow);
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 0.2s ease, transform 0.2s ease, background 0.2s ease;
+}
+.tripBar.hidden { opacity: 0; transform: translateY(16px); pointer-events: none; visibility: hidden; }
+.tripBar.alerting { background: var(--brand-fill-strong); animation: trip-pulse 0.9s ease-in-out 3; }
+.tripBar.alerting, .tripBar.alerting .tripNote { color: var(--on-brand); }
+.tripBarInner { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.tripIcon svg { width: 22px; height: 22px; }
+.tripText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.tripText strong { font-size: 14px; }
+.tripNote { font-size: 11px; color: var(--muted-strong); }
+body.on-trip { padding-bottom: 96px; }
+
+@keyframes trip-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+}
+
+/* Picking the stop to get off at, on a bus's route. */
+.getOffPickNote { font-weight: 700; color: var(--brand-ink); }
+#routeList.picking .routeStop { outline: 1px dashed color-mix(in srgb, var(--brand-ink) 45%, transparent); outline-offset: -2px; }

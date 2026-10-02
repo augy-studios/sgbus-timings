@@ -98,8 +98,8 @@ open it again. See [Updates and offline use](../web/updates.md).
 **Web app:**
 
 - Open **Service alerts** and check **All updates** or **Disruptions only** is
-  picked. If the note says the browser can't receive notifications, or that
-  they're blocked, do what it says.
+  picked for the kind you want, train or traffic. If the note says the browser
+  can't receive notifications, or that they're blocked, do what it says.
 - On iPhone and iPad, notifications only work in the app added to your Home
   Screen and opened from there, not in a Safari tab.
 - On Android, if they arrive late, set your browser or the installed app to
@@ -110,6 +110,24 @@ open it again. See [Updates and offline use](../web/updates.md).
 
 **Bot:** send `/settings` and check **Service Alerts** isn't Off. If you've
 muted the bot's chat, its messages arrive silently.
+
+## The Get Off Alert didn't go off
+
+- Keep the site open on screen during the trip. A website only gets your
+  location while it's open; the site keeps the screen awake for you, but
+  switching apps or locking the phone pauses it.
+- Allow location and notifications for the site when asked. Without location it
+  goes by the clock, which is rougher.
+- Underground there's no GPS, so it goes by the expected ride time; the trip bar
+  says so. A delayed train can make it early or late.
+- Check **Get Off Alert on a trip** is **On** in Settings.
+- If your phone is on silent, the vibration still comes, but not the beeps.
+
+## Navigate can't find a place
+
+Type more of the name, or the postal code. Places come from OneMap's search,
+which knows addresses, buildings and postal codes, plus every MRT and LRT
+station and bus stop.
 
 ## Routines did not arrive
 

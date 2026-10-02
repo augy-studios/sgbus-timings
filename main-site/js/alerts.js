@@ -6,9 +6,10 @@
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const API_BASE = "/api/push";
-  const MODE_KEY = "sgbus.alertMode";
+  const MODES_KEY = "sgbus.alertModes";
+  const MODE_KEY = "sgbus.alertMode"; // the single mode from before train and traffic were split
   const DEVICE_KEY = "sgbus.pushDeviceId";
-  const MODES = ["all", "disruptions"];
+  const MODES = ["all", "disruptions", "off"];
 
   // Keep in step with BLOCKING_TYPES in api/_push/alerts.js and
   // telegram-bot/src/service_alerts.py.
@@ -133,21 +134,27 @@
     return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
   }
 
-  function storedMode() {
+  // The choice, { train, traffic }, each "all", "disruptions" or "off". Before the two were
+  // split, one mode under MODE_KEY covered both; that carries over as the same for each.
+  function storedModes() {
     try {
-      const m = localStorage.getItem(MODE_KEY);
-      return MODES.includes(m) ? m : null;
-    } catch {
-      return null;
-    }
+      const saved = JSON.parse(localStorage.getItem(MODES_KEY) || "null");
+      if (saved && MODES.includes(saved.train) && MODES.includes(saved.traffic)) return saved;
+      const old = localStorage.getItem(MODE_KEY);
+      if (old === "all" || old === "disruptions") return { train: old, traffic: old };
+    } catch {}
+    return { train: "off", traffic: "off" };
   }
 
-  function storeMode(mode) {
+  function storeModes(modes) {
     try {
-      if (mode) localStorage.setItem(MODE_KEY, mode);
-      else localStorage.removeItem(MODE_KEY);
+      localStorage.removeItem(MODE_KEY);
+      if (modes.train === "off" && modes.traffic === "off") localStorage.removeItem(MODES_KEY);
+      else localStorage.setItem(MODES_KEY, JSON.stringify(modes));
     } catch {}
   }
+
+  const anyOn = (modes) => modes.train !== "off" || modes.traffic !== "off";
 
   function deviceId() {
     let id = null;
@@ -161,23 +168,35 @@
     return id || crypto.randomUUID();
   }
 
-  const NOTES = {
-    off: "Notifications are off. The card still shows what's happening now.",
-    all: "You'll be notified when train service status changes, and of every new traffic incident in Singapore.",
-    disruptions: "You'll be notified when a train disruption starts, changes or clears, and of accidents, breakdowns, road blocks and diversions.",
+  const TRAIN_NOTES = {
+    all: "every change to MRT and LRT services, including service notices",
+    disruptions: "train disruptions starting, changing or clearing",
+  };
+  const TRAFFIC_NOTES = {
+    all: "every new traffic incident in Singapore",
+    disruptions: "accidents, breakdowns, road blocks and diversions",
+  };
+  const PROBLEMS = {
     unsupported: "This browser can't receive notifications. On iPhone or iPad, add the app to your Home Screen, open it from there, and try again.",
     denied: "Notifications are blocked for this site. Allow them in your browser's site settings, then pick again.",
     failed: "Couldn't reach the alerts server. Try again in a minute.",
   };
 
-  function showMode(mode, note) {
-    const current = mode || "off";
-    document.querySelectorAll("#alertModes [data-alert-mode]").forEach((btn) => {
-      const on = btn.dataset.alertMode === current;
-      btn.classList.toggle("active", on);
-      btn.setAttribute("aria-pressed", String(on));
-    });
-    $("#alertsNote").textContent = NOTES[note || current];
+  function noteFor(modes) {
+    const parts = [TRAIN_NOTES[modes.train], TRAFFIC_NOTES[modes.traffic]].filter(Boolean);
+    if (!parts.length) return "Notifications are off. The card still shows what's happening now.";
+    return `You'll be notified of ${parts.join(", and of ")}.`;
+  }
+
+  function showModes(modes, problem) {
+    for (const kind of ["train", "traffic"]) {
+      document.querySelectorAll(`[data-alert-kind="${kind}"] [data-alert-mode]`).forEach((btn) => {
+        const on = btn.dataset.alertMode === modes[kind];
+        btn.classList.toggle("active", on);
+        btn.setAttribute("aria-pressed", String(on));
+      });
+    }
+    $("#alertsNote").textContent = problem ? PROBLEMS[problem] : noteFor(modes);
   }
 
   // navigator.serviceWorker.ready never settles if registration failed, so it
@@ -197,7 +216,7 @@
     return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   }
 
-  async function subscribe(mode) {
+  async function subscribe(modes) {
     const reg = await readyRegistration();
     const sub = (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -206,7 +225,7 @@
     const res = await fetch(`${API_BASE}/devices/${deviceId()}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription: sub.toJSON(), mode }),
+      body: JSON.stringify({ subscription: sub.toJSON(), train: modes.train, traffic: modes.traffic }),
     });
     if (!res.ok) throw new Error(`alerts server replied ${res.status}`);
   }
@@ -230,40 +249,44 @@
     }
   }
 
-  async function setMode(mode) {
-    const previous = storedMode();
-    if (mode === "off") {
-      storeMode(null);
-      showMode(null);
+  async function setMode(kind, mode) {
+    const previous = storedModes();
+    const modes = { ...previous, [kind]: mode };
+    if (!anyOn(modes)) {
+      storeModes(modes);
+      showModes(modes);
       if (pushSupported()) await unsubscribe();
       return;
     }
-    if (!pushSupported()) return showMode(previous, "unsupported");
+    if (!pushSupported()) return showModes(previous, "unsupported");
 
     const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-    if (perm !== "granted") return showMode(previous, "denied");
+    if (perm !== "granted") return showModes(previous, "denied");
 
-    showMode(mode);
+    showModes(modes);
     try {
-      await subscribe(mode);
-      storeMode(mode);
+      await subscribe(modes);
+      storeModes(modes);
     } catch (err) {
       console.warn("service alerts unavailable:", err);
-      showMode(previous, "failed");
+      showModes(previous, "failed");
     }
   }
 
-  // Re-sends the mode on every load, which also refreshes the subscription. A
-  // permission revoked in the browser's settings turns the setting off here too.
+  // Re-sends the choice on every load, which also refreshes the subscription. A
+  // permission revoked in the browser's settings turns both off here too.
   function resync() {
-    const mode = storedMode();
-    if (!mode) return;
+    const modes = storedModes();
+    if (!anyOn(modes)) return;
     if (!pushSupported() || Notification.permission !== "granted") {
-      storeMode(null);
-      showMode(null);
+      const off = { train: "off", traffic: "off" };
+      storeModes(off);
+      showModes(off);
       return;
     }
-    subscribe(mode).catch((err) => console.warn("service alerts resync failed:", err));
+    // Saved again, so a single pre-split mode moves to the new key.
+    storeModes(modes);
+    subscribe(modes).catch((err) => console.warn("service alerts resync failed:", err));
   }
 
   // ---------- wiring ----------
@@ -277,7 +300,7 @@
     $("#alertsRefresh").addEventListener("click", load);
     $("#alertModes").addEventListener("click", (e) => {
       const btn = e.target.closest("[data-alert-mode]");
-      if (btn) setMode(btn.dataset.alertMode);
+      if (btn) setMode(btn.closest("[data-alert-kind]").dataset.alertKind, btn.dataset.alertMode);
     });
     $("#alertsBody").addEventListener("click", (e) => {
       const more = e.target.closest(".alertsMore");
@@ -296,7 +319,7 @@
       });
     }
 
-    showMode(storedMode());
+    showModes(storedModes());
     resync();
   }
 

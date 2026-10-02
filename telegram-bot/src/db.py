@@ -129,12 +129,13 @@ db.executescript(
         created_at INTEGER NOT NULL
     );
 
-    -- Service Alerts (/sub). mode: 'all' (every train status change and every new
-    -- traffic incident) or 'disruptions' (train disruptions, and incidents that can
-    -- block or reroute a bus).
+    -- Service Alerts (/sub), chosen separately for trains and traffic, each 'all',
+    -- 'disruptions' (train disruptions / incidents that can block or reroute a bus) or
+    -- 'off'. A chat with both off isn't subscribed and has no row.
     CREATE TABLE IF NOT EXISTS service_alert_subs (
         chat_id INTEGER PRIMARY KEY,
-        mode TEXT NOT NULL DEFAULT 'all',
+        train_mode TEXT NOT NULL DEFAULT 'all',
+        traffic_mode TEXT NOT NULL DEFAULT 'all',
         created_at INTEGER NOT NULL
     );
 
@@ -144,6 +145,26 @@ db.executescript(
         state TEXT NOT NULL,
         updated_at INTEGER NOT NULL
     );
+
+    -- /nav: the journey being planned, one per chat. `field` is the end the bot is waiting
+    -- to be told, 'from' or 'to'; each end is a place, a label and a position.
+    CREATE TABLE IF NOT EXISTS nav_drafts (
+        chat_id INTEGER PRIMARY KEY,
+        field TEXT,
+        from_label TEXT, from_lat REAL, from_lng REAL,
+        to_label TEXT, to_lat REAL, to_lng REAL,
+        updated_at INTEGER NOT NULL
+    );
+
+    -- /mynavs: starred navs. A nav and its reverse are two separate favourites.
+    CREATE TABLE IF NOT EXISTS favourite_navs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL,
+        from_label TEXT NOT NULL, from_lat REAL NOT NULL, from_lng REAL NOT NULL,
+        to_label TEXT NOT NULL, to_lat REAL NOT NULL, to_lng REAL NOT NULL,
+        created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_favourite_navs_chat ON favourite_navs(chat_id);
 
     CREATE TABLE IF NOT EXISTS jobs (
         name TEXT PRIMARY KEY,
@@ -215,5 +236,15 @@ if "services" not in _routine_drafts_columns:
         db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_code TEXT")
         db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_name TEXT")
         db.execute("ALTER TABLE routine_drafts ADD COLUMN services TEXT")
+
+# Service Alerts used to have one mode for both kinds. A subscriber from then keeps it for
+# each, so nobody's alerts change until they pick otherwise.
+_alert_columns = {row["name"] for row in db.execute("PRAGMA table_info(service_alert_subs)").fetchall()}
+if "train_mode" not in _alert_columns:
+    with db:
+        db.execute("ALTER TABLE service_alert_subs ADD COLUMN train_mode TEXT NOT NULL DEFAULT 'all'")
+        db.execute("ALTER TABLE service_alert_subs ADD COLUMN traffic_mode TEXT NOT NULL DEFAULT 'all'")
+        if "mode" in _alert_columns:
+            db.execute("UPDATE service_alert_subs SET train_mode = mode, traffic_mode = mode")
 
 db.commit()

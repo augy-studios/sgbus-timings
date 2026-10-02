@@ -3,8 +3,8 @@ title: Favourites
 description: Save the stops, buses and routes you use, and open any of them with one tap.
 ---
 
-Favourites live in their own card under the search box, in up to three groups:
-**Bus stops**, **Buses** and **Routes**. Each favourite is a chip; tap it to open
+Favourites live in their own card under the search box, in up to four groups:
+**Bus stops**, **Buses**, **Routes** and **Navs**. Each favourite is a chip; tap it to open
 it, or tap the cross on its right to remove it.
 
 ## Save a favourite
@@ -14,6 +14,7 @@ it, or tap the cross on its right to remove it.
 | A bus stop | Tap **Save** on the stop's timings | That stop's timings |
 | A bus | Tap **Save bus** on the bus's [route](bus-routes.md) | That bus's route |
 | A route | Tap **Save route** in the [route planner](route-planner.md) | The planner, with both ends set |
+| A nav | Tap **Save nav** in [Navigate](nav.md) | Navigate, with both ends set |
 
 A saved button reads **Saved**. Tap it again to remove the favourite.
 

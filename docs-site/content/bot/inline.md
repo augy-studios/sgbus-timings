@@ -24,7 +24,7 @@ With nothing after the username, the results are your favourite stops.
 ## What gets posted
 
 The posted message has the stop's timings, a **Refresh** button and a
-**Navigate** button. Anyone in the chat can tap **Refresh** to update it. It has
+**Directions** button. Anyone in the chat can tap **Refresh** to update it. It has
 no favourite button, because whoever taps it may not be you.
 
 > [!NOTE]

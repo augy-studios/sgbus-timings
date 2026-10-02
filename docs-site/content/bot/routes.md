@@ -25,7 +25,9 @@ Once one end is set, the stops offered for the other do some of the planning for
 you. Those with a bus straight to your end (or, when you're picking the end,
 straight from your start) are ticked, listed first, and name the buses:
 
-> ✅ Opp Bedok Stn Exit A (22222) ~85m · 10, 24
+> Opp Bedok Stn Exit A (22222) ~85m · 10, 24
+
+with a tick in front of it.
 
 - **A name matching several stops**: the ticked ones lead the **Did you mean**
   list. Every match is checked, so a stop with a direct bus makes the list even

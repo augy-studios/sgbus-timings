@@ -21,6 +21,7 @@ than about three taps to reach goes under Advanced.
 * [Bus routes](web/bus-routes.md)
 * [Favourites](web/favourites.md)
 * [Settings and themes](web/settings.md)
+* [Weather and air quality](web/weather.md)
 * [Links you can share](web/links.md)
 * [Updates and offline use](web/updates.md)
 
@@ -28,6 +29,8 @@ than about three taps to reach goes under Advanced.
 
 * [More from a stop](web/more-from-a-stop.md)
 * [Plan a route](web/route-planner.md)
+* [Navigate by bus and train](web/nav.md)
+* [Get Off Alert](web/get-off-alert.md)
 * [Service alerts](web/service-alerts.md)
 * [Sync favourites between devices](web/sync.md)
 
@@ -45,6 +48,7 @@ than about three taps to reach goes under Advanced.
 
 * [More from a stop](bot/more-from-a-stop.md)
 * [Routes and journeys](bot/routes.md)
+* [Navigate with /nav](bot/nav.md)
 * [Routines](bot/routines.md)
 * [Service Alerts](bot/service-alerts.md)
 * [Inline mode](bot/inline.md)

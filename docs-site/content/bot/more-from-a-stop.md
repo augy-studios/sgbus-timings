@@ -37,8 +37,8 @@ Tap any stop to see its timings for the same bus, so you can walk the route a
 stop at a time. **Back to timings** returns to where you started. At the last
 stop of a route there is nothing ahead, and the button says so.
 
-## Navigate to the stop
+## Directions to the stop
 
-**Navigate**, on the last row, opens into two links, **Google Maps** and
+**Directions**, on the last row, opens into two links, **Google Maps** and
 **Citymapper**, each with walking directions to the stop. Refreshing folds them
 back into the one button.

@@ -1,7 +1,9 @@
 {
     "functions": {
         "api/bus-routes.js": { "maxDuration": 60 },
-        "api/push/poll.js": { "maxDuration": 300 }
+        "api/push/poll.js": { "maxDuration": 300 },
+        "api/nav.js": { "maxDuration": 60 },
+        "api/places.js": { "maxDuration": 30 }
     },
     "crons": [
         { "path": "/api/push/poll", "schedule": "* * * * *" }

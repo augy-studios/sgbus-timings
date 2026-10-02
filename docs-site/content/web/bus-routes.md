@@ -46,6 +46,12 @@ Tap any stop in the list to open its timings, narrowed to this bus. The
 timings say how many stops the bus has left to go, and **Back to bus 22** (with
 your bus) returns to the route.
 
+## Alert me to get off
+
+On the bus? Tap **Get Off Alert** at the top of the route, then tap the stop
+you're getting off at. The site follows you along the route and buzzes two stops
+before it. See [Get Off Alert](get-off-alert.md).
+
 ## Save the bus
 
 Tap **Save bus** at the top of the route to add the bus to your favourite

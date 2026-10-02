@@ -14,7 +14,7 @@ from ..reply import send_rich_message
 from ..service_alerts import (
     diff_traffic,
     diff_train,
-    get_mode,
+    get_modes,
     list_subscribers,
     subscribe,
     unsubscribe,
@@ -51,8 +51,8 @@ def register_servicealerts(client):
     async def sub(event):
         # Re-sending /sub keeps the existing mode and just shows the picker again.
         subscribe(event.chat_id)
-        mode = get_mode(event.chat_id)
-        await event.respond(format_subscription(mode), buttons=sub_mode_buttons(mode))
+        modes = get_modes(event.chat_id)
+        await event.respond(format_subscription(modes), buttons=sub_mode_buttons(modes))
 
     @client.on(events.NewMessage(pattern=r"^/unsub(@\w+)?$"))
     async def unsub(event):
@@ -102,13 +102,15 @@ async def poll_service_alerts(client) -> None:
 async def _broadcast(client, train_update, new_incidents) -> None:
     messages = {}
     for row in list_subscribers():
-        chat_id, mode = row["chat_id"], row["mode"]
-        if mode not in messages:
-            train, incidents = update_for(mode, train_update, new_incidents)
-            messages[mode] = (
+        chat_id = row["chat_id"]
+        modes = {"train": row["train_mode"], "traffic": row["traffic_mode"]}
+        key = (modes["train"], modes["traffic"])
+        if key not in messages:
+            train, incidents = update_for(modes, train_update, new_incidents)
+            messages[key] = (
                 format_alert_update(train["value"] if train else None, incidents) if (train or incidents) else None
             )
-        rich = messages[mode]
+        rich = messages[key]
         if not rich:
             continue
         try:

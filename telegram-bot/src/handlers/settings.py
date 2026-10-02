@@ -10,7 +10,7 @@ from ..favourites import list_favourites
 from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
 from ..format import escape_md
 from ..reply import send_rich_message
-from ..service_alerts import get_mode as get_alert_mode
+from ..service_alerts import get_modes as get_alert_modes
 from ..service_alerts_view import MODE_LABELS
 from ..user_settings import (
     get_birthday,
@@ -70,7 +70,7 @@ def build_settings_view(chat_id: int, sender):
     name_is_set = name != fallback
     birthday = get_birthday(chat_id)
     notifications_on = get_notifications_enabled(chat_id)
-    alert_mode = get_alert_mode(chat_id)
+    alert_modes = get_alert_modes(chat_id)
     fav_buses = list_favourite_buses(chat_id)
     fav_stops = list_favourites(chat_id)
     bus_position = get_pref(chat_id, "bus")
@@ -81,7 +81,13 @@ def build_settings_view(chat_id: int, sender):
         f"- **Name**: {escape_md(name) if name_is_set else '_not set_'}",
         f"- **Birthday**: {birthday if birthday else '_not set_'}",
         f"- **Routine notifications**: {'Enabled' if notifications_on else 'Disabled'}",
-        f"- **Service Alerts**: {MODE_LABELS[alert_mode] if alert_mode else 'Off'} (/sub, /unsub)",
+        f"- **Service Alerts**: "
+        + (
+            f"trains {MODE_LABELS[alert_modes['train']].lower()}, traffic {MODE_LABELS[alert_modes['traffic']].lower()}"
+            if alert_modes
+            else "Off"
+        )
+        + " (/sub, /unsub)",
         "",
         f"## Favourite buses ({_POSITION_LABELS.get(bus_position, bus_position)} pinned)",
     ]

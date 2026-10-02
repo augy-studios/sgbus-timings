@@ -87,7 +87,11 @@ time for the whole journey.
 
 Each leg has a button to open that stop's timings for the bus. Use
 **Refresh** to update the live timings, and **Back to route** to return to the
-list of journeys.
+list of journeys. **Start trip** follows you along the journey and buzzes two
+stops before each change and the end: see [Get Off Alert](get-off-alert.md).
+
+For a journey that takes a train too, or starts or ends somewhere other than a
+bus stop, use [Navigate](nav.md).
 
 ## Picked the wrong side of the road?
 

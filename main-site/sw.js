@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v23";
+const VERSION = "v24";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -20,6 +20,9 @@ const ASSETS = [
   "/js/sync.js",
   "/js/mrt-stations.js",
   "/js/alerts.js",
+  "/js/weather.js",
+  "/js/trip.js",
+  "/js/nav.js",
   "/js/sw-update.js",
   "/manifest.json",
   "/favicon.ico",
@@ -151,6 +154,9 @@ self.addEventListener("fetch", (event) => {
     // Service Alerts sign-up talks to the server and nothing else: a cached answer
     // could hand back a key from before the server's keys changed.
     if (url.pathname.startsWith("/api/push/")) return;
+    // Journeys use live alerts and the time of day, and place searches go to OneMap:
+    // neither is worth answering from an old copy.
+    if (url.pathname === "/api/nav" || url.pathname === "/api/places") return;
     // Stops and route info change rarely, so the last good copy is useful offline.
     event.respondWith(networkFirst(request));
     return;

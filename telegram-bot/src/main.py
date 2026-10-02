@@ -19,6 +19,7 @@ from .handlers.favroutes import register_favroutes
 from .handlers.favstops import register_favstops
 from .handlers.flow_control import register_flow_control
 from .handlers.inline import register_inline
+from .handlers.nav import register_nav
 from .handlers.nearme import register_nearme
 from .handlers.newroute import register_newroute
 from .handlers.routines import register_routines
@@ -52,6 +53,7 @@ async def main() -> None:
     # Both interceptors it carries have to come before the handler they take a message off:
     # the text one before register_search, the location one before register_nearme.
     register_newroute(client)
+    register_nav(client)  # its text and location interceptors, before register_search and register_nearme
     register_nearme(client)
     register_favstops(client)
     register_addfavbus(client)  # includes the flow text-interceptor, must come before register_search

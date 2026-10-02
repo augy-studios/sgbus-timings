@@ -16,11 +16,13 @@ description: Every command the bot understands, and what you can send it without
 | `/unfavbus` | Remove favourite buses | [Favourites](favourites.md#favourite-buses) |
 | `/route` | Find the buses, or journeys, between two stops | [Routes and journeys](routes.md) |
 | `/myroutes` | Your favourite routes | [Routes and journeys](routes.md#save-a-route) |
+| `/nav` | Get from any place to any other by bus and train | [Navigate with /nav](nav.md) |
+| `/mynavs` | Your favourite navs | [Navigate with /nav](nav.md#save-it) |
 | `/favouritepref` | Pin favourites to the top or bottom | [Favourites](favourites.md#top-or-bottom) |
 | `/addroutine` | Set up timings sent to you on a schedule | [Routines](routines.md) |
 | `/routines` | See, edit or delete your routines | [Routines](routines.md#see-change-or-delete-routines) |
 | `/alerts` | Train disruptions and traffic incidents right now | [Service Alerts](service-alerts.md#see-whats-happening-now) |
-| `/sub` | Get Service Alerts: all updates, or disruptions only | [Service Alerts](service-alerts.md) |
+| `/sub` | Get train service and traffic alerts: all, disruptions only, or off, for each | [Service Alerts](service-alerts.md) |
 | `/unsub` | Stop Service Alerts | [Service Alerts](service-alerts.md#unsubscribe) |
 | `/setname` | Set or clear the name the bot calls you | [Settings](settings.md#your-name) |
 | `/settings` | Your name, birthday, notifications and favourites | [Settings](settings.md) |
