@@ -72,8 +72,9 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
     buttons = []
 
     if awaiting:
-        md.append(f"_{escape_md(PROMPTS[awaiting])}_")
-        plain.append(PROMPTS[awaiting])
+        prompt = "✏️ " + PROMPTS[awaiting]
+        md.append(f"_{escape_md(prompt)}_")
+        plain.append(prompt)
     elif error:
         md.append(escape_md(error))
         plain.append(error)
@@ -111,9 +112,12 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
             Button.inline("⭐ Remove favourite" if fav else "⭐ Add favourite", make_button("nav_fav", _ends_payload(start, end))),
             Button.inline("🔄 Refresh", make_button("nav_show", _ends_payload(start, end))),
         ])
+    # The end being waited on swaps its letter for a pencil, as on the /route panel.
     buttons.append([
-        Button.inline("🅰 Set start", make_button("nav_set", {**_ends_payload(start, end), "field": "from"})),
-        Button.inline("🅱 Set end", make_button("nav_set", {**_ends_payload(start, end), "field": "to"})),
+        Button.inline(f"{'✏️' if awaiting == 'from' else '🅰'} Set start",
+                      make_button("nav_set", {**_ends_payload(start, end), "field": "from"})),
+        Button.inline(f"{'✏️' if awaiting == 'to' else '🅱'} Set end",
+                      make_button("nav_set", {**_ends_payload(start, end), "field": "to"})),
     ])
     return {"markdown": "\n".join(md).strip(), "fallback": "\n".join(plain).strip()}, buttons
 
