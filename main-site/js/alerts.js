@@ -1,16 +1,16 @@
 // Service Alerts: the card showing train service alerts and traffic incidents
 // right now (/api/service-alerts), and notifications for them while the app is
-// closed. The page subscribes to Web Push and tells the push server
-// (push-server/ in this repo) which updates it wants; the server polls LTA and
-// pushes. The subscribing follows alarm-clock's main-site/js/push.js.
+// closed. The page subscribes to Web Push and tells /api/push which updates it
+// wants; a cron function (api/push/poll.js) polls LTA every minute and pushes.
+// The subscribing follows alarm-clock's main-site/js/push.js.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
-  const API_BASE = "https://push.sgbus.uwuapps.org";
+  const API_BASE = "/api/push";
   const MODE_KEY = "sgbus.alertMode";
   const DEVICE_KEY = "sgbus.pushDeviceId";
   const MODES = ["all", "disruptions"];
 
-  // Keep in step with BLOCKING_TYPES in push-server/alerts.js and
+  // Keep in step with BLOCKING_TYPES in api/_push/alerts.js and
   // telegram-bot/src/service_alerts.py.
   const BLOCKING_TYPES = new Set([
     "accident", "vehicle breakdown", "road block", "diversion", "obstacle", "fire", "plant failure",
@@ -190,8 +190,8 @@
   }
 
   async function fetchPublicKey() {
-    const res = await fetch(`${API_BASE}/v1/vapid-key`);
-    if (!res.ok) throw new Error(`push server replied ${res.status}`);
+    const res = await fetch(`${API_BASE}/vapid-key`);
+    if (!res.ok) throw new Error(`alerts server replied ${res.status}`);
     const { publicKey } = await res.json();
     const b64 = (publicKey + "=".repeat((4 - (publicKey.length % 4)) % 4)).replace(/-/g, "+").replace(/_/g, "/");
     return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -203,12 +203,12 @@
       userVisibleOnly: true,
       applicationServerKey: await fetchPublicKey(),
     });
-    const res = await fetch(`${API_BASE}/v1/devices/${deviceId()}`, {
+    const res = await fetch(`${API_BASE}/devices/${deviceId()}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subscription: sub.toJSON(), mode }),
     });
-    if (!res.ok) throw new Error(`push server replied ${res.status}`);
+    if (!res.ok) throw new Error(`alerts server replied ${res.status}`);
   }
 
   // Unsubscribe and have the server forget this device. Browsers don't let a
@@ -222,7 +222,7 @@
       console.warn("unsubscribe failed:", err);
     }
     try {
-      await fetch(`${API_BASE}/v1/devices/${deviceId()}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/devices/${deviceId()}`, { method: "DELETE" });
     } catch (err) {
       // The subscription is already gone, so the server drops the device the
       // first time a push to it fails.

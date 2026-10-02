@@ -2,7 +2,7 @@
 change. A port of sgmrt-alerts' /sub feature (telegram-bot/src/subscriptions.js and
 scheduler.js), with LTA's traffic incidents alongside the train alerts.
 
-push-server/alerts.js applies the same rules for the web app's notifications; keep the
+main-site/api/_push/alerts.js applies the same rules for the web app's notifications; keep the
 two in step.
 """
 

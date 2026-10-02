@@ -439,8 +439,8 @@ in place.
 
 Service Alerts are separate from routine notifications: turning routines off in
 `/settings` doesn't stop them, and `/settings` shows which mode, if any, is on.
-The web app offers the same two modes as notifications, through the push
-server in [`../push-server`](../push-server/SETUP.md).
+The web app offers the same two modes as notifications, sent by a Vercel cron
+function in [`../main-site/api/push`](../main-site/SERVICE-ALERTS-SETUP.md).
 
 ### Settings
 

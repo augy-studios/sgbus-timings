@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v20";
+const VERSION = "v21";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -63,7 +63,7 @@ self.addEventListener("message", (event) => {
   }
 });
 
-/* -- Push: Service Alerts from the push server (push-server/ in this repo) -- */
+/* -- Push: Service Alerts, sent by the cron function in api/push/poll.js -- */
 
 self.addEventListener("push", (event) => {
   let data = null;
@@ -148,6 +148,9 @@ self.addEventListener("fetch", (event) => {
     // arrival time or disruption shown as live is worse than an error saying the
     // network is down.
     if (url.pathname === "/api/bus-arrivals" || url.pathname === "/api/service-alerts") return;
+    // Service Alerts sign-up talks to the server and nothing else: a cached answer
+    // could hand back a key from before the server's keys changed.
+    if (url.pathname.startsWith("/api/push/")) return;
     // Stops and route info change rarely, so the last good copy is useful offline.
     event.respondWith(networkFirst(request));
     return;

@@ -53,7 +53,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### Service Alerts
 - **Service alerts** under the search box opens a card with train service alerts (disrupted lines, affected stations, free buses and shuttles, service notices) and traffic incidents across Singapore, the ones that can block or reroute a bus listed first. From `/api/service-alerts`, never served from the offline cache
 - **Notify me** turns on notifications that arrive with the app closed: **All updates** (every train status change and every new traffic incident) or **Disruptions only** (train disruptions, and new accidents, breakdowns, road blocks, diversions and the like). The same two modes as the Telegram bot's `/sub`
-- Web Push, sent by the push server in [`../push-server`](../push-server/SETUP.md) at `push.sgbus.uwuapps.org`, which has to be running for notifications to turn on. On iPhone and iPad, only from the app added to the Home Screen
+- Web Push, sent by a Vercel cron function (`api/push/poll.js`, every minute) with subscriptions kept in Upstash Redis. One-off setup in [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md). On iPhone and iPad, only from the app added to the Home Screen
 - Tapping a notification opens the card, as does `#alerts`
 
 ### Themes
@@ -101,10 +101,11 @@ Clone the repository and use the [Vercel CLI](https://vercel.com/docs/cli) for l
 
 ```bash
 npm i -g vercel
+npm install
 vercel dev
 ```
 
-Set the `LTA_ACCOUNT_KEY` environment variable with your [LTA DataMall API key](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html).
+Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LTA DataMall API key](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html). Service Alerts notifications need a few more; see [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md).
 
 ## License
 

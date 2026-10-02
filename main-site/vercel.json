@@ -1,5 +1,9 @@
 {
     "functions": {
-        "api/bus-routes.js": { "maxDuration": 60 }
-    }
+        "api/bus-routes.js": { "maxDuration": 60 },
+        "api/push/poll.js": { "maxDuration": 300 }
+    },
+    "crons": [
+        { "path": "/api/push/poll", "schedule": "* * * * *" }
+    ]
 }

@@ -1,7 +1,7 @@
 """MRT and LRT station names and line labels, for describing train service alerts.
 
 Generated from sgmrt-alerts (telegram-bot/src/stations.js). Keep in step with
-push-server/mrt-stations.js, generated from the same source.
+main-site/api/_push/mrt-stations.js, generated from the same source.
 """
 
 STATION_NAMES = {

@@ -47,8 +47,8 @@ alerts server two things: your browser's push subscription, an address your
 browser's push service (Google, Apple, Mozilla or Microsoft) gives the app for
 delivering notifications to this device, and which updates you picked. Nothing
 else: no name, no location, no favourites. The server also keeps a random ID
-this device made up, so it can tell your device apart. Picking **Off** deletes
-all of it from the server.
+this device made up, so it can tell your device apart. It's stored in a database
+run by Upstash for SG Bus Timing. Picking **Off** deletes all of it.
 
 ### Directions
 
