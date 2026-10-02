@@ -199,7 +199,7 @@ async function buildAc() {
     acData = Object.entries(idx).map(([code, v]) => ({ code, name: v.n, road: v.road || '' }));
 }
 
-function matchStops(q) {
+function matchStops(q, limit = 20) {
     q = q.trim().toLowerCase();
     if (!q) return [];
     const isCode = /^\d+$/.test(q);
@@ -207,15 +207,22 @@ function matchStops(q) {
         .filter(it => isCode
             ? it.code.startsWith(q)
             : it.name.toLowerCase().includes(q) || it.road.toLowerCase().includes(q))
-        .slice(0, 20);
+        .slice(0, limit);
 }
+
+// How many matches are checked for a direct bus before the list is cut to its usual 20, so
+// a stop with one further down still makes it, without checking thousands on a short query.
+const DIRECT_CHECK_LIMIT = 300;
 
 // A postal code is six digits and a stop code five, so the two never collide.
 const isPostalCode = v => /^\d{6}$/.test(v.trim());
 
-function renderAcList(box, stops, services = [], postal = null) {
+// `direct` (stop code to bus numbers) marks the stops with a bus straight to the other end of
+// a planned route; `note` says so above them.
+function renderAcList(box, stops, services = [], postal = null, direct = null, note = '') {
     if (!stops.length && !services.length && !postal) { box.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML =
+        (note ? `<div class="acNote">${escapeHtml(note)}</div>` : '') +
         (postal
             ? `<div class="acItem acService" data-postal="${escapeHtml(postal)}">` +
               `<span class="code">${ico('pin')} ${escapeHtml(postal)}</span>` +
@@ -228,27 +235,44 @@ function renderAcList(box, stops, services = [], postal = null) {
             `<span class="name">${escapeHtml(serviceEndsText(no))}</span>` +
             `</div>`
         ).join('') +
-        stops.map(it =>
-            `<div class="acItem" data-code="${it.code}">` +
-            `<span class="code">${it.code}</span>` +
-            `<span class="name">${escapeHtml(it.name)}${it.road ? `<span class="road"> · ${escapeHtml(it.road)}</span>` : ''}</span>` +
-            `</div>`
-        ).join('');
+        stops.map(it => {
+            const buses = direct?.get(it.code);
+            return `<div class="acItem${buses ? ' direct' : ''}" data-code="${it.code}">` +
+                `<span class="code">${it.code}` +
+                (buses ? `<span class="acDirect">${ico('bus')} ${escapeHtml(buses.join(', '))}</span>` : '') + `</span>` +
+                `<span class="name">${escapeHtml(it.name)}${it.road ? `<span class="road"> · ${escapeHtml(it.road)}</span>` : ''}</span>` +
+                `</div>`;
+        }).join('');
     box.hidden = false;
 }
 
 // Stop suggestions under an input, plus bus numbers with `withServices`, and the stops near
 // a postal code once one is typed. Enter picks the stop typed or the first match, unless
 // `onEnter` takes it over. A postal code goes to `onPostal`, by default a list of the stops
-// near it to pick one from.
-function attachAutocomplete(input, box, { withServices = false, onStop, onService, onEnter, onPostal }) {
+// near it to pick one from. With `directFor` (a stop code to the buses running straight to
+// where the route planner is going, or null), those stops go first and are marked, and
+// `directNote` (given how many) says so above them.
+function attachAutocomplete(input, box, { withServices = false, onStop, onService, onEnter, onPostal, directFor, directNote }) {
     onPostal ??= code => postalStops(code)
         .then(({ title, stops }) => openStopList(title, stops, { pin: false, onPick: onStop }))
         .catch(e => alert(e.message));
+    // The stops to suggest, in the order shown, so Enter picks the one at the top.
+    const suggest = (v) => {
+        if (!directFor) return { stops: matchStops(v), direct: null, note: '' };
+        const all = matchStops(v, DIRECT_CHECK_LIMIT);
+        const direct = new Map();
+        for (const s of all) {
+            const buses = directFor(s.code);
+            if (buses) direct.set(s.code, buses);
+        }
+        const stops = [...all.filter(s => direct.has(s.code)), ...all.filter(s => !direct.has(s.code))].slice(0, 20);
+        return { stops, direct, note: direct.size ? directNote?.(direct.size) || '' : '' };
+    };
     const render = () => {
         const v = input.value;
-        renderAcList(box, matchStops(v), withServices && BusNet.isReady() ? BusNet.matchServices(v, 4) : [],
-            isPostalCode(v) ? v.trim() : null);
+        const { stops, direct, note } = suggest(v);
+        renderAcList(box, stops, withServices && BusNet.isReady() ? BusNet.matchServices(v, 4) : [],
+            isPostalCode(v) ? v.trim() : null, direct, note);
     };
     input.addEventListener('input', render);
     input.addEventListener('focus', render);
@@ -260,7 +284,7 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
         const v = input.value.trim();
         if (isPostalCode(v)) { onPostal(v); return; }
         const code = v.match(/\b\d{5}\b/)?.[0];
-        const pick = code && stopsIndex?.[code] ? code : matchStops(v)[0]?.code;
+        const pick = code && stopsIndex?.[code] ? code : suggest(v).stops[0]?.code;
         if (pick) onStop(pick);
         else if (v) alert('No bus stops matched that. Try a bus stop number or part of its name.');
     });
@@ -798,20 +822,28 @@ async function withLocating(btn, work) {
 let stopListPick = null;
 
 // A list of stops to pick one from. `pin` pins favourites per the stop preference; without
-// it they're only starred, and the list keeps its own order.
-function openStopList(title, stops, { pin = true, onPick }) {
+// it they're only starred, and the list keeps its own order. `direct` (stop code to bus
+// numbers) marks the stops with a bus straight to where the route planner is going, and
+// puts them first; `note` says above the list what that means.
+function openStopList(title, stops, { pin = true, onPick, direct = null, note = '' }) {
     const favs = new Set(LS.getFavs().map(f => f.code));
-    const list = pin ? pinFavourites(stops, favs, LS.getPin('stop'), s => s.code) : stops;
+    let list = pin ? pinFavourites(stops, favs, LS.getPin('stop'), s => s.code) : stops;
+    if (direct?.size) list = [...list.filter(s => direct.has(s.code)), ...list.filter(s => !direct.has(s.code))];
     $('#stopListTitle').textContent = title;
-    $('#stopListBody').innerHTML = list.map(s => {
+    const rows = list.map(s => {
         const road = stopsIndex?.[s.code]?.road || '';
-        return `<button type="button" class="routeStop" data-stop="${escapeHtml(s.code)}">` +
+        const buses = direct?.get(s.code);
+        return `<button type="button" class="routeStop${buses ? ' direct' : ''}" data-stop="${escapeHtml(s.code)}">` +
             `<span class="name">${favs.has(s.code) ? favMark() : ''}${escapeHtml(nameOf(s.code) || s.code)}` +
-            (road ? `<span class="road">${escapeHtml(road)}</span>` : '') + `</span>` +
+            (road ? `<span class="road">${escapeHtml(road)}</span>` : '') +
+            (buses ? `<span class="via">${ico('bus')} Direct: ${escapeHtml(buses.join(', '))}</span>` : '') + `</span>` +
             (s.distance != null ? `<span class="dist">${formatDistance(s.distance)}</span>` : '') +
             `<span class="pill">${escapeHtml(s.code)}</span>` +
             `</button>`;
-    }).join('') || '<div class="empty">No bus stops found nearby.</div>';
+    }).join('');
+    $('#stopListBody').innerHTML = rows
+        ? (note ? `<p class="stopListNote">${escapeHtml(note)}</p>` : '') + rows
+        : '<div class="empty">No bus stops found nearby.</div>';
     stopListPick = onPick;
     openModal('stopListModal');
 }
@@ -1030,13 +1062,17 @@ $('.favBar').addEventListener('click', e => {
 
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
-// for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with.
+// for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
+// "#alerts" for the service alerts card.
 function routeFromHash() {
     const hash = decodeURIComponent(location.hash.replace('#', ''));
     let m;
     // Opens Settings over the page rather than showing anything in it, so it answers false and
     // the first favourite stop still loads behind.
     if ((m = hash.match(/^sync\/([0-9A-Za-z]{6})$/))) { openSyncLink(m[1]); return false; }
+    // Where a Service Alerts notification opens. Shown above the page, so the first
+    // favourite stop still loads behind it.
+    if (hash === 'alerts') { window.Alerts.open({ scroll: false }); return false; }
     if ((m = hash.match(/^route\/(\d{5})\/(\d{5})$/))) { openPlanner(m[1], m[2], { scroll: false }); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
     const [hashCode, hashSvc] = hash.split(',');

@@ -130,7 +130,9 @@ LTA_ACCOUNT_KEY=your-lta-account-key
 DB_PATH=./data/bot.db
 WEBAPP_URL=https://sgbus.uwuapps.org/
 DONATE_URL=https://donate.stripe.com/28o2akeAr3hv0DK6oo
+GUIDE_URL=https://guide.sgbus.uwuapps.org/bot/start
 BUS_STOPS_REFRESH_HOURS=24
+SERVICE_ALERT_POLL_SECONDS=60
 ```
 
 ## 5. Install and run on a Debian 13 VPS

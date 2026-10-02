@@ -129,6 +129,22 @@ db.executescript(
         created_at INTEGER NOT NULL
     );
 
+    -- Service Alerts (/sub). mode: 'all' (every train status change and every new
+    -- traffic incident) or 'disruptions' (train disruptions, and incidents that can
+    -- block or reroute a bus).
+    CREATE TABLE IF NOT EXISTS service_alert_subs (
+        chat_id INTEGER PRIMARY KEY,
+        mode TEXT NOT NULL DEFAULT 'all',
+        created_at INTEGER NOT NULL
+    );
+
+    -- What each feed looked like at the last poll, so only changes are announced.
+    CREATE TABLE IF NOT EXISTS service_alert_state (
+        feed TEXT PRIMARY KEY,
+        state TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS jobs (
         name TEXT PRIMARY KEY,
         interval_ms INTEGER NOT NULL,

@@ -23,6 +23,7 @@ from .handlers.nearme import register_nearme
 from .handlers.newroute import register_newroute
 from .handlers.routines import register_routines
 from .handlers.search import register_search
+from .handlers.servicealerts import poll_service_alerts, register_servicealerts
 from .handlers.setname import register_setname
 from .handlers.settings import register_settings
 from .handlers.start import register_start
@@ -63,6 +64,7 @@ async def main() -> None:
     register_addroutine(client)  # includes the flow text-interceptor, must come before register_search
     register_routines(client)
     register_favroutes(client)
+    register_servicealerts(client)
     register_flow_control(client)
     register_callbacks(client)
     register_inline(client)
@@ -85,6 +87,11 @@ async def main() -> None:
     )
     register_job("check-routines", 60 * 1000, lambda: _check_routines_job(client))
     register_job("check-birthdays", 60 * 1000, lambda: _check_birthdays_job(client))
+    register_job(
+        "poll-service-alerts",
+        int(config.service_alert_poll_seconds * 1000),
+        lambda: poll_service_alerts(client),
+    )
 
     if bus_stops_count() == 0:
         print("Bus stop cache is empty, fetching from LTA DataMall before starting...")

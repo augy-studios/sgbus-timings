@@ -23,7 +23,7 @@ FLOW = register_flow(Flow(name="add_fav_bus", description="adding favourite buse
 
 
 def register_addfavbus(client):
-    @client.on(events.NewMessage(pattern="/addfavbus"))
+    @client.on(events.NewMessage(pattern=r"^/addfavbus(@\w+)?(\s|$)"))
     async def start(event):
         set_flow(event.chat_id, FLOW)
         await event.respond(

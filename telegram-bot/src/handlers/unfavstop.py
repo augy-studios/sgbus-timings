@@ -29,7 +29,7 @@ def build_unfavstop_view(chat_id: int, page: int):
 
 
 def register_unfavstop(client):
-    @client.on(events.NewMessage(pattern="/unfavstop"))
+    @client.on(events.NewMessage(pattern=r"^/unfavstop(@\w+)?(\s|$)"))
     async def handler(event):
         rich, buttons, stops = build_unfavstop_view(event.chat_id, 0)
         if not stops:

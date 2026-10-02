@@ -24,7 +24,9 @@ class Config:
     db_path: Path
     webapp_url: str
     donate_url: str
+    guide_url: str
     bus_stops_refresh_hours: float
+    service_alert_poll_seconds: float
     onemap_email: str
     onemap_password: str
 
@@ -37,7 +39,9 @@ config = Config(
     db_path=(ROOT_DIR / os.environ.get("DB_PATH", "./data/bot.db")).resolve(),
     webapp_url=os.environ.get("WEBAPP_URL", "https://sgbus.uwuapps.org/"),
     donate_url=os.environ.get("DONATE_URL", "https://donate.stripe.com/28o2akeAr3hv0DK6oo"),
+    guide_url=os.environ.get("GUIDE_URL", "https://guide.sgbus.uwuapps.org/bot/start"),
     bus_stops_refresh_hours=float(os.environ.get("BUS_STOPS_REFRESH_HOURS", "24")),
+    service_alert_poll_seconds=float(os.environ.get("SERVICE_ALERT_POLL_SECONDS", "60")),
     onemap_email=os.environ.get("ONEMAP_EMAIL", ""),
     onemap_password=os.environ.get("ONEMAP_PASSWORD", ""),
 )

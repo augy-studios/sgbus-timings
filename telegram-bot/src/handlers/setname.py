@@ -6,7 +6,7 @@ MAX_NAME_LENGTH = 64
 
 
 def register_setname(client):
-    @client.on(events.NewMessage(pattern="/setname"))
+    @client.on(events.NewMessage(pattern=r"^/setname(@\w+)?(\s|$)"))
     async def handler(event):
         arg = event.message.text[len("/setname") :].strip()
 

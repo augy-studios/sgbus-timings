@@ -1,4 +1,5 @@
 from telethon import events, types
+from telethon.errors import MessageNotModifiedError
 
 from ..bus_route_view import build_bus_stops_view, build_route_onward_view
 from ..buttons import resolve_button
@@ -11,6 +12,9 @@ from ..reply import edit_rich_message, edit_rich_message_at
 from ..route_drafts import panel_awaiting, start_route_draft
 from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
+from ..service_alerts import MODES as ALERT_MODES
+from ..service_alerts import set_mode as set_alert_mode
+from ..service_alerts_view import alerts_buttons, format_alerts_now, format_subscription, sub_mode_buttons
 from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
 from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
@@ -21,6 +25,7 @@ from .favroutes import build_favroutes_view
 from .newroute import apply_stop as apply_route_stop
 from .newroute import arm_route_field
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
+from .servicealerts import fetch_alerts_now
 from .settings import build_settings_view, start_edit_birthday, start_edit_name
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
@@ -376,6 +381,27 @@ def register_callbacks(client):
                 await event.answer(
                     "Notifications " + ("enabled" if get_notifications_enabled(user_id) else "disabled")
                 )
+                return
+
+            # Also re-subscribes, so tapping a mode under an old /sub reply after /unsub
+            # does what the button says.
+            if action == "alerts_mode":
+                mode = payload.get("mode")
+                if mode not in ALERT_MODES:
+                    await event.answer()
+                    return
+                set_alert_mode(event.chat_id, mode)
+                try:
+                    await event.edit(format_subscription(mode), buttons=sub_mode_buttons(mode))
+                except MessageNotModifiedError:
+                    pass  # the mode already picked, tapped again
+                await event.answer("You'll get all updates" if mode == "all" else "You'll only get disruption updates")
+                return
+
+            if action == "alerts_refresh":
+                train, traffic = await fetch_alerts_now()
+                await edit_rich_message(client, event, format_alerts_now(train, traffic), alerts_buttons())
+                await event.answer("Refreshed")
                 return
 
             await event.answer()

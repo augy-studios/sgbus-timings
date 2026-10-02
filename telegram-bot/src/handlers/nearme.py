@@ -6,7 +6,7 @@ from ..reply import send_rich_message
 
 
 def register_nearme(client):
-    @client.on(events.NewMessage(pattern="/nearme"))
+    @client.on(events.NewMessage(pattern=r"^/nearme(@\w+)?(\s|$)"))
     async def ask_location(event):
         # The location handler below listens for any location message, so /nearme is only
         # ever a shortcut to the share button - worth saying, since sending a location

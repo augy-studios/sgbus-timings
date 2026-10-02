@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v17";
+const VERSION = "v20";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -18,6 +18,8 @@ const ASSETS = [
   "/js/p2p.js",
   "/js/qr.js",
   "/js/sync.js",
+  "/js/mrt-stations.js",
+  "/js/alerts.js",
   "/js/sw-update.js",
   "/manifest.json",
   "/favicon.ico",
@@ -59,6 +61,44 @@ self.addEventListener("message", (event) => {
   if (type === "skip-waiting") {
     event.waitUntil(self.skipWaiting().then(() => self.clients.claim()));
   }
+});
+
+/* -- Push: Service Alerts from the push server (push-server/ in this repo) -- */
+
+self.addEventListener("push", (event) => {
+  let data = null;
+  try {
+    data = event.data?.json();
+  } catch {}
+  if (data?.type !== "service-alert") return;
+
+  // One tag for every alert, so a burst of traffic incidents replaces one
+  // notification rather than filling the tray; renotify still buzzes for each.
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Service Alerts", {
+      body: data.body || "",
+      tag: "service-alert",
+      renotify: true,
+      icon: "/sgbusicon1.png",
+      badge: "/sgbusicon1.png",
+      data: { url: data.url || "/#alerts" },
+    })
+  );
+});
+
+// Tapping one opens the service alerts card: in the app if it's open already,
+// otherwise in a new window.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/#alerts", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const client = clients.find((c) => new URL(c.url).origin === self.location.origin);
+      if (!client) return self.clients.openWindow(url);
+      client.postMessage({ type: "open-alerts" });
+      return client.focus();
+    })
+  );
 });
 
 async function cacheFirst(request, fallbackUrl) {
@@ -104,9 +144,10 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.pathname.startsWith("/api/")) {
-    // Live arrivals are never answered from a cache: an old arrival time shown
-    // as live is worse than an error saying the network is down.
-    if (url.pathname === "/api/bus-arrivals") return;
+    // Live arrivals and service alerts are never answered from a cache: an old
+    // arrival time or disruption shown as live is worse than an error saying the
+    // network is down.
+    if (url.pathname === "/api/bus-arrivals" || url.pathname === "/api/service-alerts") return;
     // Stops and route info change rarely, so the last good copy is useful offline.
     event.respondWith(networkFirst(request));
     return;

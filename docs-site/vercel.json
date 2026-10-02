@@ -1,0 +1,16 @@
+{
+    "buildCommand": "npm run build",
+    "outputDirectory": "dist",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "headers": [
+        {
+            "source": "/version.json",
+            "headers": [{ "key": "Cache-Control", "value": "no-store" }]
+        },
+        {
+            "source": "/(css|js)/(.*)",
+            "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600, must-revalidate" }]
+        }
+    ]
+}

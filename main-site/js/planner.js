@@ -10,8 +10,18 @@
 const planner = { start: null, end: null, journey: null, journeys: [], sideFix: null, token: 0 };
 
 function initPlanner() {
-  attachAutocomplete($('#routeStart'), $('#routeStartAc'), { onStop: (code) => setPlannerEnd('start', code) });
-  attachAutocomplete($('#routeEnd'), $('#routeEndAc'), { onStop: (code) => setPlannerEnd('end', code) });
+  for (const [field, input, box] of [['start', '#routeStart', '#routeStartAc'], ['end', '#routeEnd', '#routeEndAc']]) {
+    attachAutocomplete($(input), $(box), {
+      onStop: (code) => setPlannerEnd(field, code),
+      directFor: (code) => directBuses(field, code),
+      directNote: (count) =>
+        `${count === 1 ? 'One has' : `${count} have`} a bus ${directWay(field)}, listed first.`,
+      onPostal: (code) =>
+        postalStops(code)
+          .then(({ title, stops }) => offerNearbyEnd(field, title, stops))
+          .catch((e) => alert(e.message)),
+    });
+  }
   // A set end reads "Name (code)"; selecting it on focus means typing replaces it outright.
   for (const input of [$('#routeStart'), $('#routeEnd')]) input.addEventListener('focus', () => input.select());
 
@@ -31,13 +41,7 @@ function initPlanner() {
     if (!btn) return;
     const field = btn.dataset.nearFor;
     withLocating(btn, () =>
-      findNearbyStops().then((stops) =>
-        // Nearest first rather than pinned: the whole point of answering with a location.
-        openStopList(`Stops near you: pick the ${field}`, stops, {
-          pin: false,
-          onPick: (code) => setPlannerEnd(field, code),
-        })
-      )
+      findNearbyStops().then((stops) => offerNearbyEnd(field, `Stops near you: pick the ${field}`, stops))
     );
   });
 
@@ -96,6 +100,49 @@ function closePlanner() {
   $('#plannerSection').hidden = true;
   planner.token++;
   if (location.hash.startsWith('#route/')) history.replaceState(null, '', stopHash() || location.pathname);
+}
+
+// The stops near a place, to fill one end of the route in: nearest first rather than pinned,
+// the whole point of answering with a place. With the other end already set, the stops a bus
+// runs straight to it from (or from it to, when picking the end) go first, each naming those
+// buses. Ported from _offer_nearby in the bot's handlers/newroute.py.
+// The end of the route that's already set, opposite the one being filled in.
+const otherEnd = (field) => (field === 'start' ? planner.end : planner.start);
+
+// The buses that run straight between a stop and the other end, heading the right way: from
+// the stop to the end when picking the start, from the start to the stop when picking the
+// end. Null when there are none, the other end isn't set, or the routes aren't in yet.
+function directBuses(field, code) {
+  const other = otherEnd(field);
+  if (!other || code === other || !BusNet.isReady()) return null;
+  const buses = field === 'start' ? Journeys.directServices(code, other) : Journeys.directServices(other, code);
+  return buses.length ? buses : null;
+}
+
+const directWay = (field) => `straight ${field === 'start' ? 'to' : 'from'} ${nameOf(otherEnd(field)) || otherEnd(field)}`;
+
+async function offerNearbyEnd(field, title, stops) {
+  const other = otherEnd(field);
+  let direct = null;
+  let note = '';
+  if (other) {
+    try {
+      await BusNet.load(stopsIndex);
+      direct = new Map();
+      for (const s of stops) {
+        const buses = directBuses(field, s.code);
+        if (buses) direct.set(s.code, buses);
+      }
+      note = direct.size
+        ? `${direct.size === 1 ? 'One of these has' : `${direct.size} of these have`} a bus ${directWay(field)}, listed first.`
+        : `None of these has a bus ${directWay(field)}, so the planner will look for journeys with a change.`;
+    } catch (e) {
+      // Without the routes the list still works, just unmarked.
+      console.warn('Bus routes failed:', e);
+      direct = null;
+    }
+  }
+  openStopList(title, stops, { pin: false, onPick: (code) => setPlannerEnd(field, code), direct, note });
 }
 
 function setPlannerEnd(field, code) {

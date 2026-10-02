@@ -141,6 +141,27 @@ def _shape_next_bus(nb: Optional[dict]) -> Optional[dict]:
     }
 
 
+async def fetch_train_alerts() -> dict:
+    """LTA's TrainServiceAlerts as it comes: {"Status", "AffectedSegments", "Message"}."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        data = await _lta_get(client, "/TrainServiceAlerts")
+    value = data.get("value", data)
+    return value if isinstance(value, dict) else {}
+
+
+async def fetch_traffic_incidents() -> list[dict]:
+    """Every traffic incident LTA reports right now, island-wide. LTA's own message
+    already starts with when it was reported, e.g. "(2/10)14:32 Accident on PIE ..."."""
+    async with httpx.AsyncClient(timeout=15) as client:
+        data = await _lta_get(client, "/TrafficIncidents")
+    incidents = []
+    for i in data.get("value") or []:
+        message = (i.get("Message") or "").strip()
+        if message:
+            incidents.append({"type": (i.get("Type") or "Incident").strip(), "message": message})
+    return incidents
+
+
 def _natural_sort_key(text: str) -> list:
     """Mirrors JS localeCompare(..., { numeric: true }): numeric chunks compare by value."""
     return [int(chunk) if chunk.isdigit() else chunk for chunk in re.split(r"(\d+)", text)]

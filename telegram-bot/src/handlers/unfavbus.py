@@ -25,7 +25,7 @@ def build_unfavbus_view(chat_id: int, page: int):
 
 
 def register_unfavbus(client):
-    @client.on(events.NewMessage(pattern="/unfavbus"))
+    @client.on(events.NewMessage(pattern=r"^/unfavbus(@\w+)?(\s|$)"))
     async def handler(event):
         rich, buttons, buses = build_unfavbus_view(event.chat_id, 0)
         if not buses:

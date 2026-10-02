@@ -7,7 +7,7 @@ from ..reply import send_rich_message
 
 
 def register_favstops(client):
-    @client.on(events.NewMessage(pattern="/favstops"))
+    @client.on(events.NewMessage(pattern=r"^/favstops(@\w+)?(\s|$)"))
     async def handler(event):
         favs = list_favourites(event.chat_id)
         if not favs:

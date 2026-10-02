@@ -50,7 +50,7 @@ def build_favouritepref_view(chat_id: int, page: int):
 
 
 def register_favouritepref(client):
-    @client.on(events.NewMessage(pattern="/favouritepref"))
+    @client.on(events.NewMessage(pattern=r"^/favouritepref(@\w+)?(\s|$)"))
     async def handler(event):
         rich, buttons = build_favouritepref_view(event.chat_id, 0)
         await send_rich_message(client, event.chat_id, rich, buttons)

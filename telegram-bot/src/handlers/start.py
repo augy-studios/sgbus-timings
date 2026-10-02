@@ -19,6 +19,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Choose whether favourites pin to the top or bottom of the list
 - Tap Navigate on any stop's timings, then pick Google Maps or Citymapper for directions there
 - Set up routines to get a bus stop's timings sent to you automatically at a time you choose
+- Subscribe to Service Alerts for train disruptions and traffic incidents, all of them or disruptions only
 - Use this bot inline in any chat: type @{username} then a bus stop number or name
 
 ## Commands
@@ -35,15 +36,18 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /favouritepref - choose whether favourites pin to the top or bottom
 - /addroutine - set up a routine that sends you a bus stop's timings on a schedule
 - /routines - view, edit, or delete your routines
+- /alerts - train service alerts and traffic incidents right now
+- /sub - get Service Alerts updates (all, or disruptions only)
+- /unsub - stop those updates
 - /setname - set the name you want the bot to call you by
-- /settings - view and change your settings (name, birthday, routine notifications, map app)
+- /settings - view and change your settings (name, birthday, routine notifications)
 - /done - finish whatever you're in the middle of
 - /cancel - stop whatever you're in the middle of
 """
 
 
 def register_start(client):
-    @client.on(events.NewMessage(pattern="/start"))
+    @client.on(events.NewMessage(pattern=r"^/start(@\w+)?(\s|$)"))
     async def handler(event):
         me = await client.get_me()
         username = escape_md(me.username) if me.username else "this bot"
@@ -53,6 +57,7 @@ def register_start(client):
         }
         buttons = [
             [Button.url("🌐 Open web app", config.webapp_url)],
+            [Button.url("📖 How to use this bot", config.guide_url)],
             [Button.url("💖 Donate", config.donate_url)],
         ]
         await send_rich_message(client, event.chat_id, rich, buttons)

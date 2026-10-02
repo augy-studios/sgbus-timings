@@ -175,7 +175,7 @@ async def save_draft(client, chat_id):
 
 
 def register_addroutine(client):
-    @client.on(events.NewMessage(pattern="/addroutine"))
+    @client.on(events.NewMessage(pattern=r"^/addroutine(@\w+)?(\s|$)"))
     async def start(event):
         clear_draft(event.chat_id)
         start_draft(event.chat_id, step="time")

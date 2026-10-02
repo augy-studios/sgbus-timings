@@ -33,7 +33,7 @@ def build_favroutes_view(chat_id: int, page: int):
 
 
 def register_favroutes(client):
-    @client.on(events.NewMessage(pattern="/myroutes"))
+    @client.on(events.NewMessage(pattern=r"^/myroutes(@\w+)?(\s|$)"))
     async def handler(event):
         rich, buttons, routes = build_favroutes_view(event.chat_id, 0)
         if not routes:

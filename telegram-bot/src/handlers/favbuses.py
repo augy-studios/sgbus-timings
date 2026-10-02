@@ -25,7 +25,7 @@ def build_favbuses_view(chat_id: int, page: int):
 
 
 def register_favbuses(client):
-    @client.on(events.NewMessage(pattern="/favbuses"))
+    @client.on(events.NewMessage(pattern=r"^/favbuses(@\w+)?(\s|$)"))
     async def handler(event):
         rich, buttons, buses = build_favbuses_view(event.chat_id, 0)
         if not buses:

@@ -112,7 +112,7 @@ async def start_field_edit(client, chat_id, routine_id, field):
 
 
 def register_routines(client):
-    @client.on(events.NewMessage(pattern="/routines"))
+    @client.on(events.NewMessage(pattern=r"^/routines(@\w+)?(\s|$)"))
     async def handler(event):
         rich, buttons, routines = build_routines_view(event.chat_id, 0)
         if not routines:

@@ -9,7 +9,7 @@ def register_flow_control(client):
     registered about itself, so every command that keeps chat state, now or later, gets
     both of them for free."""
 
-    @client.on(events.NewMessage(pattern="/done"))
+    @client.on(events.NewMessage(pattern=r"^/done(@\w+)?(\s|$)"))
     async def done(event):
         name = get_flow(event.chat_id)
         if not name:
@@ -35,7 +35,7 @@ def register_flow_control(client):
         end_flow(event.chat_id, name)
         await event.respond(message)
 
-    @client.on(events.NewMessage(pattern="/cancel"))
+    @client.on(events.NewMessage(pattern=r"^/cancel(@\w+)?(\s|$)"))
     async def cancel(event):
         name = get_flow(event.chat_id)
         if not name:

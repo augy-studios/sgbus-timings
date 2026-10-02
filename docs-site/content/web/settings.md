@@ -1,0 +1,60 @@
+---
+title: Settings and themes
+description: Set your name and birthday, choose where favourites pin, and pick a colour and light or dark mode.
+---
+
+## Settings
+
+Open Settings with the gear in the header, or by tapping the app's title.
+
+| Setting | What it does |
+|---|---|
+| **Your name, for the greeting** | The header greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
+| **Birthday** | On the day, the greeting becomes "Happy Birthday, Sam!" **Clear** removes it. Only the day and month are used. |
+| **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
+| **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
+| **Sync favourites with another device** | See [Sync favourites between devices](sync.md). |
+
+Changes save as you make them. There is no Save button.
+
+> [!NOTE]
+> Looking for notifications? They're switched on in the
+> [Service alerts](service-alerts.md#get-notified) card, under the search box,
+> not here.
+
+The greeting follows the time of day, good morning, afternoon or evening, and
+keeps up while the app stays open.
+
+## Themes
+
+Tap the sun or moon button at the right of the header to open the theme picker.
+Choices apply at once and are remembered on this device.
+
+### Mode
+
+- **Light** is the default, whatever your device is set to.
+- **Dark** stays dark.
+- **Time-based** follows your device's clock: light from 09:00, dark from 18:00.
+  An app left open across either time switches by itself. The picker says which
+  of the two it is in right now.
+
+### Brand colour
+
+Seven colours tint the page, the buttons and the highlights:
+
+| Colour | Swatch |
+|---|---|
+| Classic, the default | Pale green |
+| Not green 1 | Pale red |
+| Not green 2 | Pale blue |
+| Not green 3 | Pale yellow |
+| Not green 4 | Pale pink |
+| Not green 5 | Pale cyan |
+| Really really light green | White |
+
+Every colour works in both light and dark mode, and text stays readable in all
+fourteen combinations.
+
+> [!TIP]
+> This guide has the same theme picker, at the top right of every page. Its
+> choice is separate from the app's.

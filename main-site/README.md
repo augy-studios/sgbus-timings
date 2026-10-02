@@ -44,10 +44,17 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ### Route Planner
 - Pick a start and end stop (typed, or near your location) to see every bus that runs from one to the other without a change, heading the right way
+- With one end set, the stops offered for the other (typed suggestions, stops near you, or near a postal code) list those with a bus straight there first, tinted and naming the buses
 - When no single bus does, the quickest five journeys with up to three changes and short walks
 - Picked the stop on the wrong side of the road? When the buses for your trip go from the stop across the road, the planner says so, with a button to swap it in
 - Open a journey leg by leg with live timings, which bus you'd catch at each change, and a rough arrival time
 - A bus opened from a route or journey says how many stops it has left to go
+
+### Service Alerts
+- **Service alerts** under the search box opens a card with train service alerts (disrupted lines, affected stations, free buses and shuttles, service notices) and traffic incidents across Singapore, the ones that can block or reroute a bus listed first. From `/api/service-alerts`, never served from the offline cache
+- **Notify me** turns on notifications that arrive with the app closed: **All updates** (every train status change and every new traffic incident) or **Disruptions only** (train disruptions, and new accidents, breakdowns, road blocks, diversions and the like). The same two modes as the Telegram bot's `/sub`
+- Web Push, sent by the push server in [`../push-server`](../push-server/SETUP.md) at `push.sgbus.uwuapps.org`, which has to be running for notifications to turn on. On iPhone and iPad, only from the app added to the Home Screen
+- Tapping a notification opens the card, as does `#alerts`
 
 ### Themes
 - 7 built-in colour themes: **Classic**, **Not Green 1–5**, **Really Really Light Green**
@@ -62,6 +69,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Stops and services are reflected in the URL hash (e.g. `#84009` or `#84009,174`)
 - `#bus/22` opens a bus's route and `#route/84009/75009` opens the route planner
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
+- `#alerts` opens the Service alerts card
 - Bookmark or share a direct link to any stop, service or route
 
 ### PWA / Offline Support

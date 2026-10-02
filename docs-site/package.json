@@ -1,0 +1,16 @@
+{
+  "name": "sgbus-guide",
+  "private": true,
+  "description": "The SG Bus Timing Guide, at guide.sgbus.uwuapps.org",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs --serve"
+  },
+  "dependencies": {
+    "marked": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

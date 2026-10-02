@@ -54,6 +54,9 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop, buses) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
+| `/alerts` | Shows train service alerts and traffic incidents right now, with a refresh button |
+| `/sub` | Subscribes to Service Alerts, with buttons to pick **All updates** or **Disruptions only** |
+| `/unsub` | Stops Service Alerts |
 | `/setname` | Sets (or clears) the name the bot calls you by |
 | `/settings` | Lists your settings (name, birthday, routine notifications) with buttons to change them |
 | `/done` | Finishes whatever multi-step flow the chat is in the middle of |
@@ -189,11 +192,14 @@ page. Loop services don't get the button - they only ever run one way.
 
 ### Viewing timings
 
-Every timings message has two buttons:
+Every timings message has these buttons:
 
 - **Add favourite / Remove favourite** - toggle the bus stop in your
   favourites list.
 - **Refresh** - re-fetch live timings for that stop.
+- **🧭 Navigate** - on the last row, beside a lone back button if there is
+  one. Tapping it unfolds into **Google Maps** and **Citymapper** links with
+  directions to the stop; a refresh folds it back into the single button.
 
 These buttons keep working even after the bot restarts, since the button
 actions are stored in SQLite rather than only in memory.
@@ -255,7 +261,14 @@ A name matching several stops brings up the same **Did you mean:** buttons a
 search does. You can also **send your location** instead of typing, which lists
 the bus stops nearest to it with their distances - tapping one sets that end of
 the route rather than opening its timings, the way `/nearme` would. A 6-digit
-postal code does the same for the stops nearest that address. Answer once
+postal code does the same for the stops nearest that address. When the other
+end is already set, the stops offered with a bus straight to it (or, picking
+the end, straight from the start), heading the right way, are ticked (✅), name
+those buses, and go first, keeping their own order among themselves; the
+message says how many there are, or that none has one and the route will need a
+change. That holds for the stops near a location or postal code, and for the
+**Did you mean:** list a name brings up, where up to 100 matches are checked
+before the list is cut to 10, so a direct stop further down still makes it. Answer once
 and the panel comes back asking for the end; answer again and the route is
 complete. The two buttons stay put afterwards, so either end can be changed
 later, and `/cancel` stops the flow at any point.
@@ -391,6 +404,44 @@ services** button to widen it out), prefixed with a greeting based on the time o
 ("Good morning/afternoon/evening") and your name - either your Telegram first
 name, or a custom one set via `/setname`.
 
+### Service Alerts
+
+The same notification feature as sgmrt-alerts' `/sub`, for the two things that
+throw a bus journey off: train disruptions, which put people onto buses and
+bring in free bridging buses, and traffic incidents on the roads the buses use.
+
+`/sub` subscribes the chat and replies with two buttons, **🔔 All updates** and
+**⚠️ Disruptions only**; the one in force is ticked. Sending `/sub` again shows
+the picker without changing anything, and tapping a mode under an old reply
+after `/unsub` subscribes again. `/unsub` stops them.
+
+Every `SERVICE_ALERT_POLL_SECONDS` (60 by default) the bot polls LTA's
+`TrainServiceAlerts` and `TrafficIncidents`, and sends each subscriber one
+message covering what changed:
+
+| | All updates | Disruptions only |
+|---|---|---|
+| Train service | Every change: a disruption starting, changing or clearing, or a new service notice | Only while a disruption is active either side of the change, so including the update when it clears |
+| Traffic incidents | Every new incident anywhere in Singapore, of any type | Only new incidents that can stop or reroute a bus: accident, vehicle breakdown, road block, diversion, obstacle, fire, plant failure |
+
+The train part is sgmrt-alerts' rule as it stands. Train messages name stations
+rather than codes (`Buona Vista (EW21)`), using the station list copied from
+sgmrt-alerts into `src/mrt_stations.py`, and list any free buses and shuttles
+LTA reports. An update lists at most 15 new incidents and says how many more.
+An incident LTA drops and lists again within six hours isn't announced twice.
+The first poll after a fresh install only records what the feeds look like, so
+a restart never re-announces the current status. A chat that has blocked the
+bot is unsubscribed the first time a send to it fails.
+
+`/alerts` shows the current state on demand: the train summary, the incidents
+that can block a bus, and a count of the rest by type. **🔄 Refresh** updates it
+in place.
+
+Service Alerts are separate from routine notifications: turning routines off in
+`/settings` doesn't stop them, and `/settings` shows which mode, if any, is on.
+The web app offers the same two modes as notifications, through the push
+server in [`../push-server`](../push-server/SETUP.md).
+
 ### Settings
 
 `/settings` shows every custom setting the bot keeps for you, and whether
@@ -425,13 +476,14 @@ In any chat (not just with the bot), type:
 
 An empty query after the bot's username shows your favourites; anything else
 is treated as a search, same as typing directly into the bot's chat. Picking
-a result posts a live timings message with just a refresh button - no
-favourite toggle, since the message can be posted into any chat.
+a result posts a live timings message with just the refresh and navigate
+buttons - no favourite toggle, since the message can be posted into any chat.
 
 ## Data source
 
 All bus stop and arrival data comes from LTA DataMall's `BusStops`,
-`BusServices`, `BusRoutes`, and `v3/BusArrival` endpoints. The bus stop,
+`BusServices`, `BusRoutes`, and `v3/BusArrival` endpoints, and Service Alerts
+from its `TrainServiceAlerts` and `TrafficIncidents`. The bus stop,
 service, and route lists are cached locally in SQLite and refreshed
 automatically on a schedule (see `BUS_STOPS_REFRESH_HOURS` in `.env`, which
 governs all three caches); arrival timings are always fetched live.
@@ -504,12 +556,16 @@ telegram-bot/
     route_view.py          builds the route panel: both ends, and the buses running between them
     journeys.py            finds direct buses, journeys with a walk or up to three changes, and ends picked on the wrong side of the road, over an in-memory copy of every route
     journey_view.py        builds one journey's leg-by-leg view with live timings, and the stops-left line
+    service_alerts.py      Service Alerts subscriptions (SQLite), and what changed in LTA's train alerts and traffic incidents since the last poll
+    service_alerts_view.py builds /alerts, the /sub reply and its mode buttons, and the updates sent to subscribers
+    mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,
       favbuses.py, unfavbus.py, favouritepref.py, flow_control.py,
       addroutine.py, routines.py, newroute.py, favroutes.py,
-      setname.py, settings.py, search.py, callbacks.py, inline.py
+      setname.py, settings.py, search.py, callbacks.py, inline.py,
+      servicealerts.py (/alerts, /sub, /unsub, and the poll that sends updates)
   data/                   SQLite database + Telethon session file (gitignored)
 ```
 

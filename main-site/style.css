@@ -539,6 +539,27 @@ header {
     font-size: 11px;
 }
 
+/* A suggestion with a bus straight to the other end of a planned route, as in the stop list. */
+.acItem.direct { background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.acItem.direct:hover { background: var(--brand-fill); }
+.acItem.direct .code { display: flex; flex-direction: column; gap: 2px; }
+.acDirect {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ok);
+    white-space: nowrap;
+}
+.acItem:hover .acDirect { color: var(--on-brand); }
+.acNote {
+    padding: 8px 14px 6px;
+    font-size: 12px;
+    color: var(--muted-strong);
+    border-bottom: 1px solid var(--surface-border);
+}
+
 /* ===== Hint ===== */
 .hint {
     font-size: 12px;
@@ -950,6 +971,25 @@ header {
     color: var(--muted-strong);
     white-space: nowrap;
 }
+/* A nearby stop with a bus straight to the other end of a planned route: the status tint
+   and colour pair the theme spec tunes to AA against each other. */
+.routeStop.direct { background: color-mix(in srgb, var(--ok) 14%, transparent); }
+.routeStop .via {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--ok);
+    margin-top: 2px;
+}
+.routeStop:hover .via { color: var(--on-brand); }
+
+.stopListNote {
+    font-size: 13px;
+    color: var(--muted-strong);
+    padding: 0 8px 8px;
+}
+
 .routeStop:hover .road,
 .routeStop:hover .dist,
 .routeStop.me .road,
@@ -1152,6 +1192,58 @@ header {
 .swapBtn [data-icon] { transform: rotate(90deg); }
 
 .plannerBody { margin-top: 14px; }
+
+/* ===== Service alerts (js/alerts.js) ===== */
+.alertsSection { margin-top: 18px; scroll-margin-top: 84px; }
+
+/* Off, All updates, Disruptions only: three across, where the theme's toggle is two. */
+.alertModes { grid-template-columns: repeat(3, 1fr); }
+.alertModes .mode-btn { text-align: center; line-height: 1.25; }
+
+.alertsBody { margin-top: 6px; }
+.alertsHead {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--brand-ink);
+    margin: 16px 0 8px;
+}
+.alertsLine {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.45;
+}
+.alertsLine .statusDot { margin-top: 0.4em; }
+.alertsDetail {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--muted-strong);
+    margin-top: 4px;
+}
+.alertItem {
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--warn) 14%, transparent);
+}
+.alertItem.error { background: color-mix(in srgb, var(--error) 14%, transparent); }
+.alertItem + .alertItem { margin-top: 8px; }
+.alertsList {
+    margin: 8px 0 0;
+    padding-left: 18px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.alertsList li + li { margin-top: 4px; }
+.alertsMore { margin-top: 10px; }
+.alertsOthers:not([hidden]) { animation: alerts-reveal 0.2s ease; }
+
+@keyframes alerts-reveal {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 .plannerStatus {
     font-size: 14px;
