@@ -322,8 +322,9 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
   <meta property="og:title" content="${escapeHtml(title)}" />
   <meta property="og:description" content="${escapeHtml(description)}" />
   <meta property="og:url" content="${canonical}" />
-  <meta property="og:image" content="${SITE.origin}/sgbusicon1.png" />
   <meta name="twitter:card" content="summary">
+  <meta name="twitter:image:src" content="${SITE.origin}/sgbusicon1.png">
+  <meta property="og:image" content="${SITE.origin}/sgbusicon1.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

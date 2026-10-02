@@ -10,12 +10,12 @@
     "screenshots": [{
             "src": "/images/screenshot_1.png",
             "type": "image/png",
-            "sizes": "1080x2340"
+            "sizes": "1560x3380"
         },
         {
             "src": "/images/screenshot_2.png",
             "type": "image/png",
-            "sizes": "1920x988"
+            "sizes": "3840x1976"
         }
     ],
     "start_url": "/",
