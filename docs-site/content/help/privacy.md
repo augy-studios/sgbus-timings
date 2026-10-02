@@ -83,7 +83,7 @@ Remove favourites with `/unfavstop`, `/unfavbus` and the favourite buttons,
 routines with `/routines`, Service Alerts with `/unsub`, your name with `/setname clear`, and your birthday
 with **Clear birthday** in `/settings`. To have everything about you deleted,
 email Augy, who runs the bot, at
-[augybiz@gmail.com](mailto:augybiz@gmail.com), with your Telegram username.
+[augy@augystudios.com](mailto:augy@augystudios.com), with your Telegram username.
 
 ## Where the bus data comes from
 

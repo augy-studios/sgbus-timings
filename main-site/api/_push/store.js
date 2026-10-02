@@ -3,12 +3,12 @@
 // two polls never overlap, and a per-IP request count. Upstash Redis, over its REST API
 // with plain fetch, so there's no client library or connection to manage.
 //
-// Connected from the Vercel Marketplace, Upstash sets KV_REST_API_URL and
-// KV_REST_API_TOKEN; set up on Upstash directly, it's UPSTASH_REDIS_REST_URL and
+// Connected from the Vercel Marketplace, Upstash sets SGBUS_KV_REST_API_URL and
+// SGBUS_KV_REST_API_TOKEN; set up on Upstash directly, it's UPSTASH_REDIS_REST_URL and
 // UPSTASH_REDIS_REST_TOKEN. Either pair works.
 
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const REDIS_URL = process.env.SGBUS_KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+const TOKEN = process.env.SGBUS_KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
 
 const KEY = 'sgbus:push';
 const DEVICES = `${KEY}:devices`;
