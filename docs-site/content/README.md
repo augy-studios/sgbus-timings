@@ -1,6 +1,6 @@
 ---
 title: Welcome to SG Bus Timing
-description: Live Singapore bus arrivals, bus routes and journeys between any two stops, in your browser and in Telegram.
+description: How to use SG Bus Timing's web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.
 ---
 
 SG Bus Timing tells you when the next bus is coming. Pick a bus stop and you see

@@ -1,7 +1,7 @@
 {
     "name": "SG Bus Timing by UwU Apps",
     "short_name": "UwU Buses",
-    "description": "Live Singapore bus arrivals, bus routes, and journeys between any two stops.",
+    "description": "Live Singapore bus arrivals, bus routes, and journeys by bus and train between any two places.",
     "icons": [{
         "src": "sgbusicon1.png",
         "type": "image/png",
