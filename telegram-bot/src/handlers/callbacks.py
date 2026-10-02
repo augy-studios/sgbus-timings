@@ -7,14 +7,14 @@ from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
 from ..journey_view import build_journey_view
 from ..list_view import rebuild_stop_list_view
-from ..reply import edit_rich_message
+from ..reply import edit_rich_message, edit_rich_message_at
 from ..route_drafts import panel_awaiting, start_route_draft
 from ..route_view import build_route_view, toggle_route_favourite
 from ..routines import delete_routine
 from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
 from ..user_settings import clear_birthday, get_notifications_enabled, set_notifications_enabled
-from .addroutine import finalize_stop
+from .addroutine import build_bus_picker, clear_buses, finalize_stop, save_draft, toggle_bus
 from .favbuses import build_favbuses_view
 from .favouritepref import build_favouritepref_view
 from .favroutes import build_favroutes_view
@@ -30,7 +30,8 @@ def _stop_view_args(payload: dict) -> dict:
     """A stop view's own state, as every button that reopens it carries it: which service
     the view is narrowed to and which way the user got there, whether it's been widened
     out to all services, where in the service's stop list they came from, the list of
-    stops they picked this one off, and the route panel they picked the bus off."""
+    stops they picked this one off, the route panel they picked the bus off, and the buses
+    a routine narrowed it to."""
     return {
         "service_no": payload.get("service_no"),
         "picked_service_no": payload.get("bus_no"),
@@ -39,6 +40,7 @@ def _stop_view_args(payload: dict) -> dict:
         "stops_reverse": payload.get("reverse", False),
         "back": payload.get("back"),
         "route": payload.get("route"),
+        "services": payload.get("services"),
     }
 
 
@@ -321,6 +323,30 @@ def register_callbacks(client):
 
             if action == "routine_stop_pick":
                 await finalize_stop(client, user_id, payload["code"], payload["name"])
+                await event.answer()
+                return
+
+            if action in ("routine_bus_toggle", "routine_bus_clear", "routine_bus_page"):
+                if action == "routine_bus_toggle":
+                    toggle_bus(user_id, payload["service_no"])
+                elif action == "routine_bus_clear":
+                    clear_buses(user_id)
+                view = build_bus_picker(user_id, payload.get("page", 0))
+                if not view:
+                    await event.answer("This routine setup has already ended.")
+                    return
+                await edit_rich_message(client, event, *view)
+                await event.answer()
+                return
+
+            if action == "routine_bus_done":
+                view = build_bus_picker(user_id)
+                if not view:
+                    await event.answer("This routine setup has already ended.")
+                    return
+                # The picker stays as a record of what was picked, but its buttons go.
+                await edit_rich_message_at(client, user_id, event.message_id, view[0])
+                await save_draft(client, user_id)
                 await event.answer("Saved")
                 return
 

@@ -39,6 +39,7 @@ async def build_stop_view(
     stops_reverse: bool = False,
     back: "dict | None" = None,
     route: "dict | None" = None,
+    services: "list | None" = None,
     navigate_open: bool = False,
 ):
     """
@@ -67,6 +68,9 @@ async def build_stop_view(
     another of the buses running that route is one tap away. It holds the journey too
     when the bus is one leg of a journey with changes, and either way the view says how
     many stops the bus has left to go.
+    `services` narrows the view to several buses at once, the ones a routine was set up
+    to send. It has no way back of its own, being where the user lands rather than
+    somewhere they navigated to, but widens out and collapses back like the others.
     `navigate_open=True` unfolds the Navigate button into a link per map app. It isn't
     part of where the user is, so a refresh folds it back to the single button.
     """
@@ -76,9 +80,10 @@ async def build_stop_view(
 
     # Whichever way the user got here, this is the service the view is narrowed to.
     only_service = service_no or picked_service_no
+    wanted = [only_service] if only_service else services
     arrivals = await fetch_arrivals(code)
-    if only_service and not expanded:
-        arrivals = {**arrivals, "services": [s for s in arrivals["services"] if s["serviceNo"] == only_service]}
+    if wanted and not expanded:
+        arrivals = {**arrivals, "services": [s for s in arrivals["services"] if s["serviceNo"] in wanted]}
 
     favourite = is_favourite(chat_id, code) if chat_id is not None else False
     fav_bus_nos = {row["service_no"] for row in list_favourite_buses(chat_id)} if chat_id is not None else set()
@@ -108,6 +113,7 @@ async def build_stop_view(
         **({"expanded": True} if expanded else {}),
         **({"back": back} if back else {}),
         **({"route": route} if route else {}),
+        **({"services": services} if services else {}),
     }
     # This exact view, as a payload - what the screens opened from here come back to.
     origin = {"code": code, **here}
@@ -121,7 +127,7 @@ async def build_stop_view(
             Button.inline("🔄 Refresh", make_button("refresh", {"code": code, **here})),
         ]
     ]
-    if only_service:
+    if wanted:
         buttons.append(
             [
                 Button.inline(

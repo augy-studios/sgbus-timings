@@ -8,8 +8,9 @@ def start_draft(chat_id: int, step: str, routine_id: "int | None" = None, **fiel
         db.execute("DELETE FROM routine_drafts WHERE chat_id = ?", (chat_id,))
         db.execute(
             """
-            INSERT INTO routine_drafts (chat_id, routine_id, step, hour, minute, days, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO routine_drafts
+                (chat_id, routine_id, step, hour, minute, days, stop_code, stop_name, services, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 chat_id,
@@ -18,6 +19,9 @@ def start_draft(chat_id: int, step: str, routine_id: "int | None" = None, **fiel
                 fields.get("hour"),
                 fields.get("minute"),
                 fields.get("days"),
+                fields.get("stop_code"),
+                fields.get("stop_name"),
+                fields.get("services"),
                 int(time.time() * 1000),
             ),
         )

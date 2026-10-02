@@ -52,7 +52,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/route` | Starts a flow to build a route between two bus stops, listing every bus that runs the whole way |
 | `/myroutes` | Lists your favourite routes as paginated buttons; tap one to reopen it |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
-| `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop) that sends you timings on a schedule |
+| `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop, buses) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
 | `/setname` | Sets (or clears) the name the bot calls you by |
 | `/settings` | Lists your settings (name, birthday, routine notifications) with buttons to change them |
@@ -70,7 +70,7 @@ the right button jumps back to the first (**First ▶**).
 ### Multi-step flows
 
 Some commands ask a question and wait for the reply - `/addfavbus` collecting
-bus numbers, `/addroutine` walking through time, frequency and stop, `/route`
+bus numbers, `/addroutine` walking through time, frequency, stop and buses, `/route`
 asking for each end of a route, `/settings` asking for a name or birthday.
 While one of those is in progress the chat is
 "in a flow", and `/done` and `/cancel` apply to whichever one it happens to be:
@@ -368,20 +368,26 @@ which OneMap still answers.
 
 ### Routines
 
-`/addroutine` walks you through three questions, one at a time: what time (24-
+`/addroutine` walks you through four questions, one at a time: what time (24-
 or 12-hour, e.g. `9 AM`, `10 PM`, `0830`, `20:00`, always interpreted as
 GMT+8), how often (`daily`, `weekdays`, `weekends`, or a comma-separated list
-of days like `Mon, Wed, Fri`), and which bus stop - pick one of your
+of days like `Mon, Wed, Fri`), which bus stop - pick one of your
 favourites from the buttons shown, or type a bus stop code or part of its
-name. Send `/cancel` at any point to abort.
+name - and which buses at that stop. The buses come as a grid of buttons that
+tick on and off, favourites starred and pinned as usual; tap **Done** when
+you're happy. Leaving them all unticked sends every bus. You can type the
+numbers instead (`15, 25`), or `all`. Send `/cancel` at any point to abort.
 
 `/routines` lists your saved routines as a numbered list of buttons; tapping
 one shows its details with **Edit** and **Delete** buttons. Edit opens a
-sub-menu to change just the time, frequency, or bus stop - editing the time
-lets a routine fire again later the same day even if it already ran once.
+sub-menu to change just the time, frequency, bus stop, or buses - editing the
+time lets a routine fire again later the same day even if it already ran
+once. A new bus stop goes on to the bus grid, with any buses you'd picked
+that also call at the new stop still ticked.
 
 When a routine's scheduled time and day arrive, the bot sends that stop's
-live timings automatically, prefixed with a greeting based on the time of day
+live timings automatically, narrowed to the buses you picked (with an **All
+services** button to widen it out), prefixed with a greeting based on the time of day
 ("Good morning/afternoon/evening") and your name - either your Telegram first
 name, or a custom one set via `/setname`.
 

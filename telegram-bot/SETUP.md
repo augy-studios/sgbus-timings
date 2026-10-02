@@ -231,12 +231,14 @@ python -m src.main
    Tap the notifications toggle and confirm it flips between
    enabled/disabled.
 10. Send `/addroutine`, answer the time/frequency/stop questions (try picking
-   a favourite stop button as well as typing a search), and confirm the
-   confirmation message matches. Send `/routines`, tap the routine, tap
+   a favourite stop button as well as typing a search), tick a couple of buses
+   on the grid and tap **Done**, and confirm the confirmation message matches.
+   Try another with the buses typed as text, and one left on every bus. Send `/routines`, tap the routine, tap
    **Edit**, change one field, and confirm only that field changed. Tap
    **Delete** and confirm it's removed. Set a routine a minute or two in the
    future and confirm it fires once, with a time-of-day greeting using your
-   `/setname` name (or Telegram first name if unset).
+   `/setname` name (or Telegram first name if unset), showing only the buses
+   it was set up with, and that **Refresh** keeps it narrowed to them.
 11. Send `/route` and reply with a bus stop you know, then with a second one
    a bus reaches from the first. Confirm each answer arrives as a **new** panel
    and that the panel it replaced has lost its buttons. Confirm the finished

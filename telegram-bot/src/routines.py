@@ -4,14 +4,34 @@ from datetime import datetime
 from .db import db
 
 
-def add_routine(chat_id: int, hour: int, minute: int, days: str, stop_code: str, stop_name: str) -> int:
+def split_services(services: "str | None") -> list:
+    """A stored services string as a list of bus numbers. Empty means every bus."""
+    return [s for s in (services or "").split(",") if s]
+
+
+def join_services(services: list) -> "str | None":
+    """The other way round: NULL rather than an empty string when no bus is picked."""
+    return ",".join(services) or None
+
+
+def format_services(services: "str | None") -> str:
+    """The buses a routine sends, as a phrase: "every bus", "bus 15", "buses 15, 25"."""
+    picked = split_services(services)
+    if not picked:
+        return "every bus"
+    return f"{'bus' if len(picked) == 1 else 'buses'} {', '.join(picked)}"
+
+
+def add_routine(
+    chat_id: int, hour: int, minute: int, days: str, stop_code: str, stop_name: str, services: "str | None" = None
+) -> int:
     with db:
         cursor = db.execute(
             """
-            INSERT INTO routines (chat_id, hour, minute, days, stop_code, stop_name, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO routines (chat_id, hour, minute, days, stop_code, stop_name, services, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (chat_id, hour, minute, days, stop_code, stop_name, int(time.time() * 1000)),
+            (chat_id, hour, minute, days, stop_code, stop_name, services, int(time.time() * 1000)),
         )
         return cursor.lastrowid
 
@@ -39,11 +59,13 @@ def update_routine_days(routine_id: int, days: str) -> None:
         db.execute("UPDATE routines SET days = ? WHERE id = ?", (days, routine_id))
 
 
-def update_routine_stop(routine_id: int, stop_code: str, stop_name: str) -> None:
+def update_routine_stop(routine_id: int, stop_code: str, stop_name: str, services: "str | None") -> None:
+    """The stop and its buses change together, since the buses picked at one stop may not
+    call at another."""
     with db:
         db.execute(
-            "UPDATE routines SET stop_code = ?, stop_name = ? WHERE id = ?",
-            (stop_code, stop_name, routine_id),
+            "UPDATE routines SET stop_code = ?, stop_name = ?, services = ? WHERE id = ?",
+            (stop_code, stop_name, services, routine_id),
         )
 
 

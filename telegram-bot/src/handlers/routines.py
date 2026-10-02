@@ -1,13 +1,13 @@
 from telethon import Button, events
 
 from ..buttons import make_button
-from ..flows import set_flow
+from ..flows import end_flow, set_flow
 from ..frequency import format_frequency
 from ..pagination import nav_row, paginate
 from ..reply import send_rich_message
 from ..routine_drafts import start_draft
-from ..routines import get_routine, list_routines
-from .addroutine import FLOW, FREQUENCY_PROMPT, TIME_PROMPT, _prompt_for_stop
+from ..routines import format_services, get_routine, list_routines
+from .addroutine import FLOW, FREQUENCY_PROMPT, TIME_PROMPT, _prompt_for_stop, prompt_for_buses
 
 FIELD_PROMPTS = {
     "time": TIME_PROMPT,
@@ -16,7 +16,10 @@ FIELD_PROMPTS = {
 
 
 def _routine_line(routine) -> str:
-    return f"{routine['hour']:02d}:{routine['minute']:02d} · {format_frequency(routine['days'])} · {routine['stop_name']} ({routine['stop_code']})"
+    return (
+        f"{routine['hour']:02d}:{routine['minute']:02d} · {format_frequency(routine['days'])} · "
+        f"{routine['stop_name']} ({routine['stop_code']}) · {format_services(routine['services'])}"
+    )
 
 
 def build_routines_view(chat_id: int, page: int):
@@ -71,7 +74,10 @@ def build_routine_edit_menu_view(routine_id: int):
             Button.inline("🕐 Time", make_button("routine_edit_field", {"id": routine_id, "field": "time"})),
             Button.inline("📅 Frequency", make_button("routine_edit_field", {"id": routine_id, "field": "frequency"})),
         ],
-        [Button.inline("🚌 Bus stop", make_button("routine_edit_field", {"id": routine_id, "field": "stop"}))],
+        [
+            Button.inline("📍 Bus stop", make_button("routine_edit_field", {"id": routine_id, "field": "stop"})),
+            Button.inline("🚌 Buses", make_button("routine_edit_field", {"id": routine_id, "field": "buses"})),
+        ],
         [Button.inline("🔙 Back", make_button("routine_view", {"id": routine_id}))],
     ]
     return rich, buttons
@@ -88,10 +94,19 @@ async def start_field_edit(client, chat_id, routine_id, field):
         hour=routine["hour"],
         minute=routine["minute"],
         days=routine["days"],
+        stop_code=routine["stop_code"],
+        stop_name=routine["stop_name"],
+        services=routine["services"],
     )
     set_flow(chat_id, FLOW)
     if field == "stop":
         await _prompt_for_stop(client, chat_id)
+    elif field == "buses":
+        if not await prompt_for_buses(client, chat_id):
+            end_flow(chat_id, FLOW)
+            await client.send_message(
+                chat_id, "No buses are listed for this routine's stop, so it sends every bus that turns up."
+            )
     else:
         await client.send_message(chat_id, FIELD_PROMPTS[field])
 

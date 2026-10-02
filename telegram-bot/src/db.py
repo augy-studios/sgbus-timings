@@ -95,6 +95,7 @@ db.executescript(
         days TEXT NOT NULL,
         stop_code TEXT NOT NULL,
         stop_name TEXT NOT NULL,
+        services TEXT,
         last_fired_key TEXT,
         created_at INTEGER NOT NULL
     );
@@ -106,6 +107,9 @@ db.executescript(
         hour INTEGER,
         minute INTEGER,
         days TEXT,
+        stop_code TEXT,
+        stop_name TEXT,
+        services TEXT,
         updated_at INTEGER NOT NULL
     );
 
@@ -181,5 +185,19 @@ if "notifications_enabled" not in _user_settings_columns:
 if "last_birthday_wish" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN last_birthday_wish TEXT")
+
+# A routine's `services` is a comma-separated list of the bus numbers it sends; NULL, as
+# every routine saved before buses could be picked has, means every bus at the stop.
+_routines_columns = {row["name"] for row in db.execute("PRAGMA table_info(routines)").fetchall()}
+if "services" not in _routines_columns:
+    with db:
+        db.execute("ALTER TABLE routines ADD COLUMN services TEXT")
+
+_routine_drafts_columns = {row["name"] for row in db.execute("PRAGMA table_info(routine_drafts)").fetchall()}
+if "services" not in _routine_drafts_columns:
+    with db:
+        db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_code TEXT")
+        db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_name TEXT")
+        db.execute("ALTER TABLE routine_drafts ADD COLUMN services TEXT")
 
 db.commit()

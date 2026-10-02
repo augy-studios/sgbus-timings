@@ -29,7 +29,7 @@ from .handlers.start import register_start
 from .handlers.unfavbus import register_unfavbus
 from .handlers.unfavstop import register_unfavstop
 from .reply import send_rich_message
-from .routines import due_routines, mark_fired
+from .routines import due_routines, mark_fired, split_services
 from .scheduler import register_job, start_scheduler, stop_scheduler
 from .stop_view import build_stop_view
 from .time_of_day import greeting_for_hour
@@ -138,7 +138,9 @@ async def _check_routines_job(client: TelegramClient) -> None:
             fallback = entity.first_name if entity and entity.first_name else "there"
             name = get_display_name(routine["chat_id"], fallback)
 
-            view = await build_stop_view(routine["stop_code"], routine["chat_id"])
+            view = await build_stop_view(
+                routine["stop_code"], routine["chat_id"], services=split_services(routine["services"])
+            )
             if not view:
                 continue
 

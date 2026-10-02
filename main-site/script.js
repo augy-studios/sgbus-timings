@@ -1013,7 +1013,7 @@ $('.favBar').addEventListener('click', e => {
         removeFav(d.remove);
         if (current?.code === d.remove) renderStopHeader();
     } else if (d.fav) {
-        loadStop(d.fav);
+        loadStop(d.fav, { scroll: true });
     } else if (d.removeBus) {
         toggleFavBus(d.removeBus);
     } else if (d.favBus) {
