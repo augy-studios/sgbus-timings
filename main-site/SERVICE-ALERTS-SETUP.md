@@ -25,7 +25,7 @@ It takes about 10 minutes.
    Singapore; the free plan is plenty.
 3. Connect it to the project, for Production and Preview.
 
-That adds `SGBUS_KV_REST_API_URL` and `SGBUS_KV_REST_API_TOKEN` to the project's
+That adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to the project's
 environment variables. The code also accepts Upstash's own names,
 `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, if you set the store up
 on upstash.com instead.
