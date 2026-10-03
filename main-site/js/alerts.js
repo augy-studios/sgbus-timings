@@ -51,6 +51,7 @@
       const res = await fetch("/api/service-alerts", { cache: "no-store" });
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
+      if (data.train) showBar(disruptionText(data.train));
       if (token === loadToken) body.innerHTML = render(data);
     } catch {
       if (token === loadToken) {
@@ -127,6 +128,53 @@
   }
 
   const list = (items) => `<ul class="alertsList">${items.map((i) => `<li>${esc(i.message)}</li>`).join("")}</ul>`;
+
+  // ---------- the disruptions bar ----------
+  // Along the top, under the update bar, only while a train line is disrupted or delayed: what's
+  // affected, and Details for the card. Hide puts it away for this page view, until the
+  // disruption changes. Traffic incidents don't count: there's nearly always one somewhere.
+
+  const BAR_REFRESH_MS = 2 * 60 * 1000;
+  let barPutAway = null; // the text of the disruption last hidden
+
+  function disruptionText(train) {
+    const status = Number(train.Status) || 1;
+    const segments = Array.isArray(train.AffectedSegments) ? train.AffectedSegments : [];
+    if (status <= 1 && !segments.length) return null;
+    const parts = segments.map((seg) => {
+      const stations = split(seg.Stations).map(stationLabel);
+      const where = stations.length > 1 ? `, ${stations[0]} to ${stations[stations.length - 1]}`
+        : stations.length ? `, at ${stations[0]}` : "";
+      const towards = seg.Direction && !/both/i.test(seg.Direction) ? `, towards ${seg.Direction}` : "";
+      return `${window.MRT.lineLabel(seg.Line || "?")}${where}${towards}`;
+    });
+    const what = status > 1 ? "Train disruption" : "Train delay";
+    if (parts.length) return `${what}: ${parts.join("; ")}`;
+    const notice = (Array.isArray(train.Message) ? train.Message : []).map((n) => String(n.Content || "").trim()).find(Boolean);
+    return notice || `${what} on the MRT or LRT`;
+  }
+
+  function showBar(text) {
+    const bar = $("#disruptionBar");
+    bar.hidden = !text || text === barPutAway;
+    if (bar.hidden || bar.dataset.text === text) return;
+    bar.dataset.text = text;
+    bar.innerHTML = `<div class="disruption-inner">${ico("alert")}<p>${esc(text)}</p>` +
+      `<button type="button" class="btn" data-disruption="details">Details</button>` +
+      `<button type="button" class="iconBtn" data-disruption="hide">Hide</button></div>`;
+  }
+
+  // Only while the page is on screen; coming back to it checks straight away.
+  async function refreshBar() {
+    if (document.visibilityState !== "visible") return;
+    try {
+      const res = await fetch("/api/service-alerts", { cache: "no-store" });
+      if (!res.ok) return;
+      const { train } = await res.json();
+      // LTA's train feed down: whatever's shown stays.
+      if (train) showBar(disruptionText(train));
+    } catch {}
+  }
 
   // ---------- notifications ----------
 
@@ -216,12 +264,23 @@
     return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   }
 
-  async function subscribe(modes) {
+  async function subscription() {
     const reg = await readyRegistration();
-    const sub = (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({
+    return (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: await fetchPublicKey(),
     });
+  }
+
+  // This device's id and push subscription, for the Get Off Alert's background half
+  // (js/trip.js), which pushes to the same subscription. Null without permission.
+  async function pushTarget() {
+    if (!pushSupported() || Notification.permission !== "granted") return null;
+    return { deviceId: deviceId(), subscription: (await subscription()).toJSON() };
+  }
+
+  async function subscribe(modes) {
+    const sub = await subscription();
     const res = await fetch(`${API_BASE}/devices/${deviceId()}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -234,9 +293,10 @@
   // page revoke notification permission itself; this is the closest it gets.
   async function unsubscribe() {
     try {
+      // A trip still running needs the subscription for its Get Off Alert.
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
-      await sub?.unsubscribe();
+      if (!window.Trip?.active()) await sub?.unsubscribe();
     } catch (err) {
       console.warn("unsubscribe failed:", err);
     }
@@ -319,10 +379,23 @@
       });
     }
 
+    $("#disruptionBar").addEventListener("click", (e) => {
+      const action = e.target.closest("[data-disruption]")?.dataset.disruption;
+      if (action === "details") {
+        open();
+      } else if (action === "hide") {
+        barPutAway = $("#disruptionBar").dataset.text;
+        $("#disruptionBar").hidden = true;
+      }
+    });
+    refreshBar();
+    setInterval(refreshBar, BAR_REFRESH_MS);
+    document.addEventListener("visibilitychange", refreshBar);
+
     showModes(storedModes());
     resync();
   }
 
-  window.Alerts = { open, close };
+  window.Alerts = { open, close, pushTarget };
   init();
 })();

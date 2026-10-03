@@ -2,10 +2,12 @@
     "functions": {
         "api/bus-routes.js": { "maxDuration": 60 },
         "api/push/poll.js": { "maxDuration": 300 },
+        "api/push/trip-poll.js": { "maxDuration": 60 },
         "api/nav.js": { "maxDuration": 60 },
         "api/places.js": { "maxDuration": 30 }
     },
     "crons": [
-        { "path": "/api/push/poll", "schedule": "* * * * *" }
+        { "path": "/api/push/poll", "schedule": "* * * * *" },
+        { "path": "/api/push/trip-poll", "schedule": "* * * * *" }
     ]
 }

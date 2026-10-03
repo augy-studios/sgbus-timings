@@ -113,11 +113,14 @@ muted the bot's chat, its messages arrive silently.
 
 ## The Get Off Alert didn't go off
 
-- Keep the site open on screen during the trip. A website only gets your
-  location while it's open; the site keeps the screen awake for you, but
-  switching apps or locking the phone pauses it.
-- Allow location and notifications for the site when asked. Without location it
-  goes by the clock, which is rougher.
+- Allow notifications for the site when asked. With the site in the background,
+  the alert comes from the server as a notification, so without them nothing
+  arrives until you open the site again.
+- For the most exact alert, keep the site open on screen during the trip. A
+  website only gets your location while it's open; in the background the server
+  goes by LTA's live bus positions instead, which run a minute or so behind.
+- Allow location for the site when asked. Without it the site goes by the clock,
+  which is rougher.
 - Underground there's no GPS, so it goes by the expected ride time; the trip bar
   says so. A delayed train can make it early or late.
 - Check **Get Off Alert on a trip** is **On** in Settings.

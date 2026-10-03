@@ -6,7 +6,8 @@
 // Loaded before script.js and uses its helpers ($, LS, loadStop, ...), so nothing here runs
 // until script.js calls initNav().
 
-const nav = { from: null, to: null, options: [], option: null, onemap: false, token: 0 };
+// walksOpen: the walks of the open way whose Directions have been opened into map apps.
+const nav = { from: null, to: null, options: [], option: null, onemap: false, token: 0, walksOpen: new Set(), walksFor: null };
 
 const NAV_PLACES_DELAY_MS = 300;
 
@@ -53,6 +54,13 @@ function initNav() {
       nav.option = nav.options[Number(option.dataset.navOption)] || null;
       renderNav();
       $('#navSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    const walk = e.target.closest('[data-nav-walk]');
+    if (walk && nav.option) {
+      // Swapped in place, so the live timings already shown aren't fetched again.
+      nav.walksOpen.add(Number(walk.dataset.navWalk));
+      walk.outerHTML = walkDirections(nav.option, Number(walk.dataset.navWalk));
       return;
     }
     const stop = e.target.closest('[data-nav-stop]');
@@ -267,6 +275,10 @@ const placeName = (p) => (p?.kind === 'station' ? `${p.name} station` : p?.name 
 async function renderNavOption(o) {
   const body = $('#navBody');
   const token = nav.token;
+  if (nav.walksFor !== o) {
+    nav.walksFor = o;
+    nav.walksOpen = new Set();
+  }
   const head =
     `<div class="plannerNav">` +
     `<button type="button" class="iconBtn" data-nav-action="back">${ico('back')} All ways</button>` +
@@ -278,7 +290,10 @@ async function renderNavOption(o) {
   const steps = (timings = {}) => o.legs.map((leg, k) => {
     if (leg.mode === 'walk') {
       const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(placeName(leg.to));
-      return `<li class="step stepWalk">${ico('walk')}<span>Walk ~${leg.metres} m to ${where}, ~${Math.max(1, Math.round(leg.minutes))} min</span></li>`;
+      return `<li class="step stepWalk">${ico('walk')}<div class="walkBody">` +
+        `<span>Walk ~${leg.metres} m to ${where}, ~${Math.max(1, Math.round(leg.minutes))} min</span>` +
+        walkDirections(o, k) +
+        `</div></li>`;
     }
     if (leg.mode === 'train') {
       return `<li class="step stepLeg">` +
@@ -315,6 +330,24 @@ async function renderNavOption(o) {
     timings[k] = svc ? [svc.next, svc.next2, svc.next3].filter((n) => n && n.eta_ms != null).map((n) => n.eta_ms) : null;
   });
   draw(timings);
+}
+
+// Directions for a walk in a map app, from where it starts to where it ends: the start of the
+// nav or the stop or station the last ride got off at, to the next one or the end. Like a
+// stop's Directions (renderStopTools in script.js), the button opens into a link per app.
+function walkDirections(o, k) {
+  const leg = o.legs[k];
+  const from = leg.from || o.legs[k - 1]?.to || nav.from;
+  const to = k === o.legs.length - 1 ? nav.to : leg.to;
+  if (to?.lat == null || to?.lng == null) return '';
+  const dest = { lat: to.lat, lng: to.lng, n: to.label || placeName(to) };
+  const opts = { from: from?.lat != null && from?.lng != null ? from : null, walk: true };
+  if (!nav.walksOpen.has(k)) {
+    return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} Directions</button>`;
+  }
+  return `<div class="walkApps">` + MAP_APPS.map((app) =>
+    `<a class="iconBtn" href="${escapeHtml(directionsUrl(dest, app.id, opts))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
+  ).join('') + `</div>`;
 }
 
 // ---- Favourite navs ----
@@ -359,6 +392,8 @@ function tripFromNav(o, to) {
         names: l.names,
         minutes: l.minutes,
         wait: l.wait,
+        // For the server to find the bus while the app is in the background.
+        ...(l.mode === 'bus' && { service: l.route, alight: l.to?.code }),
       })),
   };
 }

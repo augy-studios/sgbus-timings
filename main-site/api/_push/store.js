@@ -53,6 +53,43 @@ export const devices = {
   },
 };
 
+// ---------- trips: the Get Off Alert, by device id (api/_push/trip.js) ----------
+// Each its own key, so it expires on its own when the app stops checking in, with a set of
+// the ids so the cron can find them. An id whose key has expired is dropped from the set
+// the next time the cron looks.
+
+const TRIPS = `${KEY}:trips`;
+const tripKey = (id) => `${KEY}:trip:${id}`;
+
+export const trips = {
+  async get(id) {
+    return parse(await redis('GET', tripKey(id)));
+  },
+  async set(id, trip, seconds) {
+    await redis('SET', tripKey(id), JSON.stringify(trip), 'EX', Math.max(60, seconds));
+    await redis('SADD', TRIPS, id);
+  },
+  // Only if it's still there, so a trip ended while the cron was working on it stays ended.
+  async update(id, trip, seconds) {
+    await redis('SET', tripKey(id), JSON.stringify(trip), 'EX', Math.max(60, seconds), 'XX');
+  },
+  async delete(id) {
+    await redis('DEL', tripKey(id));
+    await redis('SREM', TRIPS, id);
+  },
+  // Every trip still running, as [id, trip] pairs.
+  async all() {
+    const ids = (await redis('SMEMBERS', TRIPS)) ?? [];
+    if (!ids.length) return [];
+    const values = await redis('MGET', ...ids.map(tripKey));
+    const out = [];
+    const gone = [];
+    ids.forEach((id, i) => (values[i] == null ? gone.push(id) : out.push([id, parse(values[i])])));
+    if (gone.length) await redis('SREM', TRIPS, ...gone);
+    return out;
+  },
+};
+
 // ---------- the feeds' last state, and the last error per feed ----------
 
 export async function getState(name) {

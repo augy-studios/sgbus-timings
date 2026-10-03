@@ -12,7 +12,7 @@ from ..planning_areas import tell_apart
 from ..postal import POSTAL_CODE_RE
 from ..reply import edit_rich_message, edit_rich_message_at, send_rich_message, sent_message_id
 from ..route_drafts import clear_route_draft, get_route_draft, start_route_draft
-from ..route_view import build_route_view
+from ..route_view import build_route_view_async
 from .search import find_postal_stops
 
 # No `finish`: a route is only worth anything once both ends are set, and it's the panel's
@@ -161,12 +161,12 @@ async def send_route_panel(client, chat_id, start_code, end_code, awaiting=None,
 
     Arms the flow for `awaiting`, so the next thing typed fills that end in - or ends the
     flow when the route is complete and there's nothing left to answer."""
-    rich, buttons = build_route_view(chat_id, start_code, end_code, awaiting=awaiting)
+    rich, buttons = await build_route_view_async(chat_id, start_code, end_code, awaiting=awaiting)
     result = await send_rich_message(client, chat_id, rich, buttons)
 
     if replacing:
         old_id, old_start, old_end = replacing
-        stale_rich, _ = build_route_view(chat_id, old_start, old_end)
+        stale_rich, _ = await build_route_view_async(chat_id, old_start, old_end)
         await edit_rich_message_at(client, chat_id, old_id, stale_rich)
 
     if awaiting:
@@ -192,7 +192,7 @@ async def arm_route_field(client, event, chat_id, payload):
         chat_id, field, start_code=start_code, end_code=end_code, panel_msg_id=event.query.msg_id
     )
     set_flow(chat_id, FLOW)
-    rich, buttons = build_route_view(
+    rich, buttons = await build_route_view_async(
         chat_id, start_code, end_code, payload.get("page", 0), awaiting=field, from_fav=payload.get("from_fav")
     )
     await edit_rich_message(client, event, rich, buttons)

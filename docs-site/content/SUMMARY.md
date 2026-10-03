@@ -33,6 +33,7 @@ than about three taps to reach goes under Advanced.
 * [Get Off Alert](web/get-off-alert.md)
 * [Service alerts](web/service-alerts.md)
 * [Sync favourites between devices](web/sync.md)
+* [Shortcuts and widgets](web/shortcuts-and-widgets.md)
 
 ## Telegram bot: basics
 

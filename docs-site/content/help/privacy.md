@@ -3,7 +3,7 @@ title: Privacy and your data
 description: What the web app and the bot keep about you, where, and who else is involved.
 ---
 
-SG Bus Timing needs very little about you, and keeps it as close to you as it
+SG Bus Timings needs very little about you, and keeps it as close to you as it
 can.
 
 ## The web app
@@ -42,17 +42,17 @@ devices, encrypted, and never through that service.
 
 ### Service alert notifications
 
-Turning on notifications in the Service alerts card sends SG Bus Timing's
+Turning on notifications in the Service alerts card sends SG Bus Timings'
 alerts server two things: your browser's push subscription, an address your
 browser's push service (Google, Apple, Mozilla or Microsoft) gives the app for
 delivering notifications to this device, and which updates you picked. Nothing
 else: no name, no location, no favourites. The server also keeps a random ID
 this device made up, so it can tell your device apart. It's stored in a database
-run by Upstash for SG Bus Timing. Picking **Off** deletes all of it.
+run by Upstash for SG Bus Timings. Picking **Off** deletes all of it.
 
 ### Navigate
 
-The places you type into **Navigate** are looked up by SG Bus Timing's server and
+The places you type into **Navigate** are looked up by SG Bus Timings' server and
 OneMap's search, and the two ends of a nav are sent to the server, which asks
 OneMap's journey planner too. Nothing about you goes with them. Saved navs stay
 in your browser, like other favourites.
@@ -62,9 +62,16 @@ in your browser, like other favourites.
 On a trip, your live location is used in your browser to count the stops left.
 It never leaves your device.
 
+If you've allowed notifications, the trip is also sent to SG Bus Timings' server
+so it can send the alert while the site is in the background. That covers the
+stops on the trip, the buses and trains it uses, how many stops along the trip
+you've got, and the push subscription to send to, all under a random ID. Your
+location itself is never sent. The server deletes the trip when you end it, when
+it's over, or a while after it should have been.
+
 ### Weather
 
-The weather button asks SG Bus Timing's server for Singapore's forecast and air
+The weather button asks SG Bus Timings' server for Singapore's forecast and air
 quality, from Open-Meteo and NEA (data.gov.sg). Nothing about you is sent; the
 forecast is the same for everyone.
 

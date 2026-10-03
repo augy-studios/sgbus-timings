@@ -1,4 +1,4 @@
-// Builds the SG Bus Timing Guide into dist/.
+// Builds the SG Bus Timings Guide into dist/.
 //
 // Pages are Markdown in content/, ordered by content/SUMMARY.md the way GitBook
 // orders them. Everything in public/ is copied across untouched. Run with
@@ -20,12 +20,12 @@ const PUBLIC = path.join(ROOT, "public");
 const DIST = path.join(ROOT, "dist");
 
 const SITE = {
-  name: "SG Bus Timing Guide",
-  short: "SG Bus Timing",
+  name: "SG Bus Timings Guide",
+  short: "SG Bus Timings",
   origin: "https://guide.sgbus.uwuapps.org",
   app: "https://sgbus.uwuapps.org",
   bot: "https://t.me/UwUsgbus_bot",
-  description: "How to use SG Bus Timing's web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.",
+  description: "How to use SG Bus Timings' web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.",
 };
 
 // Keep in sync with APP_KEY in public/js/theme.js.
@@ -352,7 +352,7 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
         <span class="search-trigger-label">Search the guide</span>
         <kbd class="search-kbd" id="searchKbd">Ctrl K</kbd>
       </button>
-      <nav class="top-links" aria-label="SG Bus Timing">
+      <nav class="top-links" aria-label="SG Bus Timings">
         <a class="top-link" href="${SITE.app}" target="_blank" rel="noopener noreferrer" title="Open the web app"><span data-icon="globe"></span><span class="top-link-label">Web app</span></a>
         <a class="top-link" href="${SITE.bot}" target="_blank" rel="noopener noreferrer" title="Open the Telegram bot"><span data-icon="send"></span><span class="top-link-label">Telegram bot</span></a>
       </nav>

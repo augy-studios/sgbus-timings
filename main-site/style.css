@@ -306,6 +306,31 @@ body.modal-open { overflow: hidden; }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* ===== Disruptions bar: under the update bar, only while a train line is disrupted (js/alerts.js) ===== */
+.disruption-bar {
+    background: color-mix(in srgb, var(--error) 14%, transparent);
+    border-bottom: 1px solid var(--surface-border);
+    color: var(--ink);
+    font-size: 0.875rem;
+    animation: update-notice-in 0.2s ease;
+}
+.disruption-bar[hidden] { display: none; }
+.disruption-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0.5rem 16px;
+}
+/* Under the notch when there's no update bar above it. */
+.disruption-bar:first-child .disruption-inner { padding-top: max(0.5rem, env(safe-area-inset-top)); }
+.disruption-inner > .ico { flex: none; color: var(--error); }
+.disruption-inner p { flex: 1 1 auto; min-width: 0; }
+.disruption-inner .btn,
+.disruption-inner .iconBtn { flex: none; }
+.disruption-inner .btn { padding: 8px 14px; font-size: 13px; }
+
 /* ===== Layout ===== */
 .container {
     max-width: 1000px;
@@ -384,6 +409,14 @@ header {
     border-radius: 20px;
     overflow: hidden;
 }
+/* Cards sit on the page's flat background, where a backdrop blur has nothing to blur and
+   looks the same without one, but a phone still redoes it across the whole card on every
+   frame of a scroll: the main cause of lag scrolling a long list of timings. Kept on what
+   floats over other content: the header, modals, dropdowns and the trip bar. */
+.card.glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
 
 .cardHeader {
     display: flex;
@@ -438,9 +471,9 @@ header {
     border: 1px solid var(--surface-border);
     padding: 14px 16px;
     border-radius: 14px;
+    /* No backdrop blur: inputs sit on the flat page or a card, with nothing behind to blur
+       (see .card.glass). */
     background: var(--surface-strong);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
     outline: none;
     font-size: 14px;
     color: var(--ink);
@@ -576,6 +609,36 @@ header {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+/* The Favourites card folds to its header (script.js). Its one grid row animates between
+   0fr and 1fr, the content's own height, as the trip bar's drawer does; folded, the chips
+   are hidden from tabbing and screen readers too. */
+.favToggle {
+    background: none; border: 0; padding: 0; margin: 0; color: inherit; font: inherit;
+    font-weight: 700; font-size: 15px; text-align: left; cursor: pointer;
+}
+.favCount { font-weight: 400; color: var(--muted-strong); }
+#favCard:not(.collapsed) .favCount { display: none; }
+.favChevron { display: inline-flex; }
+/* Up while open, down while folded. */
+.favChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
+#favCard.collapsed .favChevron svg { transform: rotate(180deg); }
+.favDrawer {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows 0.25s ease, visibility 0s;
+}
+.favDrawer > div { min-height: 0; overflow: hidden; }
+#favCard.collapsed .favDrawer {
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease, visibility 0s linear 0.25s;
+}
+#favCard .cardHeader { transition: border-color 0.25s ease; }
+#favCard.collapsed .cardHeader { border-bottom-color: transparent; }
+@media (prefers-reduced-motion: reduce) {
+    .favDrawer, #favCard.collapsed .favDrawer, .favChevron svg { transition: none; }
 }
 
 .favGroup + .favGroup { margin-top: 12px; }
@@ -753,11 +816,19 @@ header {
     gap: 12px;
     background: var(--surface);
     transition: box-shadow 0.15s, transform 0.15s;
+    /* A busy stop lists thirty buses or more. Rows off screen skip layout and paint until
+       they scroll near, which is most of the work of showing a stop; `auto` remembers each
+       row's real height once it's been drawn, so the scrollbar doesn't jump. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 220px;
 }
 
-.svc:hover {
-    box-shadow: var(--shadow);
-    transform: translateY(-1px);
+/* Only where there's a real pointer: on a phone a tap leaves :hover stuck on the row. */
+@media (hover: hover) {
+    .svc:hover {
+        box-shadow: var(--shadow);
+        transform: translateY(-1px);
+    }
 }
 
 .svcLeft {
@@ -1351,6 +1422,9 @@ header {
 }
 .stepWalk, .stepArrive { padding: 4px 4px; color: var(--muted-strong); }
 .stepArrive { color: var(--ink); font-size: 14px; }
+/* A nav's walk: what to walk, then its Directions (js/nav.js). */
+.walkBody { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.walkApps { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .stepLeg {
     flex-direction: column;
@@ -1678,6 +1752,27 @@ header {
 .tripBar.expanded .tripChevron svg { transform: rotate(180deg); }
 body.on-trip { padding-bottom: 96px; }
 
+/* The drawer the timeline slides out of. Its one grid row grows from 0fr to 1fr, which
+   animates to the timeline's own height; the bar is pinned to the bottom, so it opens
+   upwards. The middle div has no padding, so the closed row really is 0px tall. */
+.tripDrawer {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease, visibility 0s linear 0.25s;
+}
+.tripDrawer > div { min-height: 0; overflow: hidden; }
+.tripBar.expanded .tripDrawer {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows 0.25s ease, visibility 0s;
+}
+.tripTimeline { opacity: 0; transition: opacity 0.2s ease; }
+.tripBar.expanded .tripTimeline { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+    .tripDrawer, .tripBar.expanded .tripDrawer, .tripTimeline { transition: none; }
+}
+
 /* The timeline: the stops ahead, with a dot where you are (js/trip.js). */
 .tripTimeline {
     max-height: min(50vh, 420px);
@@ -1695,10 +1790,14 @@ body.on-trip { padding-bottom: 96px; }
     position: absolute; left: 9px; top: 15px; bottom: 15px; width: 4px; border-radius: 2px;
     background: color-mix(in srgb, var(--ink) 14%, transparent);
 }
-.tlDone { position: absolute; left: 0; top: 0; width: 100%; height: 0; border-radius: 2px; background: var(--trip-dot); }
+/* Grown with scaleY from js/trip.js rather than its height, so it never needs a layout. */
+.tlDone {
+    position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 2px; background: var(--trip-dot);
+    transform: scaleY(0); transform-origin: top; will-change: transform;
+}
 .tlStop { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 13px; }
 .tlNode {
-    position: absolute; left: -24px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
+    position: absolute; left: -23px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
     background: var(--surface-strong); border: 2px solid color-mix(in srgb, var(--ink) 35%, transparent);
 }
 .tlStop.passed { color: var(--muted-strong); }

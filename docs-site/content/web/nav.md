@@ -57,7 +57,8 @@ Each way shows:
 
 Tap a way to see it leg by leg:
 
-- **Walks**, with the distance and roughly how long.
+- **Walks**, with the distance and roughly how long. **Directions** opens the
+  walk in Google Maps (as walking directions) or Citymapper.
 - **Trains**, with the line, the direction to take (**towards** its last
   station), how many stops, and where to get off.
 - **Buses**, with how many stops, where to get off, and the **live timings** of

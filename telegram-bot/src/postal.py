@@ -13,6 +13,7 @@ from typing import Optional
 import httpx
 
 from .config import config
+from .http_client import shared_client
 
 POSTAL_CODE_RE = re.compile(r"^\d{6}$")
 
@@ -65,19 +66,19 @@ async def lookup_postal_code(code: str) -> Optional[dict]:
     """{postal, address, lat, lng} for a postal code, or None when no address has it.
     Raises httpx.HTTPError when OneMap can't be reached."""
     params = {"searchVal": code, "returnGeom": "Y", "getAddrDetails": "Y", "pageNum": 1}
-    async with httpx.AsyncClient(timeout=15) as client:
+    client = shared_client()
 
-        async def search(token):
-            headers = {"accept": "application/json", **({"Authorization": token} if token else {})}
-            return await client.get(_SEARCH_URL, params=params, headers=headers)
+    async def search(token):
+        headers = {"accept": "application/json", **({"Authorization": token} if token else {})}
+        return await client.get(_SEARCH_URL, params=params, headers=headers, timeout=15)
 
-        token = await _get_token(client)
-        r = await search(token)
-        # A token OneMap has stopped taking before its expiry: one more try on a new one.
-        if token and r.status_code in (401, 403):
-            r = await search(await _get_token(client, renew=True))
-        r.raise_for_status()
-        data = r.json()
+    token = await _get_token(client)
+    r = await search(token)
+    # A token OneMap has stopped taking before its expiry: one more try on a new one.
+    if token and r.status_code in (401, 403):
+        r = await search(await _get_token(client, renew=True))
+    r.raise_for_status()
+    data = r.json()
 
     # The search matches addresses as text, so a result only counts on the exact code.
     for hit in data.get("results") or []:

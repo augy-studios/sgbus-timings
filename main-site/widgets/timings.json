@@ -1,0 +1,58 @@
+{
+    "type": "AdaptiveCard",
+    "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+    "version": "1.5",
+    "body": [
+        {
+            "type": "Container",
+            "$when": "${state == 'setup'}",
+            "items": [
+                { "type": "TextBlock", "text": "Pick a bus stop", "weight": "Bolder", "wrap": true },
+                {
+                    "type": "Input.ChoiceSet",
+                    "id": "fav",
+                    "$when": "${count(choices) > 0}",
+                    "label": "A favourite stop",
+                    "placeholder": "Pick a favourite",
+                    "value": "${fav}",
+                    "choices": [{ "$data": "${choices}", "title": "${title}", "value": "${value}" }]
+                },
+                { "type": "Input.Text", "id": "stop", "label": "${if(count(choices) > 0, 'Or a stop code', 'Stop code')}", "placeholder": "e.g. 84009", "maxLength": 5, "value": "${stop}" },
+                { "type": "Input.Text", "id": "buses", "label": "Buses (optional)", "placeholder": "Every bus, or e.g. 21, 22", "maxLength": 40, "value": "${buses}" },
+                { "type": "TextBlock", "$when": "${message != ''}", "text": "${message}", "color": "Attention", "size": "Small", "wrap": true },
+                {
+                    "type": "ActionSet",
+                    "actions": [{ "type": "Action.Execute", "title": "Show timings", "verb": "save" }]
+                }
+            ]
+        },
+        {
+            "type": "Container",
+            "$when": "${state == 'timings'}",
+            "items": [
+                { "type": "TextBlock", "text": "${title}", "weight": "Bolder", "size": "${if($host.widgetSize == 'small', 'Default', 'Medium')}", "wrap": false },
+                { "type": "TextBlock", "$when": "${$host.widgetSize != 'small'}", "text": "${subtitle}", "isSubtle": true, "size": "Small", "spacing": "None", "wrap": false },
+                {
+                    "type": "ColumnSet",
+                    "$data": "${rows}",
+                    "$when": "${if($host.widgetSize == 'small', $index < 2, if($host.widgetSize == 'medium', $index < 4, true))}",
+                    "spacing": "Small",
+                    "columns": [
+                        { "type": "Column", "width": "auto", "items": [{ "type": "TextBlock", "text": "${service}", "weight": "Bolder" }] },
+                        { "type": "Column", "width": "stretch", "items": [{ "type": "TextBlock", "text": "${etas}", "horizontalAlignment": "Right", "wrap": false }] }
+                    ]
+                },
+                { "type": "TextBlock", "$when": "${empty != ''}", "text": "${empty}", "isSubtle": true, "wrap": true },
+                { "type": "TextBlock", "$when": "${$host.widgetSize != 'small'}", "text": "Updated ${updated}", "isSubtle": true, "size": "Small", "spacing": "Small" },
+                {
+                    "type": "ActionSet",
+                    "actions": [
+                        { "type": "Action.Execute", "title": "Refresh", "verb": "refresh" },
+                        { "type": "Action.Execute", "$when": "${$host.widgetSize != 'small'}", "title": "Change", "verb": "setup" },
+                        { "type": "Action.OpenUrl", "$when": "${$host.widgetSize != 'small'}", "title": "Open", "url": "${url}" }
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -27,6 +27,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Favourite buses are starred and pinned in every stop's timings
 - Choose whether favourite buses and stops pin to the top or bottom of lists
 - Favourites are persisted in your browser's local storage
+- The Favourites card folds to its title (with a count) and remembers whether it's folded
 - **Sync favourites with another device** (stops, buses, routes and navs) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
   - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
@@ -55,6 +56,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Notify me** turns on notifications that arrive with the app closed, chosen separately for **train service alerts** and **traffic alerts**: each **Off**, **All updates**, or **Disruptions only** (train disruptions / accidents, breakdowns, road blocks, diversions and the like). The same choices as the Telegram bot's `/sub`
 - Web Push, sent by a Vercel cron function (`api/push/poll.js`, every minute) with subscriptions kept in Upstash Redis. One-off setup in [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md). On iPhone and iPad, only from the app added to the Home Screen
 - Tapping a notification opens the card, as does `#alerts`
+- A disruptions bar along the top, under the update bar, only while a train line is disrupted or delayed; checked every two minutes while the site is on screen, with **Details** for the card and **Hide** until the disruption changes
 
 ### Navigate
 - **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops or your location, at either end
@@ -63,8 +65,9 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
 
 ### Get Off Alert
-- On a trip (**Start trip** on a nav or a planned journey, or **Get Off Alert** on a bus's route and then the stop you're getting off at), the site follows your live location and alerts you two stops before each change and the end: short pulsed vibrations, three beeps and a notification
+- On a trip (**Start trip** on a nav or a planned journey, or **Get Off Alert** on a bus's route and then the stop you're getting off at), the site follows your live location and alerts you two stops before each change and the end: "OFF" vibrated in Morse code, three beeps and a notification
 - Keeps the screen awake while the trip runs, since a website only gets your location while it's open; underground it goes by the expected ride time
+- In the background, with notifications allowed, the server takes over: `api/push/trip-poll.js` (Vercel Cron, every minute) follows your bus from LTA's live bus positions, or the clock for trains, and pushes the alert. Uses the Service Alerts setup (Redis, VAPID keys, `CRON_SECRET`)
 - Tap the trip bar for the timeline: the stops ahead, with a blue dot where you are, redrawn 20 times a second so it glides between stops
 - On by default; Settings turns it off
 
@@ -88,11 +91,14 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - `#alerts` opens the Service alerts card
 - `#nav/1.30050,103.85580/1.33320,103.92920` opens Navigate between two points
+- `#near` opens the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
 - Bookmark or share a direct link to any stop, service or route
 
 ### PWA / Offline Support
 - Installable on mobile and desktop as a standalone app
 - Service Worker with Workbox for offline caching
+- Three app shortcuts (`manifest.json`): Stops near me, Navigate and Service alerts, with icons in `images/icons/`
+- A **Bus timings** widget for the Windows 11 Widgets board (Edge-installed app only): pick a stop and optionally its buses, like the bot's routines. An Adaptive Card (`widgets/timings.json`) filled in by `sw.js`; small, medium and large show 2, 4 and up to 12 buses
 
 ## How to Use
 

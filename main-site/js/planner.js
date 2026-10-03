@@ -97,6 +97,52 @@ function initPlanner() {
   });
 }
 
+// Journeys with a change, and the wrong-side-of-the-road fixes for them, found in
+// js/planner-worker.js so the page keeps scrolling while it searches. Where a worker can't
+// start, or fails, the same search runs here instead, after the status has painted.
+let plannerWorker = null;
+let workerFailed = false;
+let workerSeq = 0;
+const workerWaiting = new Map();
+
+function searchHere(start, end) {
+  return new Promise((resolve) => setTimeout(resolve, 0)).then(() => {
+    const journeys = Journeys.findJourneys(start, end);
+    return { journeys, fixes: journeys.length ? Journeys.wrongSideEnds(start, end) : {} };
+  });
+}
+
+function searchJourneys(start, end) {
+  if (workerFailed || typeof Worker === 'undefined') return searchHere(start, end);
+  let first = false;
+  if (!plannerWorker) {
+    try {
+      plannerWorker = new Worker('/js/planner-worker.js');
+    } catch {
+      workerFailed = true;
+      return searchHere(start, end);
+    }
+    first = true;
+    plannerWorker.onmessage = ({ data }) => {
+      const waiting = workerWaiting.get(data.id);
+      workerWaiting.delete(data.id);
+      if (!waiting) return;
+      if (data.error) waiting.fallback();
+      else waiting.resolve({ journeys: data.journeys, fixes: data.fixes });
+    };
+    plannerWorker.onerror = () => {
+      workerFailed = true;
+      for (const waiting of workerWaiting.values()) waiting.fallback();
+      workerWaiting.clear();
+    };
+  }
+  const id = ++workerSeq;
+  return new Promise((resolve) => {
+    workerWaiting.set(id, { resolve, fallback: () => searchHere(start, end).then(resolve) });
+    plannerWorker.postMessage(first ? { id, start, end, stops: stopsIndex } : { id, start, end });
+  });
+}
+
 function openPlanner(start = null, end = null, { journey = null, scroll = true } = {}) {
   planner.start = start;
   planner.end = end;
@@ -277,19 +323,16 @@ async function renderPlanner() {
     return;
   }
 
-  // Finding journeys walks the whole network; let the status paint first.
   body.innerHTML = plannerStatus('No single bus links these two stops. Looking for journeys with a change…');
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  const { journeys, fixes } = await searchJourneys(start, end);
   if (token !== planner.token) return;
 
-  const journeys = Journeys.findJourneys(start, end);
   planner.journeys = journeys;
   if (!journeys.length) {
     body.innerHTML = plannerStatus('No single bus links these two stops, even with three changes. Try picking other stops.');
     return;
   }
 
-  const fixes = Journeys.wrongSideEnds(start, end);
   const fixed = { start: fixes.start?.code || start, end: fixes.end?.code || end };
   const hasFix = (fixes.start || fixes.end) && fixed.start !== fixed.end;
   if (hasFix) planner.sideFix = fixed;

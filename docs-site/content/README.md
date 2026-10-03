@@ -1,9 +1,9 @@
 ---
-title: Welcome to SG Bus Timing
-description: How to use SG Bus Timing's web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.
+title: Welcome to SG Bus Timings
+description: How to use SG Bus Timings' web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.
 ---
 
-SG Bus Timing tells you when the next bus is coming. Pick a bus stop and you see
+SG Bus Timings tells you when the next bus is coming. Pick a bus stop and you see
 every service that calls there, the next three buses for each, how full they
 are and how far away. It also shows where a bus goes, and which buses get you
 from one stop to another, with a change or two if no single bus does.

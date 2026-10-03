@@ -1,7 +1,7 @@
 {
   "name": "sgbus-timings-site",
   "private": true,
-  "description": "SG Bus Timing at sgbus.uwuapps.org: a static site plus Vercel Functions in api/.",
+  "description": "SG Bus Timings at sgbus.uwuapps.org: a static site plus Vercel Functions in api/.",
   "type": "module",
   "dependencies": {
     "web-push": "^3.6.7"

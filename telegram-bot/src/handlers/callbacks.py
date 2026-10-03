@@ -10,7 +10,7 @@ from ..journey_view import build_journey_view
 from ..list_view import rebuild_stop_list_view
 from ..reply import edit_rich_message, edit_rich_message_at
 from ..route_drafts import panel_awaiting, start_route_draft
-from ..route_view import build_route_view, toggle_route_favourite
+from ..route_view import build_route_view_async, toggle_route_favourite
 from ..routines import delete_routine
 from ..service_alerts import KINDS as ALERT_KINDS
 from ..service_alerts import MODES as ALERT_MODES
@@ -148,7 +148,7 @@ def register_callbacks(client):
                     start_route_draft(
                         user_id, awaiting, start_code=start_code, end_code=end_code, panel_msg_id=event.query.msg_id
                     )
-                rich, buttons = build_route_view(
+                rich, buttons = await build_route_view_async(
                     user_id,
                     start_code,
                     end_code,
@@ -173,7 +173,7 @@ def register_callbacks(client):
             if action == "route_fav":
                 start_code, end_code = payload["start"], payload["end"]
                 now_fav = toggle_route_favourite(user_id, start_code, end_code)
-                rich, buttons = build_route_view(
+                rich, buttons = await build_route_view_async(
                     user_id,
                     start_code,
                     end_code,

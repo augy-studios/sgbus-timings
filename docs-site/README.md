@@ -1,4 +1,4 @@
-# SG Bus Timing Guide
+# SG Bus Timings Guide
 
 How to use the [web app](../main-site/) and the [Telegram bot](../telegram-bot/),
 at [guide.sgbus.uwuapps.org](https://guide.sgbus.uwuapps.org).

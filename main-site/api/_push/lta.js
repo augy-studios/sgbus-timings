@@ -1,4 +1,5 @@
-// LTA DataMall: the two feeds Service Alerts watches.
+// LTA DataMall: the two feeds Service Alerts watches, and where the buses are for the Get
+// Off Alert.
 
 const BASE = 'https://datamall2.mytransport.sg/ltaodataservice';
 
@@ -9,6 +10,17 @@ async function get(path, accountKey) {
   });
   if (!res.ok) throw new Error(`LTA ${path} replied ${res.status}`);
   return res.json();
+}
+
+// Where each of a service's next three buses to a stop is, for the Get Off Alert. Only the
+// ones LTA is tracking: an untracked bus's estimate comes from the timetable, with no place.
+export async function fetchBusPositions(accountKey, stop, service) {
+  const data = await get(`/v3/BusArrival?BusStopCode=${encodeURIComponent(stop)}&ServiceNo=${encodeURIComponent(service)}`, accountKey);
+  const svc = (data?.Services ?? []).find((s) => String(s.ServiceNo) === String(service));
+  return [svc?.NextBus, svc?.NextBus2, svc?.NextBus3]
+    .filter((b) => b && String(b.Monitored) === '1')
+    .map((b) => ({ lat: parseFloat(b.Latitude), lng: parseFloat(b.Longitude) }))
+    .filter((b) => b.lat && b.lng);
 }
 
 // TrainServiceAlerts as it comes: { Status, AffectedSegments, Message }.

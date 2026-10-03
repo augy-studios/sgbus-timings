@@ -6,14 +6,14 @@ description: How the app updates itself, and what still works without a connecti
 ## When a new version is ready
 
 <figure>
-<img src="/screenshots/web/updates-new-version.png" alt="A bar across the top of the app saying A new version of SG Bus Timing is ready, with Reload and Not now buttons." width="1280" height="118" loading="lazy">
+<img src="/screenshots/web/updates-new-version.png" alt="A bar across the top of the app saying A new version of SG Bus Timings is ready, with Reload and Not now buttons." width="1280" height="118" loading="lazy">
 <figcaption>The bar a new version brings. Nothing reloads until you tap Reload.</figcaption>
 </figure>
 
 The app downloads new versions in the background. When one is ready, a slim bar
 appears at the very top of the page:
 
-> A new version of SG Bus Timing is ready. **Reload** **Not now**
+> A new version of SG Bus Timings is ready. **Reload** **Not now**
 
 - **Reload** switches to the new version straight away. The page reloads once.
 - **Not now** hides the bar for now. It comes back the next time you open the
@@ -23,7 +23,7 @@ Nothing reloads on its own, so the app never changes under you halfway through
 something.
 
 > [!NOTE]
-> This guide has the same bar, and says "A new version of the SG Bus Timing
+> This guide has the same bar, and says "A new version of the SG Bus Timings
 > Guide is ready." when a page has been updated since you opened it.
 
 ## Offline

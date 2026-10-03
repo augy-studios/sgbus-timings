@@ -357,7 +357,7 @@
 
   const COPY = {
     label: "Update",
-    ready: "A new version of the SG Bus Timing Guide is ready.",
+    ready: "A new version of the SG Bus Timings Guide is ready.",
     reload: "Reload",
     later: "Not now",
   };

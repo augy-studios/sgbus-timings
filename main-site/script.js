@@ -56,6 +56,14 @@ const LS = {
         localStorage.setItem(this.pinKey, JSON.stringify(prefs));
     },
 
+    // Whether the Favourites card is folded to its header.
+    favsCollapsedKey: 'sgbus_favs_collapsed',
+    getFavsCollapsed() { return localStorage.getItem(this.favsCollapsedKey) === '1'; },
+    setFavsCollapsed(on) {
+        if (on) localStorage.setItem(this.favsCollapsedKey, '1');
+        else localStorage.removeItem(this.favsCollapsedKey);
+    },
+
     // "YYYY-MM-DD", or empty.
     getBirthday() { return localStorage.getItem(this.birthdayKey) || ''; },
     setBirthday(v) {
@@ -201,18 +209,27 @@ let acData = [];
 
 async function buildAc() {
     const idx = await ensureStopsIndex();
-    acData = Object.entries(idx).map(([code, v]) => ({ code, name: v.n, road: v.road || '' }));
+    // Lowercased once here rather than for every stop on every keystroke.
+    acData = Object.entries(idx).map(([code, v]) => {
+        const name = v.n || '', road = v.road || '';
+        return { code, name, road, find: `${name}\n${road}`.toLowerCase() };
+    });
 }
 
+// Stops are checked in order and the search stops at `limit`, so a short query doesn't run
+// through all five thousand.
 function matchStops(q, limit = 20) {
     q = q.trim().toLowerCase();
     if (!q) return [];
     const isCode = /^\d+$/.test(q);
-    return acData
-        .filter(it => isCode
-            ? it.code.startsWith(q)
-            : it.name.toLowerCase().includes(q) || it.road.toLowerCase().includes(q))
-        .slice(0, limit);
+    const out = [];
+    for (const it of acData) {
+        if (isCode ? it.code.startsWith(q) : it.find.includes(q)) {
+            out.push(it);
+            if (out.length >= limit) break;
+        }
+    }
+    return out;
 }
 
 // How many matches are checked for a direct bus before the list is cut to its usual 20, so
@@ -343,12 +360,40 @@ function renderFavs() {
         return chip(`data-fav-nav="${i}"`, `data-remove-nav="${i}"`, '', label, label);
     }).join('');
 
+    shareFavsWithWidgets(favs);
+
+    // Shown beside the title while the card is folded, so it still says what's in it.
+    const total = favs.length + buses.length + routes.length + navs.length;
+    $('#favCount').textContent = total ? `· ${total}` : '';
+
     $('#favStopsGroup').hidden  = !favs.length;
     $('#favBusesGroup').hidden  = !buses.length;
     $('#favRoutesGroup').hidden = !routes.length;
     $('#favNavsGroup').hidden   = !navs.length;
     $('#favEmpty').hidden = favs.length + buses.length + routes.length + navs.length > 0;
 }
+
+// The favourite stops, copied where the installed app's Bus timings widget can offer them in
+// its setup (sw.js). The cache is the one storage a service worker and a page both reach.
+function shareFavsWithWidgets(favs) {
+    if (!('caches' in window)) return;
+    const list = favs.map(({ code, name }) => ({ code, name: name || nameOf(code) || '' }));
+    caches.open('sgbus-widgets')
+        .then(c => c.put('/widget/favourites', new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } })))
+        .catch(() => {});
+}
+
+// Folds the Favourites card to its header, or opens it again, and remembers which.
+function setFavsCollapsed(collapsed) {
+    $('#favCard').classList.toggle('collapsed', collapsed);
+    $('#favToggle').setAttribute('aria-expanded', String(!collapsed));
+    try { LS.setFavsCollapsed(collapsed); } catch {}
+}
+
+$('#favToggle').addEventListener('click', () => setFavsCollapsed(!$('#favCard').classList.contains('collapsed')));
+
+// Set before the first paint, so a folded card loads folded rather than folding as it opens.
+try { if (LS.getFavsCollapsed()) setFavsCollapsed(true); } catch {}
 
 function isFavStop(code) {
     return LS.getFavs().some(f => f.code === code);
@@ -436,14 +481,21 @@ const MAP_APPS = [
     { id: 'citymapper', label: 'Citymapper' },
 ];
 
-// Directions to a stop in a map app: the app itself where it's installed, its website otherwise.
-function directionsUrl(stop, app) {
+// Directions to a stop (or any { lat, lng, n }) in a map app: the app itself where it's
+// installed, its website otherwise. `from` starts them somewhere other than where you are, and
+// `walk` asks Google Maps for walking directions (a nav's walks, js/nav.js); Citymapper's
+// links have no mode, and it offers walking among its own.
+function directionsUrl(stop, app, { from = null, walk = false } = {}) {
     if (app === 'citymapper') {
         let q = `endcoord=${stop.lat}%2C${stop.lng}&endname=${encodeURIComponent(stop.n || '')}`;
         if (stop.road) q += `&endaddress=${encodeURIComponent(stop.road)}`;
+        if (from) q += `&startcoord=${from.lat}%2C${from.lng}`;
         return `https://citymapper.com/directions?${q}`;
     }
-    return `https://www.google.com/maps/dir/?api=1&destination=${stop.lat}%2C${stop.lng}`;
+    let q = `api=1&destination=${stop.lat}%2C${stop.lng}`;
+    if (from) q += `&origin=${from.lat}%2C${from.lng}`;
+    if (walk) q += '&travelmode=walking';
+    return `https://www.google.com/maps/dir/?${q}`;
 }
 
 function stopHash() {
@@ -518,7 +570,18 @@ function goBack(ctx) {
     else if (ctx.kind === 'nearby')  openNearbyList(ctx.stops, ctx.title);
 }
 
-const wheelchairBadge = `<span class="badge"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M192 96a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM120.5 247.2c12.4-4.7 18.7-18.5 14-30.9s-18.5-18.7-30.9-14C43.1 225.1 0 283.5 0 352c0 88.4 71.6 160 160 160c61.2 0 114.3-34.3 141.2-84.7c6.2-11.7 1.8-26.2-9.9-32.5s-26.2-1.8-32.5 9.9C240 440 202.8 464 160 464C98.1 464 48 413.9 48 352c0-47.9 30.1-88.8 72.5-104.8zM259.8 176l-1.9-9.7c-4.5-22.3-24-38.3-46.8-38.3c-30.1 0-52.7 27.5-46.8 57l23.1 115.5c6 29.9 32.2 51.4 62.8 51.4h5.1c.4 0 .8 0 1.3 0h94.1c6.7 0 12.6 4.1 15 10.4L402 459.2c6 16.1 23.8 24.6 40.1 19.1l48-16c16.8-5.6 25.8-23.7 20.2-40.5s-23.7-25.8-40.5-20.2l-18.7 6.2-25.5-68c-11.7-31.2-41.6-51.9-74.9-51.9H282.2l-9.6-48H336c17.7 0 32-14.3 32-32s-14.3-32-32-32H259.8z"/></svg> Wheelchair</span>`;
+// The icon is drawn once, in a hidden <symbol> on the page, and each badge points at it:
+// a stop shows up to three buses per service, and copying the whole drawing into every
+// badge made a busy stop's timings several times heavier to parse.
+const wheelchairBadge = `<span class="badge"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#i-wheelchair"/></svg> Wheelchair</span>`;
+
+(function addWheelchairSymbol() {
+    const sprite = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    sprite.setAttribute('aria-hidden', 'true');
+    sprite.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    sprite.innerHTML = `<symbol id="i-wheelchair" viewBox="0 0 512 512"><path fill="currentColor" d="M192 96a48 48 0 1 0 0-96 48 48 0 1 0 0 96zM120.5 247.2c12.4-4.7 18.7-18.5 14-30.9s-18.5-18.7-30.9-14C43.1 225.1 0 283.5 0 352c0 88.4 71.6 160 160 160c61.2 0 114.3-34.3 141.2-84.7c6.2-11.7 1.8-26.2-9.9-32.5s-26.2-1.8-32.5 9.9C240 440 202.8 464 160 464C98.1 464 48 413.9 48 352c0-47.9 30.1-88.8 72.5-104.8zM259.8 176l-1.9-9.7c-4.5-22.3-24-38.3-46.8-38.3c-30.1 0-52.7 27.5-46.8 57l23.1 115.5c6 29.9 32.2 51.4 62.8 51.4h5.1c.4 0 .8 0 1.3 0h94.1c6.7 0 12.6 4.1 15 10.4L402 459.2c6 16.1 23.8 24.6 40.1 19.1l48-16c16.8-5.6 25.8-23.7 20.2-40.5s-23.7-25.8-40.5-20.2l-18.7 6.2-25.5-68c-11.7-31.2-41.6-51.9-74.9-51.9H282.2l-9.6-48H336c17.7 0 32-14.3 32-32s-14.3-32-32-32H259.8z"/></symbol>`;
+    document.body.prepend(sprite);
+})();
 
 const DAY_NAMES = { Weekday: 'weekday', Sat: 'Saturday', Sun: 'Sunday' };
 
@@ -1058,6 +1121,7 @@ function tripLegForBus(service, codes, toCode) {
     return {
         kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode,
         points, names: known.map(c => nameOf(c) || c), minutes: metres / 250, wait: 0,
+        service, alight: toCode,
     };
 }
 
@@ -1128,7 +1192,8 @@ $('.favBar').addEventListener('click', e => {
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
-// "#alerts" for the service alerts card, "#nav/lat,lng/lat,lng" for Navigate.
+// "#alerts" for the service alerts card, "#nav/lat,lng/lat,lng" for Navigate, and "#near" and
+// "#nav" for the installed app's shortcuts.
 function routeFromHash() {
     const hash = decodeURIComponent(location.hash.replace('#', ''));
     let m;
@@ -1138,6 +1203,9 @@ function routeFromHash() {
     // Where a Service Alerts notification opens. Shown above the page, so the first
     // favourite stop still loads behind it.
     if (hash === 'alerts') { window.Alerts.open({ scroll: false }); return false; }
+    // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
+    if (hash === 'near') { $('#nearMeBtn').click(); return true; }
+    if (hash === 'nav') { openNav(null, null, { scroll: false }); return true; }
     if ((m = hash.match(/^route\/(\d{5})\/(\d{5})$/))) { openPlanner(m[1], m[2], { scroll: false }); return true; }
     if ((m = hash.match(/^nav\/(-?[\d.]+,-?[\d.]+)\/(-?[\d.]+,-?[\d.]+)$/))) { openNavHash(m[1], m[2]); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }

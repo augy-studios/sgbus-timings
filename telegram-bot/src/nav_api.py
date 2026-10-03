@@ -7,6 +7,7 @@ which lifts the site's per-IP limit: every chat's /nav comes from this one serve
 import httpx
 
 from .config import config
+from .http_client import shared_client
 
 
 class NavError(RuntimeError):
@@ -24,8 +25,7 @@ def _headers() -> dict:
 async def places(query: str) -> list[dict]:
     """Up to 10 of {kind: station | stop | place, label, sub, lat, lng} for typed text."""
     try:
-        async with httpx.AsyncClient(timeout=20) as client:
-            res = await client.get(_url("/api/places"), params={"q": query}, headers=_headers())
+        res = await shared_client().get(_url("/api/places"), params={"q": query}, headers=_headers(), timeout=20)
     except httpx.HTTPError as err:
         raise NavError("Couldn't search for that place right now. Please try again shortly.") from err
     if res.status_code != 200:
@@ -40,8 +40,7 @@ async def plan(from_point: dict, to_point: dict) -> dict:
         "to": f"{to_point['lat']:.5f},{to_point['lng']:.5f}",
     }
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            res = await client.get(_url("/api/nav"), params=params, headers=_headers())
+        res = await shared_client().get(_url("/api/nav"), params=params, headers=_headers(), timeout=60)
     except httpx.HTTPError as err:
         raise NavError("Couldn't plan that right now. Please try again shortly.") from err
     if res.status_code != 200:

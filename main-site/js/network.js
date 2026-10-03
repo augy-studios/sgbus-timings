@@ -181,8 +181,11 @@
     { label: "Sun", offset: 16 },
   ];
 
+  // Made once: a stop's timings ask for every bus there, and building a formatter is slow.
+  const WEEKDAY = new Intl.DateTimeFormat("en-SG", { timeZone: "Asia/Singapore", weekday: "short" });
+
   function singaporeWeekday(now = new Date()) {
-    return new Intl.DateTimeFormat("en-SG", { timeZone: "Asia/Singapore", weekday: "short" }).format(now);
+    return WEEKDAY.format(now);
   }
 
   // Today's first and last bus for a service at a stop, by Singapore's day of the week.
@@ -249,7 +252,10 @@
     }
     const at = {};
     list.forEach((run, r) => run.stops.forEach((code, i) => (at[code] ??= []).push([r, i])));
-    graph = { coords, roads, runs: list, at };
+    // Each service's runs, so looking one up doesn't scan them all.
+    const byBus = new Map();
+    for (const run of list) (byBus.get(run.bus) || byBus.set(run.bus, []).get(run.bus)).push(run);
+    graph = { coords, roads, runs: list, at, byBus };
     return graph;
   }
 
@@ -266,7 +272,7 @@
   // bus serving the two stops on opposite runs gets there. { stops, via } where `via` is
   // that terminus's code, or null when there's no turn.
   function stopsTo(serviceNo, fromCode, toCode) {
-    const own = getGraph().runs.filter((run) => run.bus === serviceNo);
+    const own = getGraph().byBus.get(serviceNo) || [];
     for (const { stops: seq } of own) {
       const i = seq.indexOf(fromCode);
       if (i !== -1 && seq.indexOf(toCode, i + 1) !== -1) return { stops: seq.indexOf(toCode, i + 1) - i, via: null };

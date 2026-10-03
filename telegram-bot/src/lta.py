@@ -5,16 +5,18 @@ from typing import Optional
 import httpx
 
 from .config import config
+from .http_client import shared_client
 
 BASE = "https://datamall2.mytransport.sg/ltaodataservice"
 
 
-async def _lta_get(client: httpx.AsyncClient, pathname: str, params: Optional[dict] = None) -> dict:
+async def _lta_get(client: httpx.AsyncClient, pathname: str, params: Optional[dict] = None, timeout=httpx.USE_CLIENT_DEFAULT) -> dict:
     params = {k: v for k, v in (params or {}).items() if v not in (None, "")}
     res = await client.get(
         f"{BASE}{pathname}",
         params=params,
         headers={"AccountKey": config.lta_account_key, "accept": "application/json"},
+        timeout=timeout,
     )
     if res.status_code != 200:
         raise RuntimeError(f"LTA DataMall request failed ({res.status_code}): {pathname}")
@@ -143,8 +145,7 @@ def _shape_next_bus(nb: Optional[dict]) -> Optional[dict]:
 
 async def fetch_train_alerts() -> dict:
     """LTA's TrainServiceAlerts as it comes: {"Status", "AffectedSegments", "Message"}."""
-    async with httpx.AsyncClient(timeout=15) as client:
-        data = await _lta_get(client, "/TrainServiceAlerts")
+    data = await _lta_get(shared_client(), "/TrainServiceAlerts", timeout=15)
     value = data.get("value", data)
     return value if isinstance(value, dict) else {}
 
@@ -152,8 +153,7 @@ async def fetch_train_alerts() -> dict:
 async def fetch_traffic_incidents() -> list[dict]:
     """Every traffic incident LTA reports right now, island-wide. LTA's own message
     already starts with when it was reported, e.g. "(2/10)14:32 Accident on PIE ..."."""
-    async with httpx.AsyncClient(timeout=15) as client:
-        data = await _lta_get(client, "/TrafficIncidents")
+    data = await _lta_get(shared_client(), "/TrafficIncidents", timeout=15)
     incidents = []
     for i in data.get("value") or []:
         message = (i.get("Message") or "").strip()
@@ -169,8 +169,9 @@ def _natural_sort_key(text: str) -> list:
 
 async def fetch_arrivals(stop_code: str, service_no: Optional[str] = None) -> dict:
     """Live bus arrival timings for a given bus stop code, reshaped for display."""
-    async with httpx.AsyncClient(timeout=15) as client:
-        data = await _lta_get(client, "/v3/BusArrival", {"BusStopCode": stop_code, "ServiceNo": service_no})
+    data = await _lta_get(
+        shared_client(), "/v3/BusArrival", {"BusStopCode": stop_code, "ServiceNo": service_no}, timeout=15
+    )
 
     services = []
     for svc in data.get("Services") or []:

@@ -29,11 +29,12 @@ stays in that browser.
 
 ## Install it
 
-Installing puts SG Bus Timing on your home screen or in your app list, opening
+Installing puts SG Bus Timings on your home screen or in your app list, opening
 in its own window without the browser's address bar. It also lets the app open
 when you have no connection; see [Updates and offline use](updates.md). On
 iPhone and iPad, it's also the only way to get
-[service alert notifications](service-alerts.md#get-notified).
+[service alert notifications](service-alerts.md#get-notified). Installed, it also
+has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 
 ### iPhone and iPad
 
@@ -50,7 +51,7 @@ iPhone and iPad, it's also the only way to get
 ### Windows, macOS, Linux and ChromeOS
 
 In Chrome or Edge, click the install icon at the right of the address bar, or
-open the browser menu and choose **Install SG Bus Timing**. Safari on a Mac
+open the browser menu and choose **Install SG Bus Timings**. Safari on a Mac
 offers **File**, then **Add to Dock**.
 
 > [!NOTE]

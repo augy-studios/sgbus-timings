@@ -1,5 +1,5 @@
 {
-    "name": "SG Bus Timing by UwU Apps",
+    "name": "SG Bus Timings by UwU Apps",
     "short_name": "SG Bus Timings",
     "description": "Live Singapore bus arrivals, bus routes, and journeys by bus and train between any two places.",
     "icons": [{
@@ -32,5 +32,41 @@
         "productivity",
         "lifestyle",
         "utilities"
-    ]
+    ],
+    "shortcuts": [{
+            "name": "Stops near me",
+            "short_name": "Near me",
+            "description": "Live bus timings at the stops around you",
+            "url": "/#near",
+            "icons": [{ "src": "/images/icons/shortcut-near.png", "type": "image/png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Navigate",
+            "short_name": "Navigate",
+            "description": "From any place to any other by bus and train",
+            "url": "/#nav",
+            "icons": [{ "src": "/images/icons/shortcut-nav.png", "type": "image/png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Service alerts",
+            "short_name": "Alerts",
+            "description": "Train disruptions and traffic incidents right now",
+            "url": "/#alerts",
+            "icons": [{ "src": "/images/icons/shortcut-alerts.png", "type": "image/png", "sizes": "192x192" }]
+        }
+    ],
+    "widgets": [{
+        "name": "Bus timings",
+        "short_name": "Bus timings",
+        "description": "Live arrivals at a bus stop you pick, for every bus there or just the ones you choose",
+        "tag": "timings",
+        "ms_ac_template": "/widgets/timings.json",
+        "data": "/widgets/timings-data.json",
+        "type": "application/json",
+        "screenshots": [{ "src": "/widgets/screenshot.png", "sizes": "600x400", "label": "The Bus timings widget showing the next buses at a stop" }],
+        "icons": [{ "src": "/images/icons/widget-bus.png", "type": "image/png", "sizes": "192x192" }],
+        "auth": false,
+        "update": 60,
+        "multiple": true
+    }]
 }

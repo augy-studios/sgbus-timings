@@ -1,7 +1,7 @@
 {
   "name": "sgbus-guide",
   "private": true,
-  "description": "The SG Bus Timing Guide, at guide.sgbus.uwuapps.org",
+  "description": "The SG Bus Timings Guide, at guide.sgbus.uwuapps.org",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

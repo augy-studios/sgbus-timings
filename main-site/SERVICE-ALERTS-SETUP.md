@@ -87,6 +87,20 @@ Jobs**. `VERSION` in `sw.js` is already bumped for this change.
 On iPhone and iPad, notifications only work from the app added to the Home
 Screen and opened from there.
 
+## The Get Off Alert in the background
+
+The same setup also sends the Get Off Alert while the app is in the background,
+with no more to do. The app sends its trip to `/api/push/trips/<id>`
+(`api/push/trips/[id].js`). A second cron, `/api/push/trip-poll`
+(`api/push/trip-poll.js`), runs every minute. It follows each trip's bus from
+LTA's bus arrivals at the stop you get off at, or the clock for trains, and
+pushes the alert two stops out (`api/_push/trip.js`).
+
+To check it: start a trip, allow notifications, and lock the phone. **Settings →
+Cron Jobs → Logs** for `/api/push/trip-poll` shows `{"trips":1,"sent":0}` each
+minute until the alert, then `"sent":1`. With no trips running it returns
+`{"trips":0}` and touches nothing else.
+
 ## Troubleshooting
 
 **The card says it couldn't reach the alerts server.** On a computer, open
@@ -111,5 +125,8 @@ added, so redeploy after adding them.
 
 Redis holds each device's push subscription and its mode, All updates or
 Disruptions only, under a random ID the device made up. No names, locations or
-favourites. Picking **Off** deletes the device. Clearing the store only means
+favourites. Picking **Off** deletes the device. A trip for the Get Off Alert is
+kept only while it runs: its stops, its buses and trains, how many stops along it
+the app last saw you, and the push subscription. Never your location itself. It's
+deleted when the trip ends, and expires on its own if the app stops checking in. Clearing the store only means
 each device re-sends its choice the next time the app opens.

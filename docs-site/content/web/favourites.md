@@ -7,6 +7,10 @@ Favourites live in their own card under the search box, in up to four groups:
 **Bus stops**, **Buses**, **Routes** and **Navs**. Each favourite is a chip; tap it to open
 it, or tap the cross on its right to remove it.
 
+Tap **Favourites** at the top of the card to fold it down to just its title, with how
+many favourites you have beside it, and tap again to open it. The site remembers which
+you left it as.
+
 ## Save a favourite
 
 <figure>

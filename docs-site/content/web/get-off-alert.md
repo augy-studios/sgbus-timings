@@ -42,7 +42,7 @@ and where to get off or change. Tap it again to close it.
 
 Two stops before you get off, the phone:
 
-- **buzzes in short pulses**, three quick and two more, rather than one long
+- **buzzes "OFF" in Morse code** (– – –  · · – ·  · · – ·), rather than one long
   vibration;
 - **beeps** three times;
 - shows a **notification**, "Get off in 2 stops, at Bedok Int";
@@ -59,8 +59,14 @@ first stop. **Next leg** moves it on by hand, and **End trip** stops it.
 </figure>
 
 A website only gets your location while it's open on screen. So while a trip
-runs, the site keeps the screen awake. If you switch to another app or lock the
-phone, the tracking pauses, and picks up where you are when you come back.
+runs, the site keeps the screen awake.
+
+If you switch to another app or lock the phone, SG Bus Timings' server takes over
+as long as you've allowed notifications. It follows your bus using LTA's live bus
+positions, and sends the alert as a notification. For trains it goes by the
+expected ride time. It's less exact than your own location: LTA's positions are a
+minute or so behind, so the alert can come a little early or late. When you come
+back, the site picks up where you are again.
 
 Underground, where there's no GPS, it goes by the clock instead: how long the ride
 should take, stop by stop. The trip bar says when it's doing that.

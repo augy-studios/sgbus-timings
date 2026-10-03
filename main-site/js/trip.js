@@ -4,15 +4,20 @@
 //
 // A website only gets your location while it's open with the screen on, so the trip keeps
 // the screen awake (the Wake Lock API) while it runs. Underground, where GPS gives out, it
-// falls back on the time each ride should take.
+// falls back on the time each ride should take. With notifications allowed, the trip is also
+// sent to the server, which follows the bus from LTA's live positions while the app is in the
+// background and pushes the alert itself (api/push/trip-poll.js).
 //
 // Trip.start({ title, legs }) with legs of
-// { kind: "bus" | "train", label, to, points: [[lat, lng], ...], names, minutes, wait }:
+// { kind: "bus" | "train", label, to, points: [[lat, lng], ...], names, minutes, wait,
+//   service, alight }:
 // `points` are the stops from boarding to alighting, so a leg of 5 stops has 6 points, and
-// `names` (optional) names each of them for the timeline.
+// `names` (optional) names each of them for the timeline. A bus leg's `service` and `alight`
+// (the stop code you get off at) let the server find the bus; without them it goes by the clock.
 //
 // Tapping the trip bar opens that timeline: the stops still ahead, with a blue dot where you
-// are, redrawn 20 times a second so it glides between stops like a progress bar.
+// are, gliding between stops like a progress bar. It's drawn once a frame only while the dot
+// is moving, and moved with transforms, so an open timeline doesn't make the page lag.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -27,23 +32,34 @@
   // With no good fix for this long, go by the clock instead.
   const FIX_STALE_MS = 60 * 1000;
   const TICK_MS = 15 * 1000;
-  // Short pulses rather than one long buzz: three quick, a pause, two quick.
-  const VIBRATION = [180, 90, 180, 90, 180, 450, 180, 90, 180];
+  // "OFF" in Morse code (--- ..-. ..-.), buzz and pause in turn, with a 120 ms dot: a dash is
+  // three dots, the gap inside a letter one dot, and between letters three. Keep sw.js in step.
+  const VIBRATION = [
+    360, 120, 360, 120, 360, 360, // O  ---
+    120, 120, 120, 120, 360, 120, 120, 360, // F  ..-.
+    120, 120, 120, 120, 360, 120, 120, // F  ..-.
+  ];
 
-  // The timeline's dot: 20 frames a second, each closing this share of the gap to where
-  // you are, so it eases rather than jumps when a new fix comes in.
+  // The timeline's dot closes this share of the gap to where you are every FRAME_MS, at
+  // whatever rate the screen draws, so it eases rather than jumps when a new fix comes in.
   const FRAME_MS = 50;
   const EASE = 0.15;
+  // With no fix, the clock moves the dot on slowly; this often it's checked for that.
+  const NUDGE_MS = 1000;
 
   let trip = null;
   let watchId = null;
   let tick = null;
   let wakeLock = null;
   let expanded = false;
-  let frame = null;
+  let frame = null; // the pending animation frame, while the dot is moving
+  let nudge = null;
+  let lastFrame = null;
   let shown = null; // the dot's drawn position, as a stop index with a fraction
   let builtLeg = null;
   let shownStop = null;
+  let geo = null; // the current leg's column, measured (see measure)
+  let passedUpTo = null;
 
   const enabled = () => {
     try {
@@ -79,6 +95,7 @@
     if (!legs?.length) return;
     stop(false);
     trip = {
+      tripId: crypto.randomUUID(),
       title,
       legs,
       leg: 0,
@@ -91,7 +108,8 @@
     save();
     run();
     // Asked once, so the alert can also show as a notification over a locked screen's wake.
-    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {});
+    // Once allowed, the server can send it while the app is in the background too.
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().then(sync).catch(() => {});
   }
 
   function run() {
@@ -104,6 +122,7 @@
     }
     tick = setInterval(onTick, TICK_MS);
     keepAwake();
+    sync();
   }
 
   function stop(clear = true) {
@@ -115,6 +134,7 @@
     if (clear) {
       trip = null;
       save();
+      unsync();
       setExpanded(false);
       $("#tripBar").classList.add("hidden");
       document.body.classList.remove("on-trip");
@@ -198,6 +218,7 @@
     trip.legStartedAt = Date.now();
     shown = null;
     save();
+    sync();
   }
 
   function stopsLeft() {
@@ -254,6 +275,85 @@
     trip.alertText = text;
     trip.alertLeft = left;
     render(text);
+    sync();
+  }
+
+  // The server sent the alert while the app was in the background (sw.js passes it on):
+  // shown on the bar, and not sounded again.
+  function alertedElsewhere({ tripId, leg, text }) {
+    if (!trip || tripId !== trip.tripId || trip.alerted[leg]) return;
+    trip.alerted[leg] = true;
+    if (leg === trip.leg) {
+      trip.alertText = text;
+      trip.alertLeft = stopsLeft();
+      const bar = $("#tripBar");
+      bar.classList.add("alerting");
+      setTimeout(() => bar.classList.remove("alerting"), 8000);
+    }
+    save();
+    render();
+  }
+
+  // ---------- the server, for while the app is in the background ----------
+  // Sent at the start, at each change of leg or alert, and as the app goes into or comes back
+  // from the background. The answer says how far the server has got, so a change of leg or an
+  // alert it made while the app was away is picked up here.
+
+  const TRIPS_API = "/api/push/trips";
+  let pushTo = null; // { deviceId, subscription }, from js/alerts.js
+
+  async function sync() {
+    if (!trip || !enabled()) return;
+    try {
+      pushTo ??= await window.Alerts.pushTarget();
+    } catch (err) {
+      console.warn("get off alert can't subscribe:", err);
+    }
+    if (!pushTo || !trip) return;
+    const body = JSON.stringify({
+      tripId: trip.tripId,
+      subscription: pushTo.subscription,
+      legs: trip.legs.map((l) => ({
+        kind: l.kind, to: l.to, points: l.points, minutes: l.minutes || 0, wait: l.wait || 0, service: l.service, alight: l.alight,
+      })),
+      leg: trip.leg,
+      at: trip.at,
+      pos: trip.pos || 0,
+      legStartedAt: trip.legStartedAt,
+      seenAt: trip.lastFixAt || trip.legStartedAt,
+      alerted: trip.alerted,
+    });
+    try {
+      const res = await fetch(`${TRIPS_API}/${pushTo.deviceId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        // So the one sent as the app goes into the background still goes. Browsers cap a
+        // keepalive body at 64 KB; a trip that long is sent without it.
+        keepalive: body.length < 60000,
+        body,
+      });
+      if (!res.ok) throw new Error(`replied ${res.status}`);
+      adopt(await res.json());
+    } catch (err) {
+      console.warn("get off alert server unavailable:", err);
+    }
+  }
+
+  function adopt(state) {
+    if (!trip || state?.tripId !== trip.tripId) return;
+    state.alerted.forEach((a, i) => {
+      if (a) trip.alerted[i] = true;
+    });
+    if (state.leg > trip.leg && state.leg < trip.legs.length) {
+      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, alertText: null, legStartedAt: state.legStartedAt || Date.now() });
+      shown = null;
+    }
+    save();
+    render();
+  }
+
+  function unsync() {
+    if (pushTo) fetch(`${TRIPS_API}/${pushTo.deviceId}`, { method: "DELETE", keepalive: true }).catch(() => {});
   }
 
   // Three short beeps, made in the page, so there's nothing to download.
@@ -312,6 +412,7 @@
     $("#tripBar").classList.remove("hidden");
     document.body.classList.add("on-trip");
     if (expanded && builtLeg !== trip.leg) buildTimeline();
+    else kick();
   }
 
   // ---------- the timeline ----------
@@ -354,7 +455,9 @@
     builtLeg = trip.leg;
     shown = null;
     shownStop = null;
-    draw();
+    geo = null;
+    passedUpTo = null;
+    kick();
   }
 
   // Where the dot should be: the last fix's place along the leg, or, without a recent good
@@ -370,42 +473,91 @@
     return Math.min(last, pos);
   }
 
-  function draw() {
-    if (!trip || !expanded) return;
+  // Where everything on the current leg's column is, measured once per build (and again if
+  // the panel changes width, which rewraps the names), so drawing a frame reads no layout.
+  function measure(list) {
+    const items = [...list.querySelectorAll(".tlStop")];
+    const track = list.querySelector(".tlTrack");
+    return {
+      list,
+      width: list.clientWidth,
+      items,
+      mids: items.map((el) => el.offsetTop + el.offsetHeight / 2),
+      tops: items.map((el) => el.offsetTop),
+      dot: list.querySelector(".tlDot"),
+      done: list.querySelector(".tlDone"),
+      trackTop: track.offsetTop,
+      trackHeight: Math.max(1, track.offsetHeight),
+    };
+  }
+
+  // One frame: eases the dot towards where you are. Says whether it's still moving, so the
+  // frames stop once it settles and nothing is redrawn while the dot sits still.
+  function draw(now) {
+    if (!trip || !expanded) return false;
     const list = $("#tripTimeline .tlLeg.current .tlStops");
-    if (!list) return;
+    if (!list) return false;
+    let remeasured = false;
+    if (!geo || geo.list !== list || geo.width !== list.clientWidth) {
+      geo = measure(list);
+      lastFrame = null;
+      remeasured = true;
+    }
     const goal = target();
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    shown = shown == null || still ? goal : shown + (goal - shown) * EASE;
+    const before = shown;
+    if (shown == null || still) {
+      shown = goal;
+    } else {
+      // The same easing at any frame rate: EASE of the gap per FRAME_MS.
+      const dt = lastFrame == null ? FRAME_MS : Math.min(200, now - lastFrame);
+      shown += (goal - shown) * (1 - Math.pow(1 - EASE, dt / FRAME_MS));
+    }
+    lastFrame = now;
     if (Math.abs(goal - shown) < 0.002) shown = goal;
+    if (shown === before && !remeasured) return false;
 
-    const items = list.querySelectorAll(".tlStop");
+    const { items, mids, tops } = geo;
     const i = Math.min(Math.floor(shown), items.length - 1);
-    const mid = (el) => el.offsetTop + el.offsetHeight / 2;
-    const y = i >= items.length - 1 ? mid(items[i]) : mid(items[i]) + (shown - i) * (mid(items[i + 1]) - mid(items[i]));
-    list.querySelector(".tlDot").style.transform = `translateY(${y}px)`;
-    const track = list.querySelector(".tlTrack");
-    list.querySelector(".tlDone").style.height = `${Math.max(0, y - track.offsetTop)}px`;
-    items.forEach((el, n) => el.classList.toggle("passed", n <= shown + 0.001));
+    const y = i >= items.length - 1 ? mids[i] : mids[i] + (shown - i) * (mids[i + 1] - mids[i]);
+    geo.dot.style.transform = `translateY(${y}px)`;
+    // Scaled rather than resized, so the line grows without a layout each frame.
+    geo.done.style.transform = `scaleY(${Math.min(1, Math.max(0, (y - geo.trackTop) / geo.trackHeight))})`;
+    const passed = Math.floor(shown + 0.001);
+    if (passed !== passedUpTo) {
+      items.forEach((el, n) => el.classList.toggle("passed", n <= passed));
+      passedUpTo = passed;
+    }
 
     // Keep the stop you're at in view as you pass each one.
     if (shownStop !== i) {
       shownStop = i;
       const box = $("#tripTimeline");
-      box.scrollTo({ top: Math.max(0, items[i].offsetTop - box.clientHeight / 3), behavior: still ? "auto" : "smooth" });
+      box.scrollTo({ top: Math.max(0, tops[i] - box.clientHeight / 3), behavior: still ? "auto" : "smooth" });
     }
+    return shown !== goal;
+  }
+
+  // Starts the frames if they've stopped. Called on each new fix or tick; the slow nudge in
+  // setExpanded catches the clock moving the dot on when there's no fix at all.
+  function kick() {
+    if (frame || !expanded) return;
+    frame = requestAnimationFrame(function step(now) {
+      frame = draw(now) ? requestAnimationFrame(step) : null;
+    });
   }
 
   function setExpanded(on) {
     expanded = on && !!trip;
     $("#tripBar").classList.toggle("expanded", expanded);
     $("#tripToggle").setAttribute("aria-expanded", String(expanded));
-    $("#tripTimeline").hidden = !expanded;
-    clearInterval(frame);
+    cancelAnimationFrame(frame);
     frame = null;
+    clearInterval(nudge);
+    nudge = null;
     if (expanded) {
       buildTimeline();
-      frame = setInterval(draw, FRAME_MS);
+      nudge = setInterval(kick, NUDGE_MS);
     }
   }
 
@@ -439,26 +591,35 @@
         setEnabled(btn.dataset.getoff === "on");
         syncSetting();
         render();
+        if (enabled()) sync();
+        else unsync();
       })
     );
     syncSetting();
-    // The wake lock goes when the page is hidden; take it back on return.
+    // The wake lock goes when the page is hidden; take it back on return. Either way the
+    // server hears: going, how far you'd got; back, what it did meanwhile.
     document.addEventListener("visibilitychange", () => {
-      if (trip && document.visibilityState === "visible") {
+      if (!trip) return;
+      if (document.visibilityState === "visible") {
         keepAwake();
         onTick();
       }
+      sync();
+    });
+    navigator.serviceWorker?.addEventListener("message", (event) => {
+      if (event.data?.type === "get-off") alertedElsewhere(event.data);
     });
     // A reload mid-trip carries on.
     try {
       const saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || "null");
       if (saved?.legs?.length) {
         trip = saved;
+        trip.tripId ??= crypto.randomUUID();
         run();
       }
     } catch {}
   }
 
-  window.Trip = { start, stop, enabled };
+  window.Trip = { start, stop, enabled, active: () => Boolean(trip) };
   init();
 })();

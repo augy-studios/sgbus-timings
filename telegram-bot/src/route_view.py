@@ -1,3 +1,5 @@
+import asyncio
+
 from telethon import Button
 
 from .bus_stops import get_bus_stop_by_code
@@ -94,7 +96,25 @@ def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool
     )
 
 
-def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None):
+def plan_route(start_code, end_code):
+    """The buses straight from one end to the other, or failing those the quickest journeys
+    with a change and any wrong-side-of-the-road fixes, as (services, journeys, fixes). Only
+    reads, so it can run off the event loop (build_route_view_async)."""
+    services = direct_services(start_code, end_code) if start_code and end_code else []
+    journeys = find_journeys(start_code, end_code) if start_code and end_code and not services else []
+    fixes = wrong_side_ends(start_code, end_code) if journeys else {}
+    return services, journeys, fixes
+
+
+async def build_route_view_async(chat_id: int, start_code, end_code, *args, **kwargs):
+    """build_route_view with the search on a worker thread. A journey with a change walks
+    the whole bus network, which on the event loop held up every other chat until it was
+    done. The panel itself is still built here, since it writes its buttons."""
+    plan = await asyncio.to_thread(plan_route, start_code, end_code)
+    return build_route_view(chat_id, start_code, end_code, *args, plan=plan, **kwargs)
+
+
+def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None, plan=None):
     """The route panel: where the route starts and ends, and the buses that run from one to
     the other without a change, as a paginated grid four across. When there are none, the
     quickest few journeys with a walk or a change stand in for them, a button each - and
@@ -108,13 +128,12 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
 
     Favourite buses are starred and pinned per the user's `/favouritepref`, as they are in
     every other bus grid; favourite routes have no preference of their own.
+    `plan` is plan_route's answer when it has already been found off the event loop.
     Returns (rich, buttons)."""
     start_text = stop_display(start_code)
     end_text = stop_display(end_code)
-    services = direct_services(start_code, end_code) if start_code and end_code else []
-    journeys = find_journeys(start_code, end_code) if start_code and end_code and not services else []
+    services, journeys, fixes = plan or plan_route(start_code, end_code)
     status = _status_line(start_code, end_code, services, journeys)
-    fixes = wrong_side_ends(start_code, end_code) if journeys else {}
     fixed_start = fixes["start"][0] if "start" in fixes else start_code
     fixed_end = fixes["end"][0] if "end" in fixes else end_code
     if fixed_start == fixed_end:

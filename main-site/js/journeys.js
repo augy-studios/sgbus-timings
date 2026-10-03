@@ -128,10 +128,29 @@
       .map((item) => item.legs);
   }
 
+  // The last few searches, since the planner asks findJourneys and then wrongSideEnds the
+  // same question, and each walks the whole network. Cleared when the network changes.
+  const RANKED_KEEP = 6;
+  let rankedFor = null;
+  const rankedCache = new Map();
+
   // Every journey findJourneys weighs up, best first, as { cost, legs }. With `walkStart` or
   // `walkEnd` off, that end is used as it is, with no walk to or from it.
   function rankedJourneys(startCode, endCode, { walkStart = true, walkEnd = true } = {}) {
     const g = BusNet.graph();
+    if (rankedFor !== g) {
+      rankedFor = g;
+      rankedCache.clear();
+    }
+    const key = `${startCode}|${endCode}|${walkStart}|${walkEnd}`;
+    if (!rankedCache.has(key)) {
+      if (rankedCache.size >= RANKED_KEEP) rankedCache.delete(rankedCache.keys().next().value);
+      rankedCache.set(key, searchJourneys(g, startCode, endCode, walkStart, walkEnd));
+    }
+    return rankedCache.get(key);
+  }
+
+  function searchJourneys(g, startCode, endCode, walkStart, walkEnd) {
     ensureGrid(g);
     const starts = walkStart ? withNear(g, startCode) : [[startCode, 0]];
     const ends = walkEnd ? withNear(g, endCode) : [[endCode, 0]];
@@ -333,7 +352,7 @@
   // How long a leg is: the stops it rides and roughly how many minutes that takes. Null
   // when the bus no longer runs that way, for a journey kept from before a route change.
   function legDetails(leg) {
-    const run = BusNet.graph().runs.find((r) => r.bus === leg.bus && r.dir === leg.dir);
+    const run = (BusNet.graph().byBus.get(leg.bus) || []).find((r) => r.dir === leg.dir);
     if (!run) return null;
     const i = run.stops.indexOf(leg.from);
     const j = i === -1 ? -1 : run.stops.indexOf(leg.to, i + 1);
