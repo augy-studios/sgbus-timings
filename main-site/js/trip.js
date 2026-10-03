@@ -229,6 +229,7 @@
   // when a stray fix sent it ahead. Wobbles of a stop or two never trigger it. Says whether
   // it moved.
   function realign(here, accuracy, leg) {
+    if (leg.points.length < 2) return false;
     const believed = Math.min(leg.points.length - 1, target());
     const i = Math.floor(believed);
     const j = Math.min(leg.points.length - 1, i + 1);
