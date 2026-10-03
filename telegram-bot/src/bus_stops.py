@@ -1,10 +1,12 @@
 import math
+import re
 import sqlite3
 from typing import Optional
 
 from .db import db
 from .journeys import invalidate_network
 from .lta import fetch_all_bus_stops
+from .stations import find_station, station_points
 
 
 def _haversine_meters(lat1, lon1, lat2, lon2) -> Optional[float]:
@@ -48,11 +50,25 @@ def get_bus_stop_by_code(code: str) -> Optional[sqlite3.Row]:
     return db.execute("SELECT * FROM bus_stops WHERE code = ?", (code,)).fetchone()
 
 
+# LTA's stop names always shorten a station to "Stn" ("Bedok Stn Exit B"), so a search
+# saying "station", "MRT" or "LRT" is also tried that way. Whole words only: the one stop
+# name with "station" spelled out is in "Substation", at Lim Chu Kang.
+_STN_WORDS_RE = re.compile(r"\b(?:(?:mrt|lrt)\s+(?:station|stn)|mrt|lrt|station)\b")
+
+
 def search_bus_stops(query: str, limit: int = 10) -> list:
-    """Search cached bus stops by exact code, code prefix, or a substring of the name/road."""
+    """Search cached bus stops by exact code, code prefix, or a substring of the name/road.
+    A station, as "Bedok MRT" or "Senja LRT", lists the stops at it instead, nearest first
+    and with their distance from the closest exit."""
     q = query.strip().lower()
     if not q:
         return []
+
+    station = find_station(q)
+    if station:
+        at_station = bus_stops_at_station(station, limit)
+        if at_station:
+            return at_station
 
     if q.isdigit():
         return db.execute(
@@ -60,18 +76,37 @@ def search_bus_stops(query: str, limit: int = 10) -> list:
             (f"{q}%", limit),
         ).fetchall()
 
-    like = f"%{q}%"
+    as_stn = _STN_WORDS_RE.sub("stn", q)
     return db.execute(
         """
         SELECT * FROM bus_stops
-        WHERE LOWER(name) LIKE ? OR LOWER(road) LIKE ?
+        WHERE LOWER(name) LIKE ? OR LOWER(road) LIKE ? OR LOWER(name) LIKE ?
         ORDER BY
-            CASE WHEN LOWER(name) LIKE ? THEN 0 ELSE 1 END,
+            CASE WHEN LOWER(name) LIKE ? OR LOWER(name) LIKE ? THEN 0 ELSE 1 END,
             name
         LIMIT ?
         """,
-        (like, like, f"{q}%", limit),
+        (f"%{q}%", f"%{q}%", f"%{as_stn}%", f"{q}%", f"{as_stn}%", limit),
     ).fetchall()
+
+
+# How far from a station exit a stop can be and still count as at the station: across the
+# road and a little way along it.
+STATION_RADIUS_M = 250
+
+
+def bus_stops_at_station(station: dict, limit: int = 10) -> list[dict]:
+    """The stops within STATION_RADIUS_M of any of a station's exits, nearest first, each
+    with its distance from the closest exit."""
+    points = station_points(station)
+    found = []
+    for row in db.execute("SELECT * FROM bus_stops").fetchall():
+        distances = [_haversine_meters(lat, lng, row["lat"], row["lng"]) for lat, lng in points]
+        distances = [d for d in distances if d is not None]
+        if distances and min(distances) <= STATION_RADIUS_M:
+            found.append({**dict(row), "distance": min(distances)})
+    found.sort(key=lambda s: s["distance"])
+    return found[:limit]
 
 
 def nearest_bus_stops(lat: float, lng: float, limit: int = 8) -> list[dict]:

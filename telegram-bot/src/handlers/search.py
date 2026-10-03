@@ -9,6 +9,7 @@ from ..bus_stops import get_bus_stop_by_code, nearest_bus_stops, search_bus_stop
 from ..list_view import build_stop_list_view
 from ..postal import POSTAL_CODE_RE, lookup_postal_code
 from ..reply import send_rich_message
+from ..stations import find_station, station_label
 from ..stop_view import build_stop_view
 
 # Bus stop codes are always 5 digits and postal codes 6; bus service numbers are
@@ -75,5 +76,7 @@ def register_search(client):
             await send_rich_message(client, event.chat_id, view["rich"], view["buttons"])
             return
 
-        rich, buttons = build_stop_list_view(event.chat_id, "Did you mean", matches)
+        station = find_station(text)
+        title = f"Bus stops at {station_label(station)}" if station and "distance" in matches[0].keys() else "Did you mean"
+        rich, buttons = build_stop_list_view(event.chat_id, title, matches)
         await send_rich_message(client, event.chat_id, rich, buttons)

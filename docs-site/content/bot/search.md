@@ -15,7 +15,11 @@ question it has just asked, is treated as a search.
   list of services, so anything that is not a real bus is searched as a name
   instead.
 - **Part of a stop's name or road**, such as `bedok` or `changi`, finds the
-  matching stops.
+  matching stops. Stop names shorten "station" to "Stn", so `bedok mrt exit b`
+  finds Bedok Stn Exit B.
+- **An MRT or LRT station**, such as `bedok mrt`, `senja lrt` or
+  `botanic gardens station`, lists the stops within about 250 m of its exits,
+  nearest first, whatever they're named.
 - **A 6-digit postal code**, such as `519599`, lists the stops nearest that
   address. See [Stops near you](nearby.md#stops-near-an-address).
 

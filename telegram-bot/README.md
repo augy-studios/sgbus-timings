@@ -116,7 +116,14 @@ You don't need a command to search. Just type into the chat:
 - A bus number, e.g. `22`, `971E` or `NR7`, to browse the stops that service
   visits (see [Bus routes](#bus-routes) below).
 - Part of a bus stop's name or road, e.g. `bedok` or `changi`, to see a list
-  of matching stops as buttons.
+  of matching stops as buttons. LTA writes "Stn" in stop names, so "station",
+  "MRT" and "LRT" in a search are matched as "Stn" too: `bedok mrt exit b`
+  finds Bedok Stn Exit B.
+- An MRT or LRT station, e.g. `bedok mrt`, `senja lrt` or `botanic gardens
+  station`, to list the bus stops within 250 m of its exits, nearest first,
+  whatever they're named. Station exits come from sgraildata, copied from the web
+  app's `main-site/api/_nav/rail.json` into `src/rail_stations.json` by
+  `scripts/vendor-rail.mjs`.
 
 Bus stop numbers and bus numbers never collide: a bus stop number is always
 exactly 5 digits, while a bus number is shorter and may contain letters, so
@@ -600,6 +607,8 @@ telegram-bot/
     mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
     planning_areas.py      which planning area a stop is in, to tell same-named stops apart
     planning_areas.json    URA planning area outlines, vendored by scripts/vendor-planning-areas.mjs
+    stations.py            MRT/LRT station lookup for searches like "Bedok MRT"
+    rail_stations.json     MRT/LRT stations and exits, from sgraildata via scripts/vendor-rail.mjs
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,
