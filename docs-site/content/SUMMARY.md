@@ -22,6 +22,7 @@ than about three taps to reach goes under Advanced.
 * [Favourites](web/favourites.md)
 * [Settings and themes](web/settings.md)
 * [Weather and air quality](web/weather.md)
+* [Disruptions bar](web/disruptions-bar.md)
 * [Links you can share](web/links.md)
 * [Updates and offline use](web/updates.md)
 

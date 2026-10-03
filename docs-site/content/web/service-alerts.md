@@ -32,15 +32,8 @@ traffic and roadworks, are counted by type; **Show the other** lists them too.
 Tap **Refresh** to fetch the latest. The card never shows a saved copy, so
 without a connection it says it couldn't reach LTA instead.
 
-### The disruptions bar
-
 While a train line is disrupted or delayed, a red bar along the top of the site
-says which line, between which stations, and in which direction. It shows only
-then, and goes by itself once LTA reports the line running normally again. It
-checks every two minutes while the site is open. **Details** opens the Service
-alerts card. **Hide** puts the bar away until the disruption changes or you
-reload the page. Traffic incidents don't bring it up: there's nearly always one
-somewhere in Singapore.
+also says so, without opening the card: see [Disruptions bar](disruptions-bar.md).
 
 ## Get notified
 
