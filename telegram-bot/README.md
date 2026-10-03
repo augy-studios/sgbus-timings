@@ -125,7 +125,11 @@ against LTA's live service list, and anything that isn't a real service falls
 through to the name search.
 
 If there's exactly one match, the bot shows its live timings immediately. If
-there's more than one, tap the bus stop you meant from the list.
+there's more than one, tap the bus stop you meant from the list. Stops that
+share a name say where they are, so the five called Blk 111 read
+`Blk 111 (84229) · Bedok`, `Blk 111 (65029) · Sengkang` and so on: the URA
+planning area the stop is in, or its road where two of the same name are in one
+area. Every list of stops does this, including `/route`'s and `/addroutine`'s.
 
 Picking one off that list isn't a one-way door: the timings that open carry a
 **🔙 Back** button as the very last row, which puts the same list of matches
@@ -515,6 +519,11 @@ service, and route lists are cached locally in SQLite and refreshed
 automatically on a schedule (see `BUS_STOPS_REFRESH_HOURS` in `.env`, which
 governs all three caches); arrival timings are always fetched live.
 
+The planning areas that set same-named stops apart are URA's Master Plan 2019
+boundaries, from [data.gov.sg](https://data.gov.sg/), vendored in
+`src/planning_areas.json`. To update them, run
+`node scripts/vendor-planning-areas.mjs` from the repository root.
+
 ## Running it
 
 Registering the bot with BotFather gives you `BOT_TOKEN`. Because this bot
@@ -589,6 +598,8 @@ telegram-bot/
     service_alerts.py      Service Alerts subscriptions (SQLite), and what changed in LTA's train alerts and traffic incidents since the last poll
     service_alerts_view.py builds /alerts, the /sub reply and its mode buttons, and the updates sent to subscribers
     mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
+    planning_areas.py      which planning area a stop is in, to tell same-named stops apart
+    planning_areas.json    URA planning area outlines, vendored by scripts/vendor-planning-areas.mjs
     refresh_stops.py       one-off script: refresh the bus stop cache
     handlers/
       start.py, nearme.py, favstops.py, unfavstop.py, addfavbus.py,

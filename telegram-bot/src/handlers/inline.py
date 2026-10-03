@@ -5,6 +5,7 @@ from telethon.tl import functions
 
 from ..bus_stops import get_bus_stop_by_code, search_bus_stops
 from ..favourites import list_favourites
+from ..planning_areas import area_at
 from ..stop_view import build_stop_view
 
 MAX_RESULTS = 8
@@ -61,7 +62,7 @@ def register_inline(client):
                     id=str(uuid.uuid4()),
                     type="article",
                     title=f"{stop['name']} ({stop['code']})",
-                    description=stop["road"] or "Bus stop",
+                    description=" · ".join(p for p in (stop["road"], area_at(stop["lat"], stop["lng"])) if p) or "Bus stop",
                     send_message=types.InputBotInlineMessageRichMessage(
                         rich_message=types.InputRichMessageMarkdown(markdown=markdown),
                         reply_markup=markup,

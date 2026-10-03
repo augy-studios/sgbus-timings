@@ -9,9 +9,10 @@ from ..favourite_buses import list_favourite_buses
 from ..favourite_prefs import get_pref, pin_favourites
 from ..favourites import list_favourites
 from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
-from ..format import bus_button_label, escape_md
+from ..format import bus_button_label, escape_md, stop_label
 from ..frequency import format_frequency, parse_frequency
 from ..pagination import nav_row, paginate
+from ..planning_areas import tell_apart
 from ..reply import send_rich_message
 from ..routine_drafts import clear_draft, get_draft, start_draft, update_draft
 from ..routines import (
@@ -238,10 +239,11 @@ def register_addroutine(client):
                 await finalize_stop(client, chat_id, matches[0]["code"], matches[0]["name"])
                 raise events.StopPropagation
 
+            places = tell_apart(matches)
             buttons = [
                 [
                     Button.inline(
-                        f"{stop['name']} ({stop['code']})"[:64],
+                        stop_label(stop, places.get(stop["code"]))[:64],
                         make_button("routine_stop_pick", {"code": stop["code"], "name": stop["name"]}),
                     )
                 ]

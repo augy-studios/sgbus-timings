@@ -193,18 +193,25 @@ def _build_fallback_text(
     return "\n".join(lines)
 
 
-def stop_button_label(stop, distance_meters=None, is_favourite=False) -> str:
-    """Label for a bus stop selection button, kept under Telegram's 64-char limit."""
+def stop_label(stop, place=None) -> str:
+    """A stop as "Blk 111 (84229)", or "Blk 111 (84229) · Bedok" with a `place` from
+    planning_areas.tell_apart to set it apart from others of the same name."""
+    return f"{stop['name']} ({stop['code']})" + (f" · {place}" if place else "")
+
+
+def stop_button_label(stop, distance_meters=None, is_favourite=False, place=None) -> str:
+    """Label for a bus stop selection button, kept under Telegram's 64-char limit by
+    shortening the name, so the code, `place` and distance always show. The distance is
+    left off for a stop that has none, as a name search's matches don't."""
     icon = "⭐" if is_favourite else "🚌"
-    label = f"{icon} {stop['name']} ({stop['code']})"
-    if distance_meters is None:
-        dist_text = "~∞m"
-    else:
-        dist_text = f"~{distance_meters / 1000:.1f}km" if distance_meters >= 1000 else f"~{distance_meters}m"
-    label += f" {dist_text}"
-    if len(label) > 64:
-        label = f"{label[:61]}..."
-    return label
+    tail = f" ({stop['code']})" + (f" · {place}" if place else "")
+    if distance_meters is not None:
+        tail += f" ~{distance_meters / 1000:.1f}km" if distance_meters >= 1000 else f" ~{distance_meters}m"
+    name = stop["name"]
+    room = 64 - len(icon) - 1 - len(tail)
+    if len(name) > room:
+        name = f"{name[: max(room - 3, 8)].rstrip()}..."
+    return f"{icon} {name}{tail}"[:64]
 
 
 def bus_button_label(service_no: str, is_favourite=False) -> str:

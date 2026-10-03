@@ -4,12 +4,14 @@ from ..buttons import make_button
 from ..favourites import list_favourites
 from ..format import stop_button_label
 from ..pagination import nav_row, paginate
+from ..planning_areas import tell_apart
 from ..reply import send_rich_message
 
 
 def build_unfavstop_view(chat_id: int, page: int):
     stops = list_favourites(chat_id)
     page_items, page, total_pages = paginate(stops, page)
+    places = tell_apart(page_items)
 
     rich = {
         "markdown": "# Remove favourite bus stops\nTap a bus stop to remove it.",
@@ -18,7 +20,7 @@ def build_unfavstop_view(chat_id: int, page: int):
     buttons = [
         [
             Button.inline(
-                stop_button_label(stop, is_favourite=True),
+                stop_button_label(stop, is_favourite=True, place=places.get(stop["code"])),
                 make_button("unfavstop_remove", {"code": stop["code"], "page": page}),
             )
         ]

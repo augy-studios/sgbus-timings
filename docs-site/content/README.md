@@ -81,3 +81,6 @@ open data service. Arrival times are fetched live each time you open or refresh
 a stop, and are only as good as what the buses report to LTA. A bus that is not
 sending its position is shown differently, as
 [Reading bus timings](getting-started/reading-timings.md) explains.
+
+The web app's [weather](web/weather.md) comes from [Open-Meteo](https://open-meteo.com/),
+and its PSI and PM2.5 readings are NEA's, from [data.gov.sg](https://data.gov.sg/).

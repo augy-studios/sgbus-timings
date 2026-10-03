@@ -5,6 +5,7 @@ from .buttons import make_button
 from .favourite_prefs import get_pref, pin_favourites
 from .favourites import list_favourites
 from .format import escape_md, stop_button_label
+from .planning_areas import tell_apart
 
 
 def pin_favourite_stops(stops, favourite_codes, pin_position) -> list:
@@ -14,11 +15,13 @@ def pin_favourite_stops(stops, favourite_codes, pin_position) -> list:
 def build_stop_list_keyboard(stops, favourite_codes=None, pin_position="top", back=None):
     """One inline button per row, each opening a stop's live arrivals.
     `favourite_codes` (an optional set of stop codes) stars already-favourited stops
-    and, per `pin_position`, pins them to the top or bottom of the list.
+    and, per `pin_position`, pins them to the top or bottom of the list. Stops sharing a
+    name say where they are, e.g. "Blk 111 (84229) · Bedok".
     `back` is this list's own context (see `stop_list_context`), carried along on every
     button so the stop view it opens can offer a way back to the list."""
     favourite_codes = favourite_codes or set()
     stops = pin_favourite_stops(stops, favourite_codes, pin_position)
+    places = tell_apart(stops)
     return [
         [
             Button.inline(
@@ -26,6 +29,7 @@ def build_stop_list_keyboard(stops, favourite_codes=None, pin_position="top", ba
                     stop,
                     stop["distance"] if "distance" in stop.keys() else None,
                     is_favourite=stop["code"] in favourite_codes,
+                    place=places.get(stop["code"]),
                 ),
                 make_button("stop", {"code": stop["code"], **({"back": back} if back else {})}),
             )

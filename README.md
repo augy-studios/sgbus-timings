@@ -1,6 +1,6 @@
 # SG Bus Timings
 
-Real-time Singapore bus arrival timings, powered by [LTA DataMall](https://datamall.lta.gov.sg/), available as a web app and a Telegram bot.
+Real-time Singapore bus arrival timings, powered by [LTA DataMall](https://datamall.lta.gov.sg/), available as a web app and a Telegram bot. The web app's weather and air quality come from [Open-Meteo](https://open-meteo.com/) and NEA via [data.gov.sg](https://data.gov.sg/).
 
 ## Projects
 

@@ -6,8 +6,9 @@ from ..bus_stops import get_bus_stop_by_code, nearest_bus_stops, search_bus_stop
 from ..buttons import make_button
 from ..favourites import list_favourites
 from ..flows import Flow, end_flow, get_flow, register_flow, set_flow
-from ..format import stop_button_label
+from ..format import stop_button_label, stop_label
 from ..journeys import direct_services
+from ..planning_areas import tell_apart
 from ..postal import POSTAL_CODE_RE
 from ..reply import edit_rich_message, edit_rich_message_at, send_rich_message, sent_message_id
 from ..route_drafts import clear_route_draft, get_route_draft, start_route_draft
@@ -55,15 +56,16 @@ def _direct_buses(stops, field, other) -> dict:
     return direct
 
 
-def _direct_label(stop, buses, is_favourite) -> str:
+def _direct_label(stop, buses, is_favourite, place=None) -> str:
     """A stop with a bus straight to the other end: ticked, and naming the buses, kept
     under 64 characters like every other stop button by shortening the name. With its
-    distance when it has one, as a stop near a place does."""
+    distance when it has one, as a stop near a place does, and where it is when another
+    in the list shares its name."""
     shown = ", ".join(buses[:3]) + (f" +{len(buses) - 3}" if len(buses) > 3 else "")
     metres = stop.get("distance")
     dist = "" if metres is None else (f" ~{metres / 1000:.1f}km" if metres >= 1000 else f" ~{metres}m")
     head = "✅⭐ " if is_favourite else "✅ "
-    tail = f" ({stop['code']}){dist} · {shown}"
+    tail = f" ({stop['code']}){f' · {place}' if place else ''}{dist} · {shown}"
     name = stop["name"]
     room = 64 - len(head) - len(tail)
     if len(name) > room:
@@ -98,11 +100,14 @@ async def _offer_nearby(event, chat_id, nearby, near, draft):
     favourite_codes = {f["code"] for f in list_favourites(chat_id)}
 
     ordered = sorted(nearby, key=lambda s: (s["code"] not in direct, s["distance"]))
+    places = tell_apart(ordered)
     buttons = [
         _pick_row(
-            _direct_label(stop, direct[stop["code"]], stop["code"] in favourite_codes)
+            _direct_label(stop, direct[stop["code"]], stop["code"] in favourite_codes, places.get(stop["code"]))
             if stop["code"] in direct
-            else stop_button_label(stop, stop["distance"], is_favourite=stop["code"] in favourite_codes),
+            else stop_button_label(
+                stop, stop["distance"], is_favourite=stop["code"] in favourite_codes, place=places.get(stop["code"])
+            ),
             stop["code"],
         )
         for stop in ordered
@@ -124,14 +129,16 @@ async def _offer_matches(event, chat_id, matches, draft):
     favourite_codes = {f["code"] for f in list_favourites(chat_id)} if direct else set()
 
     ordered = [s for s in matches if s["code"] in direct] + [s for s in matches if s["code"] not in direct]
+    shown = ordered[:_MATCHES_SHOWN]
+    places = tell_apart(shown)
     buttons = [
         _pick_row(
-            _direct_label(stop, direct[stop["code"]], stop["code"] in favourite_codes)
+            _direct_label(stop, direct[stop["code"]], stop["code"] in favourite_codes, places.get(stop["code"]))
             if stop["code"] in direct
-            else f"{stop['name']} ({stop['code']})",
+            else stop_label(stop, places.get(stop["code"])),
             stop["code"],
         )
-        for stop in ordered[:_MATCHES_SHOWN]
+        for stop in shown
     ]
     note = _direct_note(field, other, direct)
     await event.respond(f"Did you mean one of these? {note}:" if note else "Did you mean:", buttons=buttons)

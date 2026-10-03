@@ -70,7 +70,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### Weather
 - The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
-- Open-Meteo for the forecast; NEA's readings from data.gov.sg (`DATA_GOV_KEY`)
+- [Open-Meteo](https://open-meteo.com/) for the forecast; NEA's PSI and PM2.5 readings from [data.gov.sg](https://data.gov.sg/) (`DATA_GOV_KEY`)
 
 ### Themes
 - 7 built-in colour themes: **Classic**, **Not Green 1–5**, **Really Really Light Green**
@@ -109,6 +109,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Frontend**: Vanilla HTML, CSS, and JavaScript (no frameworks)
 - **Backend**: Vercel Edge Functions proxying the [LTA DataMall API](https://datamall.lta.gov.sg/)
 - **Bus stop and route data**: LTA DataMall, via `/api/bus-stops` and `/api/bus-routes` (every route in one response, edge-cached for a day)
+- **Weather and air quality**: [Open-Meteo](https://open-meteo.com/) for the forecast and NEA's PSI and PM2.5 from [data.gov.sg](https://data.gov.sg/), via `/api/weather`
 - **PWA**: Workbox service worker, Web App Manifest
 - **Deployment**: Vercel
 
@@ -122,7 +123,7 @@ npm install
 vercel dev
 ```
 
-Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LTA DataMall API key](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html). Service Alerts notifications need a few more; see [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md).
+Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LTA DataMall API key](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html). Service Alerts notifications need a few more; see [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md). `DATA_GOV_KEY`, a [data.gov.sg](https://data.gov.sg/) API key, is optional: without it the weather button's PSI and PM2.5 still load, at data.gov.sg's lower rate limit.
 
 ## License
 

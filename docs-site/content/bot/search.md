@@ -28,6 +28,11 @@ If only one stop matches, its timings open straight away. If several do, the
 bot replies **Did you mean:** with a button for each, your favourite stops
 starred. Tap the one you meant.
 
+Stops that share a name say which part of Singapore they're in, so the stops
+called Blk 111 read **Blk 111 (84229) · Bedok**, **Blk 111 (65029) · Sengkang**
+and so on. Where two of the same name are in one area, the button gives the road
+instead.
+
 ## Going back to the list
 
 Timings opened from a list of matches have a **Back** button as their last row.
