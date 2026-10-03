@@ -57,7 +57,7 @@ Each way shows:
 ## Open a way
 
 <figure>
-<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways and Start trip." width="994" height="520" loading="lazy">
+<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="994" height="520" loading="lazy">
 <figcaption>A way leg by leg, with Start trip for the Get Off Alert.</figcaption>
 </figure>
 
@@ -71,11 +71,12 @@ Tap a way to see it leg by leg:
   that bus at the stop you board it. A button opens that stop's timings for the
   bus.
 
-**All ways** goes back to the list.
+**All ways** goes back to the list, and **Refresh** beside it updates the way's
+live bus timings.
 
-**Refresh**, at the top of the card once both ends are set, plans the ways again,
-with any new disruptions and the time now. With a way open, it updates that way's
-live bus timings instead.
+**Refresh** at the top of the card, there once both ends are set, plans the ways
+again, with any new disruptions and the time now. With a way open, it updates that
+way's live timings too.
 
 **Start trip** follows you along the way and buzzes two stops before each change
 and the end: see [Get Off Alert](get-off-alert.md).

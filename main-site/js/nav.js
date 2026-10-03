@@ -73,6 +73,8 @@ function initNav() {
     if (action === 'back') {
       nav.option = null;
       renderNav();
+    } else if (action === 'refresh') {
+      refreshNav();
     } else if (action === 'trip' && nav.option) {
       Trip.start(tripFromNav(nav.option, nav.to));
     } else if (action === 'retry') {
@@ -280,6 +282,9 @@ async function renderNavOption(o) {
   const head =
     `<div class="plannerNav">` +
     `<button type="button" class="iconBtn" data-nav-action="back">${ico('back')} All ways</button>` +
+    // Here as well as in the card's header, which has scrolled away by the time you're
+    // reading a way on a phone; the route planner has its Refresh in the same place.
+    `<button type="button" class="iconBtn" data-nav-action="refresh">Refresh</button>` +
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} Start trip</button>` +
     `</div>` +
     `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>`;
