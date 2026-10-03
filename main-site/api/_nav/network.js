@@ -31,8 +31,35 @@ const TRACK_FACTOR = 1.1; // track is longer than the straight line between stat
 // Walks between nodes, at most this far.
 const STOP_WALK_M = 200;
 const STATION_WALK_M = 300;
+// A change at a hub - an interchange, a terminal or a station - can be between any two of
+// its stops, or a stop and its station, this far apart: Tampines Int is 300 m from Tampines
+// Stn/Int, and HarbourFront Int nearly 400 m from HarbourFront Stn. Walks are timed like any
+// other, so a long one only wins when it's worth it. The same as HUB_WALK_M in js/network.js
+// and the Telegram bot's journeys.py.
+const HUB_WALK_M = 400;
+
+// The hub a stop belongs to, from its name: what comes before "Int", "Ter" or "Stn", with
+// which side of the road it's on dropped, so "Tampines Int", "Opp Tampines Stn/Int" and
+// "Tampines Stn Exit D" are all "tampines", as is Tampines station. Stations that aren't rail
+// stations ("Police Stn", "Caltex Stn") belong to none. Keep in step with hubOf in
+// js/network.js and hub_of in the bot's journeys.py.
+const HUB_RE = /^(.*?)\s*\b(?:bus\s+)?(?:int|ter|stn)\b/i;
+const NOT_A_STATION_RE =
+  /\b(?:police|fire|pumping|power|petrol|radio|coast\s*guard|civil\s*defence|bus|caltex|shell|esso|spc|sinopec|mobil)\s+stn\b/gi;
+const SIDE_PREFIX_RE = /^(?:opp|aft|bef|bet|opposite)\s+/i;
+
+function hubOf(node) {
+  if (node.kind === "station") return node.name.trim().toLowerCase();
+  const m = node.name.replace(NOT_A_STATION_RE, "").replace(SIDE_PREFIX_RE, "").trim().match(HUB_RE);
+  return (m && m[1].trim().toLowerCase()) || null;
+}
 // From a station's exit to its platform, or back.
 export const STATION_ACCESS_MIN = 2;
+// A change on foot from one bus stop to another, over staying at the same stop: finding the
+// stop and crossing to it, so riding on into the interchange the next bus leaves from wins
+// unless walking is clearly quicker. A walk to a station has STATION_ACCESS_MIN instead. The
+// same as CHANGE_WALK_MIN in js/journeys.js and the bot's journeys.py.
+const CHANGE_WALK_MIN = 1;
 
 const LRT_LINES = new Set(["BP", "SK", "PG"]);
 
@@ -172,8 +199,18 @@ function buildGraph(stopsPayload, routesPayload) {
     grid.get(key).push(i);
   });
 
-  // Walks: [node, minutes], from every node to those a short way off.
+  // Walks: [node, minutes, metres], from every node to those a short way off.
   const walks = nodes.map(() => []);
+  // The metres between two nodes, and the walk to add if it's within `limit`.
+  const walkBetween = (i, j, limit) => {
+    const a = nodes[i];
+    const b = nodes[j];
+    if (a.kind === "station" && b.kind === "station") return null; // changes inside the network ride on
+    const station = a.kind === "station" ? a : b.kind === "station" ? b : null;
+    const metres = station ? metresTo(station, ...(station === a ? [b.lat, b.lng] : [a.lat, a.lng])) : haversine(a.lat, a.lng, b.lat, b.lng);
+    if (metres > (limit ?? (station ? STATION_WALK_M : STOP_WALK_M))) return null;
+    return [j, metres / WALK_M_PER_MIN + (station ? STATION_ACCESS_MIN : CHANGE_WALK_MIN), metres];
+  };
   nodes.forEach((a, i) => {
     const cx = Math.floor(a.lat / CELL_DEG);
     const cy = Math.floor(a.lng / CELL_DEG);
@@ -181,16 +218,30 @@ function buildGraph(stopsPayload, routesPayload) {
       for (let dy = -1; dy <= 1; dy++) {
         for (const j of grid.get(`${cx + dx},${cy + dy}`) || []) {
           if (j === i) continue;
-          const b = nodes[j];
-          if (a.kind === "station" && b.kind === "station") continue; // changes inside the network ride on
-          const station = a.kind === "station" ? a : b.kind === "station" ? b : null;
-          const metres = station ? metresTo(station, ...(station === a ? [b.lat, b.lng] : [a.lat, a.lng])) : haversine(a.lat, a.lng, b.lat, b.lng);
-          if (metres > (station ? STATION_WALK_M : STOP_WALK_M)) continue;
-          walks[i].push([j, metres / WALK_M_PER_MIN + (station ? STATION_ACCESS_MIN : 0), metres]);
+          const walk = walkBetween(i, j);
+          if (walk) walks[i].push(walk);
         }
       }
     }
   });
+
+  // Across a hub, further than an ordinary walk (HUB_WALK_M). Walks only follow a ride, so
+  // this lengthens changes and never the walk to the first stop or from the last.
+  const hubs = new Map();
+  nodes.forEach((n, i) => {
+    const hub = hubOf(n);
+    if (hub) (hubs.get(hub) || hubs.set(hub, []).get(hub)).push(i);
+  });
+  for (const members of hubs.values()) {
+    for (const i of members) {
+      const already = new Set(walks[i].map(([j]) => j));
+      for (const j of members) {
+        if (j === i || already.has(j)) continue;
+        const walk = walkBetween(i, j, HUB_WALK_M);
+        if (walk) walks[i].push(walk);
+      }
+    }
+  }
 
   return { nodes, runs, at, walks, grid, busNode, stationNode };
 }

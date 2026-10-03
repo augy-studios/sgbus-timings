@@ -51,6 +51,18 @@ Two stops before you get off, the phone:
 At a change, the trip moves on to the next leg by itself once you're near its
 first stop. **Next leg** moves it on by hand, and **End trip** stops it.
 
+## Waiting for the bus
+
+You can start a trip while you wait at the stop. On a bus, the trip stays at the
+stop you get on at until your location shows you moving along the bus's route,
+so waiting, even a long while inside an interchange, never counts as riding.
+Only then does it count the stops down.
+
+If the trip ever has you somewhere you aren't, say a few stops ahead while
+you're still at the interchange, it notices from your location and moves back
+to where you are. An alert that went off too early goes off again at the right
+stop.
+
 ## Keep the site open
 
 <figure>
@@ -58,8 +70,9 @@ first stop. **Next leg** moves it on by hand, and **End trip** stops it.
 <figcaption>The trip bar while a trip runs.</figcaption>
 </figure>
 
-A website only gets your location while it's open on screen. So while a trip
-runs, the site keeps the screen awake.
+A website only gets your location while it's open on screen, and no setting
+changes that. So while a trip runs, the site keeps the screen awake. See
+[What the web app can't do](../help/web-app-limits.md).
 
 If you switch to another app or lock the phone, SG Bus Timings' server takes over
 as long as you've allowed notifications. It follows your bus using LTA's live bus
@@ -69,7 +82,9 @@ minute or so behind, so the alert can come a little early or late. When you come
 back, the site picks up where you are again.
 
 Underground, where there's no GPS, it goes by the clock instead: how long the ride
-should take, stop by stop. The trip bar says when it's doing that.
+should take, stop by stop, counted from the last place it was sure of. The trip
+bar says when it's doing that. On a bus it only does so once it has seen you
+riding.
 
 > [!TIP]
 > On iPhone, add the app to your Home Screen first: notifications only work from

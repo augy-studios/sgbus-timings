@@ -208,6 +208,28 @@
     return null;
   }
 
+  // ---- Hubs ----
+
+  // The hub a stop belongs to, from its name: what comes before "Int", "Ter" or "Stn", with
+  // which side of the road it's on dropped, so "Tampines Int", "Opp Tampines Stn/Int" and
+  // "Tampines Stn Exit D" are all "tampines". Stations that aren't rail stations ("Police
+  // Stn", "Caltex Stn") belong to none. Keep in step with hub_of in the Telegram bot's
+  // journeys.py and api/_nav/network.js.
+  const HUB_RE = /^(.*?)\s*\b(?:bus\s+)?(?:int|ter|stn)\b/i;
+
+  function hubOf(name) {
+    if (!name) return null;
+    const m = name.replace(NOT_A_STATION_RE, "").replace(SIDE_PREFIX_RE, "").trim().match(HUB_RE);
+    return (m && m[1].trim().toLowerCase()) || null;
+  }
+
+  // A change of bus at a hub can be between any two of its stops this far apart, beyond the
+  // usual walk: Tampines Int is 300 m from Tampines Stn/Int, and HarbourFront Int nearly 400 m
+  // from HarbourFront Stn. The walk is timed like any other, so a long one only wins when it's
+  // worth it. The same as HUB_WALK_M in the bot's journeys.py.
+  const HUB_WALK_M = 400;
+  const WALK_LIMIT_M = 200;
+
   // ---- Graph, for the journey planner and stop counts ----
 
   // Every run of every service held as a list, with the distance ridden to each stop and
@@ -217,10 +239,25 @@
     if (graph) return graph;
     const coords = {};
     const roads = {};
+    const hubs = new Map();
     for (const [code, s] of Object.entries(stops)) {
       if (s.lat == null || s.lng == null) continue;
       coords[code] = [s.lat, s.lng];
       if (s.road) roads[code] = s.road.trim().toLowerCase();
+      const hub = hubOf(s.n);
+      if (hub) (hubs.get(hub) || hubs.set(hub, []).get(hub)).push(code);
+    }
+    // [stop, metres] for the stops of the same hub too far apart for an ordinary walk but
+    // close enough to change between (HUB_WALK_M).
+    const hubMates = new Map();
+    for (const codes of hubs.values()) {
+      for (const a of codes) {
+        for (const b of codes) {
+          if (a === b) continue;
+          const metres = haversine(coords[a], coords[b]);
+          if (metres > WALK_LIMIT_M && metres <= HUB_WALK_M) (hubMates.get(a) || hubMates.set(a, []).get(a)).push([b, metres]);
+        }
+      }
     }
     const list = [];
     // In the Telegram bot's order (its SQL sorts service numbers as text, then direction),
@@ -255,7 +292,7 @@
     // Each service's runs, so looking one up doesn't scan them all.
     const byBus = new Map();
     for (const run of list) (byBus.get(run.bus) || byBus.set(run.bus, []).get(run.bus)).push(run);
-    graph = { coords, roads, runs: list, at, byBus };
+    graph = { coords, roads, runs: list, at, byBus, hubMates };
     return graph;
   }
 

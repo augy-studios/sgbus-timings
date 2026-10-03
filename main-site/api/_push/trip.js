@@ -60,7 +60,14 @@ function whereNow(trip, leg, buses, now) {
   const per = perStop(leg);
   const stopsSince = (t) => Math.max(0, now - t) / 60000 / per;
   const known = Math.max(trip.pos || 0, trip.at || 0);
-  const clock = Math.min(last, Math.max(known, stopsSince(trip.legStartedAt) - (leg.wait || 0) / per));
+  // By the clock from the last place the app was sure of, as the app's own clock goes
+  // (clockPos in js/trip.js): a good fix, a realignment, or the leg's start once the wait is
+  // over. Its time can be ahead while the app waits for the bus to come.
+  // Not for a bus the app hasn't yet seen you riding (clockRuns): waiting at the stop isn't
+  // riding. A bus that LTA shows leaving with you still counts, below.
+  const from = trip.anchor || { pos: 0, t: trip.legStartedAt + (leg.wait || 0) * 60000 };
+  const clockRuns = trip.clockRuns !== false || leg.kind !== 'bus';
+  const clock = clockRuns ? Math.min(last, Math.max(known, from.pos + stopsSince(from.t))) : known;
   const track = trip.track;
 
   if (!buses) return { pos: track ? Math.min(last, track.pos + stopsSince(track.t)) : clock, track };
@@ -103,7 +110,7 @@ export function step(trip, buses, now) {
   let done = false;
   if (pos >= last - 0.2) {
     if (trip.leg < trip.legs.length - 1) {
-      Object.assign(trip, { leg: trip.leg + 1, at: 0, pos: 0, legStartedAt: now, seenAt: now, track: null, est: 0 });
+      Object.assign(trip, { leg: trip.leg + 1, at: 0, pos: 0, legStartedAt: now, seenAt: now, anchor: null, track: null, est: 0 });
     } else {
       done = true;
     }

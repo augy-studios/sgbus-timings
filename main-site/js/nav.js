@@ -25,6 +25,7 @@ function initNav() {
     showEnds();
     runNav();
   });
+  $('#navRefresh').addEventListener('click', refreshNav);
   $('#navFavBtn').addEventListener('click', () => {
     toggleFavNav(nav.from, nav.to);
     renderNavFav();
@@ -72,9 +73,6 @@ function initNav() {
     if (action === 'back') {
       nav.option = null;
       renderNav();
-    } else if (action === 'refresh') {
-      if (nav.option) renderNav();
-      else runNav();
     } else if (action === 'trip' && nav.option) {
       Trip.start(tripFromNav(nav.option, nav.to));
     } else if (action === 'retry') {
@@ -282,7 +280,6 @@ async function renderNavOption(o) {
   const head =
     `<div class="plannerNav">` +
     `<button type="button" class="iconBtn" data-nav-action="back">${ico('back')} All ways</button>` +
-    `<button type="button" class="iconBtn" data-nav-action="refresh">Refresh</button>` +
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} Start trip</button>` +
     `</div>` +
     `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>`;
@@ -371,10 +368,25 @@ function toggleFavNav(from, to) {
   renderFavs();
 }
 
+// Save nav and Refresh, in the card's header, once both ends are set.
 function renderNavFav() {
   const btn = $('#navFavBtn');
   btn.hidden = !(nav.from && nav.to);
+  $('#navRefresh').hidden = btn.hidden;
   if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to), 'Save nav', 'Saved');
+}
+
+// Refresh: the ways planned again, for new disruptions and the time of day, or, with one
+// open, its buses' live timings. Shown busy until the answer is in.
+async function refreshNav() {
+  const btn = $('#navRefresh');
+  if (btn.classList.contains('busy')) return;
+  btn.classList.add('busy');
+  try {
+    await (nav.option ? renderNavOption(nav.option) : runNav());
+  } finally {
+    btn.classList.remove('busy');
+  }
 }
 
 // ---- Trips, for the Get Off Alert ----
@@ -393,7 +405,7 @@ function tripFromNav(o, to) {
         minutes: l.minutes,
         wait: l.wait,
         // For the server to find the bus while the app is in the background.
-        ...(l.mode === 'bus' && { service: l.route, alight: l.to?.code }),
+        ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code }),
       })),
   };
 }

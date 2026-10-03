@@ -81,6 +81,12 @@ to a stop across the road at either end, or between two buses. Journeys are
 ranked by time riding and walking, plus 6 minutes for each change, so a
 slightly longer ride is preferred to an extra change.
 
+At an interchange, terminal or station, a change can also be between any two of its
+stops up to 400 m apart, such as Tampines Int and Tampines Stn/Int. The walk is timed
+like any other, so a long one is only suggested when it's worth it. If your first bus
+goes on into the interchange your next one leaves from, the journey stays on
+it, unless getting off at the station's stop and walking is clearly quicker.
+
 > [!NOTE]
 > LTA publishes no journey times, so these are estimates from the straight line
 > distance between stops: about 15 km/h on a bus and 60 m a minute on foot.

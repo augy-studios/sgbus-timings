@@ -11,6 +11,7 @@ between consecutive stops. They are good for ranking journeys against each other
 a rough "you'd get there around" - nothing tighter."""
 
 import math
+import re
 from collections import defaultdict
 
 from .db import db
@@ -24,6 +25,11 @@ WALK_M_PER_MIN = 60
 # What a change costs over the time spent moving - the wait for the next bus, mostly - so
 # a journey with fewer changes wins unless it's clearly slower.
 CHANGE_PENALTY_MIN = 6
+# A change on foot, to another stop, over one at the same stop: finding the stop and
+# crossing to it. So when the first bus goes on into the interchange the next one leaves
+# from, riding in wins unless getting off early and walking is clearly quicker. The same as
+# CHANGE_WALK_MIN in main-site/js/journeys.js and main-site/api/_nav/network.js.
+CHANGE_WALK_MIN = 1
 # Changes of bus in one journey, at most: some trips across the island take four buses.
 MAX_CHANGES = 3
 MAX_JOURNEYS = 5
@@ -35,9 +41,37 @@ ACROSS_ROAD_M = 100
 # wrong side, rather than a stop with slower buses.
 WRONG_SIDE_MIN = 5
 
+# A change of bus at a hub - an interchange, a terminal or a station - can be between any
+# two of its stops this far apart, beyond the usual walk: Tampines Int is 300 m from
+# Tampines Stn/Int, and HarbourFront Int nearly 400 m from HarbourFront Stn. The walk is
+# timed like any other, so a long one only wins when it's worth it.
+HUB_WALK_M = 400
+
 # Grid cells of about 220 m, so every stop within the walk limit is in the 3x3 block of
 # cells around a stop.
 _CELL_DEG = 0.002
+
+# The hub a stop belongs to, from its name: what comes before "Int", "Ter" or "Stn", with
+# which side of the road it's on dropped, so "Tampines Int", "Opp Tampines Stn/Int" and
+# "Tampines Stn Exit D" are all "tampines". Stations that aren't rail stations ("Police
+# Stn", "Caltex Stn") belong to none. Keep in step with hubOf in main-site/js/network.js and
+# main-site/api/_nav/network.js.
+_HUB_RE = re.compile(r"^(.*?)\s*\b(?:bus\s+)?(?:int|ter|stn)\b", re.IGNORECASE)
+_NOT_A_STATION_RE = re.compile(
+    r"\b(?:police|fire|pumping|power|petrol|radio|coast\s*guard|civil\s*defence|bus"
+    r"|caltex|shell|esso|spc|sinopec|mobil)\s+stn\b",
+    re.IGNORECASE,
+)
+_SIDE_PREFIX_RE = re.compile(r"^(?:opp|aft|bef|bet|opposite)\s+", re.IGNORECASE)
+
+
+def hub_of(name) -> str | None:
+    if not name:
+        return None
+    match = _HUB_RE.match(_SIDE_PREFIX_RE.sub("", _NOT_A_STATION_RE.sub("", name)).strip())
+    if not match:
+        return None
+    return match.group(1).strip().lower() or None
 
 _network = None
 
@@ -65,14 +99,31 @@ class _Network:
     def __init__(self):
         self.coords = {}
         self.roads = {}
-        for row in db.execute("SELECT code, road, lat, lng FROM bus_stops WHERE lat IS NOT NULL AND lng IS NOT NULL"):
+        hubs = defaultdict(list)
+        for row in db.execute(
+            "SELECT code, name, road, lat, lng FROM bus_stops WHERE lat IS NOT NULL AND lng IS NOT NULL"
+        ):
             self.coords[row["code"]] = (row["lat"], row["lng"])
             if row["road"]:
                 self.roads[row["code"]] = row["road"].strip().lower()
+            hub = hub_of(row["name"])
+            if hub:
+                hubs[hub].append(row["code"])
         self._near = {}
         self.grid = defaultdict(list)
         for code, (lat, lng) in self.coords.items():
             self.grid[self._cell(lat, lng)].append(code)
+
+        # (stop, metres) for the stops of the same hub too far apart for an ordinary walk
+        # but close enough to change between: see HUB_WALK_M.
+        self.hub_mates = defaultdict(list)
+        for codes in hubs.values():
+            for a in codes:
+                for b in codes:
+                    if a != b:
+                        metres = _haversine(self.coords[a], self.coords[b])
+                        if WALK_LIMIT_M < metres <= HUB_WALK_M:
+                            self.hub_mates[a].append((b, metres))
 
         loops = {
             row["service_no"]: row["origin_code"]
@@ -135,6 +186,12 @@ class _Network:
         """The stop itself at no distance, then the stops within walking distance of it."""
         return [(code, 0.0), *self.near(code)]
 
+    def change_near(self, code) -> list:
+        """Where a change of bus off at this stop can board the next: `with_near`, plus the
+        rest of its hub (HUB_WALK_M). Only for changes; a journey's two ends keep to the
+        ordinary walk."""
+        return [*self.with_near(code), *self.hub_mates.get(code, ())]
+
     def walk_metres(self, a, b) -> float:
         if a == b or a not in self.coords or b not in self.coords:
             return 0.0
@@ -154,6 +211,11 @@ def _ride_min(net, run, i, j) -> float:
 
 def _walk_min(metres) -> float:
     return metres / WALK_M_PER_MIN
+
+
+def _change_walk(metres) -> float:
+    """A change's walk: none at the same stop, or the walk and CHANGE_WALK_MIN to another."""
+    return _walk_min(metres) + CHANGE_WALK_MIN if metres > 0 else 0.0
 
 
 def _leg(net, run, i, j) -> dict:
@@ -238,11 +300,11 @@ def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, wa
 
     # One change: off the first bus, a short walk at most, onto a bus to the end.
     for (stop, run1), (cost1, i1, j1) in onward.items():
-        for board, walk_m in net.with_near(stop):
+        for board, walk_m in net.change_near(stop):
             for run2, cost2, i2, j2 in inward_at.get(board, ()):
                 if run2[0] == run1[0]:
                     continue
-                cost = cost1 + _walk_min(walk_m) + CHANGE_PENALTY_MIN + cost2
+                cost = cost1 + _change_walk(walk_m) + CHANGE_PENALTY_MIN + cost2
                 offer(cost, ((run1, i1, j1), (run2, i2, j2)))
 
     # Two changes or more: the best way onto each stop after the first few buses, and the
@@ -341,11 +403,12 @@ def _cheapest(entries_at) -> dict:
 
 def _change_at(net, at) -> dict:
     """A change of bus at every stop in `at`, {stop: (minutes, parts)}: the short walk to
-    each stop near it and the wait there, cheapest per stop, keyed the same way."""
+    each stop near it, or across its hub, and the wait there, cheapest per stop, keyed the
+    same way."""
     out = {}
     for stop, (cost, parts) in at.items():
-        for other, walk_m in net.with_near(stop):
-            total = cost + _walk_min(walk_m) + CHANGE_PENALTY_MIN
+        for other, walk_m in net.change_near(stop):
+            total = cost + _change_walk(walk_m) + CHANGE_PENALTY_MIN
             if other not in out or total < out[other][0]:
                 out[other] = (total, parts)
     return out

@@ -10,10 +10,11 @@
 //
 // Trip.start({ title, legs }) with legs of
 // { kind: "bus" | "train", label, to, points: [[lat, lng], ...], names, minutes, wait,
-//   service, alight }:
+//   service, board, alight }:
 // `points` are the stops from boarding to alighting, so a leg of 5 stops has 6 points, and
 // `names` (optional) names each of them for the timeline. A bus leg's `service` and `alight`
-// (the stop code you get off at) let the server find the bus; without them it goes by the clock.
+// (the stop code you get off at) let the server find the bus, and `board` (the stop code you
+// get on at) lets the clock wait for it; without them it goes by the clock alone.
 //
 // Tapping the trip bar opens that timeline: the stops still ahead, with a blue dot where you
 // are, gliding between stops like a progress bar. It's drawn once a frame only while the dot
@@ -27,6 +28,19 @@
   const ALERT_STOPS = 2;
   // A fix this accurate counts; a rough one (indoors, underground) is ignored.
   const GOOD_FIX_M = 150;
+  // A rough fix up to this is still good enough to tell you're nowhere near where the trip
+  // has you, and realign it (see realign), though not to move you on.
+  const ROUGH_FIX_M = 500;
+  // Further than this, beyond the fix's own accuracy, from where the trip has you, and the
+  // trip is wrong: the clock ran on while you waited indoors, or a stray fix sent it ahead.
+  const REALIGN_M = 400;
+  // While you wait at the first stop with no good fix, its live timings are checked this
+  // often, and the clock held until your bus is due.
+  const HOLD_CHECK_MS = 30 * 1000;
+  // On board for sure once the fixes have moved you this many stops along the route within
+  // this long (noteMove).
+  const MOVE_STOPS = 0.5;
+  const MOVE_WINDOW_MS = 10 * 60 * 1000;
   // Near enough to a stop on the leg to say you're there.
   const ON_ROUTE_M = 250;
   // With no good fix for this long, go by the clock instead.
@@ -144,13 +158,26 @@
   // ---------- where you are ----------
 
   function onFix(pos) {
-    if (!trip || pos.coords.accuracy > GOOD_FIX_M) return;
+    const accuracy = pos.coords.accuracy;
+    if (!trip || accuracy > ROUGH_FIX_M) return;
     const here = [pos.coords.latitude, pos.coords.longitude];
+    const leg = trip.legs[trip.leg];
+    if (realign(here, accuracy, leg)) return;
+    if (accuracy > GOOD_FIX_M) return;
     trip.lastFixAt = Date.now();
     trip.noLocation = false;
 
-    const leg = trip.legs[trip.leg];
-    // The nearest stop on this leg at or past the last one, so a fix can't send you back.
+    // Not yet on the bus for sure: you stay at the first stop, and the clock waits, until the
+    // fixes show you moving along its route (noteMove).
+    if (!underWay(leg) && !noteMove(alongLeg(here, leg, 0))) {
+      trip.anchor = { pos: 0, t: Date.now() };
+      save();
+      render();
+      return;
+    }
+
+    // The nearest stop on this leg at or past the last one, so a fix that wobbles behind
+    // can't send you back; realign deals with one that's really somewhere else.
     let best = -1;
     let bestM = Infinity;
     for (let i = Math.max(0, trip.at - 1); i < leg.points.length; i++) {
@@ -158,15 +185,94 @@
       if (m < bestM) [best, bestM] = [i, m];
     }
     if (best !== -1 && bestM <= ON_ROUTE_M) trip.at = Math.max(trip.at, best);
-    // How far between stops, for the timeline's dot. Never backwards: a fix that wobbles
-    // behind where the last one put you leaves the dot where it is.
+    // How far between stops, for the timeline's dot.
     const along = alongLeg(here, leg, trip.at);
     if (along != null) trip.pos = Math.max(trip.pos || 0, along);
+    // The clock goes on from here if the fixes stop.
+    trip.anchor = { pos: Math.max(trip.pos || 0, trip.at), t: Date.now() };
 
     // Off at the end of this leg and already near the next one's first stop: on to it.
     const next = trip.legs[trip.leg + 1];
     if (next && trip.at >= leg.points.length - 1 && metres(here, next.points[0]) <= ON_ROUTE_M) nextLeg();
     check();
+  }
+
+  // Whether this leg is under way for sure. A bus leg is once the fixes have shown you moving
+  // along its route (noteMove); until then the trip keeps you at the first stop and the clock
+  // doesn't run, so waiting for the bus never counts as riding it. A train leg goes by the
+  // clock from the start, as GPS gives out underground, and so does any leg with location
+  // turned off, where the clock is all there is.
+  function underWay(leg) {
+    return Boolean(trip.boarded) || leg.kind !== "bus" || trip.noLocation;
+  }
+
+  // Good fixes along the leg before boarding, as { along, t }. Boarded once one is at least
+  // MOVE_STOPS further along than another in the last MOVE_WINDOW_MS, and past the first
+  // stop: really moving down the route, not a fix wobbling about the stop you wait at. Says
+  // whether you're now on board.
+  function noteMove(along) {
+    if (along == null) return false;
+    const now = Date.now();
+    const moves = (trip.moves || []).filter((m) => now - m.t <= MOVE_WINDOW_MS);
+    const moved = along >= 1 && moves.some((m) => along - m.along >= MOVE_STOPS);
+    trip.moves = [...moves.slice(-5), { along, t: now }];
+    if (!moved) return false;
+    trip.boarded = true;
+    trip.moves = [];
+    sync();
+    return true;
+  }
+
+  // Checked on every fix, rough ones too: if you're clearly not where the trip has you, it
+  // moves to the stop you're at, backwards if need be. That's how it recovers when the
+  // clock ran on while you waited somewhere GPS can't reach, like inside an interchange, or
+  // when a stray fix sent it ahead. Wobbles of a stop or two never trigger it. Says whether
+  // it moved.
+  function realign(here, accuracy, leg) {
+    const believed = Math.min(leg.points.length - 1, target());
+    const i = Math.floor(believed);
+    const j = Math.min(leg.points.length - 1, i + 1);
+    const f = believed - i;
+    const shownAt = [
+      leg.points[i][0] + (leg.points[j][0] - leg.points[i][0]) * f,
+      leg.points[i][1] + (leg.points[j][1] - leg.points[i][1]) * f,
+    ];
+    if (metres(here, shownAt) <= accuracy + REALIGN_M) return false;
+
+    let best = -1;
+    let bestM = Infinity;
+    leg.points.forEach((p, k) => {
+      const m = metres(here, p);
+      if (m < bestM) [best, bestM] = [k, m];
+    });
+    if (best === -1 || bestM > accuracy + ON_ROUTE_M) return false;
+    // Ahead only once you're on board for sure; before that only back to the first stop.
+    if (best > believed && !underWay(leg)) return false;
+
+    const now = Date.now();
+    const along = accuracy <= GOOD_FIX_M ? alongLeg(here, leg, 0) : null;
+    trip.at = best;
+    trip.pos = along ?? best;
+    trip.anchor = { pos: trip.pos, t: now };
+    trip.realignedAt = now;
+    if (accuracy <= GOOD_FIX_M) trip.lastFixAt = now;
+    trip.noLocation = false;
+    // Back at the first stop: you're waiting for the bus, not on it.
+    if (best === 0) {
+      trip.boarded = false;
+      trip.moves = [];
+    }
+    // Moved back before the alert stop: the alert that went off too early can go off again.
+    const last = leg.points.length - 1;
+    if (trip.at < last - ALERT_STOPS && trip.alerted[trip.leg]) {
+      trip.alerted[trip.leg] = false;
+      trip.alertText = null;
+    }
+    shown = null; // the dot jumps rather than gliding back across the stops
+    save();
+    sync();
+    check();
+    return true;
   }
 
   function onFixError(err) {
@@ -175,18 +281,57 @@
     render();
   }
 
+  // How far the ride should have got by the clock, from the last place it was sure of (a good
+  // fix, a realignment, or the leg's start once the wait for the bus is over) and the time
+  // it was there. Null for a leg with no time to go by.
+  function clockPos(leg) {
+    if (!leg.minutes) return null;
+    const last = leg.points.length - 1;
+    const from = trip.anchor || { pos: 0, t: trip.legStartedAt + (leg.wait || 0) * 60000 };
+    const perStop = leg.minutes / Math.max(1, last);
+    return Math.min(last, from.pos + Math.max(0, Date.now() - from.t) / 60000 / perStop);
+  }
+
+  const stale = () => Date.now() - trip.lastFixAt > FIX_STALE_MS;
+
   // Without a recent good fix, how far the ride should have got by the clock.
   function onTick() {
     if (!trip) return;
     const leg = trip.legs[trip.leg];
-    if (Date.now() - trip.lastFixAt > FIX_STALE_MS && leg.minutes) {
-      const riding = (Date.now() - trip.legStartedAt) / 60000 - (leg.wait || 0);
-      const perStop = leg.minutes / Math.max(1, leg.points.length - 1);
-      const guess = Math.min(leg.points.length - 1, Math.floor(Math.max(0, riding) / perStop));
-      trip.at = Math.max(trip.at, guess);
-      check();
+    if (stale() && underWay(leg)) {
+      holdForBus(leg);
+      const guess = clockPos(leg);
+      if (guess != null) {
+        trip.at = Math.max(trip.at, Math.floor(guess));
+        check();
+      }
     }
     render();
+  }
+
+  // Still at the first stop with no good fix, often inside an interchange: the clock waits
+  // for your bus, by its live timing there, rather than setting off as soon as the trip
+  // starts. Only before the clock has you halfway to the second stop, so a ride that has
+  // begun isn't pulled back by the next bus's timing.
+  let holdCheckedAt = 0;
+  async function holdForBus(leg) {
+    if (leg.kind !== "bus" || !leg.service || !leg.board) return;
+    if (Math.max(trip.at, trip.pos || 0, clockPos(leg) ?? 0) >= 0.5) return;
+    if (Date.now() - holdCheckedAt < HOLD_CHECK_MS) return;
+    holdCheckedAt = Date.now();
+    const asked = trip;
+    try {
+      const res = await fetch(`/api/bus-arrivals?stop=${encodeURIComponent(leg.board)}&service=${encodeURIComponent(leg.service)}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const svc = (await res.json()).services?.find((s) => String(s.serviceNo).toUpperCase() === String(leg.service).toUpperCase());
+      const eta = svc?.next?.eta_ms;
+      if (trip !== asked || asked.legs[asked.leg] !== leg || eta == null || eta <= 60 * 1000) return;
+      trip.anchor = { pos: 0, t: Date.now() + eta };
+      trip.at = 0;
+      trip.pos = 0;
+      save();
+      render();
+    } catch {}
   }
 
   // Where a point is along a leg, as a stop index with a fraction: 3.4 is 40% of the way
@@ -214,6 +359,9 @@
     trip.leg += 1;
     trip.at = 0;
     trip.pos = 0;
+    trip.anchor = null;
+    trip.boarded = false;
+    trip.moves = [];
     trip.alertText = null;
     trip.legStartedAt = Date.now();
     shown = null;
@@ -321,6 +469,12 @@
       pos: trip.pos || 0,
       legStartedAt: trip.legStartedAt,
       seenAt: trip.lastFixAt || trip.legStartedAt,
+      // Where the clock goes on from, and when the trip last moved itself back (realign):
+      // the server takes the app's place and alerts over its own after that.
+      anchor: trip.anchor || null,
+      realignedAt: trip.realignedAt || 0,
+      // Whether the clock may move you on: not on a bus until you're on board for sure.
+      clockRuns: underWay(trip.legs[trip.leg]),
       alerted: trip.alerted,
     });
     try {
@@ -345,7 +499,7 @@
       if (a) trip.alerted[i] = true;
     });
     if (state.leg > trip.leg && state.leg < trip.legs.length) {
-      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, alertText: null, legStartedAt: state.legStartedAt || Date.now() });
+      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, legStartedAt: state.legStartedAt || Date.now() });
       shown = null;
     }
     save();
@@ -466,10 +620,7 @@
     const leg = trip.legs[trip.leg];
     const last = leg.points.length - 1;
     let pos = Math.max(trip.pos || 0, trip.at);
-    if (Date.now() - trip.lastFixAt > FIX_STALE_MS && leg.minutes) {
-      const riding = (Date.now() - trip.legStartedAt) / 60000 - (leg.wait || 0);
-      pos = Math.max(pos, Math.max(0, riding) / (leg.minutes / Math.max(1, last)));
-    }
+    if (stale() && underWay(leg)) pos = Math.max(pos, clockPos(leg) ?? 0);
     return Math.min(last, pos);
   }
 

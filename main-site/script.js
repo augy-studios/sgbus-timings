@@ -1121,7 +1121,7 @@ function tripLegForBus(service, codes, toCode) {
     return {
         kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode,
         points, names: known.map(c => nameOf(c) || c), minutes: metres / 250, wait: 0,
-        service, alight: toCode,
+        service, board: known[0], alight: toCode,
     };
 }
 

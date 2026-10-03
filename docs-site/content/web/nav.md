@@ -34,6 +34,12 @@ vehicles, so a train then two buses, or two trains then a bus, is there to
 compare. A mix that's clearly slower than another of the same kind, and no
 better in changes or walking, is left out as a detour.
 
+A change can be a short walk to another stop or station, or, at an interchange,
+terminal or station, a walk of up to 400 m across it, such as Tampines Int to
+Tampines Stn/Int. Every walk is timed, so a long one only shows up when it's worth
+it. Staying on a bus into the interchange your next bus leaves from is
+preferred over getting off early and walking, unless walking is clearly quicker.
+
 Each way shows:
 
 - its trains and buses in order, each train line marked in its colour;
@@ -51,7 +57,7 @@ Each way shows:
 ## Open a way
 
 <figure>
-<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="994" height="520" loading="lazy">
+<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways and Start trip." width="994" height="520" loading="lazy">
 <figcaption>A way leg by leg, with Start trip for the Get Off Alert.</figcaption>
 </figure>
 
@@ -65,7 +71,11 @@ Tap a way to see it leg by leg:
   that bus at the stop you board it. A button opens that stop's timings for the
   bus.
 
-**Refresh** updates the live timings, and **All ways** goes back to the list.
+**All ways** goes back to the list.
+
+**Refresh**, at the top of the card once both ends are set, plans the ways again,
+with any new disruptions and the time now. With a way open, it updates that way's
+live bus timings instead.
 
 **Start trip** follows you along the way and buzzes two stops before each change
 and the end: see [Get Off Alert](get-off-alert.md).

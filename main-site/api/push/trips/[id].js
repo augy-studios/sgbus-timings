@@ -48,8 +48,13 @@ export default async function handler(req, res) {
 // The same trip again: whatever either side has done stays done. An alert sent by one isn't
 // sent again by the other, and a leg the server moved on to isn't undone by an app that
 // hasn't heard yet. A new trip replaces the old one outright.
+//
+// Except when the app has realigned since (js/trip.js): it found the trip had you somewhere
+// you weren't, moved you back, and re-armed an alert that went off too early. Then its place
+// and its alerts stand, and the bus the server was following is dropped as the wrong one.
 function merge(old, sent) {
   if (!old || old.tripId !== sent.tripId) return { ...sent, track: null };
+  if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, track: null };
   const alerted = sent.alerted.map((a, i) => a || Boolean(old.alerted[i]));
   if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted };
   if (old.leg < sent.leg) return { ...sent, alerted, track: null };
@@ -59,8 +64,6 @@ function merge(old, sent) {
   const track = old.track && old.track.pos >= known - 1.5 ? old.track : null;
   return {
     ...sent,
-    at: Math.max(sent.at, old.at),
-    pos: Math.max(sent.pos, old.pos || 0),
     seenAt: Math.max(sent.seenAt, old.seenAt),
     alerted,
     track,

@@ -19,6 +19,11 @@
   // What a change costs over the time spent moving, the wait for the next bus mostly, so a
   // journey with fewer changes wins unless it's clearly slower.
   const CHANGE_PENALTY_MIN = 6;
+  // A change on foot, to another stop, over one at the same stop: finding the stop and
+  // crossing to it. So when the first bus goes on into the interchange the next one leaves
+  // from, riding in wins unless getting off early and walking is clearly quicker. The same
+  // as CHANGE_WALK_MIN in the bot's journeys.py and api/_nav/network.js.
+  const CHANGE_WALK_MIN = 1;
   // Changes of bus in one journey, at most: some trips across the island take four buses.
   const MAX_CHANGES = 3;
   const MAX_JOURNEYS = 5;
@@ -78,8 +83,18 @@
   // The stop itself at no distance, then the stops within walking distance of it.
   const withNear = (g, code) => [[code, 0], ...near(g, code)];
 
+  // Where a change of bus off at this stop can board the next: withNear, plus the rest of its
+  // hub, an interchange's stops and its station's (HUB_WALK_M in js/network.js). Only for
+  // changes; a journey's two ends keep to the ordinary walk.
+  const changeNear = (g, code) => {
+    const mates = g.hubMates.get(code);
+    return mates ? [...withNear(g, code), ...mates] : withNear(g, code);
+  };
+
   const rideMin = (run, i, j) => (run.cum[j] - run.cum[i]) / BUS_M_PER_MIN;
   const walkMin = (metres) => metres / WALK_M_PER_MIN;
+  // A change's walk: none at the same stop, or the walk and CHANGE_WALK_MIN to another.
+  const changeWalk = (metres) => (metres > 0 ? walkMin(metres) + CHANGE_WALK_MIN : 0);
   const toLeg = ([run, i, j]) => ({ bus: run.bus, dir: run.dir, from: run.stops[i], to: run.stops[j] });
 
   function groupByStop(entries) {
@@ -204,11 +219,11 @@
     // One change: off the first bus, a short walk at most, onto a bus to the end.
     for (const e1 of onward.values()) {
       const run1 = g.runs[e1.r];
-      for (const [board, walkM] of withNear(g, e1.stop)) {
+      for (const [board, walkM] of changeNear(g, e1.stop)) {
         for (const e2 of inwardAt.get(board) || []) {
           const run2 = g.runs[e2.r];
           if (run2.bus === run1.bus) continue;
-          offer(e1.cost + walkMin(walkM) + CHANGE_PENALTY_MIN + e2.cost, [
+          offer(e1.cost + changeWalk(walkM) + CHANGE_PENALTY_MIN + e2.cost, [
             [run1, e1.i, e1.j],
             [run2, e2.i, e2.j],
           ]);
@@ -300,13 +315,13 @@
     return on;
   }
 
-  // A change of bus at every stop in `at`: the short walk to each stop near it and the wait
-  // there, cheapest per stop, keyed the same way.
+  // A change of bus at every stop in `at`: the short walk to each stop near it, or across its
+  // hub, and the wait there, cheapest per stop, keyed the same way.
   function changeAt(g, at) {
     const out = new Map();
     for (const [stop, { cost, parts }] of at) {
-      for (const [other, walkM] of withNear(g, stop)) {
-        const total = cost + walkMin(walkM) + CHANGE_PENALTY_MIN;
+      for (const [other, walkM] of changeNear(g, stop)) {
+        const total = cost + changeWalk(walkM) + CHANGE_PENALTY_MIN;
         if (!out.has(other) || total < out.get(other).cost) out.set(other, { cost: total, parts });
       }
     }

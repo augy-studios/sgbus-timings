@@ -60,3 +60,4 @@ than about three taps to reach goes under Advanced.
 
 * [Troubleshooting](help/troubleshooting.md)
 * [Privacy and your data](help/privacy.md)
+* [What the web app can't do](help/web-app-limits.md)

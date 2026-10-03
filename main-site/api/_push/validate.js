@@ -82,6 +82,13 @@ export function parseTrip(body, now = Date.now()) {
   if (!isNum(body.legStartedAt, now - DAY_MS, now + DAY_MS)) fail('bad legStartedAt');
   if (!isNum(body.seenAt, now - DAY_MS, now + DAY_MS)) fail('bad seenAt');
   if (!Array.isArray(body.alerted) || body.alerted.length !== legs.length) fail('alerted must have one entry per leg');
+  // Where the app's clock goes on from: { pos, t }, t possibly ahead while it waits for the bus.
+  let anchor = null;
+  if (body.anchor != null) {
+    if (!isNum(body.anchor.pos, 0, last) || !isNum(body.anchor.t, now - DAY_MS, now + DAY_MS)) fail('bad anchor');
+    anchor = { pos: body.anchor.pos, t: body.anchor.t };
+  }
+  if (body.realignedAt != null && !isNum(body.realignedAt, 0, now + DAY_MS)) fail('bad realignedAt');
 
   return {
     tripId: body.tripId,
@@ -92,6 +99,10 @@ export function parseTrip(body, now = Date.now()) {
     pos: body.pos || 0,
     legStartedAt: Math.min(now, body.legStartedAt),
     seenAt: Math.min(now, body.seenAt),
+    anchor,
+    realignedAt: Math.min(now, body.realignedAt || 0),
+    // False while the app waits to be sure you're on the bus; an older app doesn't say.
+    clockRuns: body.clockRuns !== false,
     alerted: body.alerted.map(Boolean),
   };
 }

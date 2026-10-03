@@ -62,6 +62,12 @@ to a stop across the road at either end, or between two buses. They are ranked
 by time riding and walking, plus 6 minutes for each change. If no journey links
 the stops even with three changes, the bot says so.
 
+At an interchange, terminal or station, a change can also be between any two of its
+stops up to 400 m apart, such as Tampines Int and Tampines Stn/Int. The walk is timed
+like any other, so a long one is only suggested when it's worth it. If your first bus
+goes on into the interchange your next one leaves from, the journey stays on
+it, unless getting off at the station's stop and walking is clearly quicker.
+
 Tap a journey to see it leg by leg, with the live timings of each bus at the
 stop you board it. From the second bus on, the bot estimates when you would
 reach that stop, strikes through the buses due before then, and bolds the one
