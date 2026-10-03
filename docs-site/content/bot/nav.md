@@ -42,7 +42,8 @@ disruption on.
 Tap a way to see it leg by leg: each walk, each train with the line, the direction
 to take and where to get off, and each bus with the **live timings** of that bus
 at the stop you board it. A button with the bus and stop opens that stop's
-timings for the bus. **Back to all ways** returns to the list.
+timings for the bus, with **Back to the way** and **All ways** to come back.
+**Back to all ways** returns to the list.
 
 ## Save it
 

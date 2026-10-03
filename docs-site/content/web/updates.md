@@ -5,6 +5,11 @@ description: How the app updates itself, and what still works without a connecti
 
 ## When a new version is ready
 
+<figure>
+<img src="/screenshots/web/updates-new-version.png" alt="A bar across the top of the app saying A new version of SG Bus Timing is ready, with Reload and Not now buttons." width="1280" height="118" loading="lazy">
+<figcaption>The bar a new version brings. Nothing reloads until you tap Reload.</figcaption>
+</figure>
+
 The app downloads new versions in the background. When one is ready, a slim bar
 appears at the very top of the page:
 

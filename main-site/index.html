@@ -456,13 +456,16 @@
 
     <!-- A trip in progress, and its Get Off Alert: js/trip.js -->
     <div id="tripBar" class="tripBar hidden" role="region" aria-label="Trip in progress">
+        <!-- Tapping the bar opens the stops ahead, with a dot where you are. -->
+        <div id="tripTimeline" class="tripTimeline" hidden></div>
         <div class="tripBarInner">
             <span class="tripIcon" data-icon="bus"></span>
-            <div class="tripText">
+            <button id="tripToggle" class="tripText" type="button" aria-expanded="false" aria-controls="tripTimeline" title="Show the stops ahead">
                 <strong id="tripTitle"></strong>
                 <span id="tripStatus" role="status" aria-live="assertive"></span>
                 <span id="tripNote" class="tripNote" hidden></span>
-            </div>
+            </button>
+            <span class="tripChevron" data-icon="chevron" aria-hidden="true"></span>
             <button id="tripNext" class="iconBtn" type="button" hidden>Next leg</button>
             <button id="tripEnd" class="iconBtn" type="button">End trip</button>
         </div>

@@ -327,6 +327,29 @@
     }
   });
 
+  // ---------- screenshots open full size ----------
+  // A tap on a screenshot opens it in a new tab as a blob, at its full resolution. The
+  // tab is opened in the click itself, before the fetch, so popup blockers let it
+  // through; it's pointed at the blob once that's ready, or at the image if it fails.
+
+  document.addEventListener("click", async (e) => {
+    const img = e.target.closest(".prose figure img");
+    if (!img || e.button !== 0) return;
+    e.preventDefault();
+    const src = img.currentSrc || img.src;
+    const tab = window.open("", "_blank");
+    if (!tab) return;
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(String(res.status));
+      const url = URL.createObjectURL(await res.blob());
+      tab.location.href = url;
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch {
+      tab.location.href = src;
+    }
+  });
+
   // ---------- new version bar ----------
   // No service worker here, so this is the "site has no service worker"
   // variant of update-bar-spec.md: compare the build this page booted with

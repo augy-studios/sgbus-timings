@@ -157,8 +157,10 @@ def build_nav_option(start, end, option: dict, timings: dict):
             md.append(escape_md(eta_line))
             plain.append(eta_line)
             if leg.get("from", {}).get("code"):
+                # The way rides along, so the timings can come back to it.
+                way = {**_ends_payload(start, end), "option": option}
                 buttons.append([Button.inline(f"🚏 {leg['route']} at {leg['from']['name']}"[:64],
-                                              make_button("stop", {"code": leg["from"]["code"], "bus_no": leg["route"]}))])
+                                              make_button("stop", {"code": leg["from"]["code"], "bus_no": leg["route"], "nav": way}))])
     note = "Train times are estimates from distance; bus timings are live from LTA."
     md += ["", f"_{escape_md(note)}_"]
     plain += ["", note]

@@ -784,6 +784,7 @@ kbd, .search-kbd {
   box-shadow: var(--shadow);
 }
 .prose figure { margin-top: 1.5em; }
+.prose figure img { margin: 0 auto; cursor: zoom-in; }
 .prose figcaption { margin-top: 8px; font-size: 0.85rem; color: var(--muted); text-align: center; }
 .prose figure.phone img { max-width: 300px; margin: 0 auto; }
 

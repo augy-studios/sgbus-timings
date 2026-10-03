@@ -1665,12 +1665,67 @@ header {
 .tripBar.hidden { opacity: 0; transform: translateY(16px); pointer-events: none; visibility: hidden; }
 .tripBar.alerting { background: var(--brand-fill-strong); animation: trip-pulse 0.9s ease-in-out 3; }
 .tripBar.alerting, .tripBar.alerting .tripNote { color: var(--on-brand); }
-.tripBarInner { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.tripBar { --trip-dot: #2f7dff; }
+.tripBarInner { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
 .tripIcon svg { width: 22px; height: 22px; }
-.tripText { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.tripText {
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px;
+    background: none; border: 0; padding: 0; margin: 0; text-align: left; color: inherit; font: inherit; cursor: pointer;
+}
 .tripText strong { font-size: 14px; }
 .tripNote { font-size: 11px; color: var(--muted-strong); }
+.tripChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
+.tripBar.expanded .tripChevron svg { transform: rotate(180deg); }
 body.on-trip { padding-bottom: 96px; }
+
+/* The timeline: the stops ahead, with a dot where you are (js/trip.js). */
+.tripTimeline {
+    max-height: min(50vh, 420px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 12px 14px 6px;
+    border-bottom: 1px solid var(--surface-border);
+}
+.tlLeg + .tlLeg { margin-top: 14px; }
+.tlHead { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-weight: 700; font-size: 13px; }
+.tlHead svg { width: 16px; height: 16px; }
+.tlHead span { font-weight: 400; color: var(--muted-strong); }
+.tlStops { position: relative; list-style: none; margin: 0; padding: 0 0 0 28px; }
+.tlTrack {
+    position: absolute; left: 9px; top: 15px; bottom: 15px; width: 4px; border-radius: 2px;
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.tlDone { position: absolute; left: 0; top: 0; width: 100%; height: 0; border-radius: 2px; background: var(--trip-dot); }
+.tlStop { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 13px; }
+.tlNode {
+    position: absolute; left: -24px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
+    background: var(--surface-strong); border: 2px solid color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.tlStop.passed { color: var(--muted-strong); }
+.tlStop.passed .tlNode { background: var(--trip-dot); border-color: var(--trip-dot); }
+.tlStop.end { font-weight: 700; }
+.tlTag {
+    display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; background: var(--brand-fill); color: var(--brand-ink);
+}
+.tlTag svg { width: 12px; height: 12px; }
+.tlDot {
+    position: absolute; left: 2px; top: 0; width: 18px; height: 18px; margin-top: -9px; border-radius: 50%;
+    background: var(--trip-dot); border: 3px solid #fff; box-sizing: border-box;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); will-change: transform;
+}
+.tlDot::after {
+    content: ""; position: absolute; inset: -6px; border-radius: 50%;
+    background: color-mix(in srgb, var(--trip-dot) 30%, transparent);
+    animation: trip-dot-pulse 1.6s ease-out infinite;
+}
+@keyframes trip-dot-pulse {
+    0% { transform: scale(0.6); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .tlDot::after { animation: none; }
+}
 
 @keyframes trip-pulse {
     0%, 100% { transform: scale(1); }

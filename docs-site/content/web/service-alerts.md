@@ -9,6 +9,11 @@ roads the buses run on.
 
 ## See what's happening now
 
+<figure>
+<img src="/screenshots/web/service-alerts-now.png" alt="The Service alerts card: notification choices at the top, then Trains, with all train services running normally and LTA's notices, and Roads, counting the incidents across Singapore and listing those that can block or reroute a bus." width="994" height="697" loading="lazy">
+<figcaption>Trains and roads, as LTA reports them right now.</figcaption>
+</figure>
+
 Tap **Service alerts** under the search box. A card opens with two parts.
 
 **Trains** says either that every train service is running normally, or, for
@@ -28,6 +33,11 @@ Tap **Refresh** to fetch the latest. The card never shows a saved copy, so
 without a connection it says it couldn't reach LTA instead.
 
 ## Get notified
+
+<figure>
+<img src="/screenshots/web/service-alerts-notify.png" alt="Notify me, even with the app closed: Train service alerts and Traffic alerts, each with Off, All updates and Disruptions only, and a note that notifications are off." width="970" height="217" loading="lazy">
+<figcaption>Train and traffic alerts are chosen separately.</figcaption>
+</figure>
 
 Under **Notify me, even with the app closed**, train and traffic alerts are
 chosen separately, each **Off**, **All updates** or **Disruptions only**:

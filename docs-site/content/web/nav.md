@@ -8,6 +8,11 @@ to any other, by bus, train or both, including the walk at each end.
 
 ## Set where you're going
 
+<figure>
+<img src="/screenshots/web/nav-set-suggest.png" alt="Navigate with Bedok Mall typed into From, and suggestions for places, stations and stops dropping down below it." width="994" height="284" loading="lazy">
+<figcaption>Type a place, an address, a station or a stop, and pick it from the suggestions.</figcaption>
+</figure>
+
 1. Tap **Navigate** under the search box.
 2. In **From**, type an address, a building, a postal code, an MRT or LRT
    station, or a bus stop, and pick it from the suggestions. Or tap the pin next
@@ -17,6 +22,11 @@ to any other, by bus, train or both, including the walk at each end.
 The swap button between the two boxes turns the journey around.
 
 ## The ways there
+
+<figure>
+<img src="/screenshots/web/nav-ways.png" alt="Navigate from Bedok Mall to Botanic Gardens station listing 13 ways, quickest first: trains on the EW and CC or DT lines, buses, and mixes of the two, each with its changes, walk and time." width="994" height="800" loading="lazy">
+<figcaption>Every worthwhile mix of bus and train, quickest first.</figcaption>
+</figure>
 
 Navigate lists the ways to get there, quickest first. It doesn't stop at the
 fastest: it keeps the best journey for every mix of bus and train, up to four
@@ -40,6 +50,11 @@ Each way shows:
 
 ## Open a way
 
+<figure>
+<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="994" height="520" loading="lazy">
+<figcaption>A way leg by leg, with Start trip for the Get Off Alert.</figcaption>
+</figure>
+
 Tap a way to see it leg by leg:
 
 - **Walks**, with the distance and roughly how long.
@@ -55,6 +70,11 @@ Tap a way to see it leg by leg:
 and the end: see [Get Off Alert](get-off-alert.md).
 
 ## Save it
+
+<figure>
+<img src="/screenshots/web/nav-save.png" alt="The top of Navigate, with a Saved button and a filled star." width="986" height="83" loading="lazy">
+<figcaption>Save nav turns into Saved.</figcaption>
+</figure>
 
 Tap **Save nav** to add it to your [favourites](favourites.md), under **Navs**.
 Like routes, a nav and its reverse are two separate favourites.

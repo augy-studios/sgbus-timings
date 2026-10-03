@@ -5,6 +5,11 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 
 ## Settings
 
+<figure>
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, and syncing favourites with another device." width="440" height="824" loading="lazy">
+<figcaption>Settings. Changes save as you make them.</figcaption>
+</figure>
+
 Open Settings with the gear in the header, or by tapping the app's title.
 
 | Setting | What it does |
@@ -27,6 +32,11 @@ The greeting follows the time of day, good morning, afternoon or evening, and
 keeps up while the app stays open.
 
 ## Themes
+
+<figure>
+<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark and Time-based modes, and seven brand colour swatches." width="440" height="446" loading="lazy">
+<figcaption>The theme picker: a mode, and one of seven colours.</figcaption>
+</figure>
 
 Tap the sun or moon button at the right of the header to open the theme picker.
 Choices apply at once and are remembered on this device.

@@ -200,8 +200,10 @@ function toOption(graph, { total, label, end }) {
         stops: to - from,
         minutes: run.cum[to] - run.cum[from],
         wait: WAIT_MIN[run.mode],
-        // Where the leg passes, for following it on the way (the Get Off Alert).
+        // Where the leg passes, for following it on the way (the Get Off Alert), and the
+        // name of each stop or station on it, for the trip's timeline.
         path: run.nodes.slice(from, to + 1).map((n) => [graph.nodes[n].lat, graph.nodes[n].lng]),
+        names: run.nodes.slice(from, to + 1).map((n) => graph.nodes[n].name),
       };
       if (run.mode === "B") leg.dir = run.dir;
       else Object.assign(leg, { name: run.name, color: run.color, lrt: run.lrt });

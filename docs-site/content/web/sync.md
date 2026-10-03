@@ -15,6 +15,11 @@ server.
 
 ## On the first device: show a code
 
+<figure>
+<img src="/screenshots/web/sync-show-code.png" alt="Settings showing a 6-letter sync code in large type, a QR code and the link under it, the status Waiting for the other device, and New code and Stop buttons." width="420" height="411" loading="lazy">
+<figcaption>The code, its QR code and its link, waiting for the other device.</figcaption>
+</figure>
+
 1. Open **Settings**, from the gear or by tapping the app's title.
 2. Under **Sync favourites with another device**, tap
    **Show a code on this device**.
@@ -24,6 +29,11 @@ server.
 The status reads "Waiting for the other device" until the second device joins.
 
 ## On the second device: enter it
+
+<figure>
+<img src="/screenshots/web/sync-enter-code.png" alt="Settings on the second device, with the code typed into the box and a Connect button beside it." width="420" height="197" loading="lazy">
+<figcaption>Type the code from the first device and tap Connect.</figcaption>
+</figure>
 
 Do one of these:
 
@@ -38,6 +48,11 @@ cannot be misread.
 
 ## Pick what to copy
 
+<figure>
+<img src="/screenshots/web/sync-pick.png" alt="Connected to the other device: Import and Export tabs, Select all ticked, and the other device's favourites listed with ticks, one marked Already here." width="420" height="639" loading="lazy">
+<figcaption>Tick what to copy. Favourites this device already has are marked.</figcaption>
+</figure>
+
 Once connected, both devices show two tabs:
 
 - **Import** lists the other device's favourites that this one does not have.
@@ -50,11 +65,21 @@ Copying only ever adds. Nothing is removed or replaced on either device.
 
 ## Finish
 
+<figure>
+<img src="/screenshots/web/sync-finish.png" alt="Settings while connected, with New code and Stop buttons." width="420" height="355" loading="lazy">
+<figcaption>Stop ends the sync; New code retires the code on screen.</figcaption>
+</figure>
+
 Tap **Stop** to end the sync, or just close Settings. Closing Settings ends it
 too. **New code** retires the code on screen and shows a fresh one, so the old
 code stops working.
 
 ## If it will not connect
+
+<figure>
+<img src="/screenshots/web/sync-wont-connect.png" alt="Settings after a failed connection, with a red dot and the message Nobody is showing that code. Check it and try again." width="420" height="224" loading="lazy">
+<figcaption>What the app says when no device is showing the code you entered.</figcaption>
+</figure>
 
 | The app says | What to do |
 |---|---|

@@ -9,6 +9,11 @@ no single bus does, it finds the quickest journeys with up to three changes.
 
 ## Set the two ends
 
+<figure>
+<img src="/screenshots/web/route-planner-ends.png" alt="The route planner with Start set to Bedok Int (84009) and End set to Serangoon Int (66009), each with a pin button, and the swap button between them." width="994" height="168" loading="lazy">
+<figcaption>Start and End, each with a pin for the stops near you, and the swap button between them.</figcaption>
+</figure>
+
 1. Tap **Plan a route** under the search box.
 2. In **Start**, type a stop's name, its code, or a 6-digit postal code, and pick
    it from the list. Or tap the pin next to the box to pick from the stops near
@@ -18,6 +23,11 @@ no single bus does, it finds the quickest journeys with up to three changes.
 The swap button between the two boxes turns the route around.
 
 ### Direct buses to the other end
+
+<figure>
+<img src="/screenshots/web/route-planner-direct-suggest.png" alt="With Start set to Bedok Int, tampines typed into End: the suggestions say 36 have a bus straight from Bedok Int, listed first, and each tinted stop shows its buses, such as 38 and 69 for Tampines Int." width="970" height="379" loading="lazy">
+<figcaption>Once one end is set, the stops with a bus straight to it lead the suggestions, with their buses.</figcaption>
+</figure>
 
 Once one end is set, the stops offered for the other do some of the planning for
 you. The stops with a bus straight to your end (or, when you're picking the end,
@@ -37,6 +47,11 @@ nearest first for nearby stops, best match first for a typed name.
 
 ## Buses that run the whole way
 
+<figure>
+<img src="/screenshots/web/route-planner-direct.png" alt="The planner from Bedok Int to Tampines Int, saying 2 buses run between these stops, with buttons for 38 and 69." width="994" height="251" loading="lazy">
+<figcaption>The buses that run the whole way, as a grid.</figcaption>
+</figure>
+
 If one or more buses run from the start to the end without a change, the
 planner lists them as a grid, with your favourite buses starred. Only a bus
 heading the right way counts: one that calls at your start and then, later on
@@ -48,6 +63,11 @@ stops the bus has to go to your end, and **Back to route** returns to the
 planner.
 
 ## Journeys with a change
+
+<figure>
+<img src="/screenshots/web/route-planner-journeys.png" alt="From Bedok Int to Serangoon Int, no single bus links the two stops, so the planner lists journeys such as 60 then 45 and 87 then 45, about 34 minutes with 1 change, each saying where to change." width="994" height="632" loading="lazy">
+<figcaption>No single bus runs from Bedok Int to Serangoon Int, so the planner offers journeys with a change.</figcaption>
+</figure>
 
 When no single bus links the two stops, the planner offers the quickest five
 journeys instead. Each one shows:
@@ -68,6 +88,11 @@ slightly longer ride is preferred to an extra change.
 > the time spent waiting for a bus.
 
 ## Open a journey
+
+<figure>
+<img src="/screenshots/web/route-planner-journey.png" alt="A journey leg by leg: bus 60 for 2 stops to Blk 45, then bus 45 for 16 stops, each with live timings and a button for its stop, a short walk at the end, and a rough arrival time." width="994" height="699" loading="lazy">
+<figcaption>A journey leg by leg, with live timings for each bus and a rough arrival time.</figcaption>
+</figure>
 
 Tap a journey to see it leg by leg:
 
@@ -90,6 +115,11 @@ bus stop, use [Navigate](nav.md).
 
 ## Picked the wrong side of the road?
 
+<figure>
+<img src="/screenshots/web/route-planner-wrong-side.png" alt="The planner from Opp Waterfront Waves to Serangoon Int, with a note: Wrong side of the road? The quickest buses for this trip leave from Aft Waterfront Waves, across the road from your start, about 27 m away; and a button, Use Aft Waterfront Waves instead." width="994" height="255" loading="lazy">
+<figcaption>The planner spots a start on the wrong side of the road, and offers the stop across it.</figcaption>
+</figure>
+
 The two sides of a road are two different bus stops, and a bus only calls at
 the one on its side. It is easy to pick the stop your bus does not go your way
 from.
@@ -107,6 +137,11 @@ When both ends are on the wrong side, the button reads
 you save is the right one.
 
 ## Save the route
+
+<figure>
+<img src="/screenshots/web/route-planner-save.png" alt="The top of the route planner, with a Saved button and a filled star." width="986" height="83" loading="lazy">
+<figcaption>Save route turns into Saved.</figcaption>
+</figure>
 
 Tap **Save route** to add it to your [favourites](favourites.md). A route is
 saved in the direction you set it: Bedok Int to Serangoon Int, and Serangoon Int

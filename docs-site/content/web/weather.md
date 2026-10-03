@@ -18,6 +18,11 @@ Each is a range, from the lowest region to the highest:
 
 ## Today's weather
 
+<figure>
+<img src="/screenshots/web/weather-today.png" alt="Today's weather: the temperature and sky in central Singapore, the day's range and rain chance, feels like, humidity, wind, pressure, cloud and sunrise and sunset, the next hours, a chart of rain for the next two hours, and PSI and PM2.5 for each region with NEA's bands." width="440" height="1115" loading="lazy">
+<figcaption>Today's weather, from right now to the air quality in each region.</figcaption>
+</figure>
+
 Tap the button for today's weather:
 
 - **Right now**, in central Singapore: the temperature and the sky.

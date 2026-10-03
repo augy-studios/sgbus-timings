@@ -41,6 +41,7 @@ async def build_stop_view(
     route: "dict | None" = None,
     services: "list | None" = None,
     navigate_open: bool = False,
+    nav: "dict | None" = None,
 ):
     """
     Builds the rich-message text + inline keyboard for a bus stop's live
@@ -73,6 +74,8 @@ async def build_stop_view(
     somewhere they navigated to, but widens out and collapses back like the others.
     `navigate_open=True` unfolds the Directions button into a link per map app. It isn't
     part of where the user is, so a refresh folds it back to the single button.
+    `nav` is the /nav way this bus is a leg of - its two ends and the way itself - so the
+    view can go back to that way, or to all the ways between the two ends.
     """
     stop = get_bus_stop_by_code(code)
     if not stop:
@@ -114,6 +117,7 @@ async def build_stop_view(
         **({"back": back} if back else {}),
         **({"route": route} if route else {}),
         **({"services": services} if services else {}),
+        **({"nav": nav} if nav else {}),
     }
     # This exact view, as a payload - what the screens opened from here come back to.
     origin = {"code": code, **here}
@@ -172,5 +176,13 @@ async def build_stop_view(
         buttons.append([Button.inline(label, make_button("route_view", route))])
     if back:
         buttons.append([Button.inline("🔙 Back", make_button("stop_list", back))])
+    if nav:
+        ends = {"from": nav["from"], "to": nav["to"]}
+        buttons.append(
+            [
+                Button.inline("🔙 Back to the way", make_button("nav_option", nav)),
+                Button.inline("🧭 All ways", make_button("nav_show", ends)),
+            ]
+        )
 
     return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, origin, navigate_open)}

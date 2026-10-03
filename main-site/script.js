@@ -1051,10 +1051,14 @@ function renderGetOffPick() {
 
 // Stop codes as points, and a ride time from distance at the planner's ~15 km/h.
 function tripLegForBus(service, codes, toCode) {
-    const points = codes.map(c => stopsIndex?.[c]).filter(s => s && s.lat != null).map(s => [s.lat, s.lng]);
+    const known = codes.filter(c => stopsIndex?.[c]?.lat != null);
+    const points = known.map(c => [stopsIndex[c].lat, stopsIndex[c].lng]);
     let metres = 0;
     for (let i = 1; i < points.length; i++) metres += haversine(points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]) || 0;
-    return { kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode, points, minutes: metres / 250, wait: 0 };
+    return {
+        kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode,
+        points, names: known.map(c => nameOf(c) || c), minutes: metres / 250, wait: 0,
+    };
 }
 
 function startBusTrip(service, dir, toCode, fromStop) {

@@ -39,8 +39,8 @@ def _stop_view_args(payload: dict) -> dict:
     """A stop view's own state, as every button that reopens it carries it: which service
     the view is narrowed to and which way the user got there, whether it's been widened
     out to all services, where in the service's stop list they came from, the list of
-    stops they picked this one off, the route panel they picked the bus off, and the buses
-    a routine narrowed it to."""
+    stops they picked this one off, the route panel they picked the bus off, the buses
+    a routine narrowed it to, and the /nav way the bus is a leg of."""
     return {
         "service_no": payload.get("service_no"),
         "picked_service_no": payload.get("bus_no"),
@@ -50,6 +50,7 @@ def _stop_view_args(payload: dict) -> dict:
         "back": payload.get("back"),
         "route": payload.get("route"),
         "services": payload.get("services"),
+        "nav": payload.get("nav"),
     }
 
 

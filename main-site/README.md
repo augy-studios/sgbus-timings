@@ -65,6 +65,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### Get Off Alert
 - On a trip (**Start trip** on a nav or a planned journey, or **Get Off Alert** on a bus's route and then the stop you're getting off at), the site follows your live location and alerts you two stops before each change and the end: short pulsed vibrations, three beeps and a notification
 - Keeps the screen awake while the trip runs, since a website only gets your location while it's open; underground it goes by the expected ride time
+- Tap the trip bar for the timeline: the stops ahead, with a blue dot where you are, redrawn 20 times a second so it glides between stops
 - On by default; Settings turns it off
 
 ### Weather

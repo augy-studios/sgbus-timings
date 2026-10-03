@@ -9,6 +9,11 @@ stays in that browser.
 
 ## A tour of the screen
 
+<figure>
+<img src="/screenshots/web/install-tour.png" alt="The top of the app: the header greeting Sam with buttons for Telegram, coffee, the guide, Settings and the theme; the search box with Get Timings; Stops near me, Plan a route, Navigate and Service alerts with the weather on the right; and Favourites with bus stops, buses, routes and navs." width="1000" height="604" loading="lazy">
+<figcaption>The header, the search box, the row of quick actions with the weather at its end, and your favourites.</figcaption>
+</figure>
+
 - **The header** greets you by the time of day, and by name once you have set
   one. Tap the title, or the gear, for [Settings](settings.md). The other
   buttons open the Telegram bot, a page to buy Augy a coffee, this guide (the

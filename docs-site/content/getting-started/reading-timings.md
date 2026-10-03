@@ -9,6 +9,11 @@ wheelchairs, and how far away it is right now.
 
 ## When it arrives
 
+<figure>
+<img src="/screenshots/web/reading-when.png" alt="A single bus's arrival time, with its wheelchair, deck and distance badges underneath." width="217" height="82" loading="lazy">
+<figcaption>One bus: when it's due, then its badges.</figcaption>
+</figure>
+
 The time is how long until the bus reaches the stop. The web app writes it as
 `45s`, `3 mins` or `12 mins 20s`; the bot as `45s` or `12m 20s`, and `arr` for a
 bus that is arriving now. It counts from the moment the timings were fetched,
@@ -27,6 +32,11 @@ because there is no position to measure from.
 
 ## How full it is
 
+<figure>
+<img src="/screenshots/web/reading-full.png" alt="The incoming buses bar, with each bus's time coloured by how full it is." width="994" height="147" loading="lazy">
+<figcaption>Each time is coloured by how full the bus is: green for seats, amber for standing, red for packed.</figcaption>
+</figure>
+
 LTA reports one of three loads for each bus.
 
 | LTA code | Web app | Telegram bot | Meaning |
@@ -37,6 +47,11 @@ LTA reports one of three loads for each bus.
 
 ## The badges
 
+<figure>
+<img src="/screenshots/web/reading-badges.png" alt="A service's next three buses, each with Wheelchair, Single or Double, and distance badges." width="336" height="281" loading="lazy">
+<figcaption>Wheelchair, the kind of bus, and how far away it is. A bus not sending its position shows ~ ∞m.</figcaption>
+</figure>
+
 | Badge | Meaning |
 |---|---|
 | Wheelchair | The bus is wheelchair accessible. LTA calls this `WAB`, and the bot shows it in a row of its own as Yes or No. |
@@ -44,6 +59,11 @@ LTA reports one of three loads for each bus.
 | <span class="badge">~ 850m</span> | How far the bus is from the stop, in a straight line, right now. |
 
 ## In the web app
+
+<figure>
+<img src="/screenshots/web/reading-web-app.png" alt="A stop's timings card with the incoming buses bar above three services, each with its number, operator, Route button and next three buses." width="994" height="604" loading="lazy">
+<figcaption>A stop's timings in the web app: the incoming buses bar, then a row per service.</figcaption>
+</figure>
 
 A stop's timings list each service as a row: the bus number, the operator, a
 **Route** button, then the next three buses side by side with their badges.

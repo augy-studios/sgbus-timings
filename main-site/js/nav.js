@@ -356,6 +356,7 @@ function tripFromNav(o, to) {
         label: l.mode === 'bus' ? `Bus ${l.route}` : `${l.route} ${l.lrt ? 'LRT' : 'Line'}`,
         to: placeName(l.to),
         points: l.path,
+        names: l.names,
         minutes: l.minutes,
         wait: l.wait,
       })),
