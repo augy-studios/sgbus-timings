@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v33";
+const VERSION = "v34";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -28,6 +28,9 @@ const ASSETS = [
   "/manifest.json",
   "/favicon.ico",
   "/sgbusicon1.png",
+  // The status bar's notification icon. Android draws only its shape, so the app icon's
+  // solid square came out as a plain white one; this has its window and wheels cut out.
+  "/sgbusnotificon.png",
   "/images/screenshot_1.png",
   "/images/screenshot_2.png",
   "/widgets/timings.json",
@@ -91,7 +94,7 @@ self.addEventListener("push", (event) => {
       tag: "service-alert",
       renotify: true,
       icon: "/sgbusicon1.png",
-      badge: "/sgbusicon1.png",
+      badge: "/sgbusnotificon.png",
       data: { url: data.url || "/#alerts" },
     })
   );
@@ -119,7 +122,7 @@ async function getOff(data) {
     requireInteraction: true,
     vibrate: VIBRATION,
     icon: "/sgbusicon1.png",
-    badge: "/sgbusicon1.png",
+    badge: "/sgbusnotificon.png",
     data: { url: "/", kind: "get-off" },
   });
 }

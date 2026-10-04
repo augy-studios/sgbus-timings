@@ -412,7 +412,7 @@
           requireInteraction: true,
           vibrate: VIBRATION,
           icon: "/sgbusicon1.png",
-          badge: "/sgbusicon1.png",
+          badge: "/sgbusnotificon.png",
         });
       })
       .catch(() => {});
