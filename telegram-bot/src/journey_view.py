@@ -7,10 +7,12 @@ from telethon import Button
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .format import _format_eta, escape_md
-from .journeys import journey_minutes, leg_details, stops_to, walk_details
+from .journeys import journey_clock, journey_minutes, leg_details, stops_to, walk_details
 from .lta import fetch_arrivals
+from .when import at_to_dt, clock, clock_day, live_lead, now, span
 
 ESTIMATE_NOTE = "Times are rough estimates for riding and walking, not counting the wait for a bus."
+CLOCK_NOTE = "Times are rough estimates from distance. Clock times count an average wait for each bus."
 
 BUTTON_LABEL_LIMIT = 64
 
@@ -37,7 +39,20 @@ def _minutes_text(journey_min) -> str:
     return f"~{round(journey_min)} min" if journey_min is not None else "time unknown"
 
 
-def journey_summary(legs: list, start_code: str, end_code: str) -> str:
+def _time_text(legs: list, start_code: str, end_code: str, when) -> str:
+    """"~25 min" on the move for Leave now, or "08:12 → 08:50" for a picked time, with "too
+    late" on an Arrive by you'd have had to set off for already."""
+    if not when:
+        return _minutes_text(journey_minutes(legs, start_code, end_code))
+    timed = journey_clock(legs, start_code, end_code)
+    if not timed:
+        return "time unknown"
+    leave, arrive = span(when, timed["total"])
+    late = " (too late)" if when["mode"] == "arrive" and leave < now() else ""
+    return f"{clock(leave)} → {clock(arrive)}{late}"
+
+
+def journey_summary(legs: list, start_code: str, end_code: str, when=None) -> str:
     """One line for a journey in the route panel's list: its buses, where they're boarded
     and left when that isn't the route's own ends, and where the changes are."""
     parts = [" → ".join(leg["bus"] for leg in legs)]
@@ -49,13 +64,12 @@ def journey_summary(legs: list, start_code: str, end_code: str) -> str:
         parts.append(f"change{'s' if len(changes) > 1 else ''} at {places}")
     if legs[-1]["to"] != end_code:
         parts.append(f"off at {_name(legs[-1]['to'])}")
-    return f"{', '.join(parts)} · {_minutes_text(journey_minutes(legs, start_code, end_code))}"
+    return f"{', '.join(parts)} · {_time_text(legs, start_code, end_code, when)}"
 
 
-def journey_button_label(number: int, legs: list, start_code: str, end_code: str) -> str:
+def journey_button_label(number: int, legs: list, start_code: str, end_code: str, when=None) -> str:
     buses = " → ".join(leg["bus"] for leg in legs)
-    minutes = _minutes_text(journey_minutes(legs, start_code, end_code))
-    return _truncate(f"🧭 {number}. {buses} · {minutes} · {_plural(len(legs) - 1, 'change')}")
+    return _truncate(f"🧭 {number}. {buses} · {_time_text(legs, start_code, end_code, when)} · {_plural(len(legs) - 1, 'change')}")
 
 
 def _etas_min(arrivals, service_no) -> list:
@@ -89,9 +103,21 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
         text = "This journey no longer runs the way it did. Go back to the route for today's options."
         return {"markdown": escape_md(text), "fallback": text}, [back_row]
 
-    results = await asyncio.gather(
-        *(fetch_arrivals(leg["from"], leg["bus"]) for leg in legs), return_exceptions=True
-    )
+    # For a picked time: when you'd set off, and whether that's soon enough for live timings
+    # to say which bus you'd catch. Past that, each bus is timed by the clock, with an
+    # average wait, rather than by the buses due now.
+    when = route.get("when")
+    timed = journey_clock(legs, start_code, end_code)
+    leave = span(when, timed["total"])[0] if when else now()
+    lead = live_lead(leave) if when else 0.0
+    live = lead is not None
+
+    if live:
+        results = await asyncio.gather(
+            *(fetch_arrivals(leg["from"], leg["bus"]) for leg in legs), return_exceptions=True
+        )
+    else:
+        results = [None] * len(legs)
 
     total_stops = sum(d["stops"] for d in details)
     changes = len(legs) - 1
@@ -106,10 +132,18 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
         ),
     ]
     fallback = ["Journey", f"Start: {_stop_text(start_code)}", f"End: {_stop_text(end_code)}"]
+    if when:
+        by = clock(at_to_dt(when["at"]))
+        if leave < now() - timedelta(minutes=1):
+            set_off = f"⚠️ To arrive by {by} you'd have had to leave by {clock(leave)}."
+        else:
+            set_off = f"🕒 Set off around {clock_day(leave)}{f' to arrive by {by}' if when['mode'] == 'arrive' else ''}."
+        lines += ["", escape_md(set_off)]
+        fallback.append(set_off)
 
     # Minutes from now, walked forward leg by leg: when you'd reach each stop, and when the
     # bus you'd catch there leaves. None once a leg has no live timing left to go on.
-    t = 0.0
+    t = lead
     here_code = start_code
     for number, (leg, detail, arrivals) in enumerate(zip(legs, details, results), 1):
         walk = walk_details(here_code, leg["from"])
@@ -124,6 +158,13 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
         ride = f"From {_stop_text(leg['from'])} to {_stop_text(leg['to'])}"
         lines += ["", f"## {escape_md(heading)}", escape_md(ride)]
         fallback += ["", heading, ride]
+
+        if not live:
+            board = f"Board around {clock(leave + timedelta(minutes=timed['boards'][number - 1]))}, after an average wait."
+            lines += ["", escape_md(board)]
+            fallback.append(board)
+            here_code = leg["to"]
+            continue
 
         if t is not None and t >= 1:
             reach = f"You'd get to this stop in ~{round(t)} min, around {_clock(t)}."
@@ -174,10 +215,15 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
         arrive = f"🏁 Arrive around {_clock(t)}, in ~{round(t)} min, catching the first bus you can."
         lines += ["", f"## {escape_md(arrive)}"]
         fallback += ["", arrive]
+    elif not live:
+        arrive = f"🏁 Arrive around {clock_day(leave + timedelta(minutes=timed['total']))}, counting an average wait for each bus."
+        lines += ["", f"## {escape_md(arrive)}"]
+        fallback += ["", arrive]
 
     updated = datetime.now(ZoneInfo("Asia/Singapore")).strftime("%H:%M:%S")
-    lines += ["", f"_{escape_md(ESTIMATE_NOTE)}_", "", f"_Updated {updated}_"]
-    fallback += [ESTIMATE_NOTE, f"Updated {updated}"]
+    note = ESTIMATE_NOTE if live else f"{CLOCK_NOTE} Live timings show here from half an hour before you set off."
+    lines += ["", f"_{escape_md(note)}_", "", f"_Updated {updated}_"]
+    fallback += [note, f"Updated {updated}"]
 
     # Each leg opens its boarding stop's timings narrowed to that bus - the ordinary stop
     # view, which says how many stops are left, with this journey as its way back.

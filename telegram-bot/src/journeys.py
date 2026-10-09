@@ -13,9 +13,11 @@ a rough "you'd get there around" - nothing tighter."""
 import math
 import re
 from collections import defaultdict
+from datetime import timedelta
 
 from .db import db
 from .lta import _natural_sort_key
+from .when import BUS_WAIT_MIN, bus_runs_at, first_last_string
 
 WALK_LIMIT_M = 200
 # Straight-line metres covered per minute. A bus's ~15 km/h takes in its stops and the
@@ -133,17 +135,24 @@ class _Network:
             )
         }
         self.runs = defaultdict(list)
+        # Each stop's first and last bus on each run, for whether it's running at a time
+        # (when.py), beside self.runs.
+        self.times = defaultdict(list)
         for row in db.execute(
-            "SELECT service_no, direction, stop_code FROM bus_routes ORDER BY service_no, direction, stop_sequence"
+            "SELECT service_no, direction, stop_code, wd_first, wd_last, sat_first, sat_last, sun_first, sun_last "
+            "FROM bus_routes ORDER BY service_no, direction, stop_sequence"
         ):
             self.runs[(row["service_no"], row["direction"])].append(row["stop_code"])
-        for (service_no, _), stops in self.runs.items():
+            self.times[(row["service_no"], row["direction"])].append(first_last_string(row))
+        for run, stops in self.runs.items():
             # A loop ends where it started, but the route list keeps one row per stop, so
             # the terminus is only there as the first stop. Put it back on the end, or no
-            # journey could ever ride a loop service home to its interchange.
-            origin = loops.get(service_no)
+            # journey could ever ride a loop service home to its interchange. Never boarded
+            # there, it borrows the start's times.
+            origin = loops.get(run[0])
             if origin and stops[0] == origin and stops[-1] != origin:
                 stops.append(origin)
+                self.times[run].append(self.times[run][0])
 
         self.cum = {}
         self.at = defaultdict(list)
@@ -236,14 +245,77 @@ def direct_services(start_code: str, end_code: str) -> list:
     return sorted(found, key=_natural_sort_key)
 
 
-def find_journeys(start_code: str, end_code: str, limit: int = MAX_JOURNEYS) -> list:
+def direct_rides(start_code: str, end_code: str, timing: dict) -> list:
+    """The buses straight from one stop to the other, as `direct_services` finds them, with
+    the minutes each rides and whether it's running when boarded for `timing`, {"mode":
+    "leave" | "arrive", "moment"} (when.timing): [{bus, minutes, running}], in bus-number
+    order. A bus with more than one way between them keeps its quickest that's running."""
+    net = _get_network()
+    by_bus = {}
+    for run, i in net.at.get(start_code, ()):
+        stops = net.runs[run]
+        if end_code not in stops[i + 1 :]:
+            continue
+        minutes = _ride_min(net, run, i, stops.index(end_code, i + 1))
+        # Boarded after the average wait when leaving at a time, or in time to ride in by one.
+        board = (timing["moment"] - timedelta(minutes=minutes) if timing["mode"] == "arrive"
+                 else timing["moment"] + timedelta(minutes=BUS_WAIT_MIN))
+        ride = {"bus": run[0], "minutes": minutes, "running": bus_runs_at(net.times[run][i], board)}
+        old = by_bus.get(run[0])
+        if (not old or (ride["running"] and not old["running"])
+                or (ride["running"] == old["running"] and ride["minutes"] < old["minutes"])):
+            by_bus[run[0]] = ride
+    return sorted(by_bus.values(), key=lambda r: _natural_sort_key(r["bus"]))
+
+
+def find_journeys(start_code: str, end_code: str, limit: int = MAX_JOURNEYS, timing: "dict | None" = None) -> list:
     """The quickest few ways from one stop to another with a walk or up to three changes,
     best first, one per sequence of buses. Each is a list of legs, {bus, dir, from, to},
-    the walks being implied by the gaps between one leg's `to` and the next's `from`.
+    the walks being implied by the gaps between one leg's `to` and the next's `from`. With
+    `timing` (see `direct_rides`), only journeys whose every bus is running when boarded.
 
     Meant for when no single bus links the two stops, so it doesn't look for one riding
     straight between them - but a bus from the stop across the road does count."""
-    return [legs for _, legs in _ranked_journeys(start_code, end_code)[:limit]]
+    found = []
+    for _, legs in _ranked_journeys(start_code, end_code):
+        if len(found) >= limit:
+            break
+        if timing is None or _journey_runs(legs, start_code, end_code, timing):
+            found.append(legs)
+    return found
+
+
+def journey_clock(legs: list, start_code: str, end_code: str) -> "dict | None":
+    """A journey by the clock: {boards, total}, the minutes after setting off that each bus
+    is boarded and the whole journey's minutes, the average wait for each bus counted in.
+    None when a bus no longer runs that way."""
+    boards, t, here = [], 0.0, start_code
+    for leg in legs:
+        details = leg_details(leg)
+        if not details:
+            return None
+        walk = walk_details(here, leg["from"])
+        t += (walk["minutes"] if walk else 0) + BUS_WAIT_MIN
+        boards.append(t)
+        t += details["minutes"]
+        here = leg["to"]
+    walk = walk_details(here, end_code)
+    return {"boards": boards, "total": t + (walk["minutes"] if walk else 0)}
+
+
+def _journey_runs(legs: list, start_code: str, end_code: str, timing: dict) -> bool:
+    """Whether every bus on a journey is running when it's boarded, setting off at the time
+    or in time to arrive by it."""
+    clock = journey_clock(legs, start_code, end_code)
+    if not clock:
+        return False
+    leave = timing["moment"] - timedelta(minutes=clock["total"]) if timing["mode"] == "arrive" else timing["moment"]
+    net = _get_network()
+    for leg, board in zip(legs, clock["boards"]):
+        run = (leg["bus"], leg["dir"])
+        if not bus_runs_at(net.times[run][net.runs[run].index(leg["from"])], leave + timedelta(minutes=board)):
+            return False
+    return True
 
 
 def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, walk_end: bool = True) -> list:

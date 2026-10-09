@@ -21,6 +21,26 @@ to any other, by bus, train or both, including the walk at each end.
 
 The swap button between the two boxes turns the journey around.
 
+## Pick a time
+
+Under the boxes, **Leave now** is picked to start with. Tap **Leave at** or
+**Arrive by** to plan for another time instead, then pick the day (today or any of
+the next six) and the time.
+
+- **Leave at** lists each way with the time you'd set off and roughly when you'd
+  get in, as **08:30 → 09:05**.
+- **Arrive by** lists each way with the time you'd have to set off to get in by
+  then. A way you'd have had to leave on already says **Too late**.
+
+Only buses and trains running at that time are used, for Leave now as well: a
+bus counts as running between its first and last bus at that stop, for that day
+of the week, with public holidays counted as Sundays, and trains between about
+5:30am (6am on Sundays and public holidays) and midnight. A bus that's stopped
+for the night, or only runs on weekdays, isn't offered on a Sunday.
+
+Navigate goes back to **Leave now** each time it's opened, including from a saved
+nav.
+
 ## The ways there
 
 <figure>
@@ -71,6 +91,11 @@ Tap a way to see it leg by leg:
   that bus at the stop you board it. A button opens that stop's timings for the
   bus.
 
+With a time picked, each bus and train also says roughly when you'd board it. Live
+timings only reach about half an hour ahead, so for a way setting off later than
+that, each bus says when you'd board it instead, counting an average wait, and its
+live timings show up from half an hour before you set off.
+
 **All ways** goes back to the list, and **Refresh** beside it updates the way's
 live bus timings.
 
@@ -92,7 +117,9 @@ Tap **Save nav** to add it to your [favourites](favourites.md), under **Navs**.
 Like routes, a nav and its reverse are two separate favourites.
 
 The address of the page also changes to the nav, as
-`#nav/1.30050,103.85580/1.33320,103.92920`, so you can bookmark or share it.
+`#nav/1.30050,103.85580/1.33320,103.92920`, so you can bookmark or share it. With
+a time picked it ends with the time too, as `/arrive/2026-10-12T09:00`. A saved
+nav doesn't keep a time.
 
 ## Also in Telegram
 

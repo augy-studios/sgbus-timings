@@ -8,6 +8,7 @@ finds the points.
 | `network.js` | Builds one graph of bus stops and stations from the site's own `/api/bus-routes` and `/api/bus-stops` and from `rail.json`. Every bus direction and train service is a run, with estimated minutes to each stop. |
 | `router.js` | Round-based search, one vehicle per round, keeping the best arrival per mix of buses and trains, then a varied shortlist. |
 | `onemap-check.js` | Asks OneMap's timetable-based router the same question, to show its time beside matching options and add any it found that ours didn't. |
+| `when.js` | Leave now, Leave at or Arrive by, and whether a bus or train is running at a time: LTA's first and last bus per stop for the kind of day (public holidays count as Sundays), and the hours trains run. The router never boards anything that isn't. Keep in step with `js/when.js` and the bot's `when.py`; add each year's public holidays once MOM publishes them. |
 | `rail.json` | The MRT and LRT network: stations with their codes, positions and exits, and each line's stations in order. |
 
 ## rail.json
@@ -36,3 +37,8 @@ stations (calibrated so Jurong East to Tanah Merah is about the 52 minutes it
 takes), an average wait to board (5 minutes for a bus, 3 for a train), 3 minutes
 to change trains inside an interchange, and 2 minutes between a station's exit
 and its platform. OneMap's check shows a timetable-based time where it can.
+
+With a time picked (`&when=leave|arrive&at=2026-10-09T08:30`), and for Leave now too, a bus
+is only boarded between its first and last bus at that stop, and a train between about
+5:30am (6am on Sundays and public holidays) and midnight. Arrive by plans from the quickest
+way's time to set off, then keeps each way only if it runs from its own.

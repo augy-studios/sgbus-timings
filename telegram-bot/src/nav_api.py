@@ -33,11 +33,13 @@ async def places(query: str) -> list[dict]:
     return res.json()
 
 
-async def plan(from_point: dict, to_point: dict) -> dict:
-    """{options: [...], onemap: bool, alerts: {lines}}, quickest option first."""
+async def plan(from_point: dict, to_point: dict, when: "dict | None" = None) -> dict:
+    """{options: [...], onemap: bool, alerts: {lines}, when}, quickest option first. `when`
+    is a picked time (when.py), None for Leave now."""
     params = {
         "from": f"{from_point['lat']:.5f},{from_point['lng']:.5f}",
         "to": f"{to_point['lat']:.5f},{to_point['lng']:.5f}",
+        **({"when": when["mode"], "at": when["at"]} if when else {}),
     }
     try:
         res = await shared_client().get(_url("/api/nav"), params=params, headers=_headers(), timeout=60)

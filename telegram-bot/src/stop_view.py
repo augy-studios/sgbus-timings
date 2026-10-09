@@ -177,7 +177,7 @@ async def build_stop_view(
     if back:
         buttons.append([Button.inline("🔙 Back", make_button("stop_list", back))])
     if nav:
-        ends = {"from": nav["from"], "to": nav["to"]}
+        ends = {k: nav[k] for k in ("from", "to", "when") if k in nav}
         buttons.append(
             [
                 Button.inline("🔙 Back to the way", make_button("nav_option", nav)),

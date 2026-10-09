@@ -284,7 +284,11 @@
           if (a && b) total += haversine(a, b);
           cum.push(total);
         }
-        list.push({ bus: serviceNo, dir: Number(dir), stops: seq, cum });
+        // Each stop's first and last bus, for whether it's running at a time (js/when.js).
+        // The loop's end, never boarded at, borrows its start's.
+        const own = dirs[dir].times || [];
+        const times = seq.map((_, i) => own[i] ?? own[0] ?? '');
+        list.push({ bus: serviceNo, dir: Number(dir), stops: seq, cum, times });
       }
     }
     const at = {};

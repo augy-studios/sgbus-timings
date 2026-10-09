@@ -11,8 +11,10 @@ from ..journeys import direct_services
 from ..planning_areas import tell_apart
 from ..postal import POSTAL_CODE_RE
 from ..reply import edit_rich_message, edit_rich_message_at, send_rich_message, sent_message_id
-from ..route_drafts import clear_route_draft, get_route_draft, start_route_draft
+from ..route_drafts import clear_route_draft, draft_when, get_route_draft, start_route_draft
 from ..route_view import build_route_view_async
+from ..when import parse_typed, problem
+from ..when_view import TYPED_HINT, build_when_prompt
 from .search import find_postal_stops
 
 # No `finish`: a route is only worth anything once both ends are set, and it's the panel's
@@ -144,29 +146,29 @@ async def _offer_matches(event, chat_id, matches, draft):
     await event.respond(f"Did you mean one of these? {note}:" if note else "Did you mean:", buttons=buttons)
 
 
-def _armed_draft(chat_id):
-    """The route the chat is filling in, when it really is waiting for a stop to be typed
-    or pointed at. None otherwise, which is how the handlers below know to keep out of the
-    way of whatever else the message might mean."""
+def _armed_draft(chat_id, fields=("start", "end")):
+    """The route the chat is filling in, when it really is waiting for one of `fields` - a
+    stop, by default - to be typed or pointed at. None otherwise, which is how the handlers
+    below know to keep out of the way of whatever else the message might mean."""
     if get_flow(chat_id) != FLOW:
         return None
     draft = get_route_draft(chat_id)
-    return draft if draft and draft["field"] in ("start", "end") else None
+    return draft if draft and draft["field"] in fields else None
 
 
-async def send_route_panel(client, chat_id, start_code, end_code, awaiting=None, replacing=None):
+async def send_route_panel(client, chat_id, start_code, end_code, awaiting=None, replacing=None, when=None):
     """Posts the route panel as a new message and takes the buttons off the panel it
     supersedes, so only the newest one is ever live. `replacing` is the
-    (message id, start, end) of that older panel.
+    (message id, start, end, when) of that older panel; `when` is the time picked (when.py).
 
     Arms the flow for `awaiting`, so the next thing typed fills that end in - or ends the
     flow when the route is complete and there's nothing left to answer."""
-    rich, buttons = await build_route_view_async(chat_id, start_code, end_code, awaiting=awaiting)
+    rich, buttons = await build_route_view_async(chat_id, start_code, end_code, awaiting=awaiting, when=when)
     result = await send_rich_message(client, chat_id, rich, buttons)
 
     if replacing:
-        old_id, old_start, old_end = replacing
-        stale_rich, _ = await build_route_view_async(chat_id, old_start, old_end)
+        old_id, old_start, old_end, old_when = replacing
+        stale_rich, _ = await build_route_view_async(chat_id, old_start, old_end, when=old_when)
         await edit_rich_message_at(client, chat_id, old_id, stale_rich)
 
     if awaiting:
@@ -176,6 +178,7 @@ async def send_route_panel(client, chat_id, start_code, end_code, awaiting=None,
             start_code=start_code,
             end_code=end_code,
             panel_msg_id=sent_message_id(result),
+            when=when,
         )
         set_flow(chat_id, FLOW)
     else:
@@ -187,14 +190,36 @@ async def arm_route_field(client, event, chat_id, payload):
     fills that end in, and redraws the panel with the prompt on it. Any panel still holding
     its buttons can be edited this way, including one opened from /myroutes."""
     field = payload["field"]
-    start_code, end_code = payload.get("start"), payload.get("end")
+    start_code, end_code, when = payload.get("start"), payload.get("end"), payload.get("when")
     start_route_draft(
-        chat_id, field, start_code=start_code, end_code=end_code, panel_msg_id=event.query.msg_id
+        chat_id, field, start_code=start_code, end_code=end_code, panel_msg_id=event.query.msg_id, when=when
     )
     set_flow(chat_id, FLOW)
     rich, buttons = await build_route_view_async(
-        chat_id, start_code, end_code, payload.get("page", 0), awaiting=field, from_fav=payload.get("from_fav")
+        chat_id, start_code, end_code, payload.get("page", 0), awaiting=field, from_fav=payload.get("from_fav"), when=when
     )
+    await edit_rich_message(client, event, rich, buttons)
+
+
+# Where the time picker goes back to: the panel as it was.
+WHEN_BACK = ("route_view", "🔙 Back to route")
+
+
+async def arm_route_when(client, event, chat_id, payload):
+    """Leave at or Arrive by tapped: waits for the time to be typed, keeping the route. The
+    answer posts a new panel and takes the buttons off this message, as a typed stop does."""
+    mode = payload["mode"]
+    route = {k: v for k, v in payload.items() if k != "mode"}
+    start_route_draft(
+        chat_id,
+        f"when:{mode}",
+        start_code=payload.get("start"),
+        end_code=payload.get("end"),
+        panel_msg_id=event.query.msg_id,
+        when=payload.get("when"),
+    )
+    set_flow(chat_id, FLOW)
+    rich, buttons = build_when_prompt("route", route, mode, WHEN_BACK)
     await edit_rich_message(client, event, rich, buttons)
 
 
@@ -214,15 +239,17 @@ async def apply_stop(client, chat_id, code):
         return
 
     awaiting = "end" if not end_code else ("start" if not start_code else None)
+    when = draft_when(draft)
     await send_route_panel(
         client,
         chat_id,
         start_code,
         end_code,
         awaiting,
-        replacing=(draft["panel_msg_id"], draft["start_code"], draft["end_code"])
+        replacing=(draft["panel_msg_id"], draft["start_code"], draft["end_code"], when)
         if draft["panel_msg_id"]
         else None,
+        when=when,
     )
 
 
@@ -252,6 +279,32 @@ def register_newroute(client):
             raise events.StopPropagation
 
         await _offer_nearby(event, chat_id, nearby, "you", draft)
+        raise events.StopPropagation
+
+    @client.on(events.NewMessage(func=lambda e: bool(e.message.text) and not e.message.text.startswith("/")))
+    async def collect_when(event):
+        """A time typed after Leave at or Arrive by: the route posted again at that time. The
+        prompt it answers was the panel's own message, so that's the one left without buttons."""
+        chat_id = event.chat_id
+        draft = _armed_draft(chat_id, ("when:leave", "when:arrive"))
+        if not draft:
+            return
+        when = parse_typed(event.message.text, draft["field"].split(":", 1)[1])
+        late = problem(when) if when else None
+        if not when or late:
+            await event.respond(late or TYPED_HINT)
+            raise events.StopPropagation
+        start_code, end_code = draft["start_code"], draft["end_code"]
+        awaiting = "start" if not start_code else ("end" if not end_code else None)
+        await send_route_panel(
+            client,
+            chat_id,
+            start_code,
+            end_code,
+            awaiting,
+            replacing=(draft["panel_msg_id"], start_code, end_code, draft_when(draft)) if draft["panel_msg_id"] else None,
+            when=when,
+        )
         raise events.StopPropagation
 
     @client.on(events.NewMessage(func=lambda e: bool(e.message.text) and not e.message.text.startswith("/")))

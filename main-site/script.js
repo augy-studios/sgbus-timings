@@ -564,8 +564,8 @@ function renderStopContext() {
 }
 
 function goBack(ctx) {
-    if (ctx.kind === 'route')        openPlanner(ctx.start, ctx.end);
-    else if (ctx.kind === 'journey') openPlanner(ctx.start, ctx.end, { journey: ctx.legs });
+    if (ctx.kind === 'route')        openPlanner(ctx.start, ctx.end, { when: ctx.when });
+    else if (ctx.kind === 'journey') openPlanner(ctx.start, ctx.end, { journey: ctx.legs, when: ctx.when });
     else if (ctx.kind === 'service') openService(ctx.service, { fromStop: ctx.fromStop, onward: ctx.onward, dir: ctx.dir });
     else if (ctx.kind === 'nearby')  openNearbyList(ctx.stops, ctx.title);
 }
@@ -1193,7 +1193,12 @@ $('.favBar').addEventListener('click', e => {
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
 // "#alerts" for the service alerts card, "#nav/lat,lng/lat,lng" for Navigate, and "#near" and
-// "#nav" for the installed app's shortcuts.
+// "#nav" for the installed app's shortcuts. A route or nav can end "/leave/2026-10-09T08:30"
+// or "/arrive/..." for a picked time (js/when.js); one that has passed opens saying so.
+const WHEN_HASH = When.HASH_RE_SOURCE;
+const ROUTE_HASH_RE = new RegExp(`^route\\/(\\d{5})\\/(\\d{5})${WHEN_HASH}$`);
+const NAV_HASH_RE = new RegExp(`^nav\\/(-?[\\d.]+,-?[\\d.]+)\\/(-?[\\d.]+,-?[\\d.]+)${WHEN_HASH}$`);
+
 function routeFromHash() {
     const hash = decodeURIComponent(location.hash.replace('#', ''));
     let m;
@@ -1206,8 +1211,8 @@ function routeFromHash() {
     // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
     if (hash === 'near') { $('#nearMeBtn').click(); return true; }
     if (hash === 'nav') { openNav(null, null, { scroll: false }); return true; }
-    if ((m = hash.match(/^route\/(\d{5})\/(\d{5})$/))) { openPlanner(m[1], m[2], { scroll: false }); return true; }
-    if ((m = hash.match(/^nav\/(-?[\d.]+,-?[\d.]+)\/(-?[\d.]+,-?[\d.]+)$/))) { openNavHash(m[1], m[2]); return true; }
+    if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(m[1], m[2], { scroll: false, when: When.fromHash(m[3], m[4]) }); return true; }
+    if ((m = hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[3], m[4])); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
     const [hashCode, hashSvc] = hash.split(',');
     if (/^\d{5}$/.test(hashCode)) {

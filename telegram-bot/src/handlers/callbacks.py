@@ -23,13 +23,21 @@ from .addroutine import build_bus_picker, clear_buses, finalize_stop, save_draft
 from .favbuses import build_favbuses_view
 from .favouritepref import build_favouritepref_view
 from .favroutes import build_favroutes_view
+from .newroute import FLOW as ROUTE_FLOW
+from .newroute import WHEN_BACK as ROUTE_WHEN_BACK
 from .newroute import apply_stop as apply_route_stop
-from .newroute import arm_route_field
+from .newroute import arm_route_field, arm_route_when
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .servicealerts import fetch_alerts_now
-from .nav import arm_nav_field, open_favourite_nav, set_end as set_nav_end, show_nav, show_option
+from .nav import WHEN_BACK as NAV_WHEN_BACK
+from .nav import arm_nav_field, arm_when as arm_nav_when, open_favourite_nav, redraw_panel as redraw_nav_panel
+from .nav import set_end as set_nav_end, show_nav, show_option
+from ..flows import end_flow, get_flow, set_flow
 from ..nav_view import build_mynavs_view
 from ..navs import toggle_favourite_nav
+from ..route_drafts import get_route_draft
+from ..when import describe, quick
+from ..when_view import build_when_menu
 from .settings import build_settings_view, start_edit_birthday, start_edit_name
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
@@ -142,12 +150,17 @@ def register_callbacks(client):
                     await event.answer()
                     return
                 awaiting = panel_awaiting(user_id, event.query.msg_id)
+                draft = get_route_draft(user_id)
                 if awaiting:
                     # The wrong-side button swaps an end in, and a stop typed in answer to
                     # this panel afterwards has to land on the route as it now stands.
                     start_route_draft(
-                        user_id, awaiting, start_code=start_code, end_code=end_code, panel_msg_id=event.query.msg_id
+                        user_id, awaiting, start_code=start_code, end_code=end_code,
+                        panel_msg_id=event.query.msg_id, when=payload.get("when"),
                     )
+                elif get_flow(user_id) == ROUTE_FLOW and draft and (draft["field"] or "").startswith("when:"):
+                    # Back from the time prompt: no time is coming after all.
+                    end_flow(user_id)
                 rich, buttons = await build_route_view_async(
                     user_id,
                     start_code,
@@ -155,9 +168,45 @@ def register_callbacks(client):
                     payload.get("page", 0),
                     awaiting=awaiting,
                     from_fav=payload.get("from_fav"),
+                    when=payload.get("when"),
                 )
                 await edit_rich_message(client, event, rich, buttons)
                 await event.answer()
+                return
+
+            if action == "route_when":
+                rich, buttons = build_when_menu("route", payload, ROUTE_WHEN_BACK)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "route_when_mode":
+                await arm_route_when(client, event, user_id, payload)
+                await event.answer()
+                return
+
+            if action == "route_when_set":
+                pick = payload.get("pick")
+                when = quick(pick["mode"], pick["minutes"]) if pick else None
+                route = {k: v for k, v in payload.items() if k not in ("pick", "when")}
+                if when:
+                    route["when"] = when
+                start_code, end_code = route.get("start"), route.get("end")
+                # Either way the time is answered; an end still missing is asked for again.
+                awaiting = "start" if not start_code else ("end" if not end_code else None)
+                if awaiting:
+                    start_route_draft(
+                        user_id, awaiting, start_code=start_code, end_code=end_code,
+                        panel_msg_id=event.query.msg_id, when=when,
+                    )
+                    set_flow(user_id, ROUTE_FLOW)
+                elif get_flow(user_id) == ROUTE_FLOW:
+                    end_flow(user_id)
+                rich, buttons = await build_route_view_async(
+                    user_id, start_code, end_code, awaiting=awaiting, from_fav=route.get("from_fav"), when=when
+                )
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer(describe(when))
                 return
 
             if action == "route_set":
@@ -180,6 +229,7 @@ def register_callbacks(client):
                     payload.get("page", 0),
                     awaiting=panel_awaiting(user_id, event.query.msg_id),
                     from_fav=payload.get("from_fav"),
+                    when=payload.get("when"),
                 )
                 await edit_rich_message(client, event, rich, buttons)
                 await event.answer("Route added to favourites" if now_fav else "Route removed from favourites")
@@ -420,18 +470,39 @@ def register_callbacks(client):
 
             if action == "nav_show":
                 await event.answer("Finding ways there…")
-                await show_nav(client, event, payload["from"], payload["to"])
+                await show_nav(client, event, payload["from"], payload["to"], payload.get("when"))
                 return
 
             if action == "nav_option":
                 await event.answer()
-                await show_option(client, event, payload["from"], payload["to"], payload["option"])
+                await show_option(client, event, payload["from"], payload["to"], payload["option"], payload.get("when"))
                 return
 
             if action == "nav_fav":
                 now_fav = toggle_favourite_nav(event.chat_id, payload["from"], payload["to"])
                 await event.answer("Nav added to favourites" if now_fav else "Nav removed from favourites")
-                await show_nav(client, event, payload["from"], payload["to"])
+                await show_nav(client, event, payload["from"], payload["to"], payload.get("when"))
+                return
+
+            if action == "nav_when":
+                rich, buttons = build_when_menu("nav", payload, NAV_WHEN_BACK)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
+            if action == "nav_when_mode":
+                await arm_nav_when(client, event, event.chat_id, payload)
+                await event.answer()
+                return
+
+            if action in ("nav_when_set", "nav_back"):
+                if action == "nav_when_set":
+                    pick = payload.get("pick")
+                    when = quick(pick["mode"], pick["minutes"]) if pick else None
+                else:
+                    when = payload.get("when")
+                await event.answer(describe(when) if action == "nav_when_set" else None)
+                await redraw_nav_panel(client, event, event.chat_id, payload, when)
                 return
 
             if action == "nav_open_fav":

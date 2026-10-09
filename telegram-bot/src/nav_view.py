@@ -4,10 +4,13 @@ site's /api/nav (nav_api.py), the same as the web app's Navigate."""
 
 from telethon import Button
 
+from datetime import timedelta
+
 from .buttons import make_button
 from .format import _format_eta, escape_md
 from .navs import is_favourite_nav, list_favourite_navs
 from .pagination import nav_row, paginate
+from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
 
 MAX_OPTIONS = 8
 
@@ -50,23 +53,37 @@ def option_summary(option: dict) -> str:
     return f"{' → '.join(_chip(leg) for leg in rides)} · {change_text}, {_metres(walk)} walk"
 
 
-def _ends_lines(start: "dict | None", end: "dict | None") -> tuple[list, list]:
+def _ends_lines(start: "dict | None", end: "dict | None", when=None) -> tuple[list, list]:
     md = [
         f"**From:** {escape_md(start['label']) if start else '_not set_'}",
         f"**To:** {escape_md(end['label']) if end else '_not set_'}",
+        f"**When:** {escape_md(describe(when))}",
     ]
-    plain = [f"From: {start['label'] if start else 'not set'}", f"To: {end['label'] if end else 'not set'}"]
+    plain = [f"From: {start['label'] if start else 'not set'}", f"To: {end['label'] if end else 'not set'}", f"When: {describe(when)}"]
     return md, plain
 
 
-def _ends_payload(start, end) -> dict:
-    return {"from": start, "to": end}
+def _ends_payload(start, end, when=None) -> dict:
+    """What every /nav button carries: both ends, and the time picked when there is one."""
+    return {"from": start, "to": end, **({"when": when} if when else {})}
 
 
-def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, result: "dict | None" = None, error: "str | None" = None):
+def _clocks(when, minutes) -> str:
+    """"08:12 → 08:50" for a way, by the time picked."""
+    leave, arrive = span(when, minutes)
+    return f"{clock(leave)} → {clock(arrive)}"
+
+
+def _too_late(when, minutes) -> bool:
+    """For Arrive by: a way you'd have had to set off on already."""
+    return bool(when) and when["mode"] == "arrive" and span(when, minutes)[0] < now() - timedelta(minutes=1)
+
+
+def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, result: "dict | None" = None, error: "str | None" = None, when=None):
     """The /nav panel. With both ends set and `result` from the API, the ways between them,
-    a button each; otherwise a prompt for the end it's waiting on."""
-    md_ends, plain_ends = _ends_lines(start, end)
+    a button each; otherwise a prompt for the end it's waiting on. `when` is the time picked
+    (when.py), None for Leave now."""
+    md_ends, plain_ends = _ends_lines(start, end, when)
     md = ["# 🧭 Navigate by bus and train", "", *md_ends, ""]
     plain = ["🧭 Navigate by bus and train", "", *plain_ends, ""]
     buttons = []
@@ -81,7 +98,8 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
     elif result is not None:
         options = (result.get("options") or [])[:MAX_OPTIONS]
         if not options:
-            line = "No way by bus or train was found between these two places. Try somewhere nearby."
+            line = (f"No way by bus or train running {'at that time' if when else 'right now'} was found between "
+                    "these two places. Try another time, or somewhere nearby.")
             md.append(line)
             plain.append(line)
         else:
@@ -95,40 +113,66 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 if o.get("source") == "onemap":
                     extra.append("found by OneMap")
                 warn = " ⚠️" if o.get("disrupted") else ""
-                text = f"{i}. ~{o['minutes']} min · {option_summary(o)}{' · ' + ', '.join(extra) if extra else ''}{warn}"
+                late = " (too late)" if _too_late(when, o["minutes"]) else ""
+                # With a time picked, the clock times lead.
+                lead = f"{_clocks(when, o['minutes'])}{late} · ~{o['minutes']} min" if when else f"~{o['minutes']} min"
+                text = f"{i}. {lead} · {option_summary(o)}{' · ' + ', '.join(extra) if extra else ''}{warn}"
                 md.append(escape_md(text))
                 plain.append(text)
+                short = _clocks(when, o["minutes"]) if when else f"~{o['minutes']} min"
                 buttons.append(
-                    [Button.inline(f"{i} · ~{o['minutes']} min · {' → '.join(leg['route'] for leg in _rides(o)) or 'walk'}"[:64],
-                                   make_button("nav_option", {**_ends_payload(start, end), "option": o}))]
+                    [Button.inline(f"{i} · {short} · {' → '.join(leg['route'] for leg in _rides(o)) or 'walk'}"[:64],
+                                   make_button("nav_option", {**_ends_payload(start, end, when), "option": o}))]
                 )
-            note = "Times include walking and an average wait to board. ⚠️ marks a line LTA reports a disruption on."
+            note = ("Times include walking and an average wait to board. Only buses and trains running at the time "
+                    "are used. ⚠️ marks a line LTA reports a disruption on.")
             md += ["", f"_{escape_md(note)}_"]
             plain += ["", note]
 
+    ends = _ends_payload(start, end, when)
     if start and end:
         fav = is_favourite_nav(chat_id, start, end)
         buttons.append([
-            Button.inline("⭐ Remove favourite" if fav else "⭐ Add favourite", make_button("nav_fav", _ends_payload(start, end))),
-            Button.inline("🔄 Refresh", make_button("nav_show", _ends_payload(start, end))),
+            Button.inline("⭐ Remove favourite" if fav else "⭐ Add favourite", make_button("nav_fav", ends)),
+            Button.inline("🔄 Refresh", make_button("nav_show", ends)),
         ])
     # The end being waited on swaps its letter for a pencil, as on the /route panel.
     buttons.append([
-        Button.inline(f"{'✏️' if awaiting == 'from' else '🅰'} Set start",
-                      make_button("nav_set", {**_ends_payload(start, end), "field": "from"})),
-        Button.inline(f"{'✏️' if awaiting == 'to' else '🅱'} Set end",
-                      make_button("nav_set", {**_ends_payload(start, end), "field": "to"})),
+        Button.inline(f"{'✏️' if awaiting == 'from' else '🅰'} Set start", make_button("nav_set", {**ends, "field": "from"})),
+        Button.inline(f"{'✏️' if awaiting == 'to' else '🅱'} Set end", make_button("nav_set", {**ends, "field": "to"})),
     ])
+    buttons.append([Button.inline(f"🕒 {describe(when)}"[:64], make_button("nav_when", ends))])
     return {"markdown": "\n".join(md).strip(), "fallback": "\n".join(plain).strip()}, buttons
 
 
-def build_nav_option(start, end, option: dict, timings: dict):
+def option_is_live(option: dict, when) -> bool:
+    """Whether a way sets off soon enough for live bus timings to be the buses you'd catch:
+    always for Leave now, and within half an hour for a picked time."""
+    return not when or live_lead(span(when, option["minutes"])[0]) is not None
+
+
+def build_nav_option(start, end, option: dict, timings: dict, when=None):
     """One way, leg by leg. `timings` maps a bus leg's index to its next ETAs in ms (or None
-    when LTA has none)."""
+    when LTA has none); for a way setting off too far ahead for those (option_is_live), each
+    bus and train says when it's boarded instead, by the clock."""
     md = [f"# 🧭 ~{option['minutes']} min", f"{escape_md(start['label'])} → {escape_md(end['label'])}", ""]
     plain = [f"🧭 ~{option['minutes']} min", f"{start['label']} → {end['label']}", ""]
     buttons = []
     legs = option["legs"]
+    live = option_is_live(option, when)
+    leave, arrive = span(when, option["minutes"])
+    if when:
+        if _too_late(when, option["minutes"]):
+            line = f"⚠️ To arrive by {clock(at_to_dt(when['at']))} you'd have had to leave by {clock(leave)}."
+        else:
+            line = f"🕒 Set off around {clock_day(leave)}, arrive around {clock(arrive)}."
+        md += [escape_md(line), ""]
+        plain += [line, ""]
+
+    def board_line(leg, after_wait):
+        if not when or leg.get("board") is None:
+            return None
+        return f"   Board around {clock(leave + timedelta(minutes=leg['board']))}{', after an average wait' if after_wait else ''}."
     for k, leg in enumerate(legs):
         if leg["mode"] == "walk":
             where = end["label"] if k == len(legs) - 1 else _place_name(leg.get("to"))
@@ -141,6 +185,10 @@ def build_nav_option(start, end, option: dict, timings: dict):
                     f"{leg['stops']} stop{'s' if leg['stops'] != 1 else ''} to {_place_name(leg['to'])}, ~{round(leg['minutes'])} min")
             md.append(escape_md(line))
             plain.append(line)
+            board = board_line(leg, after_wait=False)
+            if board:
+                md.append(escape_md(board))
+                plain.append(board)
             if leg.get("disrupted"):
                 note = "   ⚠️ LTA reports a disruption on this line. Send /alerts for details."
                 md.append(escape_md(note))
@@ -151,22 +199,28 @@ def build_nav_option(start, end, option: dict, timings: dict):
                     f"{leg['stops']} stop{'s' if leg['stops'] != 1 else ''} to {_place_name(leg['to'])}, ~{round(leg['minutes'])} min")
             md.append(escape_md(line))
             plain.append(line)
-            etas = timings.get(k)
-            eta_line = (f"   Next {leg['route']}: {' · '.join(_format_eta(ms) for ms in etas)}" if etas
-                        else "   No live timings for this bus right now.")
-            md.append(escape_md(eta_line))
-            plain.append(eta_line)
+            if live:
+                etas = timings.get(k)
+                eta_line = (f"   Next {leg['route']}: {' · '.join(_format_eta(ms) for ms in etas)}" if etas
+                            else "   No live timings for this bus right now.")
+            else:
+                eta_line = board_line(leg, after_wait=True)
+            if eta_line:
+                md.append(escape_md(eta_line))
+                plain.append(eta_line)
             if leg.get("from", {}).get("code"):
                 # The way rides along, so the timings can come back to it.
-                way = {**_ends_payload(start, end), "option": option}
+                way = {**_ends_payload(start, end, when), "option": option}
                 buttons.append([Button.inline(f"🚏 {leg['route']} at {leg['from']['name']}"[:64],
                                               make_button("stop", {"code": leg["from"]["code"], "bus_no": leg["route"], "nav": way}))])
-    note = "Train times are estimates from distance; bus timings are live from LTA."
+    note = ("Train times are estimates from distance; bus timings are live from LTA." if live
+            else "Times are estimates from distance, with an average wait to board. "
+                 "Live bus timings show here from half an hour before you set off.")
     md += ["", f"_{escape_md(note)}_"]
     plain += ["", note]
     buttons.append([
-        Button.inline("🔄 Refresh", make_button("nav_option", {**_ends_payload(start, end), "option": option})),
-        Button.inline("🔙 Back to all ways", make_button("nav_show", _ends_payload(start, end))),
+        Button.inline("🔄 Refresh", make_button("nav_option", {**_ends_payload(start, end, when), "option": option})),
+        Button.inline("🔙 Back to all ways", make_button("nav_show", _ends_payload(start, end, when))),
     ])
     return {"markdown": "\n".join(md).strip(), "fallback": "\n".join(plain).strip()}, buttons
 

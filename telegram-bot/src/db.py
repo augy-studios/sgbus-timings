@@ -113,12 +113,16 @@ db.executescript(
         updated_at INTEGER NOT NULL
     );
 
+    -- `field` is what the panel is waiting to be told: 'start' or 'end', or 'when:leave' /
+    -- 'when:arrive' for a time. `when_json` is the time already picked (when.py), NULL for
+    -- Leave now.
     CREATE TABLE IF NOT EXISTS route_drafts (
         chat_id INTEGER PRIMARY KEY,
         field TEXT,
         start_code TEXT,
         end_code TEXT,
         panel_msg_id INTEGER,
+        when_json TEXT,
         updated_at INTEGER NOT NULL
     );
 
@@ -147,12 +151,14 @@ db.executescript(
     );
 
     -- /nav: the journey being planned, one per chat. `field` is the end the bot is waiting
-    -- to be told, 'from' or 'to'; each end is a place, a label and a position.
+    -- to be told, 'from' or 'to', or 'when:leave' / 'when:arrive' for a time; each end is a
+    -- place, a label and a position. `when_json` is the time already picked, NULL for now.
     CREATE TABLE IF NOT EXISTS nav_drafts (
         chat_id INTEGER PRIMARY KEY,
         field TEXT,
         from_label TEXT, from_lat REAL, from_lng REAL,
         to_label TEXT, to_lat REAL, to_lng REAL,
+        when_json TEXT,
         updated_at INTEGER NOT NULL
     );
 
@@ -236,6 +242,12 @@ if "services" not in _routine_drafts_columns:
         db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_code TEXT")
         db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_name TEXT")
         db.execute("ALTER TABLE routine_drafts ADD COLUMN services TEXT")
+
+# A time to leave at or arrive by, for /route and /nav (when.py).
+for _draft_table in ("route_drafts", "nav_drafts"):
+    if "when_json" not in {row["name"] for row in db.execute(f"PRAGMA table_info({_draft_table})").fetchall()}:
+        with db:
+            db.execute(f"ALTER TABLE {_draft_table} ADD COLUMN when_json TEXT")
 
 # Service Alerts used to have one mode for both kinds. A subscriber from then keeps it for
 # each, so nobody's alerts change until they pick otherwise.

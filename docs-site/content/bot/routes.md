@@ -39,6 +39,26 @@ The message above the buttons says how many there are, or that none of them has
 one and the finished route will offer journeys with a change. Only a bus heading
 the right way counts, the same rule as the list of buses below.
 
+## Pick a time
+
+The panel starts at **🕒 Leave now**. Tap it, then **Leave at…** or **Arrive
+by…**, and send the time: `8:30`, `8.30pm` or `2030`, or with a day, `tmr 8am` or
+`sat 9:15`, up to a week ahead. A time with no day that has already passed today
+means tomorrow. Or tap one of **In 15 min**, **In 30 min**, **In 1 h** or **In 2
+h**. **Leave now** on the same menu goes back.
+
+Only buses running at that time are offered, for Leave now as well: a bus counts
+as running between its first and last bus at your stop, for that day of the week,
+with public holidays counted as Sundays. A bus that runs the whole way but isn't
+running then is named at the bottom of the panel, and if none of them is, the bot
+offers journeys with a change instead.
+
+With a time picked, the panel says when you'd get in or when to set off on the
+buses that run the whole way, and each journey shows when you'd set off and get
+in, as **08:30 → 09:05**, counting an average 5-minute wait for each bus.
+
+A new `/route`, and a route opened from `/myroutes`, starts at Leave now again.
+
 ## Buses that run the whole way
 
 A finished route lists every bus that runs from the start to the end without a
@@ -72,6 +92,10 @@ Tap a journey to see it leg by leg, with the live timings of each bus at the
 stop you board it. From the second bus on, the bot estimates when you would
 reach that stop, strikes through the buses due before then, and bolds the one
 you would catch. It ends with a rough arrival time for the whole journey.
+
+With a time picked, it starts with when to set off. For a journey setting off more
+than half an hour from now, each bus says roughly when you'd board it instead of
+its live timings, which don't reach that far ahead.
 
 Each leg has a button to open that stop's timings for the bus, with
 **Back to journey** to return.

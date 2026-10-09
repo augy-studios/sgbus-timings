@@ -44,9 +44,10 @@ function toOption(it) {
 
 const keyOf = (o) => o.routes.join(">");
 
-export async function checkWithOneMap(options, from, to) {
+// `when` is the moment to set off, so OneMap's timetables answer for then.
+export async function checkWithOneMap(options, from, to, when = new Date()) {
   const ask = (mode) =>
-    Promise.race([route(from, to, { mode }), new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), TIMEOUT_MS))]);
+    Promise.race([route(from, to, { mode, when }), new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), TIMEOUT_MS))]);
   const results = await Promise.allSettled(["TRANSIT", "BUS", "RAIL"].map(ask));
   const theirs = new Map();
   for (const r of results) {

@@ -157,7 +157,11 @@ function busRuns(nodes, busNode, payload) {
       const codes = [...run.stops];
       // A loop ends where it started, but the route list keeps one row per stop.
       if (loopOrigin && codes[0] === loopOrigin && codes[codes.length - 1] !== loopOrigin) codes.push(loopOrigin);
-      const path = codes.map((c) => busNode.get(c)).filter((id) => id != null);
+      // Each stop's first and last bus (see when.js), kept beside it; the loop's end, never
+      // boarded at, borrows its start's.
+      const kept = codes.map((c, k) => [busNode.get(c), run.times?.[k] ?? run.times?.[0] ?? ""]).filter(([id]) => id != null);
+      const path = kept.map(([id]) => id);
+      const times = kept.map(([, t]) => t);
       if (path.length < 2) continue;
       const cum = [0];
       for (let i = 1; i < path.length; i++) {
@@ -165,7 +169,7 @@ function busRuns(nodes, busNode, payload) {
         const b = nodes[path[i]];
         cum.push(cum[i - 1] + haversine(a.lat, a.lng, b.lat, b.lng) / BUS_M_PER_MIN);
       }
-      runs.push({ mode: "B", key: `B:${serviceNo}`, route: serviceNo, dir: Number(dir), towards: nodes[path[path.length - 1]].name, nodes: path, cum });
+      runs.push({ mode: "B", key: `B:${serviceNo}`, route: serviceNo, dir: Number(dir), towards: nodes[path[path.length - 1]].name, nodes: path, cum, times });
     }
   }
   return runs;

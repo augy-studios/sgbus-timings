@@ -134,14 +134,72 @@
     return [...found].sort(BusNet.byNumber);
   }
 
+  // The buses straight from one stop to the other, as directServices finds them, with the
+  // minutes each rides and whether it's running when boarded for `timing`, { mode: 'leave' |
+  // 'arrive', ms } (js/when.js): [{ bus, minutes, running }], in bus-number order. A bus
+  // with more than one way between them keeps its quickest that's running.
+  function directRides(startCode, endCode, timing) {
+    const g = BusNet.graph();
+    const byBus = new Map();
+    for (const [r, i] of g.at[startCode] || []) {
+      const run = g.runs[r];
+      const j = run.stops.indexOf(endCode, i + 1);
+      if (j === -1) continue;
+      const minutes = rideMin(run, i, j);
+      // Boarded after the average wait when leaving at a time, or in time to ride in by one.
+      const boardMs = timing.mode === 'arrive' ? timing.ms - minutes * 60000 : timing.ms + When.BUS_WAIT_MIN * 60000;
+      const ride = { bus: run.bus, minutes, running: When.busRunsAt(run.times[i], boardMs) };
+      const old = byBus.get(run.bus);
+      if (!old || (ride.running && !old.running) || (ride.running === old.running && ride.minutes < old.minutes)) byBus.set(run.bus, ride);
+    }
+    return [...byBus.values()].sort((a, b) => BusNet.byNumber(a.bus, b.bus));
+  }
+
   // The quickest few ways from one stop to another with a walk or up to three changes, best
   // first, one per sequence of buses. Each is a list of legs, { bus, dir, from, to }, the
-  // walks implied by the gaps between one leg's `to` and the next's `from`.
-  function findJourneys(startCode, endCode, limit = MAX_JOURNEYS) {
-    return rankedJourneys(startCode, endCode)
-      .slice(0, limit)
-      .map((item) => item.legs);
+  // walks implied by the gaps between one leg's `to` and the next's `from`. With `timing`
+  // (see directRides), only journeys whose every bus is running when it's boarded.
+  function findJourneys(startCode, endCode, limit = MAX_JOURNEYS, timing = null) {
+    const ranked = rankedJourneys(startCode, endCode);
+    const found = [];
+    for (const { legs } of ranked) {
+      if (found.length >= limit) break;
+      if (!timing || journeyRuns(legs, startCode, endCode, timing)) found.push(legs);
+    }
+    return found;
   }
+
+  // A journey by the clock: the minutes after setting off that each bus is boarded, and the
+  // whole journey's minutes, the average wait for each bus counted in. Null when a bus no
+  // longer runs that way.
+  function journeyClock(legs, startCode, endCode) {
+    const boards = [];
+    let t = 0;
+    let here = startCode;
+    for (const leg of legs) {
+      const details = legDetails(leg);
+      if (!details) return null;
+      t += (walkDetails(here, leg.from)?.minutes || 0) + When.BUS_WAIT_MIN;
+      boards.push(t);
+      t += details.minutes;
+      here = leg.to;
+    }
+    return { boards, total: t + (walkDetails(here, endCode)?.minutes || 0) };
+  }
+
+  // Whether every bus on a journey is running when it's boarded, setting off at `timing` or
+  // in time to arrive by it.
+  function journeyRuns(legs, startCode, endCode, timing) {
+    const clock = journeyClock(legs, startCode, endCode);
+    if (!clock) return false;
+    const leaveMs = timing.mode === 'arrive' ? timing.ms - clock.total * 60000 : timing.ms;
+    return legs.every((leg, k) => {
+      const run = runOf(leg);
+      return When.busRunsAt(run.times[run.stops.indexOf(leg.from)], leaveMs + clock.boards[k] * 60000);
+    });
+  }
+
+  const runOf = (leg) => (BusNet.graph().byBus.get(leg.bus) || []).find((r) => r.dir === leg.dir);
 
   // The last few searches, since the planner asks findJourneys and then wrongSideEnds the
   // same question, and each walks the whole network. Cleared when the network changes.
@@ -367,7 +425,7 @@
   // How long a leg is: the stops it rides and roughly how many minutes that takes. Null
   // when the bus no longer runs that way, for a journey kept from before a route change.
   function legDetails(leg) {
-    const run = (BusNet.graph().byBus.get(leg.bus) || []).find((r) => r.dir === leg.dir);
+    const run = runOf(leg);
     if (!run) return null;
     const i = run.stops.indexOf(leg.from);
     const j = i === -1 ? -1 : run.stops.indexOf(leg.to, i + 1);
@@ -396,5 +454,5 @@
     return total + (walkDetails(here, endCode)?.minutes || 0);
   }
 
-  window.Journeys = { directServices, findJourneys, wrongSideEnds, legDetails, walkDetails, journeyMinutes, ESTIMATE_NOTE };
+  window.Journeys = { directServices, directRides, findJourneys, wrongSideEnds, legDetails, walkDetails, journeyMinutes, journeyClock, ESTIMATE_NOTE };
 })();

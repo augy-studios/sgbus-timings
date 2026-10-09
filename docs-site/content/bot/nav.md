@@ -17,6 +17,25 @@ bus, train or both, including the walk at each end.
 **Set start** and **Set end** stay on the panel, so either end can be
 changed later. Send `/cancel` to stop at any point.
 
+## Pick a time
+
+The panel starts at **🕒 Leave now**. Tap it, then **Leave at…** or **Arrive
+by…**, and send the time: `8:30`, `8.30pm` or `2030`, or with a day, `tmr 8am` or
+`sat 9:15`, up to a week ahead. A time with no day that has already passed today
+means tomorrow. Or tap one of **In 15 min**, **In 30 min**, **In 1 h** or **In 2
+h**. **Leave now** on the same menu goes back.
+
+With a time picked, each way shows when you'd set off and get in, as **08:30 →
+09:05**; for Arrive by, a way you'd have had to leave on already says **too
+late**.
+
+Only buses and trains running at that time are used, for Leave now as well: a bus
+counts as running between its first and last bus at that stop, for that day of
+the week, with public holidays counted as Sundays, and trains between about
+5:30am (6am on Sundays and public holidays) and midnight.
+
+A new `/nav`, and a nav opened from `/mynavs`, starts at Leave now again.
+
 ## The ways there
 
 The panel lists the ways to get there, quickest first, each as a line and a
@@ -44,6 +63,10 @@ to take and where to get off, and each bus with the **live timings** of that bus
 at the stop you board it. A button with the bus and stop opens that stop's
 timings for the bus, with **Back to the way** and **All ways** to come back.
 **Back to all ways** returns to the list.
+
+With a time picked, each bus and train says roughly when you'd board it. A way
+setting off more than half an hour from now shows those times instead of live
+timings, which don't reach that far ahead.
 
 ## Save it
 

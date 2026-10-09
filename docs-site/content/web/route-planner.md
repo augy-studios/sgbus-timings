@@ -45,6 +45,29 @@ Only a bus heading the right way counts, the same rule as the list of buses
 below. Among the marked stops, and among the rest, the usual order still holds:
 nearest first for nearby stops, best match first for a typed name.
 
+## Pick a time
+
+Under the boxes, **Leave now** is picked to start with. Tap **Leave at** or
+**Arrive by** to plan for another time instead, then pick the day (today or any of
+the next six) and the time.
+
+Only buses running at that time are offered, for Leave now as well: a bus counts
+as running between its first and last bus at your stop, for that day of the week,
+with public holidays counted as Sundays. A bus that runs the whole way but isn't
+running then is named under the list, as **Not running at that time**, and if
+none of them is, the planner looks for journeys with a change instead.
+
+With a time picked:
+
+- the buses that run the whole way come with when you'd get in (Leave at) or when
+  to set off (Arrive by);
+- each journey shows when you'd set off and get in, as **08:30 → 09:05**,
+  counting an average 5-minute wait for each bus. For Arrive by, a journey you'd
+  have had to leave on already says **Too late**.
+
+The planner goes back to **Leave now** each time it's opened, including from a
+saved route.
+
 ## Buses that run the whole way
 
 <figure>
@@ -110,6 +133,11 @@ From the second bus on, the planner works out roughly when you would reach that
 stop. Buses due before then are struck through, because they will have gone,
 and the one you would catch is in bold. At the end it gives a rough arrival
 time for the whole journey.
+
+With a time picked, the journey starts with when to set off. Live timings only
+reach about half an hour ahead, so for a journey setting off later than that, each
+bus says roughly when you'd board it instead, after an average wait, and its live
+timings show up from half an hour before you set off.
 
 Each leg has a button to open that stop's timings for the bus. Use
 **Refresh** to update the live timings, and **Back to route** to return to the

@@ -44,7 +44,10 @@ function access(graph, lat, lng) {
 
 // Labels: per node, per mix, the best arrival { t, prev }, where prev is how it got there:
 // { kind: "access", metres } | { kind: "ride", run, from, to, label } | { kind: "walk", from, metres, label }.
-export function plan(graph, from, to) {
+//
+// `open(run, i, t)`, when given, says whether a run is running at its i-th node t minutes
+// after setting off (when.js); a run that isn't is never boarded there.
+export function plan(graph, from, to, { open = null } = {}) {
   const starts = access(graph, from.lat, from.lng);
   const ends = access(graph, to.lat, to.lng);
   const endAt = new Map(ends.map(([n, min, m]) => [n, { min, metres: m }]));
@@ -111,6 +114,7 @@ export function plan(graph, from, to) {
           const last = lastRide(graph, label);
           let t = label.t + WAIT_MIN[run.mode];
           if (last && last.mode === "T" && run.mode === "T") t += INTERCHANGE_MIN;
+          if (open && !open(run, i, t)) continue;
           const base = t - run.cum[i];
           const on = onboard.get(label.mix);
           if (!on || base < on.base) onboard.set(label.mix, { base, from: i, label });
@@ -177,11 +181,21 @@ function haversineDirect(a, b) {
 
 const nodeRef = (n) => ({ kind: n.kind, code: n.code, name: n.name, lat: n.lat, lng: n.lng });
 
+// Each option's rides as [run, board index, minutes in when boarded], for runsThroughout.
+const ridesOf = new WeakMap();
+
+// Whether every ride on an option is running when it's boarded, by `open` (see plan). An
+// option the router didn't make, such as OneMap's, is taken as it is.
+export function runsThroughout(option, open) {
+  return (ridesOf.get(option) || []).every(([run, i, t]) => open(run, i, t));
+}
+
 // A chain of labels back to the start, as legs a person reads: walk, ride, walk.
 function toOption(graph, { total, label, end }) {
   const chain = [];
   for (let l = label; l; l = l.prev.label) chain.unshift(l);
   const legs = [];
+  const rides = [];
   for (const l of chain) {
     const node = graph.nodes[l.node];
     if (l.prev.kind === "access") {
@@ -200,6 +214,8 @@ function toOption(graph, { total, label, end }) {
         stops: to - from,
         minutes: run.cum[to] - run.cum[from],
         wait: WAIT_MIN[run.mode],
+        // Minutes after setting off that it's boarded, the wait to board counted in.
+        board: l.t - (run.cum[to] - run.cum[from]),
         // Where the leg passes, for following it on the way (the Get Off Alert), and the
         // name of each stop or station on it, for the trip's timeline.
         path: run.nodes.slice(from, to + 1).map((n) => [graph.nodes[n].lat, graph.nodes[n].lng]),
@@ -208,19 +224,22 @@ function toOption(graph, { total, label, end }) {
       if (run.mode === "B") leg.dir = run.dir;
       else Object.assign(leg, { name: run.name, color: run.color, lrt: run.lrt });
       legs.push(leg);
+      rides.push([run, from, leg.board]);
     }
   }
   legs.push({ mode: "walk", metres: Math.round(end.metres), minutes: end.min, to: { kind: "place" } });
 
   // Walks of nothing (starting or ending right at a stop) say nothing.
   const kept = legs.filter((l) => l.mode !== "walk" || l.metres >= 20);
-  const rides = kept.filter((l) => l.mode !== "walk");
-  return {
+  const ridden = kept.filter((l) => l.mode !== "walk");
+  const option = {
     minutes: Math.round(total),
-    mix: rides.map((l) => (l.mode === "bus" ? "B" : "T")).join(""),
-    routes: rides.map((l) => l.route),
+    mix: ridden.map((l) => (l.mode === "bus" ? "B" : "T")).join(""),
+    routes: ridden.map((l) => l.route),
     legs: kept,
   };
+  ridesOf.set(option, rides);
+  return option;
 }
 
 // The quickest, then the best of each other mix that's close enough to be worth it, so the

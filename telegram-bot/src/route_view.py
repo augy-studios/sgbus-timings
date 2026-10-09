@@ -1,4 +1,5 @@
 import asyncio
+from datetime import timedelta
 
 from telethon import Button
 
@@ -8,10 +9,11 @@ from .favourite_buses import list_favourite_buses
 from .favourite_prefs import get_pref, pin_favourites
 from .favourite_routes import is_favourite_route, toggle_favourite_route
 from .format import bus_button_label, escape_md
-from .journey_view import ESTIMATE_NOTE, journey_button_label, journey_summary
-from .journeys import direct_services, find_journeys, wrong_side_ends
+from .journey_view import CLOCK_NOTE, ESTIMATE_NOTE, journey_button_label, journey_summary
+from .journeys import direct_rides, find_journeys, wrong_side_ends
 from .pagination import nav_row, paginate
 from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
+from .when import BUS_WAIT_MIN, at_to_dt, clock, clock_day, describe, now, problem, timing
 
 # Two setter buttons share a row, so each one has half a row's width to say which stop it
 # holds. The route buttons in /myroutes get a row to themselves and Telegram's full 64.
@@ -49,15 +51,37 @@ def _setter_label(icon: str, field: str, code, armed: bool) -> str:
     return _truncate(f"{prefix} {field.capitalize()}: {stop['name']}", SETTER_LABEL_LIMIT)
 
 
-def _status_line(start_code, end_code, services, journeys) -> str:
+def _status_line(start_code, end_code, services, journeys, idle, when) -> str:
     if not (start_code and end_code):
         return "Set both ends to see the buses that run between them."
+    late = problem(when)
+    if late:
+        return f"🕒 {late}"
+    then = "at that time" if when else "right now"
+    none = f"No bus runs straight between these stops {then}" if idle else "No single bus links these two stops"
     if not services and journeys:
-        return "No single bus links these two stops, but these journeys get there with a short walk or a change:"
+        return f"{none}, but these journeys get there with a short walk or a change:"
     if not services:
-        return "😕 No single bus links these two stops, even with three changes. Try picking other stops."
+        return f"😕 {none}. No journey with up to three changes runs {then} either. Try another time, or other stops."
     count = len(services)
-    return f"🚌 {count} bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} between these stops."
+    return f"🚌 {count} bus{'' if count == 1 else 'es'} run{'s' if count == 1 else ''} between these stops{' at that time' if when else ''}."
+
+
+def _direct_clock_line(rides: list, when) -> str:
+    """When to set off or get in on the buses straight between the stops, for a picked time."""
+    moment = at_to_dt(when["at"])
+    totals = [timedelta(minutes=r["minutes"] + BUS_WAIT_MIN) for r in rides]
+    quickest, slowest = min(totals), max(totals)
+
+    def between(a, b):
+        return clock(a) if clock(a) == clock(b) else f"{clock(a)} to {clock(b)}"
+
+    wait = "counting an average wait for the bus"
+    if when["mode"] == "leave":
+        return f"🕒 Leave at {clock_day(moment)} and you'd get in around {between(moment + quickest, moment + slowest)}, {wait}."
+    if moment - quickest < now():
+        return f"🕒 To arrive by {clock(moment)} you'd have had to leave by about {clock(moment - quickest)}."
+    return f"🕒 To arrive by {clock_day(moment)}, leave around {between(moment - slowest, moment - quickest)}, {wait}."
 
 
 def _wrong_side_lines(fixes: dict) -> list:
@@ -96,25 +120,29 @@ def toggle_route_favourite(chat_id: int, start_code: str, end_code: str) -> bool
     )
 
 
-def plan_route(start_code, end_code):
-    """The buses straight from one end to the other, or failing those the quickest journeys
-    with a change and any wrong-side-of-the-road fixes, as (services, journeys, fixes). Only
-    reads, so it can run off the event loop (build_route_view_async)."""
-    services = direct_services(start_code, end_code) if start_code and end_code else []
-    journeys = find_journeys(start_code, end_code) if start_code and end_code and not services else []
+def plan_route(start_code, end_code, when=None):
+    """The buses straight from one end to the other, each marked running or not at the time
+    picked (when.py, Leave now when None), and failing any that are, the quickest journeys
+    with a change that run then and any wrong-side-of-the-road fixes, as (rides, journeys,
+    fixes). Only reads, so it can run off the event loop (build_route_view_async)."""
+    if not (start_code and end_code) or problem(when):
+        return [], [], {}
+    at = timing(when)
+    rides = direct_rides(start_code, end_code, at)
+    journeys = [] if any(r["running"] for r in rides) else find_journeys(start_code, end_code, timing=at)
     fixes = wrong_side_ends(start_code, end_code) if journeys else {}
-    return services, journeys, fixes
+    return rides, journeys, fixes
 
 
 async def build_route_view_async(chat_id: int, start_code, end_code, *args, **kwargs):
     """build_route_view with the search on a worker thread. A journey with a change walks
     the whole bus network, which on the event loop held up every other chat until it was
     done. The panel itself is still built here, since it writes its buttons."""
-    plan = await asyncio.to_thread(plan_route, start_code, end_code)
+    plan = await asyncio.to_thread(plan_route, start_code, end_code, kwargs.get("when"))
     return build_route_view(chat_id, start_code, end_code, *args, plan=plan, **kwargs)
 
 
-def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None, plan=None):
+def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting=None, from_fav=None, plan=None, when=None):
     """The route panel: where the route starts and ends, and the buses that run from one to
     the other without a change, as a paginated grid four across. When there are none, the
     quickest few journeys with a walk or a change stand in for them, a button each - and
@@ -129,21 +157,28 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     Favourite buses are starred and pinned per the user's `/favouritepref`, as they are in
     every other bus grid; favourite routes have no preference of their own.
     `plan` is plan_route's answer when it has already been found off the event loop.
+    `when` is the time picked (when.py), None for Leave now: only the buses running then are
+    offered, and the rest named.
     Returns (rich, buttons)."""
     start_text = stop_display(start_code)
     end_text = stop_display(end_code)
-    services, journeys, fixes = plan or plan_route(start_code, end_code)
-    status = _status_line(start_code, end_code, services, journeys)
+    rides, journeys, fixes = plan or plan_route(start_code, end_code, when)
+    running = [r for r in rides if r["running"]]
+    services = [r["bus"] for r in running]
+    idle = [r["bus"] for r in rides if not r["running"]]
+    status = _status_line(start_code, end_code, services, journeys, idle, when)
     fixed_start = fixes["start"][0] if "start" in fixes else start_code
     fixed_end = fixes["end"][0] if "end" in fixes else end_code
     if fixed_start == fixed_end:
         fixes = {}
     wrong_side = _wrong_side_lines(fixes)
 
+    when_text = describe(when)
     lines = [
         "# Route",
         f"- **Start**: {escape_md(start_text) if start_text else '_not set_'}",
         f"- **End**: {escape_md(end_text) if end_text else '_not set_'}",
+        f"- **When**: {escape_md(when_text)}",
         # Blank lines between blocks: a single newline collapses into the previous
         # paragraph in Telegram's rich-message Markdown.
         *(item for line in wrong_side for item in ("", f"**{escape_md(line)}**")),
@@ -154,16 +189,26 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
         "Route",
         f"Start: {start_text or 'not set'}",
         f"End: {end_text or 'not set'}",
+        f"When: {when_text}",
         *wrong_side,
         status,
     ]
+    if running and when:
+        clock_line = _direct_clock_line(running, when)
+        lines += ["", escape_md(clock_line)]
+        fallback_lines.append(clock_line)
     if journeys:
         summaries = [
-            f"{number}. {journey_summary(legs, start_code, end_code)}" for number, legs in enumerate(journeys, 1)
+            f"{number}. {journey_summary(legs, start_code, end_code, when)}" for number, legs in enumerate(journeys, 1)
         ]
-        lines += ["", *(escape_md(summary) for summary in summaries), "", f"_{escape_md(ESTIMATE_NOTE)}_"]
-        fallback_lines += [*summaries, ESTIMATE_NOTE]
-    if awaiting:
+        note = CLOCK_NOTE if when else ESTIMATE_NOTE
+        lines += ["", *(escape_md(summary) for summary in summaries), "", f"_{escape_md(note)}_"]
+        fallback_lines += [*summaries, note]
+    if idle:
+        idle_line = f"Not running {'at that time' if when else 'right now'}: {', '.join(idle)}."
+        lines += ["", f"_{escape_md(idle_line)}_"]
+        fallback_lines.append(idle_line)
+    if awaiting in ("start", "end"):
         prompt = "✏️ " + STOP_PROMPT.format(awaiting)
         lines += ["", escape_md(prompt)]
         fallback_lines.append(prompt)
@@ -180,6 +225,7 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
         **({"end": end_code} if end_code else {}),
         **({"page": page} if page else {}),
         **({"from_fav": from_fav} if from_fav is not None else {}),
+        **({"when": when} if when else {}),
     }
     buttons = [
         [
@@ -191,7 +237,14 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
                 _setter_label("🅱", "end", end_code, awaiting == "end"),
                 make_button("route_set", {**base, "field": "end"}),
             ),
-        ]
+        ],
+        # The page is left behind: a new time can change which buses there are to page through.
+        [
+            Button.inline(
+                f"🕒 {when_text}"[:64],
+                make_button("route_when", {k: v for k, v in base.items() if k != "page"}),
+            )
+        ],
     ]
 
     # Straight under the ends it changes. The page is left behind: it counted buses on the
@@ -223,7 +276,7 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     buttons += [
         [
             Button.inline(
-                journey_button_label(number, legs, start_code, end_code),
+                journey_button_label(number, legs, start_code, end_code, when),
                 make_button("route_view", {**base, "journey": legs}),
             )
         ]

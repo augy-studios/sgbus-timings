@@ -7,13 +7,19 @@
 // until script.js calls initNav().
 
 // walksOpen: the walks of the open way whose Directions have been opened into map apps.
-const nav = { from: null, to: null, options: [], option: null, onemap: false, token: 0, walksOpen: new Set(), walksFor: null };
+// when: the time picked (js/when.js), null for Leave now.
+const nav = { from: null, to: null, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null };
 
 const NAV_PLACES_DELAY_MS = 300;
 
 function initNav() {
   attachPlaceSearch('from');
   attachPlaceSearch('to');
+  nav.whenPicker = When.picker($('#navWhen'), (when) => {
+    nav.when = when;
+    nav.option = null;
+    runNav();
+  });
 
   $('#navBtn').addEventListener('click', () => {
     if ($('#navSection').hidden) openNav();
@@ -154,10 +160,13 @@ function showEnds() {
 
 // ---- Opening and closing ----
 
-function openNav(from = null, to = null, { scroll = true } = {}) {
+// Opens at Leave now unless it's given a time: one picked before isn't kept.
+function openNav(from = null, to = null, { scroll = true, when = null } = {}) {
   if (from) nav.from = from;
   if (to) nav.to = to;
   nav.option = null;
+  nav.when = when;
+  nav.whenPicker.set(when);
   $('#navSection').hidden = false;
   showEnds();
   if (nav.from && nav.to) runNav();
@@ -174,12 +183,13 @@ function closeNav() {
 
 const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
-// "#nav/1.30050,103.85580/1.33320,103.92920", so a nav can be bookmarked or shared.
+// "#nav/1.30050,103.85580/1.33320,103.92920", so a nav can be bookmarked or shared, with
+// "/arrive/2026-10-09T08:30" on the end for a picked time.
 function navHash() {
-  return nav.from && nav.to ? `#nav/${coord(nav.from)}/${coord(nav.to)}` : '';
+  return nav.from && nav.to ? `#nav/${coord(nav.from)}/${coord(nav.to)}${When.hashPart(nav.when)}` : '';
 }
 
-function openNavHash(fromText, toText) {
+function openNavHash(fromText, toText, when = null) {
   const point = (t, label) => {
     const [lat, lng] = t.split(',').map(Number);
     const fav = LS.getFavNavs().find((n) => coord(n.from) === t || coord(n.to) === t);
@@ -188,7 +198,7 @@ function openNavHash(fromText, toText) {
   };
   const from = point(fromText, 'Start');
   const to = point(toText, 'End');
-  if (from && to) openNav(from, to, { scroll: false });
+  if (from && to) openNav(from, to, { scroll: false, when });
 }
 
 // ---- Planning ----
@@ -201,9 +211,16 @@ async function runNav() {
   }
   const token = ++nav.token;
   history.replaceState(null, '', navHash());
+  const late = When.problem(nav.when);
+  if (late) {
+    $('#navBody').innerHTML = plannerStatus(late);
+    return;
+  }
+  const when = nav.when;
   $('#navBody').innerHTML = plannerStatus('Finding journeys by bus and train…');
   try {
-    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}`, { cache: 'no-store' });
+    const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
+    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}${at}`, { cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
     if (token !== nav.token) return;
     if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
@@ -230,14 +247,23 @@ function renderNav() {
     return;
   }
   if (!nav.options.length) {
-    body.innerHTML = plannerStatus('No way by bus or train was found between these two places. Try somewhere nearby.');
+    body.innerHTML = plannerStatus(`No way by bus or train running ${nav.when ? 'at that time' : 'right now'} was found between these two places. Try another time, or somewhere nearby.`);
     return;
   }
   body.innerHTML =
-    plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
+    plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there${nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : ''}, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
-    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>`;
+    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>`;
 }
+
+// "08:12 → 08:50" for a way, by the time picked.
+const navClocks = (o) => {
+  const { leave, arrive } = When.span(nav.when, o.minutes);
+  return `${When.clock(leave)} → ${When.clock(arrive)}`;
+};
+
+// For Arrive by: a way you'd have had to set off on already.
+const navTooLate = (o) => nav.when?.mode === 'arrive' && When.span(nav.when, o.minutes).leave < Date.now() - 60000;
 
 function legChip(leg) {
   if (leg.mode === 'bus') return `<span class="busChip">${ico('bus')} ${escapeHtml(leg.route)}</span>`;
@@ -262,11 +288,15 @@ function navOptionItem(o, i) {
   const notes = [];
   if (o.onemapMinutes != null) notes.push(`OneMap ~${o.onemapMinutes} min`);
   if (o.source === 'onemap') notes.push('Found by OneMap');
+  // With a time picked, the clock times lead and the minutes go with the rest.
+  const lead = nav.when ? navClocks(o) : `~${o.minutes} min`;
+  const detail = [...(nav.when ? [`~${o.minutes} min`] : []), navMixText(o), ...notes].join(' · ');
   return `<button type="button" class="journeyItem${o.disrupted ? ' disrupted' : ''}" data-nav-option="${i}">` +
     `<span class="journeyBuses">${chips}</span>` +
-    `<span class="journeyMeta">~${o.minutes} min</span>` +
-    `<span class="journeyDetail">${escapeHtml(navMixText(o))}${notes.length ? ` · ${escapeHtml(notes.join(' · '))}` : ''}</span>` +
+    `<span class="journeyMeta">${escapeHtml(lead)}</span>` +
+    `<span class="journeyDetail">${escapeHtml(detail)}</span>` +
     (o.disrupted ? `<span class="journeyWarn">${ico('alert')} A line on this journey has a disruption</span>` : '') +
+    (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} Too late: you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}</span>` : '') +
     `</button>`;
 }
 
@@ -287,7 +317,17 @@ async function renderNavOption(o) {
     `<button type="button" class="iconBtn" data-nav-action="refresh">Refresh</button>` +
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} Start trip</button>` +
     `</div>` +
-    `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>`;
+    `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>` +
+    (nav.when
+      ? navTooLate(o)
+        ? `<p class="journeyWarn">${ico('alert')} To arrive by ${escapeHtml(When.clock(When.atToMs(nav.when.at)))} you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}.</p>`
+        : plannerStatus(`Set off around ${When.clockDay(When.span(nav.when, o.minutes).leave)}, arrive around ${When.clock(When.span(nav.when, o.minutes).arrive)}.`)
+      : '');
+
+  // Live timings only when setting off soon enough for them to be the buses you'd catch;
+  // otherwise each bus is timed by the clock, from when the router has it boarded.
+  const leaveMs = When.span(nav.when, o.minutes).leave;
+  const live = !nav.when || When.liveLead(leaveMs) != null;
 
   const steps = (timings = {}) => o.legs.map((leg, k) => {
     if (leg.mode === 'walk') {
@@ -301,13 +341,18 @@ async function renderNavOption(o) {
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
         `<div class="legRide">From ${escapeHtml(placeName(leg.from))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}: ${leg.stops} stop${leg.stops === 1 ? '' : 's'} to ${escapeHtml(placeName(leg.to))}, ~${Math.round(leg.minutes)} min</div>` +
+        (nav.when && leg.board != null ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}.</div>` : '') +
         (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} LTA reports a disruption on this line. Check Service alerts.</div>` : '') +
         `</li>`;
     }
     const t = timings[k];
-    const etas = t === undefined ? `<div class="legNote">Loading live timings…</div>`
-      : t && t.length ? `<div class="legEtas">Next ${escapeHtml(leg.route)}: ${t.map((ms) => escapeHtml(msToMins(ms))).join(' &middot; ')}</div>`
-      : `<div class="legNote">No live timings for this bus right now.</div>`;
+    const board = nav.when && leg.board != null
+      ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}, after an average wait.</div>`
+      : '';
+    const etas = !live ? board
+      : t === undefined ? `${board}<div class="legNote">Loading live timings…</div>`
+      : t && t.length ? `${board}<div class="legEtas">Next ${escapeHtml(leg.route)}: ${t.map((ms) => escapeHtml(msToMins(ms))).join(' &middot; ')}</div>`
+      : `${board}<div class="legNote">No live timings for this bus right now.</div>`;
     return `<li class="step stepLeg">` +
       `<div class="legHead">${legChip(leg)}<span>${leg.stops} stop${leg.stops === 1 ? '' : 's'} · ~${Math.round(leg.minutes)} min</span></div>` +
       `<div class="legRide">From ${escapeHtml(placeName(leg.from))} to ${escapeHtml(placeName(leg.to))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}</div>` +
@@ -318,9 +363,12 @@ async function renderNavOption(o) {
 
   const draw = (timings) => {
     body.innerHTML = head + `<ol class="journeySteps">${steps(timings)}</ol>` +
-      `<p class="estimateNote">Train times are estimates from distance. Bus timings are live from LTA.</p>`;
+      `<p class="estimateNote">${live
+        ? 'Train times are estimates from distance. Bus timings are live from LTA.'
+        : 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.'}</p>`;
   };
   draw();
+  if (!live) return;
 
   const busLegs = o.legs.map((l, k) => [l, k]).filter(([l]) => l.mode === 'bus' && l.from?.code);
   const results = await Promise.allSettled(busLegs.map(([l]) => fetchArrivals(l.from.code, l.route)));

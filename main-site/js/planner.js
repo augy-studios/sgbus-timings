@@ -6,10 +6,19 @@
 // until script.js calls initPlanner().
 
 // `sideFix` is the route with the stops across the road swapped in, while the planner is
-// suggesting one.
-const planner = { start: null, end: null, journey: null, journeys: [], sideFix: null, token: 0 };
+// suggesting one. `when` is the time picked (js/when.js), null for Leave now.
+const planner = { start: null, end: null, journey: null, journeys: [], sideFix: null, when: null, whenPicker: null, token: 0 };
+
+// The time to plan for, as Journeys takes it: Leave now is leaving at this moment.
+const plannerTiming = () => ({ mode: planner.when?.mode || 'leave', ms: planner.when ? When.atToMs(planner.when.at) : Date.now() });
 
 function initPlanner() {
+  // A new time keeps an open journey open, timed again for it.
+  planner.whenPicker = When.picker($('#routeWhen'), (when) => {
+    planner.when = when;
+    renderPlanner();
+  });
+
   for (const [field, input, box] of [['start', '#routeStart', '#routeStartAc'], ['end', '#routeEnd', '#routeEndAc']]) {
     attachAutocomplete($(input), $(box), {
       onStop: (code) => setPlannerEnd(field, code),
@@ -50,7 +59,7 @@ function initPlanner() {
     if (bus) {
       loadStop(planner.start, {
         service: bus.dataset.routeBus,
-        ctx: { kind: 'route', start: planner.start, end: planner.end },
+        ctx: { kind: 'route', start: planner.start, end: planner.end, when: planner.when },
         scroll: true,
       });
       return;
@@ -67,7 +76,7 @@ function initPlanner() {
       const picked = legs[Number(leg.dataset.leg)];
       loadStop(picked.from, {
         service: picked.bus,
-        ctx: { kind: 'journey', start: planner.start, end: planner.end, legs },
+        ctx: { kind: 'journey', start: planner.start, end: planner.end, legs, when: planner.when },
         scroll: true,
       });
       return;
@@ -105,22 +114,22 @@ let workerFailed = false;
 let workerSeq = 0;
 const workerWaiting = new Map();
 
-function searchHere(start, end) {
+function searchHere(start, end, timing) {
   return new Promise((resolve) => setTimeout(resolve, 0)).then(() => {
-    const journeys = Journeys.findJourneys(start, end);
+    const journeys = Journeys.findJourneys(start, end, undefined, timing);
     return { journeys, fixes: journeys.length ? Journeys.wrongSideEnds(start, end) : {} };
   });
 }
 
-function searchJourneys(start, end) {
-  if (workerFailed || typeof Worker === 'undefined') return searchHere(start, end);
+function searchJourneys(start, end, timing) {
+  if (workerFailed || typeof Worker === 'undefined') return searchHere(start, end, timing);
   let first = false;
   if (!plannerWorker) {
     try {
       plannerWorker = new Worker('/js/planner-worker.js');
     } catch {
       workerFailed = true;
-      return searchHere(start, end);
+      return searchHere(start, end, timing);
     }
     first = true;
     plannerWorker.onmessage = ({ data }) => {
@@ -138,15 +147,18 @@ function searchJourneys(start, end) {
   }
   const id = ++workerSeq;
   return new Promise((resolve) => {
-    workerWaiting.set(id, { resolve, fallback: () => searchHere(start, end).then(resolve) });
-    plannerWorker.postMessage(first ? { id, start, end, stops: stopsIndex } : { id, start, end });
+    workerWaiting.set(id, { resolve, fallback: () => searchHere(start, end, timing).then(resolve) });
+    plannerWorker.postMessage(first ? { id, start, end, timing, stops: stopsIndex } : { id, start, end, timing });
   });
 }
 
-function openPlanner(start = null, end = null, { journey = null, scroll = true } = {}) {
+// Opens at Leave now unless it's given a time: one picked before isn't kept.
+function openPlanner(start = null, end = null, { journey = null, scroll = true, when = null } = {}) {
   planner.start = start;
   planner.end = end;
   planner.journey = journey;
+  planner.when = when;
+  planner.whenPicker.set(when);
   $('#plannerSection').hidden = false;
   renderPlanner();
   if (scroll) $('#plannerSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -250,6 +262,24 @@ function sgClock(minutesFromNow) {
   });
 }
 
+// "21", "21 and 25", "21, 25 and 960".
+const listText = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}` : items[0] || '');
+
+// "a to b", or just "a" when the two read the same.
+const clockRange = (a, b) => (When.clock(a) === When.clock(b) ? When.clock(a) : `${When.clock(a)} to ${When.clock(b)}`);
+
+// When to set off or get in on the buses straight between the stops, for a picked time.
+function directClockText(running, when) {
+  const ms = When.atToMs(when.at);
+  const totals = running.map((r) => (r.minutes + When.BUS_WAIT_MIN) * 60000);
+  const quickest = Math.min(...totals);
+  const slowest = Math.max(...totals);
+  const wait = 'counting an average wait for the bus';
+  if (when.mode === 'leave') return `Leave at ${When.clockDay(ms)} and you'd get in around ${clockRange(ms + quickest, ms + slowest)}, ${wait}.`;
+  if (ms - quickest < Date.now()) return `To arrive by ${When.clock(ms)} you'd have had to leave by about ${When.clock(ms - quickest)}.`;
+  return `To arrive by ${When.clockDay(ms)}, leave around ${clockRange(ms - slowest, ms - quickest)}, ${wait}.`;
+}
+
 // A line per end of the route picked on the wrong side of the road, naming the stop across
 // the road that the buses really use, and a button to swap it in.
 function sideFixHtml(fixes) {
@@ -283,7 +313,7 @@ async function renderPlanner() {
   $('#routeFavBtn').hidden = !complete;
   if (complete) {
     setFavButton($('#routeFavBtn'), isFavRoute(start, end), 'Save route', 'Saved');
-    history.replaceState(null, '', `#route/${start}/${end}`);
+    history.replaceState(null, '', `#route/${start}/${end}${When.hashPart(planner.when)}`);
   }
 
   if (!start || !end) {
@@ -292,6 +322,11 @@ async function renderPlanner() {
   }
   if (start === end) {
     body.innerHTML = plannerStatus('A route needs two different bus stops.');
+    return;
+  }
+  const late = When.problem(planner.when);
+  if (late) {
+    body.innerHTML = plannerStatus(late);
     return;
   }
 
@@ -312,24 +347,38 @@ async function renderPlanner() {
     return;
   }
 
-  const services = Journeys.directServices(start, end);
-  if (services.length) {
+  // Every bus straight between the two, but only those running at the time are offered; the
+  // rest are named, so a bus you know of isn't just missing.
+  const timing = plannerTiming();
+  const when = planner.when;
+  const then = when ? 'at that time' : 'right now';
+  const rides = Journeys.directRides(start, end, timing);
+  const running = rides.filter((r) => r.running);
+  const idle = rides.filter((r) => !r.running).map((r) => r.bus);
+  const idleNote = idle.length
+    ? `<p class="estimateNote">Not running ${then}: ${escapeHtml(listText(idle))}.</p>`
+    : '';
+  if (running.length) {
+    const services = running.map((r) => r.bus);
     const favs = new Set(LS.getFavBuses());
     const list = pinFavourites(services, favs, LS.getPin('bus'));
     const count = services.length;
     body.innerHTML =
-      plannerStatus(`${count} bus${count === 1 ? '' : 'es'} run${count === 1 ? 's' : ''} between these stops. Pick one to see its timings at the start.`) +
-      `<div class="busGrid">${list.map((no) => busButton(no, favs.has(no), `data-route-bus="${escapeHtml(no)}"`)).join('')}</div>`;
+      plannerStatus(`${count} bus${count === 1 ? '' : 'es'} run${count === 1 ? 's' : ''} between these stops${when ? ' at that time' : ''}. Pick one to see its timings at the start.`) +
+      (when ? plannerStatus(directClockText(running, when)) : '') +
+      `<div class="busGrid">${list.map((no) => busButton(no, favs.has(no), `data-route-bus="${escapeHtml(no)}"`)).join('')}</div>` +
+      idleNote;
     return;
   }
 
-  body.innerHTML = plannerStatus('No single bus links these two stops. Looking for journeys with a change…');
-  const { journeys, fixes } = await searchJourneys(start, end);
+  const none = idle.length ? `No bus runs straight between these stops ${then}.` : 'No single bus links these two stops.';
+  body.innerHTML = plannerStatus(`${none} Looking for journeys with a change…`);
+  const { journeys, fixes } = await searchJourneys(start, end, timing);
   if (token !== planner.token) return;
 
   planner.journeys = journeys;
   if (!journeys.length) {
-    body.innerHTML = plannerStatus('No single bus links these two stops, even with three changes. Try picking other stops.');
+    body.innerHTML = plannerStatus(`${none} No journey with up to three changes runs ${then} either. Try another time, or other stops.`) + idleNote;
     return;
   }
 
@@ -339,20 +388,41 @@ async function renderPlanner() {
 
   body.innerHTML =
     (hasFix ? sideFixHtml(fixes) : '') +
-    plannerStatus('No single bus links these two stops, but these journeys get there with a short walk or a change:') +
+    plannerStatus(`${none.replace(/\.$/, '')}, but these journeys get there with a short walk or a change:`) +
     `<div class="journeyList">${journeys
       .map((legs, i) => {
         const changes = legs.length - 1;
         return (
           `<button type="button" class="journeyItem" data-journey="${i}">` +
           `<span class="journeyBuses">${legs.map((l) => busChip(l.bus)).join(legArrow)}</span>` +
-          `<span class="journeyMeta">${escapeHtml(minutesText(Journeys.journeyMinutes(legs, start, end)))} &middot; ${escapeHtml(plural(changes, 'change'))}</span>` +
+          `<span class="journeyMeta">${escapeHtml(journeyTimeText(legs, start, end, when))} &middot; ${escapeHtml(plural(changes, 'change'))}</span>` +
           `<span class="journeyDetail">${escapeHtml(journeyDetail(legs, start, end))}</span>` +
+          (when?.mode === 'arrive' && journeyLeave(legs, start, end, when) < Date.now()
+            ? `<span class="journeyWarn">${ico('alert')} Too late: you'd have had to leave by ${escapeHtml(When.clock(journeyLeave(legs, start, end, when)))}</span>`
+            : '') +
           `</button>`
         );
       })
       .join('')}</div>` +
-    `<p class="estimateNote">${escapeHtml(Journeys.ESTIMATE_NOTE)}</p>`;
+    idleNote +
+    `<p class="estimateNote">${escapeHtml(when ? CLOCK_NOTE : Journeys.ESTIMATE_NOTE)}</p>`;
+}
+
+const CLOCK_NOTE = 'Times are rough estimates from distance. Clock times count an average wait for each bus.';
+
+// When a journey sets off for a picked time: then, or in time to arrive by it.
+function journeyLeave(legs, start, end, when) {
+  const clock = Journeys.journeyClock(legs, start, end);
+  return clock ? When.span(when, clock.total).leave : null;
+}
+
+// "~25 min" on the move for Leave now, or "08:12 → 08:50" for a picked time.
+function journeyTimeText(legs, start, end, when) {
+  if (!when) return minutesText(Journeys.journeyMinutes(legs, start, end));
+  const clock = Journeys.journeyClock(legs, start, end);
+  if (!clock) return 'time unknown';
+  const { leave, arrive } = When.span(when, clock.total);
+  return `${When.clock(leave)} → ${When.clock(arrive)}`;
 }
 
 // Where a journey's buses are boarded and left, when that isn't the route's own ends, and
@@ -399,15 +469,31 @@ async function renderJourney(token) {
     return;
   }
 
-  body.innerHTML = nav + plannerStatus('Loading live timings…');
-  const results = await Promise.allSettled(legs.map((l) => fetchArrivals(l.from, l.bus)));
-  if (token !== planner.token) return;
+  // For a picked time: when you'd set off, and whether that's soon enough for live timings
+  // to say which bus you'd catch. Past that, each bus is timed by the clock, with an average
+  // wait, rather than by the buses due now.
+  const when = planner.when;
+  const clock = Journeys.journeyClock(legs, start, end);
+  const leaveMs = when ? When.span(when, clock.total).leave : Date.now();
+  const lead = when ? When.liveLead(leaveMs) : 0;
+  const live = lead != null;
+
+  let results = [];
+  if (live) {
+    body.innerHTML = nav + plannerStatus('Loading live timings…');
+    results = await Promise.allSettled(legs.map((l) => fetchArrivals(l.from, l.bus)));
+    if (token !== planner.token) return;
+  }
 
   const totalStops = details.reduce((sum, d) => sum + d.stops, 0);
   const steps = [];
+  const setOff = !when ? ''
+    : leaveMs < Date.now() - 60000
+      ? `<p class="journeyWarn">${ico('alert')} To arrive by ${escapeHtml(When.clock(When.atToMs(when.at)))} you'd have had to leave by ${escapeHtml(When.clock(leaveMs))}.</p>`
+      : plannerStatus(`Set off around ${When.clockDay(leaveMs)}${when.mode === 'arrive' ? ` to arrive by ${When.clock(When.atToMs(when.at))}` : ''}.`);
   // Minutes from now, walked forward leg by leg: when you'd reach each stop, and when the bus
   // you'd catch there leaves. Null once a leg has no live timing left to go on.
-  let t = 0;
+  let t = live ? lead : null;
   let here = start;
 
   legs.forEach((leg, k) => {
@@ -420,6 +506,18 @@ async function renderJourney(token) {
     }
 
     const detail = details[k];
+    if (!live) {
+      steps.push(
+        `<li class="step stepLeg">` +
+        `<div class="legHead">${busChip(leg.bus)}<span>${escapeHtml(plural(detail.stops, 'stop'))} &middot; ~${Math.round(detail.minutes)} min</span></div>` +
+        `<div class="legRide">From ${escapeHtml(stopText(leg.from))} to ${escapeHtml(stopText(leg.to))}</div>` +
+        `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + clock.boards[k] * 60000))}, after an average wait.</div>` +
+        `<button type="button" class="iconBtn" data-leg="${k}">${ico('bus')} ${escapeHtml(leg.bus)} timings at ${escapeHtml(nameOf(leg.from) || leg.from)}</button>` +
+        `</li>`
+      );
+      here = leg.to;
+      return;
+    }
     const etas = etasMin(results[k], leg.bus);
     // The bus you'd catch: the first one due once you're at the stop. Unknown when an earlier
     // leg couldn't be timed, so nothing is struck through or picked out then.
@@ -472,14 +570,19 @@ async function renderJourney(token) {
     steps.push(
       `<li class="step stepArrive">${ico('flag')}<span>Arrive around <strong>${sgClock(t)}</strong>, in ~${Math.round(t)} min, catching the first bus you can.</span></li>`
     );
+  } else if (!live) {
+    steps.push(
+      `<li class="step stepArrive">${ico('flag')}<span>Arrive around <strong>${escapeHtml(When.clockDay(leaveMs + clock.total * 60000))}</strong>, counting an average wait for each bus.</span></li>`
+    );
   }
 
   const changes = legs.length - 1;
   body.innerHTML =
     nav +
     `<p class="journeyHead">${escapeHtml(minutesText(Journeys.journeyMinutes(legs, start, end)))} on the move &middot; ${escapeHtml(plural(changes, 'change'))} &middot; ${escapeHtml(plural(totalStops, 'stop'))}</p>` +
+    setOff +
     `<ol class="journeySteps">${steps.join('')}</ol>` +
-    `<p class="estimateNote">${escapeHtml(Journeys.ESTIMATE_NOTE)}</p>` +
+    `<p class="estimateNote">${escapeHtml(live ? Journeys.ESTIMATE_NOTE : `${CLOCK_NOTE} Live timings show here from half an hour before you set off.`)}</p>` +
     `<p class="estimateNote">Updated ${escapeHtml(new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore' }))}</p>`;
 }
 

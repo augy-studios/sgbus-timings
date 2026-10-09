@@ -1,5 +1,6 @@
 """/nav's state: the journey a chat is planning, and the navs it has starred (/mynavs)."""
 
+import json
 import time
 
 from .db import db
@@ -16,9 +17,10 @@ def get_nav_draft(chat_id: int):
     return db.execute("SELECT * FROM nav_drafts WHERE chat_id = ?", (chat_id,)).fetchone()
 
 
-def start_nav_draft(chat_id: int, field: "str | None", from_place: "dict | None" = None, to_place: "dict | None" = None) -> None:
-    """Starts (or replaces) the nav the chat is planning. `field` is the end the bot is
-    waiting to be told, "from" or "to", or None when both are set."""
+def start_nav_draft(chat_id: int, field: "str | None", from_place: "dict | None" = None, to_place: "dict | None" = None, when: "dict | None" = None) -> None:
+    """Starts (or replaces) the nav the chat is planning. `field` is what the bot is waiting
+    to be told: the end, "from" or "to", "when:leave" / "when:arrive" for a time, or None
+    when both ends are set. `when` is the time already picked (when.py)."""
 
     def parts(p):
         return (p["label"], p["lat"], p["lng"]) if p else (None, None, None)
@@ -27,10 +29,10 @@ def start_nav_draft(chat_id: int, field: "str | None", from_place: "dict | None"
         db.execute("DELETE FROM nav_drafts WHERE chat_id = ?", (chat_id,))
         db.execute(
             """
-            INSERT INTO nav_drafts (chat_id, field, from_label, from_lat, from_lng, to_label, to_lat, to_lng, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO nav_drafts (chat_id, field, from_label, from_lat, from_lng, to_label, to_lat, to_lng, when_json, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (chat_id, field, *parts(from_place), *parts(to_place), _now_ms()),
+            (chat_id, field, *parts(from_place), *parts(to_place), json.dumps(when) if when else None, _now_ms()),
         )
 
 
@@ -38,6 +40,11 @@ def draft_place(draft, field: str) -> "dict | None":
     if not draft or draft[f"{field}_label"] is None:
         return None
     return {"label": draft[f"{field}_label"], "lat": draft[f"{field}_lat"], "lng": draft[f"{field}_lng"]}
+
+
+def draft_when(draft) -> "dict | None":
+    """The time a draft was started with, None for Leave now."""
+    return json.loads(draft["when_json"]) if draft and draft["when_json"] else None
 
 
 def clear_nav_draft(chat_id: int) -> None:
