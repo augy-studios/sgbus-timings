@@ -390,6 +390,9 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
   ${themeModalHtml()}
   ${searchModalHtml()}
   <div class="toast hidden" id="toast" role="status" aria-live="polite"></div>
+  <button class="icon-btn to-top hidden" id="toTop" type="button" aria-label="Back to top" title="Back to top">
+    <span data-icon="arrow-up"></span>
+  </button>
 
   <script src="/js/icons.js?v=${buildId}"></script>
   <script src="/js/ui.js?v=${buildId}"></script>

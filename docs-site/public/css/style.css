@@ -11,8 +11,9 @@
   user-select: none;
 }
 
-html, body { height: 100%; }
-html { scroll-padding-top: 84px; }
+/* Only html is pinned to the viewport. A fixed-height body would end the sticky
+   top bar's run one screen down; body grows with the page via min-height. */
+html { height: 100%; scroll-padding-top: 84px; }
 input, textarea { user-select: text; -webkit-user-select: text; }
 
 [hidden] { display: none !important; }
@@ -764,6 +765,27 @@ kbd, .search-kbd {
   opacity: 0;
   visibility: hidden;
   transform: translate(-50%, 8px);
+  transition: opacity 0.18s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+}
+
+/* ---- back to top ----
+   Above the page, below the sidebar drawer (40) and modals (50). */
+.to-top {
+  position: fixed;
+  right: max(20px, env(safe-area-inset-right));
+  bottom: max(20px, env(safe-area-inset-bottom));
+  z-index: 30;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.18s ease, transform 0.2s ease, visibility 0s linear 0s;
+}
+.to-top.hidden {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
   transition: opacity 0.18s ease, transform 0.2s ease, visibility 0s linear 0.2s;
 }
 

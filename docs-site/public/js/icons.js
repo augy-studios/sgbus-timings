@@ -33,6 +33,7 @@
     list: a + '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>' + z,
     "arrow-left": a + '<path d="M19 12H5M11 6l-6 6 6 6"/>' + z,
     "arrow-right": a + '<path d="M5 12h14M13 6l6 6-6 6"/>' + z,
+    "arrow-up": a + '<path d="M12 19V5M6 11l6-6 6 6"/>' + z,
     info: a + '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>' + z,
     bulb: a + '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0 0 12 3z"/>' + z,
     alert: a + '<path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17h.01"/>' + z,

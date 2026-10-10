@@ -76,6 +76,34 @@
     markToc();
   }
 
+  // ---------- back to top ----------
+  // Shows once the page is scrolled a fifth of a screen down.
+
+  const toTop = $("#toTop");
+  let toTopQueued = false;
+
+  function markToTop() {
+    toTop.classList.toggle("hidden", window.scrollY < window.innerHeight * 0.2);
+  }
+
+  window.addEventListener("scroll", () => {
+    if (toTopQueued) return;
+    toTopQueued = true;
+    requestAnimationFrame(() => {
+      toTopQueued = false;
+      markToTop();
+    });
+  }, { passive: true });
+  window.addEventListener("resize", markToTop);
+  markToTop();
+
+  toTop.addEventListener("click", () => {
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: still ? "auto" : "smooth" });
+    // The button hides on the way up, so keyboard focus goes to the page instead.
+    $("#content").focus({ preventScroll: true });
+  });
+
   // ---------- search ----------
 
   const searchInput = $("#searchInput");
