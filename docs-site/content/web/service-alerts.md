@@ -10,11 +10,11 @@ roads the buses run on.
 ## See what's happening now
 
 <figure>
-<img src="/screenshots/web/service-alerts-now.png" alt="The Service alerts card: notification choices at the top, then Trains, with all train services running normally and LTA's notices, and Roads, counting the incidents across Singapore and listing those that can block or reroute a bus." width="994" height="697" loading="lazy">
+<img src="/screenshots/web/service-alerts-now.png" alt="The Service alerts window: notification choices at the top, then Trains, with all train services running normally and LTA's notices, and Roads, counting the incidents across Singapore and listing those that can block or reroute a bus." width="906" height="697" loading="lazy">
 <figcaption>Trains and roads, as LTA reports them right now.</figcaption>
 </figure>
 
-Tap **Service alerts**, the bell in the Edge Tray. A card opens with two parts.
+Tap **Service alerts**, the bell in the Edge Tray. A window opens over the page, with two parts.
 
 **Trains** says either that every train service is running normally, or, for
 each line with a problem:
@@ -29,16 +29,16 @@ can block or reroute a bus, accidents, breakdowns, road blocks, diversions,
 obstacles, fires and plant failures, are listed in full. The rest, such as heavy
 traffic and roadworks, are counted by type; **Show the other** lists them too.
 
-Tap **Refresh** to fetch the latest. The card never shows a saved copy, so
+Tap **Refresh** to fetch the latest. The window never shows a saved copy, so
 without a connection it says it couldn't reach LTA instead.
 
 While a train line is disrupted or delayed, a red bar along the top of the site
-also says so, without opening the card: see [Disruptions bar](disruptions-bar.md).
+also says so, without opening the window: see [Disruptions bar](disruptions-bar.md).
 
 ## Get notified
 
 <figure>
-<img src="/screenshots/web/service-alerts-notify.png" alt="Notify me, even with the app closed: Train service alerts and Traffic alerts, each with Off, All updates and Disruptions only, and a note that notifications are off." width="970" height="217" loading="lazy">
+<img src="/screenshots/web/service-alerts-notify.png" alt="Notify me, even with the app closed: Train service alerts and Traffic alerts, each with Off, All updates and Disruptions only, and a note that notifications are off." width="878" height="217" loading="lazy">
 <figcaption>Train and traffic alerts are chosen separately.</figcaption>
 </figure>
 
@@ -62,7 +62,7 @@ it. The note under the buttons then says what you'll be notified of.
 > day, so expect many notifications. **Disruptions only** is the quieter choice
 > for most people.
 
-Tapping a notification opens the app on the Service alerts card. A new alert
+Tapping a notification opens the app on the Service alerts window. A new alert
 replaces the one before it in your notification tray rather than piling up.
 
 ### Which devices can get them

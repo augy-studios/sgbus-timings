@@ -177,6 +177,33 @@ body {
     transform: translateY(14px) scale(0.97);
 }
 
+/* Navigate, Plan a route and Service alerts: their cards open over the page, as windows of
+   their own (js/ui.js, showPanel). The panel is the backdrop and scrolls by itself, so a long
+   list of ways scrolls inside it while the page stays put; a tap around the card closes it.
+   section.panelModal outranks the cards' old in-page rules (.plannerSection, .navSection,
+   .alertsSection), wherever those sit in this file. */
+section.panelModal {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    margin: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: max(16px, calc(env(safe-area-inset-top) + 12px)) 12px max(24px, calc(env(safe-area-inset-bottom) + 16px));
+    background: rgba(10, 15, 12, 0.35);
+    animation: panel-fade 0.2s ease;
+}
+/* The card keeps the look it had on the page: its glass over the page's own colour, which the
+   dimmed backdrop would otherwise show through. */
+.panelModal > .card {
+    max-width: 880px;
+    margin: 0 auto;
+    background: linear-gradient(var(--surface), var(--surface)), color-mix(in srgb, var(--brand) 10%, var(--bg));
+    animation: panel-rise 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@keyframes panel-fade { from { opacity: 0; } }
+@keyframes panel-rise { from { opacity: 0; transform: translateY(14px) scale(0.98); } }
+
 /* Modifiers for the service modal, which carries its own header and body. */
 .modal.wide { max-width: 720px; }
 .modal.flush { padding: 0; gap: 0; overflow: hidden; }

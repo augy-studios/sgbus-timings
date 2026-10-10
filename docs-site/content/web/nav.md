@@ -9,7 +9,7 @@ to any other, by bus, train or both, including the walk at each end.
 ## Set where you're going
 
 <figure>
-<img src="/screenshots/web/nav-set-suggest.png" alt="Navigate with Bedok Mall typed into From, and suggestions for places, stations and stops dropping down below it." width="994" height="284" loading="lazy">
+<img src="/screenshots/web/nav-set-suggest.png" alt="Navigate with Bedok Mall typed into From, and suggestions for places, stations and stops dropping down below it." width="906" height="284" loading="lazy">
 <figcaption>Type a place, an address, a station or a stop, and pick it from the suggestions.</figcaption>
 </figure>
 
@@ -20,6 +20,11 @@ to any other, by bus, train or both, including the walk at each end.
 3. Do the same in **To**.
 
 The swap button between the two boxes turns the journey around.
+
+Navigate opens in a window over the page. Close it with the button at its top
+right, or by tapping anywhere outside it. Opening a bus's timings from it, or
+starting a trip, closes it too, and the Edge Tray's arrowhead brings it back
+with the same two places.
 
 ### From a Google Maps link
 
@@ -58,7 +63,7 @@ nav.
 ## The ways there
 
 <figure>
-<img src="/screenshots/web/nav-ways.png" alt="Navigate from Bedok Mall to Botanic Gardens station listing 8 ways, quickest first: trains on the EW and DT lines, buses, and mixes of the two, each with its changes, walk and time." width="994" height="800" loading="lazy">
+<img src="/screenshots/web/nav-ways.png" alt="Navigate from Bedok Mall to Botanic Gardens station listing 8 ways, quickest first: trains on the EW and DT lines, buses, and mixes of the two, each with its changes, walk and time." width="906" height="800" loading="lazy">
 <figcaption>Every worthwhile mix of bus and train, quickest first.</figcaption>
 </figure>
 
@@ -91,7 +96,7 @@ Each way shows:
 ## Open a way
 
 <figure>
-<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="994" height="668" loading="lazy">
+<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="906" height="668" loading="lazy">
 <figcaption>A way leg by leg, with Start trip for the Get Off Alert.</figcaption>
 </figure>
 
@@ -113,7 +118,7 @@ live timings show up from half an hour before you set off.
 **All ways** goes back to the list, and **Refresh** beside it updates the way's
 live bus timings.
 
-**Refresh** at the top of the card, there once both ends are set, plans the ways
+**Refresh** at the top of the window, there once both ends are set, plans the ways
 again, with any new disruptions and the time now. With a way open, it updates that
 way's live timings too.
 
@@ -123,7 +128,7 @@ and the end: see [Get Off Alert](get-off-alert.md).
 ## Save it
 
 <figure>
-<img src="/screenshots/web/nav-save.png" alt="The top of Navigate, with Refresh, Share, and a Saved button with a filled star." width="986" height="75" loading="lazy">
+<img src="/screenshots/web/nav-save.png" alt="The top of Navigate, with Refresh, Share, and a Saved button with a filled star." width="898" height="75" loading="lazy">
 <figcaption>Save nav turns into Saved.</figcaption>
 </figure>
 

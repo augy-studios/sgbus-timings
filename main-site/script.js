@@ -1273,12 +1273,12 @@ function routeFromHash() {
     if ((m = hash.match(/^sync\/([0-9A-Za-z]{6})$/))) { openSyncLink(m[1]); return false; }
     // Where a Service Alerts notification opens. Shown above the page, so the first
     // favourite stop still loads behind it.
-    if (hash === 'alerts') { window.Alerts.open({ scroll: false }); return false; }
+    if (hash === 'alerts') { window.Alerts.open(); return false; }
     // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
     if (hash === 'near') { $('#nearMeBtn').click(); return true; }
-    if (hash === 'nav') { openNav(null, null, { scroll: false }); return true; }
-    if (hash === 'route') { openPlanner(null, null, { scroll: false }); return true; }
-    if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(end(m[1]), end(m[2]), { scroll: false, when: When.fromHash(m[3], m[4]) }); return true; }
+    if (hash === 'nav') { openNav(); return true; }
+    if (hash === 'route') { openPlanner(); return true; }
+    if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(end(m[1]), end(m[2]), { when: When.fromHash(m[3], m[4]) }); return true; }
     // Matched before decoding, so a "/" in a place's name stays inside it.
     if ((m = raw.match(NAV_HASH_RE) || hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[3], m[4])); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }

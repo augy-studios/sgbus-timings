@@ -35,6 +35,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### The Edge Tray
 - Favourites, Stops near me, Plan a route, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
 - Its arrow tab tucks it away at the edge of the screen and remembers that; Settings puts it on the left or the right
+- Navigate, Plan a route and Service alerts open as windows over the page (`.panelModal`, `showPanel` in `js/ui.js`); a tap outside closes them, and opening a stop's timings or starting a trip from one closes it
 
 ### Incoming Buses Bar
 - Visual summary of the next arriving bus across all services at the current stop

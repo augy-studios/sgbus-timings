@@ -10,7 +10,7 @@ no single bus does, it finds the quickest journeys with up to three changes.
 ## Set the two ends
 
 <figure>
-<img src="/screenshots/web/route-planner-ends.png" alt="The route planner with Start set to Bedok Int (84009) and End set to Serangoon Int (66009), each with a pin button, and the swap button between them." width="994" height="168" loading="lazy">
+<img src="/screenshots/web/route-planner-ends.png" alt="The route planner with Start set to Bedok Int (84009) and End set to Serangoon Int (66009), each with a pin button, and the swap button between them." width="906" height="168" loading="lazy">
 <figcaption>Start and End, each with a pin for the stops near you, and the swap button between them.</figcaption>
 </figure>
 
@@ -25,7 +25,7 @@ The swap button between the two boxes turns the route around.
 ### Direct buses to the other end
 
 <figure>
-<img src="/screenshots/web/route-planner-direct-suggest.png" alt="With Start set to Bedok Int, tampines typed into End: the suggestions say 36 have a bus straight from Bedok Int, listed first, and each tinted stop shows its buses, such as 38 and 69 for Tampines Int." width="970" height="379" loading="lazy">
+<img src="/screenshots/web/route-planner-direct-suggest.png" alt="With Start set to Bedok Int, tampines typed into End: the suggestions say 36 have a bus straight from Bedok Int, listed first, and each tinted stop shows its buses, such as 38 and 69 for Tampines Int." width="874" height="371" loading="lazy">
 <figcaption>Once one end is set, the stops with a bus straight to it lead the suggestions, with their buses.</figcaption>
 </figure>
 
@@ -71,7 +71,7 @@ saved route.
 ## Buses that run the whole way
 
 <figure>
-<img src="/screenshots/web/route-planner-direct.png" alt="The planner from Bedok Int to Tampines Int, saying 2 buses run between these stops, with buttons for 38 and 69." width="994" height="320" loading="lazy">
+<img src="/screenshots/web/route-planner-direct.png" alt="The planner from Bedok Int to Tampines Int, saying 2 buses run between these stops, with buttons for 38 and 69." width="906" height="320" loading="lazy">
 <figcaption>The buses that run the whole way, as a grid.</figcaption>
 </figure>
 
@@ -88,7 +88,7 @@ planner.
 ## Journeys with a change
 
 <figure>
-<img src="/screenshots/web/route-planner-journeys.png" alt="From Bedok Int to Serangoon Int, no single bus links the two stops, so the planner lists journeys such as 60 then 45 and 87 then 45, about 34 minutes with 1 change, each saying where to change." width="994" height="701" loading="lazy">
+<img src="/screenshots/web/route-planner-journeys.png" alt="From Bedok Int to Serangoon Int, no single bus links the two stops, so the planner lists journeys such as 60 then 45 and 87 then 45, about 34 minutes with 1 change, each saying where to change." width="906" height="701" loading="lazy">
 <figcaption>No single bus runs from Bedok Int to Serangoon Int, so the planner offers journeys with a change.</figcaption>
 </figure>
 
@@ -119,7 +119,7 @@ it, unless getting off at the station's stop and walking is clearly quicker.
 ## Open a journey
 
 <figure>
-<img src="/screenshots/web/route-planner-journey.png" alt="A journey leg by leg: bus 60 for 2 stops to Blk 45, then bus 45 for 16 stops, each with live timings and a button for its stop, a short walk at the end, and a rough arrival time." width="994" height="767" loading="lazy">
+<img src="/screenshots/web/route-planner-journey.png" alt="A journey leg by leg: bus 60 for 2 stops to Blk 45, then bus 45 for 16 stops, each with live timings and a button for its stop, a short walk at the end, and a rough arrival time." width="906" height="767" loading="lazy">
 <figcaption>A journey leg by leg, with live timings for each bus and a rough arrival time.</figcaption>
 </figure>
 
@@ -150,7 +150,7 @@ bus stop, use [Navigate](nav.md).
 ## Picked the wrong side of the road?
 
 <figure>
-<img src="/screenshots/web/route-planner-wrong-side.png" alt="The planner from Opp Waterfront Waves to Serangoon Int, with a note: Wrong side of the road? The quickest buses for this trip leave from Aft Waterfront Waves, across the road from your start, about 27 m away; and a button, Use Aft Waterfront Waves instead." width="994" height="335" loading="lazy">
+<img src="/screenshots/web/route-planner-wrong-side.png" alt="The planner from Opp Waterfront Waves to Serangoon Int, with a note: Wrong side of the road? The quickest buses for this trip leave from Aft Waterfront Waves, across the road from your start, about 27 m away; and a button, Use Aft Waterfront Waves instead." width="906" height="335" loading="lazy">
 <figcaption>The planner spots a start on the wrong side of the road, and offers the stop across it.</figcaption>
 </figure>
 
@@ -173,7 +173,7 @@ you save is the right one.
 ## Save the route
 
 <figure>
-<img src="/screenshots/web/route-planner-save.png" alt="The top of the route planner, with Share, and a Saved button with a filled star." width="986" height="75" loading="lazy">
+<img src="/screenshots/web/route-planner-save.png" alt="The top of the route planner, with Share, and a Saved button with a filled star." width="898" height="75" loading="lazy">
 <figcaption>Save route turns into Saved.</figcaption>
 </figure>
 
@@ -188,4 +188,4 @@ it opens your share sheet; on a computer it copies the link. It works with one
 end set, or none, too: the person you send it to gets the planner as far as you
 filled it in, with your time if you picked one.
 
-To close the planner, tap the close button at its top right.
+The planner opens in a window over the page. To close it, tap the close button at its top right, or anywhere outside it. Opening a bus's timings from it, or starting a trip, closes it too; **Back** on the timings brings it back.

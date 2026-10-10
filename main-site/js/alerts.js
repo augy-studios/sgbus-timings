@@ -30,14 +30,14 @@
 
   // ---------- the card ----------
 
-  function open({ scroll = true } = {}) {
-    $("#alertsSection").hidden = false;
+  // Over the page, as a .panelModal (js/ui.js).
+  function open() {
+    window.showPanel("alertsSection", true);
     load();
-    if (scroll) $("#alertsSection").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function close() {
-    $("#alertsSection").hidden = true;
+    window.showPanel("alertsSection", false);
     loadToken++;
     if (location.hash === "#alerts") history.replaceState(null, "", location.pathname);
   }
@@ -232,7 +232,7 @@
 
   function noteFor(modes) {
     const parts = [TRAIN_NOTES[modes.train], TRAFFIC_NOTES[modes.traffic]].filter(Boolean);
-    if (!parts.length) return "Notifications are off. The card still shows what's happening now.";
+    if (!parts.length) return "Notifications are off. This window still shows what's happening now.";
     return `You'll be notified of ${parts.join(", and of ")}.`;
   }
 
@@ -356,6 +356,7 @@
       if ($("#alertsSection").hidden) open();
       else close();
     });
+    window.wirePanel("alertsSection", close);
     $("#alertsClose").addEventListener("click", close);
     $("#alertsRefresh").addEventListener("click", load);
     $("#alertModes").addEventListener("click", (e) => {

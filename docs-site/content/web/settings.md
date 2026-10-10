@@ -26,7 +26,7 @@ Changes save as you make them. There is no Save button.
 
 > [!NOTE]
 > Looking for notifications? They're switched on in the
-> [Service alerts](service-alerts.md#get-notified) card, opened from the bell in
+> [Service alerts](service-alerts.md#get-notified) window, opened from the bell in
 > the Edge Tray, not here.
 
 The greeting follows the time of day, good morning, afternoon or evening, and

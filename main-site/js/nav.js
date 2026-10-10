@@ -28,6 +28,7 @@ function initNav() {
     else closeNav();
   });
   $('#navClose').addEventListener('click', closeNav);
+  wirePanel('navSection', closeNav);
   $('#navSwap').addEventListener('click', () => {
     [nav.from, nav.to] = [nav.to, nav.from];
     showEnds();
@@ -56,7 +57,7 @@ function initNav() {
     if (option) {
       nav.option = nav.options[Number(option.dataset.navOption)] || null;
       renderNav();
-      $('#navSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      $('#navSection').scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     const walk = e.target.closest('[data-nav-walk]');
@@ -67,7 +68,9 @@ function initNav() {
       return;
     }
     const stop = e.target.closest('[data-nav-stop]');
+    // The stop's timings and the trip bar are on the page, so Navigate gets out of their way.
     if (stop) {
+      closeNav();
       loadStop(stop.dataset.navStop, { service: stop.dataset.navBus, scroll: true });
       return;
     }
@@ -79,6 +82,7 @@ function initNav() {
       refreshNav();
     } else if (action === 'trip' && nav.option) {
       Trip.start(tripFromNav(nav.option, nav.to));
+      closeNav();
     } else if (action === 'retry') {
       runNav();
     }
@@ -193,18 +197,18 @@ function showEnds() {
 
 // ---- Opening and closing ----
 
-// Opens at Leave now unless it's given a time: one picked before isn't kept.
-function openNav(from = null, to = null, { scroll = true, when = null, focus = true } = {}) {
+// Opens over the page (a .panelModal, js/ui.js), at Leave now unless it's given a time: one
+// picked before isn't kept.
+function openNav(from = null, to = null, { when = null, focus = true } = {}) {
   if (from) nav.from = from;
   if (to) nav.to = to;
   nav.option = null;
   nav.when = when;
   nav.whenPicker.set(when);
-  $('#navSection').hidden = false;
+  showPanel('navSection', true);
   showEnds();
   if (nav.from && nav.to) runNav();
   else renderNav();
-  if (scroll) $('#navSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   if (!nav.from && focus) $('#navFrom').focus({ preventScroll: true });
 }
 
@@ -212,7 +216,7 @@ function openNav(from = null, to = null, { scroll = true, when = null, focus = t
 // or text naming one, goes in To as if pasted there. A link is set as the end once it's read;
 // anything else leaves its suggestions open to pick from.
 function openNavShared(text) {
-  openNav(null, null, { scroll: false });
+  openNav();
   const input = $('#navTo');
   input.value = text;
   if (!MAPS_LINK_RE.test(text)) input.focus({ preventScroll: true });
@@ -220,7 +224,7 @@ function openNavShared(text) {
 }
 
 function closeNav() {
-  $('#navSection').hidden = true;
+  showPanel('navSection', false);
   nav.token++;
   if (location.hash.startsWith('#nav/')) history.replaceState(null, '', stopHash() || location.pathname);
 }
@@ -261,7 +265,7 @@ function openNavHash(fromText, toText, when = null) {
   nav.from = point(fromText, 'Start');
   nav.to = point(toText, 'End');
   // Not the keyboard up over From while it's finding where you are.
-  openNav(nav.from, nav.to, { scroll: false, when, focus: fromText !== 'here' });
+  openNav(nav.from, nav.to, { when, focus: fromText !== 'here' });
   if (fromText === 'here') locateNavEnd('from');
   if (toText === 'here') locateNavEnd('to');
 }

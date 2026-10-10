@@ -12,7 +12,7 @@ stations, and in which direction, for example:
 It shows only then. When LTA reports the line running normally again, the bar
 goes by itself.
 
-- **Details** opens the [Service alerts](service-alerts.md) card, with the stations
+- **Details** opens the [Service alerts](service-alerts.md) window, with the stations
   affected and where free buses and shuttles are running.
 - **Hide** puts the bar away until the disruption changes or you reload the page.
 
@@ -20,4 +20,4 @@ The site checks for disruptions every two minutes while it's open, and straight
 away when you come back to it.
 
 Traffic incidents don't bring the bar up: there's nearly always one somewhere in
-Singapore. They're in the [Service alerts](service-alerts.md) card instead.
+Singapore. They're in the [Service alerts](service-alerts.md) window instead.

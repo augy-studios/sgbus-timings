@@ -40,6 +40,7 @@ function initPlanner() {
     renderPlanner();
   });
   $('#plannerClose').addEventListener('click', closePlanner);
+  wirePanel('plannerSection', closePlanner);
   $('#routeFavBtn').addEventListener('click', () => {
     toggleFavRoute(planner.start, planner.end);
     renderPlanner();
@@ -65,9 +66,12 @@ function initPlanner() {
     );
   });
 
+  // A stop's timings and the trip bar are on the page, so the planner gets out of their way;
+  // the stop's Back reopens it where it was.
   $('#plannerBody').addEventListener('click', (e) => {
     const bus = e.target.closest('[data-route-bus]');
     if (bus) {
+      closePlanner();
       loadStop(planner.start, {
         service: bus.dataset.routeBus,
         ctx: { kind: 'route', start: planner.start, end: planner.end, when: planner.when },
@@ -85,6 +89,7 @@ function initPlanner() {
     if (leg) {
       const legs = planner.journey;
       const picked = legs[Number(leg.dataset.leg)];
+      closePlanner();
       loadStop(picked.from, {
         service: picked.bus,
         ctx: { kind: 'journey', start: planner.start, end: planner.end, legs, when: planner.when },
@@ -113,6 +118,7 @@ function initPlanner() {
           return tripLegForBus(leg.bus, stops.slice(i, j + 1), leg.to);
         }),
       });
+      closePlanner();
     }
   });
 }
@@ -163,21 +169,21 @@ function searchJourneys(start, end, timing) {
   });
 }
 
-// Opens at Leave now unless it's given a time: one picked before isn't kept.
-function openPlanner(start = null, end = null, { journey = null, scroll = true, when = null } = {}) {
+// Opens over the page (a .panelModal, js/ui.js), at Leave now unless it's given a time: one
+// picked before isn't kept.
+function openPlanner(start = null, end = null, { journey = null, when = null } = {}) {
   planner.start = start;
   planner.end = end;
   planner.journey = journey;
   planner.when = when;
   planner.whenPicker.set(when);
-  $('#plannerSection').hidden = false;
+  showPanel('plannerSection', true);
   renderPlanner();
-  if (scroll) $('#plannerSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   if (!start) $('#routeStart').focus({ preventScroll: true });
 }
 
 function closePlanner() {
-  $('#plannerSection').hidden = true;
+  showPanel('plannerSection', false);
   planner.token++;
   if (location.hash.startsWith('#route/')) history.replaceState(null, '', stopHash() || location.pathname);
 }
