@@ -57,7 +57,8 @@ function initPlanner() {
     shareLink(e.currentTarget, `${location.origin}/${hash}`, title);
   });
 
-  $('.plannerFields').addEventListener('click', (e) => {
+  // Scoped to the planner: Navigate's fields share the class, and come first on the page.
+  $('#plannerSection .plannerFields').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-near-for]');
     if (!btn) return;
     const field = btn.dataset.nearFor;
