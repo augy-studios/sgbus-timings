@@ -67,6 +67,13 @@ export function parseTrip(body, now = Date.now()) {
     if (!isNum(l.minutes, 0, 300)) fail(`leg ${i}: minutes must be 0 to 300`);
     if (l.wait != null && !isNum(l.wait, 0, 60)) fail(`leg ${i}: wait must be 0 to 60`);
     const leg = { kind: l.kind, to: text(l.to, `leg ${i} to`), points, minutes: l.minutes, wait: l.wait || 0 };
+    // For a live ETA link (api/_lib/share-links.js, etaFromTrip): the ride's name, and the
+    // minutes walked after it, to the next ride or the end.
+    if (l.label != null) leg.label = text(l.label, `leg ${i} label`).slice(0, 40);
+    if (l.walkAfter != null) {
+      if (!isNum(l.walkAfter, 0, 120)) fail(`leg ${i}: walkAfter must be 0 to 120`);
+      leg.walkAfter = l.walkAfter;
+    }
     // A bus followed live needs both; without them it goes by the clock.
     if (l.kind === 'bus' && SERVICE_RE.test(l.service ?? '') && STOP_RE.test(l.alight ?? '')) {
       Object.assign(leg, { service: l.service, alight: l.alight });
@@ -104,7 +111,21 @@ export function parseTrip(body, now = Date.now()) {
     // False while the app waits to be sure you're on the bus; an older app doesn't say.
     clockRuns: body.clockRuns !== false,
     alerted: body.alerted.map(Boolean),
+    share: parseShare(body.share),
   };
+}
+
+// The trip's live ETA link, if it's being shared: the cron keeps it updated while the app is
+// in the background (api/push/trip-poll.js). The secret is what api/share.js handed the app.
+function parseShare(share) {
+  if (share == null) return null;
+  if (typeof share !== 'object') fail('bad share');
+  if (typeof share.id !== 'string' || !/^[a-z0-9]{10}$/.test(share.id)) fail('bad share.id');
+  if (typeof share.secret !== 'string' || !B64URL_RE.test(share.secret) || share.secret.length > 64) fail('bad share.secret');
+  const to = share.to;
+  if (!to || typeof to !== 'object' || !isNum(to.lat, ...SG.lat) || !isNum(to.lng, ...SG.lng)) fail('bad share.to');
+  const name = share.name == null || share.name === '' ? '' : text(share.name, 'share.name').slice(0, 64);
+  return { id: share.id, secret: share.secret, name, to: { label: text(to.label, 'share.to.label'), lat: to.lat, lng: to.lng } };
 }
 
 function parseSubscription(sub) {

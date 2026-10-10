@@ -16,6 +16,8 @@ const LS = {
     favNavKey:     'sgbus_fav_navs',
     pinKey:        'sgbus_pin_prefs',
     birthdayKey:   'sgbus_birthday',
+    homeKey:       'sgbus_home',
+    workKey:       'sgbus_work',
 
     getName()  { return localStorage.getItem(this.nameKey) || ''; },
     setName(v) { localStorage.setItem(this.nameKey, v); },
@@ -61,6 +63,18 @@ const LS = {
     setBirthday(v) {
         if (v) localStorage.setItem(this.birthdayKey, v);
         else localStorage.removeItem(this.birthdayKey);
+    },
+
+    // Home or Work ("home" or "work"), set in Settings: { label, lat, lng }, with `stop` the
+    // stop code when the place is a bus stop. Null while it isn't set.
+    getPlace(kind) {
+        const v = readJson(kind === 'work' ? this.workKey : this.homeKey, null);
+        return v && typeof v.label === 'string' && Number.isFinite(v.lat) && Number.isFinite(v.lng) ? v : null;
+    },
+    setPlace(kind, place) {
+        const key = kind === 'work' ? this.workKey : this.homeKey;
+        if (place) localStorage.setItem(key, JSON.stringify(place));
+        else localStorage.removeItem(key);
     },
 
     getStops() {
@@ -1253,6 +1267,7 @@ $('#favsModal').addEventListener('click', e => {
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
+// "#share/<id>" for a short share link (js/share.js),
 // "#alerts" for the service alerts card, "#nav/lat,lng~Name/here" for Navigate (navHash in
 // js/nav.js), and "#near" and "#nav" for the installed app's shortcuts. Either end of a route
 // or nav can be "-", not set yet, as Share gives them part filled in, and "#route" opens the
@@ -1264,6 +1279,10 @@ const NAV_END = '(-|here|-?[\\d.]+,-?[\\d.]+(?:~[^/]*)?)';
 const NAV_HASH_RE = new RegExp(`^nav\\/${NAV_END}\\/${NAV_END}${WHEN_HASH}$`);
 
 function routeFromHash() {
+    // The short link itself, when the app was served for it offline (sw.js) rather than
+    // api/share-page.js sending it on.
+    const short = location.pathname.match(/^\/(?:go|trip|eta)\/([a-z0-9]{10})$/);
+    if (short) history.replaceState(null, '', `/#share/${short[1]}`);
     const raw = location.hash.replace('#', '');
     const hash = decodeURIComponent(raw);
     const end = (code) => (code === '-' ? null : code);
@@ -1274,6 +1293,9 @@ function routeFromHash() {
     // Where a Service Alerts notification opens. Shown above the page, so the first
     // favourite stop still loads behind it.
     if (hash === 'alerts') { window.Alerts.open(); return false; }
+    // A short share link (js/share.js), sent on here by api/share-page.js: a place or
+    // directions open Navigate, live progress opens over the page.
+    if ((m = hash.match(/^share\/([a-z0-9]{10})$/))) { Share.open(m[1]); return true; }
     // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
     if (hash === 'near') { $('#nearMeBtn').click(); return true; }
     if (hash === 'nav') { openNav(); return true; }
@@ -1310,6 +1332,7 @@ function routeFromShare() {
     setInterval(updateGreeting, 30_000);
     initPlanner();
     initNav();
+    Share.init();
     initSync();
 
     // Started alongside the stops so it's usually in by the time anything wants it.

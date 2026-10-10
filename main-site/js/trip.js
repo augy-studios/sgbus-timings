@@ -8,9 +8,11 @@
 // sent to the server, which follows the bus from LTA's live positions while the app is in the
 // background and pushes the alert itself (api/push/trip-poll.js).
 //
-// Trip.start({ title, legs }) with legs of
+// Trip.start({ title, legs, to }) with legs of
 // { kind: "bus" | "train", label, to, points: [[lat, lng], ...], names, minutes, wait,
-//   service, board, alight }:
+//   walkAfter, service, board, alight }, and `to` (optional) the place it ends at,
+// { label, lat, lng }, for a live ETA link (js/share.js); `walkAfter` is the minutes walked
+// after the ride, to the next one or the end, for the same.
 // `points` are the stops from boarding to alighting, so a leg of 5 stops has 6 points, and
 // `names` (optional) names each of them for the timeline. A bus leg's `service` and `alight`
 // (the stop code you get off at) let the server find the bus, and `board` (the stop code you
@@ -105,13 +107,14 @@
 
   // ---------- starting and ending ----------
 
-  function start({ title, legs }) {
+  function start({ title, legs, to = null }) {
     if (!legs?.length) return;
     stop(false);
     trip = {
       tripId: crypto.randomUUID(),
       title,
       legs,
+      to,
       leg: 0,
       at: 0, // the index of the stop you're at or have just passed, on the current leg
       legStartedAt: Date.now(),
@@ -146,6 +149,8 @@
     tick = null;
     releaseAwake();
     if (clear) {
+      // A trip being shared as a live ETA link says it's over (js/share.js).
+      if (trip) window.dispatchEvent(new CustomEvent("trip:end", { detail: { tripId: trip.tripId } }));
       trip = null;
       save();
       unsync();
@@ -464,7 +469,10 @@
       subscription: pushTo.subscription,
       legs: trip.legs.map((l) => ({
         kind: l.kind, to: l.to, points: l.points, minutes: l.minutes || 0, wait: l.wait || 0, service: l.service, alight: l.alight,
+        label: l.label, walkAfter: l.walkAfter || 0,
       })),
+      // A live ETA link, kept updated by the server while the app is in the background.
+      share: trip.share || null,
       leg: trip.leg,
       at: trip.at,
       pos: trip.pos || 0,
@@ -528,6 +536,51 @@
       });
       setTimeout(() => ctx.close(), 1500);
     } catch {}
+  }
+
+  // ---------- sharing a live ETA (js/share.js) ----------
+
+  // How far the trip has got, and when it should get in: the rest of this ride by how far
+  // along it is, the wait for the bus if it hasn't come, the walk after it, and every ride
+  // after that with its wait and walk. Null with no trip. Keep in step with etaFromTrip in
+  // api/_lib/share-links.js, which works it out for the server's copy of the trip.
+  function progress() {
+    if (!trip) return null;
+    const leg = trip.legs[trip.leg];
+    const last = leg.points.length - 1;
+    const pos = target();
+    let minutes = (leg.minutes || 0) * (1 - pos / Math.max(1, last)) + (leg.walkAfter || 0);
+    if (pos < 0.5 && !underWay(leg)) {
+      const due = trip.anchor?.t ?? trip.legStartedAt + (leg.wait || 0) * 60000;
+      minutes += Math.max(0, due - Date.now()) / 60000;
+    }
+    for (const l of trip.legs.slice(trip.leg + 1)) minutes += (l.wait || 0) + (l.minutes || 0) + (l.walkAfter || 0);
+    const i = Math.min(last, Math.floor(pos));
+    const j = Math.min(last, i + 1);
+    const f = pos - i;
+    const final = trip.legs[trip.legs.length - 1];
+    const end = final.points[final.points.length - 1];
+    return {
+      tripId: trip.tripId,
+      to: trip.to || { label: final.to, lat: end[0], lng: end[1] },
+      minutesLeft: minutes,
+      leg: { label: leg.label, to: leg.to, stopsLeft: stopsLeft() },
+      legIndex: trip.leg,
+      legCount: trip.legs.length,
+      at: [leg.points[i][0] + (leg.points[j][0] - leg.points[i][0]) * f, leg.points[i][1] + (leg.points[j][1] - leg.points[i][1]) * f],
+      path: trip.legs.flatMap((l) => l.points),
+      arrived: stopsLeft() === 0 && trip.leg === trip.legs.length - 1,
+      share: trip.share || null,
+    };
+  }
+
+  // The ETA link this trip is shared as, { id, secret, name, to }, or null to stop. Sent to the
+  // server with the trip, so it can carry on updating the link in the background.
+  function setShare(share) {
+    if (!trip) return;
+    trip.share = share;
+    save();
+    sync();
   }
 
   // ---------- keeping the screen on ----------
@@ -725,7 +778,7 @@
     // Anywhere on the bar but its buttons opens or closes the timeline; the title is the
     // button for keyboards and screen readers.
     $("#tripBar .tripBarInner").addEventListener("click", (e) => {
-      if (e.target.closest("#tripEnd, #tripNext")) return;
+      if (e.target.closest("#tripEnd, #tripNext, #tripShare")) return;
       setExpanded(!expanded);
     });
     $("#tripEnd").addEventListener("click", () => stop());
@@ -772,6 +825,6 @@
     } catch {}
   }
 
-  window.Trip = { start, stop, enabled, active: () => Boolean(trip) };
+  window.Trip = { start, stop, enabled, active: () => Boolean(trip), progress, setShare };
   init();
 })();

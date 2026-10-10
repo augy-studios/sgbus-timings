@@ -21,6 +21,12 @@ to any other, by bus, train or both, including the walk at each end.
 
 The swap button between the two boxes turns the journey around.
 
+### Home and Work
+
+Under each box, **Home** and **Work** set that end to the place saved for it. Set
+both in [Settings](settings.md); until one is, its button is dashed, and tapping it
+opens Settings at that box.
+
 Navigate opens in a window over the page. Close it with the button at its top
 right, or by tapping anywhere outside it. Opening a bus's timings from it, or
 starting a trip, closes it too, and the Edge Tray's arrowhead brings it back
@@ -139,16 +145,45 @@ A saved nav doesn't keep a time.
 
 ## Share it
 
-Tap **Share** at the top of Navigate to send someone a link to it. On a phone it
-opens your share sheet; on a computer it copies the link. It works whether both
-ends are set, one, or neither, and keeps the time if you picked one.
+Tap **Share** at the top of Navigate, and pick what to send:
 
-An end set to **Your location** isn't sent as where you are: it becomes the
-location of whoever opens the link. Share a nav from your location to the
-Botanic Gardens, and your friend gets one from where they are to the Botanic
-Gardens.
+| Pick | Sends | The link |
+|---|---|---|
+| **Share my ETA** | On a trip: when you'll get there, and how far along you are, live | `sgbus.uwuapps.org/eta/…` |
+| **Share these directions** | Both ends, the time if you picked one, and the way you have open | `sgbus.uwuapps.org/trip/…` |
+| **Share start**, **Share end** | "How to get to" that place | `sgbus.uwuapps.org/go/…` |
 
-The address of the page changes to the nav too, so you can also bookmark it.
+Each opens a card with a map and the short link, and buttons to send it with
+Telegram or WhatsApp, copy it, or, on a phone, open your share sheet with
+**More**. In a chat, the link shows its map and what it is.
+
+- A **directions** link opens Navigate with the same two places and time, and the
+  same way open if it still runs.
+- A **start** or **end** link opens Navigate from wherever the person opening it
+  is, to that place.
+- An end set to **Your location** isn't sent as where you are: in a directions
+  link it becomes the location of whoever opens it, and shared on its own it's
+  sent as **My location**, for meeting up.
+
+Sharing the same place or directions again gives the same link. With nothing set
+yet, **Share** sends a link to Navigate itself, and the address of the page
+changes to the nav as you go, so you can also bookmark it.
+
+### Share my ETA
+
+On a trip, **Share my ETA**, here or on the trip bar, gives a link to your live
+progress: "Sam will arrive in 12 min", around what time, which bus or train
+you're on and how many stops are left, and a map with where you've got to on the
+route. The name is the one in [Settings](settings.md), if you set one.
+
+Whoever opens it sees it update by itself. The app sends your progress every half
+minute while it's open. With notifications allowed for the
+[Get Off Alert](get-off-alert.md), the server carries on from LTA's bus positions
+and the clock while the app is in the background. The link says when it was last
+updated, and that the arrival time is the last estimate if it's been a while.
+
+It ends when you arrive or end the trip, or when you tap **Stop sharing my ETA**
+on its card. The link stops working three hours after its last update.
 
 ## Also in Telegram
 

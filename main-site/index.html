@@ -170,6 +170,10 @@
                                 </div>
                                 <button class="iconBtn" type="button" data-nav-here="from" title="Start from where I am" aria-label="Start from where I am"><span data-icon="pin"></span></button>
                             </div>
+                            <div class="savedPlaceBtns">
+                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="from"><span data-icon="home"></span> Home</button>
+                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="from"><span data-icon="work"></span> Work</button>
+                            </div>
                         </div>
                         <button id="navSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
                         <div class="plannerField">
@@ -180,6 +184,10 @@
                                     <div id="navToAc" class="acList" hidden></div>
                                 </div>
                                 <button class="iconBtn" type="button" data-nav-here="to" title="End where I am" aria-label="End where I am"><span data-icon="pin"></span></button>
+                            </div>
+                            <div class="savedPlaceBtns">
+                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="to"><span data-icon="home"></span> Home</button>
+                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="to"><span data-icon="work"></span> Work</button>
                             </div>
                         </div>
                     </div>
@@ -244,6 +252,10 @@
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="start" title="Pick a stop near me" aria-label="Pick a start stop near me"><span data-icon="pin"></span></button>
                             </div>
+                            <div class="savedPlaceBtns">
+                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="start"><span data-icon="home"></span> Home</button>
+                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="start"><span data-icon="work"></span> Work</button>
+                            </div>
                         </div>
                         <button id="routeSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
                         <div class="plannerField">
@@ -254,6 +266,10 @@
                                     <div id="routeEndAc" class="acList" hidden></div>
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="end" title="Pick a stop near me" aria-label="Pick an end stop near me"><span data-icon="pin"></span></button>
+                            </div>
+                            <div class="savedPlaceBtns">
+                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="end"><span data-icon="home"></span> Home</button>
+                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="end"><span data-icon="work"></span> Work</button>
                             </div>
                         </div>
                     </div>
@@ -408,6 +424,24 @@
                 <button id="clearBirthday" class="iconBtn" type="button">Clear</button>
             </div>
             <p class="mode-note">On your birthday, the greeting wishes you a happy one.</p>
+            <!-- Home and Work: js/nav.js, "Home and Work" -->
+            <label class="modal-section-label" for="setHome">Home</label>
+            <div class="settingsRow">
+                <div class="ac">
+                    <input id="setHome" class="input settingsInput" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="done" />
+                    <div id="setHomeAc" class="acList" hidden></div>
+                </div>
+                <button id="clearHome" class="iconBtn" type="button" hidden>Clear</button>
+            </div>
+            <label class="modal-section-label" for="setWork">Work</label>
+            <div class="settingsRow">
+                <div class="ac">
+                    <input id="setWork" class="input settingsInput" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="done" />
+                    <div id="setWorkAc" class="acList" hidden></div>
+                </div>
+                <button id="clearWork" class="iconBtn" type="button" hidden>Clear</button>
+            </div>
+            <p class="mode-note">The Home and Work buttons under each end of Navigate and Plan a route use these.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>
             <div class="mode-toggle" data-pin-kind="bus">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -478,6 +512,68 @@
         </div>
     </div>
 
+    <!-- Navigate's Share: what to share, the card with its short link, and someone's live
+         progress opened from a link. js/share.js -->
+    <div id="shareMenuModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="shareMenuTitle">
+            <div class="modal-head">
+                <h2 id="shareMenuTitle">Share</h2>
+                <button class="icon-btn small" type="button" data-close-modal="shareMenuModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="shareMenuList" class="shareMenu"></div>
+        </div>
+    </div>
+
+    <div id="shareCardModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="shareCardTitle">
+            <div class="modal-head">
+                <h2 id="shareCardTitle">Share</h2>
+                <button class="icon-btn small" type="button" data-close-modal="shareCardModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div class="shareBubble">
+                <div class="shareMap"><img id="shareMapImg" alt="Map" hidden /></div>
+                <div class="shareBand">
+                    <p id="shareCardName" class="shareName"></p>
+                    <p id="shareCardSub" class="shareSub" hidden></p>
+                    <p id="shareCardLink" class="shareUrl" role="status"></p>
+                </div>
+            </div>
+            <button id="shareRetry" class="iconBtn" type="button" hidden>Try again</button>
+            <div id="shareTargets" class="shareTargets">
+                <button class="shareTarget" type="button" data-share-to="telegram" disabled><span data-icon="navigate"></span><span class="lbl">Telegram</span></button>
+                <button class="shareTarget" type="button" data-share-to="whatsapp" disabled><span data-icon="chat"></span><span class="lbl">WhatsApp</span></button>
+                <button class="shareTarget" type="button" data-share-to="copy" disabled><span data-icon="copy"></span><span class="lbl">Copy link</span></button>
+                <button class="shareTarget" type="button" data-share-to="more" disabled><span data-icon="share"></span><span class="lbl">More</span></button>
+            </div>
+            <button id="shareStopEta" class="iconBtn" type="button" hidden>Stop sharing my ETA</button>
+        </div>
+    </div>
+
+    <div id="etaModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="etaTitle">
+            <div class="modal-head">
+                <h2 id="etaTitle">Live progress</h2>
+                <button class="icon-btn small" type="button" data-close-modal="etaModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div class="shareBubble">
+                <div class="shareMap"><img id="etaMapImg" alt="Map of the trip" hidden /></div>
+                <div class="shareBand">
+                    <p id="etaHead" class="shareName"></p>
+                    <p id="etaSub" class="shareSub"></p>
+                </div>
+            </div>
+            <p id="etaLeg" class="etaLeg" hidden></p>
+            <p id="etaUpdated" class="mode-note" role="status"></p>
+            <button id="etaDirections" class="btn" type="button"><span data-icon="navigate"></span> Directions there</button>
+        </div>
+    </div>
+
     <!-- A trip in progress, and its Get Off Alert: js/trip.js -->
     <div id="tripBar" class="tripBar hidden" role="region" aria-label="Trip in progress">
         <!-- Tapping the bar opens the stops ahead, with a dot where you are. -->
@@ -490,6 +586,7 @@
                 <span id="tripNote" class="tripNote" hidden></span>
             </button>
             <span class="tripChevron" data-icon="chevron" aria-hidden="true"></span>
+            <button id="tripShare" class="iconBtn" type="button" title="Share my ETA" aria-label="Share my ETA"><span data-icon="share"></span></button>
             <button id="tripNext" class="iconBtn" type="button" hidden>Next leg</button>
             <button id="tripEnd" class="iconBtn" type="button">End trip</button>
         </div>
@@ -531,6 +628,7 @@
     <script src="/js/weather.js"></script>
     <script src="/js/trip.js"></script>
     <script src="/js/nav.js"></script>
+    <script src="/js/share.js"></script>
     <script src="/script.js"></script>
     <script src="/js/sw-update.js"></script>
 </body>

@@ -17,7 +17,9 @@ no single bus does, it finds the quickest journeys with up to three changes.
 1. Tap **Plan a route**, the winding path in the Edge Tray.
 2. In **Start**, type a stop's name, its code, or a 6-digit postal code, and pick
    it from the list. Or tap the pin next to the box to pick from the stops near
-   you.
+   you, or **Home** or **Work** under it to pick from the stops near the place
+   saved in [Settings](settings.md). If that place is itself a bus stop, it's
+   used as it is.
 3. Do the same in **End**.
 
 The swap button between the two boxes turns the route around.
@@ -37,7 +39,7 @@ straight from your start) go to the top, tinted green, with their buses shown:
   the stop code and a line above saying how many there are. Every stop matching
   what you typed is checked, so one further down the alphabet still makes the
   top. **Enter** picks the first one shown.
-- **The pin, or a postal code**: they lead the list of nearby stops, with
+- **The pin, Home, Work or a postal code**: they lead the list of nearby stops, with
   **Direct: 10, 24** under each name. The line above the list also says when
   none of them has one, so the planner will look for journeys with a change.
 

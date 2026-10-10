@@ -8,15 +8,17 @@
 
 // walksOpen: the walks of the open way whose Directions have been opened into map apps.
 // when: the time picked (js/when.js), null for Leave now.
-const nav = { from: null, to: null, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null };
+// pickWay: a shared way to open once the ways are in (openNavAt).
+const nav = { from: null, to: null, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null, pickWay: null };
 
 const NAV_PLACES_DELAY_MS = 300;
 // A Google Maps link, which /api/places reads for the one place it points at (api/_lib/gmaps.js).
 const MAPS_LINK_RE = /maps\.app\.goo\.gl\/|goo\.gl\/maps\/|google\.[a-z]{2,3}(?:\.[a-z]{2})?\/maps|maps\.google\./i;
 
 function initNav() {
-  attachPlaceSearch('from');
-  attachPlaceSearch('to');
+  attachPlaceSearch($('#navFrom'), $('#navFromAc'), (place) => setNavEnd('from', place));
+  attachPlaceSearch($('#navTo'), $('#navToAc'), (place) => setNavEnd('to', place));
+  initSavedPlaces();
   nav.whenPicker = When.picker($('#navWhen'), (when) => {
     nav.when = when;
     nav.option = null;
@@ -39,17 +41,21 @@ function initNav() {
     toggleFavNav(nav.from, nav.to);
     renderNavFav();
   });
+  // Share: these directions, the start or the end, or your ETA on a trip, as short links
+  // (js/share.js). With nothing set yet, the link to Navigate itself.
   $('#navShare').addEventListener('click', (e) => {
-    const title = nav.from && nav.to ? `${nav.from.label} to ${nav.to.label}`
-      : nav.to ? `To ${nav.to.label}`
-      : nav.from ? `From ${nav.from.label}`
-      : 'Navigate by bus and train';
-    shareLink(e.currentTarget, `${location.origin}/${navHash()}`, title);
+    if (!nav.from && !nav.to && !Trip.active()) {
+      shareLink(e.currentTarget, `${location.origin}/${navHash()}`, 'Navigate by bus and train');
+      return;
+    }
+    Share.openMenu();
   });
 
   $('.navFields').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-nav-here]');
     if (btn) locateNavEnd(btn.dataset.navHere);
+    const saved = e.target.closest('[data-saved-place]');
+    if (saved) useSavedPlace(saved.dataset.savedPlace, (place) => setNavEnd(saved.dataset.savedFor, place));
   });
 
   $('#navBody').addEventListener('click', (e) => {
@@ -91,16 +97,17 @@ function initNav() {
 
 // ---- Choosing the ends ----
 
-function attachPlaceSearch(field) {
-  const input = $(field === 'from' ? '#navFrom' : '#navTo');
-  const box = $(field === 'from' ? '#navFromAc' : '#navToAc');
+// Place suggestions from /api/places under an input, for Navigate's ends and for Home and Work
+// in Settings. `onPick` gets the place picked.
+function attachPlaceSearch(input, box, onPick) {
   let timer = null;
   let token = 0;
   let found = [];
 
   const render = (places) => {
     found = places;
-    if (!places.length) {
+    // Not reopened by an answer that comes in after the field has been left.
+    if (!places.length || document.activeElement !== input) {
       box.hidden = true;
       box.innerHTML = '';
       return;
@@ -138,7 +145,7 @@ function attachPlaceSearch(field) {
         const places = r.ok && Array.isArray(data) ? data : [];
         if (link && places.length === 1) {
           box.hidden = true;
-          setNavEnd(field, places[0]);
+          onPick(places[0]);
           return;
         }
         render(places);
@@ -153,15 +160,63 @@ function attachPlaceSearch(field) {
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && found[0]) {
       box.hidden = true;
-      setNavEnd(field, found[0]);
+      onPick(found[0]);
     }
   });
   box.addEventListener('click', (e) => {
     const item = e.target.closest('[data-place]');
     if (!item) return;
     box.hidden = true;
-    setNavEnd(field, found[Number(item.dataset.place)]);
+    onPick(found[Number(item.dataset.place)]);
   });
+}
+
+// ---- Home and Work ----
+
+const SAVED_PLACES = { home: 'Home', work: 'Work' };
+
+// Set in Settings with the same search as Navigate's ends, and offered by the Home and Work
+// buttons under each end of Navigate and the route planner.
+function initSavedPlaces() {
+  for (const [kind, name] of Object.entries(SAVED_PLACES)) {
+    const input = $(`#set${name}`);
+    attachPlaceSearch(input, $(`#set${name}Ac`), (place) => {
+      LS.setPlace(kind, { label: place.label, lat: place.lat, lng: place.lng, ...(place.kind === 'stop' && place.code && { stop: place.code }) });
+      input.blur();
+      showSavedPlaces();
+    });
+    // Typing without picking anything leaves the place as it was.
+    input.addEventListener('blur', () => setTimeout(showSavedPlaces, 200));
+    $(`#clear${name}`).addEventListener('click', () => {
+      LS.setPlace(kind, null);
+      showSavedPlaces();
+    });
+  }
+  showSavedPlaces();
+}
+
+// Settings' fields and the buttons' tooltips, as Home and Work are now.
+function showSavedPlaces() {
+  for (const [kind, name] of Object.entries(SAVED_PLACES)) {
+    const place = LS.getPlace(kind);
+    const input = $(`#set${name}`);
+    if (document.activeElement !== input) input.value = place?.label || '';
+    $(`#clear${name}`).hidden = !place;
+    for (const btn of $$(`[data-saved-place="${kind}"]`)) {
+      btn.title = place ? `${name}: ${place.label}` : `Set your ${name.toLowerCase()} in Settings`;
+      btn.classList.toggle('unset', !place);
+    }
+  }
+}
+
+// Home or Work handed to `use`, or, while it isn't set, Settings opened at its field.
+function useSavedPlace(kind, use) {
+  const place = LS.getPlace(kind);
+  if (place) return use(place);
+  openSettings();
+  const input = $(`#set${SAVED_PLACES[kind]}`);
+  input.scrollIntoView({ block: 'center' });
+  input.focus({ preventScroll: true });
 }
 
 const HERE_LABEL = 'Your location';
@@ -262,13 +317,24 @@ function openNavHash(fromText, toText, when = null) {
     }
     return { label: label.trim(), lat, lng };
   };
-  nav.from = point(fromText, 'Start');
-  nav.to = point(toText, 'End');
-  // Not the keyboard up over From while it's finding where you are.
-  openNav(nav.from, nav.to, { when, focus: fromText !== 'here' });
-  if (fromText === 'here') locateNavEnd('from');
-  if (toText === 'here') locateNavEnd('to');
+  openNavAt(fromText === 'here' ? 'here' : point(fromText, 'Start'), toText === 'here' ? 'here' : point(toText, 'End'), when);
 }
+
+// Opens Navigate at two ends, from a link: each a place, null for not set, or "here" for
+// wherever the person opening it is. `way` (wayKey) is the way to open once they're planned,
+// if it's still among them.
+function openNavAt(from, to, when = null, way = null) {
+  nav.from = from === 'here' ? null : from;
+  nav.to = to === 'here' ? null : to;
+  nav.pickWay = way;
+  // Not the keyboard up over From while it's finding where you are.
+  openNav(nav.from, nav.to, { when, focus: from !== 'here' });
+  if (from === 'here') locateNavEnd('from');
+  if (to === 'here') locateNavEnd('to');
+}
+
+// A way, as it's told apart from the others: its rides and where each is boarded.
+const wayKey = (o) => (o.walkOnly ? 'walk' : o.legs.filter((l) => l.mode !== 'walk').map((l) => `${l.mode}:${l.route}@${l.from?.code || l.from?.name || ''}`).join('>'));
 
 // ---- Planning ----
 
@@ -295,7 +361,9 @@ async function runNav() {
     if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
     nav.options = data.options || [];
     nav.onemap = !!data.onemap;
-    nav.option = null;
+    // A shared way (openNavAt) opens once, if it's still one of the ways.
+    nav.option = nav.pickWay ? nav.options.find((o) => wayKey(o) === nav.pickWay) || null : null;
+    nav.pickWay = null;
     renderNav();
   } catch (e) {
     if (token !== nav.token) return;
@@ -514,20 +582,30 @@ async function refreshNav() {
 // ---- Trips, for the Get Off Alert ----
 
 function tripFromNav(o, to) {
+  const legs = [];
+  for (const l of o.legs) {
+    // A walk counts towards the ride before it, for a live ETA link (js/share.js).
+    if (l.mode === 'walk') {
+      if (legs.length) legs[legs.length - 1].walkAfter += l.minutes || 0;
+      continue;
+    }
+    if (!(l.path?.length >= 2)) continue;
+    legs.push({
+      kind: l.mode,
+      label: l.mode === 'bus' ? `Bus ${l.route}` : `${l.route} ${l.lrt ? 'LRT' : 'Line'}`,
+      to: placeName(l.to),
+      points: l.path,
+      names: l.names,
+      minutes: l.minutes,
+      wait: l.wait,
+      walkAfter: 0,
+      // For the server to find the bus while the app is in the background.
+      ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code }),
+    });
+  }
   return {
     title: `To ${to?.label || 'your stop'}`,
-    legs: o.legs
-      .filter((l) => l.mode !== 'walk' && l.path?.length >= 2)
-      .map((l) => ({
-        kind: l.mode,
-        label: l.mode === 'bus' ? `Bus ${l.route}` : `${l.route} ${l.lrt ? 'LRT' : 'Line'}`,
-        to: placeName(l.to),
-        points: l.path,
-        names: l.names,
-        minutes: l.minutes,
-        wait: l.wait,
-        // For the server to find the bus while the app is in the background.
-        ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code }),
-      })),
+    legs,
+    to: to ? { label: to.label, lat: to.lat, lng: to.lng } : null,
   };
 }

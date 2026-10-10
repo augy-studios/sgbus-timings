@@ -7,6 +7,8 @@ import webpush from 'web-push';
 import { fetchBusPositions } from '../_push/lta.js';
 import { releaseLock, storeConfigured, takeLock, trips } from '../_push/store.js';
 import { step, ttlSeconds } from '../_push/trip.js';
+import { etaFromTrip, updateEta } from '../_lib/share-links.js';
+import { supabaseConfigured } from '../_lib/supabase.js';
 
 // An alert that arrives a few minutes late is past the stop: better none.
 const PUSH_TTL = 3 * 60;
@@ -61,6 +63,7 @@ async function poll(accountKey) {
       const { alert, done } = step(trip, buses?.length ? buses : null, now);
 
       if (alert && (await send(id, trip, alert))) sent++;
+      if (trip.share) await shareProgress(trip, done, now);
       if (done) await trips.delete(id);
       else await trips.update(id, trip, ttlSeconds(trip, now));
     } catch (err) {
@@ -68,6 +71,20 @@ async function poll(accountKey) {
     }
   }));
   return { trips: all.length, sent };
+}
+
+// A trip being shared as a live ETA link (api/_lib/share-links.js): kept updated from here
+// once the app has gone quiet, as it does in the background. While it's open the app's own
+// updates, from your location, are better, and these are skipped.
+const APP_QUIET_MS = 90 * 1000;
+
+async function shareProgress(trip, done, now) {
+  if (!supabaseConfigured()) return;
+  try {
+    await updateEta(trip.share.id, trip.share.secret, etaFromTrip(trip, now, { ended: done }), now, { quietFor: APP_QUIET_MS });
+  } catch (err) {
+    console.warn(`eta link ${trip.share.id} failed: ${err.message}`);
+  }
 }
 
 async function send(id, trip, alert) {

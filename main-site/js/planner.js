@@ -59,6 +59,11 @@ function initPlanner() {
 
   // Scoped to the planner: Navigate's fields share the class, and come first on the page.
   $('#plannerSection .plannerFields').addEventListener('click', (e) => {
+    const saved = e.target.closest('[data-saved-place]');
+    if (saved) {
+      useSavedPlace(saved.dataset.savedPlace, (place) => planFromSaved(saved, place));
+      return;
+    }
     const btn = e.target.closest('[data-near-for]');
     if (!btn) return;
     const field = btn.dataset.nearFor;
@@ -230,6 +235,17 @@ async function offerNearbyEnd(field, title, stops) {
     }
   }
   openStopList(title, stops, { pin: false, onPick: (code) => setPlannerEnd(field, code), direct, note });
+}
+
+// Home or Work (js/nav.js) as one end: the stop itself when it's a bus stop, otherwise the
+// stops near it to pick from, as for the pin.
+function planFromSaved(btn, place) {
+  const field = btn.dataset.savedFor;
+  if (place.stop) return setPlannerEnd(field, place.stop);
+  const name = SAVED_PLACES[btn.dataset.savedPlace];
+  return withLocating(btn, () =>
+    ensureStopsIndex().then(() => offerNearbyEnd(field, `Stops near ${name}: pick the ${field}`, stopsNear(place.lat, place.lng)))
+  );
 }
 
 function setPlannerEnd(field, code) {

@@ -1,0 +1,400 @@
+// Navigate's Share, as Citymapper has it: a menu of what to share, then a card with its map
+// and a short link, and the apps to send it with.
+//
+//   Share my ETA            on a trip (js/trip.js): /eta/<id>, live progress, updated from
+//                           here every half minute, and by the server while the app is in the
+//                           background (api/push/trip-poll.js).
+//   Share these directions  both ends, the time and the way that's open: /trip/<id>.
+//   Share start, Share end  "How to get to" one end: /go/<id>, opened from wherever the person
+//                           opening it is.
+//
+// The links are made and read by api/share.js; opening one goes through api/share-page.js to
+// #share/<id> here (Share.open). Uses nav.js's state and script.js's helpers, so nothing
+// here runs until script.js calls Share.init().
+// Plain script: this project does not use ES modules, so exports go on window.
+(function () {
+  const ETA_KEY = 'sgbus.etaShare';
+  const ETA_EVERY_MS = 30 * 1000;
+  const VIEW_EVERY_MS = 20 * 1000;
+  // Updated longer ago than this and the viewer says so.
+  const VIEW_STALE_MS = 3 * 60 * 1000;
+  const PATH_POINTS = 300;
+
+  const clock = (ms) => new Date(ms).toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' });
+  const minutesTo = (ms) => Math.max(0, Math.round((ms - Date.now()) / 60000));
+
+  function thin(points, max) {
+    if (points.length <= max) return points;
+    const step = (points.length - 1) / (max - 1);
+    return Array.from({ length: max }, (_, i) => points[Math.round(i * step)]);
+  }
+
+  async function api(url, options) {
+    const r = await fetch(url, { cache: 'no-store', ...options });
+    const body = r.status === 204 ? {} : await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong. Please try again.'), { status: r.status });
+    return body;
+  }
+
+  async function makeLink(kind, data) {
+    const body = await api('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ kind, data }) });
+    return { ...body, url: `${location.origin}${body.path}` };
+  }
+
+  // ---------- what's shared ----------
+
+  const placeOf = (p) => ({ label: p.label === HERE_LABEL ? 'My location' : p.label, lat: p.lat, lng: p.lng });
+  // An end of the directions: Your location stays "wherever you are" for whoever opens it.
+  const endOf = (p) => (p.label === HERE_LABEL ? 'here' : placeOf(p));
+
+  function directionsData() {
+    const o = nav.option;
+    return {
+      from: endOf(nav.from),
+      to: endOf(nav.to),
+      when: nav.when,
+      way: o ? wayKey(o) : null,
+      summary: o ? `~${o.minutes} min · ${navMixText(o)}` : '',
+      path: o ? thin(o.legs.flatMap((l) => (l.mode !== 'walk' && l.path) || []), PATH_POINTS) : null,
+    };
+  }
+
+  function etaData(p, extra = {}) {
+    return {
+      name: LS.getName(),
+      to: p.to,
+      arriveAt: Date.now() + p.minutesLeft * 60000,
+      leg: { label: p.leg.label || '', to: p.leg.to || '', stopsLeft: p.leg.stopsLeft },
+      legIndex: p.legIndex,
+      legCount: p.legCount,
+      at: p.at,
+      path: thin(p.path, PATH_POINTS),
+      ended: p.arrived,
+      ...extra,
+    };
+  }
+
+  // ---------- the menu ----------
+
+  function openMenu() {
+    const items = [];
+    if (Trip.active()) items.push({ pick: 'eta', icon: 'clock', title: 'Share my ETA', sub: 'Live progress, until you get there' });
+    if (nav.from && nav.to) items.push({ pick: 'directions', icon: 'route', title: 'Share these directions', sub: `${nav.from.label} to ${nav.to.label}` });
+    if (nav.from) items.push({ pick: 'start', icon: 'pin', title: 'Share start', sub: placeOf(nav.from).label });
+    if (nav.to) items.push({ pick: 'end', icon: 'flag', title: 'Share end', sub: placeOf(nav.to).label });
+    $('#shareMenuList').innerHTML = items.map((it) =>
+      `<button type="button" class="shareMenuItem" data-share-pick="${it.pick}">${ico(it.icon)}` +
+      `<span><strong>${escapeHtml(it.title)}</strong><span class="sub">${escapeHtml(it.sub)}</span></span></button>`
+    ).join('');
+    openModal('shareMenuModal');
+  }
+
+  // ---------- the card ----------
+
+  let card = null; // { kind, title, text, url } of the card open
+  let lastPick = null; // what the menu picked, for Try again
+
+  function openCard(pick) {
+    lastPick = pick;
+    if (pick === 'eta') return openEtaCard();
+    if (pick === 'directions') {
+      const o = nav.option;
+      showCard({
+        heading: 'Share these directions',
+        name: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}`,
+        sub: o ? `~${o.minutes} min · ${navMixText(o)}` : When.describe(nav.when),
+        kind: 'directions',
+        data: directionsData(),
+        text: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}, by bus and train`,
+      });
+      return;
+    }
+    const place = placeOf(pick === 'start' ? nav.from : nav.to);
+    showCard({ heading: 'How to get to:', name: place.label, kind: 'place', data: place, text: `How to get to ${place.label}` });
+  }
+
+  // Shows the card at once, and the link and map as soon as the link is made.
+  async function showCard({ heading, name, sub = '', kind, data, text, made = null }) {
+    card = { kind, title: name, text, url: null };
+    $('#shareCardTitle').textContent = heading;
+    $('#shareCardName').textContent = name;
+    $('#shareCardSub').textContent = sub;
+    $('#shareCardSub').hidden = !sub;
+    setLink(null);
+    $('#shareMapImg').hidden = true;
+    $('#shareStopEta').hidden = kind !== 'eta';
+    openModal('shareCardModal');
+    try {
+      const link = made || (await makeLink(kind, data));
+      if (card?.kind !== kind || card.title !== name) return;
+      card.url = link.url;
+      setLink(link.url);
+      const img = $('#shareMapImg');
+      img.onload = () => { img.hidden = false; };
+      img.src = `/api/share-map?id=${link.id}${kind === 'eta' ? `&v=${Date.now()}` : ''}`;
+      return link;
+    } catch (e) {
+      setLink(null, e.message);
+      return null;
+    }
+  }
+
+  // The link under the card's name: being made, made, or why it couldn't be.
+  function setLink(url, error = '') {
+    const el = $('#shareCardLink');
+    el.classList.toggle('making', !url && !error);
+    el.textContent = url || error || 'Making a short link…';
+    $('#shareRetry').hidden = !error;
+    for (const btn of document.querySelectorAll('#shareTargets [data-share-to]')) btn.disabled = !url;
+  }
+
+  async function sendTo(target, btn) {
+    if (!card?.url) return;
+    const { url, text, title } = card;
+    if (target === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    else if (target === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
+    else if (target === 'more') {
+      try { await navigator.share({ title, text, url }); } catch { /* closed */ }
+    } else if (target === 'copy') {
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch {
+        prompt('Copy this link:', url);
+        return;
+      }
+      const lbl = btn.querySelector('.lbl');
+      lbl.textContent = 'Copied';
+      setTimeout(() => { lbl.textContent = 'Copy link'; }, 2000);
+    }
+  }
+
+  // ---------- sharing my ETA ----------
+  // { id, secret, url, tripId }, kept for the session so a reload mid-trip carries on.
+
+  let eta = null;
+  let etaTimer = null;
+  let etaLast = null; // the last progress sent, for the ended one
+
+  function saveEta() {
+    try {
+      if (eta) sessionStorage.setItem(ETA_KEY, JSON.stringify(eta));
+      else sessionStorage.removeItem(ETA_KEY);
+    } catch { /* this page view only */ }
+  }
+
+  function etaText(p) {
+    const mins = Math.max(0, Math.round(p.minutesLeft));
+    return `I'm on my way to ${p.to.label}, arriving around ${clock(Date.now() + mins * 60000)}. Follow along live:`;
+  }
+
+  async function openEtaCard() {
+    const p = Trip.progress();
+    if (!p) return;
+    const mine = eta?.tripId === p.tripId ? eta : null;
+    const link = await showCard({
+      heading: 'Share live progress',
+      name: `I will arrive in ${Math.max(0, Math.round(p.minutesLeft))} min`,
+      sub: `at ${p.to.label}, around ${clock(Date.now() + p.minutesLeft * 60000)}`,
+      kind: 'eta',
+      data: etaData(p),
+      text: etaText(p),
+      made: mine,
+    });
+    if (link && !mine) {
+      eta = { id: link.id, secret: link.secret, url: link.url, path: link.path, tripId: p.tripId };
+      saveEta();
+      Trip.setShare({ id: eta.id, secret: eta.secret, name: LS.getName(), to: p.to });
+      etaLast = etaData(p);
+      runEta();
+    }
+  }
+
+  function runEta() {
+    clearInterval(etaTimer);
+    etaTimer = setInterval(() => sendEta(), ETA_EVERY_MS);
+  }
+
+  // This trip's progress to its link. A trip that's over, or another one started since, ends it.
+  async function sendEta({ keepalive = false } = {}) {
+    if (!eta) return;
+    const p = Trip.progress();
+    if (!p || p.tripId !== eta.tripId) return endEta();
+    etaLast = etaData(p);
+    await patchEta(etaLast, keepalive);
+    if (p.arrived) clearEta();
+  }
+
+  async function patchEta(data, keepalive) {
+    const { id, secret } = eta;
+    try {
+      await api(`/api/share?id=${id}`, { method: 'PATCH', keepalive, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ secret, data }) });
+    } catch (e) {
+      // Gone: expired, so there's nothing more to update.
+      if (e.status === 404 && eta?.id === id) clearEta();
+      else console.warn('eta link update failed:', e);
+    }
+  }
+
+  function endEta(extra = { ended: true }) {
+    if (!eta) return;
+    if (etaLast) patchEta({ ...etaLast, arriveAt: extra.stopped ? etaLast.arriveAt : Date.now(), ...extra }, true);
+    clearEta();
+  }
+
+  function clearEta() {
+    clearInterval(etaTimer);
+    etaTimer = null;
+    eta = null;
+    etaLast = null;
+    saveEta();
+  }
+
+  function stopEta() {
+    endEta({ stopped: true });
+    if (Trip.active()) Trip.setShare(null);
+    closeModal('shareCardModal');
+  }
+
+  // ---------- following someone's ETA ----------
+
+  let view = null; // { id, data, updatedAt, timer, tick }
+
+  async function openEtaView(id, first) {
+    view = { id, ...first };
+    renderView();
+    openModal('etaModal');
+    view.timer = setInterval(refreshView, VIEW_EVERY_MS);
+    // The minutes count down between updates.
+    view.tick = setInterval(renderView, 15 * 1000);
+  }
+
+  async function refreshView() {
+    if (!view) return;
+    const id = view.id;
+    try {
+      const got = await api(`/api/share?id=${id}`);
+      if (view?.id !== id) return;
+      Object.assign(view, { data: got.data, updatedAt: got.updatedAt, gone: false });
+    } catch (e) {
+      if (view?.id !== id) return;
+      if (e.status === 404) view.gone = true;
+    }
+    renderView();
+  }
+
+  function renderView() {
+    if (!view) return;
+    const { data: d, updatedAt, gone } = view;
+    const name = d.name;
+    let head;
+    if (gone) head = 'This trip has ended';
+    else if (d.stopped) head = name ? `${name} stopped sharing` : 'Sharing stopped';
+    else if (d.ended) head = name ? `${name} has arrived` : 'Arrived';
+    else {
+      const mins = minutesTo(d.arriveAt);
+      head = mins === 0 ? `${name || 'They'}'re arriving now` : `${name ? `${name} will arrive` : 'Arriving'} in ${mins} min`;
+    }
+    $('#etaHead').textContent = head;
+    $('#etaSub').textContent = d.ended || d.stopped || gone ? `at ${d.to.label}` : `at ${d.to.label}, around ${clock(d.arriveAt)}`;
+
+    const leg = d.leg;
+    const live = !d.ended && !d.stopped && !gone;
+    $('#etaLeg').hidden = !(live && leg?.label);
+    if (live && leg?.label) {
+      $('#etaLeg').textContent = `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}` +
+        (d.legCount > 1 ? ` · leg ${d.legIndex + 1} of ${d.legCount}` : '');
+    }
+    const ago = Math.round((Date.now() - updatedAt) / 60000);
+    $('#etaUpdated').textContent = gone ? 'The link has expired.'
+      : !live ? `Updated ${clock(updatedAt)}.`
+      : Date.now() - updatedAt > VIEW_STALE_MS ? `Last updated ${ago} min ago, so the arrival time is the last estimate.`
+      : `Updated ${ago < 1 ? 'just now' : `${ago} min ago`}. This refreshes by itself.`;
+
+    const img = $('#etaMapImg');
+    const src = `/api/share-map?id=${view.id}&v=${updatedAt}`;
+    if (!gone && img.getAttribute('src') !== src) {
+      img.onload = () => { img.hidden = false; };
+      img.src = src;
+    }
+  }
+
+  function closeView() {
+    if (!view) return;
+    clearInterval(view.timer);
+    clearInterval(view.tick);
+    view = null;
+    if (location.hash.startsWith('#share/')) history.replaceState(null, '', stopHash() || location.pathname);
+  }
+
+  // ---------- opening a link ----------
+
+  async function open(id) {
+    let got;
+    try {
+      got = await api(`/api/share?id=${encodeURIComponent(id)}`);
+    } catch (e) {
+      alert(e.status === 404 ? 'This link has expired, or doesn’t exist.' : e.message);
+      if (location.hash.startsWith('#share/')) history.replaceState(null, '', location.pathname);
+      return;
+    }
+    const { kind, data } = got;
+    if (kind === 'place') openNavAt('here', data);
+    else if (kind === 'directions') openNavAt(data.from, data.to, data.when, data.way);
+    else if (kind === 'eta') openEtaView(id, { data, updatedAt: got.updatedAt });
+  }
+
+  // ---------- wiring ----------
+
+  function init() {
+    $('#shareMenuList').addEventListener('click', (e) => {
+      const item = e.target.closest('[data-share-pick]');
+      if (!item) return;
+      closeModal('shareMenuModal');
+      openCard(item.dataset.sharePick);
+    });
+    $('#shareTargets').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-share-to]');
+      if (btn) sendTo(btn.dataset.shareTo, btn);
+    });
+    $('#shareTargets [data-share-to="more"]').hidden = !navigator.share;
+    $('#shareRetry').addEventListener('click', () => {
+      if (lastPick) openCard(lastPick);
+    });
+    $('#shareStopEta').addEventListener('click', stopEta);
+    $('#shareCardModal').addEventListener('modalclose', () => { card = null; });
+    $('#tripShare').addEventListener('click', () => openCard('eta'));
+    $('#etaModal').addEventListener('modalclose', closeView);
+    $('#etaDirections').addEventListener('click', () => {
+      const to = view?.data?.to;
+      closeModal('etaModal');
+      if (to) openNavAt('here', to);
+    });
+
+    window.addEventListener('trip:end', (e) => {
+      if (eta && e.detail?.tripId === eta.tripId) endEta();
+    });
+    // Sent as the app goes into the background, so the server's updates take over from
+    // where it really was.
+    document.addEventListener('visibilitychange', () => {
+      if (eta && document.visibilityState === 'hidden') sendEta({ keepalive: true });
+    });
+
+    // A reload mid-trip carries on sharing, if it's still the same trip.
+    try {
+      eta = JSON.parse(sessionStorage.getItem(ETA_KEY) || 'null');
+    } catch {
+      eta = null;
+    }
+    if (eta) {
+      const p = Trip.progress();
+      if (p?.tripId === eta.tripId) {
+        etaLast = etaData(p);
+        runEta();
+      } else {
+        clearEta();
+      }
+    }
+  }
+
+  window.Share = { init, open, openMenu };
+})();

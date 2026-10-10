@@ -10,8 +10,8 @@ can.
 
 ### Kept in your browser
 
-Your favourites, your name and birthday, where favourites pin, and your theme
-are saved in your browser's storage on your device. They are not sent to SG Bus
+Your favourites, your name and birthday, your Home and Work, where favourites
+pin, and your theme are saved in your browser's storage on your device. They are not sent to SG Bus
 Timing's server, and there is no account. Clearing your browsing data for the
 site deletes them.
 
@@ -60,16 +60,32 @@ in your browser, like other favourites.
 A Google Maps link you paste or share in is sent to the server, which opens a
 short link with Google to find the full one, then reads the place from it.
 
+### Share links
+
+A link made with Navigate's **Share** is kept in a database run by Supabase for
+SG Bus Timings, so its short address can find what it points to. A place or
+directions link holds the places' names and points, the time and the way if you
+picked them, and nothing about you; anyone with the link can open it. An end set
+to **Your location** in a directions link isn't sent at all. Shared on its own as
+**Share start** or **Share end**, it is: as the point where you were.
+
+A **Share my ETA** link also holds the name from Settings, if you set one, where
+you are along the trip's route, and when you should get there, updated as you go.
+It's deleted three hours after its last update. The map on a link is drawn by
+OneMap.
+
 ### Get Off Alert
 
 On a trip, your live location is used in your browser to count the stops left.
-It never leaves your device.
+It never leaves your device, unless you share your ETA: then where you are along
+the trip's route is sent with it (see [Share links](#share-links)).
 
 If you've allowed notifications, the trip is also sent to SG Bus Timings' server
 so it can send the alert while the site is in the background. That covers the
 stops on the trip, the buses and trains it uses, how many stops along the trip
-you've got, and the push subscription to send to, all under a random ID. Your
-location itself is never sent. The server deletes the trip when you end it, when
+you've got, and the push subscription to send to, all under a random ID, and, if
+you're sharing your ETA, that link and its name and destination, so the server can
+keep it updated. Your location itself is never sent. The server deletes the trip when you end it, when
 it's over, or a while after it should have been.
 
 ### Weather

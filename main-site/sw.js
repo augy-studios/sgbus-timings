@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v41";
+const VERSION = "v42";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -25,6 +25,7 @@ const ASSETS = [
   "/js/weather.js",
   "/js/trip.js",
   "/js/nav.js",
+  "/js/share.js",
   "/js/sw-update.js",
   "/manifest.json",
   "/favicon.ico",
@@ -383,12 +384,21 @@ self.addEventListener("fetch", (event) => {
     // Journeys use live alerts and the time of day, and place searches go to OneMap:
     // neither is worth answering from an old copy.
     if (url.pathname === "/api/nav" || url.pathname === "/api/places") return;
+    // Share links: live progress moves, and a link just made has to be read fresh.
+    if (url.pathname === "/api/share" || url.pathname === "/api/share-map") return;
     if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops") {
       event.respondWith(staleWhileRevalidate(event, request));
       return;
     }
     // Stops and route info change rarely, so the last good copy is useful offline.
     event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // A short share link (api/share-page.js) is never kept: the server sends it on into the
+  // app. Offline, the app itself, which reads the link from its path (script.js).
+  if (request.mode === "navigate" && /^\/(go|trip|eta)\/[a-z0-9]{10}$/.test(url.pathname)) {
+    event.respondWith(fetch(request).catch(async () => (await caches.match("/")) || Response.error()));
     return;
   }
 

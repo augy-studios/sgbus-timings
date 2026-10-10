@@ -13,6 +13,9 @@ screen can be bookmarked, added to your home screen, or sent to a friend.
 | `sgbus.uwuapps.org/#bus/22` | Bus 22's route |
 | `sgbus.uwuapps.org/#route/84009/75009` | The route planner, from stop 84009 to stop 75009 |
 | `sgbus.uwuapps.org/#nav/here/1.31533,103.81554~Botanic%20Gardens` | [Navigate](nav.md), from where you are to the Botanic Gardens |
+| `sgbus.uwuapps.org/go/t2d6bdtkdj` | [Navigate](nav.md#share-it) to a shared place, from where you are |
+| `sgbus.uwuapps.org/trip/t89e11x1zg` | Navigate with shared directions |
+| `sgbus.uwuapps.org/eta/ttzik7wkd6` | Someone's [live progress](nav.md#share-my-eta) on a trip |
 | `sgbus.uwuapps.org/#sync/BCDFGH` | Settings, with sync code `BCDFGH` filled in |
 | `sgbus.uwuapps.org/#alerts` | The [Service alerts](service-alerts.md) card, where a tapped alert notification also lands |
 
