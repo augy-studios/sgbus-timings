@@ -87,7 +87,14 @@ function initNav() {
     } else if (action === 'refresh') {
       refreshNav();
     } else if (action === 'trip' && nav.option) {
-      Trip.start(tripFromNav(nav.option, nav.to));
+      const trip = tripFromNav(nav.option, nav.to);
+      // A way with no ride it can follow stop by stop, such as walking all the way, says so
+      // rather than closing as if the trip had started.
+      if (!trip.legs.length) {
+        alert("This way can't be followed as a trip. Try another way.");
+        return;
+      }
+      Trip.start(trip);
       closeNav();
     } else if (action === 'retry') {
       runNav();

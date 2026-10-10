@@ -23,6 +23,9 @@ function toOption(it) {
     const minutes = (l.duration || 0) / 60;
     if (l.mode === "WALK") return { mode: "walk", metres: Math.round(l.distance || 0), minutes, to: place(l.to) };
     const bus = l.mode === "BUS";
+    // Every stop or station on the ride, for following it on a trip (the Get Off Alert), as
+    // the router's own legs have: without a path, Start trip had nothing to follow.
+    const stops = [l.from, ...(l.intermediateStops || []), l.to].filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
     return {
       mode: bus ? "bus" : "train",
       route: bus ? String(l.route || l.routeShortName || "") : lineCode(l.route || l.routeShortName || l.routeId),
@@ -30,6 +33,8 @@ function toOption(it) {
       to: place(l.to),
       stops: (l.intermediateStops?.length ?? 0) + 1,
       minutes,
+      path: stops.map((p) => [p.lat, p.lon]),
+      names: stops.map((p) => p.name || ""),
     };
   });
   const rides = legs.filter((l) => l.mode !== "walk");

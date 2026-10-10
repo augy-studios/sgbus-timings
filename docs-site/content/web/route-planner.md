@@ -22,6 +22,11 @@ no single bus does, it finds the quickest journeys with up to three changes.
    used as it is.
 3. Do the same in **End**.
 
+<figure>
+<img src="/screenshots/web/route-planner-home.png" alt="A list titled Stops near Home: pick the start, with Bedok Int 33 m away first, then Bedok Stn Exit B and Exit A, each with its road, distance and stop code." width="444" height="490" loading="lazy">
+<figcaption>Home under Start: the stops near it, nearest first.</figcaption>
+</figure>
+
 The swap button between the two boxes turns the route around.
 
 ### Direct buses to the other end

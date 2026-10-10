@@ -15,7 +15,7 @@ but every short link answers "Sharing is not set up yet."
    | Name | Value |
    |---|---|
    | `SUPABASE_URL` | `https://<project>.supabase.co` |
-   | `SUPABASE_SERVICE_ROLE_KEY` | the key from step 3 |
+   | `SUPABASE_SERVICE_KEY` | the key from step 3 |
 
    Both are server-only. Never put either in the page.
 5. Redeploy.

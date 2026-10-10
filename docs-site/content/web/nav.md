@@ -23,6 +23,11 @@ The swap button between the two boxes turns the journey around.
 
 ### Home and Work
 
+<figure>
+<img src="/screenshots/web/nav-home-work.png" alt="Navigate from Bedok Mall to One Raffles Place, with Home and Work buttons under both the From and To boxes." width="902" height="252" loading="lazy">
+<figcaption>From Home to Work in two taps.</figcaption>
+</figure>
+
 Under each box, **Home** and **Work** set that end to the place saved for it. Set
 both in [Settings](settings.md); until one is, its button is dashed, and tapping it
 opens Settings at that box.
@@ -147,6 +152,11 @@ A saved nav doesn't keep a time.
 
 Tap **Share** at the top of Navigate, and pick what to send:
 
+<figure>
+<img src="/screenshots/web/nav-share-menu.png" alt="The Share menu: Share my ETA, live progress until you get there; Share these directions, Bedok Mall to One Raffles Place; Share start, Bedok Mall; and Share end, One Raffles Place." width="444" height="356" loading="lazy">
+<figcaption>Share my ETA is there while you're on a trip.</figcaption>
+</figure>
+
 | Pick | Sends | The link |
 |---|---|---|
 | **Share my ETA** | On a trip: when you'll get there, and how far along you are, live | `sgbus.uwuapps.org/eta/…` |
@@ -156,6 +166,16 @@ Tap **Share** at the top of Navigate, and pick what to send:
 Each opens a card with a map and the short link, and buttons to send it with
 Telegram or WhatsApp, copy it, or, on a phone, open your share sheet with
 **More**. In a chat, the link shows its map and what it is.
+
+<figure>
+<img src="/screenshots/web/nav-share-place.png" alt="The How to get to card: a map of Raffles Place with a pin, One Raffles Place, and its short link, above buttons for Telegram, WhatsApp, Copy link and More." width="444" height="454" loading="lazy">
+<figcaption>Share end: how to get to One Raffles Place, from wherever your friend is.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/nav-share-directions.png" alt="The Share these directions card: a map with the route from Bedok to Raffles Place drawn in purple between a green start pin and a red end pin, then Bedok Mall to One Raffles Place, ~46 min, 1 change, 211 m walk, and the short link." width="444" height="475" loading="lazy">
+<figcaption>Share these directions, with the way you have open drawn on the map.</figcaption>
+</figure>
 
 - A **directions** link opens Navigate with the same two places and time, and the
   same way open if it still runs.
@@ -175,6 +195,16 @@ On a trip, **Share my ETA**, here or on the trip bar, gives a link to your live
 progress: "Sam will arrive in 12 min", around what time, which bus or train
 you're on and how many stops are left, and a map with where you've got to on the
 route. The name is the one in [Settings](settings.md), if you set one.
+
+<figure>
+<img src="/screenshots/web/nav-share-eta.png" alt="The Share live progress card: the route on a map with a blue pin where you are, I will arrive in 36 min at One Raffles Place, around 06:08, the short link, the send buttons, and Stop sharing my ETA." width="444" height="516" loading="lazy">
+<figcaption>Your ETA, as you share it.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/nav-share-eta-view.png" alt="The Live progress window a friend sees: the map, Sam will arrive in 36 min at One Raffles Place, around 06:08, On Bus 28: 11 stops to Paya Lebar Stn Exit D, leg 1 of 2, Updated just now, and a Directions there button." width="444" height="516" loading="lazy">
+<figcaption>What your friend sees when they open the link. Directions there plans their own way to you.</figcaption>
+</figure>
 
 Whoever opens it sees it update by itself. The app sends your progress every half
 minute while it's open. With notifications allowed for the

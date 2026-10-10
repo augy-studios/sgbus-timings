@@ -33,6 +33,27 @@ Changes save as you make them. There is no Save button.
 The greeting follows the time of day, good morning, afternoon or evening, and
 keeps up while the app stays open.
 
+### Home and Work
+
+<figure>
+<img src="/screenshots/web/settings-home-search.png" alt="Settings with bedok mall typed into Home, and three suggestions below it: Bedok Mall, Bedok Mall (car Park Entrance) and Djitsun Mall Bedok." width="448" height="215" loading="lazy">
+<figcaption>Type a place in Home or Work and pick it from the suggestions.</figcaption>
+</figure>
+
+In **Home** or **Work**, type an address, a building, a postal code, a station or
+a stop, the same as in [Navigate](nav.md), and pick it from the suggestions. A
+Google Maps link works too. Typing without picking anything leaves the place as
+it was.
+
+<figure>
+<img src="/screenshots/web/settings-home-work.png" alt="Settings with Home set to Bedok Mall and Work set to One Raffles Place, each with a Clear button." width="448" height="236" loading="lazy">
+<figcaption>Both set, each with Clear to remove it.</figcaption>
+</figure>
+
+They're used by the **Home** and **Work** buttons under each end of
+[Navigate](nav.md#home-and-work) and [Plan a route](route-planner.md). They're
+kept on this device, and aren't part of [syncing favourites](sync.md).
+
 ## Themes
 
 <figure>
