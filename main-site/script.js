@@ -162,6 +162,31 @@ function setFavButton(btn, on, offLabel, onLabel) {
     if (lbl) lbl.textContent = on ? onLabel : offLabel;
 }
 
+// A Share button's link: the share sheet on a phone, copied elsewhere, the button saying so for
+// a moment. Where neither works, it's shown to copy by hand.
+async function shareLink(btn, url, title) {
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+        try {
+            await navigator.share({ title, url });
+            return;
+        } catch (e) {
+            if (e.name === 'AbortError') return;
+        }
+    }
+    try {
+        await navigator.clipboard.writeText(url);
+    } catch {
+        prompt('Copy this link:', url);
+        return;
+    }
+    const lbl = btn.querySelector('.lbl');
+    if (!lbl) return;
+    lbl.dataset.label ??= lbl.textContent;
+    lbl.textContent = 'Link copied';
+    clearTimeout(btn.shareTimer);
+    btn.shareTimer = setTimeout(() => { lbl.textContent = lbl.dataset.label; }, 2000);
+}
+
 function busButton(no, isFav, attrs) {
     return `<button type="button" class="busBtn${isFav ? ' fav' : ''}" ${attrs}>${isFav ? favMark() : ''}${escapeHtml(no)}</button>`;
 }
@@ -1192,15 +1217,20 @@ $('.favBar').addEventListener('click', e => {
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
-// "#alerts" for the service alerts card, "#nav/lat,lng/lat,lng" for Navigate, and "#near" and
-// "#nav" for the installed app's shortcuts. A route or nav can end "/leave/2026-10-09T08:30"
-// or "/arrive/..." for a picked time (js/when.js); one that has passed opens saying so.
+// "#alerts" for the service alerts card, "#nav/lat,lng~Name/here" for Navigate (navHash in
+// js/nav.js), and "#near" and "#nav" for the installed app's shortcuts. Either end of a route
+// or nav can be "-", not set yet, as Share gives them part filled in, and "#route" opens the
+// planner empty. A route or nav can end "/leave/2026-10-09T08:30" or "/arrive/..." for a
+// picked time (js/when.js); one that has passed opens saying so.
 const WHEN_HASH = When.HASH_RE_SOURCE;
-const ROUTE_HASH_RE = new RegExp(`^route\\/(\\d{5})\\/(\\d{5})${WHEN_HASH}$`);
-const NAV_HASH_RE = new RegExp(`^nav\\/(-?[\\d.]+,-?[\\d.]+)\\/(-?[\\d.]+,-?[\\d.]+)${WHEN_HASH}$`);
+const ROUTE_HASH_RE = new RegExp(`^route\\/(\\d{5}|-)\\/(\\d{5}|-)${WHEN_HASH}$`);
+const NAV_END = '(-|here|-?[\\d.]+,-?[\\d.]+(?:~[^/]*)?)';
+const NAV_HASH_RE = new RegExp(`^nav\\/${NAV_END}\\/${NAV_END}${WHEN_HASH}$`);
 
 function routeFromHash() {
-    const hash = decodeURIComponent(location.hash.replace('#', ''));
+    const raw = location.hash.replace('#', '');
+    const hash = decodeURIComponent(raw);
+    const end = (code) => (code === '-' ? null : code);
     let m;
     // Opens Settings over the page rather than showing anything in it, so it answers false and
     // the first favourite stop still loads behind.
@@ -1211,8 +1241,10 @@ function routeFromHash() {
     // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
     if (hash === 'near') { $('#nearMeBtn').click(); return true; }
     if (hash === 'nav') { openNav(null, null, { scroll: false }); return true; }
-    if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(m[1], m[2], { scroll: false, when: When.fromHash(m[3], m[4]) }); return true; }
-    if ((m = hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[3], m[4])); return true; }
+    if (hash === 'route') { openPlanner(null, null, { scroll: false }); return true; }
+    if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(end(m[1]), end(m[2]), { scroll: false, when: When.fromHash(m[3], m[4]) }); return true; }
+    // Matched before decoding, so a "/" in a place's name stays inside it.
+    if ((m = raw.match(NAV_HASH_RE) || hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[3], m[4])); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
     const [hashCode, hashSvc] = hash.split(',');
     if (/^\d{5}$/.test(hashCode)) {

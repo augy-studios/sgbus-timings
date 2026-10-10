@@ -130,10 +130,20 @@ and the end: see [Get Off Alert](get-off-alert.md).
 Tap **Save nav** to add it to your [favourites](favourites.md), under **Navs**.
 Like routes, a nav and its reverse are two separate favourites.
 
-The address of the page also changes to the nav, as
-`#nav/1.30050,103.85580/1.33320,103.92920`, so you can bookmark or share it. With
-a time picked it ends with the time too, as `/arrive/2026-10-12T09:00`. A saved
-nav doesn't keep a time.
+A saved nav doesn't keep a time.
+
+## Share it
+
+Tap **Share** at the top of Navigate to send someone a link to it. On a phone it
+opens your share sheet; on a computer it copies the link. It works whether both
+ends are set, one, or neither, and keeps the time if you picked one.
+
+An end set to **Your location** isn't sent as where you are: it becomes the
+location of whoever opens the link. Share a nav from your location to the
+Botanic Gardens, and your friend gets one from where they are to the Botanic
+Gardens.
+
+The address of the page changes to the nav too, so you can also bookmark it.
 
 ## Also in Telegram
 

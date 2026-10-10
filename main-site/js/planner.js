@@ -44,6 +44,17 @@ function initPlanner() {
     toggleFavRoute(planner.start, planner.end);
     renderPlanner();
   });
+  // The route as a link, with either end left "-" while it isn't set, as the URL comment in
+  // script.js reads them.
+  $('#routeShare').addEventListener('click', (e) => {
+    const { start, end, when } = planner;
+    const hash = start || end || when ? `#route/${start || '-'}/${end || '-'}${When.hashPart(when)}` : '#route';
+    const title = start && end ? `${nameOf(start) || start} to ${nameOf(end) || end}`
+      : end ? `To ${nameOf(end) || end}`
+      : start ? `From ${nameOf(start) || start}`
+      : 'Plan a route';
+    shareLink(e.currentTarget, `${location.origin}/${hash}`, title);
+  });
 
   $('.plannerFields').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-near-for]');

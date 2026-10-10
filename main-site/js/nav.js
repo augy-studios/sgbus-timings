@@ -38,23 +38,17 @@ function initNav() {
     toggleFavNav(nav.from, nav.to);
     renderNavFav();
   });
+  $('#navShare').addEventListener('click', (e) => {
+    const title = nav.from && nav.to ? `${nav.from.label} to ${nav.to.label}`
+      : nav.to ? `To ${nav.to.label}`
+      : nav.from ? `From ${nav.from.label}`
+      : 'Navigate by bus and train';
+    shareLink(e.currentTarget, `${location.origin}/${navHash()}`, title);
+  });
 
   $('.navFields').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-nav-here]');
-    if (!btn) return;
-    const field = btn.dataset.navHere;
-    withLocating(btn, () =>
-      new Promise((resolve, reject) => {
-        if (!navigator.geolocation) return reject(new Error("This browser can't share its location."));
-        navigator.geolocation.getCurrentPosition(
-          (pos) => resolve(setNavEnd(field, { label: 'Your location', lat: pos.coords.latitude, lng: pos.coords.longitude })),
-          (err) => reject(new Error(err.code === 1
-            ? 'Location access is turned off for this site. Allow it in your browser to start from where you are.'
-            : "Couldn't get your location. Please try again.")),
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-        );
-      })
-    );
+    if (btn) locateNavEnd(btn.dataset.navHere);
   });
 
   $('#navBody').addEventListener('click', (e) => {
@@ -166,6 +160,24 @@ function attachPlaceSearch(field) {
   });
 }
 
+const HERE_LABEL = 'Your location';
+
+// An end set to where you are, by its pin button, which shows it's working meanwhile.
+function locateNavEnd(field) {
+  return withLocating($(`[data-nav-here="${field}"]`), () =>
+    new Promise((resolve, reject) => {
+      if (!navigator.geolocation) return reject(new Error("This browser can't share its location."));
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve(setNavEnd(field, { label: HERE_LABEL, lat: pos.coords.latitude, lng: pos.coords.longitude })),
+        (err) => reject(new Error(err.code === 1
+          ? 'Location access is turned off for this site. Allow it in your browser to start from where you are.'
+          : "Couldn't get your location. Please try again.")),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+      );
+    })
+  );
+}
+
 function setNavEnd(field, place) {
   nav[field] = { label: place.label, lat: place.lat, lng: place.lng };
   nav.option = null;
@@ -182,7 +194,7 @@ function showEnds() {
 // ---- Opening and closing ----
 
 // Opens at Leave now unless it's given a time: one picked before isn't kept.
-function openNav(from = null, to = null, { scroll = true, when = null } = {}) {
+function openNav(from = null, to = null, { scroll = true, when = null, focus = true } = {}) {
   if (from) nav.from = from;
   if (to) nav.to = to;
   nav.option = null;
@@ -193,7 +205,7 @@ function openNav(from = null, to = null, { scroll = true, when = null } = {}) {
   if (nav.from && nav.to) runNav();
   else renderNav();
   if (scroll) $('#navSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  if (!nav.from) $('#navFrom').focus({ preventScroll: true });
+  if (!nav.from && focus) $('#navFrom').focus({ preventScroll: true });
 }
 
 // Something shared into the installed app (manifest.json's share_target): a Google Maps place,
@@ -215,22 +227,43 @@ function closeNav() {
 
 const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
-// "#nav/1.30050,103.85580/1.33320,103.92920", so a nav can be bookmarked or shared, with
-// "/arrive/2026-10-09T08:30" on the end for a picked time.
+// The nav as a link, for the address bar and Share: "#nav/1.30050,103.85580~Bedok%20Mall/here",
+// with "/arrive/2026-10-09T08:30" on the end for a picked time. Each end is its point and name;
+// "here" for Your location, so whoever opens the link starts or ends where they are; or "-"
+// while it isn't set. Just "#nav" with nothing set at all.
 function navHash() {
-  return nav.from && nav.to ? `#nav/${coord(nav.from)}/${coord(nav.to)}${When.hashPart(nav.when)}` : '';
+  const end = (p) => {
+    if (!p) return '-';
+    if (p.label === HERE_LABEL) return 'here';
+    // The name escaped further than encodeURIComponent goes, so "~" only ever starts it and a
+    // closing bracket doesn't end the link where it's pasted.
+    return `${coord(p)}~${encodeURIComponent(p.label).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
+  };
+  return nav.from || nav.to || nav.when ? `#nav/${end(nav.from)}/${end(nav.to)}${When.hashPart(nav.when)}` : '#nav';
 }
 
+// Opens a nav link (navHash). A link from before ends carried names takes a saved nav's
+// names for its points, or Start and End.
 function openNavHash(fromText, toText, when = null) {
-  const point = (t, label) => {
-    const [lat, lng] = t.split(',').map(Number);
-    const fav = LS.getFavNavs().find((n) => coord(n.from) === t || coord(n.to) === t);
-    const named = fav ? (coord(fav.from) === t ? fav.from.label : fav.to.label) : label;
-    return Number.isFinite(lat) && Number.isFinite(lng) ? { label: named, lat, lng } : null;
+  const point = (t, fallback) => {
+    if (t === '-' || t === 'here') return null;
+    const [pos, ...rest] = t.split('~');
+    const [lat, lng] = pos.split(',').map(Number);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    let label = rest.join('~');
+    try { label = decodeURIComponent(label); } catch { /* left as it came */ }
+    if (!label.trim()) {
+      const fav = LS.getFavNavs().find((n) => coord(n.from) === pos || coord(n.to) === pos);
+      label = fav ? (coord(fav.from) === pos ? fav.from.label : fav.to.label) : fallback;
+    }
+    return { label: label.trim(), lat, lng };
   };
-  const from = point(fromText, 'Start');
-  const to = point(toText, 'End');
-  if (from && to) openNav(from, to, { scroll: false, when });
+  nav.from = point(fromText, 'Start');
+  nav.to = point(toText, 'End');
+  // Not the keyboard up over From while it's finding where you are.
+  openNav(nav.from, nav.to, { scroll: false, when, focus: fromText !== 'here' });
+  if (fromText === 'here') locateNavEnd('from');
+  if (toText === 'here') locateNavEnd('to');
 }
 
 // ---- Planning ----

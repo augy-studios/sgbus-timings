@@ -181,4 +181,11 @@ Tap **Save route** to add it to your [favourites](favourites.md). A route is
 saved in the direction you set it: Bedok Int to Serangoon Int, and Serangoon Int
 to Bedok Int, are two different favourites.
 
+## Share the route
+
+Tap **Share** at the top of the planner to send someone a link to it. On a phone
+it opens your share sheet; on a computer it copies the link. It works with one
+end set, or none, too: the person you send it to gets the planner as far as you
+filled it in, with your time if you picked one.
+
 To close the planner, tap the close button at its top right.

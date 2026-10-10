@@ -62,7 +62,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops, Google Maps links or your location, at either end
 - A Google Maps link, full or short (`maps.app.goo.gl`), is read by `/api/places` (`api/_lib/gmaps.js`) for the place it points at: its pin where the link has one, otherwise its address looked up on OneMap. Things shared into the installed app (the manifest's `share_target`, `/?text=...&url=...`) go into **To**
 - Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
-- Open one leg by leg, with live timings for every bus leg; save it to Favourites (Navs); share it as `#nav/lat,lng/lat,lng`
+- Open one leg by leg, with live timings for every bus leg; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. Plan a route has the same **Share**
 - The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
 
 ### Get Off Alert
@@ -91,7 +91,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - `#bus/22` opens a bus's route and `#route/84009/75009` opens the route planner
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - `#alerts` opens the Service alerts card
-- `#nav/1.30050,103.85580/1.33320,103.92920` opens Navigate between two points
+- `#nav/1.30050,103.85580~Bedok%20Mall/1.33320,103.92920~Name` opens Navigate between two points; an end can be `here` (the opener's location) or `-` (not set), and the name after `~` is optional. `#route/-/75009` likewise leaves a route's start empty, and `#route` opens the planner empty
 - `#near` opens the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
 - `/?text=<Google Maps link>` (what sharing to the installed app opens) opens Navigate with that place in **To**
 - Bookmark or share a direct link to any stop, service or route
