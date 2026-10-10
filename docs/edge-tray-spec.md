@@ -25,9 +25,21 @@ HTML, CSS and JavaScript with no dependencies. A React adaptation follows it.
 | `body` class | `tray-open` | none |
 | Page | On narrow screens, keeps a strip clear for the tray (§5.1) | Takes the full width; the tab floats over its edge. Only the brand line, level with the tab, steps in to clear it |
 
-- **Motion:** one transform on the whole tray, 220 ms,
-  `cubic-bezier(0.2, 0.8, 0.2, 1)`. The buttons fade and the tab's corner
-  radius and chevron rotation animate over the same 220 ms.
+- **Motion:** everything runs at one pace, `--tray-time` (340 ms) with
+  `--tray-ease` (`cubic-bezier(0.2, 0.8, 0.2, 1)`), so the tray, its buttons,
+  its tab and the page move together:
+  - **The tray** slides as one transform, off the edge to collapse and back to
+    open.
+  - **The buttons unroll on open.** Each fades in, slides 12 px back from the
+    edge and grows from 85 % scale. Each starts 18 ms after the one above it,
+    so the column fills in from top to bottom. **On collapse they go
+    together**, fading, shrinking and sliding towards the edge as the tray
+    slides away.
+  - **The tab** reshapes from pill to edge tab and its chevron turns round, at
+    the same pace.
+  - **The page** follows: its side padding (§5.1) grows as the tray opens and
+    shrinks as it collapses, and the brand line's nudge steps in and out with
+    it. Changing the tray's side (§9) animates the same way.
 - **Persistence:** the state is written to `localStorage` on every toggle, as
   `"1"` or `"0"`. On load the tray is open unless the stored value is exactly
   `"0"`. If storage throws (private mode, blocked site data), the tray opens and
@@ -75,6 +87,8 @@ are suggestions; keep whatever the host app already calls these things.
 | `--edge` | Inset from the right edge, safe-area aware | `max(16px, calc(env(safe-area-inset-right) + 16px))`; `10px` variant at ≤ 480 px |
 | `--tray-top` | Distance from the top, clear of the notch and any top banner | `max(calc(var(--banner-h, 0px) + 14px), calc(env(safe-area-inset-top) + 14px))` |
 | `--banner-h` | Height of a sticky top banner, if the app has one (set from JS, §6.3) | `0px` |
+| `--tray-time` | Duration of every tray animation, and of the page making room | `0.34s` |
+| `--tray-ease` | Their easing | `cubic-bezier(0.2, 0.8, 0.2, 1)` |
 | `--surface` | Glass background | light `rgba(255,255,255,.55)` / dark `rgba(255,255,255,.06)` |
 | `--surface-strong` | Hover background | light `rgba(255,255,255,.78)` / dark `rgba(255,255,255,.11)` |
 | `--surface-border` | 1 px border | light `rgba(255,255,255,.65)` / dark `rgba(255,255,255,.14)` |
@@ -157,7 +171,7 @@ Rules:
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: transform var(--tray-time) var(--tray-ease);
 }
 .tray.collapsed { transform: translateX(var(--tray-shift)); }
 
@@ -176,9 +190,9 @@ Rules:
   box-shadow: var(--shadow);
   color: var(--ink);
   cursor: pointer;
-  transition: border-radius 0.22s ease;
+  transition: border-radius var(--tray-time) var(--tray-ease);
 }
-.tray-tab svg { width: 16px; height: 16px; transition: transform 0.22s ease; }
+.tray-tab svg { width: 16px; height: 16px; transition: transform var(--tray-time) var(--tray-ease); }
 /* At the edge it is a tab: flat on the side the screen cuts off. */
 .tray.collapsed .tray-tab { border-radius: 12px 0 0 12px; border-right: none; }
 .tray.collapsed .tray-tab svg { transform: rotate(180deg); }
@@ -190,11 +204,7 @@ Rules:
   align-items: center;
   gap: 8px;
 }
-.tray-buttons {
-  margin-right: var(--edge);
-  transition: opacity 0.22s ease;
-}
-.tray.collapsed .tray-buttons { opacity: 0; }
+.tray-buttons { margin-right: var(--edge); }
 
 /* Separates the views from the global actions. */
 .tray-rule {
@@ -225,6 +235,39 @@ Rules:
 .glass-btn:hover { transform: translateY(-1px); background: var(--surface-strong); }
 .glass-btn svg { width: 22px; height: 22px; }
 
+/* The buttons unroll: each fades in, slides back from the edge and grows, 18 ms after
+   the one above it. They move by `translate` and `scale`, leaving `transform` to the
+   hover lift, so the list repeats the hover transitions. After .glass-btn, so it wins.
+   A <nav> of views is one child here and moves as one step. */
+.tray-buttons > * {
+  transition:
+    opacity calc(var(--tray-time) * 0.8) ease,
+    translate var(--tray-time) var(--tray-ease),
+    scale var(--tray-time) var(--tray-ease),
+    transform 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+  /* Only opening is staggered: the delay comes from the state being entered. */
+  transition-delay: calc(var(--i, 0) * 18ms), calc(var(--i, 0) * 18ms), calc(var(--i, 0) * 18ms), 0s, 0s, 0s;
+}
+.tray-buttons > :nth-child(2) { --i: 1; }
+.tray-buttons > :nth-child(3) { --i: 2; }
+.tray-buttons > :nth-child(4) { --i: 3; }
+.tray-buttons > :nth-child(5) { --i: 4; }
+.tray-buttons > :nth-child(6) { --i: 5; }
+.tray-buttons > :nth-child(7) { --i: 6; }
+.tray-buttons > :nth-child(8) { --i: 7; }
+.tray-buttons > :nth-child(9) { --i: 8; }
+.tray-buttons > :nth-child(10) { --i: 9; }
+.tray-buttons > :nth-child(11) { --i: 10; }
+/* Add more nth-child lines if the tray holds more than eleven items. */
+.tray.collapsed .tray-buttons > * {
+  opacity: 0;
+  translate: 12px 0;   /* towards the edge it leaves by */
+  scale: 0.85;
+  transition-delay: 0s; /* collapsing, they all go at once */
+}
+
 /* The view on screen. */
 .glass-btn[aria-selected="true"],
 .glass-btn[aria-selected="true"]:hover {
@@ -247,8 +290,9 @@ Rules:
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hud-right, .tray, .tray-tab, .tray-tab svg, .tray-buttons, .glass-btn {
+  .hud-right, .tray, .tray-tab, .tray-tab svg, .tray-buttons > *, .glass-btn, main, .brand {
     transition-duration: 0.001ms !important;
+    transition-delay: 0s !important;
   }
 }
 ```
@@ -265,9 +309,9 @@ would only leave a blank band down that side of the screen. The content takes
 the full width and the tab floats over its edge.
 
 The one exception is the brand line at the top, which sits level with the tab.
+The brand line is the app's logo and its name, side by side, and nothing else.
 Only that line steps in, just far enough for the tab and a 10px gap, so the tab
-never covers the app icon or the title; everything below it keeps the full
-width. On a screen wide enough that the tab is out in the margin, the step is
+never covers the logo or the name; everything below it keeps the full width. On a screen wide enough that the tab is out in the margin, the step is
 zero. If the tab would cover something else that is interactive, move that
 control rather than reserve the strip.
 
@@ -278,7 +322,11 @@ in and widens as it slides out, and the brand line steps in and out with it.
 /* Pick the breakpoint where the content column's right edge meets the tray:
    roughly column max-width + 2 × (button + edge + 12px). For a 720px column
    that is about 920px. */
-main, .brand { transition: padding-right 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+/* Both sides, so changing the tray's side (§9) animates too. */
+main, .brand {
+  transition: padding-right var(--tray-time) var(--tray-ease),
+              padding-left var(--tray-time) var(--tray-ease);
+}
 @media (max-width: 920px) {
   body.tray-open main { padding-right: calc(var(--glass-btn) + var(--edge) + 12px); }
   /* Collapsed: the brand line alone clears the tab (24px wide) by 10px, less the
@@ -416,7 +464,8 @@ apply the stored state before first paint with a tiny inline script in
 
 ```css
 .tray-start-collapsed .tray { transform: translateX(var(--tray-shift)); transition: none; }
-.tray-start-collapsed .tray-buttons { opacity: 0; }
+.tray-start-collapsed .tray-buttons > * { opacity: 0; translate: 12px 0; scale: 0.85; transition: none; }
+.tray-start-collapsed main, .tray-start-collapsed .brand { transition: none; }
 .tray-start-collapsed .tray-tab { border-radius: 12px 0 0 12px; border-right: none; }
 .tray-start-collapsed .tray-tab svg { transform: rotate(180deg); }
 ```
@@ -484,8 +533,10 @@ an effect (or use the §6.4 head script) to avoid a hydration mismatch.
    items can be links (`<a class="glass-btn" aria-current="page">`) instead of
    ARIA tabs. Style `[aria-current="page"]` the way §5 styles
    `[aria-selected="true"]`.
-6. **Remove the old header nav**, or keep only the brand line. Give it the
-   collapsed tab's clearance from §5.1; the rest of the page needs none.
+6. **Remove the old header nav**, or keep only the brand line: the app's logo
+   and its name, in the page flow above the content. Give it the collapsed
+   tab's clearance from §5.1; the rest of the page needs none. Nothing else
+   goes in it.
 7. **Clear the top right.** Audit everything that is `position: fixed/sticky`
    or absolutely positioned near the top right: toasts, FABs, map controls,
    chat widgets. Move them, or offset them by the tray's footprint. Check the
@@ -505,7 +556,10 @@ an effect (or use the §6.4 head script) to avoid a hydration mismatch.
   `.tray-buttons` takes `margin-left: var(--edge)`, the shift becomes
   `translateX(calc(-1 * var(--tray-shift)))`, and the collapsed tab is flat on
   the left (`border-radius: 0 12px 12px 0; border-left: none`). Use a
-  left-pointing chevron for the open state.
+  left-pointing chevron for the open state. Collapsing, the buttons slide
+  towards the left edge (`translate: -12px 0`). The content padding (§5.1) moves to
+  the left too, and so does the brand line's nudge: collapsed, it takes the
+  tab's clearance as `padding-left`, so the tab doesn't cover the logo.
 - **More items than fit vertically.** Give `.tray-buttons` a
   `max-height: calc(100dvh - var(--tray-top) - 16px)` and `overflow-y: auto`,
   or group rarely used actions behind one "More" button that opens a menu.
@@ -518,9 +572,13 @@ an effect (or use the §6.4 head script) to avoid a hydration mismatch.
 
 - [ ] Tray appears top right, `--edge` from the side, below the notch and below
       any top banner. It moves down and up as the banner comes and goes.
-- [ ] Clicking the tab collapses the tray in about 220 ms. Only the tab remains,
-      flush with the right edge, flat on its right side, chevron pointing left.
-- [ ] Clicking it again restores the tray, chevron pointing right.
+- [ ] Clicking the tab collapses the tray in about 340 ms, the buttons fading,
+      shrinking and sliding out together. Only the tab remains, flush with the
+      right edge, flat on its right side, chevron pointing left.
+- [ ] Clicking it again restores the tray, chevron pointing right, and the
+      buttons unroll top to bottom, each a beat after the one above.
+- [ ] The page's side padding and the brand line's nudge animate in step with
+      the tray, at the same pace, in both directions and when the side changes.
 - [ ] The tab's `aria-expanded` and `aria-label` track the state.
 - [ ] Collapsed: Tab-key navigation skips every tray button. A screen reader
       does not announce them.
@@ -534,7 +592,7 @@ an effect (or use the §6.4 head script) to avoid a hydration mismatch.
       content runs under the open tray. The page does not scroll sideways.
 - [ ] Collapsed, the page uses its full width: no blank strip is left down the
       side for the tab, which floats over the page's edge. Only the brand line
-      steps in, so the tab covers neither the app icon nor the title. The
+      (logo and app name) steps in, so the tab covers neither. The
       column widens as the tray slides out and narrows as it slides back in.
 - [ ] Views (if used): arrow keys, Home and End move the selection, only the
       selected tab is in the tab order, and the selected button uses the accent
