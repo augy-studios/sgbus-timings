@@ -4,7 +4,7 @@
 // the public anon key gets nothing. See SHARE-LINKS-SETUP.md.
 
 const BASE = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
-const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+const KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
 export const supabaseConfigured = () => Boolean(BASE && KEY);
 
