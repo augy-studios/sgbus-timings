@@ -14,12 +14,12 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 
 | Setting | What it does |
 |---|---|
-| **Your name, for the greeting** | The header greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
+| **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
 | **Birthday** | On the day, the greeting becomes "Happy Birthday, Sam!" **Clear** removes it. Only the day and month are used. |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
-| **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons under the header, hangs from. Its arrow tucks it away at that edge. |
+| **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
 | **Sync favourites with another device** | See [Sync favourites between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.

@@ -275,8 +275,8 @@ body.modal-open { overflow: hidden; }
 }
 
 /* ---- update bar (js/sw-update.js) ---- */
-/* Above the sticky header and scrolls away with the page, so it stays quieter
-   than the header. A light brand tint, --ink on it in both modes. */
+/* At the very top, scrolling away with the page. A light brand tint, --ink on it in both
+   modes. Its contents keep clear of the Edge Tray, which floats over its end. */
 .update-notice {
     background: color-mix(in srgb, var(--brand) 12%, transparent);
     border-bottom: 1px solid var(--surface-border);
@@ -292,6 +292,8 @@ body.modal-open { overflow: hidden; }
     max-width: 1000px;
     margin: 0 auto;
     padding: 0.5rem 16px;
+    padding-right: var(--tray-pad-right);
+    padding-left: var(--tray-pad-left);
     /* Under the notch on a phone, where the bar is the topmost thing on screen. */
     padding-top: max(0.5rem, env(safe-area-inset-top));
 }
@@ -322,6 +324,8 @@ body.modal-open { overflow: hidden; }
     max-width: 1000px;
     margin: 0 auto;
     padding: 0.5rem 16px;
+    padding-right: var(--tray-pad-right);
+    padding-left: var(--tray-pad-left);
 }
 /* Under the notch when there's no update bar above it. */
 .disruption-bar:first-child .disruption-inner { padding-top: max(0.5rem, env(safe-area-inset-top)); }
@@ -335,69 +339,43 @@ body.modal-open { overflow: hidden; }
 .container {
     max-width: 1000px;
     margin: 0 auto;
-    padding: 24px 16px 80px;
-    /* Clear of the Edge Tray on its side, less whatever margin the screen leaves the page
-       there already: none on a phone, all it needs on a wide screen. */
-    padding-right: max(16px, calc(var(--tray-room) - max(0px, (100vw - 1000px) / 2)));
-}
-:root[data-tray-side="left"] .container {
-    padding-right: 16px;
-    padding-left: max(16px, calc(var(--tray-room) - max(0px, (100vw - 1000px) / 2)));
+    padding: 14px 16px 80px;
+    padding-right: var(--tray-pad-right);
+    padding-left: var(--tray-pad-left);
+    /* Narrows and widens in step with the Edge Tray opening and closing, or changing side. */
+    transition: padding-left var(--tray-time) var(--tray-ease), padding-right var(--tray-time) var(--tray-ease);
 }
 
-/* ===== Header ===== */
-header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    border-bottom: 1px solid var(--surface-border);
-    box-shadow: var(--shadow);
-}
-/* The glass is drawn behind the header rather than on it: an element with a backdrop filter
-   blurs only what's inside it for anything in it with one of its own, and the Edge Tray, in
-   the header, is glass that has to blur the page. */
-header::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background: var(--surface);
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-}
-
-.bar {
-    max-width: 1000px;
-    margin: 0 auto;
+/* ===== The greeting, at the top of the page (sg-psi's brand line) ===== */
+.brand {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 14px 16px;
-}
-
-.logo {
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    flex-shrink: 0;
-    object-fit: contain;
-}
-
-.title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    gap: 12px;
+    padding: 6px 0 18px;
     cursor: pointer;
-    flex: 1;
     min-width: 0;
+    transition: padding-left var(--tray-time) var(--tray-ease), padding-right var(--tray-time) var(--tray-ease);
+}
+/* With the Edge Tray tucked away the page takes the full width, and only this line, level
+   with the tab, steps clear of it. Open, the page's padding already keeps it clear. */
+:root[data-tray-closed] .brand { padding-right: var(--tab-clear); }
+:root[data-tray-closed][data-tray-side="left"] .brand { padding-right: 0; padding-left: var(--tab-clear); }
+
+/* The app icon, which carries its own background. */
+.logo {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    object-fit: cover;
 }
 
-/* Lets the greeting shrink and ellipsise rather than run under the header buttons. */
-.title > div { min-width: 0; }
+/* Lets the greeting shrink and ellipsise rather than wrap. */
+.brand-text { min-width: 0; }
 
-.title h1 {
-    font-size: 18px;
+.brand h1 {
+    font-size: 20px;
     font-weight: 700;
     margin: 0;
     white-space: nowrap;
@@ -406,7 +384,7 @@ header::before {
 }
 
 .subtitle {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
@@ -414,26 +392,52 @@ header::before {
 }
 
 /* ===== The Edge Tray (sg-psi's tray) ===== */
-/* A column of glass buttons hanging under the header, at the right edge or, picked in
-   Settings, the left, with an arrow tab on its inner side. Tucked away, the buttons slide off
-   the edge and the tab is left peeking out. In the sticky header, so it stays in view. */
+/* A column of glass buttons fixed at the top of the screen, at the right edge or, picked in
+   Settings, the left, with an arrow tab on its inner side; it stays put as the page scrolls.
+   Tucked away, the buttons slide off the edge and the tab is left peeking out. */
 :root {
     --glass-btn: 44px;
     --hud-edge: max(16px, calc(env(safe-area-inset-right) + 16px));
+    --hud-top: max(14px, calc(env(safe-area-inset-top) + 14px));
     --tray-tab: 24px;
-    /* What the page keeps clear beside it: all of it open, the tab tucked away. */
+    /* What the page keeps clear beside it while it's open. Tucked away, only the tab is
+       left, floating over the page's edge, so the page takes the whole width. */
     --tray-room: calc(var(--hud-edge) + var(--glass-btn) + 8px + var(--tray-tab) + 8px);
+    /* The page's side padding, and the bars' at the top: the tray's room on its side, less
+       whatever margin the screen leaves the page there already (none on a phone, all it
+       needs on a wide screen), and 16px on the other. */
+    --tray-pad: max(16px, calc(var(--tray-room) - max(0px, (100vw - 1000px) / 2)));
+    /* How far the greeting, level with the tucked-away tab, steps in to clear it: the tab and
+       a 10px gap, less the page's own 16px and any margin the screen leaves beside it. */
+    --tab-clear: max(0px, calc(var(--tray-tab) + 10px - 16px - max(0px, (100vw - 1000px) / 2)));
+    --tray-pad-right: var(--tray-pad);
+    --tray-pad-left: 16px;
+    /* One pace for the tray, its buttons, its arrow and the page making room for it. */
+    --tray-time: 0.34s;
+    --tray-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-:root[data-tray-side="left"] { --hud-edge: max(16px, calc(env(safe-area-inset-left) + 16px)); }
-:root[data-tray-closed] { --tray-room: calc(var(--tray-tab) + 10px); }
+:root[data-tray-side="left"] {
+    --hud-edge: max(16px, calc(env(safe-area-inset-left) + 16px));
+    --tray-pad-right: 16px;
+    --tray-pad-left: var(--tray-pad);
+}
+:root[data-tray-closed] { --tray-room: 0px; }
 
+/* Clipped at the screen's edge: the tray tucked away slides past it, and anything out there
+   would widen the page, which a phone then zooms out to fit, modals and all. Pinned to the
+   edge, the box grows its padding inwards, leaving room for the buttons' shadows and the
+   favourites badge without moving the tray; the top is pulled up by that padding. Over the
+   page and the bars at the top, under the modals. */
 .hud {
-    position: absolute;
-    top: calc(100% + 12px);
+    position: fixed;
+    z-index: 40;
+    top: calc(var(--hud-top) - 12px);
     right: 0;
+    overflow: hidden;
+    padding: 12px 0 48px 40px;
     pointer-events: none;
 }
-:root[data-tray-side="left"] .hud { right: auto; left: 0; }
+:root[data-tray-side="left"] .hud { right: auto; left: 0; padding: 12px 40px 48px 0; }
 .hud > * { pointer-events: auto; }
 
 .tray {
@@ -441,7 +445,7 @@ header::before {
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform var(--tray-time) var(--tray-ease);
 }
 :root[data-tray-side="left"] .tray { flex-direction: row-reverse; }
 :root[data-tray-closed] .tray { transform: translateX(var(--tray-shift)); }
@@ -495,7 +499,7 @@ header::before {
 .tray-tab {
     width: var(--tray-tab);
     border-radius: 12px;
-    transition: border-radius 0.22s ease;
+    transition: border-radius var(--tray-time) var(--tray-ease);
 }
 .tray-tab > [data-icon] { display: inline-flex; }
 /* The chevron points up; turned, it points the way the tray goes: off the edge while it's
@@ -504,7 +508,7 @@ header::before {
     width: 16px;
     height: 16px;
     transform: rotate(90deg);
-    transition: transform 0.22s ease;
+    transition: transform var(--tray-time) var(--tray-ease);
 }
 :root[data-tray-closed] .tray-tab svg,
 :root[data-tray-side="left"] .tray-tab svg { transform: rotate(-90deg); }
@@ -519,10 +523,38 @@ header::before {
     align-items: center;
     gap: 8px;
     margin-right: var(--hud-edge);
-    transition: opacity 0.22s ease;
 }
 :root[data-tray-side="left"] .tray-buttons { margin-right: 0; margin-left: var(--hud-edge); }
-:root[data-tray-closed] .tray-buttons { opacity: 0; }
+
+/* Each button rides out with the tray and fades in a beat after the one above it, so the
+   column unrolls top to bottom; closing, they fade together as the tray slides away. They
+   move by translate and scale, leaving transform to the hover lift. */
+.tray-buttons > * {
+    transition:
+        opacity calc(var(--tray-time) * 0.8) ease,
+        translate var(--tray-time) var(--tray-ease),
+        scale var(--tray-time) var(--tray-ease),
+        transform 0.15s ease,
+        background 0.15s ease;
+    transition-delay: calc(var(--i, 0) * 18ms), calc(var(--i, 0) * 18ms), calc(var(--i, 0) * 18ms), 0s, 0s;
+}
+.tray-buttons > :nth-child(2) { --i: 1; }
+.tray-buttons > :nth-child(3) { --i: 2; }
+.tray-buttons > :nth-child(4) { --i: 3; }
+.tray-buttons > :nth-child(5) { --i: 4; }
+.tray-buttons > :nth-child(6) { --i: 5; }
+.tray-buttons > :nth-child(7) { --i: 6; }
+.tray-buttons > :nth-child(8) { --i: 7; }
+.tray-buttons > :nth-child(9) { --i: 8; }
+.tray-buttons > :nth-child(10) { --i: 9; }
+.tray-buttons > :nth-child(11) { --i: 10; }
+:root[data-tray-closed] .tray-buttons > * {
+    opacity: 0;
+    translate: 12px 0;
+    scale: 0.85;
+    transition-delay: 0s;
+}
+:root[data-tray-closed][data-tray-side="left"] .tray-buttons > * { translate: -12px 0; }
 
 /* Between the tools and the links and settings. */
 .tray-rule {
@@ -537,7 +569,7 @@ header::before {
 @media (max-height: 560px) {
     .tray { --tray-shift: calc(var(--glass-btn) + 18px + var(--hud-edge)); }
     .tray-buttons {
-        max-height: calc(100dvh - 120px);
+        max-height: calc(100dvh - var(--hud-top) - 60px);
         overflow-y: auto;
         scrollbar-width: none;
         padding: 4px 10px 12px;
@@ -555,7 +587,7 @@ header::before {
 /* Cards sit on the page's flat background, where a backdrop blur has nothing to blur and
    looks the same without one, but a phone still redoes it across the whole card on every
    frame of a scroll: the main cause of lag scrolling a long list of timings. Kept on what
-   floats over other content: the header, modals, dropdowns and the trip bar. */
+   floats over other content: the Edge Tray, modals, dropdowns and the trip bar. */
 .card.glass {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -1323,7 +1355,7 @@ header::before {
 
 /* ===== Route planner ===== */
 .plannerSection,
-.resultsSection { scroll-margin-top: 84px; }
+.resultsSection { scroll-margin-top: 16px; }
 
 /* The stop dropdowns live inside this card. The card's blur makes it a stacking context
    and .card clips its contents, so without these the dropdowns were cut off at the card's
@@ -1393,7 +1425,7 @@ header::before {
 [data-mode="dark"] .whenPick .input { color-scheme: dark; }
 
 /* ===== Service alerts (js/alerts.js) ===== */
-.alertsSection { margin-top: 18px; scroll-margin-top: 84px; }
+.alertsSection { margin-top: 18px; scroll-margin-top: 16px; }
 
 /* Off, All updates, Disruptions only: three across, where the theme's toggle is two. */
 .alertModes { grid-template-columns: repeat(3, 1fr); }
@@ -1751,8 +1783,7 @@ header::before {
 }
 
 @media (max-width: 520px) {
-    .title h1 { font-size: 16px; }
-    .subtitle  { display: none; }
+    .brand h1 { font-size: 18px; }
     .btn { padding: 14px 14px; font-size: 13px; }
     .incomingNote { display: none; }
 

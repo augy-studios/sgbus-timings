@@ -10,13 +10,13 @@ stays in that browser.
 ## A tour of the screen
 
 <figure>
-<img src="/screenshots/web/install-tour.png" alt="The top of the app: the header greeting Sam; the search box with Get Timings and the weather under it; Bedok Int's timings; and down the right, the Edge Tray: Favourites with a 6 on it, Stops near me, Plan a route, Navigate and Service alerts, then Telegram, coffee, the guide, Settings and the theme, with the arrow tab beside it." width="1000" height="604" loading="lazy">
-<figcaption>The header, the search box and the weather, a stop's timings, and the Edge Tray down the side.</figcaption>
+<img src="/screenshots/web/install-tour.png" alt="The top of the app: the greeting, Good Afternoon, Sam!; the search box with Get Timings and the weather under it; Bedok Int's timings; and down the right, the Edge Tray: Favourites with a 6 on it, Stops near me, Plan a route, Navigate and Service alerts, then Telegram, coffee, the guide, Settings and the theme, with the arrow tab beside it." width="1000" height="604" loading="lazy">
+<figcaption>The greeting, the search box and the weather, a stop's timings, and the Edge Tray down the side.</figcaption>
 </figure>
 
-- **The header** greets you by the time of day, and by name once you have set
+- **The greeting** at the top greets you by the time of day, and by name once you have set
   one. Tap the title for [Settings](settings.md).
-- **The Edge Tray** is the column of buttons under the header, at the right edge of
+- **The Edge Tray** is the column of buttons at the top right of
   the screen. From the top: [**Favourites**](favourites.md) (the star),
   **Stops near me**, **Plan a route**,
   [**Navigate**](nav.md) and [**Service alerts**](service-alerts.md), then the

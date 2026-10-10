@@ -29,11 +29,11 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Favourites are persisted in your browser's local storage
 - Favourites open in their own window from the star at the top of the Edge Tray
 - **Sync favourites with another device** (stops, buses, routes and navs) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
-  - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
+  - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../docs/STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
 ### The Edge Tray
-- Favourites, Stops near me, Plan a route, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons under the header (sg-psi's tray); the weather stays under the search box
+- Favourites, Stops near me, Plan a route, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
 - Its arrow tab tucks it away at the edge of the screen and remembers that; Settings puts it on the left or the right
 
 ### Incoming Buses Bar
@@ -114,7 +114,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 4. **See the full route** - tap **Route** next to any service, or search its number, to open a modal with the complete stop list.
 5. **Save a favourite** - tap **Save** on a stop card, **Save bus** on a route, or **Save route** in the planner.
 6. **Plan a route** - tap **Plan a route**, then pick a start and end stop.
-7. **Switch themes** - tap the theme button in the header to cycle through colour schemes.
+7. **Switch themes** - tap the theme button at the bottom of the Edge Tray to pick a colour scheme.
 8. **Install as an app** - use your browser's "Add to Home Screen" or "Install" prompt to use the app offline.
 
 ## Tech Stack

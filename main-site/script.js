@@ -968,7 +968,7 @@ function syncPinButtons() {
 }
 
 // ----------- The Edge Tray -----------
-// sg-psi's tray of glass buttons under the header (index.html), on the side Settings picks,
+// sg-psi's tray of glass buttons at the top of the screen (index.html), on the side Settings picks,
 // tucked away and brought back by its arrow tab. Both are kept as attributes on <html>, set
 // before first paint by the script in index.html's head; per-browser conveniences, so
 // storage failing only means the defaults: on the right, out.
