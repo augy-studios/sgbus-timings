@@ -336,6 +336,13 @@ body.modal-open { overflow: hidden; }
     max-width: 1000px;
     margin: 0 auto;
     padding: 24px 16px 80px;
+    /* Clear of the Edge Tray on its side, less whatever margin the screen leaves the page
+       there already: none on a phone, all it needs on a wide screen. */
+    padding-right: max(16px, calc(var(--tray-room) - max(0px, (100vw - 1000px) / 2)));
+}
+:root[data-tray-side="left"] .container {
+    padding-right: 16px;
+    padding-left: max(16px, calc(var(--tray-room) - max(0px, (100vw - 1000px) / 2)));
 }
 
 /* ===== Header ===== */
@@ -343,11 +350,20 @@ header {
     position: sticky;
     top: 0;
     z-index: 20;
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    background: var(--surface);
     border-bottom: 1px solid var(--surface-border);
     box-shadow: var(--shadow);
+}
+/* The glass is drawn behind the header rather than on it: an element with a backdrop filter
+   blurs only what's inside it for anything in it with one of its own, and the Edge Tray, in
+   the header, is glass that has to blur the page. */
+header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--surface);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
 }
 
 .bar {
@@ -397,11 +413,138 @@ header {
     text-overflow: ellipsis;
 }
 
-.headerActions {
+/* ===== The Edge Tray (sg-psi's tray) ===== */
+/* A column of glass buttons hanging under the header, at the right edge or, picked in
+   Settings, the left, with an arrow tab on its inner side. Tucked away, the buttons slide off
+   the edge and the tab is left peeking out. In the sticky header, so it stays in view. */
+:root {
+    --glass-btn: 44px;
+    --hud-edge: max(16px, calc(env(safe-area-inset-right) + 16px));
+    --tray-tab: 24px;
+    /* What the page keeps clear beside it: all of it open, the tab tucked away. */
+    --tray-room: calc(var(--hud-edge) + var(--glass-btn) + 8px + var(--tray-tab) + 8px);
+}
+:root[data-tray-side="left"] { --hud-edge: max(16px, calc(env(safe-area-inset-left) + 16px)); }
+:root[data-tray-closed] { --tray-room: calc(var(--tray-tab) + 10px); }
+
+.hud {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    pointer-events: none;
+}
+:root[data-tray-side="left"] .hud { right: auto; left: 0; }
+.hud > * { pointer-events: auto; }
+
+.tray {
+    --tray-shift: calc(var(--glass-btn) + 8px + var(--hud-edge));
     display: flex;
+    align-items: flex-start;
     gap: 8px;
+    transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+:root[data-tray-side="left"] .tray { flex-direction: row-reverse; }
+:root[data-tray-closed] .tray { transform: translateX(var(--tray-shift)); }
+:root[data-tray-closed][data-tray-side="left"] .tray { transform: translateX(calc(-1 * var(--tray-shift))); }
+
+.glass-btn,
+.tray-tab {
+    display: inline-flex;
     align-items: center;
-    flex-shrink: 0;
+    justify-content: center;
+    height: var(--glass-btn);
+    background: var(--surface);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+}
+.glass-btn {
+    position: relative;
+    width: var(--glass-btn);
+    border-radius: 14px;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+/* A count on a button's corner: how many favourites, on the star. --brand-ink on --bg reads
+   in both modes, as it's dark green on light and pale green on dark. */
+.tray-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--brand-ink);
+    color: var(--bg);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    pointer-events: none;
+}
+.glass-btn:hover { transform: translateY(-1px); background: var(--surface-strong); }
+.glass-btn svg { width: 22px; height: 22px; }
+.glass-btn > [data-icon] { display: inline-flex; }
+.glass-btn.busy { opacity: 0.6; cursor: progress; }
+.telegramBtn { color: #229ED9; }
+
+.tray-tab {
+    width: var(--tray-tab);
+    border-radius: 12px;
+    transition: border-radius 0.22s ease;
+}
+.tray-tab > [data-icon] { display: inline-flex; }
+/* The chevron points up; turned, it points the way the tray goes: off the edge while it's
+   out, back in while it's tucked away. */
+.tray-tab svg {
+    width: 16px;
+    height: 16px;
+    transform: rotate(90deg);
+    transition: transform 0.22s ease;
+}
+:root[data-tray-closed] .tray-tab svg,
+:root[data-tray-side="left"] .tray-tab svg { transform: rotate(-90deg); }
+:root[data-tray-closed][data-tray-side="left"] .tray-tab svg { transform: rotate(90deg); }
+/* At the edge it's a tab, flat on the side the screen cuts off. */
+:root[data-tray-closed] .tray-tab { border-radius: 12px 0 0 12px; border-right: none; }
+:root[data-tray-closed][data-tray-side="left"] .tray-tab { border-radius: 0 12px 12px 0; border-right: 1px solid var(--surface-border); border-left: none; }
+
+.tray-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-right: var(--hud-edge);
+    transition: opacity 0.22s ease;
+}
+:root[data-tray-side="left"] .tray-buttons { margin-right: 0; margin-left: var(--hud-edge); }
+:root[data-tray-closed] .tray-buttons { opacity: 0; }
+
+/* Between the tools and the links and settings. */
+.tray-rule {
+    width: 24px;
+    height: 1px;
+    margin: 2px 0;
+    background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+
+/* A phone on its side has no room for the whole column: it scrolls, with room kept for the
+   buttons' shadows. */
+@media (max-height: 560px) {
+    .tray { --tray-shift: calc(var(--glass-btn) + 18px + var(--hud-edge)); }
+    .tray-buttons {
+        max-height: calc(100dvh - 120px);
+        overflow-y: auto;
+        scrollbar-width: none;
+        padding: 4px 10px 12px;
+        margin-top: -4px;
+    }
+    :root:not([data-tray-side="left"]) .tray-buttons { margin-right: calc(var(--hud-edge) - 10px); }
+    :root[data-tray-side="left"] .tray-buttons { margin-left: calc(var(--hud-edge) - 10px); }
 }
 
 /* ===== Cards ===== */
@@ -600,48 +743,14 @@ header {
     margin-top: 8px;
 }
 
-/* ===== Favourites ===== */
-.favBar {
-    margin-top: 22px;
-}
-
+/* ===== Favourites, in their own window (#favsModal) ===== */
 .favChips {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
 }
 
-/* The Favourites card folds to its header (script.js). Its one grid row animates between
-   0fr and 1fr, the content's own height, as the trip bar's drawer does; folded, the chips
-   are hidden from tabbing and screen readers too. */
-.favToggle {
-    background: none; border: 0; padding: 0; margin: 0; color: inherit; font: inherit;
-    font-weight: 700; font-size: 15px; text-align: left; cursor: pointer;
-}
-.favCount { font-weight: 400; color: var(--muted-strong); }
-#favCard:not(.collapsed) .favCount { display: none; }
-.favChevron { display: inline-flex; }
-/* Up while open, down while folded. */
-.favChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
-#favCard.collapsed .favChevron svg { transform: rotate(180deg); }
-.favDrawer {
-    display: grid;
-    grid-template-rows: 1fr;
-    transition: grid-template-rows 0.25s ease, visibility 0s;
-}
-.favDrawer > div { min-height: 0; overflow: hidden; }
-#favCard.collapsed .favDrawer {
-    grid-template-rows: 0fr;
-    visibility: hidden;
-    transition: grid-template-rows 0.25s ease, visibility 0s linear 0.25s;
-}
-#favCard .cardHeader { transition: border-color 0.25s ease; }
-#favCard.collapsed .cardHeader { border-bottom-color: transparent; }
-@media (prefers-reduced-motion: reduce) {
-    .favDrawer, #favCard.collapsed .favDrawer, .favChevron svg { transition: none; }
-}
-
-.favGroup + .favGroup { margin-top: 12px; }
+.favGroup + .favGroup { margin-top: 4px; }
 
 .favGroupLabel {
     font-size: 12px;
@@ -1137,7 +1246,7 @@ header {
 
 .iconBtn.busy { opacity: 0.6; cursor: progress; }
 
-/* ===== Quick actions under the search ===== */
+/* ===== Under the search: the weather button ===== */
 .quickActions {
     display: flex;
     flex-wrap: wrap;
@@ -1214,8 +1323,7 @@ header {
 
 /* ===== Route planner ===== */
 .plannerSection,
-.resultsSection,
-.favBar { scroll-margin-top: 84px; }
+.resultsSection { scroll-margin-top: 84px; }
 
 /* The stop dropdowns live inside this card. The card's blur makes it a stacking context
    and .card clips its contents, so without these the dropdowns were cut off at the card's
@@ -1647,7 +1755,10 @@ header {
     .subtitle  { display: none; }
     .btn { padding: 14px 14px; font-size: 13px; }
     .incomingNote { display: none; }
-    .headerActions { gap: 6px; }
+
+    /* A slimmer tray, as sg-psi's on a phone, so the page keeps more of the width. */
+    :root { --glass-btn: 40px; --hud-edge: max(10px, calc(env(safe-area-inset-right) + 10px)); }
+    :root[data-tray-side="left"] { --hud-edge: max(10px, calc(env(safe-area-inset-left) + 10px)); }
 
     /* The two ends stack, with the swap button between them swapping up and down. */
     .plannerFields { grid-template-columns: 1fr; align-items: stretch; }
@@ -1666,8 +1777,7 @@ header {
 }
 
 /* ===== Weather button and modal (js/weather.js) ===== */
-/* The last quick action, pushed to the right end of the row; on a narrow screen it wraps
-   onto its own line and stays right-aligned. */
+/* At the right end of its row under the search. */
 .weatherBtn { margin-left: auto; }
 .weatherBody { display: flex; flex-direction: column; gap: 10px; }
 .wxNow { display: flex; align-items: center; gap: 12px; }

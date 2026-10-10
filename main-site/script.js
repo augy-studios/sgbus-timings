@@ -56,14 +56,6 @@ const LS = {
         localStorage.setItem(this.pinKey, JSON.stringify(prefs));
     },
 
-    // Whether the Favourites card is folded to its header.
-    favsCollapsedKey: 'sgbus_favs_collapsed',
-    getFavsCollapsed() { return localStorage.getItem(this.favsCollapsedKey) === '1'; },
-    setFavsCollapsed(on) {
-        if (on) localStorage.setItem(this.favsCollapsedKey, '1');
-        else localStorage.removeItem(this.favsCollapsedKey);
-    },
-
     // "YYYY-MM-DD", or empty.
     getBirthday() { return localStorage.getItem(this.birthdayKey) || ''; },
     setBirthday(v) {
@@ -387,9 +379,13 @@ function renderFavs() {
 
     shareFavsWithWidgets(favs);
 
-    // Shown beside the title while the card is folded, so it still says what's in it.
+    // How many, on the star in the Edge Tray that opens them.
     const total = favs.length + buses.length + routes.length + navs.length;
-    $('#favCount').textContent = total ? `· ${total}` : '';
+    $('#favCount').textContent = total > 99 ? '99+' : String(total);
+    $('#favCount').hidden = !total;
+    const label = total ? `Favourites: ${total}` : 'Favourites';
+    $('#favsBtn').setAttribute('aria-label', label);
+    $('#favsBtn').title = label;
 
     $('#favStopsGroup').hidden  = !favs.length;
     $('#favBusesGroup').hidden  = !buses.length;
@@ -407,18 +403,6 @@ function shareFavsWithWidgets(favs) {
         .then(c => c.put('/widget/favourites', new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } })))
         .catch(() => {});
 }
-
-// Folds the Favourites card to its header, or opens it again, and remembers which.
-function setFavsCollapsed(collapsed) {
-    $('#favCard').classList.toggle('collapsed', collapsed);
-    $('#favToggle').setAttribute('aria-expanded', String(!collapsed));
-    try { LS.setFavsCollapsed(collapsed); } catch {}
-}
-
-$('#favToggle').addEventListener('click', () => setFavsCollapsed(!$('#favCard').classList.contains('collapsed')));
-
-// Set before the first paint, so a folded card loads folded rather than folding as it opens.
-try { if (LS.getFavsCollapsed()) setFavsCollapsed(true); } catch {}
 
 function isFavStop(code) {
     return LS.getFavs().some(f => f.code === code);
@@ -983,10 +967,60 @@ function syncPinButtons() {
     });
 }
 
+// ----------- The Edge Tray -----------
+// sg-psi's tray of glass buttons under the header (index.html), on the side Settings picks,
+// tucked away and brought back by its arrow tab. Both are kept as attributes on <html>, set
+// before first paint by the script in index.html's head; per-browser conveniences, so
+// storage failing only means the defaults: on the right, out.
+const TRAY = { sideKey: 'sgbus_tray_side', closedKey: 'sgbus_tray_closed' };
+const page = document.documentElement;
+
+function storeTray(key, value) {
+    try {
+        if (value) localStorage.setItem(key, value);
+        else localStorage.removeItem(key);
+    } catch { /* for this page view only */ }
+}
+
+function setTrayOpen(open, save = true) {
+    page.toggleAttribute('data-tray-closed', !open);
+    const label = open ? 'Hide the Edge Tray' : 'Show the Edge Tray';
+    $('#trayTab').setAttribute('aria-expanded', String(open));
+    $('#trayTab').setAttribute('aria-label', label);
+    $('#trayTab').title = label;
+    // Buttons slid off the screen mustn't take focus.
+    $('#trayButtons').inert = !open;
+    if (save) storeTray(TRAY.closedKey, open ? '' : '1');
+}
+
+function setTraySide(side) {
+    if (side === 'left') page.setAttribute('data-tray-side', 'left');
+    else page.removeAttribute('data-tray-side');
+    storeTray(TRAY.sideKey, side === 'left' ? 'left' : '');
+    syncTraySideButtons();
+}
+
+function syncTraySideButtons() {
+    const side = page.getAttribute('data-tray-side') === 'left' ? 'left' : 'right';
+    $$('#traySidePick [data-side]').forEach(btn => {
+        const on = btn.dataset.side === side;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
+
+setTrayOpen(!page.hasAttribute('data-tray-closed'), false);
+$('#trayTab').addEventListener('click', () => setTrayOpen(page.hasAttribute('data-tray-closed')));
+$('#traySidePick').addEventListener('click', e => {
+    const btn = e.target.closest('[data-side]');
+    if (btn) setTraySide(btn.dataset.side);
+});
+
 function openSettings() {
     $('#setName').value = LS.getName();
     $('#setBirthday').value = LS.getBirthday();
     syncPinButtons();
+    syncTraySideButtons();
     prepareSync();
     openModal('settingsModal');
 }
@@ -1178,16 +1212,18 @@ $('#routeList').addEventListener('click', e => {
     });
 });
 
-$('#refreshAllBtn').addEventListener('click', () => {
-    if (current) { refreshStop(); return; }
-    const favs = LS.getFavs();
-    if (favs.length) loadStop(favs[0].code, { pushHistory: false });
+// Favourites, in their own window from the star in the Edge Tray. Opening one closes it, so what
+// it opened is in view; removing one leaves it open.
+$('#favsBtn').addEventListener('click', () => {
+    renderFavs();
+    openModal('favsModal');
 });
 
-$('.favBar').addEventListener('click', e => {
+$('#favsModal').addEventListener('click', e => {
     const t = e.target.closest('[data-remove],[data-fav],[data-remove-bus],[data-fav-bus],[data-remove-route],[data-fav-route],[data-remove-nav],[data-fav-nav]');
     if (!t) return;
     const d = t.dataset;
+    if (d.fav || d.favBus || d.favRoute || d.favNav) closeModal('favsModal');
     if (d.remove) {
         removeFav(d.remove);
         if (current?.code === d.remove) renderStopHeader();

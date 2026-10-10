@@ -14,7 +14,7 @@ roads the buses run on.
 <figcaption>Trains and roads, as LTA reports them right now.</figcaption>
 </figure>
 
-Tap **Service alerts** under the search box. A card opens with two parts.
+Tap **Service alerts**, the bell in the Edge Tray. A card opens with two parts.
 
 **Trains** says either that every train service is running normally, or, for
 each line with a problem:

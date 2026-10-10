@@ -38,7 +38,7 @@ open the best match.
 <figcaption>The 8 nearest stops, with how far away each one is. Favourite stops are starred.</figcaption>
 </figure>
 
-Tap **Stops near me** under the search box. The first time, your browser asks
+Tap **Stops near me**, the pin under the star in the Edge Tray. The first time, your browser asks
 whether the app may use your location; allow it. A list of the 8 nearest stops
 opens, each with how far away it is. Tap one to see its timings.
 

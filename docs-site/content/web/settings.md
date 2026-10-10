@@ -6,11 +6,11 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, and syncing favourites with another device." width="440" height="824" loading="lazy">
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, the Edge Tray's side, and syncing favourites with another device." width="440" height="957" loading="lazy">
 <figcaption>Settings. Changes save as you make them.</figcaption>
 </figure>
 
-Open Settings with the gear in the header, or by tapping the app's title.
+Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 
 | Setting | What it does |
 |---|---|
@@ -19,14 +19,15 @@ Open Settings with the gear in the header, or by tapping the app's title.
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
+| **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons under the header, hangs from. Its arrow tucks it away at that edge. |
 | **Sync favourites with another device** | See [Sync favourites between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.
 
 > [!NOTE]
 > Looking for notifications? They're switched on in the
-> [Service alerts](service-alerts.md#get-notified) card, under the search box,
-> not here.
+> [Service alerts](service-alerts.md#get-notified) card, opened from the bell in
+> the Edge Tray, not here.
 
 The greeting follows the time of day, good morning, afternoon or evening, and
 keeps up while the app stays open.
@@ -38,7 +39,7 @@ keeps up while the app stays open.
 <figcaption>The theme picker: a mode, and one of seven colours.</figcaption>
 </figure>
 
-Tap the sun or moon button at the right of the header to open the theme picker.
+Tap the sun or moon button at the bottom of the Edge Tray to open the theme picker.
 Choices apply at once and are remembered on this device.
 
 ### Mode

@@ -13,7 +13,7 @@ to any other, by bus, train or both, including the walk at each end.
 <figcaption>Type a place, an address, a station or a stop, and pick it from the suggestions.</figcaption>
 </figure>
 
-1. Tap **Navigate** under the search box.
+1. Tap **Navigate**, the arrowhead in the Edge Tray.
 2. In **From**, type an address, a building, a postal code, an MRT or LRT
    station, or a bus stop, and pick it from the suggestions. Or tap the pin next
    to the box to start from where you are.
@@ -58,7 +58,7 @@ nav.
 ## The ways there
 
 <figure>
-<img src="/screenshots/web/nav-ways.png" alt="Navigate from Bedok Mall to Botanic Gardens station listing 13 ways, quickest first: trains on the EW and CC or DT lines, buses, and mixes of the two, each with its changes, walk and time." width="994" height="800" loading="lazy">
+<img src="/screenshots/web/nav-ways.png" alt="Navigate from Bedok Mall to Botanic Gardens station listing 8 ways, quickest first: trains on the EW and DT lines, buses, and mixes of the two, each with its changes, walk and time." width="994" height="800" loading="lazy">
 <figcaption>Every worthwhile mix of bus and train, quickest first.</figcaption>
 </figure>
 
@@ -91,7 +91,7 @@ Each way shows:
 ## Open a way
 
 <figure>
-<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="994" height="520" loading="lazy">
+<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="994" height="668" loading="lazy">
 <figcaption>A way leg by leg, with Start trip for the Get Off Alert.</figcaption>
 </figure>
 
@@ -123,7 +123,7 @@ and the end: see [Get Off Alert](get-off-alert.md).
 ## Save it
 
 <figure>
-<img src="/screenshots/web/nav-save.png" alt="The top of Navigate, with a Saved button and a filled star." width="986" height="83" loading="lazy">
+<img src="/screenshots/web/nav-save.png" alt="The top of Navigate, with Refresh, Share, and a Saved button with a filled star." width="986" height="75" loading="lazy">
 <figcaption>Save nav turns into Saved.</figcaption>
 </figure>
 

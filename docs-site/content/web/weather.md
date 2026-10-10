@@ -3,7 +3,7 @@ title: Weather and air quality
 description: Today's temperature, PSI and PM2.5 at a glance, and today's weather in full with a tap.
 ---
 
-The button at the right end of the row under the search box shows today across
+The button under the search box, on the right, shows today across
 Singapore at a glance:
 
 > 23 - 32 °C, 72 - 94 PSI, 25 - 52 PM2.5

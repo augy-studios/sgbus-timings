@@ -20,7 +20,7 @@ server.
 <figcaption>The code, its QR code and its link, waiting for the other device.</figcaption>
 </figure>
 
-1. Open **Settings**, from the gear or by tapping the app's title.
+1. Open **Settings**, from the gear in the Edge Tray or by tapping the app's title.
 2. Under **Sync favourites with another device**, tap
    **Show a code on this device**.
 3. A 6-character code appears in large type, with a QR code and a link under

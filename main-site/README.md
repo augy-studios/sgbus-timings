@@ -27,10 +27,14 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Favourite buses are starred and pinned in every stop's timings
 - Choose whether favourite buses and stops pin to the top or bottom of lists
 - Favourites are persisted in your browser's local storage
-- The Favourites card folds to its title (with a count) and remembers whether it's folded
+- Favourites open in their own window from the star at the top of the Edge Tray
 - **Sync favourites with another device** (stops, buses, routes and navs) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
   - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
+
+### The Edge Tray
+- Favourites, Stops near me, Plan a route, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons under the header (sg-psi's tray); the weather stays under the search box
+- Its arrow tab tucks it away at the edge of the screen and remembers that; Settings puts it on the left or the right
 
 ### Incoming Buses Bar
 - Visual summary of the next arriving bus across all services at the current stop

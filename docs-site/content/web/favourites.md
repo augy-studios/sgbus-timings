@@ -3,18 +3,15 @@ title: Favourites
 description: Save the stops, buses and routes you use, and open any of them with one tap.
 ---
 
-Favourites live in their own card under the search box, in up to four groups:
-**Bus stops**, **Buses**, **Routes** and **Navs**. Each favourite is a chip; tap it to open
-it, or tap the cross on its right to remove it.
-
-Tap **Favourites** at the top of the card to fold it down to just its title, with how
-many favourites you have beside it, and tap again to open it. The site remembers which
-you left it as.
+Tap the star at the top of the Edge Tray to open your favourites, in up to four groups:
+**Bus stops**, **Buses**, **Routes** and **Navs**. The number on the star is how many
+you have. Each favourite is a chip; tap it to open it, which also closes the
+favourites, or tap the cross on its right to remove it.
 
 ## Save a favourite
 
 <figure>
-<img src="/screenshots/web/favourites-save.png" alt="The Favourites card with four groups: bus stops Bedok Int and Tampines Int, buses 60 and 14, the route Bedok Int to Serangoon Int, and the nav Bedok Mall to Changi Airport, each a chip with a cross to remove it." width="996" height="382" loading="lazy">
+<img src="/screenshots/web/favourites-save.png" alt="The Favourites window with four groups: bus stops Bedok Int and Tampines Int, buses 60 and 14, the route Bedok Int to Serangoon Int, and the nav Bedok Mall to Changi Airport, each a chip with a cross to remove it." width="440" height="372" loading="lazy">
 <figcaption>Each favourite is a chip. Tap it to open it, or its cross to remove it.</figcaption>
 </figure>
 

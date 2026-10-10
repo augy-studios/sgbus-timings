@@ -10,21 +10,24 @@ stays in that browser.
 ## A tour of the screen
 
 <figure>
-<img src="/screenshots/web/install-tour.png" alt="The top of the app: the header greeting Sam with buttons for Telegram, coffee, the guide, Settings and the theme; the search box with Get Timings; Stops near me, Plan a route, Navigate and Service alerts with the weather on the right; and Favourites with bus stops, buses, routes and navs." width="1000" height="604" loading="lazy">
-<figcaption>The header, the search box, the row of quick actions with the weather at its end, and your favourites.</figcaption>
+<img src="/screenshots/web/install-tour.png" alt="The top of the app: the header greeting Sam; the search box with Get Timings and the weather under it; Bedok Int's timings; and down the right, the Edge Tray: Favourites with a 6 on it, Stops near me, Plan a route, Navigate and Service alerts, then Telegram, coffee, the guide, Settings and the theme, with the arrow tab beside it." width="1000" height="604" loading="lazy">
+<figcaption>The header, the search box and the weather, a stop's timings, and the Edge Tray down the side.</figcaption>
 </figure>
 
 - **The header** greets you by the time of day, and by name once you have set
-  one. Tap the title, or the gear, for [Settings](settings.md). The other
-  buttons open the Telegram bot, a page to buy Augy a coffee, this guide (the
-  question mark), and the [theme picker](settings.md#themes).
+  one. Tap the title for [Settings](settings.md).
+- **The Edge Tray** is the column of buttons under the header, at the right edge of
+  the screen. From the top: [**Favourites**](favourites.md) (the star),
+  **Stops near me**, **Plan a route**,
+  [**Navigate**](nav.md) and [**Service alerts**](service-alerts.md), then the
+  Telegram bot, a page to buy Augy a coffee, this guide (the question mark),
+  [Settings](settings.md) (the gear) and the [theme picker](settings.md#themes).
+  Hover over a button for its name. The arrow beside the Edge Tray tucks it away at
+  the edge of the screen, and brings it back. To have it on the left, see
+  [Settings](settings.md).
 - **The search box** finds a stop, a bus or an address. See
-  [Find a bus stop](search.md).
-- **Stops near me**, **Plan a route**, [**Navigate**](nav.md) and
-  [**Service alerts**](service-alerts.md) sit under the search box, with the
-  [weather](weather.md) at the right end of the row.
-- **Favourites** lists the stops, buses and routes you have saved, as chips you
-  can tap.
+  [Find a bus stop](search.md). The [weather](weather.md) is under it, on the
+  right.
 - **The timings card** opens below once you pick a stop.
 
 ## Install it
