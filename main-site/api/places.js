@@ -2,8 +2,10 @@
 // { kind: "station" | "stop" | "place", label, sub, code?, lat, lng }.
 //
 // MRT/LRT stations and bus stops are matched here by name or code; anything else, an
-// address, a building, a postal code, is OneMap's search.
+// address, a building, a postal code, is OneMap's search. A Google Maps link answers the one
+// place it points at (api/_lib/gmaps.js), or a 422 with { error } saying why it can't.
 
+import { findMapsLink, MapsLinkError, placeFromMapsLink } from "./_lib/gmaps.js";
 import { addressOf, search, titleCase } from "./_lib/onemap.js";
 import { getGraph, originOf, rail } from "./_nav/network.js";
 
@@ -12,6 +14,19 @@ const LIMIT = 10;
 export default async function handler(req, res) {
   const q = String(req.query.q || "").trim();
   if (q.length < 2) return res.status(400).json({ error: "q must be at least 2 characters" });
+
+  const link = findMapsLink(q);
+  if (link) {
+    try {
+      const place = await placeFromMapsLink(link);
+      res.setHeader("Cache-Control", "s-maxage=86400");
+      return res.status(200).json([place]);
+    } catch (err) {
+      if (!(err instanceof MapsLinkError)) throw err;
+      return res.status(422).json({ error: err.message });
+    }
+  }
+
   const lower = q.toLowerCase();
 
   const stations = rail.stations

@@ -11,6 +11,8 @@
 const nav = { from: null, to: null, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null };
 
 const NAV_PLACES_DELAY_MS = 300;
+// A Google Maps link, which /api/places reads for the one place it points at (api/_lib/gmaps.js).
+const MAPS_LINK_RE = /maps\.app\.goo\.gl\/|goo\.gl\/maps\/|google\.[a-z]{2,3}(?:\.[a-z]{2})?\/maps|maps\.google\./i;
 
 function initNav() {
   attachPlaceSearch('from');
@@ -114,21 +116,40 @@ function attachPlaceSearch(field) {
     box.hidden = false;
   };
 
+  const note = (text) => {
+    found = [];
+    box.innerHTML = `<div class="acNote">${escapeHtml(text)}</div>`;
+    box.hidden = false;
+  };
+
   input.addEventListener('focus', () => input.select());
   input.addEventListener('input', () => {
     clearTimeout(timer);
     const q = input.value.trim();
     if (q.length < 2) return render([]);
+    // A Google Maps link is pasted whole, so it's read at once and, once placed, set as the end.
+    const link = MAPS_LINK_RE.test(q);
+    if (link) note('Reading the Google Maps link…');
     timer = setTimeout(async () => {
       const mine = ++token;
       try {
         const r = await fetch(`/api/places?q=${encodeURIComponent(q)}`);
-        const places = r.ok ? await r.json() : [];
-        if (mine === token) render(places);
+        const data = await r.json().catch(() => null);
+        if (mine !== token) return;
+        if (link && !r.ok) return note(data?.error || "Couldn't read that Google Maps link. Please try again.");
+        const places = r.ok && Array.isArray(data) ? data : [];
+        if (link && places.length === 1) {
+          box.hidden = true;
+          setNavEnd(field, places[0]);
+          return;
+        }
+        render(places);
       } catch {
-        if (mine === token) render([]);
+        if (mine !== token) return;
+        if (link) note("Couldn't read that Google Maps link. Check your connection and try again.");
+        else render([]);
       }
-    }, NAV_PLACES_DELAY_MS);
+    }, link ? 0 : NAV_PLACES_DELAY_MS);
   });
   input.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 150));
   input.addEventListener('keydown', (e) => {
@@ -173,6 +194,17 @@ function openNav(from = null, to = null, { scroll = true, when = null } = {}) {
   else renderNav();
   if (scroll) $('#navSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   if (!nav.from) $('#navFrom').focus({ preventScroll: true });
+}
+
+// Something shared into the installed app (manifest.json's share_target): a Google Maps place,
+// or text naming one, goes in To as if pasted there. A link is set as the end once it's read;
+// anything else leaves its suggestions open to pick from.
+function openNavShared(text) {
+  openNav(null, null, { scroll: false });
+  const input = $('#navTo');
+  input.value = text;
+  if (!MAPS_LINK_RE.test(text)) input.focus({ preventScroll: true });
+  input.dispatchEvent(new Event('input'));
 }
 
 function closeNav() {
@@ -239,7 +271,7 @@ function renderNav() {
   const body = $('#navBody');
   renderNavFav();
   if (!nav.from || !nav.to) {
-    body.innerHTML = plannerStatus('Set where you\'re starting and where you\'re going: an address, a building, a postal code, a station, a bus stop, or your location.');
+    body.innerHTML = plannerStatus('Set where you\'re starting and where you\'re going: an address, a building, a postal code, a station, a bus stop, a Google Maps link, or your location.');
     return;
   }
   if (nav.option) {

@@ -11,7 +11,9 @@ bus, train or both, including the walk at each end.
 1. Send `/nav`. The bot asks where you're starting.
 2. Reply with an address, a building, a postal code, an MRT or LRT station, or a
    bus stop. If several places match, tap the one you meant under **Did you
-   mean**. Or **send your location** instead.
+   mean**. Or **send your location** instead, or a **Google Maps link**: paste
+   one, or share a place from Google Maps to the bot. Short links
+   (`maps.app.goo.gl`) work too.
 3. It asks where you're going. Answer the same way.
 
 **Set start** and **Set end** stay on the panel, so either end can be

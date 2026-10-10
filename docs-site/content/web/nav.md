@@ -21,6 +21,20 @@ to any other, by bus, train or both, including the walk at each end.
 
 The swap button between the two boxes turns the journey around.
 
+### From a Google Maps link
+
+Either box also takes a Google Maps link: paste one in, and once it's read the
+place is set as that end, named as Google Maps names it. Short links
+(`maps.app.goo.gl`) work as well as full ones.
+
+With the app installed on Android, you can also share a place to it. In Google
+Maps, or on a Google Maps link in another app such as Telegram, tap **Share** and
+pick **SG Bus Timings**. Navigate opens with the place in **To**; tap the pin by
+**From** to go there from where you are.
+
+A link to somewhere outside Singapore, or one with no place in it, says so under
+the box.
+
 ## Pick a time
 
 Under the boxes, **Leave now** is picked to start with. Tap **Leave at** or

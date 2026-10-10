@@ -15,8 +15,8 @@ from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
 MAX_OPTIONS = 8
 
 PROMPTS = {
-    "from": "Send where you're starting: an address, a building, a postal code, an MRT station, a bus stop, or your location.",
-    "to": "Now send where you're going: an address, a building, a postal code, an MRT station, a bus stop, or your location.",
+    "from": "Send where you're starting: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps link, or your location.",
+    "to": "Now send where you're going: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps link, or your location.",
 }
 
 

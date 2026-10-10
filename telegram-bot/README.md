@@ -461,7 +461,8 @@ function in [`../main-site/api/push`](../main-site/SERVICE-ALERTS-SETUP.md).
 ### Navigate
 
 `/nav` gets you from any place to any other by bus and train: an address, a
-building, a postal code, an MRT station, a bus stop, or a shared location, at
+building, a postal code, an MRT station, a bus stop, a Google Maps link (full or
+`maps.app.goo.gl`, read by the site's `/api/places`), or a shared location, at
 either end. It asks for the start and the end like `/route`, with **Did you
 mean** buttons when a name matches several places, and **🅰 Set start** /
 **🅱 Set end** to change either later.

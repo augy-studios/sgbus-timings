@@ -59,7 +59,8 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - A disruptions bar along the top, under the update bar, only while a train line is disrupted or delayed; checked every two minutes while the site is on screen, with **Details** for the card and **Hide** until the disruption changes
 
 ### Navigate
-- **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops or your location, at either end
+- **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops, Google Maps links or your location, at either end
+- A Google Maps link, full or short (`maps.app.goo.gl`), is read by `/api/places` (`api/_lib/gmaps.js`) for the place it points at: its pin where the link has one, otherwise its address looked up on OneMap. Things shared into the installed app (the manifest's `share_target`, `/?text=...&url=...`) go into **To**
 - Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
 - Open one leg by leg, with live timings for every bus leg; save it to Favourites (Navs); share it as `#nav/lat,lng/lat,lng`
 - The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
@@ -92,6 +93,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - `#alerts` opens the Service alerts card
 - `#nav/1.30050,103.85580/1.33320,103.92920` opens Navigate between two points
 - `#near` opens the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
+- `/?text=<Google Maps link>` (what sharing to the installed app opens) opens Navigate with that place in **To**
 - Bookmark or share a direct link to any stop, service or route
 
 ### PWA / Offline Support

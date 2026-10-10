@@ -1224,6 +1224,18 @@ function routeFromHash() {
 
 window.addEventListener('hashchange', routeFromHash);
 
+// "/?title=...&text=...&url=..." is something shared into the installed app (manifest.json's
+// share_target), usually a Google Maps place: it goes into Navigate's To. The query is cleared
+// so a reload doesn't share it again.
+function routeFromShare() {
+    const params = new URLSearchParams(location.search);
+    const shared = ['title', 'text', 'url'].map(k => params.get(k)?.trim()).filter(Boolean);
+    if (!shared.length) return false;
+    history.replaceState(null, '', location.pathname + location.hash);
+    openNavShared(shared.join('\n'));
+    return true;
+}
+
 // ----------- Init -----------
 (async function init() {
     updateGreeting();
@@ -1245,7 +1257,7 @@ window.addEventListener('hashchange', routeFromHash);
         })
         .catch(() => {});
 
-    if (!routeFromHash() && LS.getFavs()[0]) {
+    if (!routeFromShare() && !routeFromHash() && LS.getFavs()[0]) {
         loadStop(LS.getFavs()[0].code, { pushHistory: false });
     }
 })();

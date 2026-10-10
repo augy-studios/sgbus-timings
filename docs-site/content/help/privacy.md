@@ -57,6 +57,9 @@ OneMap's search, and the two ends of a nav are sent to the server, which asks
 OneMap's journey planner too. Nothing about you goes with them. Saved navs stay
 in your browser, like other favourites.
 
+A Google Maps link you paste or share in is sent to the server, which opens a
+short link with Google to find the full one, then reads the place from it.
+
 ### Get Off Alert
 
 On a trip, your live location is used in your browser to count the stops left.
