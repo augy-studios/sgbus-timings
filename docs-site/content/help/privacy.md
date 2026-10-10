@@ -109,7 +109,8 @@ To work, the bot saves, against your Telegram chat:
 - your favourite stops, buses and routes, and where they pin;
 - your routines, and any routine, route or nav you are part way through setting up;
 - your favourite navs, with the places at each end;
-- the name you set, your birthday, and whether routine notifications are on;
+- the name you set, your birthday, your Home and Work places, and whether
+  routine notifications are on;
 - whether you've subscribed to Service Alerts, and in which mode;
 - what each button it has sent you does, so buttons keep working after a
   restart.
@@ -127,8 +128,9 @@ postal code you send is looked up with OneMap to find the address.
 
 Remove favourites with `/unfavstop`, `/unfavbus` and the favourite buttons,
 routines with `/routines`, Service Alerts with `/unsub`, favourite navs with
-the star on their panel, your name with `/setname clear`, and your birthday
-with **Clear birthday** in `/settings`. To have everything about you deleted,
+the star on their panel, your name with `/setname clear`, and your birthday,
+Home and Work with **Clear birthday**, **Clear home** and **Clear work** in
+`/settings`. To have everything about you deleted,
 email Augy, who runs the bot, at
 [augy@augystudios.com](mailto:augy@augystudios.com), with your Telegram username.
 

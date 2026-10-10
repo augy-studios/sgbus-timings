@@ -54,6 +54,7 @@ async def main() -> None:
     # the text one before register_search, the location one before register_nearme.
     register_newroute(client)
     register_nav(client)  # its text and location interceptors, before register_search and register_nearme
+    register_settings(client)  # its text and location interceptors (Home and Work), likewise
     register_nearme(client)
     register_favstops(client)
     register_addfavbus(client)  # includes the flow text-interceptor, must come before register_search
@@ -62,7 +63,6 @@ async def main() -> None:
     register_unfavstop(client)
     register_favouritepref(client)
     register_setname(client)
-    register_settings(client)  # includes the flow text-interceptor, must come before register_search
     register_addroutine(client)  # includes the flow text-interceptor, must come before register_search
     register_routines(client)
     register_favroutes(client)

@@ -43,7 +43,9 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /sub - get train and traffic alerts (all, or disruptions only, for each)
 - /unsub - stop those alerts
 - /setname - set the name you want the bot to call you by
-- /settings - view and change your settings (name, birthday, routine notifications)
+- /sethome - set your home, for the Home buttons in /nav and /route
+- /setwork - set your work, for the Work buttons in /nav and /route
+- /settings - view and change your settings (name, birthday, home, work, routine notifications)
 - /done - finish whatever you're in the middle of
 - /cancel - stop whatever you're in the middle of
 """

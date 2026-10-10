@@ -25,7 +25,8 @@ description: Every command the bot understands, and what you can send it without
 | `/sub` | Get train service and traffic alerts: all, disruptions only, or off, for each | [Service Alerts](service-alerts.md) |
 | `/unsub` | Stop Service Alerts | [Service Alerts](service-alerts.md#unsubscribe) |
 | `/setname` | Set or clear the name the bot calls you | [Settings](settings.md#your-name) |
-| `/settings` | Your name, birthday, notifications and favourites | [Settings](settings.md) |
+| `/sethome`, `/setwork` | Set your home or work, for the Home and Work buttons in `/nav` and `/route` | [Settings](settings.md#home-and-work) |
+| `/settings` | Your name, birthday, home, work, notifications and favourites | [Settings](settings.md) |
 | `/done` | Finish what you are in the middle of | [Flows](flows.md#done) |
 | `/cancel` | Stop what you are in the middle of | [Flows](flows.md#cancel) |
 

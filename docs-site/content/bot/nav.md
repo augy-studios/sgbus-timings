@@ -19,6 +19,12 @@ bus, train or both, including the walk at each end.
 **Set start** and **Set end** stay on the panel, so either end can be
 changed later. Send `/cancel` to stop at any point.
 
+### Home and Work
+
+Under them, **🏠 From home**, **💼 From work**, **🏠 To home** and **💼 To work**
+set that end to the place saved in `/settings` (see [Settings](settings.md#home-and-work)). One
+that isn't saved yet asks for it; once it's saved, tap the button again.
+
 ## Pick a time
 
 The panel starts at **🕒 Leave now**. Tap it, then **Leave at…** or **Arrive

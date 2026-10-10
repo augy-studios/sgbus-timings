@@ -172,6 +172,17 @@ db.executescript(
     );
     CREATE INDEX IF NOT EXISTS idx_favourite_navs_chat ON favourite_navs(chat_id);
 
+    -- Home and Work (/settings, saved_places.py): a place each, as /nav's ends are, with
+    -- `stop_code` when the place is a bus stop, so /route can take it as it is.
+    CREATE TABLE IF NOT EXISTS saved_places (
+        chat_id INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        label TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL,
+        stop_code TEXT,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, kind)
+    );
+
     CREATE TABLE IF NOT EXISTS jobs (
         name TEXT PRIMARY KEY,
         interval_ms INTEGER NOT NULL,

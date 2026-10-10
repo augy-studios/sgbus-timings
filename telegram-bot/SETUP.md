@@ -58,6 +58,8 @@ unsub - stop train service and traffic alerts
 addroutine - set up a routine that sends bus stop timings on a schedule
 routines - view, edit, or delete your routines
 setname - set the name the bot calls you by
+sethome - set your home, for the Home buttons in nav and route
+setwork - set your work, for the Work buttons in nav and route
 settings - view and change your settings
 done - finish adding favourite buses
 cancel - cancel the current operation

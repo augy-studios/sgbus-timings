@@ -27,6 +27,9 @@ from .newroute import FLOW as ROUTE_FLOW
 from .newroute import WHEN_BACK as ROUTE_WHEN_BACK
 from .newroute import apply_stop as apply_route_stop
 from .newroute import arm_route_field, arm_route_when
+from .newroute import use_saved_place as use_saved_route_place
+from ..saved_places import KINDS as PLACE_KINDS
+from ..saved_places import clear_place, get_place, nav_end
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .servicealerts import fetch_alerts_now
 from .nav import WHEN_BACK as NAV_WHEN_BACK
@@ -38,7 +41,8 @@ from ..navs import toggle_favourite_nav
 from ..route_drafts import get_route_draft
 from ..when import describe, quick
 from ..when_view import build_when_menu
-from .settings import build_settings_view, start_edit_birthday, start_edit_name
+from .settings import FLOW_PREFIX as SETTINGS_FLOW_PREFIX
+from .settings import build_settings_view, save_place, start_edit_birthday, start_edit_name, start_edit_place
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
 
@@ -212,6 +216,50 @@ def register_callbacks(client):
             if action == "route_set":
                 await arm_route_field(client, event, user_id, payload)
                 await event.answer()
+                return
+
+            if action in ("route_saved", "nav_saved"):
+                # Home or Work for one end. Unset, it's asked for, and the button works once
+                # it's saved, since the panel keeps it.
+                kind = payload.get("kind")
+                if kind not in PLACE_KINDS:
+                    await event.answer()
+                    return
+                place = get_place(event.chat_id, kind)
+                name = PLACE_KINDS[kind][1]
+                if not place:
+                    await event.answer(f"Set your {name.lower()} first")
+                    await start_edit_place(client, event.chat_id, kind, from_panel=True)
+                    return
+                if action == "route_saved":
+                    await event.answer()
+                    await use_saved_route_place(client, event, user_id, payload, place, name)
+                    return
+                ends = {"from": payload.get("from"), "to": payload.get("to")}
+                ends[payload["field"]] = nav_end(place)
+                await event.answer("Finding ways there…" if ends["from"] and ends["to"] else None)
+                await redraw_nav_panel(client, event, event.chat_id, ends, payload.get("when"))
+                return
+
+            if action == "settings_edit_place":
+                await start_edit_place(client, event.chat_id, payload["kind"])
+                await event.answer()
+                return
+
+            if action == "settings_place_pick":
+                if get_flow(event.chat_id) != SETTINGS_FLOW_PREFIX + payload["kind"]:
+                    await event.answer("That question has already been answered.")
+                    return
+                await save_place(client, event.chat_id, payload["kind"], payload["place"])
+                await event.answer()
+                return
+
+            if action == "settings_clear_place":
+                clear_place(event.chat_id, payload["kind"])
+                sender = await event.get_sender()
+                rich, buttons = build_settings_view(event.chat_id, sender)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer(f"{PLACE_KINDS[payload['kind']][1]} cleared")
                 return
 
             if action == "route_stop_pick":

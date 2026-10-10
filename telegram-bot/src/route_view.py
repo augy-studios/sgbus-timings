@@ -11,6 +11,7 @@ from .favourite_routes import is_favourite_route, toggle_favourite_route
 from .format import bus_button_label, escape_md
 from .journey_view import CLOCK_NOTE, ESTIMATE_NOTE, journey_button_label, journey_summary
 from .journeys import direct_rides, find_journeys, wrong_side_ends
+from .nav_view import saved_place_rows
 from .pagination import nav_row, paginate
 from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
 from .when import BUS_WAIT_MIN, at_to_dt, clock, clock_day, describe, now, problem, timing
@@ -238,6 +239,8 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
                 make_button("route_set", {**base, "field": "end"}),
             ),
         ],
+        # Home and Work under them. The page is left behind: a new end has its own buses.
+        *saved_place_rows("route_saved", {k: v for k, v in base.items() if k != "page"}, ("start", "end")),
         # The page is left behind: a new time can change which buses there are to page through.
         [
             Button.inline(

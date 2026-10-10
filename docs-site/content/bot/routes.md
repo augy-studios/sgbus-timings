@@ -19,6 +19,14 @@ Each answer brings a **new** panel, and the old one loses its buttons, so the
 live panel is always the latest. **Set start** and **Set end** stay on it, so
 you can change either end later. Send `/cancel` to stop at any point.
 
+### Home and Work
+
+**🏠 From home**, **💼 From work**, **🏠 To home** and **💼 To work** on the panel
+list the stops near the place saved in `/settings` (see [Settings](settings.md#home-and-work)),
+for you to pick that end from, as a location does. If the place is itself a bus
+stop, it goes straight in. One that isn't saved yet asks for it; once it's
+saved, tap the button again.
+
 ### Direct buses to the other end
 
 Once one end is set, the stops offered for the other do some of the planning for
@@ -32,7 +40,7 @@ with a tick in front of it.
 - **A name matching several stops**: the ticked ones lead the **Did you mean**
   list. Every match is checked, so a stop with a direct bus makes the list even
   if it's well down the alphabet.
-- **A location or postal code**: the ticked ones lead the list of nearby stops,
+- **A location, postal code, Home or Work**: the ticked ones lead the list of nearby stops,
   nearest first among themselves.
 
 The message above the buttons says how many there are, or that none of them has

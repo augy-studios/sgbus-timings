@@ -223,6 +223,26 @@ async def arm_route_when(client, event, chat_id, payload):
     await edit_rich_message(client, event, rich, buttons)
 
 
+async def use_saved_place(client, event, chat_id, payload, place, name):
+    """Home or Work tapped on the panel, for the end in `payload["field"]`: the stop itself
+    when the place is a bus stop, otherwise the stops near it to pick from, as a location
+    sent here gets. Either way the end goes in as a typed stop's would."""
+    field = payload["field"]
+    start_route_draft(
+        chat_id, field, start_code=payload.get("start"), end_code=payload.get("end"),
+        panel_msg_id=event.query.msg_id, when=payload.get("when"),
+    )
+    set_flow(chat_id, FLOW)
+    if place.get("stop") and get_bus_stop_by_code(place["stop"]):
+        await apply_stop(client, chat_id, place["stop"])
+        return
+    nearby = nearest_bus_stops(place["lat"], place["lng"], NEARBY_LIMIT)
+    if not nearby:
+        await event.respond("No bus stops found nearby. The bus stop cache may still be loading, please try again shortly.")
+        return
+    await _offer_nearby(event, chat_id, nearby, name.lower(), get_route_draft(chat_id))
+
+
 async def apply_stop(client, chat_id, code):
     """Puts a chosen stop into whichever end of the route the chat is filling in, and posts
     the panel that results. The other end is armed next while it's still empty, so

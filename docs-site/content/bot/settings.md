@@ -1,6 +1,6 @@
 ---
 title: Settings
-description: Set the name the bot calls you, your birthday, and whether routines are sent.
+description: Set the name the bot calls you, your birthday, your home and work, and whether routines are sent.
 ---
 
 Send `/settings` to see everything the bot keeps for you, with buttons to
@@ -8,6 +8,7 @@ change it:
 
 - **Name**: what the bot calls you, or "not set".
 - **Birthday**: the date it has saved, or "not set".
+- **Home** and **Work**: the places saved for them, or "not set".
 - **Routine notifications**: Enabled or Disabled.
 - **Service Alerts**: your choice for trains and for traffic, or Off. Change it with
   `/sub` and `/unsub`; see [Service Alerts](service-alerts.md).
@@ -38,6 +39,17 @@ read it, it asks again.
 On your birthday, at 9 AM Singapore time, the bot sends you a happy birthday
 message, every year. **Clear birthday** removes it.
 
+## Home and Work
+
+Tap **Set home** or **Set work**, or send `/sethome` or `/setwork`, then reply
+with the place: an address, a building, a postal code, an MRT station, a bus
+stop or a Google Maps link, picked from the suggestions if there are several. Or
+tap **Send my location** to save where you are now, named Home or Work.
+
+The `/nav` and `/route` panels ([Navigate](nav.md#home-and-work),
+[Routes](routes.md#home-and-work)) then have **🏠 From home**, **💼 From work**, **🏠 To home** and **💼 To work**
+buttons. **Clear home** and **Clear work** remove them.
+
 ## Routine notifications
 
 On by default. **Disable notifications** pauses every routine without deleting
@@ -48,5 +60,5 @@ any of them; **Enable notifications** starts them again.
 To change where favourites pin, use `/favouritepref`. See
 [Favourites](favourites.md#top-or-bottom).
 
-Tapping **Set name** or **Set birthday** waits for your reply. Send `/cancel` to
+Tapping **Set name**, **Set birthday**, **Set home** or **Set work** waits for your reply. Send `/cancel` to
 stop without changing anything.

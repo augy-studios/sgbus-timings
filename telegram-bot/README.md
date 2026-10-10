@@ -60,7 +60,8 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/sub` | Subscribes to Service Alerts, with a row of buttons each for train service alerts and traffic alerts: **All**, **Disruptions** or **Off** |
 | `/unsub` | Stops Service Alerts |
 | `/setname` | Sets (or clears) the name the bot calls you by |
-| `/settings` | Lists your settings (name, birthday, routine notifications) with buttons to change them |
+| `/sethome`, `/setwork` | Asks for your home or work place, for the Home and Work buttons on the `/nav` and `/route` panels |
+| `/settings` | Lists your settings (name, birthday, home, work, routine notifications) with buttons to change them |
 | `/done` | Finishes whatever multi-step flow the chat is in the middle of |
 | `/cancel` | Stops whatever multi-step flow the chat is in the middle of |
 
@@ -491,6 +492,12 @@ each one is set:
   common format (e.g. `1998-04-23`, `23/04/1998`, `23 Apr 1998`, or
   `Apr 23rd 1998`), or **Clear birthday** to unset it. If set, the bot sends a
   "Happy birthday" message at 9 AM GMT+8 on that date every year.
+- **Home / Work** - tap **Set home** or **Set work** (or send `/sethome` /
+  `/setwork`) and reply with a place, searched like a `/nav` end, or send your
+  location. The `/nav` and `/route` panels then carry **🏠 From home**,
+  **💼 From work**, **🏠 To home** and **💼 To work**: `/nav` sets that end, and
+  `/route` lists the stops near the place (or uses it directly when it's a bus
+  stop). **Clear home** / **Clear work** unset them.
 - **Routine notifications** - on by default; toggling it off pauses all
   `/addroutine` deliveries without deleting the routines themselves, and
   toggling it back on resumes them.
@@ -500,7 +507,7 @@ each one is set:
   pinned to the **top** or **bottom** of arrival views (set via
   `/favouritepref`).
 
-Tapping **Set name** or **Set birthday** starts a one-message flow, same as
+Tapping **Set name**, **Set birthday**, **Set home** or **Set work** starts a one-message flow, same as
 `/addfavbus` or `/addroutine` - reply with the value, or `/cancel` to abort.
 
 ### Inline mode
