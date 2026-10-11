@@ -1,9 +1,10 @@
 # Releases
 
 The installers built here: `sg-bus-timings-<version>.apk` for Android, made by
-`android\build-apk.ps1`. They're kept out of git (too big, and built from the source anyway);
-only this README is committed. Share them through a **GitHub Release**, where anyone can
-download them from <https://github.com/augy-studios/sgbus-timings/releases>.
+`android\build-apk.ps1`. They're committed alongside the code they were built from (about
+700 KB each), so commit the new APK with the version raise. Share them through a
+**GitHub Release**, where anyone can download them from
+<https://github.com/augy-studios/sgbus-timings/releases>.
 
 ## Build the file
 
@@ -19,7 +20,8 @@ an update.
 
 ## Put it on GitHub
 
-1. Commit and push your changes, so the release points at the code it was built from.
+1. Commit and push your changes, the new APK included, so the release points at the code it
+   was built from.
 2. Open <https://github.com/augy-studios/sgbus-timings/releases/new>.
 3. **Choose a tag**: type a new one, such as `android-v1.1.0`, and pick
    **Create new tag: android-v1.1.0 on publish**. Leave the target as `main`.

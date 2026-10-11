@@ -1,8 +1,9 @@
 # Announcement drafts and their screenshots, kept locally.
 announcement/
 
-# Built installers (android/build-apk.ps1 and the like): shared by hand, too big for git.
-# The README on publishing them is kept.
+# Built installers (android/build-apk.ps1 and the like). The APKs (about 700 KB each) and the
+# README on publishing them are committed; anything else that lands here isn't.
 release/*
 !release/README.md
+!release/*.apk
 
