@@ -543,6 +543,13 @@
             </div>
             <p class="mode-note">Your events with a location, for the next two weeks, show under Calendar when you tap into Navigate's From or To. Tap one for the way there, arriving by its start.</p>
             <p id="calSource" class="syncStatus"></p>
+            <!-- Only in the Android app, which can read the phone's calendar: js/app-bridge.js -->
+            <div id="calPhoneBlock" hidden>
+                <p class="modal-section-label">This phone's calendar</p>
+                <button id="calPhone" class="btn" type="button"><span data-icon="calendar"></span> Use this phone's calendar</button>
+                <a id="calAllow" class="iconBtn calAllow" hidden><span data-icon="calendar"></span> Allow calendar access</a>
+                <p class="mode-note">Every calendar on this phone (Google, Outlook, Samsung and others), read by the app each time the Calendar tab opens. Nothing leaves the phone except each event's location, looked up to find the place.</p>
+            </div>
             <label class="modal-section-label" for="calUrl">Your calendar's private iCal link</label>
             <div class="settingsRow">
                 <input id="calUrl" class="input settingsInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://… .ics, or webcal://…" />
@@ -696,6 +703,7 @@
     <script src="/js/history.js"></script>
     <script src="/js/places.js"></script>
     <script src="/js/recents.js"></script>
+    <script src="/js/app-bridge.js"></script>
     <script src="/js/calendar.js"></script>
     <script src="/js/nav.js"></script>
     <script src="/js/share.js"></script>

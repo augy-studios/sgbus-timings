@@ -16,8 +16,8 @@
   "startUrl": "/",
   "iconUrl": "https://sgbus.uwuapps.org/sgbusicon1.png",
   "monochromeIconUrl": "https://sgbus.uwuapps.org/sgbusnotificon.png",
-  "appVersion": "1.0.0",
-  "appVersionCode": 1,
+  "appVersion": "1.1.0",
+  "appVersionCode": 2,
   "signingKey": {
     "path": "./android.keystore",
     "alias": "sgbus"

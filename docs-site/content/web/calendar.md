@@ -11,10 +11,31 @@ show in [Navigate](nav.md). Tap one for the way there, arriving by its start.
 <figcaption>Your events with a location, in Navigate.</figcaption>
 </figure>
 
+## Your phone's calendar
+
+In the [Android app](android-app.md), the app can read your phone's own
+calendar: every calendar on the phone, Google, Outlook, Samsung and the rest,
+with nothing to paste.
+
+1. In [Navigate](nav.md), tap into **From** or **To**, then the calendar tab, then
+   **Use this phone's calendar**. Or in **Calendar settings**, tap
+   **Use this phone's calendar**.
+2. The first time, tap **Allow calendar access**, then **Allow** on Android's
+   prompt.
+3. Your events with a location show, and are read fresh each time you open the
+   tab.
+
+Your events stay on the phone: the app hands them straight to the page. As with
+a link, only each event's location is looked up, to find the place.
+
+Refused the prompt? Tap **Allow calendar access** again. After a second refusal
+Android stops asking, and the button opens the app's settings instead: turn on
+**Calendar** under **Permissions**.
+
 ## Link your calendar
 
-A website can't read your phone's calendar, so you link it once by its
-**private iCal link**, or import it as a file.
+On the website, or on an iPhone, a web page can't read your phone's calendar,
+so you link it once by its **private iCal link**, or import it as a file.
 
 <figure>
 <img src="/screenshots/web/calendar-setup.png" alt="Navigate's calendar tab before linking, with one row: Sync with calendar, Plan trips from your events." width="360" height="135" loading="lazy">

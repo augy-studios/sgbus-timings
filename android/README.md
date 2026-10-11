@@ -4,14 +4,35 @@ The Android app, `org.uwuapps.sgbus`: the web app at sgbus.uwuapps.org in a
 [Trusted Web Activity](https://developer.chrome.com/docs/android/trusted-web-activity),
 made with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap). It shows the site full
 screen in Chrome, so the site's own updates reach it at once; the app itself only needs
-building again for its native parts.
+building again for its native parts. The APK is small (about 700 KB) for the same reason: it
+holds the shell, and the site's service worker caches the rest on first launch.
 
-Native parts of its own, beyond Bubblewrap's:
+Shared as an APK file for now, through GitHub Releases: see `release/README.md`.
 
-- **OpenAppActivity** opens another app by its package, as a native app does, for the site's
-  SimplyGo button (`main-site/script.js`, "SimplyGo"). A web page can't. Only the apps listed in
-  `OpenAppActivity.java` can be opened, each also named under `<queries>` in
-  `AndroidManifest.xml`.
+## What it adds to the site
+
+Bubblewrap's usual parts: the launcher icon, splash screen, shortcuts (Near me, Navigate,
+Service alerts), the share menu entry (Google Maps places into Navigate), notifications and
+location through Chrome. Then its own, in `app/src/main/java/org/uwuapps/sgbus/`:
+
+| File | What it does |
+|---|---|
+| `OpenAppActivity.java` | Opens another app by its package, as a native app does, for the site's SimplyGo button (`main-site/script.js`, "SimplyGo"). A web page can't. Only the apps listed in it can be opened, each also named under `<queries>` in `AndroidManifest.xml`. |
+| `AppBridge.java` | A message channel to the site's pages (Chrome's [postMessage for TWAs](https://developer.chrome.com/docs/android/post-message-twa), Chrome 115+), answered by `main-site/js/app-bridge.js`. Says hello as each page loads, with what the app can do, and answers its requests. |
+| `CalendarReader.java` | The phone's calendar events with a location, for the site's Calendar tab, over AppBridge. Every calendar on the phone; Android expands repeating events. |
+| `CalendarPermissionActivity.java` | The calendar permission prompt, which the page links to when it isn't given yet; settings instead, once it's been refused for good. |
+| `LauncherActivity.java` | Bubblewrap's, plus AppBridge's hooks, and `uwusgbus://` links turned into the site's addresses: `uwusgbus://84009` a stop, `uwusgbus://bus/22`, `uwusgbus://nav`, `uwusgbus://go/<id>` a share link. |
+
+The site's links into the app: `intent://open/simplygo#Intent;scheme=org.uwuapps.sgbus;...`
+(OpenAppActivity) and `intent://calendar/permission#Intent;scheme=org.uwuapps.sgbus;...`
+(CalendarPermissionActivity). Each names this package, so a phone without the app takes the
+link's fallback, or nothing happens.
+
+AppBridge reads android-browser-helper's TwaLauncher session by its field's name, so that
+library stays at 2.5.0 (`app/build.gradle`), and `app/proguard-rules.pro` keeps the name through
+R8. If a newer version moves it, the calendar just stops reaching the page; nothing else
+breaks. The site lists the app with `use_as_origin` as well as `handle_all_urls` in
+`main-site/.well-known/assetlinks.json`, which the message channel needs.
 
 ## Build the APK
 
@@ -20,19 +41,21 @@ powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 ```
 
 It lands in `release/` at the project root as `sg-bus-timings-<version>.apk`, signed and ready
-to share. Raise `appVersion` and `appVersionCode` in `twa-manifest.json`, and `versionName` and
-`versionCode` in `app/build.gradle`, before building one to replace an installed copy.
+to share. For a new version, raise `appVersion` and `appVersionCode` in `twa-manifest.json`, and
+`versionName` and `versionCode` in `app/build.gradle`, to the same; a phone only takes a higher
+`versionCode` as an update.
 
 `bubblewrap build` would do the same, but fails on Windows with newer Node ("spawn EINVAL"), so
-the script runs its steps itself. It uses the JDK and Android SDK Bubblewrap installed in
-`~/.bubblewrap`; the JDK there must be the 64-bit one (`config.json`'s `jdkPath`).
+the script runs its steps itself: Gradle, zipalign, apksigner, and a signature check. It uses
+the JDK and Android SDK Bubblewrap keeps in `~/.bubblewrap`; the JDK there must be the 64-bit
+one (`config.json`'s `jdkPath`), as Gradle can't get the memory it needs from a 32-bit one.
 
 ## The signing key
 
 `android.keystore` and its passwords in `keystore.properties` are kept out of git. **Back both
 up somewhere safe.** An APK signed with a different key can't update one already installed, and
 the site's `main-site/.well-known/assetlinks.json` lists this key's SHA-256 fingerprint, which is
-what lets the app show the site without an address bar:
+what lets the app show the site without an address bar, and open a message channel to it:
 
 ```text
 4E:D5:3F:F1:F4:CB:4E:5E:A7:CB:C1:28:46:48:F6:2E:B3:90:47:EB:C2:9B:25:20:F5:7D:FE:5B:76:CB:44:EB
@@ -47,6 +70,15 @@ another key, say from PWABuilder, has to be uninstalled first.
 ## Changing the app
 
 Edit `twa-manifest.json` for the name, colours, icons, shortcuts and so on, then regenerate with
-`bubblewrap update --skipVersionUpgrade`. That rewrites `AndroidManifest.xml`, so put back the
-two blocks marked "Not Bubblewrap's" in it afterwards: `<queries>` and the `OpenAppActivity`
-`<activity>`. `OpenAppActivity.java` is kept.
+`bubblewrap update --skipVersionUpgrade`. That rewrites some files, so put this app's own parts
+back afterwards, each marked "Not Bubblewrap's":
+
+- `AndroidManifest.xml`: `<queries>`, the `READ_CALENDAR` permission, the `uwusgbus`
+  `<intent-filter>` on LauncherActivity, the `OpenAppActivity` and `CalendarPermissionActivity`
+  `<activity>` entries, and the `PostMessageService` `<service>`.
+- `app/build.gradle`: `proguardFiles 'proguard-rules.pro'` and the `androidx.browser`
+  dependency.
+- `LauncherActivity.java`: `createTwaLauncher`, `getCustomTabsCallback` and `fromAppLink`.
+
+The other Java files and `proguard-rules.pro` are kept as they are. Check `git diff` after an
+update to see what it changed.

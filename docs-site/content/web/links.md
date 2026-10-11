@@ -40,3 +40,22 @@ part filled in too. See [Navigate](nav.md#share-it) and the
 
 A `#sync/` link only works while the device that showed its code is still
 showing it. See [Sync favourites between devices](sync.md).
+
+## App links
+
+On a phone with the [Android app](android-app.md), every link above opens in
+the app. It also opens `uwusgbus://` links, which only work there:
+
+| Link | Opens |
+|---|---|
+| `uwusgbus://` | The app |
+| `uwusgbus://84009` | That stop's timings |
+| `uwusgbus://bus/22` | A bus's route |
+| `uwusgbus://nav` | Navigate |
+| `uwusgbus://near` | Stops near you |
+| `uwusgbus://go/t2d6bdtkdj` | A share link, as its `sgbus.uwuapps.org/go/...` would |
+
+Anything after `uwusgbus://` is the same as after the `#` in the app's own
+links. Plenty of apps, Telegram among them, don't let custom links like these be
+tapped, so share the `sgbus.uwuapps.org` links instead: they work everywhere,
+and open the app where it's installed.

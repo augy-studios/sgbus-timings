@@ -32,6 +32,10 @@
         <package android:name="sg.com.transitlink" />
     </queries>
 
+    <!-- Not Bubblewrap's (re-add after `bubblewrap update`): the phone's calendar, for the
+         site's Calendar tab (CalendarReader.java). Asked for only when you choose it. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
     
 
     
@@ -161,6 +165,15 @@
                     android:host="@string/hostName"/>
             </intent-filter>
 
+            <!-- Not Bubblewrap's (re-add after `bubblewrap update`): uwusgbus:// links, turned
+                 into the site's addresses by LauncherActivity.fromAppLink. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="uwusgbus"/>
+            </intent-filter>
+
             
         </activity>
 
@@ -180,6 +193,26 @@
                 <data android:scheme="org.uwuapps.sgbus" android:host="open" />
             </intent-filter>
         </activity>
+
+        <!-- Not Bubblewrap's (re-add after `bubblewrap update`): the calendar permission prompt,
+             for the site's Calendar tab (CalendarPermissionActivity.java). -->
+        <activity android:name="CalendarPermissionActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="org.uwuapps.sgbus" android:host="calendar" />
+            </intent-filter>
+        </activity>
+
+        <!-- Not Bubblewrap's (re-add after `bubblewrap update`): what Chrome binds to for the
+             message channel to the site (AppBridge.java). -->
+        <service android:name="androidx.browser.customtabs.PostMessageService"
+            android:exported="true" />
 
         <activity android:name="com.google.androidbrowserhelper.trusted.FocusActivity" />
 

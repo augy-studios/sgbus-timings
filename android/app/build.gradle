@@ -57,8 +57,8 @@ android {
         applicationId "org.uwuapps.sgbus"
         minSdkVersion 21
         targetSdkVersion 35
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 2
+        versionName "1.1.0"
 
         // The name for the application
         resValue "string", "appName", twaManifest.name
@@ -152,6 +152,8 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            // Not Bubblewrap's: keeps what AppBridge reads by name from R8's renaming.
+            proguardFiles 'proguard-rules.pro'
         }
     }
     compileOptions {
@@ -210,5 +212,8 @@ dependencies {
         implementation 'com.google.androidbrowserhelper:locationdelegation:1.1.1'
     
         implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
-    
+
+    // Not Bubblewrap's: the message channel to the site (AppBridge.java) needs androidx.browser
+    // 1.6 or later. androidbrowserhelper stays at 2.5.0: AppBridge reads its TwaLauncher's session.
+    implementation 'androidx.browser:browser:1.8.0'
 }

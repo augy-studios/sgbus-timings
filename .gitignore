@@ -2,5 +2,7 @@
 announcement/
 
 # Built installers (android/build-apk.ps1 and the like): shared by hand, too big for git.
-release/
+# The README on publishing them is kept.
+release/*
+!release/README.md
 

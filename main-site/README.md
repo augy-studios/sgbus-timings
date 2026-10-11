@@ -88,7 +88,13 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ### Past searches and calendar
 - Tapping into a search box drops down past searches (last 24 hours, then earlier) with tabs for saved places and, in Navigate, calendar events (`js/recents.js`). Kept in the browser, last 50, not synced
-- **Calendar**: a private iCal link, read through `POST /api/calendar` (https only, public hosts, not stored or logged), or an imported `.ics` file read in the browser. Events with a location for the next 14 days; tap one to Navigate there arriving by its start (`js/calendar.js`)
+- **Calendar**: a private iCal link, read through `POST /api/calendar` (https only, public hosts, not stored or logged), or an imported `.ics` file read in the browser, or, in the Android app, the phone's own calendar. Events with a location for the next 14 days; tap one to Navigate there arriving by its start (`js/calendar.js`)
+
+### In the Android app
+- The site is also an Android app, `org.uwuapps.sgbus` (`../android/`), which shows it full screen and adds what a web page can't do
+- `js/app-bridge.js` answers the app's hello over Chrome's postMessage for Trusted Web Activities, then asks it for things: the phone's calendar for the Calendar tab. In a browser no hello comes, and nothing changes
+- Links into the app name its package, with a fallback for phones without it: the SimplyGo button (`intent://open/simplygo...`, falling back to SimplyGo's Play Store page) and the calendar permission prompt (`intent://calendar/permission...`)
+- `.well-known/assetlinks.json` vouches for the app's signing key, with `handle_all_urls` (full screen, and the site's links open in it) and `use_as_origin` (the message channel)
 
 ### Weather
 - The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region
@@ -129,7 +135,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 5. **Save a favourite** - tap **Save** on a stop card, **Save bus** on a route, or **Save route** in the planner.
 6. **Plan a route** - tap **Plan a route**, then pick a start and end stop.
 7. **Switch themes** - tap the theme button at the bottom of the Edge Tray to pick a colour scheme.
-8. **Install as an app** - use your browser's "Add to Home Screen" or "Install" prompt to use the app offline.
+8. **Install as an app** - use your browser's "Add to Home Screen" or "Install" prompt to use the app offline, or on Android, install the APK from the [releases](https://github.com/augy-studios/sgbus-timings/releases).
 
 ## Tech Stack
 

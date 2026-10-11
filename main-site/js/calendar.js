@@ -2,7 +2,7 @@
 // the Calendar tab of Navigate's From and To (js/recents.js). Picking one plans the way there
 // to arrive by its start (navToEvent in js/nav.js).
 //
-// A website can't read the phone's calendar, so the events come from one of two places:
+// A website can't read the phone's calendar, so the events come from one of three places:
 //
 //   a link   the calendar's private iCal link (Google's "Secret address in iCal format",
 //            Outlook's published ICS link, iCloud's public calendar), kept in this browser and
@@ -10,6 +10,10 @@
 //            services don't let a page read it itself. Nothing is kept on the server.
 //   a file   an .ics file exported from the calendar app, read here and never sent anywhere;
 //            a snapshot, so imported again for new events.
+//   the phone  in the Android app (1.1.0 and later), the phone's own calendar, read by the app
+//            each time the tab opens and handed over the channel in js/app-bridge.js, already
+//            expanded. Needs the app's calendar permission, asked for by a link to the app
+//            (CalendarPermissionActivity) when it hasn't been given.
 //
 // Each event's location is free text, matched to a place with Navigate's own search
 // (/api/places), the postal code first when it has one; what it matched is remembered in this
@@ -35,7 +39,10 @@
 
   // ---------- storage ----------
 
-  // { url?, file?: { name, importedAt, events }, hidden: [key] }
+  // The Android app's calendar permission prompt (CalendarPermissionActivity).
+  const PERMISSION_LINK = 'intent://calendar/permission#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
+
+  // { url?, file?: { name, importedAt, events }, phone?: true, hidden: [key] }
   function settings() {
     try {
       const v = JSON.parse(localStorage.getItem(KEY) || 'null');
@@ -55,7 +62,7 @@
 
   const connected = () => {
     const s = settings();
-    return !!(s.url || s.file);
+    return !!(s.url || s.file || s.phone);
   };
 
   // ---------- reading iCal ----------
@@ -366,6 +373,42 @@
     return fetching;
   }
 
+  // Why the phone's calendar can't be read: 'app' when this isn't the Android app (the setting
+  // is shared with Chrome, where there's no app to ask), 'permission' until it's allowed.
+  class PhoneError extends Error {
+    constructor(reason, message) {
+      super(message);
+      this.reason = reason;
+    }
+  }
+
+  // The phone's events from the Android app, as upcoming() gives them, without the hidden ones.
+  async function phoneEvents() {
+    if (!window.AppBridge || !(await AppBridge.ready()) || !AppBridge.has('calendar')) {
+      throw new PhoneError('app', "Your phone's calendar is read by the SG Bus Timings Android app. Open this there, or pick another calendar in Calendar settings.");
+    }
+    const reply = await AppBridge.request('calendar', { days: DAYS });
+    if (reply.error === 'permission') throw new PhoneError('permission', 'Allow SG Bus Timings to see your calendar, and your events with a location show here.');
+    if (reply.error || !Array.isArray(reply.events)) throw new Error("Couldn't read your phone's calendar. Try again.");
+    const now = Date.now();
+    const hidden = new Set(settings().hidden);
+    return reply.events
+      .filter((ev) => ev && typeof ev.location === 'string' && ev.location.trim() && Number.isFinite(ev.start) && !ONLINE_RE.test(ev.location))
+      .filter((ev) => (ev.allDay ? ev.start + DAY_MS > now : ev.start >= now) && ev.start < now + DAYS * DAY_MS)
+      .map((ev) => ({ key: String(ev.key), title: String(ev.title || 'Event').slice(0, 120), location: ev.location.trim().slice(0, 200), start: ev.start, allDay: !!ev.allDay }))
+      .filter((ev) => !hidden.has(ev.key))
+      .sort((a, b) => a.start - b.start)
+      .slice(0, 100);
+  }
+
+  // The events to list, from whichever calendar is linked.
+  async function upcomingList({ fresh = false } = {}) {
+    return settings().phone ? phoneEvents() : upcoming(await events({ fresh }));
+  }
+
+  const allowLink = (label = 'Allow calendar access') =>
+    `<a class="iconBtn calAllow" href="${PERMISSION_LINK}">${ico('calendar')} ${label}</a>`;
+
   // ---------- the tab ----------
 
   const dayFmt = new Intl.DateTimeFormat('en-GB', { timeZone: SG, month: 'short', day: 'numeric' });
@@ -451,26 +494,58 @@
       }
     });
 
-    if (!connected()) return;
-    events().then((all) => {
-      list = upcoming(all);
-      draw();
-      // Matched a few at a time, each row filled in as its place comes back.
-      const locations = [...new Set(list.map((ev) => ev.location))];
-      let next = 0;
-      const worker = async () => {
-        while (next < locations.length) {
-          const loc = locations[next++];
-          const place = await placeFor(loc);
-          if (place !== undefined) places.set(loc, place);
-          draw();
-        }
-      };
-      return Promise.all([worker(), worker(), worker()]);
-    }).catch((err) => {
-      if (!box.isConnected) return;
-      box.innerHTML = `<p class="recentEmpty">${escapeHtml(err.message)}</p><button type="button" class="recentClear" data-cal-settings>Calendar settings</button>`;
-    });
+    if (!connected()) {
+      // In the Android app, the phone's own calendar is one tap away.
+      if (window.AppBridge) {
+        AppBridge.ready().then((inApp) => {
+          if (!inApp || !AppBridge.has('calendar') || !box.isConnected || connected()) return;
+          box.insertAdjacentHTML('afterbegin',
+            `<button type="button" class="calSetup" data-cal-phone>${ico('calendar')}` +
+            `<span class="recentText"><span class="name">Use this phone's calendar</span><span class="sub">Every calendar on this phone</span></span>${ico('forward')}</button>`);
+        });
+      }
+      box.addEventListener('click', (e) => {
+        if (!e.target.closest('[data-cal-phone]')) return;
+        saveSettings({ hidden: settings().hidden, phone: true });
+        load();
+      });
+      return;
+    }
+    load();
+
+    // Back from the app's permission prompt: read it again.
+    function onVisible() {
+      if (document.visibilityState !== 'visible') return;
+      document.removeEventListener('visibilitychange', onVisible);
+      if (box.isConnected) load();
+    }
+
+    function load() {
+      box.innerHTML = `<p class="recentEmpty">Reading your calendar…</p>`;
+      upcomingList().then((upcomingEvents) => {
+        list = upcomingEvents;
+        draw();
+        // Matched a few at a time, each row filled in as its place comes back.
+        const locations = [...new Set(list.map((ev) => ev.location))];
+        let next = 0;
+        const worker = async () => {
+          while (next < locations.length) {
+            const loc = locations[next++];
+            const place = await placeFor(loc);
+            if (place !== undefined) places.set(loc, place);
+            draw();
+          }
+        };
+        return Promise.all([worker(), worker(), worker()]);
+      }).catch((err) => {
+        if (!box.isConnected) return;
+        const allow = err.reason === 'permission';
+        if (allow) document.addEventListener('visibilitychange', onVisible);
+        box.innerHTML = `<p class="recentEmpty">${escapeHtml(err.message)}</p>` +
+          (allow ? `<p class="calAllowRow">${allowLink()}</p>` : '') +
+          `<button type="button" class="recentClear" data-cal-settings>Calendar settings</button>`;
+      });
+    }
   }
 
   // ---------- settings ----------
@@ -478,13 +553,30 @@
   function renderSettings(note = '', tone = '') {
     const s = settings();
     $('#calUrl').value = s.url || '';
-    $('#calSource').textContent = s.url ? 'Linked to your calendar by its iCal link.'
+    $('#calSource').textContent = s.phone ? "Using this phone's calendar, through the Android app."
+      : s.url ? 'Linked to your calendar by its iCal link.'
       : s.file ? `Imported from ${s.file.name}, ${new Date(s.file.importedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}. Import it again for new events.`
       : 'Not linked yet.';
-    $('#calRemove').hidden = !(s.url || s.file);
+    $('#calRemove').hidden = !connected();
+    // Only in the Android app, which can read the phone's calendar.
+    $('#calPhoneBlock').hidden = !window.AppBridge?.has('calendar');
+    $('#calPhone').hidden = !!s.phone;
+    $('#calAllow').hidden = tone !== 'allow';
     $('#calNote').textContent = note;
     $('#calNote').hidden = !note;
-    $('#calNote').classList.toggle('error', tone === 'error');
+    $('#calNote').classList.toggle('error', tone === 'error' || tone === 'allow');
+  }
+
+  async function usePhone() {
+    saveSettings({ hidden: settings().hidden, phone: true });
+    fetched = null;
+    renderSettings("Reading your phone's calendar…");
+    try {
+      const list = await phoneEvents();
+      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From or To.`);
+    } catch (err) {
+      renderSettings(err.message, err.reason === 'permission' ? 'allow' : 'error');
+    }
   }
 
   function openSettings() {
@@ -532,7 +624,7 @@
   }
 
   function remove() {
-    if (!confirm('Stop showing your calendar here? This forgets the link or file on this device.')) return;
+    if (!confirm('Stop showing your calendar here? This forgets the link, file or phone calendar choice on this device.')) return;
     saveSettings({ hidden: [] });
     fetched = null;
     try {
@@ -548,6 +640,15 @@
     });
     $('#calFile').addEventListener('change', (e) => importFile(e.target.files?.[0]));
     $('#calRemove').addEventListener('click', remove);
+    $('#calPhone').addEventListener('click', usePhone);
+    $('#calAllow').href = PERMISSION_LINK;
+    // The app's hello can come after the window's open; and back from its permission prompt,
+    // the phone's calendar is read again.
+    const modalOpen = () => !$('#calendarModal').classList.contains('hidden');
+    window.addEventListener('app:ready', () => modalOpen() && renderSettings());
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && modalOpen() && settings().phone) usePhone();
+    });
   }
 
   window.Calendar = { init, render, openSettings, parseIcs, upcoming, occurrences };

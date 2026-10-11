@@ -16,6 +16,7 @@ than about three taps to reach goes under Advanced.
 ## Web app: basics
 
 * [Open and install the app](web/install.md)
+* [The Android app](web/android-app.md)
 * [Find a bus stop](web/search.md)
 * [Live timings](web/timings.md)
 * [Bus routes](web/bus-routes.md)

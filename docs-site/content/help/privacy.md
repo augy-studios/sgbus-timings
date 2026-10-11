@@ -114,6 +114,21 @@ To place each event, its location (not its name or time) is searched for the way
 place typed into Navigate is. Which place each location matched is remembered in
 your browser.
 
+In the [Android app](../web/android-app.md), **Use this phone's calendar** reads
+your phone's own calendar instead, with Android's calendar permission, which it
+asks for only when you choose it. The app reads the next two weeks' events with a
+location each time the Calendar tab opens, and hands them straight to the page:
+they aren't sent to SG Bus Timings' server or kept by the app. Locations are
+looked up as above. Turn the permission off in Android's settings for the app,
+or pick **Remove calendar**, to stop it.
+
+### The Android app
+
+The [Android app](../web/android-app.md) is the website in Chrome, so everything
+on this page applies to it the same way, and its storage is Chrome's for the
+site. On its own it reads nothing about you. It opens SimplyGo when you tap that
+button, and reads your calendar only as above.
+
 ### Weather
 
 The weather button asks SG Bus Timings' server for Singapore's forecast and air

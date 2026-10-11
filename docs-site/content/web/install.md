@@ -66,16 +66,10 @@ has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 
 #### Or the Android app
 
-There's also an Android app, shared as a file (`sg-bus-timings-1.0.0.apk`)
-rather than on Google Play for now. It's the same app, full screen, with one
-extra: the [SimplyGo](#simplygo) button opens SimplyGo itself.
-
-1. Open the `.apk` file on your phone, from Files, Telegram or wherever it was
-   sent.
-2. If Android asks, allow installing apps from there, then tap **Install**.
-
-If you installed the app from Chrome before, remove that first, so you don't
-have two.
+There's also an Android app: the same app, full screen, which can also open
+SimplyGo itself and read your phone's calendar. It's shared as a file rather than
+on Google Play for now. See [The Android app](android-app.md) to download and
+install it.
 
 ### Windows, macOS, Linux and ChromeOS
 

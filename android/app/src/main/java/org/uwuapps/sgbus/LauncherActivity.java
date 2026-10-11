@@ -20,13 +20,17 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.browser.customtabs.CustomTabsCallback;
 
+import com.google.androidbrowserhelper.trusted.TwaLauncher;
 
+// Bubblewrap's, with three additions of this app's own (not regenerated: see android/README.md):
+// the message channel to the site (AppBridge) through getCustomTabsCallback and
+// createTwaLauncher, and uwusgbus:// links through getLaunchingUrl.
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
-    
-
-    
+    private static final String SCHEME = "uwusgbus";
+    private static final String SITE = "https://sgbus.uwuapps.org";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,13 +46,36 @@ public class LauncherActivity
         }
     }
 
+    // This activity lives under the TWA until it's closed, so its launcher's session, and the
+    // channel to the page over it, last as long as the app is open.
+    @Override
+    protected TwaLauncher createTwaLauncher() {
+        TwaLauncher launcher = super.createTwaLauncher();
+        AppBridge.adopt(launcher);
+        return launcher;
+    }
+
+    @Override
+    protected CustomTabsCallback getCustomTabsCallback() {
+        return AppBridge.callback(this);
+    }
+
     @Override
     protected Uri getLaunchingUrl() {
         // Get the original launch Url.
         Uri uri = super.getLaunchingUrl();
+        return SCHEME.equals(uri.getScheme()) ? fromAppLink(uri) : uri;
+    }
 
-        
-
-        return uri;
+    // uwusgbus:// links, to the page they name: the site's own short links by their path
+    // (uwusgbus://go/k3v9q2x7ma), anything else as the site's # address (uwusgbus://84009 for a
+    // stop, uwusgbus://bus/22, uwusgbus://nav), and uwusgbus:// alone to the home page.
+    static Uri fromAppLink(Uri link) {
+        String host = link.getHost() == null ? "" : link.getHost();
+        String path = link.getEncodedPath() == null ? "" : link.getEncodedPath();
+        String rest = (host + path).replaceAll("^/+|/+$", "");
+        if (rest.isEmpty()) return Uri.parse(SITE + "/");
+        if (rest.matches("(go|trip|eta)/[a-z0-9]{10}")) return Uri.parse(SITE + "/" + rest);
+        return Uri.parse(SITE + "/#" + rest);
     }
 }

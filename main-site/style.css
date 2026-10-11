@@ -2368,3 +2368,8 @@ body.on-trip { padding-bottom: 96px; }
 .calHelp summary { cursor: pointer; color: var(--brand-ink); }
 .calHelp ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted-strong); line-height: 1.45; }
 .calFile { font-size: 13px; color: var(--muted-strong); }
+/* The Android app's calendar permission prompt, as a link to it (js/calendar.js). */
+.calAllow { justify-content: center; }
+.calAllowRow { display: flex; justify-content: center; margin: 2px 0 6px; }
+#calPhoneBlock { display: flex; flex-direction: column; gap: 6px; }
+#calPhoneBlock[hidden] { display: none; }
