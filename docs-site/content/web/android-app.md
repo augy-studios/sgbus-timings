@@ -28,7 +28,7 @@ It's shared as a file rather than on Google Play, for now.
 
 1. On your Android phone, open the
    [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest)
-   and tap the `.apk` file under **Assets**, such as `sg-bus-timings-2.0.0.apk`,
+   and tap the `.apk` file under **Assets**, such as `sg-bus-timings-2.0.1.apk`,
    to download it. Or open one someone sent you, from Files or Telegram.
 2. Open the downloaded file. If Android asks, allow installing apps from your
    browser or Files, then tap **Install**. If Play Protect asks about the app,

@@ -7,16 +7,22 @@
  *
  *   status()  { nfc: "on" | "off" | "none" }
  *   read()    waits for a card, then { balance (cents), can, expiry, autoload (cents),
- *             autoloadOn, version } or rejects "not-cepas", "lost", "off" or "cancelled"
+ *             autoloadOn, purseEnabled, version, raw } or rejects "not-cepas", "lost", "off" or "cancelled"
  *   cancel()  stops waiting
  *
  * The purse's layout (from FareBot and Metrodroid, which read the same cards):
- *   0 CEPAS version, 1 purse status (bit 0: auto top-up on), 2-4 balance (signed, cents),
+ *   0 CEPAS version, 1 purse status (bit 0: purse enabled, bit 1: auto top-up on),
+ *   2-4 balance (signed, cents),
  *   5-7 auto top-up amount (cents), 8-15 CAN (the number printed on the card, as BCD),
  *   16-23 CSN, 24-25 expiry, as days since 1 January 1995.
  *
  * Cards on SimplyGo's account-based ticketing keep their value in the SimplyGo account rather
- * than on the card, so what the card says can be out of date for them; the page says so.
+ * than on the card, so what the card says can be out of date for them; the page says so. It
+ * shows no value outside what a card can hold. An EZ-Link card read on 12 October 2026 gave
+ * one (-$201.65), so the layout below may not hold for every card yet: `raw` is for that.
+ *
+ * `raw` is the purse as read, in hex, with the card's numbers (CAN and CSN, bytes 8 to 23)
+ * blanked out, for working out a card that reads wrongly (the page offers to copy it).
  */
 package org.uwuapps.sgbus;
 
@@ -152,7 +158,8 @@ public class CardPlugin extends Plugin {
     private static JSObject parse(byte[] p) {
         JSObject out = new JSObject();
         out.put("version", p[0] & 0xff);
-        out.put("autoloadOn", (p[1] & 0x01) != 0);
+        out.put("purseEnabled", (p[1] & 0x01) != 0);
+        out.put("autoloadOn", (p[1] & 0x02) != 0);
         out.put("balance", signed24(p, 2));
         out.put("autoload", signed24(p, 5));
         StringBuilder can = new StringBuilder();
@@ -160,6 +167,12 @@ public class CardPlugin extends Plugin {
         out.put("can", can.toString());
         int days = ((p[24] & 0xff) << 8) | (p[25] & 0xff);
         out.put("expiry", EPOCH_MS + days * DAY_MS);
+        StringBuilder raw = new StringBuilder();
+        for (int i = 0; i < p.length; i++) {
+            if (i > 0) raw.append(' ');
+            raw.append(i >= 8 && i < 24 ? "--" : String.format("%02X", p[i] & 0xff));
+        }
+        out.put("raw", raw.toString());
         return out;
     }
 

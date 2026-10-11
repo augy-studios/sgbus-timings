@@ -9,6 +9,18 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (late): Apps 2.0.1
+
+### Android app 2.0.1
+
+- **Card value** - Auto top-up only shows for a card that has it turned on. A value the card can't really hold now says it couldn't be read rather than showing a wrong amount, and **Card data** lets you copy what the card said, without its number, to report a card that reads wrongly.
+
+### Windows and Linux apps 2.0.1
+
+- **App links** - `uwu://sgbus/` links open the desktop app, such as `uwu://sgbus/84009` for a stop.
+
+---
+
 ## 12 October 2026 (later): Live map, walks on trips, and the 2.0 apps
 
 ### Web app
@@ -30,7 +42,6 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Windows and Linux apps 2.0.0
 
 - **SG Bus Timings for Windows** (`.exe` or `.msi`) **and Linux** (`.deb` or `.AppImage`), from the releases page. It stays in the tray when closed, shows Service alerts as desktop notifications, and can start when you sign in.
-- **App links** - `uwu://sgbus/` links open the desktop app too, such as `uwu://sgbus/84009` for a stop.
 
 ### Telegram bot
 

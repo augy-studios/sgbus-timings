@@ -4,8 +4,10 @@
 // tray's card button shows only there, and the app's Card value shortcut opens it (#card).
 //
 // The value is read straight off the card. Cards on SimplyGo's account-based ticketing keep
-// their value in the SimplyGo account instead, so the card's own figure can be out of date
-// for them; SimplyGo's button is next to this one for those.
+// their value in the SimplyGo account instead, so the card's own figure can be out of date or
+// meaningless for them; SimplyGo's button is next to this one for those. A value outside what
+// a card can hold isn't shown at all, and the card's data can be copied (without its numbers)
+// to work out why.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -17,7 +19,12 @@
   // The card number as printed: four groups of four.
   const can = (s) => String(s).replace(/(.{4})(?=.)/g, '$1 ');
 
+  // A card holds up to $500, and can go a little below nothing on a ride it couldn't cover.
+  const MAX_CENTS = 50000;
+  const MIN_CENTS = -1000;
+
   let reading = false;
+  let lastRaw = null;
 
   const available = () => Boolean(window.AppBridge?.native && AppBridge.has('card'));
 
@@ -46,16 +53,27 @@
       `<p class="sub">Near the camera on most phones. Keep it still until it's read.</p></div>`);
     try {
       const c = await AppBridge.call('Card', 'read');
+      lastRaw = c.raw || null;
       const expired = c.expiry < Date.now();
+      if (!(c.balance >= MIN_CENTS && c.balance <= MAX_CENTS)) {
+        show(
+          `<p><strong>This card's value couldn't be read.</strong></p>` +
+          `<p class="sub">Check it in the SimplyGo app for now. To help fix this, open Card data below, copy it and send it to us: it doesn't include your card's number.</p>` +
+          rawBlock(),
+          { again: true },
+        );
+        return;
+      }
       show(
         `<p class="cardValue">${dollars(c.balance)}</p>` +
         `<p class="sub">on card ${esc(can(c.can))}</p>` +
         `<dl class="cardFacts">` +
         `<dt>Expires</dt><dd>${expired ? '<strong>Expired</strong> ' : ''}${date(c.expiry)}</dd>` +
-        (c.autoloadOn ? `<dt>Auto top-up</dt><dd>${dollars(c.autoload)} when it runs low</dd>` : '') +
+        (c.autoloadOn && c.autoload > 0 && c.autoload <= MAX_CENTS ? `<dt>Auto top-up</dt><dd>${dollars(c.autoload)} when it runs low</dd>` : '') +
         `</dl>` +
         (c.balance < 300 ? `<p class="cardLow">${ico('alert')} Under $3: top up before your next ride.</p>` : '') +
-        `<p class="mode-note">A card on SimplyGo keeps its value in your SimplyGo account, so this can be out of date for it: check the SimplyGo app.</p>`,
+        `<p class="mode-note">A card on SimplyGo keeps its value in your SimplyGo account, so this can be out of date for it: check the SimplyGo app.</p>` +
+        rawBlock(),
         { again: true },
       );
     } catch (err) {
@@ -71,6 +89,13 @@
     }
   }
 
+  // The card's data as read, without its numbers, to copy and send if a card reads wrongly.
+  function rawBlock() {
+    if (!lastRaw) return '';
+    return `<details class="cardRaw"><summary>Card data</summary><code>${esc(lastRaw)}</code>` +
+      `<button type="button" class="iconBtn" data-card-copy>${ico('copy')} Copy</button></details>`;
+  }
+
   function init() {
     // The button shows once the app's said it can.
     const showButton = () => { $('#cardBtn').hidden = !available(); };
@@ -78,6 +103,11 @@
     showButton();
     $('#cardBtn').addEventListener('click', open);
     $('#cardAgain').addEventListener('click', read);
+    $('#cardBody').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-card-copy]');
+      if (!btn || !lastRaw) return;
+      navigator.clipboard?.writeText(lastRaw).then(() => { btn.lastChild.textContent = ' Copied'; }).catch(() => {});
+    });
     $('#cardNfc').addEventListener('click', () => AppBridge.call('SgBus', 'openSettings', { what: 'nfc' }));
     $('#cardModal').addEventListener('modalclose', () => {
       if (reading) AppBridge.call('Card', 'cancel').catch(() => {});

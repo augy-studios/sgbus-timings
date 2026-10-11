@@ -22,16 +22,16 @@ and download the one for your computer from under **Assets**:
 
 | Computer | File |
 |---|---|
-| Windows 10 or 11 | `sg-bus-timings-2.0.0-setup.exe`. (The `.msi` is the same app, for installing it on many computers at once.) |
-| Debian, Ubuntu, Mint | `sg-bus-timings-2.0.0-amd64.deb` |
-| Any other Linux | `sg-bus-timings-2.0.0-x86_64.AppImage` |
+| Windows 10 or 11 | `sg-bus-timings-2.0.1-setup.exe`. (The `.msi` is the same app, for installing it on many computers at once.) |
+| Debian, Ubuntu, Mint | `sg-bus-timings-2.0.1-amd64.deb` |
+| Any other Linux | `sg-bus-timings-2.0.1-x86_64.AppImage` |
 
 **Windows**: open the `.exe`. If Windows says "Windows protected your PC", click
 **More info**, then **Run anyway**: the app isn't signed with a certificate yet.
 Pick where to install it, then open **SG Bus Timings** from the Start menu.
 
 **Debian, Ubuntu, Mint**: open the `.deb` with your software installer, or in a
-terminal, `sudo apt install ./sg-bus-timings-2.0.0-amd64.deb`.
+terminal, `sudo apt install ./sg-bus-timings-2.0.1-amd64.deb`.
 
 **AppImage**: make it runnable (right-click > **Properties** > **Allow executing
 file as program**, or `chmod +x` it), then open it.

@@ -2451,4 +2451,7 @@ body.on-trip { padding-bottom: 96px; }
 .cardValue { font-size: 40px; font-weight: 700; line-height: 1.1; }
 .cardFacts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px auto 0; max-width: 300px; text-align: left; font-size: 14px; }
 .cardFacts dt { color: var(--muted); }
+.cardRaw { margin-top: 12px; text-align: left; font-size: 12px; color: var(--muted); }
+.cardRaw summary { cursor: pointer; }
+.cardRaw code { display: block; margin: 6px 0; font-family: ui-monospace, Consolas, monospace; word-break: break-all; user-select: text; -webkit-user-select: text; }
 .cardLow { margin-top: 10px; color: var(--warn); display: flex; gap: 6px; align-items: center; justify-content: center; }

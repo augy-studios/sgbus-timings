@@ -52,8 +52,8 @@ SSH into the VPS, then:
    with your VPS's user and address in place of `you@your-vps`:
 
    ```powershell
-   scp you@your-vps:~/sgbus-timings/release/2.0.0/sg-bus-timings-2.0.0-amd64.deb release\2.0.0\
-   scp you@your-vps:~/sgbus-timings/release/2.0.0/sg-bus-timings-2.0.0-x86_64.AppImage release\2.0.0\
+   scp you@your-vps:~/sgbus-timings/release/2.0.1/sg-bus-timings-2.0.1-amd64.deb release\2.0.1\
+   scp you@your-vps:~/sgbus-timings/release/2.0.1/sg-bus-timings-2.0.1-x86_64.AppImage release\2.0.1\
    ```
 
    They then sit beside the Windows `.exe` and `.msi` and the Android `.apk`. See
@@ -68,7 +68,7 @@ don't drift apart.
 The VPS has no screen, so the app can't run there. To check the `.deb` is a sound package:
 
 ```bash
-dpkg-deb --info ~/sgbus-timings/release/2.0.0/sg-bus-timings-2.0.0-amd64.deb
+dpkg-deb --info ~/sgbus-timings/release/2.0.1/sg-bus-timings-2.0.1-amd64.deb
 ```
 
 ## If something goes wrong
@@ -83,8 +83,8 @@ dpkg-deb --info ~/sgbus-timings/release/2.0.0/sg-bus-timings-2.0.0-amd64.deb
 
 ## Installing it, on a Linux PC
 
-- **`.deb`** (Debian, Ubuntu, Mint): `sudo apt install ./sg-bus-timings-2.0.0-amd64.deb`, then
+- **`.deb`** (Debian, Ubuntu, Mint): `sudo apt install ./sg-bus-timings-2.0.1-amd64.deb`, then
   open **SG Bus Timings** from the app menu.
-- **`.AppImage`** (any distribution): `chmod +x sg-bus-timings-2.0.0-x86_64.AppImage`, then
+- **`.AppImage`** (any distribution): `chmod +x sg-bus-timings-2.0.1-x86_64.AppImage`, then
   run it. Some need FUSE 2 first: `sudo apt install libfuse2t64` on Debian 13 and Ubuntu
   24.04 or later, `sudo apt install libfuse2` on older ones.

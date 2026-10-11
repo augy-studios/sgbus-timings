@@ -67,7 +67,7 @@ has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 
 #### Or the Android app
 
-There's also an Android app (`sg-bus-timings-2.0.0.apk`): the same app, which
+There's also an Android app (`sg-bus-timings-2.0.1.apk`): the same app, which
 also follows your trip with the screen off, reads your EZ-Link or NETS FlashPay
 card's value, reads your phone's calendar and opens SimplyGo itself. It's shared
 as a file rather than on Google Play for now. See
