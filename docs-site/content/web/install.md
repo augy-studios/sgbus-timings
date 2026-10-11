@@ -21,7 +21,8 @@ stays in that browser.
   **Stops near me**, **Plan a route**,
   [**Navigate**](nav.md), [**Service alerts**](service-alerts.md),
   [**Your trips**](trips.md) (the bar chart) and [**Places**](places.md) (the
-  bookmark), then, on a phone or tablet, [SimplyGo](#simplygo) (its own icon), the
+  bookmark), then, in the [Android app](android-app.md#card-value) on a phone with
+  NFC, **Card value** (the card), on a phone or tablet, [SimplyGo](#simplygo) (its own icon), the
   Telegram bot, a page to buy Augy a coffee, this guide (the question mark),
   [Settings](settings.md) (the gear) and the [theme picker](settings.md#themes).
   Hover over a button for its name. The arrow beside the Edge Tray tucks it away at
@@ -66,16 +67,24 @@ has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 
 #### Or the Android app
 
-There's also an Android app: the same app, full screen, which can also open
-SimplyGo itself and read your phone's calendar. It's shared as a file rather than
-on Google Play for now. See [The Android app](android-app.md) to download and
-install it.
+There's also an Android app (`sg-bus-timings-2.0.0.apk`): the same app, which
+also follows your trip with the screen off, reads your EZ-Link or NETS FlashPay
+card's value, reads your phone's calendar and opens SimplyGo itself. It's shared
+as a file rather than on Google Play for now. See
+[The Android app](android-app.md) to download and install it.
 
 ### Windows, macOS, Linux and ChromeOS
 
 In Chrome or Edge, click the install icon at the right of the address bar, or
 open the browser menu and choose **Install SG Bus Timings**. Safari on a Mac
 offers **File**, then **Add to Dock**.
+
+#### Or the Windows and Linux app
+
+There's also a desktop app for Windows (`.exe` or `.msi`) and Linux (`.deb` or
+`.AppImage`): the same app in its own window, which stays in the tray and shows
+Service alerts as desktop notifications. See
+[Windows and Linux apps](desktop-app.md) to download and install it.
 
 > [!NOTE]
 > An installed app keeps its own favourites and settings, separate from the

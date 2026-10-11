@@ -11,7 +11,7 @@ from one stop to another, with a change or two if no single bus does.
 It comes in two forms, built on the same live data from LTA:
 
 <div class="cards">
-<a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app.</span></a>
+<a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app, or as an app for Android, Windows and Linux.</span></a>
 <a class="card-link glass" href="bot/start.md"><span class="card-icon" data-icon="send"></span><span class="card-title">The Telegram bot</span><span class="card-text">@UwUsgbus_bot. The same timings in a chat, plus routines and Service Alerts sent to you as they happen.</span></a>
 <a class="card-link glass" href="getting-started/reading-timings.md"><span class="card-icon" data-icon="clock"></span><span class="card-title">Reading bus timings</span><span class="card-text">What the colours, badges and distances next to each bus mean.</span></a>
 <a class="card-link glass" href="help/troubleshooting.md"><span class="card-icon" data-icon="info"></span><span class="card-title">Troubleshooting</span><span class="card-text">No timings, the wrong stop, location not working, or sync that will not connect.</span></a>
