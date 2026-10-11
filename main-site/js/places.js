@@ -156,17 +156,17 @@
     }
     const open = menuFor === p.key;
     const fixed = !!FIXED[p.key];
-    return `<div class="placeRow${open ? ' open' : ''}">` +
-      `<button type="button" class="placeMain" data-place-go="${escapeHtml(p.key)}" title="Directions there from where you are">${ico(p.icon)}` +
+    const key = escapeHtml(p.key);
+    // The menu is always there, folded shut until the dots open it (toggleRowMenu in js/ui.js).
+    return `<div class="placeRow${open ? ' open' : ''}" data-menu-row="${key}">` +
+      `<button type="button" class="placeMain" data-place-go="${key}" title="Directions there from where you are">${ico(p.icon)}` +
       `<span><strong>${escapeHtml(p.name)}</strong>${p.name !== p.label ? `<span class="sub">${escapeHtml(p.label)}</span>` : ''}</span></button>` +
-      `<button type="button" class="iconBtn placeMore" data-place-menu="${escapeHtml(p.key)}" aria-expanded="${open}" aria-label="More for ${escapeHtml(p.name)}">${ico('more')}</button>` +
-      (open
-        ? `<div class="placeMenu">` +
-          `<button type="button" class="iconBtn" data-place-edit="${escapeHtml(p.key)}">${ico('edit')} Edit ${escapeHtml(fixed ? p.name : '')}</button>` +
-          `<button type="button" class="iconBtn" data-place-share="${escapeHtml(p.key)}">${ico('share')} Share ${escapeHtml(fixed ? p.name : '')}</button>` +
-          `<button type="button" class="iconBtn" data-place-delete="${escapeHtml(p.key)}">${ico('trash')} ${fixed ? 'Clear' : 'Delete'}</button>` +
-          `</div>`
-        : '') +
+      `<button type="button" class="iconBtn placeMore" data-place-menu="${key}" data-menu-toggle aria-expanded="${open}" aria-label="More for ${escapeHtml(p.name)}">${ico('more')}</button>` +
+      `<div class="rowMenu"><div><div class="placeMenu">` +
+      `<button type="button" class="iconBtn" data-place-edit="${key}">${ico('edit')} Edit ${escapeHtml(fixed ? p.name : '')}</button>` +
+      `<button type="button" class="iconBtn" data-place-share="${key}">${ico('share')} Share ${escapeHtml(fixed ? p.name : '')}</button>` +
+      `<button type="button" class="iconBtn" data-place-delete="${key}">${ico('trash')} ${fixed ? 'Clear' : 'Delete'}</button>` +
+      `</div></div></div>` +
       `</div>`;
   }
 
@@ -281,7 +281,7 @@
       const menu = e.target.closest('[data-place-menu]');
       if (menu) {
         menuFor = menuFor === menu.dataset.placeMenu ? null : menu.dataset.placeMenu;
-        render();
+        toggleRowMenu($('#placesList'), menuFor);
         return;
       }
       const ed = e.target.closest('[data-place-edit]');

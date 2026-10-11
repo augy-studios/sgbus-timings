@@ -2232,12 +2232,36 @@ body.on-trip { padding-bottom: 96px; }
 }
 .placeMore { margin-right: 8px; padding: 8px; }
 .placeMenu, .recentMenu {
-    grid-column: 1 / -1;
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     padding: 0 12px 12px;
 }
+/* The menu behind a row's three dots (toggleRowMenu in js/ui.js), as the trip bar's drawer:
+   its one grid row grows from 0fr to 1fr, which animates to the menu's own height, and back.
+   The middle div has no padding, so the closed row really is 0px tall; hidden once shut, so
+   its buttons can't be tabbed to. */
+.rowMenu {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.22s ease, visibility 0s linear 0.22s;
+}
+.rowMenu > div { min-height: 0; overflow: hidden; }
+.open > .rowMenu {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows 0.22s ease, visibility 0s;
+}
+.rowMenu .placeMenu, .rowMenu .recentMenu {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.18s ease, transform 0.22s ease;
+}
+.open > .rowMenu .placeMenu, .open > .rowMenu .recentMenu { opacity: 1; transform: none; }
+.placeMore svg, .recentMore svg { transition: transform 0.22s ease; }
+.open > .placeMore svg, .open > .recentMore svg { transform: rotate(90deg); }
 .placeNewBtn { display: inline-flex; align-items: center; gap: 8px; }
 .placeForm {
     display: flex;
@@ -2290,6 +2314,7 @@ body.on-trip { padding-bottom: 96px; }
     border-radius: 12px;
 }
 .recentRow + .recentRow { border-top: 1px solid var(--surface-border); }
+.recentRow { transition: background 0.22s ease; }
 .recentRow.open { background: var(--surface); }
 .recentMain, .calSetup {
     display: flex;

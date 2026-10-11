@@ -28,6 +28,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Fixes
 
 - A search box no longer closes its suggestions when you tap back into it quickly.
+- The menus behind the three dots, in Places, past searches and Calendar, now slide open and closed.
 
 ---
 

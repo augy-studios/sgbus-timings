@@ -396,18 +396,17 @@
       const row = (ev, i) => {
         const place = places.get(ev.location);
         const open = menu === ev.key;
-        return `<div class="recentRow${open ? ' open' : ''}">` +
+        // The menu is always there, folded shut until the dots open it (toggleRowMenu in js/ui.js).
+        return `<div class="recentRow${open ? ' open' : ''}" data-menu-row="${escapeHtml(ev.key)}">` +
           `<button type="button" class="recentMain" data-cal-pick="${i}">${ico('calendar')}<span class="recentText">` +
           `<span class="calWhen">${escapeHtml(whenText(ev))}</span><span class="name">${escapeHtml(ev.title)}</span>` +
           `<span class="sub">${escapeHtml(ev.location)}${place === null ? ' <em>· Location not found. Tap to pick it.</em>' : ''}</span></span></button>` +
-          `<button type="button" class="recentMore" data-cal-menu="${escapeHtml(ev.key)}" aria-expanded="${open}" aria-label="More for ${escapeHtml(ev.title)}">${ico('more')}</button>` +
-          (open
-            ? `<div class="recentMenu">` +
-              (place ? `<button type="button" class="iconBtn" data-cal-act="save" data-cal="${i}">${ico('pin')} Save as place</button>` : '') +
-              (place ? `<button type="button" class="iconBtn" data-cal-act="share" data-cal="${i}">${ico('share')} Share place</button>` : '') +
-              `<button type="button" class="iconBtn" data-cal-act="hide" data-cal="${i}">${ico('close')} Hide this event</button>` +
-              `</div>`
-            : '') +
+          `<button type="button" class="recentMore" data-cal-menu="${escapeHtml(ev.key)}" data-menu-toggle aria-expanded="${open}" aria-label="More for ${escapeHtml(ev.title)}">${ico('more')}</button>` +
+          `<div class="rowMenu"><div><div class="recentMenu">` +
+          (place ? `<button type="button" class="iconBtn" data-cal-act="save" data-cal="${i}">${ico('pin')} Save as place</button>` : '') +
+          (place ? `<button type="button" class="iconBtn" data-cal-act="share" data-cal="${i}">${ico('share')} Share place</button>` : '') +
+          `<button type="button" class="iconBtn" data-cal-act="hide" data-cal="${i}">${ico('close')} Hide this event</button>` +
+          `</div></div></div>` +
           `</div>`;
       };
       const todays = list.filter((ev) => sgDay(ev.start) === today);
@@ -425,7 +424,7 @@
       const m = e.target.closest('[data-cal-menu]');
       if (m) {
         menu = menu === m.dataset.calMenu ? null : m.dataset.calMenu;
-        return draw();
+        return toggleRowMenu(box, menu);
       }
       const act = e.target.closest('[data-cal-act]');
       if (act) {

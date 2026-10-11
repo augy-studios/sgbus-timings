@@ -47,7 +47,21 @@
     });
   }
 
+  // The menu behind a row's three dots (Places, past searches, calendar events): every row
+  // carries its menu folded shut (.rowMenu in style.css), and this opens the one for `key`,
+  // closing any other, in place, so each slides rather than the list being redrawn. `key`
+  // null closes them all. Rows are [data-menu-row="key"].
+  function toggleRowMenu(container, key) {
+    container.querySelectorAll("[data-menu-row]").forEach(function (row) {
+      var on = row.dataset.menuRow === key;
+      row.classList.toggle("open", on);
+      var btn = row.querySelector("[data-menu-toggle]");
+      if (btn) btn.setAttribute("aria-expanded", String(on));
+    });
+  }
+
   window.hydrateIcons = hydrateIcons;
+  window.toggleRowMenu = toggleRowMenu;
   window.openModal = openModal;
   window.closeModal = closeModal;
   window.showPanel = showPanel;

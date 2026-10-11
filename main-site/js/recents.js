@@ -97,16 +97,15 @@
   function recentRow(r, i, menuOpen) {
     const key = keyOf(r);
     const sub = r.kind === 'station' ? `<span class="sub">Station ${lineDots(r.code)}</span>` : r.sub ? `<span class="sub">${escapeHtml(r.sub)}</span>` : '';
-    return `<div class="recentRow${menuOpen ? ' open' : ''}">` +
+    // The menu is always there, folded shut until the dots open it (toggleRowMenu in js/ui.js).
+    return `<div class="recentRow${menuOpen ? ' open' : ''}" data-menu-row="${escapeHtml(key)}">` +
       `<button type="button" class="recentMain" data-recent-pick="${i}">${ico(iconOf(r))}<span class="recentText"><span class="name">${escapeHtml(r.label)}</span>${sub}</span></button>` +
-      `<button type="button" class="recentMore" data-recent-menu="${escapeHtml(key)}" aria-expanded="${menuOpen}" aria-label="More for ${escapeHtml(r.label)}">${ico('more')}</button>` +
-      (menuOpen
-        ? `<div class="recentMenu">` +
-          (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="save" data-recent="${i}">${ico('pin')} Save as place</button>` : '') +
-          (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="share" data-recent="${i}">${ico('share')} Share</button>` : '') +
-          `<button type="button" class="iconBtn" data-recent-act="remove" data-recent="${i}">${ico('trash')} Remove</button>` +
-          `</div>`
-        : '') +
+      `<button type="button" class="recentMore" data-recent-menu="${escapeHtml(key)}" data-menu-toggle aria-expanded="${menuOpen}" aria-label="More for ${escapeHtml(r.label)}">${ico('more')}</button>` +
+      `<div class="rowMenu"><div><div class="recentMenu">` +
+      (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="save" data-recent="${i}">${ico('pin')} Save as place</button>` : '') +
+      (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="share" data-recent="${i}">${ico('share')} Share</button>` : '') +
+      `<button type="button" class="iconBtn" data-recent-act="remove" data-recent="${i}">${ico('trash')} Remove</button>` +
+      `</div></div></div>` +
       `</div>`;
   }
 
@@ -226,7 +225,7 @@
       const menu = e.target.closest('[data-recent-menu]');
       if (menu) {
         state.menu = state.menu === menu.dataset.recentMenu ? null : menu.dataset.recentMenu;
-        return render();
+        return toggleRowMenu(box, state.menu);
       }
       if (e.target.closest('[data-recent-clear]')) {
         if (confirm('Clear all your past searches?')) clear();
