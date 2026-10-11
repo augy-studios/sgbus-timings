@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # Builds the Linux installers on a Linux machine, such as the Debian VPS (LINUX-BUILD.md):
 #
-#     cd desktop && ./build-linux.sh
+#     cd desktop && bash build-linux.sh
+#
+# Run it with bash rather than chmod-ing it: a chmod shows up in git as a change to the file,
+# and the next git pull refuses to go ahead.
 #
 # Installs the packages if they're missing, then electron-builder makes the .deb and the
 # .AppImage, and they're copied to release/<version>/ at the project root, beside the Windows

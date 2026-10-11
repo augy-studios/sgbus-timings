@@ -24,7 +24,6 @@ SSH into the VPS, then:
    cd ~
    git clone https://github.com/augy-studios/sgbus-timings.git
    cd sgbus-timings/desktop
-   chmod +x build-linux.sh
    ```
 
    If the repository is private, GitHub asks for a username and password. Use your username
@@ -41,7 +40,7 @@ SSH into the VPS, then:
    cd ~/sgbus-timings
    git pull
    cd desktop
-   ./build-linux.sh
+   bash build-linux.sh
    ```
 
    The first build downloads Electron and the packaging tools (a few hundred MB); later
@@ -79,7 +78,7 @@ dpkg-deb --info ~/sgbus-timings/release/2.0.2/sg-bus-timings-2.0.2-amd64.deb
 | `npm ci` fails with "package-lock.json not in sync" | Run `npm install` once on your PC in `desktop/`, commit `package-lock.json`, push, then `git pull` and build again. |
 | The build stops at `fpm` with a Ruby error | `sudo apt install -y ruby ruby-dev rpm`, then build again. electron-builder normally brings its own. |
 | `No space left on device` | `rm -rf ~/.cache/electron ~/.cache/electron-builder` clears the downloaded tools; they're fetched again next build. |
-| `Permission denied` running the script | `chmod +x build-linux.sh` |
+| `git pull` says your local changes to a file would be overwritten | The VPS's copy changed (a `chmod` on the script does it). Put it back with `git fetch` then `git reset --hard origin/main`, and pull again. Run the script with `bash build-linux.sh`, which needs no `chmod`. |
 
 ## Installing it, on a Linux PC
 
