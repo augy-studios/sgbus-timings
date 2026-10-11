@@ -29,6 +29,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 - A search box no longer closes its suggestions when you tap back into it quickly.
 - The menus behind the three dots, in Places, past searches and Calendar, now slide open and closed.
+- **SimplyGo** - On a phone or tablet, SimplyGo's icon in the Edge Tray goes to its app, for your card balance, top-ups and travel history.
 
 ---
 

@@ -522,6 +522,18 @@ body.modal-open { overflow: hidden; }
 .glass-btn > [data-icon] { display: inline-flex; }
 .glass-btn.busy { opacity: 0.6; cursor: progress; }
 .telegramBtn { color: #229ED9; }
+/* A button that's another app's own icon (SimplyGo): the icon is the whole button, edge to
+   edge, cut to the tray's rounded corners, with no glass, border or padding around it. */
+.glass-btn.appIconBtn {
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    background: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.glass-btn.appIconBtn:hover { background: none; }
+.appIconBtn img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .tray-tab {
     width: var(--tray-tab);

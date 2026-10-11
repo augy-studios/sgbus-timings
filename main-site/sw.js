@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v46";
+const VERSION = "v47";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -37,6 +37,8 @@ const ASSETS = [
   // The status bar's notification icon. Android draws only its shape, so the app icon's
   // solid square came out as a plain white one; this has its window and wheels cut out.
   "/sgbusnotificon.png",
+  // SimplyGo's own icon, on its button in the Edge Tray.
+  "/images/icons/simplygo.png",
   "/images/screenshot_1.png",
   "/images/screenshot_2.png",
   "/widgets/timings.json",

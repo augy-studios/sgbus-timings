@@ -19,7 +19,9 @@ stays in that browser.
 - **The Edge Tray** is the column of buttons at the top right of
   the screen. From the top: [**Favourites**](favourites.md) (the star),
   **Stops near me**, **Plan a route**,
-  [**Navigate**](nav.md) and [**Service alerts**](service-alerts.md), then the
+  [**Navigate**](nav.md), [**Service alerts**](service-alerts.md),
+  [**Your trips**](trips.md) (the bar chart) and [**Places**](places.md) (the
+  bookmark), then, on a phone or tablet, [SimplyGo](#simplygo) (its own icon), the
   Telegram bot, a page to buy Augy a coffee, this guide (the question mark),
   [Settings](settings.md) (the gear) and the [theme picker](settings.md#themes).
   Hover over a button for its name. The arrow beside the Edge Tray tucks it away at
@@ -29,6 +31,13 @@ stays in that browser.
   [Find a bus stop](search.md). The [weather](weather.md) is under it, on the
   right.
 - **The timings card** opens below once you pick a stop.
+
+### SimplyGo
+
+On a phone or tablet, SimplyGo's icon in the Edge Tray goes to its app, for your
+card's balance, top-ups and travel history. SimplyGo has no link that opens its
+app straight away, so the button goes to SimplyGo on Google Play or the App Store:
+tap **Open** there if you have it, or **Install** if you don't.
 
 ## Install it
 

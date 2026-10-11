@@ -1024,6 +1024,32 @@ function syncTraySideButtons() {
     });
 }
 
+// ----------- SimplyGo -----------
+// A button in the Edge Tray for SimplyGo's app, for card balances, top-ups and travel history,
+// shown on phones and tablets only. SimplyGo publishes no link that opens the app itself, so
+// on Android it's an intent naming the app, which Android opens it with where it can and
+// otherwise goes to its Play Store page; on iPhone and iPad, its App Store page. Either store
+// page says Open once the app is installed.
+const SIMPLYGO = {
+    android: 'sg.com.transitlink',
+    play: 'https://play.google.com/store/apps/details?id=sg.com.transitlink',
+};
+
+(function showSimplyGo() {
+    const ua = navigator.userAgent;
+    const android = /Android/i.test(ua);
+    // iPadOS asks for desktop sites, so says it's a Mac; a touch screen gives it away.
+    const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 0);
+    if (!android && !ios) return;
+    const btn = $('#simplyGoBtn');
+    if (android) {
+        btn.href = `intent://#Intent;package=${SIMPLYGO.android};S.browser_fallback_url=${encodeURIComponent(SIMPLYGO.play)};end`;
+        // An intent is handed to Android, not opened in a tab.
+        btn.removeAttribute('target');
+    }
+    btn.hidden = false;
+})();
+
 setTrayOpen(!page.hasAttribute('data-tray-closed'), false);
 $('#trayTab').addEventListener('click', () => setTrayOpen(page.hasAttribute('data-tray-closed')));
 $('#traySidePick').addEventListener('click', e => {
