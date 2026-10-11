@@ -44,18 +44,19 @@ showing it. See [Sync favourites between devices](sync.md).
 ## App links
 
 On a phone with the [Android app](android-app.md), every link above opens in
-the app. It also opens `uwusgbus://` links, which only work there:
+the app. It also opens `uwu://sgbus/` links, which only work there:
 
 | Link | Opens |
 |---|---|
-| `uwusgbus://` | The app |
-| `uwusgbus://84009` | That stop's timings |
-| `uwusgbus://bus/22` | A bus's route |
-| `uwusgbus://nav` | Navigate |
-| `uwusgbus://near` | Stops near you |
-| `uwusgbus://go/t2d6bdtkdj` | A share link, as its `sgbus.uwuapps.org/go/...` would |
+| `uwu://sgbus/` | The app |
+| `uwu://sgbus/84009` | That stop's timings |
+| `uwu://sgbus/bus/22` | A bus's route |
+| `uwu://sgbus/nav` | Navigate |
+| `uwu://sgbus/near` | Stops near you |
+| `uwu://sgbus/go/t2d6bdtkdj` | A share link, as its `sgbus.uwuapps.org/go/...` would |
 
-Anything after `uwusgbus://` is the same as after the `#` in the app's own
-links. Plenty of apps, Telegram among them, don't let custom links like these be
+Anything after `uwu://sgbus/` is the same as after the `#` in the app's own
+links. These need version 1.2.0 of the app or later; 1.1.0 opened
+`uwusgbus://` links instead. Plenty of apps, Telegram among them, don't let custom links like these be
 tapped, so share the `sgbus.uwuapps.org` links instead: they work everywhere,
 and open the app where it's installed.

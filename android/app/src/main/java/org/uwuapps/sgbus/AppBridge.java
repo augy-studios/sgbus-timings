@@ -7,7 +7,7 @@
  * app-bridge.js) answers on the port that came with it. Requests and their answers are JSON,
  * matched by an "id":
  *
- *   app -> page   {"type":"hello","app":"org.uwuapps.sgbus","version":"1.1.0","features":["calendar"]}
+ *   app -> page   {"type":"hello","app":"org.uwuapps.sgbus","version":"1.2.0","features":["calendar","update"]}
  *   page -> app   {"id":3,"type":"calendar","days":14}
  *   app -> page   {"id":3,"type":"calendar","events":[{"key","title","location","start","allDay"}]}
  *                 or {"id":3,"type":"calendar","error":"permission"} until the calendar is allowed
@@ -110,7 +110,8 @@ final class AppBridge {
                         .put("type", "hello")
                         .put("app", mContext.getPackageName())
                         .put("version", version)
-                        .put("features", new org.json.JSONArray().put("calendar"));
+                        // "update": it can update itself (UpdateActivity), from 1.2.0.
+                        .put("features", new org.json.JSONArray().put("calendar").put("update"));
                 post(hello);
             } catch (JSONException | android.content.pm.PackageManager.NameNotFoundException e) {
                 Log.w(TAG, e);

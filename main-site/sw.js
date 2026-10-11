@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v51";
+const VERSION = "v52";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -32,6 +32,7 @@ const ASSETS = [
   "/js/nav.js",
   "/js/share.js",
   "/js/sw-update.js",
+  "/js/app-update.js",
   "/manifest.json",
   "/favicon.ico",
   "/sgbusicon1.png",
@@ -393,6 +394,8 @@ self.addEventListener("fetch", (event) => {
     if (url.pathname === "/api/nav" || url.pathname === "/api/places") return;
     // Share links: live progress moves, and a link just made has to be read fresh.
     if (url.pathname === "/api/share" || url.pathname === "/api/share-map") return;
+    // The Android app's newest version: an old answer offers an update already installed.
+    if (url.pathname === "/api/app-release") return;
     if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops") {
       event.respondWith(staleWhileRevalidate(event, request));
       return;

@@ -93,7 +93,8 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### In the Android app
 - The site is also an Android app, `org.uwuapps.sgbus` (`../android/`), which shows it full screen and adds what a web page can't do
 - `js/app-bridge.js` answers the app's hello over Chrome's postMessage for Trusted Web Activities, then asks it for things: the phone's calendar for the Calendar tab. In a browser no hello comes, and nothing changes
-- Links into the app name its package, with a fallback for phones without it: the SimplyGo button (`intent://open/simplygo...`, falling back to SimplyGo's Play Store page) and the calendar permission prompt (`intent://calendar/permission...`)
+- Links into the app name its package, with a fallback for phones without it: the SimplyGo button (`intent://open/simplygo...`, falling back to SimplyGo's Play Store page) the calendar permission prompt (`intent://calendar/permission...`) and the app's updater (`intent://update...`)
+- `js/app-update.js` shows a bar when the app is older than its newest GitHub release, read through `GET /api/app-release` (cached 10 minutes at the edge, so GitHub's per-IP limit isn't shared by every phone). From app 1.2.0, Update has the app download and install it; on 1.1.0, Download opens the release's page
 - `.well-known/assetlinks.json` vouches for the app's signing key, with `handle_all_urls` (full screen, and the site's links open in it) and `use_as_origin` (the message channel)
 
 ### Weather

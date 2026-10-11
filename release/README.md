@@ -14,7 +14,7 @@ In PowerShell, from the project root:
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 ```
 
-It ends with `Done: ...\release\sg-bus-timings-1.1.0.apk`. For a new version, raise the version
+It ends with `Done: ...\release\sg-bus-timings-1.2.0.apk`. For a new version, raise the version
 first (see `android/README.md`, "Build the APK"), or phones with the old one won't take it as
 an update.
 
@@ -23,21 +23,22 @@ an update.
 1. Commit and push your changes, the new APK included, so the release points at the code it
    was built from.
 2. Open <https://github.com/augy-studios/sgbus-timings/releases/new>.
-3. **Choose a tag**: type a new one, such as `android-v1.1.0`, and pick
-   **Create new tag: android-v1.1.0 on publish**. Leave the target as `main`.
-4. **Release title**: `SG Bus Timings for Android 1.1.0`.
+3. **Choose a tag**: type a new one, such as `android-v1.2.0`, and pick
+   **Create new tag: android-v1.2.0 on publish**. Leave the target as `main`. Keep to
+   `android-v<version>`: it's how the app's updater finds its releases.
+4. **Release title**: `SG Bus Timings for Android 1.2.0`.
 5. **Describe this release**: what's new, for the people installing it. For example:
 
    ```markdown
-   Install: download `sg-bus-timings-1.1.0.apk` below on your Android phone and open it.
+   Install: download `sg-bus-timings-1.2.0.apk` below on your Android phone and open it.
    If Android asks, allow installing apps from your browser or Files.
 
    New:
-   - Your phone's calendar in Navigate's Calendar tab
-   - uwusgbus:// links open the app
+   - The app updates itself: it offers each new version, and installs it with a tap
+   - App links are now uwu://sgbus/, such as uwu://sgbus/84009
    ```
 
-6. Drag `sg-bus-timings-1.1.0.apk` from this folder into the box that says
+6. Drag `sg-bus-timings-1.2.0.apk` from this folder into the box that says
    **Attach binaries by dropping them here or selecting them**. Wait for it to finish
    uploading.
 7. Tick **Set as the latest release**, then **Publish release**.
@@ -47,10 +48,21 @@ The file is then at
 newest one: a good link to share. GitHub also adds the source code as zips; those are fine to
 leave.
 
+## How phones hear about it
+
+Within about 10 minutes of publishing, the app offers the new version in a bar at the top of
+the page. The bar comes from the site, which reads the releases through
+`main-site/api/app-release.js`. It skips drafts, pre-releases, tags that don't start
+`android-v`, and releases whose APK hasn't finished uploading. **Update** downloads the APK
+in the app, checks it against GitHub's checksum and hands it to Android's installer
+(`UpdateActivity.java`). From 1.1.0, which can't update itself, **Download** opens the release
+page instead.
+
 ## Before you share it
 
 - **Deploy the site first** if the release changed `main-site/.well-known/assetlinks.json`.
-  The app only hides Chrome's address bar once the live site lists its signing key.
+  The app only hides Chrome's address bar once the live site lists its signing key. The
+  update bar needs the site deployed too (`js/app-update.js`, `api/app-release.js`).
 - **The repository has to be public** for others to download it. A private repository's
   releases are only visible to people with access to it.
 - **Never upload `android.keystore` or `keystore.properties`.** Only the `.apk`.
@@ -62,4 +74,5 @@ leave.
 | "App not installed" on the phone | An older copy signed with a different key is installed, such as one from PWABuilder. Uninstall SG Bus Timings, then install again. |
 | "App not installed as package appears to be invalid" | The download didn't finish. Download it again. |
 | The app shows an address bar at the top | The live site doesn't list the app's key yet: deploy the site, then close and reopen the app. |
-| You uploaded the wrong file | On the release, **Edit**, delete the file with the bin icon, attach the right one, **Update release**. |
+| You uploaded the wrong file | On the release, **Edit**, delete the file with the bin icon, attach the right one, **Update release**. The app checks the file is newer and matches GitHub's checksum, so phones won't install a mismatch. |
+| No update bar in the app | The tag doesn't start `android-v`, the release is a draft or pre-release, or it's been under 10 minutes. `https://sgbus.uwuapps.org/api/app-release` shows what phones see. |

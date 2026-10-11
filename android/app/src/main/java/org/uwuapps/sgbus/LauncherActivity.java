@@ -26,10 +26,12 @@ import com.google.androidbrowserhelper.trusted.TwaLauncher;
 
 // Bubblewrap's, with three additions of this app's own (not regenerated: see android/README.md):
 // the message channel to the site (AppBridge) through getCustomTabsCallback and
-// createTwaLauncher, and uwusgbus:// links through getLaunchingUrl.
+// createTwaLauncher, and uwu://sgbus/ links through getLaunchingUrl.
 public class LauncherActivity
         extends com.google.androidbrowserhelper.trusted.LauncherActivity {
-    private static final String SCHEME = "uwusgbus";
+    // uwu:// is shared by UwU Apps' apps, each answering its own host; this one's is sgbus.
+    private static final String SCHEME = "uwu";
+    private static final String HOST = "sgbus";
     private static final String SITE = "https://sgbus.uwuapps.org";
 
     @Override
@@ -64,16 +66,16 @@ public class LauncherActivity
     protected Uri getLaunchingUrl() {
         // Get the original launch Url.
         Uri uri = super.getLaunchingUrl();
-        return SCHEME.equals(uri.getScheme()) ? fromAppLink(uri) : uri;
+        boolean appLink = SCHEME.equals(uri.getScheme()) && HOST.equalsIgnoreCase(uri.getHost());
+        return appLink ? fromAppLink(uri) : uri;
     }
 
-    // uwusgbus:// links, to the page they name: the site's own short links by their path
-    // (uwusgbus://go/k3v9q2x7ma), anything else as the site's # address (uwusgbus://84009 for a
-    // stop, uwusgbus://bus/22, uwusgbus://nav), and uwusgbus:// alone to the home page.
+    // uwu://sgbus/ links, to the page they name: the site's own short links by their path
+    // (uwu://sgbus/go/k3v9q2x7ma), anything else as the site's # address (uwu://sgbus/84009 for
+    // a stop, uwu://sgbus/bus/22, uwu://sgbus/nav), and uwu://sgbus/ alone to the home page.
     static Uri fromAppLink(Uri link) {
-        String host = link.getHost() == null ? "" : link.getHost();
         String path = link.getEncodedPath() == null ? "" : link.getEncodedPath();
-        String rest = (host + path).replaceAll("^/+|/+$", "");
+        String rest = path.replaceAll("^/+|/+$", "");
         if (rest.isEmpty()) return Uri.parse(SITE + "/");
         if (rest.matches("(go|trip|eta)/[a-z0-9]{10}")) return Uri.parse(SITE + "/" + rest);
         return Uri.parse(SITE + "/#" + rest);

@@ -7,7 +7,8 @@ screen in Chrome, so the site's own updates reach it at once; the app itself onl
 building again for its native parts. The APK is small (about 700 KB) for the same reason: it
 holds the shell, and the site's service worker caches the rest on first launch.
 
-Shared as an APK file for now, through GitHub Releases: see `release/README.md`.
+Shared as an APK file for now, through GitHub Releases: see `release/README.md`. From 1.2.0 it
+updates itself from there.
 
 ## What it adds to the site
 
@@ -21,12 +22,17 @@ location through Chrome. Then its own, in `app/src/main/java/org/uwuapps/sgbus/`
 | `AppBridge.java` | A message channel to the site's pages (Chrome's [postMessage for TWAs](https://developer.chrome.com/docs/android/post-message-twa), Chrome 115+), answered by `main-site/js/app-bridge.js`. Says hello as each page loads, with what the app can do, and answers its requests. |
 | `CalendarReader.java` | The phone's calendar events with a location, for the site's Calendar tab, over AppBridge. Every calendar on the phone; Android expands repeating events. |
 | `CalendarPermissionActivity.java` | The calendar permission prompt, which the page links to when it isn't given yet; settings instead, once it's been refused for good. |
-| `LauncherActivity.java` | Bubblewrap's, plus AppBridge's hooks, and `uwusgbus://` links turned into the site's addresses: `uwusgbus://84009` a stop, `uwusgbus://bus/22`, `uwusgbus://nav`, `uwusgbus://go/<id>` a share link. |
+| `UpdateActivity.java` | Updates the app to its newest GitHub release, for the site's update bar (`main-site/js/app-update.js`). Asks `main-site/api/app-release.js` for the newest version, downloads its APK from this repository's releases only, checks GitHub's SHA-256, that it's this app and a higher `versionCode`, then hands it to Android's installer, which asks you to confirm. Needs `REQUEST_INSTALL_PACKAGES`, and "Install unknown apps" allowed once, which it sends you to. |
+| `LauncherActivity.java` | Bubblewrap's, plus AppBridge's hooks, and `uwu://sgbus/` links turned into the site's addresses: `uwu://sgbus/84009` a stop, `uwu://sgbus/bus/22`, `uwu://sgbus/nav`, `uwu://sgbus/go/<id>` a share link. Only the `sgbus` host, so other UwU Apps can answer `uwu://` links of their own. |
 
 The site's links into the app: `intent://open/simplygo#Intent;scheme=org.uwuapps.sgbus;...`
-(OpenAppActivity) and `intent://calendar/permission#Intent;scheme=org.uwuapps.sgbus;...`
-(CalendarPermissionActivity). Each names this package, so a phone without the app takes the
-link's fallback, or nothing happens.
+(OpenAppActivity), `intent://calendar/permission#Intent;scheme=org.uwuapps.sgbus;...`
+(CalendarPermissionActivity) and `intent://update#Intent;scheme=org.uwuapps.sgbus;...`
+(UpdateActivity). Each names this package, so a phone without the app takes the link's
+fallback, or nothing happens.
+
+If the app ever goes on Google Play, that build has to drop UpdateActivity and
+`REQUEST_INSTALL_PACKAGES`: Play updates apps itself, and doesn't allow apps that install others.
 
 AppBridge reads android-browser-helper's TwaLauncher session by its field's name, so that
 library stays at 2.5.0 (`app/build.gradle`), and `app/proguard-rules.pro` keeps the name through
@@ -73,12 +79,15 @@ Edit `twa-manifest.json` for the name, colours, icons, shortcuts and so on, then
 `bubblewrap update --skipVersionUpgrade`. That rewrites some files, so put this app's own parts
 back afterwards, each marked "Not Bubblewrap's":
 
-- `AndroidManifest.xml`: `<queries>`, the `READ_CALENDAR` permission, the `uwusgbus`
-  `<intent-filter>` on LauncherActivity, the `OpenAppActivity` and `CalendarPermissionActivity`
-  `<activity>` entries, and the `PostMessageService` `<service>`.
+- `AndroidManifest.xml`: `<queries>`, the `READ_CALENDAR`, `INTERNET` and
+  `REQUEST_INSTALL_PACKAGES` permissions, the `uwu://sgbus` `<intent-filter>` on
+  LauncherActivity, the `OpenAppActivity`, `CalendarPermissionActivity` and `UpdateActivity`
+  `<activity>` entries, the `UpdateActivity$InstallStatus` `<receiver>`, and the
+  `PostMessageService` `<service>`.
 - `app/build.gradle`: `proguardFiles 'proguard-rules.pro'` and the `androidx.browser`
   dependency.
 - `LauncherActivity.java`: `createTwaLauncher`, `getCustomTabsCallback` and `fromAppLink`.
 
-The other Java files and `proguard-rules.pro` are kept as they are. Check `git diff` after an
+The other Java files, `res/values/update.xml`, `res/values-night/update.xml` and
+`proguard-rules.pro` are kept as they are. Check `git diff` after an
 update to see what it changed.

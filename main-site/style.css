@@ -303,8 +303,11 @@ body.modal-open { overflow: hidden; }
 
 /* ---- update bar (js/sw-update.js) ---- */
 /* At the very top, scrolling away with the page. A light brand tint, --ink on it in both
-   modes. Its contents keep clear of the Edge Tray, which floats over its end. */
-.update-notice {
+   modes. Its contents keep clear of the Edge Tray, which floats over its end. The Android
+   app's update bar (js/app-update.js) looks the same, with a class of its own so neither
+   script takes the other's bar for its own. */
+.update-notice,
+.app-update-notice {
     background: color-mix(in srgb, var(--brand) 12%, transparent);
     border-bottom: 1px solid var(--surface-border);
     color: var(--ink);
@@ -325,10 +328,14 @@ body.modal-open { overflow: hidden; }
     padding-top: max(0.5rem, env(safe-area-inset-top));
 }
 
-.update-notice p { flex: 1 1 auto; min-width: 0; }
+.update-notice p,
+.app-update-notice p { flex: 1 1 auto; min-width: 0; }
 .update-notice .btn,
-.update-notice .iconBtn { flex: none; }
-.update-notice .btn { padding: 8px 14px; font-size: 13px; }
+.update-notice .iconBtn,
+.app-update-notice .btn,
+.app-update-notice .iconBtn { flex: none; }
+.update-notice .btn,
+.app-update-notice .btn { padding: 8px 14px; font-size: 13px; text-decoration: none; }
 
 @keyframes update-notice-in {
     from { opacity: 0; transform: translateY(-6px); }
