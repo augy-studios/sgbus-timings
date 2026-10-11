@@ -1028,21 +1028,13 @@ function syncTraySideButtons() {
 // A button in the Edge Tray for SimplyGo's app, for card balances, top-ups and travel history,
 // shown on phones and tablets only.
 //
-// On Android it opens the app at its home screen, by the app's own link to it,
-// sg.com.transitlink://main: its manifest lets a browser open any sg.com.transitlink: link
-// (DeepLinkDispatchActivity), and its code routes "main" home. An intent link, so Chrome hands
-// it straight to the app, or, where it isn't installed, goes to its Play Store page. Neither is
-// published by SimplyGo; read from version 9.29.0 of the app (October 2026), so a later version
-// could drop them, and then the button falls back to the Play Store page.
+// It goes to SimplyGo's store page, which says Open once the app is installed: Google Play on
+// Android, the App Store on iPhone and iPad.
 //
-// On iPhone and iPad, its App Store page, which says Open once it's installed: the iOS app's
-// own links aren't known, and Safari shows an error for a link no app answers.
-const SIMPLYGO = {
-    android: 'sg.com.transitlink',
-    scheme: 'sg.com.transitlink',
-    home: 'main',
-    play: 'https://play.google.com/store/apps/details?id=sg.com.transitlink',
-};
+// SimplyGo publishes no link that opens the app. Its Android app (9.29.0) does answer
+// sg.com.transitlink: links, but sg.com.transitlink://main sent it into a loop of opening and
+// closing, so the button doesn't use them.
+const SIMPLYGO_PLAY = 'https://play.google.com/store/apps/details?id=sg.com.transitlink';
 
 (function showSimplyGo() {
     const ua = navigator.userAgent;
@@ -1051,12 +1043,7 @@ const SIMPLYGO = {
     const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 0);
     if (!android && !ios) return;
     const btn = $('#simplyGoBtn');
-    if (android) {
-        btn.href = `intent://${SIMPLYGO.home}#Intent;scheme=${SIMPLYGO.scheme};package=${SIMPLYGO.android};` +
-            `S.browser_fallback_url=${encodeURIComponent(SIMPLYGO.play)};end`;
-        // An intent is handed to Android, not opened in a tab.
-        btn.removeAttribute('target');
-    }
+    if (android) btn.href = SIMPLYGO_PLAY;
     btn.hidden = false;
 })();
 
