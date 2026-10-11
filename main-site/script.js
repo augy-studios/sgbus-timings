@@ -1026,12 +1026,21 @@ function syncTraySideButtons() {
 
 // ----------- SimplyGo -----------
 // A button in the Edge Tray for SimplyGo's app, for card balances, top-ups and travel history,
-// shown on phones and tablets only. SimplyGo publishes no link that opens the app itself, so
-// on Android it's an intent naming the app, which Android opens it with where it can and
-// otherwise goes to its Play Store page; on iPhone and iPad, its App Store page. Either store
-// page says Open once the app is installed.
+// shown on phones and tablets only.
+//
+// On Android it opens the app at its home screen, by the app's own link to it,
+// sg.com.transitlink://main: its manifest lets a browser open any sg.com.transitlink: link
+// (DeepLinkDispatchActivity), and its code routes "main" home. An intent link, so Chrome hands
+// it straight to the app, or, where it isn't installed, goes to its Play Store page. Neither is
+// published by SimplyGo; read from version 9.29.0 of the app (October 2026), so a later version
+// could drop them, and then the button falls back to the Play Store page.
+//
+// On iPhone and iPad, its App Store page, which says Open once it's installed: the iOS app's
+// own links aren't known, and Safari shows an error for a link no app answers.
 const SIMPLYGO = {
     android: 'sg.com.transitlink',
+    scheme: 'sg.com.transitlink',
+    home: 'main',
     play: 'https://play.google.com/store/apps/details?id=sg.com.transitlink',
 };
 
@@ -1043,7 +1052,8 @@ const SIMPLYGO = {
     if (!android && !ios) return;
     const btn = $('#simplyGoBtn');
     if (android) {
-        btn.href = `intent://#Intent;package=${SIMPLYGO.android};S.browser_fallback_url=${encodeURIComponent(SIMPLYGO.play)};end`;
+        btn.href = `intent://${SIMPLYGO.home}#Intent;scheme=${SIMPLYGO.scheme};package=${SIMPLYGO.android};` +
+            `S.browser_fallback_url=${encodeURIComponent(SIMPLYGO.play)};end`;
         // An intent is handed to Android, not opened in a tab.
         btn.removeAttribute('target');
     }

@@ -35,9 +35,12 @@ stays in that browser.
 ### SimplyGo
 
 On a phone or tablet, SimplyGo's icon in the Edge Tray goes to its app, for your
-card's balance, top-ups and travel history. SimplyGo has no link that opens its
-app straight away, so the button goes to SimplyGo on Google Play or the App Store:
-tap **Open** there if you have it, or **Install** if you don't.
+card's balance, top-ups and travel history.
+
+- On **Android**, it opens SimplyGo, or its page on Google Play if it isn't
+  installed.
+- On **iPhone and iPad**, it opens SimplyGo's page on the App Store: tap **Open**
+  there if you have it, or **Get** if you don't.
 
 ## Install it
 
