@@ -72,6 +72,7 @@
         (c.autoloadOn && c.autoload > 0 && c.autoload <= MAX_CENTS ? `<dt>Auto top-up</dt><dd>${dollars(c.autoload)} when it runs low</dd>` : '') +
         `</dl>` +
         (c.balance < 300 ? `<p class="cardLow">${ico('alert')} Under $3: top up before your next ride.</p>` : '') +
+        historyBlock(c.history) +
         `<p class="mode-note">A card on SimplyGo keeps its value in your SimplyGo account, so this can be out of date for it: check the SimplyGo app.</p>` +
         rawBlock(),
         { again: true },
@@ -83,10 +84,27 @@
         off: 'NFC is off. Turn it on, then come back here.',
         cancelled: null,
       }[err?.code];
-      if (why !== null) show(`<p>${esc(why || "Couldn't read the card. Try again.")}</p>`, { again: true, nfc: err?.code === 'off' });
+      lastRaw = err?.data?.raw || null;
+      if (why !== null) show(`<p>${esc(why || "Couldn't read the card. Try again.")}</p>` + rawBlock(), { again: true, nfc: err?.code === 'off' });
     } finally {
       reading = false;
     }
+  }
+
+  // The card's last rides and top-ups, newest first, as the card keeps them.
+  const KINDS = { bus: ['bus', 'Bus'], train: ['train', 'Train'], topup: ['card', 'Top-up'], refund: ['bus', 'Bus refund'], other: ['card', 'Other'] };
+  const when = (ms) => new Date(ms).toLocaleString('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+  function historyBlock(history) {
+    if (!Array.isArray(history) || !history.length) return '';
+    const rows = history.slice(0, 15).map((h) => {
+      const [icon, label] = KINDS[h.type] || KINDS.other;
+      // A bus's "BUS228" or "BUS  21" says its number; a train's "HBC-BDK" its stations.
+      const what = h.type === 'bus' || h.type === 'refund' ? h.what.replace(/^BUS\s*/i, 'Bus ') : h.what;
+      return `<li>${ico(icon)}<span class="cardRide"><span>${esc(what || label)}</span><span class="sub">${esc(when(h.time))}</span></span>` +
+        `<span class="cardAmt${h.amount > 0 ? ' plus' : ''}">${h.amount > 0 ? '+' : ''}${dollars(h.amount)}</span></li>`;
+    }).join('');
+    return `<p class="modal-section-label cardHistLabel">Recent rides and top-ups</p><ul class="cardHistory">${rows}</ul>`;
   }
 
   // The card's data as read, without its numbers, to copy and send if a card reads wrongly.

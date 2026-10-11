@@ -59,6 +59,8 @@
             android:label="@string/title_activity_main"
             android:theme="@style/AppTheme.NoActionBarLaunch"
             android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
             android:exported="true">
 
             <intent-filter>
@@ -127,6 +129,29 @@
         </activity>
         <receiver android:name=".UpdateActivity$InstallStatus"
             android:exported="false" />
+
+        <!-- The Bus timings widget (TimingsWidget.java), its rows, and its setup. -->
+        <receiver android:name=".TimingsWidget"
+            android:label="@string/widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/timings_widget_info" />
+        </receiver>
+        <service android:name=".TimingsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+        <activity android:name=".WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/UpdateTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
 
         <!-- The trip being followed (TripService.java). Ends with the app swiped away. -->
         <service android:name=".TripService"

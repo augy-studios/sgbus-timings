@@ -610,9 +610,11 @@ body.modal-open { overflow: hidden; }
     background: color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
-/* A phone on its side has no room for the whole column: it scrolls, with room kept for the
-   buttons' shadows. */
+/* A phone on its side, or with its keyboard open, has no room for the whole column: it
+   scrolls, with room kept for the buttons' shadows. The buttons keep their size rather than
+   being squashed to fit. */
 @media (max-height: 560px) {
+    .tray-buttons > * { flex-shrink: 0; }
     .tray { --tray-shift: calc(var(--glass-btn) + 18px + var(--hud-edge)); }
     .tray-buttons {
         max-height: calc(100dvh - var(--hud-top) - 60px);
@@ -2451,7 +2453,33 @@ body.on-trip { padding-bottom: 96px; }
 .cardValue { font-size: 40px; font-weight: 700; line-height: 1.1; }
 .cardFacts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px auto 0; max-width: 300px; text-align: left; font-size: 14px; }
 .cardFacts dt { color: var(--muted); }
+.cardHistLabel { margin-top: 14px; text-align: left; }
+.cardHistory { list-style: none; margin: 4px 0 0; padding: 0; text-align: left; }
+.cardHistory li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--surface-border); font-size: 14px; }
+.cardRide { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.cardRide .sub { font-size: 12px; }
+.cardAmt { font-variant-numeric: tabular-nums; }
+.cardAmt.plus { color: var(--ok); }
 .cardRaw { margin-top: 12px; text-align: left; font-size: 12px; color: var(--muted); }
 .cardRaw summary { cursor: pointer; }
 .cardRaw code { display: block; margin: 6px 0; font-family: ui-monospace, Consolas, monospace; word-break: break-all; user-select: text; -webkit-user-select: text; }
 .cardLow { margin-top: 10px; color: var(--warn); display: flex; gap: 6px; align-items: center; justify-content: center; }
+
+/* ---- picture-in-picture, in the Android app (js/pip.js) ---- */
+/* A window a few centimetres across: the live map if it's open, otherwise the trip's line,
+   large, and nothing else. */
+:root[data-pip] #disruptionBar, :root[data-pip] .hud, :root[data-pip] .container,
+:root[data-pip] .modal-backdrop, :root[data-pip] .panelModal { display: none !important; }
+:root[data-pip] .mapTop, :root[data-pip] .mapFabs, :root[data-pip] .mapNote, :root[data-pip] .mapActions,
+:root[data-pip] .mapPanel .leaflet-control-container { display: none !important; }
+:root[data-pip] .mapSheet { left: 4px; right: 4px; bottom: 4px; padding: 4px 8px; border-radius: 10px; }
+:root[data-pip] .mapStep { font-size: 12px; min-height: 0; }
+:root[data-pip] body.on-trip { padding: 0; overflow: hidden; }
+:root[data-pip] .tripBar {
+    inset: 0; margin: 0; max-width: none; border-radius: 0; border: 0;
+    display: flex; flex-direction: column; justify-content: center; transform: none;
+}
+:root[data-pip] .tripBar .tripDrawer, :root[data-pip] .tripBar .iconBtn, :root[data-pip] .tripChevron { display: none !important; }
+:root[data-pip] .tripBarInner { padding: 8px 12px; }
+:root[data-pip] .tripText strong { font-size: 13px; }
+:root[data-pip] #tripStatus { font-size: 15px; font-weight: 700; }

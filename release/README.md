@@ -10,7 +10,12 @@ release/2.0.0/
   sg-bus-timings-2.0.0.msi                 Windows     desktop: npm run build:win
   sg-bus-timings-2.0.0-amd64.deb           Linux       desktop/build-linux.sh, on the VPS
   sg-bus-timings-2.0.0-x86_64.AppImage     Linux       desktop/build-linux.sh, on the VPS
+  latest.yml, *-setup.exe.blockmap         Windows     what the desktop app reads to update itself
+  latest-linux.yml                         Linux       the same, for the AppImage
 ```
+
+Upload the `.yml` and `.blockmap` files with the installers on every release: without them
+the desktop app can't tell there's a new version (`desktop/updater.js`).
 
 The APKs (a few MB each) are committed alongside the code they were built from. The desktop
 installers are around 80 to 110 MB each, and GitHub refuses any file over 100 MB in git, so
@@ -61,7 +66,7 @@ phones with the old one won't take it as an update.
    - Windows and Linux apps, with Service Alerts as desktop notifications
    ```
 
-6. Drag in every file from `release\2.0.0\`, into the box that says
+6. Drag in every file from `release\<version>\`, into the box that says
    **Attach binaries by dropping them here or selecting them**. Wait for them all to finish
    uploading.
 7. Tick **Set as the latest release**, then **Publish release**.

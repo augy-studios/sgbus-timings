@@ -15,12 +15,15 @@ cd "$here"
 version="$(node -p "require('./package.json').version")"
 echo "Building SG Bus Timings ${version} for Linux..."
 
-if [ ! -d node_modules/electron-builder ]; then
+# Missing, or from before a package was added (electron-updater, 2.0.1).
+if [ ! -d node_modules/electron-builder ] || [ ! -d node_modules/electron-updater ]; then
   npm ci
 fi
-npx electron-builder --linux deb AppImage --x64
+npx electron-builder --linux deb AppImage --x64 --publish never
 
 mkdir -p "$root/release/$version"
-cp "dist/sg-bus-timings-${version}-amd64.deb" "dist/sg-bus-timings-${version}-x86_64.AppImage" "$root/release/$version/"
+# latest-linux.yml is what the AppImage reads to update itself (updater.js): it goes on the
+# GitHub release with the installers.
+cp "dist/sg-bus-timings-${version}-amd64.deb" "dist/sg-bus-timings-${version}-x86_64.AppImage" "dist/latest-linux.yml" "$root/release/$version/"
 echo "Done:"
-ls -lh "$root/release/$version/"*.deb "$root/release/$version/"*.AppImage
+ls -lh "$root/release/$version/"*.deb "$root/release/$version/"*.AppImage "$root/release/$version/latest-linux.yml"

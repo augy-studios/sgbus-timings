@@ -9,8 +9,8 @@
 // or a calendar event isn't a search, so isn't kept.
 //
 // Each recent's menu saves it as a place (js/places.js), shares it (js/share.js), or removes
-// it; Clear all empties the list. Kept in this browser only, newest first, up to MAX, and not
-// synced: it's where you looked, not something you chose to keep.
+// it; Clear all empties the list. Kept in this browser, newest first, up to MAX. Sync
+// (js/sync.js) can copy them to another device: Recents.syncList, clean and merge.
 //
 // Recents.attach(input, box, { accepts, onPick, saved, calendar }) puts the panel in `box`, a
 // box's .acList, which the box's own suggestions use once you type. `accepts(item)` says which
@@ -62,6 +62,40 @@
   }
 
   const remove = (key) => store(load().filter((r) => keyOf(r) !== key));
+
+  // ---------- sync (js/sync.js) ----------
+
+  const KINDS = ['stop', 'station', 'place', 'bus', 'postal'];
+  const syncList = () => load();
+  const syncKey = keyOf;
+
+  // A search from another device, checked field by field, or null.
+  function clean(raw) {
+    if (!raw || typeof raw !== 'object' || !KINDS.includes(raw.kind) || typeof raw.label !== 'string' || !raw.label.trim()) return null;
+    if (!Number.isFinite(raw.at)) return null;
+    const point = Number.isFinite(raw.lat) && Number.isFinite(raw.lng) && raw.lat > 1.15 && raw.lat < 1.48 && raw.lng > 103.55 && raw.lng < 104.1;
+    return {
+      kind: raw.kind,
+      label: raw.label.slice(0, 120),
+      sub: typeof raw.sub === 'string' ? raw.sub.slice(0, 160) : '',
+      ...(typeof raw.code === 'string' && /^[0-9A-Za-z]{1,6}$/.test(raw.code) && { code: raw.code }),
+      ...(point && { lat: raw.lat, lng: raw.lng }),
+      at: Math.min(Date.now(), raw.at),
+    };
+  }
+
+  // Adds the ones this device hasn't searched for, each in its place by when it was searched,
+  // keeping the newest MAX. Says how many it took.
+  function merge(list) {
+    const have = load();
+    const keys = new Set(have.map(keyOf));
+    const fresh = list.filter((r) => !keys.has(keyOf(r)));
+    if (!fresh.length) return 0;
+    const all = [...have, ...fresh].sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, MAX);
+    store(all);
+    const kept = new Set(all.map(keyOf));
+    return fresh.filter((r) => kept.has(keyOf(r))).length;
+  }
   const clear = () => store([]);
 
   // A stop from the stop list (script.js's stopsIndex) as a recent.
@@ -281,5 +315,5 @@
     delete input.dataset.quietFocus;
   }
 
-  window.Recents = { attach, add, clear, quietFocus, stopItem, busItem, postalItem, placeItem, asPlace, hasPoint };
+  window.Recents = { attach, add, clear, quietFocus, stopItem, busItem, postalItem, placeItem, asPlace, hasPoint, syncList, syncKey, clean, merge };
 })();

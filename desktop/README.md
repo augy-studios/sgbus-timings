@@ -19,7 +19,16 @@ only needs building again for its own parts. It shares the Android app's version
   runs, the page checks `/api/service-alerts` every minute, by the same rules as the server
   (`main-site/js/alerts.js`, "the desktop app"), and hands what's new to the app to show
   (`preload.js`, `main.js`). Clicking one opens Service alerts.
-- **Start when I sign in**, in the tray's menu, quietly into the tray.
+- **Starts when you sign in**, maximised, from the first run; the tray's menu turns it off.
+- **Opens maximised**, unless it was last closed un-maximised.
+- **Bus timings widgets** (`widgets.js`): small frameless windows on the desktop, each showing
+  a stop's timings from `main-site/widget.html`, resizable, optionally on top, restored where
+  they were at start-up. Added from the tray. A Windows app outside the Microsoft Store can't
+  add to Windows 11's Widgets board, so they live on the desktop instead.
+- **Updates itself** (`updater.js`): reads `latest.yml` / `latest-linux.yml` from the newest
+  GitHub release. The `.exe` and AppImage download and install with a restart; the `.msi` and
+  `.deb` only say there's a new version. Upload the `.yml` files and the `.blockmap` with the
+  installers on every release.
 - **Links elsewhere open in your browser**; the site's own pages stay in the app.
 - **`uwu://sgbus/` links open it**, on the page they name, mapped as the Android app maps
   them (`fromAppLink` in `main.js`). On Windows the app registers the `uwu` scheme for your

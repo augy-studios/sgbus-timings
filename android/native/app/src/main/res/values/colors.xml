@@ -3,4 +3,10 @@
 <resources>
     <color name="background">#CCFFCC</color>
     <color name="backgroundDark">#0C100E</color>
+    <!-- The widget, light; dark in values-night. -->
+    <color name="widget_bg">#F2F7F3</color>
+    <color name="widget_row">#E2F5E5</color>
+    <color name="widget_ink">#121815</color>
+    <color name="widget_muted">#5B665F</color>
+    <color name="widget_accent">#1F6B3D</color>
 </resources>

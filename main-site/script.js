@@ -411,9 +411,13 @@ function renderFavs() {
 
 // The favourite stops, copied where the installed app's Bus timings widget can offer them in
 // its setup (sw.js). The cache is the one storage a service worker and a page both reach.
+// The Android app's widget (TimingsWidget.java) gets them too, for its own setup.
 function shareFavsWithWidgets(favs) {
-    if (!('caches' in window)) return;
     const list = favs.map(({ code, name }) => ({ code, name: name || nameOf(code) || '' }));
+    if (window.AppBridge?.native) {
+        AppBridge.ready(5000).then(() => AppBridge.has('widget') && AppBridge.call('SgBus', 'setFavourites', { stops: list })).catch(() => {});
+    }
+    if (!('caches' in window)) return;
     caches.open('sgbus-widgets')
         .then(c => c.put('/widget/favourites', new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } })))
         .catch(() => {});
@@ -1314,7 +1318,7 @@ $('#favsModal').addEventListener('click', e => {
 
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
-// for the route planner, "#sync/BCDFGH" for another device's code to sync favourites with,
+// for the route planner, "#sync/BCDFGH" for another device's code to sync with,
 // "#share/<id>" for a short share link (js/share.js),
 // "#alerts" for the service alerts card, "#nav/lat,lng~Name/here" for Navigate (navHash in
 // js/nav.js), and "#near" and "#nav" for the installed app's shortcuts. Either end of a route

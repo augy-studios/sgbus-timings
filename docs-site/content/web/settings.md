@@ -22,7 +22,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
-| **Sync favourites with another device** | See [Sync favourites between devices](sync.md). |
+| **Sync with another device** | See [Sync between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.
 

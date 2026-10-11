@@ -15,4 +15,6 @@ ext {
     cordovaAndroidVersion = '14.0.1'
     // Not Capacitor's: TripService's location.
     playServicesLocationVersion = '21.3.0'
+    // Not Capacitor's: the widget's refresh (WidgetRefreshWorker).
+    workVersion = '2.11.2'
 }

@@ -1,12 +1,12 @@
 ---
-title: Sync favourites between devices
-description: Copy favourite stops, buses, routes and navs from one device to another, directly, with a 6-letter code.
+title: Sync between devices
+description: Copy your favourites, name and birthday, places, trips and past searches from one device to another, directly, with a 6-letter code.
 ---
 
-Your favourites are kept in each browser separately. Sync copies them from one
-device to another, say from your phone to your laptop, without an account. The
-two devices talk to each other directly; your favourites never pass through a
-server.
+Your favourites, places, trips and the rest are kept on each device separately.
+Sync copies them from one device to another, say from your phone to your laptop,
+without an account. The two devices talk to each other directly; nothing passes
+through a server.
 
 > [!WARNING]
 > Both devices have to be on the **same wifi**, or one has to be joined to the
@@ -21,7 +21,7 @@ server.
 </figure>
 
 1. Open **Settings**, from the gear in the Edge Tray or by tapping the app's title.
-2. Under **Sync favourites with another device**, tap
+2. Under **Sync with another device**, tap
    **Show a code on this device**.
 3. A 6-character code appears in large type, with a QR code and a link under
    it. Tap the code to copy the link.
@@ -61,18 +61,25 @@ Once connected, both devices show two tabs:
 Tick the ones you want, or **Select all**, then tap the button underneath to copy
 them. The other device saves them straight away and says how many were new.
 
-Copying only ever adds. Nothing is removed or replaced on either device.
+Copying only ever adds, except your name and birthday (see below). Nothing else
+is removed or replaced on either device.
 
-Besides favourite stops, buses, routes and navs, the lists hold your
-[places](places.md) and [trips](trips.md):
+Besides favourite stops, buses, routes and navs, the lists hold your name and
+birthday, your [places](places.md) and your [trips](trips.md):
 
+- **You** has your name and birthday from Settings. Each is listed when the two
+  devices have different ones, and copying it replaces the one on the device it's
+  copied to.
 - **Places** copies Home, Work and your other places. A device that already has
   a Home or Work keeps its own; a place already saved at the same spot isn't
   copied again.
 - **Trips** copies trips from Your trips that the other device doesn't have, and
   its stats count them from then on.
 
-Your [past searches](past-searches.md) and [calendar](calendar.md) aren't copied.
+- **Past searches** copies the searches the other device doesn't have, each in
+  its place by when it was searched, keeping the newest 50.
+
+Your [calendar](calendar.md) isn't copied.
 
 ## Finish
 

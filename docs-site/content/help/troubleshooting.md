@@ -76,7 +76,7 @@ every device, as long as you are using the same Telegram account.
 Both devices must be on the same wifi, or one on the other's hotspot. Work,
 school and hotel wifi often stop devices from reaching each other; use a
 hotspot. The full list of messages and fixes is in
-[Sync favourites between devices](../web/sync.md#if-it-will-not-connect).
+[Sync between devices](../web/sync.md#if-it-will-not-connect).
 
 ## The app looks out of date
 

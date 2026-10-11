@@ -7,7 +7,8 @@
  *
  *   status()  { nfc: "on" | "off" | "none" }
  *   read()    waits for a card, then { balance (cents), can, expiry, autoload (cents),
- *             autoloadOn, purseEnabled, version, raw } or rejects "not-cepas", "lost", "off" or "cancelled"
+ *             autoloadOn, purseEnabled, version, raw, history } or rejects "not-cepas", "lost",
+ *             "off" or "cancelled"
  *   cancel()  stops waiting
  *
  * The purse's layout (from FareBot and Metrodroid, which read the same cards):
@@ -16,10 +17,19 @@
  *   5-7 auto top-up amount (cents), 8-15 CAN (the number printed on the card, as BCD),
  *   16-23 CSN, 24-25 expiry, as days since 1 January 1995.
  *
+ * Read Purse is 90 32 <purse> 00 with no data. With one data byte (90 32 03 00 01 00 00), the
+ * same command answers the purse's history instead: an EZ-Link card read on 12 October 2026
+ * did, which first read as a value of -$201.65. So the purse is asked for in the short form,
+ * and only taken if it looks like one (its first byte, the CEPAS version, is small; a history
+ * record's is its type, 0x30 and up).
+ *
+ * The history is the last rides and top-ups, newest first, 16 bytes each: 0 type (0x30 MRT,
+ * 0x31 bus, 0x75 top-up, 0x76 bus refund), 1-3 amount (signed, cents), 4-7 when, as seconds
+ * since 1 January 1995 Singapore time, 8-15 what, in ASCII ("BUS  21", "HBC-BDK").
+ *
  * Cards on SimplyGo's account-based ticketing keep their value in the SimplyGo account rather
  * than on the card, so what the card says can be out of date for them; the page says so. It
- * shows no value outside what a card can hold. An EZ-Link card read on 12 October 2026 gave
- * one (-$201.65), so the layout below may not hold for every card yet: `raw` is for that.
+ * shows no value outside what a card can hold.
  *
  * `raw` is the purse as read, in hex, with the card's numbers (CAN and CSN, bytes 8 to 23)
  * blanked out, for working out a card that reads wrongly (the page offers to copy it).
@@ -32,6 +42,7 @@ import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -43,13 +54,13 @@ import java.util.Arrays;
 
 @CapacitorPlugin(name = "Card")
 public class CardPlugin extends Plugin {
-    // Read Purse, purse 3 (the one in use), as Metrodroid sends it; then the short form, which
-    // some older cards answer instead.
-    private static final byte[][] READ_PURSE = {
-            {(byte) 0x90, 0x32, 0x03, 0x00, 0x01, 0x00, 0x00},
-            {(byte) 0x90, 0x32, 0x03, 0x00, 0x00},
-    };
+    // Purse 3, the one in use: the purse itself, and its history.
+    private static final byte[] READ_PURSE = {(byte) 0x90, 0x32, 0x03, 0x00, 0x00};
+    private static final byte[] READ_HISTORY = {(byte) 0x90, 0x32, 0x03, 0x00, 0x01, 0x00, 0x00};
     private static final int MIN_PURSE = 26;
+    private static final int RECORD = 16;
+    // 1 January 1995 in Singapore, CEPAS's second 0 for its history, in Unix milliseconds.
+    private static final long EPOCH_SG_MS = 788918400000L - 8L * 60 * 60 * 1000;
     // 1 January 1995, CEPAS's day 0, in Unix milliseconds.
     private static final long EPOCH_MS = 788918400000L;
     private static final long DAY_MS = 86400000L;
@@ -125,9 +136,21 @@ public class CardPlugin extends Plugin {
             try {
                 iso.connect();
                 iso.setTimeout(2000);
-                byte[] purse = readPurse(iso);
-                if (purse == null) call.reject("That isn't an EZ-Link or NETS FlashPay card", "not-cepas");
-                else call.resolve(parse(purse));
+                byte[] purse = command(iso, READ_PURSE);
+                if (purse == null || purse.length < MIN_PURSE || (purse[0] & 0xff) >= 0x30) {
+                    JSObject data = new JSObject();
+                    if (purse != null) data.put("raw", hex(purse));
+                    call.reject("That isn't an EZ-Link or NETS FlashPay card", "not-cepas", null, data);
+                } else {
+                    JSObject out = parse(purse);
+                    // The history's a nicety: a card that won't give it still has its value.
+                    try {
+                        out.put("history", history(command(iso, READ_HISTORY)));
+                    } catch (IOException e) {
+                        out.put("history", new JSArray());
+                    }
+                    call.resolve(out);
+                }
             } catch (IOException e) {
                 call.reject("The card moved away too soon. Hold it still and try again.", "lost");
             } finally {
@@ -143,16 +166,43 @@ public class CardPlugin extends Plugin {
         finish();
     }
 
-    private static byte[] readPurse(IsoDep iso) throws IOException {
-        for (byte[] command : READ_PURSE) {
-            byte[] reply = iso.transceive(command);
-            int n = reply.length;
-            // The purse, then 90 00 for "done".
-            if (n >= MIN_PURSE + 2 && reply[n - 2] == (byte) 0x90 && reply[n - 1] == 0x00) {
-                return Arrays.copyOf(reply, n - 2);
+    // A command's answer without its 90 00 ("done"), or null if it didn't end so.
+    private static byte[] command(IsoDep iso, byte[] command) throws IOException {
+        byte[] reply = iso.transceive(command);
+        int n = reply.length;
+        if (n < 2 || reply[n - 2] != (byte) 0x90 || reply[n - 1] != 0x00) return null;
+        return Arrays.copyOf(reply, n - 2);
+    }
+
+    private static JSArray history(byte[] h) {
+        JSArray out = new JSArray();
+        if (h == null) return out;
+        for (int at = 0; at + RECORD <= h.length; at += RECORD) {
+            int type = h[at] & 0xff;
+            long secs = ((h[at + 4] & 0xffL) << 24) | ((h[at + 5] & 0xff) << 16) | ((h[at + 6] & 0xff) << 8) | (h[at + 7] & 0xff);
+            StringBuilder what = new StringBuilder();
+            for (int i = at + 8; i < at + RECORD; i++) {
+                int c = h[i] & 0xff;
+                if (c >= 0x20 && c < 0x7f) what.append((char) c);
             }
+            JSObject r = new JSObject();
+            r.put("type", type == 0x30 ? "train" : type == 0x31 ? "bus" : type == 0x75 ? "topup" : type == 0x76 ? "refund" : "other");
+            r.put("amount", signed24(h, at + 1));
+            r.put("time", EPOCH_SG_MS + secs * 1000);
+            r.put("what", what.toString().trim().replaceAll("\\s+", " "));
+            out.put(r);
         }
-        return null;
+        return out;
+    }
+
+    // In hex, with the card's numbers (CAN and CSN, bytes 8 to 23) blanked out.
+    private static String hex(byte[] p) {
+        StringBuilder raw = new StringBuilder();
+        for (int i = 0; i < p.length; i++) {
+            if (i > 0) raw.append(' ');
+            raw.append(i >= 8 && i < 24 ? "--" : String.format("%02X", p[i] & 0xff));
+        }
+        return raw.toString();
     }
 
     private static JSObject parse(byte[] p) {
@@ -167,12 +217,7 @@ public class CardPlugin extends Plugin {
         out.put("can", can.toString());
         int days = ((p[24] & 0xff) << 8) | (p[25] & 0xff);
         out.put("expiry", EPOCH_MS + days * DAY_MS);
-        StringBuilder raw = new StringBuilder();
-        for (int i = 0; i < p.length; i++) {
-            if (i > 0) raw.append(' ');
-            raw.append(i >= 8 && i < 24 ? "--" : String.format("%02X", p[i] & 0xff));
-        }
-        out.put("raw", raw.toString());
+        out.put("raw", hex(p));
         return out;
     }
 

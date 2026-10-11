@@ -21,7 +21,10 @@ from there.
 | **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. | `TripPlugin`, `TripService` (a foreground service of the location type) | `js/trip.js` |
 | **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | Capacitor's PushNotifications plugin, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
 | **The phone's calendar**, for Navigate's Calendar tab | `PhoneCalendarPlugin`, `CalendarReader` | `js/calendar.js` |
-| **Card value**: an EZ-Link or NETS FlashPay card's stored value over NFC | `CardPlugin` | `js/card.js` |
+| **Card value**: an EZ-Link or NETS FlashPay card's stored value and recent rides over NFC | `CardPlugin` | `js/card.js` |
+| **Bus timings widget** on the home screen: any stop, resizable, refreshed every 15 minutes or on tap | `TimingsWidget`, `TimingsWidgetService`, `WidgetConfigActivity`, `WidgetStore`, `WidgetRefreshWorker` | favourites from `script.js` (`shareFavsWithWidgets`) |
+| **Picture-in-picture** during a trip or with the live map open | `MainActivity` (PiP), `SgBusPlugin.pip` | `js/pip.js` |
+| **Share sheet** for every share button (the WebView has no `navigator.share`) | `SgBusPlugin.share` | `js/app-bridge.js` |
 | **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
 | **Updating itself** from GitHub Releases | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
 | **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |

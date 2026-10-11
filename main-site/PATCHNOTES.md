@@ -9,6 +9,30 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (morning): Apps 2.0.2
+
+### Web app
+
+- **Sync** - Now called **Sync with another device**, it copies your name and birthday and your past searches too, as well as favourites, places and trips.
+- The Edge Tray keeps its buttons full size when the keyboard's open, scrolling instead of squashing them.
+
+### Android app 2.0.2
+
+- **Bus timings widget** - A stop's live timings on your home screen, resizable any way, for every bus or just the ones you pick.
+- **Picture-in-picture** - During a trip or with the live map open, going home shrinks the app into a small window over your other apps.
+- **Card value** - Reads the card's value correctly, and lists its recent rides and top-ups.
+- **Share** - **More** on share cards opens Android's share sheet.
+- Sharper notification icon.
+
+### Windows and Linux apps 2.0.2
+
+- **Bus timings widgets** - A stop's live timings in a small window on your desktop, from the tray's **Add a Bus timings widget**.
+- **Updates itself** - Checks for new versions; the `.exe` and AppImage install them with a restart.
+- Opens maximised, and starts when you sign in (the tray's menu turns that off).
+- Sharper tray icon.
+
+---
+
 ## 12 October 2026 (late): Apps 2.0.1
 
 ### Android app 2.0.1

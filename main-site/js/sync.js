@@ -28,6 +28,10 @@ const SYNC_MAX_ITEMS = 500;
 const SYNC_ACK_MS = 5000;
 
 const FAV_KINDS = [
+  // You: your name and birthday from Settings, as { field, value }. Keyed by value too, so one
+  // that differs from the other device's is offered, and taking it replaces this device's;
+  // the same one shows as already there. A device from before this ignores them.
+  { kind: 'profile', list: 'profile', label: 'You', key: (p) => `profile:${p.field}=${p.value}` },
   { kind: 'stop',  list: 'stops',  label: 'Bus stops', key: (s) => `stop:${s.code}` },
   { kind: 'bus',   list: 'buses',  label: 'Buses',     key: (b) => `bus:${b}` },
   { kind: 'route', list: 'routes', label: 'Routes',    key: (r) => `route:${r.start}>${r.end}` },
@@ -39,6 +43,8 @@ const FAV_KINDS = [
   // A device from before these sends none and ignores them, as with navs.
   { kind: 'place', list: 'places', label: 'Places',    key: (p) => Places.syncKey(p) },
   { kind: 'trip',  list: 'trips',  label: 'Trips',     key: (t) => `trip:${t.id}` },
+  // Past searches (js/recents.js), merged in by when each was searched.
+  { kind: 'search', list: 'searches', label: 'Past searches', key: (r) => `search:${Recents.syncKey(r)}` },
 ];
 
 const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}`;
@@ -127,7 +133,7 @@ function openSyncLink(code) {
   openSettings();
   if (sync.role) return;
   $('#syncCodeInput').value = P2P.normaliseCode(code);
-  showSyncStatus('Tap Connect to sync favourites with the device showing this code.', 'busy');
+  showSyncStatus('Tap Connect to sync with the device showing this code.', 'busy');
   $('#syncJoinBtn').scrollIntoView({ block: 'nearest' });
   $('#syncJoinBtn').focus({ preventScroll: true });
 }
@@ -149,10 +155,22 @@ const syncLink = (code) => `${location.origin}/#sync/${code}`;
 
 // ---- Favourites ----
 
+const BIRTHDAY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function ownProfile() {
+  const out = [];
+  const name = LS.getName().trim();
+  const birthday = LS.getBirthday();
+  if (name) out.push({ field: 'name', value: name });
+  if (BIRTHDAY_RE.test(birthday)) out.push({ field: 'birthday', value: birthday });
+  return out;
+}
+
 function ownFavs() {
   return {
+    profile: ownProfile(),
     stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes(), navs: LS.getFavNavs(),
-    places: Places.syncList(), trips: TripHistory.list().slice(0, SYNC_MAX_ITEMS),
+    places: Places.syncList(), trips: TripHistory.list().slice(0, SYNC_MAX_ITEMS), searches: Recents.syncList(),
   };
 }
 
@@ -180,6 +198,11 @@ function cleanFavs(raw) {
   const place = (p) => ({ label: text(p.label) || 'Place', lat: p.lat, lng: p.lng });
 
   return {
+    profile: list(raw.profile)
+      .filter((p) => (p?.field === 'name' && typeof p.value === 'string' && p.value.trim() && p.value.length <= 64)
+        || (p?.field === 'birthday' && BIRTHDAY_RE.test(p.value)))
+      .filter((p) => once(`profile:${p.field}`))
+      .map((p) => ({ field: p.field, value: p.value.trim() })),
     stops: list(raw.stops)
       .filter((s) => isStop(s?.code) && once(`stop:${s.code}`))
       .map((s) => ({ code: s.code, name: text(s.name) })),
@@ -193,6 +216,7 @@ function cleanFavs(raw) {
       .map((n) => ({ from: place(n.from), to: place(n.to) })),
     places: list(raw.places).map(Places.clean).filter((p) => p && once(Places.syncKey(p))),
     trips: list(raw.trips).map(TripHistory.clean).filter((t) => t && once(`trip:${t.id}`)),
+    searches: list(raw.searches).map(Recents.clean).filter((r) => r && once(`search:${Recents.syncKey(r)}`)),
   };
 }
 
@@ -206,17 +230,30 @@ function mergeFavs(favs) {
   const navs = LS.getFavNavs();
   const places = [];
   const trips = [];
+  const searches = [];
   let added = 0;
+  let profile = false;
 
   for (const { key, kind, item } of favItems(favs)) {
     if (have.has(key)) continue;
     have.add(key);
+    if (kind === 'profile') {
+      if (item.field === 'name') LS.setName(item.value);
+      else LS.setBirthday(item.value);
+      profile = true;
+      added++;
+      continue;
+    }
     if (kind === 'place') {
       places.push(item);
       continue;
     }
     if (kind === 'trip') {
       trips.push(item);
+      continue;
+    }
+    if (kind === 'search') {
+      searches.push(item);
       continue;
     }
     added++;
@@ -241,9 +278,16 @@ function mergeFavs(favs) {
     LS.setFavNavs(navs);
     favouritesChanged();
   }
+  // The greeting, and Settings if it's open, show the name and birthday taken.
+  if (profile) {
+    updateGreeting();
+    $('#setName').value = LS.getName();
+    $('#setBirthday').value = LS.getBirthday();
+  }
   // Places and trips keep themselves, and say how many they took.
   if (places.length) added += Places.merge(places);
   if (trips.length) added += TripHistory.merge(trips);
+  if (searches.length) added += Recents.merge(searches);
   return added;
 }
 
@@ -563,15 +607,22 @@ function renderSync() {
 }
 
 function favTitle(kind, item) {
+  if (kind === 'profile') return item.field === 'name' ? 'Your name' : 'Your birthday';
   if (kind === 'stop') return nameOf(item.code) || item.name || 'Bus stop';
   if (kind === 'bus') return `Bus ${item}`;
   if (kind === 'nav') return `${item.from.label} → ${item.to.label}`;
   if (kind === 'place') return Places.FIXED[item.key]?.name || item.name || item.label;
   if (kind === 'trip') return `To ${item.to.label}`;
+  if (kind === 'search') return item.label;
   return `${nameOf(item.start) || item.startName || item.start} → ${nameOf(item.end) || item.endName || item.end}`;
 }
 
 function favSubtitle(kind, item) {
+  if (kind === 'profile') {
+    if (item.field === 'name') return item.value;
+    const [y, m, d] = item.value.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
+  }
   if (kind === 'stop') {
     const road = stopsIndex?.[item.code]?.road;
     return road ? `${item.code} · ${road}` : item.code;
@@ -579,6 +630,7 @@ function favSubtitle(kind, item) {
   if (kind === 'bus') return serviceEndsText(item);
   if (kind === 'nav') return 'By bus and train';
   if (kind === 'place') return item.label;
+  if (kind === 'search') return item.sub;
   if (kind === 'trip') return `${TripHistory.day(item.startedAt)} · ${item.legs.map((l) => (l.kind === 'bus' ? `Bus ${l.route}` : l.route)).join(', ')}`;
   return `${item.start} → ${item.end}`;
 }

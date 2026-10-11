@@ -15,9 +15,13 @@
  */
 package org.uwuapps.sgbus;
 
+import android.app.PictureInPictureParams;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.util.Rational;
 import android.webkit.WebView;
 
 import androidx.activity.OnBackPressedCallback;
@@ -50,6 +54,47 @@ public class MainActivity extends BridgeActivity {
                 else moveTaskToBack(true);
             }
         });
+    }
+
+    // ---------- picture-in-picture ----------
+    // While a trip runs or the live map is open, leaving the app shrinks it into a small window
+    // showing just that (main-site/js/pip.js asks for it through SgBusPlugin.pip). Android 12
+    // and later do it themselves (auto-enter); before that, onUserLeaveHint does.
+
+    private boolean mAutoPip;
+    private Rational mPipRatio = new Rational(16, 9);
+
+    void setAutoPip(boolean auto, Rational ratio) {
+        mAutoPip = auto;
+        if (ratio != null) mPipRatio = ratio;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) setPictureInPictureParams(pipParams());
+    }
+
+    boolean enterPip() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return false;
+        try {
+            return enterPictureInPictureMode(pipParams());
+        } catch (IllegalStateException e) {
+            return false; // turned off for this app in Android's settings
+        }
+    }
+
+    private PictureInPictureParams pipParams() {
+        PictureInPictureParams.Builder b = new PictureInPictureParams.Builder().setAspectRatio(mPipRatio);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) b.setAutoEnterEnabled(mAutoPip).setSeamlessResizeEnabled(true);
+        return b.build();
+    }
+
+    @Override
+    protected void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        if (mAutoPip && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Build.VERSION.SDK_INT < Build.VERSION_CODES.S) enterPip();
+    }
+
+    @Override
+    public void onPictureInPictureModeChanged(boolean inPip, Configuration config) {
+        super.onPictureInPictureModeChanged(inPip, config);
+        SgBusPlugin.onPip(inPip);
     }
 
     // BridgeActivity calls this with the intent the app was opened with too, once the page has

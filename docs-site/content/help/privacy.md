@@ -42,11 +42,11 @@ policy covers what it collects. There are no ads.
 
 ### Sync
 
-Syncing favourites uses a free public service from PeerJS to introduce your two
-devices. It sees the sync code and both devices' IP addresses, and each device
-learns the other's IP address. Your favourites, and your places and trips if you
-pick them, travel directly between the two devices, encrypted, and never through
-that service.
+Sync uses a free public service from PeerJS to introduce your two devices. It
+sees the sync code and both devices' IP addresses, and each device learns the
+other's IP address. What you pick to copy (favourites, your name and birthday,
+places, trips and past searches) travels directly between the two devices,
+encrypted, and never through that service.
 
 ### Service alert notifications
 

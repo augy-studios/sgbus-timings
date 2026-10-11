@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v55";
+const VERSION = "v56";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -30,6 +30,10 @@ const ASSETS = [
   "/js/app-bridge.js",
   "/js/map.js",
   "/js/card.js",
+  "/js/pip.js",
+  // The desktop app's widgets (desktop/widgets.js).
+  "/widget.html",
+  "/js/widget.js",
   // The live map's Leaflet (js/map.js), so the map opens offline too.
   "/vendor/leaflet/leaflet.js",
   "/vendor/leaflet/leaflet.css",

@@ -6,6 +6,13 @@
  *   notificationsAllowed()   { allowed }
  *   openSettings({ what })   the app's page in Android's settings ("app"), its notification
  *                            settings ("notifications"), or NFC's ("nfc")
+ *   pip({ auto, ratio })     whether leaving the app now shrinks it into picture-in-picture,
+ *                            and its shape as [width, height] (MainActivity); "pip" events
+ *                            say { active } as it goes in and out
+ *   setFavourites({ stops })  the favourite stops, [{ code, name }], for the widget's setup
+ *                            (WidgetStore)
+ *   share({ title, text, url })  Android's share sheet, as navigator.share is in Chrome: the
+ *                            WebView has none (js/app-bridge.js stands this in for it)
  *
  * And intent: links, which a WebView can't follow by itself as Chrome does: the site's
  * SimplyGo button, the calendar permission and the update bar each link to one of this app's
@@ -50,6 +57,12 @@ public class SgBusPlugin extends Plugin {
         features.put("update"); // UpdateActivity
         features.put("trip"); // TripPlugin
         features.put("notify");
+        features.put("share");
+        features.put("widget");
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
+            features.put("pip");
+        }
         if (NfcAdapter.getDefaultAdapter(getContext()) != null) features.put("card"); // CardPlugin
         // Firebase is set up for this build (google-services.json): the server can push.
         if (getContext().getResources().getIdentifier("google_app_id", "string", getContext().getPackageName()) != 0) {
@@ -81,6 +94,61 @@ public class SgBusPlugin extends Plugin {
         JSObject out = new JSObject();
         out.put("allowed", Notifications.allowed(getContext()));
         call.resolve(out);
+    }
+
+    private static java.lang.ref.WeakReference<SgBusPlugin> sPlugin = new java.lang.ref.WeakReference<>(null);
+
+    @Override
+    public void load() {
+        sPlugin = new java.lang.ref.WeakReference<>(this);
+    }
+
+    static void onPip(boolean active) {
+        SgBusPlugin plugin = sPlugin.get();
+        if (plugin == null) return;
+        JSObject out = new JSObject();
+        out.put("active", active);
+        plugin.notifyListeners("pip", out);
+    }
+
+    @PluginMethod
+    public void pip(PluginCall call) {
+        boolean auto = Boolean.TRUE.equals(call.getBoolean("auto", false));
+        android.util.Rational ratio = null;
+        com.getcapacitor.JSArray r = call.getArray("ratio");
+        try {
+            if (r != null && r.length() == 2) {
+                // Android takes 1:2.39 to 2.39:1.
+                int w = r.getInt(0), h = r.getInt(1);
+                if (w > 0 && h > 0 && w * 100 / h >= 42 && w * 100 / h <= 239) ratio = new android.util.Rational(w, h);
+            }
+        } catch (org.json.JSONException ignored) {
+            // No shape: the last one stands.
+        }
+        android.util.Rational shape = ratio;
+        getActivity().runOnUiThread(() -> {
+            if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).setAutoPip(auto, shape);
+            call.resolve();
+        });
+    }
+
+    @PluginMethod
+    public void setFavourites(PluginCall call) {
+        JSArray stops = call.getArray("stops");
+        if (stops != null) WidgetStore.setFavourites(getContext(), stops);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void share(PluginCall call) {
+        String text = call.getString("text", "");
+        String url = call.getString("url", "");
+        String body = text.isEmpty() ? url : url.isEmpty() ? text : text + " " + url;
+        Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body);
+        String title = call.getString("title");
+        if (title != null && !title.isEmpty()) send.putExtra(Intent.EXTRA_SUBJECT, title);
+        getActivity().startActivity(Intent.createChooser(send, title));
+        call.resolve();
     }
 
     @PluginMethod

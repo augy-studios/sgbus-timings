@@ -41,7 +41,7 @@ part filled in too. See [Navigate](nav.md#share-it) and the
 ## Sync links
 
 A `#sync/` link only works while the device that showed its code is still
-showing it. See [Sync favourites between devices](sync.md).
+showing it. See [Sync between devices](sync.md).
 
 ## App links
 

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Bus timings widget (TimingsWidget.java). Resizable either way, from one row of cells to
+     the whole screen; refreshed by WidgetRefreshWorker, not by updatePeriodMillis. -->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="180dp"
+    android:minHeight="110dp"
+    android:minResizeWidth="110dp"
+    android:minResizeHeight="40dp"
+    android:targetCellWidth="3"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="0"
+    android:initialLayout="@layout/widget_timings"
+    android:previewLayout="@layout/widget_timings"
+    android:previewImage="@mipmap/ic_launcher"
+    android:description="@string/widget_description"
+    android:configure="org.uwuapps.sgbus.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable|configuration_optional"
+    android:widgetCategory="home_screen" />

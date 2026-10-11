@@ -56,4 +56,4 @@ Open [Settings](settings.md) to choose where favourites are pinned:
 Favourites are saved in your browser on this device only. Clearing your
 browser's data for the site removes them, and another browser or device starts
 with none. To copy them to another device, use
-[Sync favourites between devices](sync.md).
+[Sync between devices](sync.md).

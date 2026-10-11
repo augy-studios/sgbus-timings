@@ -12,4 +12,26 @@
     <string name="shortcut_alerts_short">Alerts</string>
     <string name="shortcut_card">Card value</string>
     <string name="shortcut_card_short">Card value</string>
+    <!-- The Bus timings widget (TimingsWidget.java) -->
+    <string name="widget_name">Bus timings</string>
+    <string name="widget_description">Live arrivals at a bus stop you pick, for every bus there or just the ones you choose</string>
+    <string name="widget_pick">Bus timings</string>
+    <string name="widget_pick_help">Tap here to pick a stop</string>
+    <string name="widget_loading">Getting the timings…</string>
+    <string name="widget_refreshing">Refreshing…</string>
+    <string name="widget_refresh">Refresh</string>
+    <string name="widget_offline">Couldn\'t reach LTA. Tap refresh to try again.</string>
+    <string name="widget_offline_short">Offline</string>
+    <string name="widget_none">No buses are due here right now.</string>
+    <string name="widget_none_of_those">None of those buses are due here right now.</string>
+    <string name="widget_updated">Updated %1$s</string>
+    <string name="widget_setup_title">Bus timings widget</string>
+    <string name="widget_setup_intro">Pick a stop for the widget, and, if you like, just some of its buses.</string>
+    <string name="widget_setup_favourites">Your favourite stops</string>
+    <string name="widget_setup_no_favourites">Stops you save in the app show here to pick from.</string>
+    <string name="widget_setup_code">Bus stop code (5 digits)</string>
+    <string name="widget_setup_buses">Just these buses, e.g. 15, 62 (optional)</string>
+    <string name="widget_setup_save">Save</string>
+    <string name="widget_setup_bad_code">Pick a favourite, or type a 5-digit stop code.</string>
+    <string name="widget_setup_bad_buses">Bus numbers are like 21 or NR7, separated by commas.</string>
 </resources>

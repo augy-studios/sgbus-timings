@@ -53,6 +53,11 @@
 
   if (native) {
     document.documentElement.setAttribute('data-app', 'android');
+    // The WebView has no navigator.share: Android's own share sheet stands in, so every share
+    // button on the site works as it does in Chrome.
+    if (!navigator.share) {
+      navigator.share = (data = {}) => call('SgBus', 'share', { title: data.title || '', text: data.text || '', url: data.url || '' });
+    }
     call('SgBus', 'info')
       .then((info) => heard({ type: 'hello', app: 'org.uwuapps.sgbus', ...info }))
       .catch(() => heard({ type: 'hello', features: [] }));

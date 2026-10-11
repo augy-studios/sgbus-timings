@@ -6,7 +6,9 @@
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
 // - links to anywhere but the site opening in your own browser;
-// - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink).
+// - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
+// - checking for its own updates (updater.js);
+// - Bus timings widgets on the desktop (widgets.js).
 //
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
 // site's own origin. Nothing here holds a key or a secret.
@@ -14,6 +16,8 @@
 const { app, BrowserWindow, Menu, Notification, Tray, nativeImage, session, shell, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const updater = require('./updater');
+const widgets = require('./widgets');
 
 const SITE = 'https://sgbus.uwuapps.org';
 const ORIGIN = new URL(SITE).origin;
@@ -31,8 +35,7 @@ const SCHEME = 'uwu';
 const LINK_HOST = 'sgbus';
 const linkIn = (argv) => argv.find((a) => a.toLowerCase().startsWith(`${SCHEME}://`)) || null;
 const startLink = linkIn(process.argv);
-// Opened by a link, it shows even if it was started to go into the tray.
-const startHidden = process.argv.includes('--hidden') && !startLink;
+
 
 // uwu://sgbus/ links, to the page they name, as MainActivity.fromAppLink does in the Android
 // app: the site's short links by their path (uwu://sgbus/go/k3v9q2x7ma), anything else as
@@ -130,7 +133,7 @@ function createWindow() {
   });
 
   win.once('ready-to-show', () => {
-    if (!startHidden) win.show();
+    firstShow();
   });
 
   // The site's own pages stay here; everything else opens in your browser.
@@ -163,7 +166,7 @@ function createWindow() {
 
   // Closing puts it in the tray; Quit, from the tray, closes it.
   win.on('close', (e) => {
-    writeSettings({ bounds: win.getNormalBounds() });
+    writeSettings({ bounds: win.getNormalBounds(), maximized: win.isMaximized() });
     if (quitting) return;
     e.preventDefault();
     win.hide();
@@ -178,6 +181,14 @@ function createWindow() {
   });
 }
 
+// The window shows maximised, unless it was last closed un-maximised.
+let shown = false;
+function firstShow() {
+  shown = true;
+  if (readSettings().maximized !== false) win.maximize();
+  win.show();
+}
+
 function showWindow(hash) {
   if (!win) return;
   if (hash) {
@@ -186,7 +197,8 @@ function showWindow(hash) {
     else win.loadURL(`${SITE}/${hash}`);
   }
   if (win.isMinimized()) win.restore();
-  win.show();
+  if (!shown) firstShow();
+  else win.show();
   win.focus();
 }
 
@@ -197,7 +209,7 @@ const autostartFile = () => path.join(app.getPath('home'), '.config', 'autostart
 
 function startsAtLogin() {
   if (process.platform === 'linux') return fs.existsSync(autostartFile());
-  return app.getLoginItemSettings({ args: ['--hidden'] }).openAtLogin;
+  return app.getLoginItemSettings().openAtLogin;
 }
 
 function setStartAtLogin(on) {
@@ -208,40 +220,55 @@ function setStartAtLogin(on) {
     fs.mkdirSync(path.dirname(autostartFile()), { recursive: true });
     fs.writeFileSync(autostartFile(), [
       '[Desktop Entry]', 'Type=Application', 'Name=SG Bus Timings',
-      `Exec="${exec}" --hidden`, 'X-GNOME-Autostart-enabled=true', '',
+      `Exec="${exec}"`, 'X-GNOME-Autostart-enabled=true', '',
     ].join('\n'));
     return;
   }
-  app.setLoginItemSettings({ openAtLogin: on, args: ['--hidden'] });
+  app.setLoginItemSettings({ openAtLogin: on });
 }
 
 // ---------- the tray ----------
 
 function createTray() {
-  const icon = nativeImage.createFromPath(path.join(__dirname, 'build', 'tray.png')).resize({ height: 16 });
+  // sgbusnotificon.png, made square at 16px, with tray@2x.png and tray@3x.png beside it, which
+  // Electron picks for high-DPI screens itself.
+  const icon = nativeImage.createFromPath(path.join(__dirname, 'build', 'tray.png'));
   tray = new Tray(icon);
   tray.setToolTip('SG Bus Timings');
   const menu = () => Menu.buildFromTemplate([
+    ...(updater.menuItem() ? [updater.menuItem(), { type: 'separator' }] : []),
     { label: 'Open SG Bus Timings', click: () => showWindow() },
     { label: 'Service alerts', click: () => showWindow('#alerts') },
     { label: 'Navigate', click: () => showWindow('#nav') },
+    { label: 'Add a Bus timings widget', click: () => widgets.add() },
     { type: 'separator' },
     {
       label: 'Start when I sign in',
       type: 'checkbox',
       checked: startsAtLogin(),
-      click: (item) => setStartAtLogin(item.checked),
+      click: (item) => {
+        setStartAtLogin(item.checked);
+        writeSettings({ loginChosen: true });
+      },
     },
     { type: 'separator' },
     { label: 'Quit', click: () => { quitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(menu());
+  // An update found or downloaded: the menu offers it.
+  updater.start(() => tray.setContextMenu(menu()));
   tray.on('click', () => (win.isVisible() && win.isFocused() ? win.hide() : showWindow()));
   // Linux trays show the menu on any click; refreshed so the checkbox is right.
   tray.on('right-click', () => tray.setContextMenu(menu()));
 }
 
 // ---------- from the page (preload.js) ----------
+
+// A #address on the site, in the app's window: from a widget's bus, say.
+ipcMain.on('open-hash', (e, hash) => {
+  if (!isSite(e.senderFrame?.url || '') || typeof hash !== 'string' || !/^#[\w/.,~-]*$/.test(hash)) return;
+  showWindow(hash);
+});
 
 ipcMain.on('notify', (e, n) => {
   if (!isSite(e.senderFrame?.url || '') || !n || typeof n !== 'object' || !Notification.isSupported()) return;
@@ -278,10 +305,22 @@ if (!app.requestSingleInstanceLock()) {
       done(ALLOWED.has(permission) && isSite(details.requestingUrl || wc.getURL()));
     });
     session.defaultSession.setPermissionCheckHandler((_wc, permission, origin) => ALLOWED.has(permission) && origin === ORIGIN);
+    // Starts when you sign in from the first run, opening maximised like any other start. The
+    // tray's "Start when I sign in" turns it off, and that sticks.
+    if (app.isPackaged && !readSettings().loginChosen) {
+      setStartAtLogin(true);
+      writeSettings({ loginChosen: true });
+    }
     createWindow();
     createTray();
+    widgets.init({
+      site: SITE, version: app.getVersion(), readSettings, writeSettings,
+      isQuitting: () => quitting,
+    });
+    widgets.restore();
   });
   app.on('before-quit', () => { quitting = true; });
+  app.on('sgbus-quitting', () => { quitting = true; });
   // Kept running in the tray with every window closed.
   app.on('window-all-closed', () => {});
 }

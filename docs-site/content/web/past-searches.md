@@ -67,5 +67,5 @@ Tap the three dots beside a search:
 
 ## Where they're kept
 
-Past searches stay in this browser, up to the last 50. They aren't sent anywhere
-and aren't part of [syncing favourites](sync.md).
+Past searches stay on this device, up to the last 50. They aren't sent anywhere,
+but [Sync](sync.md) can copy them to another of your devices.
