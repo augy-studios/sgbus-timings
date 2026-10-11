@@ -60,7 +60,7 @@ Preview, if you want to try it there):
 | `VAPID_PRIVATE_KEY` | the Private Key from step 2, marked **Sensitive** |
 | `VAPID_SUBJECT` | `mailto:` and an address push services can reach, e.g. `mailto:augy@augystudios.com` |
 | `CRON_SECRET` | any long random string, e.g. from `openssl rand -hex 32`, marked **Sensitive** |
-| `FIREBASE_SERVICE_ACCOUNT` | for the Android app only: Firebase's service account key, the whole JSON, marked **Sensitive**. See `android/FIREBASE-SETUP.md` |
+| `FIREBASE_SERVICE_ACCOUNT` | for the Android app only: the `sgbus-timings-push` service account's key from the shared UwU Apps Firebase project, the whole JSON, marked **Sensitive**. See `android/FIREBASE-SETUP.md` |
 
 `LTA_ACCOUNT_KEY` is already there for the rest of the site.
 

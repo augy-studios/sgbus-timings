@@ -116,7 +116,9 @@ export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' 
   }
   if (r.ok) return;
   const body = await r.json().catch(() => null);
-  const code = body?.error?.details?.find((d) => d.errorCode)?.errorCode || body?.error?.status;
-  if (r.status === 404 || code === 'UNREGISTERED') throw new PushError(410, body);
+  // Only FCM's own word that the token's gone drops the device. A plain 404 can also mean the
+  // project in the key is wrong, and that would drop every phone.
+  const code = body?.error?.details?.find((d) => d.errorCode)?.errorCode;
+  if (code === 'UNREGISTERED') throw new PushError(410, body);
   throw new PushError(r.status, body);
 }
