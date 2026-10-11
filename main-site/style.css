@@ -2405,12 +2405,16 @@ body.on-trip { padding-bottom: 96px; }
 .mapTitle { display: flex; flex-direction: column; min-width: 0; }
 .mapTitle strong, .mapTitle span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mapTitle span { font-size: 13px; color: var(--muted); }
-.mapRecentre {
+/* Overview, and Recentre under it once the map's stopped following. */
+.mapFabs {
     position: absolute; z-index: 1000; right: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 120px);
+    display: flex; flex-direction: column; gap: 10px;
+}
+.mapFab {
     width: 46px; height: 46px; display: grid; place-items: center; background: var(--surface-strong);
     border: 1px solid var(--surface-border); box-shadow: var(--shadow);
 }
-.mapRecentre svg { width: 22px; height: 22px; }
+.mapFab svg { width: 22px; height: 22px; }
 .mapSheet {
     position: absolute; z-index: 1000; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
     max-width: 720px; margin: 0 auto; padding: 12px 14px; border-radius: 18px;

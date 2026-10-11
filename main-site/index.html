@@ -658,7 +658,10 @@
             <button id="mapClose" class="icon-btn small" type="button" aria-label="Close the map"><span data-icon="back"></span></button>
             <div class="mapTitle"><strong id="mapTitle"></strong><span id="mapSub"></span></div>
         </div>
-        <button id="mapRecentre" class="glass-btn mapRecentre" type="button" aria-label="Follow my location" title="Follow my location" hidden><span data-icon="locate"></span></button>
+        <div class="mapFabs">
+            <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
+            <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
+        </div>
         <div class="mapSheet glass">
             <p id="mapStep" class="mapStep" role="status" aria-live="polite"></p>
             <p id="mapNote" class="mapNote" hidden></p>

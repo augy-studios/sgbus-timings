@@ -11,6 +11,10 @@
 //   LiveMap.follow(data)    someone's shared trip (js/share.js): where they are, the way
 //                           they're going and where to, updated as their link is.
 //
+// It opens at street level, as close in as the map goes, on you (or on them, for a shared
+// trip), and keeps following. Overview shows the whole way at once; Recentre goes back to
+// street level and following.
+//
 // Made to stay light on a phone, as a map can easily make a page lag:
 // - Leaflet (vendor/leaflet, 40 KB gzipped) is only fetched the first time the map opens.
 // - Everything's drawn on one canvas (preferCanvas), and lines and markers are made once and
@@ -67,11 +71,13 @@
   // A fix rougher than this isn't drawn as where you are.
   const ROUGH_M = 200;
   const TRIP_EVERY_MS = 5000;
-  // Opened on the whole walk or trip; it follows you once you've moved this far from where
-  // you were then.
-  const FOLLOW_AFTER_M = 25;
+  // Street level: the closest both tile servers draw.
+  const STREET_ZOOM = 19;
 
   const COLOURS = { walk: '#2f7dff', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
+  // Each MRT and LRT line's own colour, for a train leg without one. Keep in step with
+  // LINE_COLORS in js/recents.js.
+  const LINE_COLOURS = { EW: '#009645', CG: '#009645', NS: '#d42e12', NE: '#9900aa', CC: '#fa9e0d', CE: '#fa9e0d', DT: '#005ec4', TE: '#9d5b25', BP: '#748477', SE: '#748477', SW: '#748477', PE: '#748477', PW: '#748477' };
 
   let leaflet = null; // the promise of Leaflet loaded
   let map = null;
@@ -96,7 +102,6 @@
   let tripTimer = null;
   let followData = null;
   let following = true; // the map keeps you in view, until you move it yourself
-  let overviewFrom = null; // where you were when it showed the whole way, to follow once you leave it
   let pushed = false; // whether opening added a step to the page's history
   let builtTripLeg = null;
 
@@ -233,11 +238,41 @@
     return map;
   }
 
+  // Who the map follows: them on a shared trip, otherwise you. Null until there's a fix.
+  function focus() {
+    if (mode === 'follow') return followData ? (followData.me ? [followData.me.lat, followData.me.lng] : followData.at) : null;
+    return here ? [here.lat, here.lng] : null;
+  }
+
+  // Following goes back in to street level on whoever's followed.
   function setFollowing(on) {
     following = on;
-    overviewFrom = null;
     $('#mapRecentre').hidden = on;
-    if (on && here) map.panTo([here.lat, here.lng], { animate: true });
+    const at = on && focus();
+    if (at) map.setView(at, STREET_ZOOM, { animate: true });
+  }
+
+  // The whole way at once: what's left of the walk or trip, or their trip, with you or them
+  // and where it ends. Clear of the bars at the top and bottom.
+  function showOverview() {
+    if (!map || !mode) return;
+    const pts = [];
+    if (mode === 'walk') {
+      if (walk) pts.push(...walk.path);
+      if (place) pts.push([place.lat, place.lng]);
+    } else if (mode === 'trip') {
+      const p = window.Trip?.progress();
+      const legs = window.Trip?.legs?.();
+      if (p && legs) pts.push(...legs.slice(p.legIndex).flatMap((l) => l.points));
+    } else if (mode === 'follow' && followData) {
+      if (followData.path) pts.push(...followData.path);
+      if (followData.to) pts.push([followData.to.lat, followData.to.lng]);
+    }
+    const at = focus();
+    if (at) pts.push(at);
+    if (!pts.length) return;
+    setFollowing(false);
+    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 90], paddingBottomRight: [70, 120], maxZoom: STREET_ZOOM - 1 });
   }
 
   // ---------- opening and closing ----------
@@ -325,9 +360,9 @@
       next.heading = bearing([lastHere.lat, lastHere.lng], [next.lat, next.lng]);
     }
     if (!lastHere || metres([lastHere.lat, lastHere.lng], [next.lat, next.lng]) > 8) lastHere = next;
+    const first = !here;
     here = next;
-    if (overviewFrom === 'next') overviewFrom = [here.lat, here.lng];
-    else if (overviewFrom && here.accuracy < 50 && metres(overviewFrom, [here.lat, here.lng]) > FOLLOW_AFTER_M) setFollowing(true);
+    if (first && following && mode !== 'follow') map.setView([here.lat, here.lng], STREET_ZOOM);
     if (mode === 'walk') onWalkFix();
   }
 
@@ -396,7 +431,8 @@
     walkFrom = from;
     offRoute = 0;
     destMark = flag([place.lat, place.lng], place.label).addTo(groups.marks);
-    map.setView([place.lat, place.lng], 17);
+    // On you already (show() went in on your last fix); until there's one, on where it ends.
+    if (!here) map.setView([place.lat, place.lng], STREET_ZOOM - 2);
     $('#mapStep').textContent = 'Finding where you are…';
     startWatching();
     // From the given start, or where you are once that's known; the end alone until then.
@@ -411,30 +447,18 @@
       const got = await fetchWalk(from, place);
       if (mode !== 'walk' || place !== asked) return;
       walk = { ...got, total: lengthOf(got.path) };
-      drawWalk(true);
+      drawWalk();
       onWalkFix();
     } catch (err) {
       if (mode === 'walk') note(err.message);
     }
   }
 
-  // The whole walk or trip in view, rather than you, until you set off.
-  function overview(bounds, maxZoom) {
-    map.fitBounds(bounds, { padding: [70, 40], maxZoom });
-    setFollowing(false);
-    overviewFrom = here ? [here.lat, here.lng] : 'next';
-  }
-
-  function drawWalk(fit) {
+  function drawWalk() {
     groups.lines.clearLayers();
     if (!walk) return;
     L.polyline(walk.path, { color: '#fff', weight: 9, opacity: 0.9, interactive: false }).addTo(groups.lines);
     L.polyline(walk.path, { color: COLOURS.walk, weight: 5, opacity: 1, dashArray: walk.source === 'line' ? '2 10' : null, lineCap: 'round', interactive: false }).addTo(groups.lines);
-    if (fit) {
-      const bounds = L.latLngBounds(walk.path);
-      if (here) bounds.extend([here.lat, here.lng]);
-      overview(bounds, 18);
-    }
     note(walk.source === 'line' ? "Couldn't find streets for this walk, so this is the straight line there." : '');
   }
 
@@ -512,7 +536,8 @@
       groups.marks.clearLayers();
       legs.forEach((leg, i) => {
         const done = i < p.legIndex;
-        const colour = done ? COLOURS.done : leg.kind === 'walk' ? COLOURS.walk : leg.color || COLOURS[leg.kind] || COLOURS.bus;
+        const colour = done ? COLOURS.done : leg.kind === 'walk' ? COLOURS.walk
+          : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
         L.polyline(leg.points, {
           color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95,
           dashArray: leg.kind === 'walk' ? '2 9' : null, lineCap: 'round', interactive: false,
@@ -541,11 +566,7 @@
           })
           .catch(() => {});
       }
-      if (fit) {
-        const bounds = L.latLngBounds(legs.slice(p.legIndex).flatMap((l) => l.points));
-        if (here) bounds.extend([here.lat, here.lng]);
-        overview(bounds, 17);
-      }
+      if (fit && !here) map.setView(p.at, STREET_ZOOM);
     }
     const status = window.Trip.status?.() || '';
     $('#mapStep').textContent = status;
@@ -591,9 +612,7 @@
         themRing.setLatLng(at).setRadius(Math.min(data.me?.accuracy || 30, 500));
       }
       if (fit) {
-        const bounds = L.latLngBounds([at]);
-        if (data.to) bounds.extend([data.to.lat, data.to.lng]);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 });
+        map.setView(at, STREET_ZOOM);
       } else if (following) {
         keepInView(at);
       }
@@ -622,6 +641,7 @@
   function init() {
     $('#mapClose').addEventListener('click', () => close());
     $('#mapRecentre').addEventListener('click', () => setFollowing(true));
+    $('#mapOverview').addEventListener('click', showOverview);
     window.addEventListener('popstate', () => {
       if (!$('#mapPanel').hidden) close({ fromHistory: true });
     });
