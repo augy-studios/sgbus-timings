@@ -2069,6 +2069,14 @@ body.modal-open { overflow: hidden; }
 .tripChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
 .tripBar.expanded .tripChevron svg { transform: rotate(180deg); }
 body.on-trip { padding-bottom: 96px; }
+/* A phone's width: the buttons on a row of their own under the trip's line, so it isn't
+   squeezed a word per line. The chevron stays up with the line it opens. */
+@media (max-width: 600px) {
+    .tripBarInner { flex-wrap: wrap; row-gap: 8px; }
+    .tripText { flex-basis: calc(100% - 72px); }
+    #tripMap { margin-left: auto; }
+    body.on-trip { padding-bottom: 140px; }
+}
 
 /* The drawer the timeline slides out of. Its one grid row grows from 0fr to 1fr, which
    animates to the timeline's own height; the bar is pinned to the bottom, so it opens
@@ -2380,3 +2388,63 @@ body.on-trip { padding-bottom: 96px; }
 .calAllowRow { display: flex; justify-content: center; margin: 2px 0 6px; }
 #calPhoneBlock { display: flex; flex-direction: column; gap: 6px; }
 #calPhoneBlock[hidden] { display: none; }
+
+/* ---- the live map (js/map.js) ---- */
+/* Full screen, over the panels and the trip bar. Its bars are solid rather than frosted:
+   blurring a map that's panning means redoing the blur every frame, which is what lags. */
+.mapPanel { position: fixed; inset: 0; z-index: 60; background: var(--bg); }
+.liveMap { position: absolute; inset: 0; background: var(--bg); }
+.mapPanel .glass {
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+}
+.mapTop {
+    position: absolute; z-index: 1000; left: 10px; right: 10px; top: max(10px, env(safe-area-inset-top));
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 16px;
+}
+.mapTitle { display: flex; flex-direction: column; min-width: 0; }
+.mapTitle strong, .mapTitle span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mapTitle span { font-size: 13px; color: var(--muted); }
+.mapRecentre {
+    position: absolute; z-index: 1000; right: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 120px);
+    width: 46px; height: 46px; display: grid; place-items: center; background: var(--surface-strong);
+    border: 1px solid var(--surface-border); box-shadow: var(--shadow);
+}
+.mapRecentre svg { width: 22px; height: 22px; }
+.mapSheet {
+    position: absolute; z-index: 1000; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
+    max-width: 720px; margin: 0 auto; padding: 12px 14px; border-radius: 18px;
+}
+.mapStep { font-size: 16px; font-weight: 700; min-height: 1.4em; }
+.mapNote { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.mapActions:empty { display: none; }
+.mapActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.map-open { overflow: hidden; }
+/* Room for the bars, so Leaflet's attribution and zoom stay clear of them. */
+.mapPanel .leaflet-bottom { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 84px); }
+.mapPanel .leaflet-control-attribution { font-size: 10px; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--muted); }
+.mapPanel .leaflet-control-attribution a { color: var(--brand-ink); }
+.mapPanel .leaflet-container { font: inherit; background: var(--bg); }
+/* The map in dark mode: its tiles darkened by the GPU, once per tile, as they're drawn. */
+:root[data-mode="dark"] .mapPanel .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9); }
+
+/* ---- a shared trip's timeline and buttons (js/share.js) ---- */
+.etaTimeline { opacity: 1; --trip-dot: #e8590c; max-height: 240px; border: 1px solid var(--surface-border); border-radius: 14px; }
+.etaTimeline .tlStops::before {
+    content: ""; position: absolute; left: 9px; top: 15px; bottom: 15px; width: 4px; border-radius: 2px;
+    background: color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.etaHere { color: var(--trip-dot); font-weight: 700; }
+.etaButtons { display: flex; flex-wrap: wrap; gap: 8px; }
+.etaButtons .btn { flex: 1 1 auto; justify-content: center; }
+
+/* ---- card value (js/card.js) ---- */
+.cardRead { text-align: center; padding: 8px 0; }
+.cardWait svg { width: 56px; height: 56px; margin: 6px auto 10px; animation: card-hold 1.6s ease-in-out infinite; }
+.cardWait .ico { justify-content: center; width: 100%; }
+@keyframes card-hold { 50% { transform: translateY(-6px); } }
+.cardRead .sub { color: var(--muted); font-size: 13px; }
+.cardValue { font-size: 40px; font-weight: 700; line-height: 1.1; }
+.cardFacts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px auto 0; max-width: 300px; text-align: left; font-size: 14px; }
+.cardFacts dt { color: var(--muted); }
+.cardLow { margin-top: 10px; color: var(--warn); display: flex; gap: 6px; align-items: center; justify-content: center; }

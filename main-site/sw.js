@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v52";
+const VERSION = "v53";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -28,6 +28,11 @@ const ASSETS = [
   "/js/places.js",
   "/js/recents.js",
   "/js/app-bridge.js",
+  "/js/map.js",
+  "/js/card.js",
+  // The live map's Leaflet (js/map.js), so the map opens offline too.
+  "/vendor/leaflet/leaflet.js",
+  "/vendor/leaflet/leaflet.css",
   "/js/calendar.js",
   "/js/nav.js",
   "/js/share.js",
@@ -54,6 +59,17 @@ const WIDGET_CACHE = "sgbus-widgets";
 // Cached on first use so the Jua font still renders offline.
 const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
+// The live map's tiles (js/map.js): kept as they're seen, so a place looked at once comes back
+// at once, and offline, and OpenStreetMap's servers are asked for each tile once rather than
+// on every pan. Not versioned, so a deploy doesn't throw them away. Capped at TILE_MAX, the
+// oldest going first (about 30 MB of OpenStreetMap's), and a tile older than TILE_REFRESH_MS
+// is still shown but fetched again behind it.
+const TILE_CACHE = "sgbus-tiles";
+const TILE_MAX = 2000;
+const TILE_REFRESH_MS = 14 * 24 * 3600 * 1000;
+const isTile = (url) => url.hostname === "tile.openstreetmap.org" ||
+  (url.hostname === "www.onemap.gov.sg" && url.pathname.startsWith("/maps/tiles/"));
+
 // No skipWaiting() here: a new worker installs and then waits until somebody
 // presses Reload on the update bar (js/sw-update.js).
 self.addEventListener("install", (event) => {
@@ -71,7 +87,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE && key !== WIDGET_CACHE).map((key) => caches.delete(key))
+        keys.filter((key) => key !== CACHE && key !== WIDGET_CACHE && key !== TILE_CACHE).map((key) => caches.delete(key))
       )
     )
   );
@@ -375,7 +391,8 @@ self.addEventListener("fetch", (event) => {
 
   if (url.origin !== self.location.origin) {
     if (FONT_HOSTS.includes(url.hostname)) event.respondWith(cacheFirst(request));
-    // Analytics, ads and PeerJS for syncing (js/p2p.js) go straight to the network,
+    else if (isTile(url)) event.respondWith(tile(event, request));
+    // Analytics and PeerJS for syncing (js/p2p.js) go straight to the network,
     // untouched: an old signalling client talking to the live broker is worse than
     // a clear "could not load".
     return;
@@ -392,6 +409,9 @@ self.addEventListener("fetch", (event) => {
     // Journeys use live alerts and the time of day, and place searches go to OneMap:
     // neither is worth answering from an old copy.
     if (url.pathname === "/api/nav" || url.pathname === "/api/places") return;
+    // A walk on the live map is asked for from where you are now, and Vercel's edge already
+    // keeps the ones asked for before (api/walk.js).
+    if (url.pathname === "/api/walk") return;
     // Share links: live progress moves, and a link just made has to be read fresh.
     if (url.pathname === "/api/share" || url.pathname === "/api/share-map") return;
     // The Android app's newest version: an old answer offers an update already installed.
@@ -417,3 +437,34 @@ self.addEventListener("fetch", (event) => {
   // app itself rather than the browser's error page.
   event.respondWith(cacheFirst(request, request.mode === "navigate" ? "/" : null));
 });
+
+/* -- The live map's tiles (js/map.js) -- */
+
+let tilePuts = 0;
+
+async function tile(event, request) {
+  const cache = await caches.open(TILE_CACHE);
+  const hit = await cache.match(request);
+  const fresh = async () => {
+    const res = await fetch(request);
+    // Only what can be read: both tile servers send CORS (js/map.js asks with it), and an
+    // opaque answer would count as megabytes against the site's storage in Chrome.
+    if (res.ok) {
+      await cache.put(request, res.clone());
+      if (++tilePuts % 50 === 0) trimTiles(cache);
+    }
+    return res;
+  };
+  if (hit) {
+    const age = Date.now() - Date.parse(hit.headers.get("date") || "");
+    if (!(age < TILE_REFRESH_MS)) event.waitUntil(fresh().catch(() => {}));
+    return hit;
+  }
+  return fresh();
+}
+
+// The oldest first: Cache Storage lists its keys in the order they went in.
+async function trimTiles(cache) {
+  const keys = await cache.keys();
+  if (keys.length > TILE_MAX) await Promise.all(keys.slice(0, keys.length - TILE_MAX).map((k) => cache.delete(k)));
+}

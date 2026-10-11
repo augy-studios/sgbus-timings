@@ -3,17 +3,21 @@ from urllib.parse import quote
 from telethon import Button
 
 from .buttons import make_button
+from .config import config
 
-# The map apps a tapped Directions button offers, in the order they appear on the row.
+# The choices a tapped Directions button offers, in the order they appear on the row: the
+# web app's own live map first, walking there turn by turn, then Citymapper.
 MAP_APPS = [
-    {"id": "google", "button": "🗺 Google Maps"},
+    {"id": "live", "button": "🧭 Live map"},
     {"id": "citymapper", "button": "🚇 Citymapper"},
 ]
 
 
 def directions_url(stop, app: str) -> "str | None":
-    """A deep link opening directions to `stop` in the given map app - the app itself where
-    it's installed, its website otherwise. None for a stop with no coordinates cached."""
+    """A link to directions to `stop`: the web app's live map (main-site/js/map.js, opened by
+    its #map/<code> address), which opens in SG Bus Timings' Android app where that's installed
+    and in the browser otherwise; or Citymapper, the app itself where it's installed, its
+    website otherwise. None for a stop with no coordinates cached."""
     lat, lng = stop["lat"], stop["lng"]
     if lat is None or lng is None:
         return None
@@ -24,7 +28,7 @@ def directions_url(stop, app: str) -> "str | None":
             query += f"&endaddress={quote(stop['road'])}"
         return f"https://citymapper.com/directions?{query}"
 
-    return f"https://www.google.com/maps/dir/?api=1&destination={lat}%2C{lng}"
+    return f"{config.webapp_url.rstrip('/')}/#map/{stop['code']}"
 
 
 def navigate_buttons(stop, origin: dict, opened: bool) -> list:

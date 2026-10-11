@@ -3,6 +3,16 @@
 // closed. The page subscribes to Web Push and tells /api/push which updates it
 // wants; a cron function (api/push/poll.js) polls LTA every minute and pushes.
 // The subscribing follows alarm-clock's main-site/js/push.js.
+//
+// In the Android app (2.0.0 and later), whose WebView has no Web Push, the app registers with
+// Firebase Cloud Messaging instead (Capacitor's PushNotifications plugin, js/app-bridge.js),
+// and the "subscription" sent to the server is { fcm: token }, which it pushes to through FCM
+// (api/_push/fcm.js). FCM shows the notification itself while the app's in the background; in
+// front, the app hands it here and it's shown through the app (AppBridge.notify).
+//
+// In the desktop app (desktop/), which has no Web Push either but stays open in the tray, the
+// page checks /api/service-alerts itself every DESKTOP_POLL_MS, by the same rules as
+// api/_push/alerts.js, and the app shows what's new as a notification (window.sgbusDesktop).
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const API_BASE = "/api/push";
@@ -178,8 +188,25 @@
 
   // ---------- notifications ----------
 
+  const inApp = () => Boolean(window.AppBridge?.native);
+  const inDesktop = () => Boolean(window.sgbusDesktop);
+
   function pushSupported() {
+    if (inDesktop()) return true;
+    if (inApp()) return AppBridge.has("push");
     return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  }
+
+  // "granted", "denied" or "default", as Notification.permission says it.
+  async function permission({ ask = false } = {}) {
+    if (inDesktop()) return "granted";
+    if (!inApp()) {
+      if (Notification.permission !== "default" || !ask) return Notification.permission;
+      return Notification.requestPermission();
+    }
+    const now = (await AppBridge.call("PushNotifications", "checkPermissions")).receive;
+    const state = now === "granted" || !ask ? now : (await AppBridge.call("PushNotifications", "requestPermissions")).receive;
+    return state === "granted" ? "granted" : state === "denied" ? "denied" : "default";
   }
 
   // The choice, { train, traffic }, each "all", "disruptions" or "off". Before the two were
@@ -228,6 +255,8 @@
     unsupported: "This browser can't receive notifications. On iPhone or iPad, add the app to your Home Screen, open it from there, and try again.",
     denied: "Notifications are blocked for this site. Allow them in your browser's site settings, then pick again.",
     failed: "Couldn't reach the alerts server. Try again in a minute.",
+    appUnsupported: "This copy of the app can't get notifications from the server yet. Update it when an update's offered, or use the website.",
+    appDenied: "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again.",
   };
 
   function noteFor(modes) {
@@ -264,7 +293,34 @@
     return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
   }
 
+  // The app's FCM token, from PushNotifications.register(): its answer comes as an event.
+  let fcmToken = null;
+  function appToken() {
+    if (fcmToken) return Promise.resolve(fcmToken);
+    return new Promise((resolve, reject) => {
+      const ok = AppBridge.on("PushNotifications", "registration", (t) => {
+        ok.remove();
+        bad.remove();
+        fcmToken = t.value;
+        resolve(fcmToken);
+      });
+      const bad = AppBridge.on("PushNotifications", "registrationError", (e) => {
+        ok.remove();
+        bad.remove();
+        reject(new Error(e?.error || "FCM registration failed"));
+      });
+      AppBridge.call("PushNotifications", "register").catch(reject);
+      setTimeout(() => reject(new Error("FCM registration timed out")), 20_000);
+    });
+  }
+
+  // What the server pushes to: a Web Push subscription, or in the app { fcm: token }. Either
+  // way it has toJSON(), as a PushSubscription does.
   async function subscription() {
+    if (inApp()) {
+      const fcm = await appToken();
+      return { toJSON: () => ({ fcm }) };
+    }
     const reg = await readyRegistration();
     return (await reg.pushManager.getSubscription()) ?? await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -275,11 +331,12 @@
   // This device's id and push subscription, for the Get Off Alert's background half
   // (js/trip.js), which pushes to the same subscription. Null without permission.
   async function pushTarget() {
-    if (!pushSupported() || Notification.permission !== "granted") return null;
+    if (!pushSupported() || (await permission()) !== "granted") return null;
     return { deviceId: deviceId(), subscription: (await subscription()).toJSON() };
   }
 
   async function subscribe(modes) {
+    if (inDesktop()) return desktopWatch(modes);
     const sub = await subscription();
     const res = await fetch(`${API_BASE}/devices/${deviceId()}`, {
       method: "PUT",
@@ -292,11 +349,15 @@
   // Unsubscribe and have the server forget this device. Browsers don't let a
   // page revoke notification permission itself; this is the closest it gets.
   async function unsubscribe() {
+    if (inDesktop()) return desktopWatch(null);
     try {
-      // A trip still running needs the subscription for its Get Off Alert.
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = await reg?.pushManager.getSubscription();
-      if (!window.Trip?.active()) await sub?.unsubscribe();
+      // A trip still running needs the subscription for its Get Off Alert. The app's FCM
+      // token stays: it's the app's, not this choice's, and the server forgets the device.
+      if (!inApp()) {
+        const reg = await navigator.serviceWorker.getRegistration();
+        const sub = await reg?.pushManager.getSubscription();
+        if (!window.Trip?.active()) await sub?.unsubscribe();
+      }
     } catch (err) {
       console.warn("unsubscribe failed:", err);
     }
@@ -318,10 +379,15 @@
       if (pushSupported()) await unsubscribe();
       return;
     }
-    if (!pushSupported()) return showModes(previous, "unsupported");
+    if (!pushSupported()) return showModes(previous, inApp() ? "appUnsupported" : "unsupported");
 
-    const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-    if (perm !== "granted") return showModes(previous, "denied");
+    let perm;
+    try {
+      perm = await permission({ ask: true });
+    } catch {
+      perm = "denied";
+    }
+    if (perm !== "granted") return showModes(previous, inApp() ? "appDenied" : "denied");
 
     showModes(modes);
     try {
@@ -335,10 +401,16 @@
 
   // Re-sends the choice on every load, which also refreshes the subscription. A
   // permission revoked in the browser's settings turns both off here too.
-  function resync() {
+  async function resync() {
     const modes = storedModes();
     if (!anyOn(modes)) return;
-    if (!pushSupported() || Notification.permission !== "granted") {
+    // The app's features are known once it's answered.
+    if (inApp()) await AppBridge.ready(5000);
+    let perm = "default";
+    try {
+      if (pushSupported()) perm = await permission();
+    } catch {}
+    if (perm !== "granted") {
       const off = { train: "off", traffic: "off" };
       storeModes(off);
       showModes(off);
@@ -347,6 +419,74 @@
     // Saved again, so a single pre-split mode moves to the new key.
     storeModes(modes);
     subscribe(modes).catch((err) => console.warn("service alerts resync failed:", err));
+  }
+
+  // ---------- the desktop app ----------
+  // The same rules as api/_push/alerts.js (diffTrain, diffTraffic, updateFor): the first look
+  // only notes how things are; after that, a train update when anything about the trains
+  // changes ("disruptions": only while one's on, and as it clears), and each traffic incident
+  // not seen in the last SEEN_FOR_MS ("disruptions": only those that can block a bus).
+
+  const DESKTOP_POLL_MS = 60 * 1000;
+  const SEEN_FOR_MS = 6 * 60 * 60 * 1000;
+  let desktop = null; // { modes, timer, train, seen }
+
+  function desktopWatch(modes) {
+    clearInterval(desktop?.timer);
+    desktop = null;
+    if (!modes || !anyOn(modes)) return;
+    desktop = { modes, train: null, seen: null, timer: setInterval(desktopPoll, DESKTOP_POLL_MS) };
+    desktopPoll();
+  }
+
+  async function desktopPoll() {
+    const d = desktop;
+    if (!d) return;
+    let data;
+    try {
+      const res = await fetch("/api/service-alerts", { cache: "no-store" });
+      if (!res.ok) return;
+      data = await res.json();
+    } catch {
+      return;
+    }
+    if (desktop !== d) return;
+    const parts = [];
+    let title = "Service Alerts";
+
+    if (data.train) {
+      const status = Number(data.train.Status) || 1;
+      const segments = Array.isArray(data.train.AffectedSegments) ? data.train.AffectedSegments : [];
+      const now = JSON.stringify([status, segments, data.train.Message || []]);
+      const disrupted = status > 1 || segments.length > 0;
+      if (d.train && d.train.key !== now && (d.modes.train === "all" || (d.modes.train === "disruptions" && (disrupted || d.train.disrupted)))) {
+        parts.push(disruptionText(data.train) || "All train services are running normally again.");
+        title = disrupted ? "Train disruption" : "Train service update";
+      }
+      d.train = { key: now, disrupted };
+    }
+
+    if (Array.isArray(data.traffic)) {
+      const t = Date.now();
+      const first = !d.seen;
+      const seen = Object.fromEntries(Object.entries(d.seen || {}).filter(([, at]) => t - at < SEEN_FOR_MS));
+      const fresh = [];
+      for (const i of data.traffic) {
+        const k = `${i.type}|${i.message}`;
+        if (!first && !(k in seen)) fresh.push(i);
+        seen[k] = t;
+      }
+      d.seen = seen;
+      const heard = d.modes.traffic === "all" ? fresh : d.modes.traffic === "disruptions" ? fresh.filter(isBlocking) : [];
+      if (heard.length) {
+        parts.push(heard[0].message + (heard.length > 1 ? `\nAnd ${heard.length - 1} more traffic incident${heard.length > 2 ? "s" : ""}.` : ""));
+        if (title === "Service Alerts" && !parts[1]) title = heard.length === 1 ? `New ${heard[0].type.toLowerCase()}` : `${heard.length} new traffic incidents`;
+        if (parts.length > 1) title = "Service Alerts";
+      }
+    }
+
+    if (parts.length) window.sgbusDesktop.notify({ title, body: parts.join("\n"), url: "/#alerts" });
+    if (data.train) showBar(disruptionText(data.train));
   }
 
   // ---------- wiring ----------
@@ -371,6 +511,24 @@
       more.setAttribute("aria-expanded", String(!others.hidden));
       more.textContent = others.hidden ? `Show the other ${others.querySelectorAll("li").length}` : "Hide them";
     });
+
+    // In the app: a push that came while it was in front, which FCM leaves to the app to
+    // show, and a tapped one. The Get Off Alert's go to js/trip.js.
+    if (inApp()) {
+      const fromPush = (n) => ({ ...(n?.data || {}), title: n?.title ?? n?.data?.title, body: n?.body ?? n?.data?.body });
+      AppBridge.on("PushNotifications", "pushNotificationReceived", (n) => {
+        const d = fromPush(n);
+        if (d.type === "get-off") {
+          window.dispatchEvent(new CustomEvent("push:get-off", { detail: { tripId: d.tripId, leg: Number(d.leg), text: d.body } }));
+        } else if (d.type === "service-alert") {
+          AppBridge.notify({ channel: "alerts", tag: "service-alert", title: d.title || "Service Alerts", body: d.body || "", url: d.url || "/#alerts" });
+          if (!$("#alertsSection").hidden) load();
+        }
+      });
+      AppBridge.on("PushNotifications", "pushNotificationActionPerformed", (a) => {
+        if (fromPush(a?.notification).type === "service-alert") open();
+      });
+    }
 
     // A tapped notification on a page that's already open: the service worker
     // asks it to show the card rather than opening a second window.

@@ -39,9 +39,12 @@ export function alongLeg(here, pts) {
   return bestM <= ON_ROUTE_M ? best : null;
 }
 
+// Whether there's another ride after this leg, to change to: walks don't count.
+const ridesAfter = (trip) => trip.legs.slice(trip.leg + 1).some((l) => l.kind !== 'walk');
+
 export function alertText(trip, left) {
   const leg = trip.legs[trip.leg];
-  const last = trip.leg === trip.legs.length - 1;
+  const last = !ridesAfter(trip);
   return left === 0
     ? `Get off now at ${leg.to}.`
     : `Get off in ${left} stop${left === 1 ? '' : 's'}, at ${leg.to}${last ? '' : ', to change'}.`;
@@ -102,7 +105,8 @@ export function step(trip, buses, now) {
   trip.est = pos;
 
   let alert = null;
-  if (pos >= last - ALERT_STOPS - LEAD_STOPS && !trip.alerted[trip.leg]) {
+  // No alert for a walk: it's by the clock here, and there's nothing to get off.
+  if (leg.kind !== 'walk' && pos >= last - ALERT_STOPS - LEAD_STOPS && !trip.alerted[trip.leg]) {
     trip.alerted[trip.leg] = true;
     alert = { text: alertText(trip, Math.max(0, Math.round(last - pos))), leg: trip.leg };
   }

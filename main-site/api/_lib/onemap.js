@@ -91,3 +91,16 @@ export async function route(from, to, { mode = "TRANSIT", when = new Date(), cou
     if (!r.ok) throw new Error(`OneMap route responded ${r.status}`);
     return (await r.json())?.plan?.itineraries || [];
 }
+
+// A walking route from OneMap's router, for the live map (/api/walk): its line, encoded as
+// Google's polylines are, and its turn-by-turn instructions. Needs a token.
+export async function walkRoute(from, to) {
+    const url = new URL(ROUTE_URL);
+    url.searchParams.set("start", `${from.lat},${from.lng}`);
+    url.searchParams.set("end", `${to.lat},${to.lng}`);
+    url.searchParams.set("routeType", "walk");
+    if (!(await getToken())) throw new Error("OneMap routing needs ONEMAP_EMAIL and ONEMAP_PASSWORD");
+    const r = await get(url);
+    if (!r.ok) throw new Error(`OneMap walk route responded ${r.status}`);
+    return r.json();
+}

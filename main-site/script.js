@@ -500,26 +500,20 @@ let lastArrivals = null;
 let navOpen = false;
 let loadSeq = 0;
 
+// Directions to a stop: the live map (js/map.js), walking there turn by turn from where you
+// are, and these map apps besides.
 const MAP_APPS = [
-    { id: 'google',     label: 'Google Maps' },
     { id: 'citymapper', label: 'Citymapper' },
 ];
 
 // Directions to a stop (or any { lat, lng, n }) in a map app: the app itself where it's
-// installed, its website otherwise. `from` starts them somewhere other than where you are, and
-// `walk` asks Google Maps for walking directions (a nav's walks, js/nav.js); Citymapper's
-// links have no mode, and it offers walking among its own.
-function directionsUrl(stop, app, { from = null, walk = false } = {}) {
-    if (app === 'citymapper') {
-        let q = `endcoord=${stop.lat}%2C${stop.lng}&endname=${encodeURIComponent(stop.n || '')}`;
-        if (stop.road) q += `&endaddress=${encodeURIComponent(stop.road)}`;
-        if (from) q += `&startcoord=${from.lat}%2C${from.lng}`;
-        return `https://citymapper.com/directions?${q}`;
-    }
-    let q = `api=1&destination=${stop.lat}%2C${stop.lng}`;
-    if (from) q += `&origin=${from.lat}%2C${from.lng}`;
-    if (walk) q += '&travelmode=walking';
-    return `https://www.google.com/maps/dir/?${q}`;
+// installed, its website otherwise. `from` starts them somewhere other than where you are.
+// Citymapper's links have no mode, and it offers walking among its own.
+function directionsUrl(stop, app, { from = null } = {}) {
+    let q = `endcoord=${stop.lat}%2C${stop.lng}&endname=${encodeURIComponent(stop.n || '')}`;
+    if (stop.road) q += `&endaddress=${encodeURIComponent(stop.road)}`;
+    if (from) q += `&startcoord=${from.lat}%2C${from.lng}`;
+    return `https://citymapper.com/directions?${q}`;
 }
 
 function stopHash() {
@@ -556,9 +550,10 @@ function renderStopTools() {
     const stop = stopsIndex?.[code];
     if (stop && stop.lat != null && stop.lng != null) {
         parts.push(navOpen
-            ? MAP_APPS.map(app =>
+            ? `<button type="button" class="iconBtn" data-tool="livemap">${ico('map')} Live map</button>` +
+              MAP_APPS.map(app =>
                 `<a class="iconBtn" href="${escapeHtml(directionsUrl(stop, app.id))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
-            ).join('')
+              ).join('')
             : `<button type="button" class="iconBtn" data-tool="navigate">${ico('navigate')} Directions</button>`);
     }
     $('#stopTools').innerHTML = parts.join('');
@@ -1170,6 +1165,9 @@ $('#stopTools').addEventListener('click', e => {
         openService(current.service, { fromStop: current.code, onward: true, dir: current.dir });
     } else if (tool === 'pick') {
         openBusPicker();
+    } else if (tool === 'livemap') {
+        const stop = stopsIndex?.[current.code];
+        if (stop) LiveMap.walkTo({ lat: stop.lat, lng: stop.lng, label: stop.n || current.code });
     } else if (tool === 'navigate') {
         navOpen = true;
         renderStopTools();
@@ -1343,6 +1341,17 @@ function routeFromHash() {
     // Where a Service Alerts notification opens. Shown above the page, so the first
     // favourite stop still loads behind it.
     if (hash === 'alerts') { window.Alerts.open(); return false; }
+    // The live map, walking to a stop or a place: the Telegram bot's Live map button. Over the
+    // page, so the stop's timings load behind it, ready for when you get there.
+    if ((m = hash.match(/^map\/(\d{5})$/))) {
+        const code = m[1];
+        ensureStopsIndex().then(() => LiveMap.openFromHash(code));
+        loadStop(code, { pushHistory: false });
+        return true;
+    }
+    if ((m = hash.match(/^map\/(-?[\d.]+,-?[\d.]+(?:~.*)?)$/))) { LiveMap.openFromHash(m[1]); return false; }
+    // The Android app's Card value shortcut (js/card.js).
+    if (hash === 'card') { window.Card?.open(); return false; }
     // A short share link (js/share.js), sent on here by api/share-page.js: a place or
     // directions open Navigate, live progress opens over the page.
     if ((m = hash.match(/^share\/([a-z0-9]{10})$/))) { Share.open(m[1]); return true; }

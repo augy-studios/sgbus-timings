@@ -34,11 +34,11 @@ server asks LTA DataMall. To search a postal code, the server looks it up with
 OneMap. Neither request includes anything about you beyond what any website
 sees, such as your IP address.
 
-### Analytics and ads
+### Analytics
 
 The web app and this guide use Google Analytics to count visits and see which
-pages are used, and show Google AdSense ads. Both are Google services that may
-set cookies; Google's own privacy policy covers what they collect.
+pages are used. It's a Google service that may set cookies; Google's own privacy
+policy covers what it collects. There are no ads.
 
 ### Sync
 
@@ -83,15 +83,18 @@ a directions link from where it started to where it ended, without when you took
 it.
 
 A **Share my ETA** link also holds the name from Settings, if you set one, where
-you are along the trip's route, and when you should get there, updated as you go.
+you are, and when you should get there, updated every 10 seconds as you go. "Where
+you are" is your location itself, from your last good GPS fix, so whoever has the
+link can follow your dot on a map; it's sent only while you're sharing, and **Stop
+sharing** stops it.
 It's deleted three hours after its last update. The map on a link is drawn by
 OneMap.
 
 ### Get Off Alert
 
 On a trip, your live location is used in your browser to count the stops left.
-It never leaves your device, unless you share your ETA: then where you are along
-the trip's route is sent with it (see [Share links](#share-links)).
+It never leaves your device, unless you share your ETA: then it's sent with it
+(see [Share links](#share-links)).
 
 If you've allowed notifications, the trip is also sent to SG Bus Timings' server
 so it can send the alert while the site is in the background. That covers the
@@ -122,12 +125,43 @@ they aren't sent to SG Bus Timings' server or kept by the app. Locations are
 looked up as above. Turn the permission off in Android's settings for the app,
 or pick **Remove calendar**, to stop it.
 
+### The live map
+
+The [live map](../web/live-map.md) uses your location on your device to follow
+you. To draw a walk, the two ends, where you are and where you're going (rounded
+to about 10 m), go to SG Bus Timings' server, which asks OneMap's walking router,
+or, if that's down, the one OpenStreetMap Germany runs. Nothing else about you
+goes with them. The map itself comes from OpenStreetMap's or OneMap's servers,
+which see your IP address and which part of the map you're looking at, like any
+website's map.
+
 ### The Android app
 
-The [Android app](../web/android-app.md) is the website in Chrome, so everything
-on this page applies to it the same way, and its storage is Chrome's for the
-site. On its own it reads nothing about you. It opens SimplyGo when you tap that
-button, and reads your calendar only as above.
+The [Android app](../web/android-app.md) shows the website, so everything on this
+page applies to it the same way. From version 2 it keeps its own storage, not
+Chrome's. On its own it reads nothing about you. It opens SimplyGo when you tap
+that button, and reads your calendar only as above.
+
+On a trip it keeps your location coming with the screen off, for the trip in the
+page only: it isn't sent anywhere the website wouldn't send it.
+
+**Card value** reads the value, expiry and number of the card you hold to the
+phone, shows them, and forgets them. Nothing is written to the card, and nothing
+read is sent anywhere or kept.
+
+**Notifications from the server** reach the app through Google's Firebase Cloud
+Messaging rather than Web Push. The app gets a token from Google, and that token
+is what's sent to SG Bus Timings' server in place of a browser's push
+subscription, for the same purposes and kept the same way. Google carries each
+notification to the phone.
+
+### The desktop app
+
+The Windows and Linux app shows the website in its own window, so everything on
+this page applies to it the same way. For Service alerts it asks the server for
+the current alerts every minute while it runs, the same request the alerts card
+makes, and shows what's new itself: nothing is sent about you, and no push
+subscription is made.
 
 ### Weather
 
@@ -137,9 +171,9 @@ forecast is the same for everyone.
 
 ### Directions
 
-The **Directions** button on a stop's timings opens Google Maps or Citymapper with
-the stop as the destination.
-From then on, that app's own privacy policy applies.
+The **Directions** button on a stop's timings opens the live map (see
+[The live map](#the-live-map)) or Citymapper, with the stop as the destination.
+Once you're in Citymapper, its own privacy policy applies.
 
 ## The Telegram bot
 

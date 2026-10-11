@@ -15,6 +15,8 @@ const PUSH_HOSTS = [
 ];
 
 const ID_RE = /^[A-Za-z0-9-]{8,64}$/;
+// An FCM registration token, the Android app's subscription: { fcm: token } (api/_push/fcm.js).
+const FCM_RE = /^[A-Za-z0-9_:\-]{100,400}$/;
 const B64URL_RE = /^[A-Za-z0-9_-]+=*$/;
 
 export class ValidationError extends Error {}
@@ -58,7 +60,8 @@ export function parseTrip(body, now = Date.now()) {
 
   const legs = body.legs.map((l, i) => {
     if (!l || typeof l !== 'object') fail(`leg ${i} must be an object`);
-    if (l.kind !== 'bus' && l.kind !== 'train') fail(`leg ${i}: kind must be bus or train`);
+    // A walk: to the first stop, between rides, or to the end (js/trip.js), followed by the clock.
+    if (l.kind !== 'bus' && l.kind !== 'train' && l.kind !== 'walk') fail(`leg ${i}: kind must be bus, train or walk`);
     if (!Array.isArray(l.points) || l.points.length < 2 || l.points.length > 200) fail(`leg ${i}: 2 to 200 points`);
     const points = l.points.map((p) => {
       if (!Array.isArray(p) || !isNum(p[0], ...SG.lat) || !isNum(p[1], ...SG.lng)) fail(`leg ${i}: a point is outside Singapore`);
@@ -130,6 +133,10 @@ function parseShare(share) {
 
 function parseSubscription(sub) {
   if (!sub || typeof sub !== 'object') fail('subscription is required');
+  if (sub.fcm != null) {
+    if (typeof sub.fcm !== 'string' || !FCM_RE.test(sub.fcm)) fail('bad subscription.fcm');
+    return { fcm: sub.fcm };
+  }
 
   let url;
   try {

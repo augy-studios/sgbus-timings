@@ -5,21 +5,12 @@ android.keystore
 *.jks
 keystore.properties
 
+# Firebase's settings for the app (FIREBASE-SETUP.md): not secret, but your project's own.
+google-services.json
+
+node_modules/
+
 # Built apps
 *.apk
 *.aab
 *.idsig
-
-# Bubblewrap's Play Store listing icon, made again by `bubblewrap update`
-store_icon.png
-
-# Build output and caches
-build/
-app/build/
-.gradle/
-local.properties
-.idea/
-*.iml
-.cxx/
-.externalNativeBuild/
-captures/

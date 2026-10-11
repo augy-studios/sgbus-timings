@@ -90,12 +90,21 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Tapping into a search box drops down past searches (last 24 hours, then earlier) with tabs for saved places and, in Navigate, calendar events (`js/recents.js`). Kept in the browser, last 50, not synced
 - **Calendar**: a private iCal link, read through `POST /api/calendar` (https only, public hosts, not stored or logged), or an imported `.ics` file read in the browser, or, in the Android app, the phone's own calendar. Events with a location for the next 14 days; tap one to Navigate there arriving by its start (`js/calendar.js`)
 
+### The live map
+- **Live map** (`js/map.js`): OpenStreetMap with Leaflet (`vendor/leaflet/`, loaded the first time it opens), full screen, following your location. Replaces Google Maps: a stop's Directions, a walk in a nav, `#map/<stop>` and `#map/<lat>,<lng>~<name>` (the Telegram bot's Live map button) walk you there turn by turn, from `GET /api/walk` (OneMap's walking router, OSRM's as a fallback, a straight line without either; cached a day at the edge), asked again if you stray
+- On a trip, the trip bar's map button shows every ride and walk, the stops and you; a shared trip's viewer follows the sharer's dot on it
+- Kept light: one canvas, markers moved rather than redrawn, fixes drawn at most once a second, tiles cached by `sw.js` (cache-first, 2,000 tiles, refreshed after 14 days); OneMap's tiles if OpenStreetMap's won't load
+
 ### In the Android app
-- The site is also an Android app, `org.uwuapps.sgbus` (`../android/`), which shows it full screen and adds what a web page can't do
-- `js/app-bridge.js` answers the app's hello over Chrome's postMessage for Trusted Web Activities, then asks it for things: the phone's calendar for the Calendar tab. In a browser no hello comes, and nothing changes
-- Links into the app name its package, with a fallback for phones without it: the SimplyGo button (`intent://open/simplygo...`, falling back to SimplyGo's Play Store page) the calendar permission prompt (`intent://calendar/permission...`) and the app's updater (`intent://update...`)
+- The site is also an Android app, `org.uwuapps.sgbus` (`../android/`): from 2.0.0 the site in Capacitor's WebView, with native plugins for what a web page can't do
+- `js/app-bridge.js` talks to the app: from 2.0.0 straight to its plugins through Capacitor's bridge (`AppBridge.call`, `AppBridge.on`); for 1.1.0 and 1.2.0 (Bubblewrap), over Chrome's postMessage for Trusted Web Activities. In a browser neither is there, and nothing changes
+- In the app: the Get Off Alert follows the trip with the screen off (`js/trip.js`, the app's TripPlugin), Service Alerts come through Firebase Cloud Messaging (`js/alerts.js`, `api/_push/fcm.js`), the Calendar tab reads the phone's calendar (`js/calendar.js`), and a card's value is read over NFC (`js/card.js`, the tray's card button). The website keeps its own versions of each that a browser can do
+- Links into the app name its package, with a fallback for phones without it: the SimplyGo button (`intent://open/simplygo...`, falling back to SimplyGo's Play Store page), the calendar permission prompt for 1.1.0 to 1.2.0 (`intent://calendar/permission...`) and the app's updater (`intent://update...`). From 2.0.0 the app follows them itself (`SgBusPlugin.shouldOverrideLoad`)
 - `js/app-update.js` shows a bar when the app is older than its newest GitHub release, read through `GET /api/app-release` (cached 10 minutes at the edge, so GitHub's per-IP limit isn't shared by every phone). From app 1.2.0, Update has the app download and install it; on 1.1.0, Download opens the release's page
-- `.well-known/assetlinks.json` vouches for the app's signing key, with `handle_all_urls` (full screen, and the site's links open in it) and `use_as_origin` (the message channel)
+- `.well-known/assetlinks.json` vouches for the app's signing key, with `handle_all_urls` (the site's links open in it) and `use_as_origin` (1.1.0 to 1.2.0's message channel)
+
+### In the desktop app
+- The site is also a Windows and Linux app (`../desktop/`), in Electron. `window.sgbusDesktop` (its `preload.js`) lets the page show desktop notifications: `js/alerts.js` checks `/api/service-alerts` every minute there instead of Web Push, by the same rules as the server
 
 ### Weather
 - The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region

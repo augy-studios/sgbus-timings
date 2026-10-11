@@ -18,6 +18,8 @@ screen can be bookmarked, added to your home screen, or sent to a friend.
 | `sgbus.uwuapps.org/eta/ttzik7wkd6` | Someone's [live progress](nav.md#share-my-eta) on a trip |
 | `sgbus.uwuapps.org/#sync/BCDFGH` | Settings, with sync code `BCDFGH` filled in |
 | `sgbus.uwuapps.org/#alerts` | The [Service alerts](service-alerts.md) card, where a tapped alert notification also lands |
+| `sgbus.uwuapps.org/#map/84009` | The [live map](live-map.md), walking to that stop, with its timings behind |
+| `sgbus.uwuapps.org/#map/1.31533,103.81554~Botanic%20Gardens` | The live map, walking to a place |
 
 ## Share a stop
 
@@ -53,6 +55,7 @@ the app. It also opens `uwu://sgbus/` links, which only work there:
 | `uwu://sgbus/bus/22` | A bus's route |
 | `uwu://sgbus/nav` | Navigate |
 | `uwu://sgbus/near` | Stops near you |
+| `uwu://sgbus/map/84009` | The live map, walking to that stop |
 | `uwu://sgbus/go/t2d6bdtkdj` | A share link, as its `sgbus.uwuapps.org/go/...` would |
 
 Anything after `uwu://sgbus/` is the same as after the `#` in the app's own

@@ -4,6 +4,7 @@
 // is for when it's in the background, where a website gets no location.
 
 import webpush from 'web-push';
+import { sendPush } from '../_push/send.js';
 import { fetchBusPositions } from '../_push/lta.js';
 import { releaseLock, storeConfigured, takeLock, trips } from '../_push/store.js';
 import { step, ttlSeconds } from '../_push/trip.js';
@@ -90,7 +91,7 @@ async function shareProgress(trip, done, now) {
 async function send(id, trip, alert) {
   const payload = JSON.stringify({ type: 'get-off', tripId: trip.tripId, leg: alert.leg, body: alert.text });
   try {
-    await webpush.sendNotification(trip.subscription, payload, { TTL: PUSH_TTL, urgency: 'high' });
+    await sendPush(trip.subscription, payload, { ttl: PUSH_TTL, urgency: 'high' });
     return true;
   } catch (err) {
     // The subscription is gone for good, so nothing more can reach this trip.

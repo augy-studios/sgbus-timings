@@ -105,12 +105,34 @@ export function parseLink(kind, data, now = Date.now()) {
   throw new ValidationError('bad kind');
 }
 
+const LEG_KINDS = ['bus', 'train', 'walk'];
+
+function me(m, now) {
+  if (m == null) return null;
+  if (typeof m !== 'object' || !Number.isFinite(m.t) || Math.abs(m.t - now) > 60 * 60 * 1000) throw new ValidationError('bad location');
+  const [lat, lng] = point(m.lat, m.lng);
+  return { lat, lng, accuracy: Number.isFinite(m.accuracy) ? Math.min(1000, Math.max(0, Math.round(m.accuracy))) : null, t: Math.round(m.t) };
+}
+
+function timeline(t) {
+  if (t == null) return null;
+  if (typeof t !== 'object' || !Array.isArray(t.legs) || !Number.isFinite(t.pos)) throw new ValidationError('bad timeline');
+  return {
+    pos: Math.max(0, Math.min(500, t.pos)),
+    legs: t.legs.slice(0, 6).map((l) => {
+      if (!l || typeof l !== 'object' || !LEG_KINDS.includes(l.kind) || !Array.isArray(l.names)) throw new ValidationError('bad timeline');
+      return { kind: l.kind, label: text(l.label, 40), to: text(l.to, 120), names: l.names.slice(0, 80).map((n) => text(n, 80)) };
+    }),
+  };
+}
+
 function parseEta(data, now) {
   if (!Number.isFinite(data.arriveAt) || Math.abs(data.arriveAt - now) > 24 * 60 * 60 * 1000) throw new ValidationError('bad arrival time');
   const leg = data.leg == null ? null : {
     label: text(data.leg.label, 40),
     to: text(data.leg.to, 120),
     stopsLeft: int(data.leg.stopsLeft, 0, 500),
+    kind: LEG_KINDS.includes(data.leg.kind) ? data.leg.kind : null,
   };
   return {
     name: text(data.name, 64),
@@ -121,6 +143,11 @@ function parseEta(data, now) {
     legCount: int(data.legCount ?? 1, 1, 20),
     at: data.at == null ? null : point(data.at[0], data.at[1]),
     path: path(data.path, 400),
+    // Where the sharer really is, from their last good fix: the dot on the live map their
+    // friend sees (js/map.js), rather than where the trip has them.
+    me: me(data.me, now),
+    // The stops from their leg on, and how far along it they are: the timeline with its dot.
+    timeline: timeline(data.timeline),
     // Arrived, or the trip ended; or the sharer stopped sharing before then.
     ended: Boolean(data.ended),
     stopped: Boolean(data.stopped),
@@ -228,7 +255,7 @@ export function etaFromTrip(trip, now, { ended = false } = {}) {
     name: share.name || '',
     to: share.to,
     arriveAt: Math.round(now + (ended ? 0 : minutes * 60000)),
-    leg: { label: leg.label || (leg.kind === 'train' ? 'Train' : `Bus ${leg.service || ''}`.trim()), to: leg.to, stopsLeft: Math.max(0, Math.round(last - pos)) },
+    leg: { label: leg.label || (leg.kind === 'train' ? 'Train' : leg.kind === 'walk' ? 'Walk' : `Bus ${leg.service || ''}`.trim()), to: leg.to, stopsLeft: Math.max(0, Math.round(last - pos)), kind: leg.kind },
     legIndex: trip.leg,
     legCount: legs.length,
     at: point(...along(leg.points, pos)),

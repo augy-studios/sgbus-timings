@@ -72,6 +72,13 @@ function initNav() {
       $('#navSection').scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
+    const live = e.target.closest('[data-live-map]');
+    if (live) {
+      try {
+        LiveMap.walkTo(JSON.parse(live.dataset.liveMap));
+      } catch { /* a button of this page's own making: always JSON */ }
+      return;
+    }
     const walk = e.target.closest('[data-nav-walk]');
     if (walk && nav.option) {
       // Swapped in place, so the live timings already shown aren't fetched again.
@@ -548,9 +555,10 @@ async function renderNavOption(o) {
   draw(timings);
 }
 
-// Directions for a walk in a map app, from where it starts to where it ends: the start of the
-// nav or the stop or station the last ride got off at, to the next one or the end. Like a
-// stop's Directions (renderStopTools in script.js), the button opens into a link per app.
+// Directions for a walk, from where it starts to where it ends: the start of the nav or the stop
+// or station the last ride got off at, to the next one or the end. Like a stop's Directions
+// (renderStopTools in script.js), the button opens into the live map (js/map.js) and a link to
+// Citymapper.
 function walkDirections(o, k) {
   const leg = o.legs[k];
   const from = leg.from || o.legs[k - 1]?.to || nav.from;
@@ -561,9 +569,11 @@ function walkDirections(o, k) {
   if (!nav.walksOpen.has(k)) {
     return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} Directions</button>`;
   }
-  return `<div class="walkApps">` + MAP_APPS.map((app) =>
-    `<a class="iconBtn" href="${escapeHtml(directionsUrl(dest, app.id, opts))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
-  ).join('') + `</div>`;
+  return `<div class="walkApps">` +
+    `<button type="button" class="iconBtn" data-live-map="${escapeHtml(JSON.stringify(dest))}">${ico('map')} Live map</button>` +
+    MAP_APPS.map((app) =>
+      `<a class="iconBtn" href="${escapeHtml(directionsUrl(dest, app.id, opts))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
+    ).join('') + `</div>`;
 }
 
 // ---- Favourite navs ----
@@ -610,18 +620,42 @@ async function refreshNav() {
 
 // ---- Trips, for the Get Off Alert ----
 
+// The trip, from where you set off to where you're going: the walks as legs of their own
+// (js/trip.js follows them as it does the rides), from the start to the first stop, between
+// rides, and from the last stop to the end. A walk too short to follow (a change within a
+// station), or with an end that isn't known, counts towards the ride before it, for a live ETA
+// link (js/share.js), or before the first ride, towards the trip, for Your trips (js/history.js).
+const WALK_LEG_MIN_M = 60;
+
 function tripFromNav(o, to, from = nav.from) {
   const legs = [];
   let walkBefore = 0;
-  for (const l of o.legs) {
-    // A walk counts towards the ride before it, for a live ETA link (js/share.js), and the
-    // one before the first ride towards the trip, for Your trips (js/history.js).
+  const at = (p) => (p?.lat != null && p?.lng != null ? [Number(p.lat), Number(p.lng)] : null);
+  o.legs.forEach((l, k) => {
     if (l.mode === 'walk') {
-      if (legs.length) legs[legs.length - 1].walkAfter += l.minutes || 0;
-      else walkBefore += l.minutes || 0;
-      continue;
+      const start = at(k === 0 ? from : l.from || o.legs[k - 1]?.to);
+      const endPlace = k === o.legs.length - 1 ? to : l.to;
+      const end = at(endPlace);
+      if (start && end && (l.metres ?? WALK_LEG_MIN_M) >= WALK_LEG_MIN_M) {
+        const startName = k === 0 ? from?.label || 'Where you set off' : placeName(l.from || o.legs[k - 1]?.to);
+        legs.push({
+          kind: 'walk',
+          label: 'Walk',
+          to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : placeName(endPlace),
+          points: [start, end],
+          names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : placeName(endPlace)],
+          minutes: Math.max(1, Math.round(l.minutes || 1)),
+          wait: 0,
+          walkAfter: 0,
+        });
+      } else if (legs.length) {
+        legs[legs.length - 1].walkAfter += l.minutes || 0;
+      } else {
+        walkBefore += l.minutes || 0;
+      }
+      return;
     }
-    if (!(l.path?.length >= 2)) continue;
+    if (!(l.path?.length >= 2)) return;
     legs.push({
       kind: l.mode,
       label: l.mode === 'bus' ? `Bus ${l.route}` : `${l.route} ${l.lrt ? 'LRT' : 'Line'}`,
@@ -636,7 +670,7 @@ function tripFromNav(o, to, from = nav.from) {
       // The line, for Your trips' chips and Trip Modes.
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
     });
-  }
+  });
   return {
     title: `To ${to?.label || 'your stop'}`,
     legs,

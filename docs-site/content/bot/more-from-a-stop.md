@@ -39,6 +39,8 @@ stop of a route there is nothing ahead, and the button says so.
 
 ## Directions to the stop
 
-**Directions**, on the last row, opens into two links, **Google Maps** and
-**Citymapper**, each with walking directions to the stop. Refreshing folds them
-back into the one button.
+**Directions**, on the last row, opens into two links, **Live map** and
+**Citymapper**. **Live map** opens the web app's [live map](../web/live-map.md),
+walking you to the stop turn by turn, in the Android app if you have it.
+**Citymapper** opens the way there in Citymapper. Refreshing folds them back into
+the one button.

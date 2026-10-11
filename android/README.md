@@ -1,44 +1,78 @@
 # SG Bus Timings for Android
 
-The Android app, `org.uwuapps.sgbus`: the web app at sgbus.uwuapps.org in a
-[Trusted Web Activity](https://developer.chrome.com/docs/android/trusted-web-activity),
-made with [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap). It shows the site full
-screen in Chrome, so the site's own updates reach it at once; the app itself only needs
-building again for its native parts. The APK is small (about 700 KB) for the same reason: it
-holds the shell, and the site's service worker caches the rest on first launch.
+The Android app, `org.uwuapps.sgbus`: the web app at sgbus.uwuapps.org in
+[Capacitor](https://capacitorjs.com)'s WebView (`capacitor.config.json`, `server.url`). The
+site's own updates reach it at once, and the app only needs building again for its native
+parts. Those are what a web page can't do, which the page reaches through Capacitor's bridge
+(`main-site/js/app-bridge.js`).
 
-Shared as an APK file for now, through GitHub Releases: see `release/README.md`. From 1.2.0 it
-updates itself from there.
+From 2.0.0. Versions 1.0.0 to 1.2.0 were a Bubblewrap Trusted Web Activity: the site in
+Chrome. It's the same package and signing key, so 2.0.0 installs over them as an update, and
+1.2.0 offers it in its update bar. The site still answers 1.1.0 and 1.2.0's message channel
+until they've updated (`js/app-bridge.js`).
+
+Shared as an APK file through GitHub Releases: see `release/README.md`. It updates itself
+from there.
 
 ## What it adds to the site
 
-Bubblewrap's usual parts: the launcher icon, splash screen, shortcuts (Near me, Navigate,
-Service alerts), the share menu entry (Google Maps places into Navigate), notifications and
-location through Chrome. Then its own, in `app/src/main/java/org/uwuapps/sgbus/`:
+| Feature | Native side (`native/app/src/main/java/org/uwuapps/sgbus/`) | Site side (`main-site/`) |
+|---|---|---|
+| **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. | `TripPlugin`, `TripService` (a foreground service of the location type) | `js/trip.js` |
+| **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | Capacitor's PushNotifications plugin, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
+| **The phone's calendar**, for Navigate's Calendar tab | `PhoneCalendarPlugin`, `CalendarReader` | `js/calendar.js` |
+| **Card value**: an EZ-Link or NETS FlashPay card's stored value over NFC | `CardPlugin` | `js/card.js` |
+| **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
+| **Updating itself** from GitHub Releases | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
+| **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |
 
-| File | What it does |
-|---|---|
-| `OpenAppActivity.java` | Opens another app by its package, as a native app does, for the site's SimplyGo button (`main-site/script.js`, "SimplyGo"). A web page can't. Only the apps listed in it can be opened, each also named under `<queries>` in `AndroidManifest.xml`. |
-| `AppBridge.java` | A message channel to the site's pages (Chrome's [postMessage for TWAs](https://developer.chrome.com/docs/android/post-message-twa), Chrome 115+), answered by `main-site/js/app-bridge.js`. Says hello as each page loads, with what the app can do, and answers its requests. |
-| `CalendarReader.java` | The phone's calendar events with a location, for the site's Calendar tab, over AppBridge. Every calendar on the phone; Android expands repeating events. |
-| `CalendarPermissionActivity.java` | The calendar permission prompt, which the page links to when it isn't given yet; settings instead, once it's been refused for good. |
-| `UpdateActivity.java` | Updates the app to its newest GitHub release, for the site's update bar (`main-site/js/app-update.js`). Asks `main-site/api/app-release.js` for the newest version, downloads its APK from this repository's releases only, checks GitHub's SHA-256, that it's this app and a higher `versionCode`, then hands it to Android's installer, which asks you to confirm. Needs `REQUEST_INSTALL_PACKAGES`, and "Install unknown apps" allowed once, which it sends you to. |
-| `LauncherActivity.java` | Bubblewrap's, plus AppBridge's hooks, and `uwu://sgbus/` links turned into the site's addresses: `uwu://sgbus/84009` a stop, `uwu://sgbus/bus/22`, `uwu://sgbus/nav`, `uwu://sgbus/go/<id>` a share link. Only the `sgbus` host, so other UwU Apps can answer `uwu://` links of their own. |
+`SgBusPlugin` also tells the page what this build can do (`info`, with `features`), posts
+notifications for it, and opens Android's settings pages. `MainActivity` makes Back go back
+through the page's history.
 
-The site's links into the app: `intent://open/simplygo#Intent;scheme=org.uwuapps.sgbus;...`
-(OpenAppActivity), `intent://calendar/permission#Intent;scheme=org.uwuapps.sgbus;...`
-(CalendarPermissionActivity) and `intent://update#Intent;scheme=org.uwuapps.sgbus;...`
-(UpdateActivity). Each names this package, so a phone without the app takes the link's
-fallback, or nothing happens.
+The site keeps its own versions of all of these that a browser can do (the Get Off Alert
+with the screen on, Web Push, the iCal calendar link), and only uses the app's when it's
+running in it. The website and PWA lose nothing.
 
-If the app ever goes on Google Play, that build has to drop UpdateActivity and
-`REQUEST_INSTALL_PACKAGES`: Play updates apps itself, and doesn't allow apps that install others.
+### Permissions
 
-AppBridge reads android-browser-helper's TwaLauncher session by its field's name, so that
-library stays at 2.5.0 (`app/build.gradle`), and `app/proguard-rules.pro` keeps the name through
-R8. If a newer version moves it, the calendar just stops reaching the page; nothing else
-breaks. The site lists the app with `use_as_origin` as well as `handle_all_urls` in
-`main-site/.well-known/assetlinks.json`, which the message channel needs.
+| Permission | Asked | For |
+|---|---|---|
+| Location (while using) | First time the site asks: Near me, Navigate, the live map, a trip | The site's own location, and `TripService` |
+| Location all the time (`ACCESS_BACKGROUND_LOCATION`) | Once, on the first trip, after location's allowed. Android 11 and later ask it on a settings page | Not needed for a trip, which runs as a foreground service; asked as decided for future features. The trip works without it |
+| Notifications | First trip, or turning on Service alerts | Alerts, and the trip's own notification |
+| Calendar | Only when you pick "Use this phone's calendar" | `PhoneCalendarPlugin` |
+| NFC | Not asked: Android grants it | `CardPlugin` |
+| Install unknown apps | First update | `UpdateActivity` |
+
+If the app ever goes on Google Play, that build has to drop `UpdateActivity` and
+`REQUEST_INSTALL_PACKAGES` (Play updates apps itself), and would need Play's declaration for
+background location.
+
+### Card value
+
+CEPAS cards (EZ-Link and NETS FlashPay) hold their value in a purse that CEPAS's Read Purse
+command reads without a key. `CardPlugin` reads it in NFC reader mode and nothing is written.
+The layout is FareBot's and Metrodroid's, which read the same cards. Cards on SimplyGo's
+account-based ticketing keep their value in the account, so the card's own figure can be out
+of date for them, and the page says so. **It hasn't been tried on a real card yet**: if the
+first read says "couldn't be read as an EZ-Link or NETS FlashPay card", the command bytes in
+`READ_PURSE` are where to look.
+
+## The project
+
+```text
+android/
+  package.json, package-lock.json   Capacitor and its push plugin
+  capacitor.config.json             the site's address, and where the native project is
+  www/offline.html                  shown when the site can't load at all (first launch offline)
+  native/                           the Android Studio / Gradle project
+  build-apk.ps1                     builds the signed APK into release/<version>/
+  FIREBASE-SETUP.md                 setting up push notifications
+```
+
+`npx cap sync android` (which the build script runs) copies `www/` and the config into
+`native/` and links the plugins from `node_modules`. What it writes is kept out of git.
 
 ## Build the APK
 
@@ -46,26 +80,51 @@ breaks. The site lists the app with `use_as_origin` as well as `handle_all_urls`
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 ```
 
-It lands in `release/` at the project root as `sg-bus-timings-<version>.apk`, signed and ready
-to share. For a new version, raise `appVersion` and `appVersionCode` in `twa-manifest.json`, and
-`versionName` and `versionCode` in `app/build.gradle`, to the same; a phone only takes a higher
-`versionCode` as an update.
+It installs the packages if they're missing, syncs, builds with Gradle and checks the
+signature, then puts the APK in `release/<version>/sg-bus-timings-<version>.apk`. It needs a
+JDK 21 or later (it finds the newest under Program Files, or `JAVA_HOME`) and the Android SDK
+(`ANDROID_HOME`, or the one Bubblewrap left in `~/.bubblewrap`). Gradle fetches any SDK
+platform it's missing.
 
-`bubblewrap build` would do the same, but fails on Windows with newer Node ("spawn EINVAL"), so
-the script runs its steps itself: Gradle, zipalign, apksigner, and a signature check. It uses
-the JDK and Android SDK Bubblewrap keeps in `~/.bubblewrap`; the JDK there must be the 64-bit
-one (`config.json`'s `jdkPath`), as Gradle can't get the memory it needs from a 32-bit one.
+For a new version, raise `versionName` and `versionCode` in `native/app/build.gradle`; a phone
+only takes a higher `versionCode` as an update. Raise `desktop/package.json`'s `version` to the
+same: the apps share version numbers.
+
+Without `native/app/google-services.json` the app builds and works, but can't get
+notifications from the server. See `FIREBASE-SETUP.md`.
+
+To try changes on a phone over USB, open `native/` in Android Studio and run it, or
+`native\gradlew.bat installDebug` with the phone plugged in and USB debugging on.
 
 ## The signing key
 
 `android.keystore` and its passwords in `keystore.properties` are kept out of git. **Back both
 up somewhere safe.** An APK signed with a different key can't update one already installed, and
 the site's `main-site/.well-known/assetlinks.json` lists this key's SHA-256 fingerprint, which is
-what lets the app show the site without an address bar, and open a message channel to it:
+what lets the site's links open in the app:
 
 ```text
 4E:D5:3F:F1:F4:CB:4E:5E:A7:CB:C1:28:46:48:F6:2E:B3:90:47:EB:C2:9B:25:20:F5:7D:FE:5B:76:CB:44:EB
 ```
+
+`build-apk.ps1` refuses an APK signed with any other key.
+
+## Google's developer verification
+
+From 30 September 2026, Android in Singapore (with Brazil, Indonesia and Thailand) checks that
+apps come from a verified developer, starting with installs through participating app stores,
+with more to follow in 2027. To stay ahead of it and keep Play Protect from warning about the
+APK:
+
+1. Sign up on the [Android Developer Console](https://developer.android.com/developer-verification/guides/android-developer-console).
+   **Full distribution** (US$25 once, ID check) to share it with anyone; **limited** (free, up
+   to 20 named devices) only for testing.
+2. Register the package `org.uwuapps.sgbus` with the SHA-256 fingerprint above.
+3. As the package already exists, the Console asks for an APK signed with this key to prove
+   it's yours: it says what to put in it.
+
+Check [Google's guide](https://developer.android.com/developer-verification/guides) for the
+current steps; they were still settling in October 2026.
 
 ## Install it
 
@@ -73,21 +132,15 @@ Copy the APK to the phone and open it. Android asks to allow installing apps fro
 was opened (Files, Chrome, Telegram); allow it once. A copy of `org.uwuapps.sgbus` signed with
 another key, say from PWABuilder, has to be uninstalled first.
 
-## Changing the app
+## Changing it
 
-Edit `twa-manifest.json` for the name, colours, icons, shortcuts and so on, then regenerate with
-`bubblewrap update --skipVersionUpgrade`. That rewrites some files, so put this app's own parts
-back afterwards, each marked "Not Bubblewrap's":
-
-- `AndroidManifest.xml`: `<queries>`, the `READ_CALENDAR`, `INTERNET` and
-  `REQUEST_INSTALL_PACKAGES` permissions, the `uwu://sgbus` `<intent-filter>` on
-  LauncherActivity, the `OpenAppActivity`, `CalendarPermissionActivity` and `UpdateActivity`
-  `<activity>` entries, the `UpdateActivity$InstallStatus` `<receiver>`, and the
-  `PostMessageService` `<service>`.
-- `app/build.gradle`: `proguardFiles 'proguard-rules.pro'` and the `androidx.browser`
-  dependency.
-- `LauncherActivity.java`: `createTwaLauncher`, `getCustomTabsCallback` and `fromAppLink`.
-
-The other Java files, `res/values/update.xml`, `res/values-night/update.xml` and
-`proguard-rules.pro` are kept as they are. Check `git diff` after an
-update to see what it changed.
+- **The site's address, the user agent, the status bars**: `capacitor.config.json`, then
+  `npx cap sync android`.
+- **Permissions, activities, links**: `native/app/src/main/AndroidManifest.xml`.
+- **A new plugin of this app's own**: a `Plugin` class like `CardPlugin`, registered in
+  `MainActivity.onCreate`, called from the page with `AppBridge.call('Name', 'method', {...})`.
+- **A Capacitor plugin from npm**: `npm install` it here, then `npx cap sync android`; the page
+  reaches it the same way.
+- **Upgrading Capacitor**: raise all three `@capacitor/*` versions together, `npm install`,
+  `npx cap sync android`, and compare `native/` with a fresh `npx cap add android` for template
+  changes.

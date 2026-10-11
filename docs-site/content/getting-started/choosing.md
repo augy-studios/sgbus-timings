@@ -20,7 +20,7 @@ each, so a stop starred in the app is not starred in the bot.
 | An alert two stops before you get off | Yes, with the [Get Off Alert](../web/get-off-alert.md) | No |
 | Weather and air quality | Yes, with the [weather button](../web/weather.md) | No |
 | Favourite stops, buses and routes | Yes | Yes |
-| Directions to a stop in Google Maps or Citymapper | Yes | Yes |
+| Walking directions to a stop, on a live map or in Citymapper | Yes | Yes, opening the web app's live map |
 | Today's first and last bus at a stop | Yes | Yes |
 | Works offline (without live timings) | Yes, once installed | No |
 | Train disruptions and traffic incidents | Yes, with [service alerts](../web/service-alerts.md) | Yes, with [Service Alerts](../bot/service-alerts.md) |

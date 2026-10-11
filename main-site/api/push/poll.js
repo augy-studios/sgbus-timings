@@ -4,6 +4,7 @@
 // (telegram-bot/src/service_alerts.py), which polls for its own subscribers.
 
 import webpush from 'web-push';
+import { sendPush } from '../_push/send.js';
 import { diffTraffic, diffTrain, modesOf, notificationFor, updateFor } from '../_push/alerts.js';
 import { fetchTrafficIncidents, fetchTrainAlerts } from '../_push/lta.js';
 import { devices, getState, releaseLock, setState, storeConfigured, takeLock } from '../_push/store.js';
@@ -82,11 +83,11 @@ async function poll(accountKey) {
 
 async function send(deviceId, device, payload) {
   try {
-    await webpush.sendNotification(device.subscription, payload, { TTL: PUSH_TTL, urgency: 'normal' });
+    await sendPush(device.subscription, payload, { ttl: PUSH_TTL, urgency: 'normal' });
     return 'sent';
   } catch (err) {
     // 404 and 410 mean the subscription is gone for good: permission revoked, app
-    // uninstalled, or site data cleared.
+    // uninstalled, or site data cleared. FCM's "unregistered" comes as 410 too.
     if (err.statusCode === 404 || err.statusCode === 410) {
       await devices.delete(deviceId).catch(() => {});
       console.info(`dropped expired subscription ${deviceId}`);

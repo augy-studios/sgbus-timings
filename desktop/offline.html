@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- Shown when the app can't load sgbus.uwuapps.org at all: the first launch with no internet,
+     before the site's service worker has kept a copy (main.js, did-fail-load). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SG Bus Timings</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #ccffcc; --fg: #0c100e; --btn: #2e7d32; }
+    @media (prefers-color-scheme: dark) { :root { --bg: #0c100e; --fg: #e6f2e6; --btn: #66bb6a; } }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg);
+      font: 16px/1.5 system-ui, sans-serif; text-align: center; padding: 24px; box-sizing: border-box; }
+    h1 { font-size: 1.3rem; margin: 0 0 8px; }
+    p { margin: 0 0 20px; opacity: .8; }
+    a { display: inline-block; padding: 10px 22px; border-radius: 999px; background: var(--btn); color: #fff; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>No connection</h1>
+    <p>SG Bus Timings needs the internet the first time it opens. Check your connection, then try again.</p>
+    <a href="https://sgbus.uwuapps.org/">Try again</a>
+  </main>
+</body>
+</html>

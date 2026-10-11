@@ -17,6 +17,7 @@ than about three taps to reach goes under Advanced.
 
 * [Open and install the app](web/install.md)
 * [The Android app](web/android-app.md)
+* [Windows and Linux apps](web/desktop-app.md)
 * [Find a bus stop](web/search.md)
 * [Live timings](web/timings.md)
 * [Bus routes](web/bus-routes.md)
@@ -32,6 +33,7 @@ than about three taps to reach goes under Advanced.
 * [More from a stop](web/more-from-a-stop.md)
 * [Plan a route](web/route-planner.md)
 * [Navigate by bus and train](web/nav.md)
+* [Live map](web/live-map.md)
 * [Places](web/places.md)
 * [Past searches](web/past-searches.md)
 * [Calendar](web/calendar.md)

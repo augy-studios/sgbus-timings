@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the app's icon. Each opens one of the site's pages (MainActivity.pageFor). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="near" android:enabled="true" android:icon="@drawable/shortcut_0"
+        android:shortcutShortLabel="@string/shortcut_near_short" android:shortcutLongLabel="@string/shortcut_near">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="org.uwuapps.sgbus"
+            android:targetClass="org.uwuapps.sgbus.MainActivity" android:data="https://sgbus.uwuapps.org/#near" />
+    </shortcut>
+    <shortcut android:shortcutId="nav" android:enabled="true" android:icon="@drawable/shortcut_1"
+        android:shortcutShortLabel="@string/shortcut_nav_short" android:shortcutLongLabel="@string/shortcut_nav">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="org.uwuapps.sgbus"
+            android:targetClass="org.uwuapps.sgbus.MainActivity" android:data="https://sgbus.uwuapps.org/#nav" />
+    </shortcut>
+    <shortcut android:shortcutId="alerts" android:enabled="true" android:icon="@drawable/shortcut_2"
+        android:shortcutShortLabel="@string/shortcut_alerts_short" android:shortcutLongLabel="@string/shortcut_alerts">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="org.uwuapps.sgbus"
+            android:targetClass="org.uwuapps.sgbus.MainActivity" android:data="https://sgbus.uwuapps.org/#alerts" />
+    </shortcut>
+    <shortcut android:shortcutId="card" android:enabled="true" android:icon="@drawable/shortcut_0"
+        android:shortcutShortLabel="@string/shortcut_card_short" android:shortcutLongLabel="@string/shortcut_card">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="org.uwuapps.sgbus"
+            android:targetClass="org.uwuapps.sgbus.MainActivity" android:data="https://sgbus.uwuapps.org/#card" />
+    </shortcut>
+</shortcuts>

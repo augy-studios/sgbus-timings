@@ -60,8 +60,15 @@ Preview, if you want to try it there):
 | `VAPID_PRIVATE_KEY` | the Private Key from step 2, marked **Sensitive** |
 | `VAPID_SUBJECT` | `mailto:` and an address push services can reach, e.g. `mailto:augy@augystudios.com` |
 | `CRON_SECRET` | any long random string, e.g. from `openssl rand -hex 32`, marked **Sensitive** |
+| `FIREBASE_SERVICE_ACCOUNT` | for the Android app only: Firebase's service account key, the whole JSON, marked **Sensitive**. See `android/FIREBASE-SETUP.md` |
 
 `LTA_ACCOUNT_KEY` is already there for the rest of the site.
+
+The Android app's WebView has no Web Push, so the app subscribes with a Firebase Cloud
+Messaging token instead, and the same cron functions push to it through FCM
+(`api/_push/fcm.js`, chosen per device by `api/_push/send.js`). Without
+`FIREBASE_SERVICE_ACCOUNT`, browsers still get everything; only the app's pushes fail. The
+desktop app (`desktop/`) checks for alerts itself and needs nothing here.
 
 Vercel sends `CRON_SECRET` with every cron call, and `/api/push/poll` refuses
 anything without it, so nobody else can make the site poll and push.

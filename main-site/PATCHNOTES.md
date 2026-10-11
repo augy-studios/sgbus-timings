@@ -9,6 +9,34 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (later): Live map, walks on trips, and the 2.0 apps
+
+### Web app
+
+- **Live map** - Directions on a stop, and on a walk in Navigate, now open a live map instead of Google Maps: OpenStreetMap, following where you are, with the walk drawn turn by turn and the next turn spelt out. Stray from it and it finds the way again. Citymapper is still there too.
+- **Live map on trips** - The map button on the trip bar shows the whole trip, every ride and walk, with its stops and you on it.
+- **Walks on trips** - A trip now starts with the walk to your first stop, includes the walks between rides, and ends with the walk to where you're going, rather than starting at the first stop and ending at the last. Each walk shows on the timeline, and the trip moves on as you get there. A way that's all walking can be followed as a trip too.
+- **Follow a shared trip live** - Someone you share your ETA with now sees your dot move: on the live map (**Follow on the map**) or on a timeline of your stops, updated every 10 seconds.
+- **Navigate's button** in the Edge Tray is now a train, so it isn't mistaken for directions.
+- **No more ads**, on the web app or the guide.
+
+### Android app 2.0.0
+
+- **Rebuilt as a real app** (Capacitor instead of a Chrome wrapper). 1.2.0 updates to it like any update.
+- **Trips with the screen off** - The Get Off Alert follows your trip with the phone locked, with an "On a trip" notification (and End trip on it), and sounds over the lock screen. The first trip also asks to allow location all the time.
+- **Card value** - Hold an EZ-Link or NETS FlashPay card to the back of the phone to see what's on it, with its expiry and auto top-up: the card button in the Edge Tray, or long-press the app's icon. On phones with NFC.
+- **Service alerts as notifications** in the app.
+
+### Windows and Linux apps 2.0.0
+
+- **SG Bus Timings for Windows** (`.exe` or `.msi`) **and Linux** (`.deb` or `.AppImage`), from the releases page. It stays in the tray when closed, shows Service alerts as desktop notifications, and can start when you sign in.
+
+### Telegram bot
+
+- **Live map** - A stop's Directions now offers **Live map**, which opens the web app's live map (or the Android app's, if you have it) walking you to the stop, in place of Google Maps.
+
+---
+
 ## 12 October 2026: The Android app updates itself
 
 ### Web app

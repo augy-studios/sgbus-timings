@@ -12,7 +12,8 @@
 //            a snapshot, so imported again for new events.
 //   the phone  in the Android app (1.1.0 and later), the phone's own calendar, read by the app
 //            each time the tab opens and handed over the channel in js/app-bridge.js, already
-//            expanded. Needs the app's calendar permission, asked for by a link to the app
+//            expanded. Needs the app's calendar permission: from 2.0.0 asked for by Android's
+//            own prompt (AppBridge.allow), and before that by a link to the app
 //            (CalendarPermissionActivity) when it hasn't been given.
 //
 // Each event's location is free text, matched to a place with Navigate's own search
@@ -39,7 +40,8 @@
 
   // ---------- storage ----------
 
-  // The Android app's calendar permission prompt (CalendarPermissionActivity).
+  // The Android app's calendar permission prompt in 1.1.0 to 1.2.0 (CalendarPermissionActivity).
+  // From 2.0.0 the same links ask through the app's plugin instead (see init).
   const PERMISSION_LINK = 'intent://calendar/permission#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
 
   // { url?, file?: { name, importedAt, events }, phone?: true, hidden: [key] }
@@ -540,7 +542,10 @@
       }).catch((err) => {
         if (!box.isConnected) return;
         const allow = err.reason === 'permission';
-        if (allow) document.addEventListener('visibilitychange', onVisible);
+        if (allow) {
+          document.addEventListener('visibilitychange', onVisible);
+          window.addEventListener('calendar:allowed', () => box.isConnected && load(), { once: true });
+        }
         box.innerHTML = `<p class="recentEmpty">${escapeHtml(err.message)}</p>` +
           (allow ? `<p class="calAllowRow">${allowLink()}</p>` : '') +
           `<button type="button" class="recentClear" data-cal-settings>Calendar settings</button>`;
@@ -633,6 +638,8 @@
     renderSettings('Removed.');
   }
 
+  const modalOpen = () => !$('#calendarModal').classList.contains('hidden');
+
   function init() {
     $('#calSave').addEventListener('click', saveUrl);
     $('#calUrl').addEventListener('keydown', (e) => {
@@ -642,9 +649,20 @@
     $('#calRemove').addEventListener('click', remove);
     $('#calPhone').addEventListener('click', usePhone);
     $('#calAllow').href = PERMISSION_LINK;
+    // In the app from 2.0.0, Android's own prompt, then the calendar's read again.
+    document.addEventListener('click', async (e) => {
+      if (!window.AppBridge?.native || !e.target.closest('.calAllow')) return;
+      e.preventDefault();
+      try {
+        if (!(await AppBridge.allow('PhoneCalendar', 'calendar'))) return;
+      } catch {
+        return;
+      }
+      window.dispatchEvent(new Event('calendar:allowed'));
+      if (modalOpen() && settings().phone) usePhone();
+    });
     // The app's hello can come after the window's open; and back from its permission prompt,
     // the phone's calendar is read again.
-    const modalOpen = () => !$('#calendarModal').classList.contains('hidden');
     window.addEventListener('app:ready', () => modalOpen() && renderSettings());
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && modalOpen() && settings().phone) usePhone();

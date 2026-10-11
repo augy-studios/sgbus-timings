@@ -4,8 +4,8 @@ description: The site follows you on a trip and buzzes two stops before you get 
 ---
 
 Dozing on the bus, or deep in your phone on the train? Start a trip and the site
-follows your live location along it, then alerts you **two stops before** each
-change and your stop.
+follows your live location along it, from the walk to your first stop to the walk
+at the end, then alerts you **two stops before** each change and your stop.
 
 The Get Off Alert is on by default. Every trip you take with it is kept in
 [Your trips](trips.md), with your stats.
@@ -32,7 +32,18 @@ browser asks for your location and for notifications; allow both.
 
 Tap the bar to open the timeline: every stop still ahead, with a blue dot where
 you are that glides along between stops as you go, the stop the alert goes off at,
-and where to get off or change. Tap it again to close it.
+and where to get off or change. Tap it again to close it. The map button on the
+bar shows the trip on the [live map](live-map.md).
+
+## Walks
+
+A trip from [Navigate](nav.md) starts with the walk to your first stop, has the
+walks between rides, and ends with the walk to where you're going. Each shows on
+the timeline as **Walk to** where it ends, with about how long is left. The trip
+moves on to the ride when you reach its stop, and on to the next walk when you
+get off. Without your location, it goes by how long each walk should take.
+
+There's no alert on a walk. The trip ends when you reach where you're going.
 
 ## The alert
 
@@ -64,6 +75,14 @@ you're still at the interchange, it notices from your location and moves back
 to where you are. An alert that went off too early goes off again at the right
 stop.
 
+## In the Android app
+
+In the [Android app](android-app.md), the trip carries on with the screen off or
+the app in the background: the app keeps your location coming, shows "On a
+trip" in a notification with **End trip** on it, and the alert sounds over the
+lock screen. The screen doesn't need to stay on. Swiping the app away ends that,
+and the server takes over as below.
+
 ## Keep the site open
 
 <figure>
@@ -72,7 +91,7 @@ stop.
 </figure>
 
 A website only gets your location while it's open on screen, and no setting
-changes that. So while a trip runs, the site keeps the screen awake. See
+changes that. So while a trip runs in a browser, the site keeps the screen awake. See
 [What the web app can't do](../help/web-app-limits.md).
 
 If you switch to another app or lock the phone, SG Bus Timings' server takes over

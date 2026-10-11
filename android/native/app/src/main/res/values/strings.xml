@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SG Bus Timings</string>
+    <string name="title_activity_main">SG Bus Timings</string>
+    <string name="package_name">org.uwuapps.sgbus</string>
+    <string name="custom_url_scheme">org.uwuapps.sgbus</string>
+    <string name="shortcut_near">Stops near me</string>
+    <string name="shortcut_near_short">Near me</string>
+    <string name="shortcut_nav">Navigate</string>
+    <string name="shortcut_nav_short">Navigate</string>
+    <string name="shortcut_alerts">Service alerts</string>
+    <string name="shortcut_alerts_short">Alerts</string>
+    <string name="shortcut_card">Card value</string>
+    <string name="shortcut_card_short">Card value</string>
+</resources>

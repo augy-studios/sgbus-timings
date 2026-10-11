@@ -31,9 +31,8 @@ const SITE = {
 // Keep in sync with APP_KEY in public/js/theme.js.
 const APP_KEY = "sgbusguide";
 
-// The same Analytics property and AdSense publisher as the main site.
+// The same Analytics property as the main site.
 const GA_ID = "G-FMCYFTFPEL";
-const ADSENSE_CLIENT = "ca-pub-9715826188316382";
 
 // ---------- helpers ----------
 
@@ -307,8 +306,6 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
     gtag('js', new Date());
     gtag('config', '${GA_ID}');
   </script>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}"
-    crossorigin="anonymous"></script>
 
   <title>${escapeHtml(title)}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">

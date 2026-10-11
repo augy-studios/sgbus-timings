@@ -41,11 +41,7 @@ to see its timings for the same bus. It is the same list as the
 
 ## Directions to the stop
 
-<figure>
-<img src="/screenshots/web/more-directions.png" alt="A stop's tools with Directions opened into two buttons, Google Maps and Citymapper." width="994" height="154" loading="lazy">
-<figcaption>Directions opens into Google Maps and Citymapper.</figcaption>
-</figure>
-
-Tap **Directions** and it opens into two buttons, **Google Maps** and
-**Citymapper**. Either one opens walking directions to the stop in that app or
-website.
+Tap **Directions** and it opens into two buttons, **Live map** and
+**Citymapper**. **Live map** walks you to the stop on the [live map](live-map.md),
+turn by turn from where you are. **Citymapper** opens the way there in Citymapper's
+app or website.

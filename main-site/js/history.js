@@ -86,6 +86,15 @@
       const done = i < s.leg || (current && !!s.arrived);
       const taken = done || (current && (s.boarded || s.at > 0 || (s.pos || 0) >= 0.5));
       if (!taken) return;
+      // A walk (to the first ride, between two, or to the end) is walking time, not a ride:
+      // as long as it took, once it's done and that's believable, or else as planned.
+      if (leg.kind === 'walk') {
+        const plan = leg.minutes || 0;
+        const took = done && t.start && t.end ? minutes(t.end - t.start) : null;
+        walkMin += took != null && took >= 0 && took <= plan * 3 + 10 ? took : plan * (done ? 1 : Math.min(1, s.pos || s.at || 0));
+        endedAt = Math.max(endedAt, t.end || 0, t.start || 0);
+        return;
+      }
       const last = Math.max(1, leg.points.length - 1);
       const planRide = leg.minutes || 0;
       const planWait = leg.wait || (leg.kind === 'bus' ? When.BUS_WAIT_MIN : 0);

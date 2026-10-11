@@ -20,7 +20,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Link your calendar to plan the way to each event, arriving on time
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
 - Choose whether favourites pin to the top or bottom of the list
-- Tap Directions on any stop's timings, then pick Google Maps or Citymapper to get there
+- Tap Directions on any stop's timings, then pick Live map (walking directions in the web app) or Citymapper to get there
 - Set up routines to get a bus stop's timings sent to you automatically at a time you choose
 - Subscribe to Service Alerts: train service alerts and traffic alerts, each all updates or disruptions only
 - Use this bot inline in any chat: type @{username} then a bus stop number or name

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The site's own colours (main-site/manifest.json): its light green, and the dark page. -->
+<resources>
+    <color name="background">#CCFFCC</color>
+    <color name="backgroundDark">#0C100E</color>
+</resources>

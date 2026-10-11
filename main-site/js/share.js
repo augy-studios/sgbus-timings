@@ -2,8 +2,10 @@
 // and a short link, and the apps to send it with.
 //
 //   Share my ETA            on a trip (js/trip.js): /eta/<id>, live progress, updated from
-//                           here every half minute, and by the server while the app is in the
-//                           background (api/push/trip-poll.js).
+//                           here every ETA_EVERY_MS with where you really are and the stops
+//                           ahead, and by the server while the app is in the background
+//                           (api/push/trip-poll.js). Whoever opens it follows along on the live
+//                           map (js/map.js) or the timeline, with your dot moving.
 //   Share these directions  both ends, the time and the way that's open: /trip/<id>.
 //   Share start, Share end  "How to get to" one end: /go/<id>, opened from wherever the person
 //                           opening it is.
@@ -18,8 +20,8 @@
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const ETA_KEY = 'sgbus.etaShare';
-  const ETA_EVERY_MS = 30 * 1000;
-  const VIEW_EVERY_MS = 20 * 1000;
+  const ETA_EVERY_MS = 10 * 1000;
+  const VIEW_EVERY_MS = 10 * 1000;
   // Updated longer ago than this and the viewer says so.
   const VIEW_STALE_MS = 3 * 60 * 1000;
   const PATH_POINTS = 300;
@@ -68,11 +70,13 @@
       name: LS.getName(),
       to: p.to,
       arriveAt: Date.now() + p.minutesLeft * 60000,
-      leg: { label: p.leg.label || '', to: p.leg.to || '', stopsLeft: p.leg.stopsLeft },
+      leg: { label: p.leg.label || '', to: p.leg.to || '', stopsLeft: p.leg.stopsLeft, kind: p.leg.kind },
       legIndex: p.legIndex,
       legCount: p.legCount,
       at: p.at,
       path: thin(p.path, PATH_POINTS),
+      me: p.me,
+      timeline: p.timeline,
       ended: p.arrived,
       ...extra,
     };
@@ -335,9 +339,14 @@
     const live = !d.ended && !d.stopped && !gone;
     $('#etaLeg').hidden = !(live && leg?.label);
     if (live && leg?.label) {
-      $('#etaLeg').textContent = `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}` +
+      $('#etaLeg').textContent = (leg.kind === 'walk'
+        ? `Walking to ${leg.to}`
+        : `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}`) +
         (d.legCount > 1 ? ` · leg ${d.legIndex + 1} of ${d.legCount}` : '');
     }
+    renderViewTimeline(live ? d.timeline : null);
+    $('#etaLiveMap').hidden = gone;
+    if (window.LiveMap?.mode() === 'follow') LiveMap.updateFollow(d);
     const ago = Math.round((Date.now() - updatedAt) / 60000);
     $('#etaUpdated').textContent = gone ? 'The link has expired.'
       : !live ? `Updated ${clock(updatedAt)}.`
@@ -350,6 +359,25 @@
       img.onload = () => { img.hidden = false; };
       img.src = src;
     }
+  }
+
+  // Their stops from here on, with a dot where they are along the one they're on: the same
+  // look as the trip bar's own timeline (js/trip.js), drawn afresh with each update.
+  function renderViewTimeline(t) {
+    const box = $('#etaTimeline');
+    box.hidden = !t?.legs?.length;
+    if (box.hidden) return;
+    const pos = t.pos || 0;
+    box.innerHTML = t.legs.map((leg, k) => {
+      const last = leg.names.length - 1;
+      const stops = leg.names.map((n, i) =>
+        `<li class="tlStop${k === 0 && i <= Math.floor(pos + 0.001) ? ' passed' : ''}${i === last ? ' end' : ''}"><span class="tlNode"></span><span class="tlName">${escapeHtml(n)}</span>` +
+        (k === 0 && i === Math.min(last, Math.round(pos)) ? `<span class="tlTag etaHere">${ico('pin')} Here</span>` : '') + `</li>`
+      ).join('');
+      const icon = leg.kind === 'train' ? 'train' : leg.kind === 'walk' ? 'walk' : 'bus';
+      return `<section class="tlLeg${k === 0 ? ' current' : ''}"><p class="tlHead">${ico(icon)} ${escapeHtml(leg.label)} <span>to ${escapeHtml(leg.to)}</span></p>` +
+        `<ol class="tlStops">${stops}</ol></section>`;
+    }).join('');
   }
 
   function closeView() {
@@ -398,6 +426,10 @@
     $('#shareCardModal').addEventListener('modalclose', () => { card = null; });
     $('#tripShare').addEventListener('click', () => openCard('eta'));
     $('#etaModal').addEventListener('modalclose', closeView);
+    // Their trip on the live map, their dot moving as the link updates.
+    $('#etaLiveMap').addEventListener('click', () => {
+      if (view?.data) LiveMap.follow(view.data);
+    });
     $('#etaDirections').addEventListener('click', () => {
       const to = view?.data?.to;
       closeModal('etaModal');

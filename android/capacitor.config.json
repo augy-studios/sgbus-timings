@@ -1,0 +1,18 @@
+{
+  "appId": "org.uwuapps.sgbus",
+  "appName": "SG Bus Timings",
+  "webDir": "www",
+  "server": {
+    "url": "https://sgbus.uwuapps.org",
+    "errorPath": "offline.html"
+  },
+  "android": {
+    "path": "native",
+    "appendUserAgent": "SGBusTimingsApp/2"
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}

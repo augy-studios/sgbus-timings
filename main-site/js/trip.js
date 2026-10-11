@@ -9,7 +9,7 @@
 // background and pushes the alert itself (api/push/trip-poll.js).
 //
 // Trip.start({ title, legs, to, from, walkBefore }) with legs of
-// { kind: "bus" | "train", label, to, points: [[lat, lng], ...], names, minutes, wait,
+// { kind: "bus" | "train" | "walk", label, to, points: [[lat, lng], ...], names, minutes, wait,
 //   walkAfter, service, board, alight, route, color, lrt }, and `to` (optional) the place it
 // ends at, { label, lat, lng }, for a live ETA link (js/share.js); `walkAfter` is the minutes
 // walked after the ride, to the next one or the end, for the same. `from` (optional) is where
@@ -22,6 +22,18 @@
 // `names` (optional) names each of them for the timeline. A bus leg's `service` and `alight`
 // (the stop code you get off at) let the server find the bus, and `board` (the stop code you
 // get on at) lets the clock wait for it; without them it goes by the clock alone.
+//
+// A walk leg (js/nav.js's tripFromNav) is the way on foot from the start to the first stop,
+// between two rides, or from the last stop to the end: two points, where it starts and where it
+// ends, and how long it should take. You're along it by how near its end you are, or by the
+// clock without a fix, and it's done once you're there; a ride that ends at a walk is done
+// once you're off. No Get Off Alert for a walk.
+//
+// In the Android app (2.0.0 and later), the trip's followed by the app's own service
+// (TripPlugin, through js/app-bridge.js) instead of the page: it keeps your location coming with
+// the screen off, shows the trip in a notification (its End trip ends it here too), and
+// sounds the alert over the lock screen. The page still works everything out; the screen
+// needn't stay on.
 //
 // Tapping the trip bar opens that timeline: the stops still ahead, with a blue dot where you
 // are, gliding between stops like a progress bar. It's drawn once a frame only while the dot
@@ -70,6 +82,8 @@
 
   let trip = null;
   let watchId = null;
+  let nativeSubs = null; // the app's location and end events, while it follows the trip
+  let nativeText = null; // what its notification last said
   let tick = null;
   let wakeLock = null;
   let expanded = false;
@@ -96,6 +110,11 @@
       else localStorage.setItem(SETTING_KEY, "off");
     } catch {}
   }
+
+  const isWalk = (leg) => leg?.kind === "walk";
+  // On a walk, this near its end and you're there.
+  const WALK_ARRIVE_M = 40;
+  const inApp = () => Boolean(window.AppBridge?.native && AppBridge.has("trip"));
 
   function metres([lat1, lng1], [lat2, lng2]) {
     const rad = (d) => (d * Math.PI) / 180;
@@ -149,14 +168,47 @@
   function run() {
     if (!trip) return;
     render();
+    if (inApp()) followNatively();
+    else watchHere();
+    tick = setInterval(onTick, TICK_MS);
+    keepAwake();
+    sync();
+  }
+
+  function watchHere() {
     if ("geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(onFix, onFixError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
     } else {
       trip.noLocation = true;
     }
-    tick = setInterval(onTick, TICK_MS);
-    keepAwake();
-    sync();
+  }
+
+  // The app's TripService: its fixes come here as the browser's would, screen off or not.
+  function followNatively() {
+    const asked = trip;
+    nativeSubs = [
+      AppBridge.on("Trip", "location", (f) => onFix({ coords: { latitude: f.lat, longitude: f.lng, accuracy: f.accuracy } })),
+      AppBridge.on("Trip", "end", () => stop()),
+    ];
+    nativeText = statusText();
+    AppBridge.call("Trip", "start", { title: trip.title, text: nativeText }).catch((err) => {
+      if (trip !== asked) return;
+      if (err?.code === "permission") {
+        trip.noLocation = true;
+        render();
+      } else if (err?.code !== "ended") {
+        // The app couldn't: the page follows the trip itself, while it's on screen.
+        console.warn("the app couldn't follow the trip:", err);
+        dropNative();
+        watchHere();
+      }
+    });
+  }
+
+  function dropNative() {
+    nativeSubs?.forEach((sub) => sub.remove());
+    nativeSubs = null;
+    nativeText = null;
   }
 
   function stop(clear = true) {
@@ -166,6 +218,10 @@
     }
     if (watchId != null) navigator.geolocation.clearWatch(watchId);
     watchId = null;
+    if (nativeSubs) {
+      dropNative();
+      AppBridge.call("Trip", "stop").catch(() => {});
+    }
     clearInterval(tick);
     tick = null;
     releaseAwake();
@@ -188,6 +244,8 @@
     if (!trip || accuracy > ROUGH_FIX_M) return;
     const here = [pos.coords.latitude, pos.coords.longitude];
     const leg = trip.legs[trip.leg];
+    if (accuracy <= GOOD_FIX_M) trip.me = { lat: here[0], lng: here[1], accuracy: Math.round(accuracy), t: Date.now() };
+    if (isWalk(leg)) return onWalkFix(here, accuracy, leg);
     if (realign(here, accuracy, leg)) return;
     if (accuracy > GOOD_FIX_M) return;
     trip.lastFixAt = Date.now();
@@ -223,6 +281,26 @@
     check();
   }
 
+  // On a walk: how far along it you are, by how much nearer its end you are than its start, and
+  // there once you're near it. Never back, so a wobbling fix doesn't undo the way walked.
+  function onWalkFix(here, accuracy, leg) {
+    if (accuracy > GOOD_FIX_M) return;
+    const now = Date.now();
+    trip.lastFixAt = now;
+    trip.noLocation = false;
+    const start = leg.points[0];
+    const end = leg.points[leg.points.length - 1];
+    const left = metres(here, end);
+    const pos = Math.min(1, Math.max(0, 1 - left / Math.max(1, metres(start, end))));
+    trip.pos = Math.max(trip.pos || 0, pos);
+    trip.anchor = { pos: trip.pos, t: now };
+    if (left <= WALK_ARRIVE_M + Math.min(accuracy, 40)) {
+      trip.at = 1;
+      trip.pos = 1;
+    }
+    check();
+  }
+
   // Whether this leg is under way for sure. A bus leg is once the fixes have shown you moving
   // along its route (noteMove); until then the trip keeps you at the first stop and the clock
   // doesn't run, so waiting for the bus never counts as riding it. A train leg goes by the
@@ -231,6 +309,9 @@
   function underWay(leg) {
     return Boolean(trip.boarded) || leg.kind !== "bus" || trip.noLocation;
   }
+
+  // Whether there's another ride after this leg, to change to.
+  const ridesAfter = () => trip.legs.slice(trip.leg + 1).some((l) => !isWalk(l));
 
   // Good fixes along the leg before boarding, as { along, t }. Boarded once one is at least
   // MOVE_STOPS further along than another in the last MOVE_WINDOW_MS, and past the first
@@ -439,9 +520,17 @@
 
   function check() {
     const left = stopsLeft();
-    if (left <= ALERT_STOPS && !trip.alerted[trip.leg]) {
+    const leg = trip.legs[trip.leg];
+    const next = trip.legs[trip.leg + 1];
+    if (!isWalk(leg) && left <= ALERT_STOPS && !trip.alerted[trip.leg]) {
       trip.alerted[trip.leg] = true;
       if (enabled()) alertNow(left);
+    }
+    // At the end of a walk, or off a ride with a walk next: on to the next leg.
+    if (left === 0 && next && (isWalk(leg) || isWalk(next))) {
+      nextLeg();
+      render();
+      return;
     }
     // At the last stop of the last leg: the trip's done.
     if (left === 0 && trip.leg === trip.legs.length - 1) {
@@ -463,14 +552,17 @@
 
   function alertNow(left) {
     const leg = trip.legs[trip.leg];
-    const last = trip.leg === trip.legs.length - 1;
+    const last = !ridesAfter();
     const text = left === 0
       ? `Get off now at ${leg.to}.`
       : `Get off in ${left} stop${left === 1 ? "" : "s"}, at ${leg.to}${last ? "" : ", to change"}.`;
 
     if (navigator.vibrate) navigator.vibrate(VIBRATION);
     beep();
-    navigator.serviceWorker?.ready
+    // In the app, its own notification, which sounds over the lock screen even with the page
+    // in the background.
+    if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text }).catch(() => {});
+    else navigator.serviceWorker?.ready
       .then((reg) => {
         if (Notification.permission !== "granted") return;
         return reg.showNotification("Get Off Alert", {
@@ -635,13 +727,22 @@
       tripId: trip.tripId,
       to: trip.to || { label: final.to, lat: end[0], lng: end[1] },
       minutesLeft: minutes,
-      leg: { label: leg.label, to: leg.to, stopsLeft: stopsLeft() },
+      leg: { label: leg.label, to: leg.to, stopsLeft: stopsLeft(), kind: leg.kind },
       legIndex: trip.leg,
       legCount: trip.legs.length,
       at: [leg.points[i][0] + (leg.points[j][0] - leg.points[i][0]) * f, leg.points[i][1] + (leg.points[j][1] - leg.points[i][1]) * f],
       path: trip.legs.flatMap((l) => l.points),
       arrived: stopsLeft() === 0 && trip.leg === trip.legs.length - 1,
       share: trip.share || null,
+      // Your last good fix, if it's recent: on a shared ETA, where you really are.
+      me: trip.me && Date.now() - trip.me.t < 2 * 60 * 1000 ? trip.me : null,
+      // The stops from here on, for the timeline on a shared ETA.
+      timeline: {
+        pos: target(),
+        legs: trip.legs.slice(trip.leg).slice(0, 6).map((l) => ({
+          kind: l.kind, label: l.label, to: l.to, names: l.points.map((_, i) => stopName(l, i)).slice(0, 80),
+        })),
+      },
     };
   }
 
@@ -657,6 +758,8 @@
   // ---------- keeping the screen on ----------
 
   async function keepAwake() {
+    // The app follows the trip with the screen off; no need to keep it on.
+    if (nativeSubs) return;
     try {
       if ("wakeLock" in navigator && document.visibilityState === "visible") wakeLock = await navigator.wakeLock.request("screen");
     } catch {}
@@ -669,15 +772,29 @@
 
   // ---------- the trip bar ----------
 
+  // The trip bar's line: where you are on this leg, or the alert while it stands.
+  function statusText(message) {
+    const leg = trip.legs[trip.leg];
+    const left = stopsLeft();
+    if (!message && trip.alertText && trip.alertLeft === left) message = trip.alertText;
+    if (message) return message;
+    const where = isWalk(leg)
+      ? `Walk to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
+      : `${leg.label}: ${left === 0 ? `at ${leg.to}` : `${left} stop${left === 1 ? "" : "s"} to ${leg.to}`}`;
+    return where + (trip.legs.length > 1 ? ` · leg ${trip.leg + 1} of ${trip.legs.length}` : "");
+  }
+
   function render(message) {
     if (!trip) return;
     const leg = trip.legs[trip.leg];
-    const left = stopsLeft();
     $("#tripTitle").textContent = trip.title;
-    if (!message && trip.alertText && trip.alertLeft === left) message = trip.alertText;
-    const status = message || `${leg.label}: ${left === 0 ? `at ${leg.to}` : `${left} stop${left === 1 ? "" : "s"} to ${leg.to}`}` +
-      (trip.legs.length > 1 ? ` · leg ${trip.leg + 1} of ${trip.legs.length}` : "");
+    const status = statusText(message);
     $("#tripStatus").textContent = status;
+    // The app's notification says the same, when it's changed.
+    if (nativeSubs && status !== nativeText) {
+      nativeText = status;
+      AppBridge.call("Trip", "update", { title: trip.title, text: status }).catch(() => {});
+    }
     const notes = [];
     if (!enabled()) notes.push("Get Off Alert is off in Settings.");
     if (trip.noLocation) notes.push("No location: going by the clock.");
@@ -686,7 +803,7 @@
     $("#tripNote").hidden = !notes.length;
     $("#tripNext").hidden = trip.leg >= trip.legs.length - 1;
     const icon = $("#tripBar [data-icon]");
-    icon.setAttribute("data-icon", leg.kind === "train" ? "train" : "bus");
+    icon.setAttribute("data-icon", leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus");
     window.hydrateIcons($("#tripBar"));
     $("#tripBar").classList.remove("hidden");
     document.body.classList.add("on-trip");
@@ -700,7 +817,7 @@
 
   function stopName(leg, i) {
     const last = leg.points.length - 1;
-    return leg.names?.[i] || (i === last ? leg.to : i === 0 ? "Where you got on" : `Stop ${i + 1}`);
+    return leg.names?.[i] || (i === last ? leg.to : i === 0 ? (isWalk(leg) ? "Where you set off" : "Where you got on") : `Stop ${i + 1}`);
   }
 
   // Every leg from this one on, each a column of its stops. Only this leg has the dot.
@@ -715,7 +832,7 @@
         const stops = leg.points
           .map((_, i) => {
             const tag = i === last
-              ? `<span class="tlTag">${window.icon("flag")} ${final ? "Get off" : "Change"}</span>`
+              ? `<span class="tlTag">${window.icon("flag")} ${isWalk(leg) ? (final ? "Arrive" : "Board") : final ? "Get off" : "Change"}</span>`
               : i === alertAt && alertAt > 0 && enabled()
                 ? `<span class="tlTag">${window.icon("bell")} Alert</span>`
                 : "";
@@ -724,7 +841,7 @@
           .join("");
         return (
           `<section class="tlLeg${k === 0 ? " current" : ""}">` +
-          `<p class="tlHead">${window.icon(leg.kind === "train" ? "train" : "bus")} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
+          `<p class="tlHead">${window.icon(leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus")} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
           `<ol class="tlStops"><span class="tlTrack"><span class="tlDone"></span></span>${stops}` +
           (k === 0 ? `<span class="tlDot" aria-hidden="true"></span>` : "") +
           `</ol></section>`
@@ -849,10 +966,11 @@
     // Anywhere on the bar but its buttons opens or closes the timeline; the title is the
     // button for keyboards and screen readers.
     $("#tripBar .tripBarInner").addEventListener("click", (e) => {
-      if (e.target.closest("#tripEnd, #tripNext, #tripShare")) return;
+      if (e.target.closest("#tripEnd, #tripNext, #tripShare, #tripMap")) return;
       setExpanded(!expanded);
     });
     $("#tripEnd").addEventListener("click", () => stop());
+    $("#tripMap").addEventListener("click", () => window.LiveMap?.trip());
     $("#tripNext").addEventListener("click", () => {
       if (!trip) return;
       nextLeg();
@@ -885,6 +1003,8 @@
     navigator.serviceWorker?.addEventListener("message", (event) => {
       if (event.data?.type === "get-off") alertedElsewhere(event.data);
     });
+    // The same from the server through the app (js/alerts.js), while it's in front.
+    window.addEventListener("push:get-off", (e) => alertedElsewhere(e.detail));
     // A reload mid-trip carries on.
     try {
       const saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || "null");
@@ -894,11 +1014,18 @@
         // A trip saved by a version from before Your trips.
         trip.times ??= trip.legs.map((_, i) => (i === trip.leg ? { start: trip.legStartedAt } : {}));
         trip.startedAt ??= trip.legStartedAt;
-        run();
+        if (window.AppBridge?.native) AppBridge.ready(5000).then(() => trip && run());
+        else run();
       }
     } catch {}
   }
 
-  window.Trip = { start, stop, enabled, active: () => Boolean(trip), progress, setShare };
+  window.Trip = {
+    start, stop, enabled, active: () => Boolean(trip), progress, setShare,
+    // For the live map (js/map.js).
+    legs: () => trip?.legs || null,
+    title: () => trip?.title || null,
+    status: () => (trip ? statusText() : null),
+  };
   init();
 })();

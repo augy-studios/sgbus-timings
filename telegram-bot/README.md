@@ -215,8 +215,11 @@ Every timings message has these buttons:
   favourites list.
 - **Refresh** - re-fetch live timings for that stop.
 - **🧭 Directions** - on the last row, beside a lone back button if there is
-  one. Tapping it unfolds into **Google Maps** and **Citymapper** links with
+  one. Tapping it unfolds into **Live map** and **Citymapper** links with
   directions to the stop; a refresh folds it back into the single button.
+  **Live map** opens the web app's live map at `#map/<stop code>`, walking there
+  turn by turn from where you are, in SG Bus Timings' Android app where it's
+  installed and the browser otherwise.
 
 These buttons keep working even after the bot restarts, since the button
 actions are stored in SQLite rather than only in memory.
