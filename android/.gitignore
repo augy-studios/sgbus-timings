@@ -1,0 +1,25 @@
+# The signing key and its passwords: never in git. Back them up somewhere safe; an APK signed
+# with a different key can't update one already installed.
+android.keystore
+*.keystore
+*.jks
+keystore.properties
+
+# Built apps
+*.apk
+*.aab
+*.idsig
+
+# Bubblewrap's Play Store listing icon, made again by `bubblewrap update`
+store_icon.png
+
+# Build output and caches
+build/
+app/build/
+.gradle/
+local.properties
+.idea/
+*.iml
+.cxx/
+.externalNativeBuild/
+captures/

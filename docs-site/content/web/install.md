@@ -35,9 +35,13 @@ stays in that browser.
 ### SimplyGo
 
 On a phone or tablet, SimplyGo's icon in the Edge Tray goes to its app, for your
-card's balance, top-ups and travel history. SimplyGo has no link that opens its
-app straight away, so the button opens SimplyGo's page on Google Play or the App
-Store: tap **Open** there if you have it, or **Install** if you don't.
+card's balance, top-ups and travel history.
+
+- With the **SG Bus Timings Android app** installed, it opens SimplyGo straight
+  away.
+- Otherwise it opens SimplyGo's page on Google Play or the App Store: tap
+  **Open** there if you have it, or **Install** if you don't. SimplyGo has no
+  link a website can use to open its app.
 
 ## Install it
 
@@ -59,6 +63,19 @@ has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 1. Open the site in **Chrome**.
 2. Tap the menu, the three dots at the top right.
 3. Tap **Install app** or **Add to Home screen**, then confirm.
+
+#### Or the Android app
+
+There's also an Android app, shared as a file (`sg-bus-timings-1.0.0.apk`)
+rather than on Google Play for now. It's the same app, full screen, with one
+extra: the [SimplyGo](#simplygo) button opens SimplyGo itself.
+
+1. Open the `.apk` file on your phone, from Files, Telegram or wherever it was
+   sent.
+2. If Android asks, allow installing apps from there, then tap **Install**.
+
+If you installed the app from Chrome before, remove that first, so you don't
+have two.
 
 ### Windows, macOS, Linux and ChromeOS
 

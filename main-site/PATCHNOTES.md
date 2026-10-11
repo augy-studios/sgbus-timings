@@ -29,7 +29,8 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 - A search box no longer closes its suggestions when you tap back into it quickly.
 - The menus behind the three dots, in Places, past searches and Calendar, now slide open and closed.
-- **SimplyGo** - On a phone or tablet, SimplyGo's icon in the Edge Tray goes to its app, for your card balance, top-ups and travel history. It opens SimplyGo's store page, where Open launches the app.
+- **SimplyGo** - On a phone or tablet, SimplyGo's icon in the Edge Tray goes to its app, for your card balance, top-ups and travel history. It opens SimplyGo's store page, where Open launches the app; with the Android app, SimplyGo itself.
+- **Android app** - SG Bus Timings is now an Android app too, shared as an APK file: the same app, full screen, opening SimplyGo straight from its button.
 
 ---
 

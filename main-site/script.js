@@ -1028,13 +1028,18 @@ function syncTraySideButtons() {
 // A button in the Edge Tray for SimplyGo's app, for card balances, top-ups and travel history,
 // shown on phones and tablets only.
 //
-// It goes to SimplyGo's store page, which says Open once the app is installed: Google Play on
-// Android, the App Store on iPhone and iPad.
+// On Android with SG Bus Timings' own Android app installed (android/), the app opens SimplyGo
+// itself, by its package, as a native app does (OpenAppActivity.java): the link names this
+// app, so Chrome hands it there, from the app or from Chrome. Without it, Chrome goes to the
+// link's fallback, SimplyGo's Play Store page. On iPhone and iPad, its App Store page. Either
+// store page says Open once SimplyGo is installed.
 //
-// SimplyGo publishes no link that opens the app. Its Android app (9.29.0) does answer
+// SimplyGo publishes no link that opens it. Its Android app (9.29.0) does answer
 // sg.com.transitlink: links, but sg.com.transitlink://main sent it into a loop of opening and
-// closing, so the button doesn't use them.
+// closing, so they're not used.
 const SIMPLYGO_PLAY = 'https://play.google.com/store/apps/details?id=sg.com.transitlink';
+const SIMPLYGO_ANDROID = 'intent://open/simplygo#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;' +
+    `S.browser_fallback_url=${encodeURIComponent(SIMPLYGO_PLAY)};end`;
 
 (function showSimplyGo() {
     const ua = navigator.userAgent;
@@ -1043,7 +1048,11 @@ const SIMPLYGO_PLAY = 'https://play.google.com/store/apps/details?id=sg.com.tran
     const ios = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 0);
     if (!android && !ios) return;
     const btn = $('#simplyGoBtn');
-    if (android) btn.href = SIMPLYGO_PLAY;
+    if (android) {
+        btn.href = SIMPLYGO_ANDROID;
+        // An intent is handed to Android, not opened in a tab.
+        btn.removeAttribute('target');
+    }
     btn.hidden = false;
 })();
 

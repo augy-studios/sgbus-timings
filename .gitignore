@@ -1,3 +1,6 @@
 # Announcement drafts and their screenshots, kept locally.
 announcement/
 
+# Built installers (android/build-apk.ps1 and the like): shared by hand, too big for git.
+release/
+

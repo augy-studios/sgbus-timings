@@ -3,6 +3,9 @@
       "target": {
         "namespace": "android_app",
         "package_name": "org.uwuapps.sgbus",
-        "sha256_cert_fingerprints": ["E4:EB:13:B6:CA:2A:9E:89:E4:8B:3C:AB:68:2B:BF:6A:99:97:09:A5:2A:9A:36:20:8C:8C:A9:94:9B:08:CB:51"]
+        "sha256_cert_fingerprints": [
+          "E4:EB:13:B6:CA:2A:9E:89:E4:8B:3C:AB:68:2B:BF:6A:99:97:09:A5:2A:9A:36:20:8C:8C:A9:94:9B:08:CB:51",
+          "4E:D5:3F:F1:F4:CB:4E:5E:A7:CB:C1:28:46:48:F6:2E:B3:90:47:EB:C2:9B:25:20:F5:7D:FE:5B:76:CB:44:EB"
+        ]
       }
     }]
