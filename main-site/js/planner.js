@@ -20,15 +20,28 @@ function initPlanner() {
   });
 
   for (const [field, input, box] of [['start', '#routeStart', '#routeStartAc'], ['end', '#routeEnd', '#routeEndAc']]) {
+    // Each pick is kept as a past search (js/recents.js), shown when the box is tapped into.
+    const onStop = (code) => {
+      Recents.add(Recents.stopItem(code));
+      setPlannerEnd(field, code);
+    };
+    const onPostal = (code) => {
+      Recents.add(Recents.postalItem(code));
+      postalStops(code)
+        .then(({ title, stops }) => offerNearbyEnd(field, title, stops))
+        .catch((e) => alert(e.message));
+    };
     attachAutocomplete($(input), $(box), {
-      onStop: (code) => setPlannerEnd(field, code),
+      onStop,
       directFor: (code) => directBuses(field, code),
       directNote: (count) =>
         `${count === 1 ? 'One has' : `${count} have`} a bus ${directWay(field)}, listed first.`,
-      onPostal: (code) =>
-        postalStops(code)
-          .then(({ title, stops }) => offerNearbyEnd(field, title, stops))
-          .catch((e) => alert(e.message)),
+      onPostal,
+    });
+    Recents.attach($(input), $(box), {
+      accepts: (r) => r.kind === 'postal' || (r.kind === 'stop' && !!r.code),
+      saved: 'places',
+      onPick: (r) => (r.kind === 'saved' ? planFromSaved(field, r.place) : r.kind === 'postal' ? onPostal(r.code) : onStop(r.code)),
     });
   }
   // A set end reads "Name (code)"; selecting it on focus means typing replaces it outright.
@@ -61,7 +74,7 @@ function initPlanner() {
   $('#plannerSection .plannerFields').addEventListener('click', (e) => {
     const saved = e.target.closest('[data-saved-place]');
     if (saved) {
-      useSavedPlace(saved.dataset.savedPlace, (place) => planFromSaved(saved, place));
+      useSavedPlace(saved.dataset.savedPlace, (place) => planFromSaved(saved.dataset.savedFor, place, saved));
       return;
     }
     const btn = e.target.closest('[data-near-for]');
@@ -185,7 +198,7 @@ function openPlanner(start = null, end = null, { journey = null, when = null } =
   planner.whenPicker.set(when);
   showPanel('plannerSection', true);
   renderPlanner();
-  if (!start) $('#routeStart').focus({ preventScroll: true });
+  if (!start) Recents.quietFocus($('#routeStart'));
 }
 
 function closePlanner() {
@@ -237,15 +250,13 @@ async function offerNearbyEnd(field, title, stops) {
   openStopList(title, stops, { pin: false, onPick: (code) => setPlannerEnd(field, code), direct, note });
 }
 
-// Home or Work (js/nav.js) as one end: the stop itself when it's a bus stop, otherwise the
-// stops near it to pick from, as for the pin.
-function planFromSaved(btn, place) {
-  const field = btn.dataset.savedFor;
+// A saved place (js/places.js) as one end: the stop itself when it's a bus stop, otherwise the
+// stops near it to pick from, as for the pin. `btn`, if it came from one, shows it's working.
+function planFromSaved(field, place, btn = null) {
   if (place.stop) return setPlannerEnd(field, place.stop);
-  const name = SAVED_PLACES[btn.dataset.savedPlace];
-  return withLocating(btn, () =>
-    ensureStopsIndex().then(() => offerNearbyEnd(field, `Stops near ${name}: pick the ${field}`, stopsNear(place.lat, place.lng)))
-  );
+  const offer = () =>
+    ensureStopsIndex().then(() => offerNearbyEnd(field, `Stops near ${place.name}: pick the ${field}`, stopsNear(place.lat, place.lng)));
+  return btn ? withLocating(btn, offer) : offer().catch((e) => alert(e.message));
 }
 
 function setPlannerEnd(field, code) {

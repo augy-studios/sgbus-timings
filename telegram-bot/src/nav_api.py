@@ -41,6 +41,20 @@ async def places(query: str) -> list[dict]:
     return res.json()
 
 
+async def share_place(place: dict) -> str:
+    """A "How to get to" link to a place, /go/<id>, made by the site's /api/share as the web
+    app's Share makes them: the same link every time the same place is shared."""
+    data = {"label": place["label"][:120], "lat": place["lat"], "lng": place["lng"]}
+    try:
+        res = await shared_client().post(_url("/api/share"), json={"kind": "place", "data": data}, headers=_headers(), timeout=20)
+    except httpx.HTTPError as err:
+        raise NavError("Couldn't make a link right now. Please try again shortly.") from err
+    if res.status_code != 200:
+        raise NavError("Couldn't make a link right now. Please try again shortly.")
+    # On the site people open, which NAV_API_URL needn't be.
+    return config.webapp_url.rstrip("/") + res.json()["path"]
+
+
 async def plan(from_point: dict, to_point: dict, when: "dict | None" = None) -> dict:
     """{options: [...], onemap: bool, alerts: {lines}, when}, quickest option first. `when`
     is a picked time (when.py), None for Leave now."""

@@ -65,7 +65,7 @@ const LS = {
         else localStorage.removeItem(this.birthdayKey);
     },
 
-    // Home or Work ("home" or "work"), set in Settings: { label, lat, lng }, with `stop` the
+    // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
     // stop code when the place is a bus stop. Null while it isn't set.
     getPlace(kind) {
         const v = readJson(kind === 'work' ? this.workKey : this.homeKey, null);
@@ -329,7 +329,8 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
     };
     input.addEventListener('input', render);
     input.addEventListener('focus', render);
-    input.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 150));
+    // Not if the box has been tapped back into meanwhile, which would close what that opened.
+    input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) box.hidden = true; }, 150));
     input.addEventListener('keydown', e => {
         if (e.key !== 'Enter') return;
         box.hidden = true;
@@ -1045,12 +1046,13 @@ async function runSearch() {
     $('#acList').hidden = true;
     if (!v) return;
 
-    if (isPostalCode(v)) { openPostalList(v); return; }
+    if (isPostalCode(v)) { searchPostal(v); return; }
 
     // A stop code, optionally followed by a bus to narrow it to: "84009 174".
     const stopMatch = v.match(/\b\d{5}\b/);
     if (stopMatch) {
         const rest = v.replace(stopMatch[0], '').trim().toUpperCase();
+        if (stopsIndex?.[stopMatch[0]]) Recents.add(Recents.stopItem(stopMatch[0]));
         loadStop(stopMatch[0], { service: /^[0-9A-Z]{1,4}$/.test(rest) ? rest : null });
         return;
     }
@@ -1060,17 +1062,22 @@ async function runSearch() {
     const svc = v.toUpperCase();
     if (/^[0-9A-Z]{1,4}$/.test(svc)) {
         try { await BusNet.load(stopsIndex); } catch { /* fall through to the stop search */ }
-        if (BusNet.hasService(svc)) { openService(svc); return; }
+        if (BusNet.hasService(svc)) { searchBus(svc); return; }
     }
 
     const first = matchStops(v)[0];
-    if (first) loadStop(first.code);
+    if (first) {
+        Recents.add(Recents.stopItem(first.code));
+        loadStop(first.code);
+    }
     else alert('Type a bus stop name, 5-digit stop code, 6-digit postal code, or bus number.');
 }
 
 // ----------- Events -----------
 $('#titleBtn').addEventListener('click', openSettings);
 $('#settingsBtn').addEventListener('click', openSettings);
+$('#settingsPlaces').addEventListener('click', () => { closeModal('settingsModal'); Places.open(); });
+$('#settingsCalendar').addEventListener('click', () => { closeModal('settingsModal'); Calendar.openSettings(); });
 
 $('#setName').addEventListener('input', e => { LS.setName(e.target.value.trim()); updateGreeting(); });
 $('#setBirthday').addEventListener('change', e => { LS.setBirthday(e.target.value); updateGreeting(); });
@@ -1088,12 +1095,23 @@ $$('[data-pin-kind]').forEach(group => group.addEventListener('click', e => {
 }));
 
 $('#searchBtn').addEventListener('click', runSearch);
+// Each pick here is kept as a past search (js/recents.js), shown when the box is tapped into.
+const searchStop = code => { Recents.add(Recents.stopItem(code)); $('#q').value = code; loadStop(code); };
+const searchBus = svc => { Recents.add(Recents.busItem(svc)); openService(svc); };
+const searchPostal = code => { Recents.add(Recents.postalItem(code)); openPostalList(code); };
 attachAutocomplete($('#q'), $('#acList'), {
     withServices: true,
-    onStop: code => { $('#q').value = code; loadStop(code); },
-    onService: svc => openService(svc),
+    onStop: searchStop,
+    onService: searchBus,
     onEnter: runSearch,
-    onPostal: openPostalList,
+    onPostal: searchPostal,
+});
+Recents.attach($('#q'), $('#acList'), {
+    accepts: r => r.kind === 'bus' || r.kind === 'postal' || (r.kind === 'stop' && !!r.code),
+    saved: 'favs',
+    // A favourite from the Saved tab (it has an icon) opens without being kept as a search.
+    onPick: r => (r.icon ? (r.kind === 'bus' ? openService(r.code) : loadStop(r.code))
+        : r.kind === 'bus' ? searchBus(r.code) : r.kind === 'postal' ? searchPostal(r.code) : searchStop(r.code)),
 });
 
 $('#nearMeBtn').addEventListener('click', e =>
@@ -1334,6 +1352,9 @@ function routeFromShare() {
     initNav();
     Share.init();
     initSync();
+    TripHistory.init();
+    Places.init();
+    Calendar.init();
 
     // Started alongside the stops so it's usually in by the time anything wants it.
     BusNet.load().catch(e => console.warn('Bus routes failed:', e));

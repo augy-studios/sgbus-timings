@@ -10,10 +10,17 @@ can.
 
 ### Kept in your browser
 
-Your favourites, your name and birthday, your Home and Work, where favourites
-pin, and your theme are saved in your browser's storage on your device. They are not sent to SG Bus
-Timing's server, and there is no account. Clearing your browsing data for the
-site deletes them.
+Your favourites, your name and birthday, your [places](../web/places.md) (Home,
+Work and the rest), [Your trips](../web/trips.md), your
+[past searches](../web/past-searches.md), your calendar link or file, where
+favourites pin, and your theme are saved in your browser's storage on your device.
+They are not sent to SG Bus Timings' server, and there is no account. Clearing your
+browsing data for the site deletes them.
+
+Your trips keep where each trip started and ended, the buses and trains it used,
+and how long you waited and rode. Past searches keep what you picked in a search
+box: up to the last 50. Both stay in the browser; only places and trips can be
+copied to another device, with [Sync](#sync).
 
 ### Your location
 
@@ -37,8 +44,9 @@ set cookies; Google's own privacy policy covers what they collect.
 
 Syncing favourites uses a free public service from PeerJS to introduce your two
 devices. It sees the sync code and both devices' IP addresses, and each device
-learns the other's IP address. Your favourites travel directly between the two
-devices, encrypted, and never through that service.
+learns the other's IP address. Your favourites, and your places and trips if you
+pick them, travel directly between the two devices, encrypted, and never through
+that service.
 
 ### Service alert notifications
 
@@ -69,6 +77,11 @@ picked them, and nothing about you; anyone with the link can open it. An end set
 to **Your location** in a directions link isn't sent at all. Shared on its own as
 **Share start** or **Share end**, it is: as the point where you were.
 
+Sharing one of your [places](../web/places.md), such as Home, makes a place link
+with its name and where it is; it doesn't expire. A trip shared from Your trips is
+a directions link from where it started to where it ended, without when you took
+it.
+
 A **Share my ETA** link also holds the name from Settings, if you set one, where
 you are along the trip's route, and when you should get there, updated as you go.
 It's deleted three hours after its last update. The map on a link is drawn by
@@ -87,6 +100,19 @@ you've got, and the push subscription to send to, all under a random ID, and, if
 you're sharing your ETA, that link and its name and destination, so the server can
 keep it updated. Your location itself is never sent. The server deletes the trip when you end it, when
 it's over, or a while after it should have been.
+
+### Calendar
+
+A [calendar](../web/calendar.md) linked by its private iCal link is read each time
+the Calendar tab opens. Calendar services don't let a web page read a calendar
+directly, so the link goes to SG Bus Timings' server, in the body of the request
+rather than the address so request logs don't keep it, and the server fetches the
+calendar and passes it straight back. It doesn't keep or log the link or the
+calendar. An imported `.ics` file is read in your browser and never sent anywhere.
+
+To place each event, its location (not its name or time) is searched for the way a
+place typed into Navigate is. Which place each location matched is remembered in
+your browser.
 
 ### Weather
 
@@ -109,8 +135,12 @@ To work, the bot saves, against your Telegram chat:
 - your favourite stops, buses and routes, and where they pin;
 - your routines, and any routine, route or nav you are part way through setting up;
 - your favourite navs, with the places at each end;
-- the name you set, your birthday, your Home and Work places, and whether
-  routine notifications are on;
+- the name you set, your birthday, your Home and Work places and any other
+  places you've saved, and whether routine notifications are on;
+- your calendar's private iCal link, if you've linked one with `/calendar`, and
+  which of its events you've hidden. The bot reads the calendar with it each time
+  you use `/calendar`, and keeps the events themselves nowhere. Which place each
+  event's location matched is kept, without whose calendar it came from;
 - whether you've subscribed to Service Alerts, and in which mode;
 - what each button it has sent you does, so buttons keep working after a
   restart.
@@ -128,9 +158,10 @@ postal code you send is looked up with OneMap to find the address.
 
 Remove favourites with `/unfavstop`, `/unfavbus` and the favourite buttons,
 routines with `/routines`, Service Alerts with `/unsub`, favourite navs with
-the star on their panel, your name with `/setname clear`, and your birthday,
+the star on their panel, your name with `/setname clear`, your birthday,
 Home and Work with **Clear birthday**, **Clear home** and **Clear work** in
-`/settings`. To have everything about you deleted,
+`/settings`, your other places with **Delete** in `/places`, and your calendar
+link with **Remove calendar** in `/calendar`. To have everything about you deleted,
 email Augy, who runs the bot, at
 [augy@augystudios.com](mailto:augy@augystudios.com), with your Telegram username.
 

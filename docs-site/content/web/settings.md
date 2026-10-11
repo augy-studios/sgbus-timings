@@ -6,7 +6,7 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, the Edge Tray's side, and syncing favourites with another device." width="440" height="957" loading="lazy">
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Open Places, Calendar settings, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, the Edge Tray's side, and syncing favourites with another device." width="420" height="1138" loading="lazy">
 <figcaption>Settings. Changes save as you make them.</figcaption>
 </figure>
 
@@ -16,7 +16,8 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 |---|---|
 | **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
 | **Birthday** | On the day, the greeting becomes "Happy Birthday, Sam!" **Clear** removes it. Only the day and month are used. |
-| **Home**, **Work** | Search for the place as in [Navigate](nav.md): an address, a building, a postal code, a station or a stop. The **Home** and **Work** buttons under each end of Navigate and [Plan a route](route-planner.md) use them. **Clear** removes one. |
+| **Home, Work and your places** | **Open Places** opens [Places](places.md), where Home, Work and your other places are set. |
+| **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
@@ -36,23 +37,12 @@ keeps up while the app stays open.
 ### Home and Work
 
 <figure>
-<img src="/screenshots/web/settings-home-search.png" alt="Settings with bedok mall typed into Home, and three suggestions below it: Bedok Mall, Bedok Mall (car Park Entrance) and Djitsun Mall Bedok." width="448" height="215" loading="lazy">
-<figcaption>Type a place in Home or Work and pick it from the suggestions.</figcaption>
+<img src="/screenshots/web/settings-places-calendar.png" alt="Settings' Open Places and Calendar settings buttons." width="378" height="109" loading="lazy">
+<figcaption>Home and Work are set in Places now, and your calendar is linked from here.</figcaption>
 </figure>
 
-In **Home** or **Work**, type an address, a building, a postal code, a station or
-a stop, the same as in [Navigate](nav.md), and pick it from the suggestions. A
-Google Maps link works too. Typing without picking anything leaves the place as
-it was.
-
-<figure>
-<img src="/screenshots/web/settings-home-work.png" alt="Settings with Home set to Bedok Mall and Work set to One Raffles Place, each with a Clear button." width="448" height="236" loading="lazy">
-<figcaption>Both set, each with Clear to remove it.</figcaption>
-</figure>
-
-They're used by the **Home** and **Work** buttons under each end of
-[Navigate](nav.md#home-and-work) and [Plan a route](route-planner.md). They're
-kept on this device, and aren't part of [syncing favourites](sync.md).
+Home and Work moved to [Places](places.md), with any other places you save.
+**Open Places** opens it, as does the bookmark in the Edge Tray.
 
 ## Themes
 

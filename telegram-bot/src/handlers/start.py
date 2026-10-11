@@ -16,6 +16,8 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Just send your location (no command needed) to find the nearest bus stops
 - Build a route between two bus stops to see every bus that runs the whole way without a change
 - Navigate between any two places by bus and train, with every mix of the two to choose from
+- Save places (home, work and your own, named as you like) and share them as links
+- Link your calendar to plan the way to each event, arriving on time
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
 - Choose whether favourites pin to the top or bottom of the list
 - Tap Directions on any stop's timings, then pick Google Maps or Citymapper to get there
@@ -45,6 +47,9 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /setname - set the name you want the bot to call you by
 - /sethome - set your home, for the Home buttons in /nav and /route
 - /setwork - set your work, for the Work buttons in /nav and /route
+- /places - your home, work and other places: get there, share, rename, move or delete
+- /addplace - save a new place, with a name of your own
+- /calendar - your calendar's events with a location, to plan the way there
 - /settings - view and change your settings (name, birthday, home, work, routine notifications)
 - /done - finish whatever you're in the middle of
 - /cancel - stop whatever you're in the middle of

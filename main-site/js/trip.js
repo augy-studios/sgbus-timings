@@ -8,11 +8,16 @@
 // sent to the server, which follows the bus from LTA's live positions while the app is in the
 // background and pushes the alert itself (api/push/trip-poll.js).
 //
-// Trip.start({ title, legs, to }) with legs of
+// Trip.start({ title, legs, to, from, walkBefore }) with legs of
 // { kind: "bus" | "train", label, to, points: [[lat, lng], ...], names, minutes, wait,
-//   walkAfter, service, board, alight }, and `to` (optional) the place it ends at,
-// { label, lat, lng }, for a live ETA link (js/share.js); `walkAfter` is the minutes walked
-// after the ride, to the next one or the end, for the same.
+//   walkAfter, service, board, alight, route, color, lrt }, and `to` (optional) the place it
+// ends at, { label, lat, lng }, for a live ETA link (js/share.js); `walkAfter` is the minutes
+// walked after the ride, to the next one or the end, for the same. `from` (optional) is where
+// it starts and `walkBefore` the minutes walked to the first ride, for Your trips
+// (js/history.js); a train leg's `route`, `color` and `lrt` are its line, for the same.
+//
+// Your trips hears of the trip as it goes (record): when it starts, as each ride is boarded
+// and left, and as it ends, so a tab closed mid-trip still leaves the rides taken so far.
 // `points` are the stops from boarding to alighting, so a leg of 5 stops has 6 points, and
 // `names` (optional) names each of them for the timeline. A bus leg's `service` and `alight`
 // (the stop code you get off at) let the server find the bus, and `board` (the stop code you
@@ -107,22 +112,34 @@
 
   // ---------- starting and ending ----------
 
-  function start({ title, legs, to = null }) {
+  function start({ title, legs, to = null, from = null, walkBefore = 0 }) {
     if (!legs?.length) return;
+    // A trip still running is over as this one starts: Your trips keeps what it got to.
+    if (trip) {
+      endLegTime();
+      record();
+    }
     stop(false);
+    const now = Date.now();
     trip = {
       tripId: crypto.randomUUID(),
       title,
       legs,
       to,
+      from,
+      walkBefore,
+      startedAt: now,
       leg: 0,
       at: 0, // the index of the stop you're at or have just passed, on the current leg
-      legStartedAt: Date.now(),
+      legStartedAt: now,
       lastFixAt: 0,
       alerted: legs.map(() => false),
       noLocation: false,
+      // When each leg began, was boarded (`gps` when the fixes showed it) and ended.
+      times: legs.map((_, i) => (i === 0 ? { start: now } : {})),
     };
     save();
+    record();
     run();
     // Asked once, so the alert can also show as a notification over a locked screen's wake.
     // Once allowed, the server can send it while the app is in the background too.
@@ -143,6 +160,10 @@
   }
 
   function stop(clear = true) {
+    if (clear && trip) {
+      endLegTime();
+      record();
+    }
     if (watchId != null) navigator.geolocation.clearWatch(watchId);
     watchId = null;
     clearInterval(tick);
@@ -224,7 +245,18 @@
     if (!moved) return false;
     trip.boarded = true;
     trip.moves = [];
+    // Boarded about as long ago as riding this far along takes, by the leg's own time per
+    // stop, though not before the last fix that still had you at the stop.
+    const t = trip.times[trip.leg];
+    const leg = trip.legs[trip.leg];
+    if (t) {
+      const perStopMs = ((leg.minutes || 0) / Math.max(1, leg.points.length - 1)) * 60000;
+      const waiting = moves.filter((m) => m.along < 0.25).map((m) => m.t);
+      const board = Math.max(now - along * perStopMs, ...waiting, t.start || 0);
+      Object.assign(t, { board: Math.min(now, board), gps: true });
+    }
     sync();
+    record();
     return true;
   }
 
@@ -267,6 +299,8 @@
     if (best === 0) {
       trip.boarded = false;
       trip.moves = [];
+      const t = trip.times[trip.leg];
+      if (t) delete t.board;
     }
     // Moved back before the alert stop: the alert that went off too early can go off again.
     const last = leg.points.length - 1;
@@ -362,7 +396,9 @@
   }
 
   function nextLeg() {
+    endLegTime();
     trip.leg += 1;
+    trip.times[trip.leg] = { start: Date.now() };
     trip.at = 0;
     trip.pos = 0;
     trip.anchor = null;
@@ -373,6 +409,27 @@
     shown = null;
     save();
     sync();
+    record();
+  }
+
+  // ---------- Your trips (js/history.js) ----------
+
+  // The leg on now has ended, if it hadn't: changed from, arrived at, or the trip ended on it.
+  function endLegTime() {
+    const t = trip.times?.[trip.leg];
+    if (t && !t.end) t.end = Date.now();
+  }
+
+  // The trip as it stands, for Your trips to keep. It works out the rides taken and their
+  // times itself, so nothing here has to.
+  function record() {
+    if (!trip || !window.TripHistory) return;
+    const { tripId, title, from, to, walkBefore, startedAt, legs, times, leg, at, pos, boarded, arrived, noLocation } = trip;
+    try {
+      window.TripHistory.record({ tripId, title, from, to, walkBefore, startedAt, legs, times, leg, at, pos, boarded, arrived, noLocation });
+    } catch (err) {
+      console.warn("couldn't keep the trip in Your trips:", err);
+    }
   }
 
   function stopsLeft() {
@@ -388,6 +445,12 @@
     }
     // At the last stop of the last leg: the trip's done.
     if (left === 0 && trip.leg === trip.legs.length - 1) {
+      if (!trip.arrived) {
+        trip.arrived = true;
+        endLegTime();
+        save();
+        record();
+      }
       render("You've arrived.");
       setTimeout(() => stop(), 60 * 1000);
       return;
@@ -507,12 +570,20 @@
     state.alerted.forEach((a, i) => {
       if (a) trip.alerted[i] = true;
     });
-    if (state.leg > trip.leg && state.leg < trip.legs.length) {
-      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, legStartedAt: state.legStartedAt || Date.now() });
+    const moved = state.leg > trip.leg && state.leg < trip.legs.length;
+    if (moved) {
+      // The server moved the trip on while the app was away: the leg it left ended about when
+      // the next one began, and any it skipped over are taken but untimed.
+      const began = state.legStartedAt || Date.now();
+      const t = trip.times[trip.leg];
+      if (t && !t.end) t.end = began;
+      trip.times[state.leg] = { start: began };
+      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, legStartedAt: began });
       shown = null;
     }
     save();
     render();
+    if (moved) record();
   }
 
   function unsync() {
@@ -820,6 +891,9 @@
       if (saved?.legs?.length) {
         trip = saved;
         trip.tripId ??= crypto.randomUUID();
+        // A trip saved by a version from before Your trips.
+        trip.times ??= trip.legs.map((_, i) => (i === trip.leg ? { start: trip.legStartedAt } : {}));
+        trip.startedAt ??= trip.legStartedAt;
         run();
       }
     } catch {}

@@ -60,6 +60,9 @@ routines - view, edit, or delete your routines
 setname - set the name the bot calls you by
 sethome - set your home, for the Home buttons in nav and route
 setwork - set your work, for the Work buttons in nav and route
+places - your home, work and other places: get there, share or change them
+addplace - save a new place, with a name of your own
+calendar - your calendar's events with a location, to plan the way there
 settings - view and change your settings
 done - finish adding favourite buses
 cancel - cancel the current operation

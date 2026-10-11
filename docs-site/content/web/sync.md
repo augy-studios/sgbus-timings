@@ -63,6 +63,17 @@ them. The other device saves them straight away and says how many were new.
 
 Copying only ever adds. Nothing is removed or replaced on either device.
 
+Besides favourite stops, buses, routes and navs, the lists hold your
+[places](places.md) and [trips](trips.md):
+
+- **Places** copies Home, Work and your other places. A device that already has
+  a Home or Work keeps its own; a place already saved at the same spot isn't
+  copied again.
+- **Trips** copies trips from Your trips that the other device doesn't have, and
+  its stats count them from then on.
+
+Your [past searches](past-searches.md) and [calendar](calendar.md) aren't copied.
+
 ## Finish
 
 <figure>

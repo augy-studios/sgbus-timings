@@ -30,6 +30,9 @@ from .newroute import arm_route_field, arm_route_when
 from .newroute import use_saved_place as use_saved_route_place
 from ..saved_places import KINDS as PLACE_KINDS
 from ..saved_places import clear_place, get_place, nav_end
+from ..saved_places import is_kind as is_place_kind
+from .calendar import handle_calendar_callback
+from .places import handle_places_callback
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .servicealerts import fetch_alerts_now
 from .nav import WHEN_BACK as NAV_WHEN_BACK
@@ -80,6 +83,14 @@ def register_callbacks(client):
         inline_only = isinstance(event.query, types.UpdateInlineBotCallbackQuery)
 
         try:
+            # /places and /calendar keep their buttons with them.
+            if action.startswith("places_"):
+                await handle_places_callback(client, event, action, payload)
+                return
+            if action.startswith("cal_"):
+                await handle_calendar_callback(client, event, action, payload)
+                return
+
             if action in ("stop", "refresh", "navigate"):
                 # Directions is the same view again, with the button swapped for a link per map app.
                 view = await build_stop_view(
@@ -219,18 +230,21 @@ def register_callbacks(client):
                 return
 
             if action in ("route_saved", "nav_saved"):
-                # Home or Work for one end. Unset, it's asked for, and the button works once
-                # it's saved, since the panel keeps it.
+                # Home, Work or one of the chat's own places for one end. Home or Work unset
+                # is asked for, and the button works once it's saved, since the panel keeps it.
                 kind = payload.get("kind")
-                if kind not in PLACE_KINDS:
+                if not is_place_kind(kind):
                     await event.answer()
                     return
                 place = get_place(event.chat_id, kind)
-                name = PLACE_KINDS[kind][1]
                 if not place:
-                    await event.answer(f"Set your {name.lower()} first")
+                    if kind not in PLACE_KINDS:
+                        await event.answer("That place has been deleted. See /places.")
+                        return
+                    await event.answer(f"Set your {PLACE_KINDS[kind][1].lower()} first")
                     await start_edit_place(client, event.chat_id, kind, from_panel=True)
                     return
+                name = place["name"]
                 if action == "route_saved":
                     await event.answer()
                     await use_saved_route_place(client, event, user_id, payload, place, name)

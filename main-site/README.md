@@ -77,6 +77,19 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Tap the trip bar for the timeline: the stops ahead, with a blue dot where you are, redrawn 20 times a second so it glides between stops
 - On by default; Settings turns it off
 
+### Your trips and stats
+- Every trip taken with the Get Off Alert is kept in **Your trips** (the bar chart in the Edge Tray), by week, once at least one ride was taken (`js/history.js`)
+- Each ride's wait and ride time, measured from when the fixes showed you board where they could, the plan's otherwise; walking is always the plan's
+- **Trip Mix** (walking, waiting, riding) and **Trip Modes** (rides by bus operator, MRT and LRT); a trip can be planned again, shared as a directions link, or deleted
+
+### Places
+- **Places** (the bookmark in the Edge Tray) keeps Home, Work and any other place, named as you like (`js/places.js`); each is a button under Navigate's and Plan a route's ends
+- Tap one for the way there; its menu edits, shares (a `/go` link) or deletes it
+
+### Past searches and calendar
+- Tapping into a search box drops down past searches (last 24 hours, then earlier) with tabs for saved places and, in Navigate, calendar events (`js/recents.js`). Kept in the browser, last 50, not synced
+- **Calendar**: a private iCal link, read through `POST /api/calendar` (https only, public hosts, not stored or logged), or an imported `.ics` file read in the browser. Events with a location for the next 14 days; tap one to Navigate there arriving by its start (`js/calendar.js`)
+
 ### Weather
 - The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
@@ -87,7 +100,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Theme preference is saved automatically
 
 ### Personalisation
-- Open settings from the gear or the app title to set your name and birthday
+- Open settings from the gear or the app title to set your name and birthday, and to reach Places and Calendar
 - The greeting changes based on time of day, and wishes you a happy birthday on the day
 - Settings are stored in local storage
 

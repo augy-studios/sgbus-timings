@@ -2133,3 +2133,201 @@ body.on-trip { padding-bottom: 96px; }
 /* Picking the stop to get off at, on a bus's route. */
 .getOffPickNote { font-weight: 700; color: var(--brand-ink); }
 #routeList.picking .routeStop { outline: 1px dashed color-mix(in srgb, var(--brand-ink) 45%, transparent); outline-offset: -2px; }
+
+/* ===== Your trips and their stats (js/history.js), after Citymapper's Go Trips ===== */
+.tripsBody { display: flex; flex-direction: column; gap: 12px; }
+.tripWeek {
+    border: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+}
+.tripWeekHead {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--muted-strong);
+    background: var(--surface);
+    border-bottom: 1px solid var(--surface-border);
+}
+.tripRow + .tripRow { border-top: 1px solid var(--surface-border); }
+.tripRowMain {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 14px;
+    text-align: left;
+    transition: background 0.13s;
+}
+.tripRowMain:hover { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+.tripWhen { font-size: 15px; }
+.tripChips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tripChips .busChip { display: inline-flex; align-items: center; gap: 5px; }
+.tripDot { color: var(--muted-strong); }
+.tripTo { font-size: 13px; color: var(--muted-strong); margin-left: 4px; }
+.tripDetails {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 0 14px 14px;
+    animation: alerts-reveal 0.2s ease;
+}
+.tripLegs { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.tripLeg { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; }
+.tripLeg .busChip { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+.tripTimes { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 12px; color: var(--muted-strong); }
+.tripPlanned { font-style: italic; }
+.tripActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.tripsAll { align-self: stretch; text-align: center; }
+.tripsRule { border: 0; border-top: 1px solid var(--surface-border); margin: 8px 0; }
+.tripsClear { align-self: center; }
+
+.statsTitle { font-size: 18px; text-align: center; color: var(--brand-ink); }
+.statsSince { font-size: 13px; color: var(--muted-strong); text-align: center; }
+.statsHead { font-size: 15px; font-weight: 700; margin: 6px 2px 0; }
+.statsCard {
+    border: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+}
+.statRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+}
+.statRow + .statRow { border-top: 1px solid var(--surface-border); }
+.statRow .ico svg { width: 20px; height: 20px; color: var(--brand-ink); }
+.statLabel { flex: 1; min-width: 0; }
+.statValue { font-weight: 700; color: var(--ok); }
+
+/* ===== Places (js/places.js) ===== */
+.placesList { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 12px; }
+.placeRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+}
+.placeRow.unset { border-style: dashed; }
+.placeMain {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 12px 14px;
+    text-align: left;
+    border-radius: 14px;
+    transition: background 0.13s;
+}
+.placeMain:hover { background: color-mix(in srgb, var(--brand) 18%, transparent); }
+.placeMain > .ico svg { width: 22px; height: 22px; color: var(--brand-ink); }
+.placeMain > span { display: flex; flex-direction: column; min-width: 0; }
+.placeMain .sub, .recentText .sub {
+    font-size: 12px;
+    color: var(--muted-strong);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.placeMore { margin-right: 8px; padding: 8px; }
+.placeMenu, .recentMenu {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 12px 12px;
+}
+.placeNewBtn { display: inline-flex; align-items: center; gap: 8px; }
+.placeForm {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface);
+}
+.placesSection .card { overflow: visible; }
+.placesSection .acList {
+    background: color-mix(in srgb, var(--brand) 6%, var(--bg));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+.settingsWide { justify-content: center; }
+
+/* The buttons under each end: Home, Work, then every other place, in one row that scrolls
+   sideways when there are more than fit. */
+.savedPlaceBtns { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
+.savedPlaceBtns::-webkit-scrollbar { display: none; }
+.savedPlaceBtns .iconBtn { flex: none; white-space: nowrap; }
+
+/* ===== Past searches (js/recents.js) and Calendar (js/calendar.js) =====
+   The search box's own dropdown, taller while it holds them, as Citymapper's "Where to?". */
+.acList.recents { max-height: min(62vh, 460px); padding: 8px; }
+.recentTabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.recentTab {
+    display: flex;
+    justify-content: center;
+    padding: 9px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--muted-strong);
+}
+.recentTab svg { width: 20px; height: 20px; }
+.recentTab.active { background: var(--brand-fill); color: var(--on-brand); }
+.recentHead { font-size: 12px; color: var(--muted-strong); margin: 8px 4px 4px; }
+.recentRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    border-radius: 12px;
+}
+.recentRow + .recentRow { border-top: 1px solid var(--surface-border); }
+.recentRow.open { background: var(--surface); }
+.recentMain, .calSetup {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    width: 100%;
+    padding: 10px 8px;
+    text-align: left;
+    border-radius: 12px;
+}
+.recentMain:hover, .calSetup:hover { background: var(--brand-fill); color: var(--on-brand); }
+.recentMain:hover .sub, .calSetup:hover .sub, .recentMain:hover .calWhen { color: inherit; }
+.recentMain > .ico svg, .calSetup > .ico svg { width: 20px; height: 20px; }
+.recentMain.unset { color: var(--muted-strong); }
+.recentText { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.recentText .name { font-size: 14px; }
+.recentText .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.recentText em { font-style: italic; }
+.recentLine { font-size: 11px; font-weight: 700; }
+.recentLine .lineDot { width: 8px; height: 8px; }
+.recentMore { padding: 8px; border-radius: 10px; color: var(--muted-strong); }
+.recentMore:hover { background: var(--surface-strong); color: var(--ink); }
+.recentMore svg { width: 18px; height: 18px; }
+.recentMenu .iconBtn { font-size: 12px; padding: 6px 10px; }
+.recentClear {
+    display: block;
+    margin: 8px auto 2px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--muted-strong);
+}
+.recentClear:hover { background: var(--surface-strong); color: var(--ink); }
+.recentEmpty { padding: 14px 8px; font-size: 13px; color: var(--muted-strong); text-align: center; }
+.calWhen { font-size: 12px; color: var(--brand-ink); }
+.calSetup { border: 1px solid var(--surface-border); background: var(--surface); }
+.calHelp { font-size: 13px; }
+.calHelp summary { cursor: pointer; color: var(--brand-ink); }
+.calHelp ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted-strong); line-height: 1.45; }
+.calFile { font-size: 13px; color: var(--muted-strong); }

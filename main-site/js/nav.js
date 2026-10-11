@@ -16,8 +16,14 @@ const NAV_PLACES_DELAY_MS = 300;
 const MAPS_LINK_RE = /maps\.app\.goo\.gl\/|goo\.gl\/maps\/|google\.[a-z]{2,3}(?:\.[a-z]{2})?\/maps|maps\.google\./i;
 
 function initNav() {
-  attachPlaceSearch($('#navFrom'), $('#navFromAc'), (place) => setNavEnd('from', place));
-  attachPlaceSearch($('#navTo'), $('#navToAc'), (place) => setNavEnd('to', place));
+  for (const field of ['from', 'to']) {
+    const id = field === 'from' ? 'navFrom' : 'navTo';
+    attachPlaceSearch($(`#${id}`), $(`#${id}Ac`), (place) => setNavEnd(field, place), {
+      recents: true,
+      calendar: true,
+      onSaved: (item) => (item.kind === 'event' ? navToEvent(field, item) : setNavEnd(field, { label: item.place.name, lat: item.place.lat, lng: item.place.lng })),
+    });
+  }
   initSavedPlaces();
   nav.whenPicker = When.picker($('#navWhen'), (when) => {
     nav.when = when;
@@ -104,9 +110,16 @@ function initNav() {
 
 // ---- Choosing the ends ----
 
-// Place suggestions from /api/places under an input, for Navigate's ends and for Home and Work
-// in Settings. `onPick` gets the place picked.
-function attachPlaceSearch(input, box, onPick) {
+// Place suggestions from /api/places under an input, for Navigate's ends and Places' search.
+// `onPick` gets the place picked. With `recents`, the box also drops down past searches until
+// something's typed (js/recents.js), and keeps what's picked from the suggestions as one; a
+// recent picked there comes back as a place, and a saved place or calendar event (with
+// `calendar`) goes to `onSaved` if given, otherwise to `onPick` as a place.
+function attachPlaceSearch(input, box, pick, { recents = false, calendar = false, onSaved = null } = {}) {
+  const onPick = (place) => {
+    if (recents) Recents.add(Recents.placeItem(place));
+    pick(place);
+  };
   let timer = null;
   let token = 0;
   let found = [];
@@ -163,7 +176,8 @@ function attachPlaceSearch(input, box, onPick) {
       }
     }, link ? 0 : NAV_PLACES_DELAY_MS);
   });
-  input.addEventListener('blur', () => setTimeout(() => { box.hidden = true; }, 150));
+  // Not if the box has been tapped back into meanwhile, which would close what that opened.
+  input.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== input) box.hidden = true; }, 150));
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && found[0]) {
       box.hidden = true;
@@ -176,54 +190,44 @@ function attachPlaceSearch(input, box, onPick) {
     box.hidden = true;
     onPick(found[Number(item.dataset.place)]);
   });
+  if (!recents) return;
+  Recents.attach(input, box, {
+    accepts: Recents.hasPoint,
+    saved: 'places',
+    calendar,
+    onPick: (item) => {
+      if (item.kind === 'saved' || item.kind === 'event') return onSaved ? onSaved(item) : pick(item.kind === 'saved' ? item.place : item.place || item);
+      pick(Recents.asPlace(item));
+    },
+  });
 }
 
-// ---- Home and Work ----
+// ---- Home, Work and your places ----
 
-const SAVED_PLACES = { home: 'Home', work: 'Work' };
-
-// Set in Settings with the same search as Navigate's ends, and offered by the Home and Work
-// buttons under each end of Navigate and the route planner.
+// Set in Places (js/places.js) and offered as buttons under each end of Navigate and the route
+// planner: Home and Work always, dashed while unset, then every other place saved. The row
+// scrolls sideways once there are more than fit.
 function initSavedPlaces() {
-  for (const [kind, name] of Object.entries(SAVED_PLACES)) {
-    const input = $(`#set${name}`);
-    attachPlaceSearch(input, $(`#set${name}Ac`), (place) => {
-      LS.setPlace(kind, { label: place.label, lat: place.lat, lng: place.lng, ...(place.kind === 'stop' && place.code && { stop: place.code }) });
-      input.blur();
-      showSavedPlaces();
-    });
-    // Typing without picking anything leaves the place as it was.
-    input.addEventListener('blur', () => setTimeout(showSavedPlaces, 200));
-    $(`#clear${name}`).addEventListener('click', () => {
-      LS.setPlace(kind, null);
-      showSavedPlaces();
-    });
-  }
   showSavedPlaces();
 }
 
-// Settings' fields and the buttons' tooltips, as Home and Work are now.
 function showSavedPlaces() {
-  for (const [kind, name] of Object.entries(SAVED_PLACES)) {
-    const place = LS.getPlace(kind);
-    const input = $(`#set${name}`);
-    if (document.activeElement !== input) input.value = place?.label || '';
-    $(`#clear${name}`).hidden = !place;
-    for (const btn of $$(`[data-saved-place="${kind}"]`)) {
-      btn.title = place ? `${name}: ${place.label}` : `Set your ${name.toLowerCase()} in Settings`;
-      btn.classList.toggle('unset', !place);
-    }
+  const places = Places.all({ unset: true });
+  for (const row of $$('.savedPlaceBtns[data-saved-for]')) {
+    const field = row.dataset.savedFor;
+    row.innerHTML = places.map((p) =>
+      `<button class="iconBtn${p.unset ? ' unset' : ''}" type="button" data-saved-place="${escapeHtml(p.key)}" data-saved-for="${field}"` +
+      ` title="${escapeHtml(p.unset ? `Set your ${p.name.toLowerCase()} in Places` : `${p.name}: ${p.label}`)}">` +
+      `${ico(p.icon)} ${escapeHtml(p.name)}</button>`
+    ).join('');
   }
 }
 
-// Home or Work handed to `use`, or, while it isn't set, Settings opened at its field.
-function useSavedPlace(kind, use) {
-  const place = LS.getPlace(kind);
+// A saved place handed to `use`, or, while Home or Work isn't set, Places opened to set it.
+function useSavedPlace(key, use) {
+  const place = Places.get(key);
   if (place) return use(place);
-  openSettings();
-  const input = $(`#set${SAVED_PLACES[kind]}`);
-  input.scrollIntoView({ block: 'center' });
-  input.focus({ preventScroll: true });
+  Places.edit(key);
 }
 
 const HERE_LABEL = 'Your location';
@@ -252,6 +256,24 @@ function setNavEnd(field, place) {
   runNav();
 }
 
+// A calendar event (js/calendar.js) picked in From or To. In To, it's the way there from
+// wherever From is, or from where you are, set to Arrive by the event's start when that's a
+// time Navigate can plan for. An event whose location matched no place puts that location in
+// the box, to pick the right place from the suggestions.
+function navToEvent(field, ev) {
+  if (!ev.place) {
+    const input = $(field === 'from' ? '#navFrom' : '#navTo');
+    input.value = ev.location;
+    input.focus({ preventScroll: true });
+    input.dispatchEvent(new Event('input'));
+    return;
+  }
+  const end = { label: ev.place.label, lat: ev.place.lat, lng: ev.place.lng };
+  if (field === 'from') return setNavEnd('from', end);
+  const when = !ev.allDay && ev.start > Date.now() ? { mode: 'arrive', at: When.msToAt(ev.start) } : null;
+  openNavAt(nav.from || 'here', end, when && When.problem(when) == null ? when : null);
+}
+
 function showEnds() {
   $('#navFrom').value = nav.from?.label || '';
   $('#navTo').value = nav.to?.label || '';
@@ -271,7 +293,7 @@ function openNav(from = null, to = null, { when = null, focus = true } = {}) {
   showEnds();
   if (nav.from && nav.to) runNav();
   else renderNav();
-  if (!nav.from && focus) $('#navFrom').focus({ preventScroll: true });
+  if (!nav.from && focus) Recents.quietFocus($('#navFrom'));
 }
 
 // Something shared into the installed app (manifest.json's share_target): a Google Maps place,
@@ -588,12 +610,15 @@ async function refreshNav() {
 
 // ---- Trips, for the Get Off Alert ----
 
-function tripFromNav(o, to) {
+function tripFromNav(o, to, from = nav.from) {
   const legs = [];
+  let walkBefore = 0;
   for (const l of o.legs) {
-    // A walk counts towards the ride before it, for a live ETA link (js/share.js).
+    // A walk counts towards the ride before it, for a live ETA link (js/share.js), and the
+    // one before the first ride towards the trip, for Your trips (js/history.js).
     if (l.mode === 'walk') {
       if (legs.length) legs[legs.length - 1].walkAfter += l.minutes || 0;
+      else walkBefore += l.minutes || 0;
       continue;
     }
     if (!(l.path?.length >= 2)) continue;
@@ -608,11 +633,15 @@ function tripFromNav(o, to) {
       walkAfter: 0,
       // For the server to find the bus while the app is in the background.
       ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code }),
+      // The line, for Your trips' chips and Trip Modes.
+      ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
     });
   }
   return {
     title: `To ${to?.label || 'your stop'}`,
     legs,
     to: to ? { label: to.label, lat: to.lat, lng: to.lng } : null,
+    from: from ? { label: from.label, lat: from.lat, lng: from.lng } : null,
+    walkBefore,
   };
 }

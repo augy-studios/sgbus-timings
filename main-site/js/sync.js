@@ -34,6 +34,11 @@ const FAV_KINDS = [
   // Navs, from Navigate (js/nav.js): two places, keyed by where they are. A device from
   // before navs synced sends none and ignores these, so sync still works between the two.
   { kind: 'nav',   list: 'navs',   label: 'Navs',      key: (n) => `nav:${navPoint(n.from)}>${navPoint(n.to)}` },
+  // Places (js/places.js): Home and Work as themselves, so one is only ever filled where it
+  // isn't set, never replaced, and the rest by where they are. Trips (js/history.js) by id.
+  // A device from before these sends none and ignores them, as with navs.
+  { kind: 'place', list: 'places', label: 'Places',    key: (p) => Places.syncKey(p) },
+  { kind: 'trip',  list: 'trips',  label: 'Trips',     key: (t) => `trip:${t.id}` },
 ];
 
 const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}`;
@@ -145,7 +150,10 @@ const syncLink = (code) => `${location.origin}/#sync/${code}`;
 // ---- Favourites ----
 
 function ownFavs() {
-  return { stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes(), navs: LS.getFavNavs() };
+  return {
+    stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes(), navs: LS.getFavNavs(),
+    places: Places.syncList(), trips: TripHistory.list().slice(0, SYNC_MAX_ITEMS),
+  };
 }
 
 // Every favourite as one flat list, each with a key that names it the same way on both devices.
@@ -183,6 +191,8 @@ function cleanFavs(raw) {
     navs: list(raw.navs)
       .filter((n) => isPlace(n?.from) && isPlace(n?.to) && once(`nav:${navPoint(n.from)}>${navPoint(n.to)}`))
       .map((n) => ({ from: place(n.from), to: place(n.to) })),
+    places: list(raw.places).map(Places.clean).filter((p) => p && once(Places.syncKey(p))),
+    trips: list(raw.trips).map(TripHistory.clean).filter((t) => t && once(`trip:${t.id}`)),
   };
 }
 
@@ -194,11 +204,21 @@ function mergeFavs(favs) {
   const buses = LS.getFavBuses();
   const routes = LS.getFavRoutes();
   const navs = LS.getFavNavs();
+  const places = [];
+  const trips = [];
   let added = 0;
 
   for (const { key, kind, item } of favItems(favs)) {
     if (have.has(key)) continue;
     have.add(key);
+    if (kind === 'place') {
+      places.push(item);
+      continue;
+    }
+    if (kind === 'trip') {
+      trips.push(item);
+      continue;
+    }
     added++;
     if (kind === 'stop') {
       stops.push({ code: item.code, name: nameOf(item.code) || item.name });
@@ -221,6 +241,9 @@ function mergeFavs(favs) {
     LS.setFavNavs(navs);
     favouritesChanged();
   }
+  // Places and trips keep themselves, and say how many they took.
+  if (places.length) added += Places.merge(places);
+  if (trips.length) added += TripHistory.merge(trips);
   return added;
 }
 
@@ -543,6 +566,8 @@ function favTitle(kind, item) {
   if (kind === 'stop') return nameOf(item.code) || item.name || 'Bus stop';
   if (kind === 'bus') return `Bus ${item}`;
   if (kind === 'nav') return `${item.from.label} → ${item.to.label}`;
+  if (kind === 'place') return Places.FIXED[item.key]?.name || item.name || item.label;
+  if (kind === 'trip') return `To ${item.to.label}`;
   return `${nameOf(item.start) || item.startName || item.start} → ${nameOf(item.end) || item.endName || item.end}`;
 }
 
@@ -553,6 +578,8 @@ function favSubtitle(kind, item) {
   }
   if (kind === 'bus') return serviceEndsText(item);
   if (kind === 'nav') return 'By bus and train';
+  if (kind === 'place') return item.label;
+  if (kind === 'trip') return `${TripHistory.day(item.startedAt)} · ${item.legs.map((l) => (l.kind === 'bus' ? `Bus ${l.route}` : l.route)).join(', ')}`;
   return `${item.start} → ${item.end}`;
 }
 

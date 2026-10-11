@@ -99,6 +99,8 @@
                 <button id="planBtn" class="glass-btn" type="button" aria-label="Plan a route" title="Plan a route"><span data-icon="route"></span></button>
                 <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" aria-label="Service alerts" title="Service alerts"><span data-icon="bell"></span></button>
+                <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
+                <button id="placesBtn" class="glass-btn" type="button" aria-label="Places" title="Places"><span data-icon="bookmark"></span></button>
                 <span class="tray-rule" aria-hidden="true"></span>
                 <a href="https://t.me/UwUsgbus_bot" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" aria-label="Singapore Bus Timings on Telegram" title="Singapore Bus Timings on Telegram">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M248 8C111 8 0 119 0 256S111 504 248 504 496 393 496 256 385 8 248 8zM365.3 169.6l-40.1 189.7c-3 13.4-11 16.7-22.3 10.4l-61.6-45.5-29.7 28.6c-3.3 3.3-6.1 6.1-12.4 6.1l4.4-63.1 114.9-103.8c5-4.5-1.1-6.9-7.7-2.5l-141.9 89.4-61.1-19.1c-13.3-4.2-13.5-13.3 2.8-19.6l238.9-92.1c11-4.2 20.7 2.6 17.1 19.6z"/></svg>
@@ -170,10 +172,7 @@
                                 </div>
                                 <button class="iconBtn" type="button" data-nav-here="from" title="Start from where I am" aria-label="Start from where I am"><span data-icon="pin"></span></button>
                             </div>
-                            <div class="savedPlaceBtns">
-                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="from"><span data-icon="home"></span> Home</button>
-                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="from"><span data-icon="work"></span> Work</button>
-                            </div>
+                            <div class="savedPlaceBtns" data-saved-for="from"></div>
                         </div>
                         <button id="navSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
                         <div class="plannerField">
@@ -185,10 +184,7 @@
                                 </div>
                                 <button class="iconBtn" type="button" data-nav-here="to" title="End where I am" aria-label="End where I am"><span data-icon="pin"></span></button>
                             </div>
-                            <div class="savedPlaceBtns">
-                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="to"><span data-icon="home"></span> Home</button>
-                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="to"><span data-icon="work"></span> Work</button>
-                            </div>
+                            <div class="savedPlaceBtns" data-saved-for="to"></div>
                         </div>
                     </div>
                     <!-- Leave now / Leave at / Arrive by: js/when.js -->
@@ -252,10 +248,7 @@
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="start" title="Pick a stop near me" aria-label="Pick a start stop near me"><span data-icon="pin"></span></button>
                             </div>
-                            <div class="savedPlaceBtns">
-                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="start"><span data-icon="home"></span> Home</button>
-                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="start"><span data-icon="work"></span> Work</button>
-                            </div>
+                            <div class="savedPlaceBtns" data-saved-for="start"></div>
                         </div>
                         <button id="routeSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
                         <div class="plannerField">
@@ -267,15 +260,63 @@
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="end" title="Pick a stop near me" aria-label="Pick an end stop near me"><span data-icon="pin"></span></button>
                             </div>
-                            <div class="savedPlaceBtns">
-                                <button class="iconBtn" type="button" data-saved-place="home" data-saved-for="end"><span data-icon="home"></span> Home</button>
-                                <button class="iconBtn" type="button" data-saved-place="work" data-saved-for="end"><span data-icon="work"></span> Work</button>
-                            </div>
+                            <div class="savedPlaceBtns" data-saved-for="end"></div>
                         </div>
                     </div>
                     <!-- Leave now / Leave at / Arrive by: js/when.js -->
                     <div id="routeWhen"></div>
                     <div id="plannerBody" class="plannerBody"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Your trips and their stats: js/history.js -->
+        <section id="tripsSection" class="panelModal tripsSection" role="dialog" aria-modal="true" aria-label="Your trips" hidden>
+            <div class="card glass">
+                <div class="cardHeader">
+                    <div class="cardTitle"><span data-icon="chart"></span> Your trips</div>
+                    <div class="actions">
+                        <button id="tripsClose" class="icon-btn small" type="button" aria-label="Close Your trips"><span data-icon="close"></span></button>
+                    </div>
+                </div>
+                <div id="tripsBody" class="cardBody tripsBody"></div>
+            </div>
+        </section>
+
+        <!-- Home, Work and your other places: js/places.js -->
+        <section id="placesSection" class="panelModal placesSection" role="dialog" aria-modal="true" aria-label="Places" hidden>
+            <div class="card glass">
+                <div class="cardHeader">
+                    <div class="cardTitle"><span data-icon="bookmark"></span> Places</div>
+                    <div class="actions">
+                        <button id="placesClose" class="icon-btn small" type="button" aria-label="Close Places"><span data-icon="close"></span></button>
+                    </div>
+                </div>
+                <div class="cardBody">
+                    <p class="alertsIntro">Tap a place for the way there from where you are. Each one is also a button under the ends of Navigate and Plan a route.</p>
+                    <div id="placesList" class="placesList"></div>
+                    <button id="placeNewBtn" class="btn placeNewBtn" type="button"><span data-icon="pin"></span> Save a new place</button>
+                    <form id="placeForm" class="placeForm" hidden>
+                        <p id="placeFormTitle" class="statsHead"></p>
+                        <label class="modal-section-label" for="placeSearch">Where</label>
+                        <div class="plannerInputRow">
+                            <div class="ac">
+                                <input id="placeSearch" class="input" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="search" />
+                                <div id="placeSearchAc" class="acList" hidden></div>
+                            </div>
+                            <button id="placeHere" class="iconBtn" type="button" title="Use where I am" aria-label="Use where I am"><span data-icon="pin"></span></button>
+                        </div>
+                        <p id="placeChosen" class="mode-note" role="status"></p>
+                        <div id="placeNameRow">
+                            <label class="modal-section-label" for="placeName">Name (optional)</label>
+                            <input id="placeName" class="input" maxlength="40" autocomplete="off" enterkeyhint="done" />
+                        </div>
+                        <div class="tripActions">
+                            <button id="placeSave" class="btn" type="submit">Save</button>
+                            <button id="placeCancel" class="iconBtn" type="button">Cancel</button>
+                        </div>
+                    </form>
+                    <p class="estimateNote">Places are kept on this device. Sync favourites in Settings to copy them to another.</p>
                 </div>
             </div>
         </section>
@@ -424,24 +465,12 @@
                 <button id="clearBirthday" class="iconBtn" type="button">Clear</button>
             </div>
             <p class="mode-note">On your birthday, the greeting wishes you a happy one.</p>
-            <!-- Home and Work: js/nav.js, "Home and Work" -->
-            <label class="modal-section-label" for="setHome">Home</label>
-            <div class="settingsRow">
-                <div class="ac">
-                    <input id="setHome" class="input settingsInput" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="done" />
-                    <div id="setHomeAc" class="acList" hidden></div>
-                </div>
-                <button id="clearHome" class="iconBtn" type="button" hidden>Clear</button>
-            </div>
-            <label class="modal-section-label" for="setWork">Work</label>
-            <div class="settingsRow">
-                <div class="ac">
-                    <input id="setWork" class="input settingsInput" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="done" />
-                    <div id="setWorkAc" class="acList" hidden></div>
-                </div>
-                <button id="clearWork" class="iconBtn" type="button" hidden>Clear</button>
-            </div>
-            <p class="mode-note">The Home and Work buttons under each end of Navigate and Plan a route use these.</p>
+            <!-- Home, Work and other places live in Places (js/places.js); calendar in js/calendar.js -->
+            <p class="modal-section-label">Home, Work and your places</p>
+            <button id="settingsPlaces" class="iconBtn settingsWide" type="button"><span data-icon="bookmark"></span> Open Places</button>
+            <p class="modal-section-label">Calendar</p>
+            <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> Calendar settings</button>
+            <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>
             <div class="mode-toggle" data-pin-kind="bus">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -496,6 +525,39 @@
                 <button id="syncNewCode" class="iconBtn" type="button">New code</button>
                 <button id="syncEnd" class="iconBtn" type="button">Stop</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Your calendar, by its iCal link or an .ics file: js/calendar.js -->
+    <div id="calendarModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
+            <div class="modal-head">
+                <h2 id="calendarTitle">Sync with calendar</h2>
+                <button class="icon-btn small" type="button" data-close-modal="calendarModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <p class="mode-note">Your events with a location, for the next two weeks, show under Calendar when you tap into Navigate's From or To. Tap one for the way there, arriving by its start.</p>
+            <p id="calSource" class="syncStatus"></p>
+            <label class="modal-section-label" for="calUrl">Your calendar's private iCal link</label>
+            <div class="settingsRow">
+                <input id="calUrl" class="input settingsInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://… .ics, or webcal://…" />
+                <button id="calSave" class="iconBtn" type="button">Link</button>
+            </div>
+            <details class="calHelp">
+                <summary>Where to find the link</summary>
+                <ul>
+                    <li><strong>Google Calendar</strong>, on a computer: Settings, then your calendar under "Settings for my calendars", then Integrate calendar. Copy <strong>Secret address in iCal format</strong>.</li>
+                    <li><strong>Outlook</strong>: Settings, Calendar, Shared calendars. Under Publish a calendar, pick the calendar and "Can view all details", Publish, then copy the <strong>ICS</strong> link.</li>
+                    <li><strong>iCloud</strong>: in Calendar, share the calendar and turn on <strong>Public Calendar</strong>, then copy its link. Anyone with that link can see the calendar.</li>
+                </ul>
+            </details>
+            <p class="mode-note">The link is kept on this device. Each time the Calendar tab opens, it's read through this site's server, because calendar services don't let a web page read it directly. The server passes the calendar straight back and keeps nothing. Treat the link like a password: anyone who has it can see your calendar.</p>
+            <label class="modal-section-label" for="calFile">Or import an .ics file</label>
+            <input id="calFile" class="calFile" type="file" accept=".ics,text/calendar" />
+            <p class="mode-note">A file is read on this device only and never sent anywhere, but it's a snapshot: import it again for new events.</p>
+            <p id="calNote" class="mode-note syncNote" role="status" hidden></p>
+            <button id="calRemove" class="iconBtn" type="button" hidden><span data-icon="trash"></span> Remove calendar</button>
         </div>
     </div>
 
@@ -627,6 +689,10 @@
     <script src="/js/alerts.js"></script>
     <script src="/js/weather.js"></script>
     <script src="/js/trip.js"></script>
+    <script src="/js/history.js"></script>
+    <script src="/js/places.js"></script>
+    <script src="/js/recents.js"></script>
+    <script src="/js/calendar.js"></script>
     <script src="/js/nav.js"></script>
     <script src="/js/share.js"></script>
     <script src="/script.js"></script>

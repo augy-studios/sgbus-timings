@@ -28,9 +28,14 @@ The swap button between the two boxes turns the journey around.
 <figcaption>From Home to Work in two taps.</figcaption>
 </figure>
 
-Under each box, **Home** and **Work** set that end to the place saved for it. Set
-both in [Settings](settings.md); until one is, its button is dashed, and tapping it
-opens Settings at that box.
+Under each box, **Home** and **Work** set that end to the place saved for it, and
+so does a button for each other place you've saved. Set them in
+[Places](places.md); until Home or Work is set, its button is dashed, and tapping
+it opens Places to set it.
+
+Tapping into either box, before you type, also lists your
+[past searches](past-searches.md), your saved places, and your
+[calendar](calendar.md)'s events, each on its own tab.
 
 Navigate opens in a window over the page. Close it with the button at its top
 right, or by tapping anywhere outside it. Opening a bus's timings from it, or

@@ -50,6 +50,9 @@ The `/nav` and `/route` panels ([Navigate](nav.md#home-and-work),
 [Routes](routes.md#home-and-work)) then have **🏠 From home**, **💼 From work**, **🏠 To home** and **💼 To work**
 buttons. **Clear home** and **Clear work** remove them.
 
+Other places you go often, named as you like, are saved with `/addplace` and
+listed with Home and Work in `/places`. See [Places with /places](places.md).
+
 ## Routine notifications
 
 On by default. **Disable notifications** pauses every routine without deleting

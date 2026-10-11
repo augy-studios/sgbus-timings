@@ -26,6 +26,9 @@ description: Every command the bot understands, and what you can send it without
 | `/unsub` | Stop Service Alerts | [Service Alerts](service-alerts.md#unsubscribe) |
 | `/setname` | Set or clear the name the bot calls you | [Settings](settings.md#your-name) |
 | `/sethome`, `/setwork` | Set your home or work, for the Home and Work buttons in `/nav` and `/route` | [Settings](settings.md#home-and-work) |
+| `/places` | Home, Work and your own places: get there, share, rename, move or delete | [Places](places.md) |
+| `/addplace` | Save a new place, with a name of your own | [Places](places.md#save-a-new-place) |
+| `/calendar` | Your calendar's events with a location, each a button to plan the way there | [Calendar](calendar.md) |
 | `/settings` | Your name, birthday, home, work, notifications and favourites | [Settings](settings.md) |
 | `/done` | Finish what you are in the middle of | [Flows](flows.md#done) |
 | `/cancel` | Stop what you are in the middle of | [Flows](flows.md#cancel) |

@@ -10,7 +10,7 @@ from .buttons import make_button
 from .format import _format_eta, escape_md
 from .navs import is_favourite_nav, list_favourite_navs
 from .pagination import nav_row, paginate
-from .saved_places import KINDS
+from .saved_places import KINDS, list_places
 from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
 
 MAX_OPTIONS = 8
@@ -142,21 +142,30 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
         Button.inline(f"{'✏️' if awaiting == 'from' else '🅰'} Set start", make_button("nav_set", {**ends, "field": "from"})),
         Button.inline(f"{'✏️' if awaiting == 'to' else '🅱'} Set end", make_button("nav_set", {**ends, "field": "to"})),
     ])
-    buttons += saved_place_rows("nav_saved", ends)
+    buttons += saved_place_rows("nav_saved", ends, chat_id=chat_id)
     buttons.append([Button.inline(f"🕒 {describe(when)}"[:64], make_button("nav_when", ends))])
     return {"markdown": "\n".join(md).strip(), "fallback": "\n".join(plain).strip()}, buttons
 
 
-def saved_place_rows(action: str, payload: dict, fields=("from", "to")) -> list:
+def saved_place_rows(action: str, payload: dict, fields=("from", "to"), chat_id: "int | None" = None) -> list:
     """Home and Work for each end, as the web app has under each box: "🏠 From home",
-    "💼 To work". `fields` are the panel's own names for its two ends."""
-    return [
+    "💼 To work". `fields` are the panel's own names for its two ends. With `chat_id`, the
+    chat's own places (/places) follow, two to a row, after Home and Work."""
+    rows = [
         [
             Button.inline(f"{icon} {word} {name.lower()}", make_button(action, {**payload, "field": field, "kind": kind}))
             for kind, (icon, name) in KINDS.items()
         ]
         for field, word in zip(fields, ("From", "To"))
     ]
+    own = [p for p in list_places(chat_id) if p["kind"] not in KINDS] if chat_id is not None else []
+    for field, word in zip(fields, ("From", "To")):
+        buttons = [
+            Button.inline(f"{p['icon']} {word} {p['name']}"[:64], make_button(action, {**payload, "field": field, "kind": p["kind"]}))
+            for p in own
+        ]
+        rows += [buttons[i:i + 2] for i in range(0, len(buttons), 2)]
+    return rows
 
 
 def option_is_live(option: dict, when) -> bool:

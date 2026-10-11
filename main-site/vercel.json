@@ -4,7 +4,8 @@
         "api/push/poll.js": { "maxDuration": 300 },
         "api/push/trip-poll.js": { "maxDuration": 60 },
         "api/nav.js": { "maxDuration": 60 },
-        "api/places.js": { "maxDuration": 30 }
+        "api/places.js": { "maxDuration": 30 },
+        "api/calendar.js": { "maxDuration": 60 }
     },
     "rewrites": [
         { "source": "/go/:id", "destination": "/api/share-page?id=:id" },

@@ -240,7 +240,7 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
             ),
         ],
         # Home and Work under them. The page is left behind: a new end has its own buses.
-        *saved_place_rows("route_saved", {k: v for k, v in base.items() if k != "page"}, ("start", "end")),
+        *saved_place_rows("route_saved", {k: v for k, v in base.items() if k != "page"}, ("start", "end"), chat_id=chat_id),
         # The page is left behind: a new time can change which buses there are to page through.
         [
             Button.inline(

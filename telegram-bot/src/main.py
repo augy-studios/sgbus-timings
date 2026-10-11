@@ -12,6 +12,7 @@ from .config import config
 from .format import escape_md
 from .handlers.addfavbus import register_addfavbus
 from .handlers.addroutine import register_addroutine
+from .handlers.calendar import register_calendar
 from .handlers.callbacks import register_callbacks
 from .handlers.favbuses import register_favbuses
 from .handlers.favouritepref import register_favouritepref
@@ -21,6 +22,7 @@ from .handlers.flow_control import register_flow_control
 from .handlers.inline import register_inline
 from .handlers.nav import register_nav
 from .handlers.nearme import register_nearme
+from .handlers.places import register_places
 from .handlers.newroute import register_newroute
 from .handlers.routines import register_routines
 from .handlers.search import register_search
@@ -55,6 +57,8 @@ async def main() -> None:
     register_newroute(client)
     register_nav(client)  # its text and location interceptors, before register_search and register_nearme
     register_settings(client)  # its text and location interceptors (Home and Work), likewise
+    register_places(client)  # its text and location interceptors (your own places), likewise
+    register_calendar(client)  # its text interceptor (the calendar's link), before register_search
     register_nearme(client)
     register_favstops(client)
     register_addfavbus(client)  # includes the flow text-interceptor, must come before register_search

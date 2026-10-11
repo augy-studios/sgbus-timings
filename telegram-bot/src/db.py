@@ -172,8 +172,9 @@ db.executescript(
     );
     CREATE INDEX IF NOT EXISTS idx_favourite_navs_chat ON favourite_navs(chat_id);
 
-    -- Home and Work (/settings, saved_places.py): a place each, as /nav's ends are, with
-    -- `stop_code` when the place is a bus stop, so /route can take it as it is.
+    -- Home, Work and the chat's own places (/settings, /places, saved_places.py): a place
+    -- each, as /nav's ends are, with `stop_code` when the place is a bus stop, so /route can
+    -- take it as it is. Own places are kind 'p:<n>', with a `name` (added below) if given one.
     CREATE TABLE IF NOT EXISTS saved_places (
         chat_id INTEGER NOT NULL,
         kind TEXT NOT NULL,
@@ -253,6 +254,30 @@ if "services" not in _routine_drafts_columns:
         db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_code TEXT")
         db.execute("ALTER TABLE routine_drafts ADD COLUMN stop_name TEXT")
         db.execute("ALTER TABLE routine_drafts ADD COLUMN services TEXT")
+
+# A name for each of the chat's own places (/places); NULL is called what it is.
+if "name" not in {row["name"] for row in db.execute("PRAGMA table_info(saved_places)").fetchall()}:
+    with db:
+        db.execute("ALTER TABLE saved_places ADD COLUMN name TEXT")
+
+# /calendar: the chat's calendar, by its private iCal link (calendar_events.py). The link is as
+# good as a password to the calendar, so it's kept here and nowhere else, and only read to
+# list the chat's own events.
+db.executescript(
+    """
+    CREATE TABLE IF NOT EXISTS calendar_links (
+        chat_id INTEGER PRIMARY KEY,
+        url TEXT NOT NULL,
+        hidden_json TEXT NOT NULL DEFAULT '[]',
+        updated_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS calendar_places (
+        location TEXT PRIMARY KEY,
+        label TEXT, lat REAL, lng REAL,
+        checked_at INTEGER NOT NULL
+    );
+    """
+)
 
 # A time to leave at or arrive by, for /route and /nav (when.py).
 for _draft_table in ("route_drafts", "nav_drafts"):

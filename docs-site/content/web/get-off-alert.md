@@ -7,7 +7,8 @@ Dozing on the bus, or deep in your phone on the train? Start a trip and the site
 follows your live location along it, then alerts you **two stops before** each
 change and your stop.
 
-The Get Off Alert is on by default.
+The Get Off Alert is on by default. Every trip you take with it is kept in
+[Your trips](trips.md), with your stats.
 
 ## Start a trip
 

@@ -61,6 +61,9 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/unsub` | Stops Service Alerts |
 | `/setname` | Sets (or clears) the name the bot calls you by |
 | `/sethome`, `/setwork` | Asks for your home or work place, for the Home and Work buttons on the `/nav` and `/route` panels |
+| `/places` | Lists Home, Work and your own places; tap one to get there (`/nav`), share it as a link, or rename, move or delete it |
+| `/addplace` | Asks for a new place (searched like a `/nav` end, or your location), then a name for it, or `/done` to keep it as it's called |
+| `/calendar` | Lists your calendar's events with a location for the next two weeks, each a button that plans the way there to arrive by its start; asks for the calendar's private iCal link the first time |
 | `/settings` | Lists your settings (name, birthday, home, work, routine notifications) with buttons to change them |
 | `/done` | Finishes whatever multi-step flow the chat is in the middle of |
 | `/cancel` | Stops whatever multi-step flow the chat is in the middle of |
@@ -497,7 +500,9 @@ each one is set:
   location. The `/nav` and `/route` panels then carry **🏠 From home**,
   **💼 From work**, **🏠 To home** and **💼 To work**: `/nav` sets that end, and
   `/route` lists the stops near the place (or uses it directly when it's a bus
-  stop). **Clear home** / **Clear work** unset them.
+  stop). **Clear home** / **Clear work** unset them. `/places` lists them with
+  any other places saved (`/addplace`, named as you like), which the panels
+  carry too, as **📍 From Gym**, **📍 To Gym** and so on.
 - **Routine notifications** - on by default; toggling it off pauses all
   `/addroutine` deliveries without deleting the routines themselves, and
   toggling it back on resumes them.

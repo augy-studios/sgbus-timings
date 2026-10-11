@@ -8,6 +8,10 @@
 //   Share start, Share end  "How to get to" one end: /go/<id>, opened from wherever the person
 //                           opening it is.
 //
+// Share.place and Share.directions open the same card for a place from Places (js/places.js),
+// a past search (js/recents.js) or a calendar event (js/calendar.js), and for a trip from Your
+// trips (js/history.js), without the menu.
+//
 // The links are made and read by api/share.js; opening one goes through api/share-page.js to
 // #share/<id> here (Share.open). Uses nav.js's state and script.js's helpers, so nothing
 // here runs until script.js calls Share.init().
@@ -109,8 +113,38 @@
       });
       return;
     }
-    const place = placeOf(pick === 'start' ? nav.from : nav.to);
-    showCard({ heading: 'How to get to:', name: place.label, kind: 'place', data: place, text: `How to get to ${place.label}` });
+    if (pick?.kind === 'place') return sharePlaceCard(pick.place, pick.note);
+    if (pick?.kind === 'directions') return shareDirectionsCard(pick);
+    sharePlaceCard(placeOf(pick === 'start' ? nav.from : nav.to));
+  }
+
+  function sharePlaceCard(place, note = '') {
+    showCard({ heading: 'How to get to:', name: place.label, sub: note, kind: 'place', data: place, text: `How to get to ${place.label}` });
+  }
+
+  // A trip from Your trips: its two ends, with no time or way picked, so whoever opens it gets
+  // every way there from now.
+  function shareDirectionsCard({ from, to, summary }) {
+    const ends = `${from.label} to ${to.label}`;
+    showCard({
+      heading: 'Share this trip',
+      name: ends,
+      sub: summary,
+      kind: 'directions',
+      data: { from: placeOf(from), to: placeOf(to), when: null, way: null, summary, path: null },
+      text: `${ends}, by bus and train`,
+    });
+  }
+
+  // `note` goes under the name, such as a word on what the link gives away.
+  function place(p, note = '') {
+    lastPick = { kind: 'place', place: placeOf(p), note };
+    openCard(lastPick);
+  }
+
+  function directions(trip) {
+    lastPick = { kind: 'directions', ...trip };
+    openCard(lastPick);
   }
 
   // Shows the card at once, and the link and map as soon as the link is made.
@@ -396,5 +430,5 @@
     }
   }
 
-  window.Share = { init, open, openMenu };
+  window.Share = { init, open, openMenu, place, directions };
 })();
