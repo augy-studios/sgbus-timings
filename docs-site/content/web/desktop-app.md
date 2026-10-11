@@ -9,7 +9,9 @@ the website, in a window of its own, and it adds:
 - **a tray icon**: closing the window keeps it running there, so
   [Service alerts](service-alerts.md) still reach you;
 - **Service alerts as desktop notifications**, without a browser open;
-- **Start when I sign in**, from the tray icon's menu, straight into the tray.
+- **Start when I sign in**, from the tray icon's menu, straight into the tray;
+- **`uwu://sgbus/` links** open it, on the stop, bus or page they name, as they
+  do the Android app (see [App links](links.md#app-links)).
 
 Everything else updates the moment the website does.
 

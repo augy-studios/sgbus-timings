@@ -5,7 +5,8 @@
 //   come as desktop notifications (main-site/js/alerts.js checks for them every minute while
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
-// - links to anywhere but the site opening in your own browser.
+// - links to anywhere but the site opening in your own browser;
+// - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink).
 //
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
 // site's own origin. Nothing here holds a key or a secret.
@@ -24,7 +25,46 @@ const ALLOWED = new Set(['geolocation', 'notifications', 'clipboard-sanitized-wr
 let win = null;
 let tray = null;
 let quitting = false;
-const startHidden = process.argv.includes('--hidden');
+// uwu://sgbus/ links. Windows and Linux give a scheme to one app only, unlike Android, which
+// shares uwu:// out by host, so this answers every uwu:// link and opens only sgbus's.
+const SCHEME = 'uwu';
+const LINK_HOST = 'sgbus';
+const linkIn = (argv) => argv.find((a) => a.toLowerCase().startsWith(`${SCHEME}://`)) || null;
+const startLink = linkIn(process.argv);
+// Opened by a link, it shows even if it was started to go into the tray.
+const startHidden = process.argv.includes('--hidden') && !startLink;
+
+// uwu://sgbus/ links, to the page they name, as MainActivity.fromAppLink does in the Android
+// app: the site's short links by their path (uwu://sgbus/go/k3v9q2x7ma), anything else as
+// the site's # address (uwu://sgbus/84009 for a stop, uwu://sgbus/bus/22, uwu://sgbus/nav,
+// uwu://sgbus/map/84009), and uwu://sgbus/ alone to the home page. Null for another host,
+// or anything that isn't a plain address.
+function fromAppLink(link) {
+  let url;
+  try {
+    url = new URL(link);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== `${SCHEME}:` || url.hostname.toLowerCase() !== LINK_HOST) return null;
+  const rest = url.pathname.replace(/^\/+|\/+$/g, '');
+  if (!/^[\w\-./,~%]*$/.test(rest)) return null;
+  if (!rest) return `${SITE}/`;
+  if (/^(go|trip|eta)\/[a-z0-9]{10}$/.test(rest)) return `${SITE}/${rest}`;
+  return `${SITE}/#${rest}`;
+}
+
+// A link while the app's open: the page it names, in the window there.
+function openLink(link) {
+  const target = fromAppLink(link);
+  if (!win || !target) return showWindow();
+  const hash = target.startsWith(`${SITE}/#`) ? target.slice(SITE.length + 1) : null;
+  if (hash && isSite(win.webContents.getURL())) showWindow(hash);
+  else {
+    win.loadURL(target);
+    showWindow();
+  }
+}
 
 // ---------- settings: where the window was, and the tray hint shown once ----------
 
@@ -83,7 +123,7 @@ function createWindow() {
   win.removeMenu();
   win.webContents.setUserAgent(`${win.webContents.getUserAgent()} SGBusTimingsDesktop/${app.getVersion()}`);
 
-  win.loadURL(SITE);
+  win.loadURL((startLink && fromAppLink(startLink)) || SITE);
   // Can't reach the site, and there's no copy of it kept yet (the first launch offline).
   win.webContents.on('did-fail-load', (_e, code, _desc, url, isMainFrame) => {
     if (isMainFrame && code !== -3 && isSite(url)) win.loadFile(path.join(__dirname, 'offline.html'));
@@ -218,9 +258,21 @@ ipcMain.on('notify', (e, n) => {
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  // Opened again (from a shortcut, or at sign-in while running): the window that's there.
-  app.on('second-instance', () => showWindow());
+  // Opened again (from a shortcut, at sign-in while running, or by a uwu://sgbus/ link): the
+  // window that's there, on the link's page if there's one.
+  app.on('second-instance', (_e, argv) => {
+    const link = linkIn(argv);
+    if (link) openLink(link);
+    else showWindow();
+  });
   app.setAppUserModelId(APP_ID);
+  // uwu:// links come here. The installers register it too; this keeps it so after an update
+  // or a move. Run from source (npm start), Windows has to be told the script as well.
+  if (process.defaultApp && process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient(SCHEME, process.execPath, [path.resolve(process.argv[1])]);
+  } else {
+    app.setAsDefaultProtocolClient(SCHEME);
+  }
   app.whenReady().then(() => {
     session.defaultSession.setPermissionRequestHandler((wc, permission, done, details) => {
       done(ALLOWED.has(permission) && isSite(details.requestingUrl || wc.getURL()));

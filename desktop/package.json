@@ -33,9 +33,20 @@
       "build/icon.png"
     ],
     "artifactName": "sg-bus-timings-${version}${suffix}.${ext}",
+    "protocols": [
+      {
+        "name": "SG Bus Timings link",
+        "schemes": [
+          "uwu"
+        ]
+      }
+    ],
     "win": {
       "icon": "build/icon.png",
-      "target": ["nsis", "msi"]
+      "target": [
+        "nsis",
+        "msi"
+      ]
     },
     "nsis": {
       "artifactName": "sg-bus-timings-${version}-setup.${ext}",
@@ -58,7 +69,10 @@
       "synopsis": "Live Singapore bus timings, routes and journeys",
       "executableName": "sgbus-timings",
       "maintainer": "UwU Apps <augybiz@gmail.com>",
-      "target": ["deb", "AppImage"]
+      "target": [
+        "deb",
+        "AppImage"
+      ]
     },
     "deb": {
       "artifactName": "sg-bus-timings-${version}-amd64.${ext}"

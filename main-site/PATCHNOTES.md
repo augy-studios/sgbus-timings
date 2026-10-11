@@ -30,6 +30,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Windows and Linux apps 2.0.0
 
 - **SG Bus Timings for Windows** (`.exe` or `.msi`) **and Linux** (`.deb` or `.AppImage`), from the releases page. It stays in the tray when closed, shows Service alerts as desktop notifications, and can start when you sign in.
+- **App links** - `uwu://sgbus/` links open the desktop app too, such as `uwu://sgbus/84009` for a stop.
 
 ### Telegram bot
 
