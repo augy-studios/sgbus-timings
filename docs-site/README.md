@@ -27,6 +27,20 @@ dark and time-based modes, Jua, glass surfaces, no emoji, no em dashes.
 - A top level numbered list is drawn as steps.
 - Images go in `public/images/` and are linked as `/images/name.png`.
 
+## Screenshots
+
+The web app's screenshots (`public/screenshots/web/`) are taken at 3x with Playwright, from
+this checkout's `main-site` with live data:
+
+```sh
+node screenshots/serve.cjs &          # main-site, with /api/* passed to sgbus.uwuapps.org
+node screenshots/shots.cjs nav tabs   # the groups to take, or none for all of them
+python3 screenshots/sizes.py nav-home-work,nav-tabs   # their width and height in the pages
+```
+
+Take the ones with live timings (`route-live`, `nav-live`, `install-tour`) in the day, while
+buses run. Behind a proxy, start `serve.cjs` with `NODE_USE_ENV_PROXY=1`.
+
 ## Building
 
 ```bash

@@ -17,7 +17,7 @@ a stop, use the **Bus and train** tab: see [Navigate](nav.md).
 ## Set the two ends
 
 <figure>
-<img src="/screenshots/web/route-planner-ends.png" alt="The route planner with Start set to Bedok Int (84009) and End set to Serangoon Int (66009), each with a pin button, and the swap button between them." width="906" height="168" loading="lazy">
+<img src="/screenshots/web/route-planner-ends.png" alt="Navigate on its Bus only tab, with Start set to Bedok Int (84009) and End set to Serangoon Int (66009), each with a pin button and Home, Work, Gym and Mum's under it, and the swap button between them." width="880" height="244" loading="lazy">
 <figcaption>Start and End, each with a pin for the stops near you, and the swap button between them.</figcaption>
 </figure>
 
@@ -40,7 +40,7 @@ The swap button between the two boxes turns the route around.
 ### Direct buses to the other end
 
 <figure>
-<img src="/screenshots/web/route-planner-direct-suggest.png" alt="With Start set to Bedok Int, tampines typed into End: the suggestions say 36 have a bus straight from Bedok Int, listed first, and each tinted stop shows its buses, such as 38 and 69 for Tampines Int." width="874" height="371" loading="lazy">
+<img src="/screenshots/web/route-planner-direct-suggest.png" alt="On the Bus only tab with Start set to Bedok Int, tampines typed into End: the suggestions say 36 have a bus straight from Bedok Int, listed first, and each tinted stop shows its buses, such as 38 and 69 for Tampines Int." width="880" height="486" loading="lazy">
 <figcaption>Once one end is set, the stops with a bus straight to it lead the suggestions, with their buses.</figcaption>
 </figure>
 
@@ -188,7 +188,7 @@ you save is the right one.
 ## Save the route
 
 <figure>
-<img src="/screenshots/web/route-planner-save.png" alt="The top of the route planner, with Share, and a Saved button with a filled star." width="898" height="75" loading="lazy">
+<img src="/screenshots/web/route-planner-save.png" alt="The top of Navigate on its Bus only tab, with Share, and a Saved button with a filled star." width="878" height="63" loading="lazy">
 <figcaption>Save route turns into Saved.</figcaption>
 </figure>
 

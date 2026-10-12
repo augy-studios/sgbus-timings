@@ -8,7 +8,7 @@ of your own if you like: "Gym", "Mum's". Open it with the bookmark in the Edge
 Tray.
 
 <figure>
-<img src="/screenshots/web/places-list.png" alt="Places: Home at Bedok Mall with its menu open showing Edit Home, Share Home and Clear; Work at One Raffles Place; Gym at Our Tampines Hub; Mum's at Blk 101 Simei Street 1; and a Save a new place button." width="416" height="535" loading="lazy">
+<img src="/screenshots/web/places-list.png" alt="Places: Home at Bedok Mall with its menu open showing Edit Home, Share Home and Clear; Work at One Raffles Place; Gym at Our Tampines Hub; Mum's at Blk 101 Simei Street 1; and a Save a new place button." width="392" height="543" loading="lazy">
 <figcaption>Your places. The menu beside each edits, shares or deletes it.</figcaption>
 </figure>
 

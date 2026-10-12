@@ -82,7 +82,7 @@ the event's start. An all-day event, or one more than a week away, plans for
 **Leave now** instead.
 
 <figure>
-<img src="/screenshots/web/calendar-nav.png" alt="Navigate from Your location to Punggol Coast Mall, with Arrive by picked for tomorrow at 7:00 pm, and the ways there listed below." width="416" height="560" loading="lazy">
+<img src="/screenshots/web/calendar-nav.png" alt="Navigate from Your location to Punggol Coast Mall, with Arrive by picked for tomorrow at 7:00 pm, and the ways there counted below." width="392" height="560" loading="lazy">
 <figcaption>Henry Dinner, tapped: the way there, arriving by 19:00.</figcaption>
 </figure>
 

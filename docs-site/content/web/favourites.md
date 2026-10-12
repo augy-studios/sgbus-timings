@@ -11,7 +11,7 @@ favourites, or tap the cross on its right to remove it.
 ## Save a favourite
 
 <figure>
-<img src="/screenshots/web/favourites-save.png" alt="The Favourites window with four groups: bus stops Bedok Int and Tampines Int, buses 60 and 14, the route Bedok Int to Serangoon Int, and the nav Bedok Mall to Changi Airport, each a chip with a cross to remove it." width="440" height="372" loading="lazy">
+<img src="/screenshots/web/favourites-save.png" alt="The Favourites window with four groups: bus stops Bedok Int and Tampines Int, buses 60 and 14, the bus-only route Bedok Int to Serangoon Int, and the nav Bedok Mall to Changi Airport, each a chip with a cross to remove it." width="416" height="405" loading="lazy">
 <figcaption>Each favourite is a chip. Tap it to open it, or its cross to remove it.</figcaption>
 </figure>
 

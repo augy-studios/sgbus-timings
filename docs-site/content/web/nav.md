@@ -29,7 +29,7 @@ used last.
 ## Set where you're going
 
 <figure>
-<img src="/screenshots/web/nav-set-suggest.png" alt="Navigate with Bedok Mall typed into From, and suggestions for places, stations and stops dropping down below it." width="906" height="284" loading="lazy">
+<img src="/screenshots/web/nav-set-suggest.png" alt="Navigate with Bedok Mall typed into From, and suggestions dropping down below it: Bedok Mall, its car park entrance, and Djitsun Mall Bedok." width="880" height="319" loading="lazy">
 <figcaption>Type a place, an address, a station or a stop, and pick it from the suggestions.</figcaption>
 </figure>
 
@@ -44,7 +44,7 @@ The swap button between the two boxes turns the journey around.
 ### Home and Work
 
 <figure>
-<img src="/screenshots/web/nav-home-work.png" alt="Navigate from Bedok Mall to One Raffles Place, with Home and Work buttons under both the From and To boxes." width="902" height="252" loading="lazy">
+<img src="/screenshots/web/nav-home-work.png" alt="Navigate from Bedok Mall to One Raffles Place, with Home, Work, Gym and Mum's buttons under both the From and To boxes." width="880" height="244" loading="lazy">
 <figcaption>From Home to Work in two taps.</figcaption>
 </figure>
 
