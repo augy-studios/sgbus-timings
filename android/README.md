@@ -18,10 +18,10 @@ from there.
 
 | Feature | Native side (`native/app/src/main/java/org/uwuapps/sgbus/`) | Site side (`main-site/`) |
 |---|---|---|
-| **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. | `TripPlugin`, `TripService` (a foreground service of the location type) | `js/trip.js` |
+| **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. From 2.0.8, walking or riding by your average speed (up to 10 km/h walking, a bus or train's 40 km/h or so riding), as the page can't count steps with the screen off | `TripPlugin`, `TripService` (a foreground service of the location type), `Pace` | `js/trip.js` |
 | **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | Capacitor's PushNotifications plugin, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
 | **The phone's calendar**, for Navigate's Calendar tab | `PhoneCalendarPlugin`, `CalendarReader` | `js/calendar.js` |
-| **Card value**: an EZ-Link or NETS FlashPay card's stored value and recent rides over NFC | `CardPlugin` | `js/card.js` |
+| **Card value**: an EZ-Link or NETS FlashPay card's stored value and recent rides over NFC, and from 2.0.8 Android offering the app when a card's held to the phone (`TECH_DISCOVERED`, `res/xml/nfc_tech.xml`), straight to it while it's open (foreground dispatch) | `CardPlugin`, `MainActivity` | `js/card.js` |
 | **Bus timings widget** on the home screen: any stop, resizable, refreshed every 15 minutes or on tap | `TimingsWidget`, `TimingsWidgetService`, `WidgetConfigActivity`, `WidgetStore`, `WidgetRefreshWorker` | favourites from `script.js` (`shareFavsWithWidgets`) |
 | **Picture-in-picture** during a trip or with the live map open | `MainActivity` (PiP), `SgBusPlugin.pip` | `js/pip.js` |
 | **Share sheet** for every share button (the WebView has no `navigator.share`) | `SgBusPlugin.share` | `js/app-bridge.js` |

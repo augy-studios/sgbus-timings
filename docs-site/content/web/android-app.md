@@ -34,6 +34,12 @@ in the background. While it runs, an **On a trip** notification shows where you
 are on it, with **End trip** to stop it, and the Get Off Alert sounds and buzzes
 over the lock screen. The screen doesn't have to stay on.
 
+From version 2.0.8, the app also goes by how fast you're moving to tell walking
+from riding, as your steps can't be counted with the screen off. Up to about
+10 km/h is walking; a bus or train's speed, about 40 km/h on average, is riding.
+So walking to your stop never counts as boarding, and once you're riding, 150 m
+down your bus's route is enough.
+
 Swiping the app away from your recent apps ends that; the server's alert takes
 over, as it does for the website.
 
@@ -42,7 +48,10 @@ over, as it does for the website.
 On a phone with NFC, the app reads an **EZ-Link** or **NETS FlashPay** card.
 
 1. Tap the card button in the Edge Tray, or long-press the app's icon and pick
-   **Card value**.
+   **Card value**. From version 2.0.8 you can also just hold the card to the
+   phone: Android offers SG Bus Timings for it, even with the app closed, and
+   the value opens straight away. While the app is open, it takes the card
+   without asking.
 2. Hold the card flat against the back of the phone, near the camera on most
    phones, until it's read.
 
@@ -164,7 +173,7 @@ get each one twice.
 | **Location all the time** | Once, on your first trip | Asked so trips can keep your location in the background. Trips work without it too: you can say no |
 | **Notifications** | Your first trip, or turning on Service alerts | Service alerts, the Get Off Alert, and the "On a trip" notification while a trip runs |
 | **Calendar** | Only if you choose **Use this phone's calendar** | Listing your events with a location in Navigate |
-| **NFC** | Not asked: Android allows it | Reading a card |
+| **NFC** | Not asked: Android allows it | Reading a card, and opening the app when you hold a card to the phone |
 | **Install unknown apps** | The first time you tap **Update** | Installing its own updates from GitHub. Android still asks before each one |
 
 ## iPhone and iPad

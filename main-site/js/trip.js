@@ -61,6 +61,10 @@
 // ride after a walk), and after you get off a bus your first steps near its last stop end
 // the ride. On a walk with no good fix, your steps say how far you've got, not the clock.
 // Without an accelerometer (or with it not allowed), the distances are as before it.
+// In the Android app (2.0.8 and later), your average speed tells them apart too, as the page
+// can't feel your steps with the screen off (Pace.java): about 10 km/h at most is walking,
+// and a bus or train's 40 km/h or so is riding. Riding speed is never walking, whatever the
+// steps say, and riding speed 150 m down a bus's route is enough to be on board.
 //
 // On the bar, a trip of more than one part (each ride and each walk; `legs` here) has Back and
 // Next, to move it by hand. Back puts you where you were on the part before, or at its start if
@@ -204,6 +208,8 @@
   const MOTION_STALE_MS = 3000;
   const STRIDE_M = 0.7;
   const WALK_DETOUR = 1.3;
+  // The app's last word on your speed (Pace.java) goes for this long.
+  const PACE_STALE_MS = 10000;
 
   const Motion = (() => {
     let listening = false;
@@ -214,6 +220,7 @@
     let lastReading = 0;
     let firstReading = 0;
     let steps = [];
+    let pace = null; // { state, t }: the app's walking, riding or still, by your average speed
 
     function onMotion(e) {
       const a = e.accelerationIncludingGravity;
@@ -270,10 +277,26 @@
         window.removeEventListener("devicemotion", onMotion);
         steps = [];
         firstReading = lastReading = 0;
+        pace = null;
       },
-      // "walking", "still", or null with no readings to go by.
+      // From the app, with each fix: "walking", "riding", "still", or nothing to go by.
+      setPace(state) {
+        pace = state ? { state, t: Date.now() } : null;
+      },
+      // "walking", "still" (standing, or riding with no word on speed), "riding" (at a bus or
+      // train's speed), or null with nothing to go by. Riding speed goes over the steps (a
+      // bus's bumps can pass for them); walking speed with no steps for a while is a bus in a
+      // jam, not a walk; and with no steps to go by (the screen off), the speed alone.
       state() {
         const now = Date.now();
+        const byStep = Motion.byStep(now);
+        const bySpeed = pace && now - pace.t <= PACE_STALE_MS ? pace.state : null;
+        if (bySpeed === "riding") return "riding";
+        if (bySpeed === "walking") return byStep === "still" ? "still" : "walking";
+        return byStep ?? bySpeed;
+      },
+      // By the steps alone.
+      byStep(now = Date.now()) {
         if (!listening || now - lastReading > MOTION_STALE_MS || now - firstReading < 2000) return null;
         if (walking(now)) return "walking";
         return now - lastStep >= STILL_MS && now - firstReading >= STILL_MS ? "still" : null;
@@ -389,7 +412,10 @@
   function followNatively() {
     const asked = trip;
     nativeSubs = [
-      AppBridge.on("Trip", "location", (f) => onFix({ coords: { latitude: f.lat, longitude: f.lng, accuracy: f.accuracy } })),
+      AppBridge.on("Trip", "location", (f) => {
+        Motion.setPace(f.pace);
+        onFix({ coords: { latitude: f.lat, longitude: f.lng, accuracy: f.accuracy } });
+      }),
       AppBridge.on("Trip", "end", () => stop()),
     ];
     nativeText = statusText();
@@ -573,6 +599,7 @@
     const moves = (trip.moves || []).filter((x) => now - x.t <= span);
     const moved = atStop
       || (fromStop >= LEFT_STOP_M && moves.some((x) => m - (x.m ?? 0) >= MOVE_M))
+      || (fromStop >= LEFT_STOP_M && m >= MOVE_M && Motion.state() === "riding")
       || (along >= 1 && fromStop > ON_ROAD_M && moves.some((x) => along - x.along >= MOVE_STOPS));
     const lastT = moves.length ? moves[moves.length - 1].t : 0;
     trip.moves = now - lastT >= MOVE_SAMPLE_MS ? [...moves.slice(-240), { along, m, t: now }] : moves;
@@ -612,7 +639,7 @@
     if (isWalk(leg)) {
       const motion = Motion.state();
       if (motion === "walking") return -1;
-      const need = motion === "still" ? WALK_LEFT_M : WALK_LEFT_UNSURE_M;
+      const need = motion === "still" || motion === "riding" ? WALK_LEFT_M : WALK_LEFT_UNSURE_M;
       if (!(metres(here, leg.points[leg.points.length - 1]) - (trip.nearEnd ?? Infinity) >= need)) return -1;
     } else if (alongLeg(here, leg, trip.at) != null) return -1;
     const k = trip.legs.findIndex((l, i) => i > trip.leg && !isWalk(l));

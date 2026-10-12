@@ -10,15 +10,21 @@
  *   PushNotifications    Capacitor's, for Service Alerts and the Get Off Alert from the server
  *
  * Here: what the app was opened with (a uwu://sgbus/ link, one of the site's own links, a
- * shortcut, something shared into it, or a tapped notification) opened in the page, the back
- * button going back through the page's history, and the notification channels.
+ * shortcut, something shared into it, a tapped notification, or a card held to the phone)
+ * opened in the page, the back button going back through the page's history, and the
+ * notification channels. While the app's open, a card held to the phone comes straight to it
+ * rather than Android asking which app should have it.
  */
 package org.uwuapps.sgbus;
 
+import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.net.Uri;
+import android.nfc.NfcAdapter;
+import android.nfc.tech.IsoDep;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Rational;
@@ -97,12 +103,50 @@ public class MainActivity extends BridgeActivity {
         SgBusPlugin.onPip(inPip);
     }
 
+    // ---------- a card held to the phone ----------
+    // Android offers a card to this app (AndroidManifest.xml, res/xml/nfc_tech.xml) when the app
+    // isn't open; while it is, it comes here first (foreground dispatch), unless the card value
+    // is already waiting for one (CardPlugin's reader mode). Either way it lands in
+    // onNewIntent, and CardPlugin reads it and tells the page (js/card.js).
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        NfcAdapter nfc = NfcAdapter.getDefaultAdapter(this);
+        if (nfc == null) return;
+        PendingIntent self = PendingIntent.getActivity(this, 0,
+                new Intent(this, MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+                PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0));
+        try {
+            nfc.enableForegroundDispatch(this, self,
+                    new IntentFilter[]{new IntentFilter(NfcAdapter.ACTION_TECH_DISCOVERED)},
+                    new String[][]{{IsoDep.class.getName()}});
+        } catch (IllegalStateException | SecurityException ignored) {
+            // Not resumed after all, or NFC's turned off for apps: Android asks as usual.
+        }
+    }
+
+    @Override
+    public void onPause() {
+        NfcAdapter nfc = NfcAdapter.getDefaultAdapter(this);
+        if (nfc != null) {
+            try {
+                nfc.disableForegroundDispatch(this);
+            } catch (IllegalStateException | SecurityException ignored) {
+                // Never enabled.
+            }
+        }
+        super.onPause();
+    }
+
     // BridgeActivity calls this with the intent the app was opened with too, once the page has
     // started loading the site's home page.
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        // A card: the page shows it wherever it is, so it isn't reloaded.
+        if (CardPlugin.tapped(intent)) return;
         String url = pageFor(intent);
         if (url != null && bridge != null) bridge.getWebView().loadUrl(url);
     }
