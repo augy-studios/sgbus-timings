@@ -329,8 +329,8 @@ python -m src.main
 15. Send `/nav`, reply with a place (e.g. `bugis`), tap one of the **Did you
    mean** buttons if they appear, then share your location or send a postal code
    for the end. Confirm the panel lists several ways, quickest first, mixing
-   buses and trains, and that tapping one opens it leg by leg with live timings
-   for its bus legs. Tap **⭐ Add favourite**, send `/mynavs`, and confirm it's
+   buses and trains, and that tapping one opens it part by part with live timings
+   for its bus rides. Tap **⭐ Add favourite**, send `/mynavs`, and confirm it's
    listed and reopens. If `/nav` says it couldn't plan, check `NAV_API_URL` and
    that `https://sgbus.uwuapps.org/api/nav` answers.
 16. In the Mini App, confirm Telegram's bar takes the web app's colour, and

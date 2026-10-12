@@ -112,11 +112,11 @@ Each way shows:
 ## Open a way
 
 <figure>
-<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, leg by leg: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="906" height="668" loading="lazy">
-<figcaption>A way leg by leg, with Start trip for the Get Off Alert.</figcaption>
+<img src="/screenshots/web/nav-open.png" alt="One way from Bedok Mall to Botanic Gardens station, part by part: the walks, each train with its line, direction and stops, and the buttons All ways, Refresh and Start trip." width="906" height="668" loading="lazy">
+<figcaption>A way part by part, with Start trip for the Get Off Alert.</figcaption>
 </figure>
 
-Tap a way to see it leg by leg:
+Tap a way to see it part by part:
 
 - **Walks**, with the distance and roughly how long. **Directions** opens the
   walk on the [live map](live-map.md), or in Citymapper.

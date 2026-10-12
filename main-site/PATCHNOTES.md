@@ -263,7 +263,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Stop timings** - Pick a bus, first and last bus times, directions to the stop, and bendy buses marked.
 - **Favourites** - Favourite buses and routes as well as stops, pinned to the top or bottom.
 - **Stops near me** and **postal code search**.
-- **Plan a route** - Every bus between two stops, or journeys with up to three changes, with live leg-by-leg timings. Spots an end on the wrong side of the road and offers the stop across it.
+- **Plan a route** - Every bus between two stops, or journeys with up to three changes, with live part-by-part timings. Spots an end on the wrong side of the road and offers the stop across it.
 - **Settings** - Your name and a birthday greeting.
 - **Sync favourites** between devices on the same network, with a code or QR code.
 
