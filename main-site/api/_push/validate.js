@@ -80,6 +80,11 @@ export function parseTrip(body, now = Date.now()) {
     // A bus followed live needs both; without them it goes by the clock.
     if (l.kind === 'bus' && SERVICE_RE.test(l.service ?? '') && STOP_RE.test(l.alight ?? '')) {
       Object.assign(leg, { service: l.service, alight: l.alight });
+      // For Get ready to board (api/_push/trip.js): the stop you get on at, and its name.
+      if (STOP_RE.test(l.board ?? '')) {
+        leg.board = l.board;
+        if (l.boardName != null) leg.boardName = text(l.boardName, `leg ${i} boardName`).slice(0, 80);
+      }
     }
     return leg;
   });
@@ -92,6 +97,8 @@ export function parseTrip(body, now = Date.now()) {
   if (!isNum(body.legStartedAt, now - DAY_MS, now + DAY_MS)) fail('bad legStartedAt');
   if (!isNum(body.seenAt, now - DAY_MS, now + DAY_MS)) fail('bad seenAt');
   if (!Array.isArray(body.alerted) || body.alerted.length !== legs.length) fail('alerted must have one entry per leg');
+  // Get ready to board, given or not, per leg. An app from before it doesn't send it.
+  if (body.readied != null && (!Array.isArray(body.readied) || body.readied.length !== legs.length)) fail('readied must have one entry per leg');
   // Where the app's clock goes on from: { pos, t }, t possibly ahead while it waits for the bus.
   let anchor = null;
   if (body.anchor != null) {
@@ -114,6 +121,7 @@ export function parseTrip(body, now = Date.now()) {
     // False while the app waits to be sure you're on the bus; an older app doesn't say.
     clockRuns: body.clockRuns !== false,
     alerted: body.alerted.map(Boolean),
+    readied: body.readied ? body.readied.map(Boolean) : legs.map(() => false),
     share: parseShare(body.share),
   };
 }

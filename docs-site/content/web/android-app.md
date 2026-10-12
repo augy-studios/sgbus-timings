@@ -90,8 +90,9 @@ If it doesn't shrink, picture-in-picture may be off for the app: Android
 
 [Service alerts](service-alerts.md) come as the app's own notifications, even
 with the app closed. Android's settings for the app list them by kind: **Service
-alerts**, **Get Off Alert** and **Trip in progress**, each of which you can turn
-off on its own.
+alerts**, **Get Off Alert**, **Get ready to board** (from 2.0.4: your bus is a
+minute away, on a trip; see [Get Off Alert](get-off-alert.md#get-ready-to-board))
+and **Trip in progress**, each of which you can turn off on its own.
 
 ## Your phone's calendar
 

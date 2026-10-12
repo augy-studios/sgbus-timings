@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v58";
+const VERSION = "v59";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -115,6 +115,7 @@ self.addEventListener("push", (event) => {
     data = event.data?.json();
   } catch {}
   if (data?.type === "get-off") return event.waitUntil(getOff(data));
+  if (data?.type === "board") return event.waitUntil(board(data));
   if (data?.type !== "service-alert") return;
 
   // One tag for every alert, so a burst of traffic incidents replaces one
@@ -158,11 +159,31 @@ async function getOff(data) {
   });
 }
 
-// Tapping a service alert opens the service alerts card, and a Get Off Alert the app with
+/* -- Push: Get ready to board, from the same cron, when the bus you wait for is a minute away -- */
+
+// The same tag and two short buzzes as js/trip.js uses for it (BOARD_VIBRATION), and any open
+// page is told so it doesn't say it again.
+async function board(data) {
+  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  clients.forEach((c) => c.postMessage({ type: "board", tripId: data.tripId, leg: data.leg, text: data.body }));
+  await self.registration.showNotification(data.title || "Get ready to board", {
+    body: data.body || "",
+    tag: "board",
+    renotify: true,
+    requireInteraction: true,
+    vibrate: [200, 120, 200],
+    icon: "/sgbusicon1.png",
+    badge: "/sgbusnotificon.png",
+    data: { url: "/", kind: "board" },
+  });
+}
+
+// Tapping a service alert opens the service alerts card, a Get Off Alert or Get ready to board the app with
 // its trip bar: in the app if it's open already, otherwise in a new window.
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const getOff = event.notification.data?.kind === "get-off" || event.notification.tag === "get-off";
+  const kind = event.notification.data?.kind || event.notification.tag;
+  const getOff = kind === "get-off" || kind === "board";
   const url = new URL(event.notification.data?.url || (getOff ? "/" : "/#alerts"), self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {

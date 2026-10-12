@@ -9,6 +9,25 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026: Apps 2.0.4
+
+### Web app
+
+- **Get ready to board** - On a trip, while you're waiting at the stop, the app checks your bus's live timing and pings you when it's **1 minute away**: a notification, two short buzzes, and the trip bar says so. Only once per bus, and only while you haven't boarded yet; with the app in the background, the server sends it instead.
+- **Trip timeline** - Tap a bus stop on the trip's timeline to see that stop's timings for your bus. The timeline closes and the page scrolls down to them, with the trip still running.
+
+### Android app 2.0.4
+
+- **Get ready to board** has its own notification kind in Android's settings for the app, with a short double buzz rather than the Get Off Alert's "OFF".
+
+### Desktop app 2.0.4
+
+- **Check for updates...** - In the tray's menu: checks now, and tells you what it found, even when you're up to date.
+- **Update button** - Once an update's downloaded, a green button in the title bar, right of the long screenshot button, restarts the app to install it.
+- The Get Off Alert and Get ready to board show as desktop notifications.
+
+---
+
 ## 12 October 2026 (late night): A sharp launch screen
 
 ### Android app

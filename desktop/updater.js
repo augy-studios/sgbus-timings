@@ -1,5 +1,6 @@
 // The desktop app checking for its own updates, with electron-updater: soon after it starts,
-// then every CHECK_EVERY_MS while it runs (it lives in the tray for days).
+// then every CHECK_EVERY_MS while it runs (it lives in the tray for days), and whenever the
+// tray's "Check for updates..." asks (checkNow), which says what it found either way.
 //
 // It reads latest.yml (Windows), latest-mac.yml (macOS) or latest-linux.yml (Linux), which the
 // build writes beside the installers, from the newest GitHub release: releases/latest/download/
@@ -35,9 +36,11 @@ const RELEASES = 'https://github.com/augy-studios/sgbus-timings/releases/latest'
 const FIRST_CHECK_MS = 30 * 1000;
 const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
 
-const state = { available: null, ready: null }; // the newer version, and once it's downloaded
+const state = { available: null, ready: null, checking: false }; // the newer version, and once it's downloaded
 let onChange = () => {};
 let notifiedFor = null;
+let asked = false; // this check was asked for from the tray, so its answer is shown whatever it is
+let install = false;
 
 const mac = process.platform === 'darwin';
 // The running SG Bus Timings.app: the executable is in its Contents/MacOS.
@@ -127,7 +130,7 @@ function restartToUpdate() {
 function start(changed) {
   if (!app.isPackaged) return; // nothing to update when run from source (npm start)
   onChange = changed || onChange;
-  const install = canInstall();
+  install = canInstall();
   autoUpdater.autoDownload = install;
   // macOS installs it itself (swapMacOnQuit), never through Squirrel.Mac.
   autoUpdater.autoInstallOnAppQuit = install && !mac;
@@ -146,7 +149,12 @@ function start(changed) {
   autoUpdater.on('update-available', (info) => {
     state.available = info.version;
     onChange();
-    if (install || notifiedFor === info.version) return;
+    // Asked from the tray: what's happening with it, even if it was said before.
+    if (asked && install) {
+      if (state.ready === info.version) notify(`SG Bus Timings ${info.version} is ready`, 'Click to restart and update. Otherwise it updates the next time you quit.', restartToUpdate);
+      else notify(`SG Bus Timings ${info.version} is out`, "It's downloading. You'll be told when it's ready to install.", () => {});
+    }
+    if (install || (notifiedFor === info.version && !asked)) return;
     notifiedFor = info.version;
     notify(`SG Bus Timings ${info.version} is out`, 'Click to download it from GitHub, then install it over this one.', () => shell.openExternal(RELEASES));
   });
@@ -168,10 +176,38 @@ function start(changed) {
   });
   // Offline, GitHub down, or no latest.yml on the release: the next check tries again.
   autoUpdater.on('error', (err) => console.warn('update check failed:', err?.message || err));
+  autoUpdater.on('update-not-available', () => {
+    if (asked) notify("You're up to date", `SG Bus Timings ${app.getVersion()} is the newest version.`, () => {});
+  });
 
-  const check = () => autoUpdater.checkForUpdates().catch(() => {});
   setTimeout(check, FIRST_CHECK_MS);
   setInterval(check, CHECK_EVERY_MS);
+}
+
+async function check() {
+  if (state.checking) return;
+  state.checking = true;
+  onChange();
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (err) {
+    if (asked) notify("Couldn't check for updates", 'Check your connection and try again.', () => {});
+  } finally {
+    state.checking = false;
+    asked = false;
+    onChange();
+  }
+}
+
+// The tray's "Check for updates...": a check now, and a notification of what it found.
+function checkNow() {
+  if (!app.isPackaged) {
+    notify('No updates to check for', 'Run from source (npm start), there is nothing to update. The installed app checks for itself.', () => {});
+    return;
+  }
+  if (state.checking) return;
+  asked = true;
+  check();
 }
 
 // For the tray's menu: one item while there's an update, else none.
@@ -181,4 +217,11 @@ function menuItem() {
   return null;
 }
 
-module.exports = { start, menuItem };
+// For the tray's menu: always there, greyed out while a check is running.
+function checkItem() {
+  return state.checking
+    ? { label: 'Checking for updates...', enabled: false }
+    : { label: 'Check for updates...', click: checkNow };
+}
+
+module.exports = { start, menuItem, checkItem, ready: () => state.ready, restart: restartToUpdate };

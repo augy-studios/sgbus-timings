@@ -221,7 +221,8 @@ function toOption(graph, { total, label, end }) {
         path: run.nodes.slice(from, to + 1).map((n) => [graph.nodes[n].lat, graph.nodes[n].lng]),
         names: run.nodes.slice(from, to + 1).map((n) => graph.nodes[n].name),
       };
-      if (run.mode === "B") leg.dir = run.dir;
+      // A bus leg's stop codes too, so the trip's timeline can open each stop's timings.
+      if (run.mode === "B") Object.assign(leg, { dir: run.dir, codes: run.nodes.slice(from, to + 1).map((n) => graph.nodes[n].code) });
       else Object.assign(leg, { name: run.name, color: run.color, lrt: run.lrt });
       legs.push(leg);
       rides.push([run, from, leg.board]);

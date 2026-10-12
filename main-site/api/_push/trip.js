@@ -6,6 +6,11 @@
 // underground.
 //
 // Keep ALERT_STOPS, ON_ROUTE_M and the alert's wording in step with js/trip.js.
+//
+// Get ready to board, too: while the app hasn't seen you get on (clockRuns false) and no bus
+// has been seen leaving the stop with you, the bus's next arrival at the stop you wait at
+// (`board`) is checked, and once it's about a minute away you're told, once per leg. The cron
+// runs once a minute, so this tells you a little earlier than the app does (BOARD_MS there).
 
 export const ALERT_STOPS = 2;
 // Near enough to the leg to be on it.
@@ -14,6 +19,10 @@ const ON_ROUTE_M = 250;
 const MATCH_STOPS = 2;
 // The cron runs once a minute, so the alert goes this much of a stop early rather than late.
 const LEAD_STOPS = 0.5;
+
+export const BOARD_MS = 90 * 1000;
+// A bus LTA has as already at the stop for longer than this has likely gone.
+const BOARD_GONE_MS = -30 * 1000;
 
 function perStop(leg) {
   const last = leg.points.length - 1;
@@ -48,6 +57,34 @@ export function alertText(trip, left) {
   return left === 0
     ? `Get off now at ${leg.to}.`
     : `Get off in ${left} stop${left === 1 ? '' : 's'}, at ${leg.to}${last ? '' : ', to change'}.`;
+}
+
+// The same as boardText in js/trip.js.
+export function boardText(leg, eta) {
+  const label = leg.label || `Bus ${leg.service}`;
+  const where = leg.boardName || 'your stop';
+  return eta <= 20 * 1000
+    ? `${label} is arriving at ${where}. Get ready to board.`
+    : `${label} is 1 min away from ${where}. Get ready to board.`;
+}
+
+// Whether to ask how far the bus is from the stop you wait at: a bus leg with one, its ping
+// not given, and you not on board, as far as either side knows. The app says it isn't sure
+// you've boarded (clockRuns false; an older app doesn't say, and isn't asked for), the server
+// isn't following a bus you're on (track), and neither has you past the first stop.
+export function waitingToBoard(trip) {
+  const leg = trip.legs[trip.leg];
+  if (leg?.kind !== 'bus' || !leg.board || !leg.service) return false;
+  if (trip.readied?.[trip.leg] || trip.clockRuns !== false || trip.track) return false;
+  return Math.max(trip.at || 0, trip.pos || 0, trip.est || 0) < 0.5;
+}
+
+// Get ready to board's text, if it's time, given the next bus's arrival in ms from now. Run
+// after step, so a bus that has just left with you rules it out.
+export function boardStep(trip, eta) {
+  if (eta == null || !waitingToBoard(trip) || eta > BOARD_MS || eta <= BOARD_GONE_MS) return null;
+  (trip.readied ??= trip.legs.map(() => false))[trip.leg] = true;
+  return { text: boardText(trip.legs[trip.leg], eta), leg: trip.leg };
 }
 
 function closest(list, expect) {

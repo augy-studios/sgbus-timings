@@ -1245,7 +1245,7 @@ function tripLegForBus(service, codes, toCode) {
     for (let i = 1; i < points.length; i++) metres += haversine(points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]) || 0;
     return {
         kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode,
-        points, names: known.map(c => nameOf(c) || c), minutes: metres / 250, wait: 0,
+        points, names: known.map(c => nameOf(c) || c), codes: known, minutes: metres / 250, wait: 0,
         service, board: known[0], alight: toCode,
     };
 }

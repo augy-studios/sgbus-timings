@@ -7,6 +7,7 @@ root.classList.toggle('mac', window.bar.platform === 'darwin');
 $('back').addEventListener('click', () => window.bar.back());
 $('forward').addEventListener('click', () => window.bar.forward());
 $('reload').addEventListener('click', () => window.bar.reload());
+$('update').addEventListener('click', () => window.bar.update());
 $('minimize').addEventListener('click', () => window.bar.minimize());
 $('maximize').addEventListener('click', () => window.bar.maximize());
 $('close').addEventListener('click', () => window.bar.close());
@@ -108,6 +109,11 @@ window.bar.onState((s) => {
   root.classList.toggle('maximized', s.maximized);
   $('maximize').title = s.maximized ? 'Restore' : 'Maximise';
   $('maximize').setAttribute('aria-label', $('maximize').title);
+  $('update').hidden = !s.update;
+  if (s.update) {
+    $('update').title = `Restart to update to ${s.update}`;
+    $('update').setAttribute('aria-label', $('update').title);
+  }
   if (s.color) {
     root.style.setProperty('--bg', s.color);
     root.classList.toggle('dark', isDark(s.color));

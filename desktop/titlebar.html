@@ -1,6 +1,7 @@
 <!doctype html>
 <!-- The app window's own title bar (main.js, createWindow): back, forward, reload, the page's
-     address, and screenshot and long screenshot buttons, with the site in a view of its own below it. The address
+     address, screenshot and long screenshot buttons, and a green update button once an update's
+     downloaded, which restarts the app to install it, with the site in a view of its own below it. The address
      can be typed over (Ctrl+L or F6 from the site), and its button copies the link. The window's controls: on macOS the system's
      traffic lights, drawn over the bar's left; on Windows and Linux the bar's own minimise,
      maximise and close, on its right. -->
@@ -26,6 +27,10 @@
     #shot { margin-left: 4px; }
     .shooting #shot, .shooting #longshot { opacity: .35; }
     .nav:hover:not(:disabled) { background: var(--hover); }
+    #update { margin-left: 4px; background: #1e9e46; color: #fff; }
+    #update[hidden] { display: none; }
+    #update:hover { background: #18843a; }
+    #update:active { background: #136e30; }
     .nav:disabled { opacity: .35; }
     .nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;
       stroke-linecap: round; stroke-linejoin: round; }
@@ -89,6 +94,9 @@
     </button>
     <button class="nav" id="longshot" title="Long screenshot: the whole page, top to bottom; copies it, and saves it in Downloads" aria-label="Long screenshot">
       <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v9M9 13l3 3 3-3"/></svg>
+    </button>
+    <button class="nav" id="update" title="Restart to update" aria-label="Restart to update" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
     </button>
     <div class="controls">
       <button class="control" id="minimize" title="Minimise" aria-label="Minimise">
