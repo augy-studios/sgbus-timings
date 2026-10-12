@@ -9,6 +9,14 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (night): Instant View for every share link
+
+### Web app
+
+- **Share to Telegram** - Shared places and live ETAs are ready for Telegram's **Instant View** too, like shared directions: a place shows where it is, and an ETA shows where they're going, when they'll get there and where they are, with the time it's from and a link on to follow along live.
+
+---
+
 ## 12 October 2026 (evening): Instant View for shared trips
 
 ### Web app

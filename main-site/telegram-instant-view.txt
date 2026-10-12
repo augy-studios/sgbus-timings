@@ -1,14 +1,15 @@
 ~version: "2.1"
 
-# Telegram Instant View for shared directions, /trip/<id>: the page api/share-page.js makes,
-# with its details in <article id="trip">. Pasted into instantview.telegram.org as this
-# domain's template; see TELEGRAM_IV_SETUP.md. Keep in step with body() in api/share-page.js.
+# Telegram Instant View for share links, /go/<id>, /trip/<id> and /eta/<id>: the page
+# api/share-page.js makes, with its details in <article id="go|trip|eta">. Pasted into
+# instantview.telegram.org as this domain's template; see TELEGRAM_IV_SETUP.md. Keep in step
+# with body() in api/share-page.js.
 #
 # The site name, description and preview image come from the page's og: tags.
 
-?path: /trip/[a-z0-9]{10}/?
+?path: /(go|trip|eta)/[a-z0-9]{10}/?
 
 title: //header/h1
 subtitle: //header/h2[has-class("subtitle")]
 cover: //header/figure[has-class("cover")]
-body: //article[@id="trip"]
+body: //article
