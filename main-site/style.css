@@ -1462,12 +1462,16 @@ html[data-telegram] .telegramBtn { display: none; }
     -webkit-backdrop-filter: none;
 }
 
+/* minmax(0, 1fr), not 1fr, and min-width 0 on each end: otherwise a column is never narrower
+   than its widest content, so a long row of places pushed both ends past the panel's edge
+   rather than scrolling sideways within it. */
 .plannerFields {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     gap: 10px;
     align-items: end;
 }
+.plannerField { min-width: 0; }
 
 .plannerField label {
     display: block;
@@ -1478,20 +1482,21 @@ html[data-telegram] .telegramBtn { display: none; }
 
 .plannerInputRow {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 6px;
 }
 .plannerInputRow .input { padding: 12px 14px; }
 
-/* Home and Work under each end (js/nav.js, "Home and Work"). A fixed height, so the swap
-   button beside the ends can line up with the inputs above them. */
-.savedPlaceBtns { display: flex; gap: 6px; margin-top: 6px; height: 30px; }
-.savedPlaceBtns .iconBtn { padding: 0 10px; font-size: 13px; }
+/* Home, Work and your places under each end (js/nav.js, "Home and Work"), wrapping onto as
+   many lines as they need. */
+.savedPlaceBtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.savedPlaceBtns .iconBtn { height: 30px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
 .savedPlaceBtns .iconBtn.unset:not(:hover) { color: var(--muted-strong); border-style: dashed; }
 
-/* The icon's arrows run up and down; side by side, the ends swap left and right. Lifted by
-   the Home and Work row's height and margin, to sit beside the inputs. */
-.swapBtn { align-self: end; margin-bottom: 42px; }
+/* The icon's arrows run up and down; side by side, the ends swap left and right. Down from
+   the top by the label's height and margin and half what the input is taller by, to sit
+   beside the inputs however many lines of places are under them. */
+.swapBtn { align-self: start; margin-top: 27px; }
 .swapBtn .ico,
 .swapBtn [data-icon] { transform: rotate(90deg); }
 
@@ -1990,7 +1995,7 @@ html[data-telegram] .telegramBtn { display: none; }
     :root[data-tray-side="left"] { --hud-edge: max(10px, calc(env(safe-area-inset-left) + 10px)); }
 
     /* The two ends stack, with the swap button between them swapping up and down. */
-    .plannerFields { grid-template-columns: 1fr; align-items: stretch; }
+    .plannerFields { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
     .swapBtn { justify-self: center; margin: 0; }
     .swapBtn .ico,
     .swapBtn [data-icon] { transform: none; }
@@ -2245,7 +2250,28 @@ body.on-trip { padding-bottom: 96px; }
     flex-direction: column;
     gap: 8px;
     padding: 0 14px 14px;
-    animation: alerts-reveal 0.2s ease;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.tripRow.open .tripDetails { opacity: 1; }
+/* A trip's details open below it as the trip bar's drawer: the one grid row grows from 0fr
+   to 1fr, which animates to the details' own height, and back. The middle div has no
+   padding, so the closed row really is 0px tall; hidden once shut, so its buttons can't be
+   tabbed to. */
+.tripMore {
+    display: grid;
+    grid-template-rows: 0fr;
+    visibility: hidden;
+    transition: grid-template-rows 0.25s ease, visibility 0s linear 0.25s;
+}
+.tripMore > div { min-height: 0; overflow: hidden; }
+.tripRow.open > .tripMore {
+    grid-template-rows: 1fr;
+    visibility: visible;
+    transition: grid-template-rows 0.25s ease, visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+    .tripMore, .tripRow.open > .tripMore, .tripDetails { transition: none; }
 }
 .tripLegs { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .tripLeg { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; }
@@ -2358,9 +2384,6 @@ body.on-trip { padding-bottom: 96px; }
 
 /* The buttons under each end: Home, Work, then every other place, in one row that scrolls
    sideways when there are more than fit. */
-.savedPlaceBtns { overflow-x: auto; scrollbar-width: none; flex-wrap: nowrap; }
-.savedPlaceBtns::-webkit-scrollbar { display: none; }
-.savedPlaceBtns .iconBtn { flex: none; white-space: nowrap; }
 
 /* ===== Past searches (js/recents.js) and Calendar (js/calendar.js) =====
    The search box's own dropdown, taller while it holds them, as Citymapper's "Where to?". */

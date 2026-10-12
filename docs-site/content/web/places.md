@@ -18,8 +18,8 @@ Tap a place for the way there from where you are: [Navigate](nav.md) opens with
 it in **To**, and finds where you are for **From**.
 
 Every place is also a button under each end of Navigate, on its Bus and train
-and [Bus only](route-planner.md) tabs, after Home and Work. The row scrolls sideways
-once there are more than fit.
+and [Bus only](route-planner.md) tabs, after Home and Work. The buttons wrap onto
+more lines once there are more than fit.
 
 <figure>
 <img src="/screenshots/web/places-nav-buttons.png" alt="Navigate's From and To, each with buttons under it for Home, Work, Gym and Mum's." width="406" height="270" loading="lazy">
