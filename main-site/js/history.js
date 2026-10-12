@@ -272,7 +272,7 @@
       `<span class="tripWhen">${escapeHtml(day(trip.startedAt))} &middot; ${escapeHtml(When.clock(trip.startedAt))}</span>` +
       `<span class="tripChips">${chips(trip)}<span class="tripTo">To ${escapeHtml(toName(trip))}</span></span>` +
       `</button>` +
-      (open ? details(trip) : '') +
+      `<div class="tripMore"><div>${details(trip)}</div></div>` +
       `</div>`;
   }
 
@@ -391,9 +391,15 @@
     wirePanel('tripsSection', close);
     $('#tripsBody').addEventListener('click', (e) => {
       const toggle = e.target.closest('[data-trip-open]');
+      // Every trip's details are there, shut; one opens, and the one open before shuts, by
+      // their class alone, so both animate (.tripMore in style.css).
       if (toggle) {
         openId = openId === toggle.dataset.tripOpen ? null : toggle.dataset.tripOpen;
-        render();
+        for (const btn of $$('#tripsBody [data-trip-open]')) {
+          const on = btn.dataset.tripOpen === openId;
+          btn.closest('.tripRow').classList.toggle('open', on);
+          btn.setAttribute('aria-expanded', on);
+        }
         return;
       }
       if (e.target.closest('[data-trips-all]')) {

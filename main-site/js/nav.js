@@ -223,7 +223,7 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
 
 // Set in Places (js/places.js) and offered as buttons under each end of Navigate and the route
 // planner: Home and Work always, dashed while unset, then every other place saved. The row
-// scrolls sideways once there are more than fit.
+// wraps onto more lines once there are more than fit.
 function initSavedPlaces() {
   showSavedPlaces();
 }

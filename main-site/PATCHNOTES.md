@@ -9,6 +9,19 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 13 October 2026 (later): Apps 2.0.8
+
+### Web app
+
+- **Your places fit in Navigate** - Fixed: with more than a few places saved, the buttons under From and To ran off the side of Navigate and pushed it wider than the screen. They now wrap onto as many lines as they need, on both the Bus and train and Bus only tabs.
+- **Your trips open smoothly** - Tapping a trip in Your trips now slides its details open, and tapping it again (or another trip) slides them shut, rather than snapping.
+
+### Android app 2.0.8 and Desktop app 2.0.8
+
+- The web app's changes above.
+
+---
+
 ## 13 October 2026: Apps 2.0.7
 
 ### Web app
