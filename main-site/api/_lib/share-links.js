@@ -304,17 +304,10 @@ export function whenText(when) {
 
 // ---------- Telegram's Instant View ----------
 // A /trip/ page has its details in an <article> that Telegram's Instant View reads with the
-// template in telegram-instant-view.txt. Until Telegram approves that template, Instant View
-// shows only for links through t.me/iv with the template's rhash (TELEGRAM_IV_SETUP.md), which
-// is what Share's Telegram button sends when TELEGRAM_IV_RHASH is set.
+// template in telegram-instant-view.txt, once Telegram approves it (TELEGRAM_IV_SETUP.md).
+// Share always sends the plain /trip/ link, never a t.me/iv one.
 
 export const IV_KINDS = ['directions'];
-
-export function instantViewUrl(kind, url) {
-  const rhash = (process.env.TELEGRAM_IV_RHASH || '').trim();
-  if (!rhash || !IV_KINDS.includes(kind)) return null;
-  return `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${encodeURIComponent(rhash)}`;
-}
 
 // ---------- the map ----------
 // OneMap's static map: free, with no key, Singapore's own. Pins are one letter; the route is

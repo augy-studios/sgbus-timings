@@ -99,7 +99,7 @@
 
   // ---------- the card ----------
 
-  let card = null; // { kind, title, text, url, telegramUrl } of the card open
+  let card = null; // { kind, title, text, url } of the card open
   let lastPick = null; // what the menu picked, for Try again
 
   function openCard(pick) {
@@ -153,7 +153,7 @@
 
   // Shows the card at once, and the link and map as soon as the link is made.
   async function showCard({ heading, name, sub = '', kind, data, text, made = null }) {
-    card = { kind, title: name, text, url: null, telegramUrl: null };
+    card = { kind, title: name, text, url: null };
     $('#shareCardTitle').textContent = heading;
     $('#shareCardName').textContent = name;
     $('#shareCardSub').textContent = sub;
@@ -166,8 +166,6 @@
       const link = made || (await makeLink(kind, data));
       if (card?.kind !== kind || card.title !== name) return;
       card.url = link.url;
-      // The same link through t.me/iv, so it opens in Telegram's Instant View (api/share.js).
-      card.telegramUrl = link.telegramUrl || null;
       setLink(link.url);
       const img = $('#shareMapImg');
       img.onload = () => { img.hidden = false; };
@@ -190,8 +188,8 @@
 
   async function sendTo(target, btn) {
     if (!card?.url) return;
-    const { url, text, title, telegramUrl } = card;
-    if (target === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(telegramUrl || url)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+    const { url, text, title } = card;
+    if (target === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     else if (target === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
     else if (target === 'more') {
       try { await navigator.share({ title, text, url }); } catch { /* closed */ }

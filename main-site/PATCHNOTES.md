@@ -13,7 +13,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Web app
 
-- **Share to Telegram** - Directions shared with Share's **Telegram** button open in Telegram's **Instant View**: both ends, the time and the map, right in the chat, with a link on to the app.
+- **Share to Telegram** - Shared directions are ready for Telegram's **Instant View**: both ends, the time and the map, right in the chat, with a link on to the app. Share's **Telegram** button sends the plain trip link, like every other button.
 
 ---
 
