@@ -302,12 +302,16 @@ export function whenText(when) {
   return `${when.mode === 'arrive' ? 'Arrive by' : 'Leave at'} ${when.at.slice(11)} on ${dow} ${d} ${MONTHS[m - 1]}`;
 }
 
-// ---------- Telegram's Instant View ----------
-// A /trip/ page has its details in an <article> that Telegram's Instant View reads with the
-// template in telegram-instant-view.txt, once Telegram approves it (TELEGRAM_IV_SETUP.md).
-// Share always sends the plain /trip/ link, never a t.me/iv one.
+// "08:41 on Mon 12 Oct", Singapore time: an ETA link's times, for its Instant View page.
+export const sgDateTime = (ms) =>
+  `${sgClock(ms)} on ${new Date(ms).toLocaleDateString('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short' })}`;
 
-export const IV_KINDS = ['directions'];
+// ---------- Telegram's Instant View ----------
+// A /go/, /trip/ or /eta/ page has its details in an <article> that Telegram's Instant View
+// reads with the template in telegram-instant-view.txt, once Telegram approves it
+// (TELEGRAM_IV_SETUP.md). Share always sends the plain link, never a t.me/iv one.
+
+export const IV_KINDS = ['place', 'directions', 'eta'];
 
 // ---------- the map ----------
 // OneMap's static map: free, with no key, Singapore's own. Pins are one letter; the route is

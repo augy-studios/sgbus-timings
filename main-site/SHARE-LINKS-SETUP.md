@@ -31,7 +31,7 @@ but every short link answers "Sharing is not set up yet."
   to have allowed notifications. Without it, the link updates only while the app
   is open.
 - **Maps**: OneMap's static map, which needs no key.
-- **Telegram Instant View**: for `/trip/…` links, once Telegram approves its
+- **Telegram Instant View**: for `/go/…`, `/trip/…` and `/eta/…` links, once Telegram approves its
   template; see [TELEGRAM_IV_SETUP.md](TELEGRAM_IV_SETUP.md). Share always sends the
   plain link.
 

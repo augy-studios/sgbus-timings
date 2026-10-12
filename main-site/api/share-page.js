@@ -3,40 +3,85 @@
 // person is sent straight on to the app, at #share/<id>, which shows the place, the
 // directions or the live progress (js/share.js).
 //
-// A /trip/ page also carries its details in an <article>, for Telegram's Instant View
+// The page also carries the link's details in an <article>, for Telegram's Instant View
 // (telegram-instant-view.txt, TELEGRAM_IV_SETUP.md). Nothing reads it but crawlers: people are
 // sent on by the script before it shows. There's no meta refresh, as Instant View's crawler
 // would follow it to the app, which has nothing for it to read.
 
 import { supabaseConfigured } from './_lib/supabase.js';
-import { IV_KINDS, PATHS, describeLink, getLink, isLinkId, whenText } from './_lib/share-links.js';
+import { IV_KINDS, PATHS, describeLink, getLink, isLinkId, sgDateTime, whenText } from './_lib/share-links.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const endText = (p) => (p === 'here' ? 'Wherever you are when you open it' : p.label);
 
+// Where an ETA link's sharer was on their trip, as the app says it (renderView in js/share.js).
+function legText(d) {
+  const leg = d.leg;
+  if (!leg?.label) return null;
+  const now = leg.kind === 'walk'
+    ? `Walking to ${leg.to}`
+    : `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}`;
+  return d.legCount > 1 ? `${now} (leg ${d.legIndex + 1} of ${d.legCount})` : now;
+}
+
+// Each kind's details: the cover's caption, the rows, a line about the app, and its link.
+function details(link) {
+  const d = link.data;
+  if (link.kind === 'place') {
+    return {
+      caption: 'The place on the map',
+      heading: 'The place',
+      rows: [['Where', d.label]],
+      note: 'Open it for directions by bus and train from wherever you are, with live bus timings on the way.',
+      open: 'Get directions in SG Bus Timings',
+    };
+  }
+  if (link.kind === 'directions') {
+    return {
+      caption: d.path ? 'The way on the map' : 'Both ends on the map',
+      heading: 'The trip',
+      rows: [['From', endText(d.from)], ['To', endText(d.to)], ['When', whenText(d.when)]],
+      note: 'Open them for live bus timings, the other ways there, and a Get Off Alert on the way.',
+      open: 'Open these directions in SG Bus Timings',
+    };
+  }
+  // An ETA changes as the sharer goes, and Telegram keeps the Instant View it made, so it
+  // says when it's from and sends people to the app for the live one.
+  const live = !d.ended && !d.stopped;
+  const as = sgDateTime(link.updatedAt);
+  const leg = live ? legText(d) : null;
+  return {
+    caption: live ? 'Where they were on the map' : 'Where they were going',
+    heading: 'The trip',
+    rows: [
+      ['Going to', d.to.label],
+      ...(d.stopped ? [['Stopped sharing', as]] : d.ended ? [['Arrived', as]] : [['Arriving around', sgDateTime(d.arriveAt)]]),
+      ...(leg ? [['Where they were', leg]] : []),
+      ...(live ? [['As of', as]] : []),
+    ],
+    note: live ? `This is how the trip stood at ${as}. Open it for live progress, updated as they go.` : 'Open it to see the trip in SG Bus Timings.',
+    open: live ? 'Follow this trip live in SG Bus Timings' : 'Open this trip in SG Bus Timings',
+  };
+}
+
 // What the page shows: the link's details where Instant View is set up for its kind, else
 // just the way on to the app.
 function body(link, { title, description }, image, target, origin) {
   if (!link || !IV_KINDS.includes(link.kind)) return `<p><a href="${esc(target)}">Open in SG Bus Timings</a></p>`;
-  const d = link.data;
-  const rows = [
-    ['From', endText(d.from)],
-    ['To', endText(d.to)],
-    ['When', whenText(d.when)],
-  ];
+  const { caption, heading, rows, note, open } = details(link);
   return `<header>
 <h1>${esc(title)}</h1>
 <h2 class="subtitle">${esc(description)}</h2>
-<figure class="cover"><img src="${esc(image)}" alt="Map of the trip" width="512" height="256"><figcaption>${esc(d.path ? 'The way on the map' : 'Both ends on the map')}</figcaption></figure>
+<figure class="cover"><img src="${esc(image)}" alt="${esc(caption)}" width="512" height="256"><figcaption>${esc(caption)}</figcaption></figure>
 </header>
-<article id="trip">
-<h3>The trip</h3>
+<article id="${PATHS[link.kind]}">
+<h3>${esc(heading)}</h3>
 <ul>
-${rows.map(([k, v]) => `<li><b>${k}:</b> ${esc(v)}</li>`).join('\n')}
+${rows.map(([k, v]) => `<li><b>${esc(k)}:</b> ${esc(v)}</li>`).join('\n')}
 </ul>
-<p>Open them for live bus timings, the other ways there, and a Get Off Alert on the way.</p>
-<p><a href="${esc(origin + target)}">Open these directions in SG Bus Timings</a></p>
+<p>${esc(note)}</p>
+<p><a href="${esc(origin + target)}">${esc(open)}</a></p>
 </article>`;
 }
 
