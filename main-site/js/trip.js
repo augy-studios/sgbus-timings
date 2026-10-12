@@ -46,6 +46,11 @@
 // checked, and once it's about a minute away you're told, once per leg: a notification, a buzz
 // and the bar. The server does the same while the app's in the background (api/_push/trip.js),
 // and each side hears of the other's (`readied`), so it's said only once.
+//
+// A bus leg's stops alone are a poor guide to where the bus goes: the straight line from one
+// to the next can be kilometres off an expressway. So at the start each bus leg's road is
+// fetched (/api/road, kept in `trip.roads`), and you're followed along it, within ON_ROAD_M.
+// Without it (the router's down), the straight lines are used with room for the road to bend.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -65,11 +70,23 @@
   // often, and the clock held until your bus is due.
   const HOLD_CHECK_MS = 30 * 1000;
   // On board for sure once the fixes have moved you this many stops along the route within
-  // this long (noteMove).
+  // this long (noteMove), or this far down its road, away from the stop you got on at.
   const MOVE_STOPS = 0.5;
+  const MOVE_M = 200;
+  const LEFT_STOP_M = 300;
   const MOVE_WINDOW_MS = 10 * 60 * 1000;
+  // Fixes come many times a second; one this often is kept to tell you've moved.
+  const MOVE_SAMPLE_MS = 3 * 1000;
   // Near enough to a stop on the leg to say you're there.
   const ON_ROUTE_M = 250;
+  // Near enough to a bus leg's road (trip.roads) to be on it.
+  const ON_ROAD_M = 100;
+  // Without the road, as much of the straight line between two stops as the road may bend
+  // away from it, at least ON_ROUTE_M.
+  const BEND_SHARE = 0.3;
+  // A fix comes many times a second: the bar and the saved trip are brought up to date at most
+  // this often. The timeline's dot eases between them on its own.
+  const REDRAW_MS = 500;
   // With no good fix for this long, go by the clock instead.
   const FIX_STALE_MS = 60 * 1000;
   const TICK_MS = 15 * 1000;
@@ -161,6 +178,7 @@
     stop(false);
     boardCheckedAt = 0;
     boardEta = null;
+    roadsAsked = null;
     const now = Date.now();
     trip = {
       tripId: crypto.randomUUID(),
@@ -177,6 +195,9 @@
       alerted: legs.map(() => false),
       // Whether each leg's Get ready to board was given.
       readied: legs.map(() => false),
+      // Each bus leg's road (fetchRoads), as { path, stops, cum }; false if there's none to
+      // be had, null if it's not been got yet.
+      roads: legs.map(() => null),
       noLocation: false,
       // When each leg began, was boarded (`gps` when the fixes showed it) and ended.
       times: legs.map((_, i) => (i === 0 ? { start: now } : {})),
@@ -198,11 +219,44 @@
     keepAwake();
     sync();
     watchBoard();
+    fetchRoads();
   }
+
+  // Each bus leg's road, once per trip (a reload asks again for any it didn't get).
+  let roadsAsked = null;
+  function fetchRoads() {
+    if (!trip || roadsAsked === trip) return;
+    roadsAsked = trip;
+    const asked = trip;
+    asked.roads ??= asked.legs.map(() => null);
+    asked.legs.forEach(async (leg, i) => {
+      if (leg.kind !== "bus" || leg.points.length < 2 || asked.roads[i] != null) return;
+      try {
+        const points = leg.points.map(([lat, lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`).join(";");
+        const res = await fetch(`/api/road?points=${encodeURIComponent(points)}`);
+        if (!res.ok) return;
+        const road = await res.json();
+        if (trip !== asked) return;
+        asked.roads[i] = road?.path?.length >= 2 && road.stops?.length === leg.points.length ? withCum(road) : false;
+        save();
+      } catch {}
+    });
+  }
+
+  // The road with the distance along it to each of its points, for alongRoad.
+  function withCum({ path, stops }) {
+    const cum = [0];
+    for (let k = 1; k < path.length; k++) cum.push(cum[k - 1] + metres(path[k - 1], path[k]));
+    // The stops as measured on the server, scaled to this measure of the path.
+    const scale = stops[stops.length - 1] ? cum[cum.length - 1] / stops[stops.length - 1] : 1;
+    return { path, stops: stops.map((m) => m * scale), cum };
+  }
+
+  const roadOf = (leg) => trip?.roads?.[trip.legs.indexOf(leg)] || null;
 
   function watchHere() {
     if ("geolocation" in navigator) {
-      watchId = navigator.geolocation.watchPosition(onFix, onFixError, { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 });
+      watchId = navigator.geolocation.watchPosition(onFix, onFixError, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
     } else {
       trip.noLocation = true;
     }
@@ -278,13 +332,13 @@
 
     // Not yet on the bus for sure: you stay at the first stop, and the clock waits, until the
     // fixes show you moving along its route (noteMove).
-    if (!underWay(leg) && !noteMove(alongLeg(here, leg, 0))) {
+    if (!underWay(leg) && !noteMove(here, alongLeg(here, leg, 0))) {
       trip.anchor = { pos: 0, t: Date.now() };
-      save();
-      render();
+      soon();
       return;
     }
 
+    const road = roadOf(leg);
     // The nearest stop on this leg at or past the last one, so a fix that wobbles behind
     // can't send you back; realign deals with one that's really somewhere else.
     let best = -1;
@@ -293,10 +347,16 @@
       const m = metres(here, leg.points[i]);
       if (m < bestM) [best, bestM] = [i, m];
     }
-    if (best !== -1 && bestM <= ON_ROUTE_M) trip.at = Math.max(trip.at, best);
-    // How far between stops, for the timeline's dot.
+    if (best !== -1 && bestM <= (road ? ON_ROAD_M : ON_ROUTE_M)) trip.at = Math.max(trip.at, best);
+    // How far between stops, for the timeline's dot; and every stop behind that, passed. On
+    // the road that's sure enough to go by, so a stop passed at speed, between fixes, or one
+    // after a long stretch that the fixes never came near counts all the same.
     const along = alongLeg(here, leg, trip.at);
-    if (along != null) trip.pos = Math.max(trip.pos || 0, along);
+    if (along != null) {
+      trip.pos = Math.max(trip.pos || 0, along);
+      trip.at = Math.max(trip.at, Math.floor(along + 0.001));
+      trip.onLegAt = Date.now();
+    }
     // The clock goes on from here if the fixes stop.
     trip.anchor = { pos: Math.max(trip.pos || 0, trip.at), t: Date.now() };
 
@@ -319,6 +379,7 @@
     const pos = Math.min(1, Math.max(0, 1 - left / Math.max(1, metres(start, end))));
     trip.pos = Math.max(trip.pos || 0, pos);
     trip.anchor = { pos: trip.pos, t: now };
+    trip.onLegAt = now;
     if (left <= WALK_ARRIVE_M + Math.min(accuracy, 40)) {
       trip.at = 1;
       trip.pos = 1;
@@ -338,26 +399,37 @@
   // Whether there's another ride after this leg, to change to.
   const ridesAfter = () => trip.legs.slice(trip.leg + 1).some((l) => !isWalk(l));
 
-  // Good fixes along the leg before boarding, as { along, t }. Boarded once one is at least
-  // MOVE_STOPS further along than another in the last MOVE_WINDOW_MS, and past the first
-  // stop: really moving down the route, not a fix wobbling about the stop you wait at. Says
-  // whether you're now on board.
-  function noteMove(along) {
+  // Good fixes along the leg before boarding, as { along, m, t }, one every MOVE_SAMPLE_MS:
+  // `m` is how far down the route that is, in metres. Boarded once you're really moving down
+  // the route, not a fix wobbling about the stop you wait at: LEFT_STOP_M from the stop and
+  // MOVE_M further down than a fix in the last MOVE_WINDOW_MS (or the leg's whole time, if
+  // that's longer, for a long stretch with no stop); or at or past the second stop and
+  // MOVE_STOPS on from such a fix; or at any stop after the first, within ON_ROAD_M of it.
+  // Says whether you're now on board.
+  function noteMove(here, along) {
     if (along == null) return false;
     const now = Date.now();
-    const moves = (trip.moves || []).filter((m) => now - m.t <= MOVE_WINDOW_MS);
-    const moved = along >= 1 && moves.some((m) => along - m.along >= MOVE_STOPS);
-    trip.moves = [...moves.slice(-5), { along, t: now }];
+    const leg = trip.legs[trip.leg];
+    const m = metresAlong(leg, along);
+    const span = Math.max(MOVE_WINDOW_MS, (leg.minutes || 0) * 60000);
+    const moves = (trip.moves || []).filter((x) => now - x.t <= span);
+    const fromStop = metres(here, leg.points[0]);
+    // A stop by the one you got on at (across the road, on a route that comes back) doesn't count.
+    const atStop = leg.points.some((p, i) => i > 0 && metres(here, p) <= ON_ROAD_M && metres(p, leg.points[0]) >= LEFT_STOP_M);
+    const moved = atStop
+      || (fromStop >= LEFT_STOP_M && moves.some((x) => m - (x.m ?? 0) >= MOVE_M))
+      || (along >= 1 && fromStop > ON_ROAD_M && moves.some((x) => along - x.along >= MOVE_STOPS));
+    const lastT = moves.length ? moves[moves.length - 1].t : 0;
+    trip.moves = now - lastT >= MOVE_SAMPLE_MS ? [...moves.slice(-240), { along, m, t: now }] : moves;
     if (!moved) return false;
     trip.boarded = true;
     trip.moves = [];
     // Boarded about as long ago as riding this far along takes, by the leg's own time per
     // stop, though not before the last fix that still had you at the stop.
     const t = trip.times[trip.leg];
-    const leg = trip.legs[trip.leg];
     if (t) {
       const perStopMs = ((leg.minutes || 0) / Math.max(1, leg.points.length - 1)) * 60000;
-      const waiting = moves.filter((m) => m.along < 0.25).map((m) => m.t);
+      const waiting = moves.filter((x) => x.along < 0.25).map((x) => x.t);
       const board = Math.max(now - along * perStopMs, ...waiting, t.start || 0);
       Object.assign(t, { board: Math.min(now, board), gps: true });
     }
@@ -399,7 +471,7 @@
     trip.pos = along ?? best;
     trip.anchor = { pos: trip.pos, t: now };
     trip.realignedAt = now;
-    if (accuracy <= GOOD_FIX_M) trip.lastFixAt = now;
+    if (accuracy <= GOOD_FIX_M) trip.lastFixAt = trip.onLegAt = now;
     trip.noLocation = false;
     // Back at the first stop: you're waiting for the bus, not on it.
     if (best === 0) {
@@ -438,7 +510,10 @@
     return Math.min(last, from.pos + Math.max(0, Date.now() - from.t) / 60000 / perStop);
   }
 
-  const stale = () => Date.now() - trip.lastFixAt > FIX_STALE_MS;
+  // No good fix lately that put you on the leg: the clock moves you on. A fix that comes but
+  // is off the leg (the road's left it for a bit, or without the road, the straight line's far
+  // from it) doesn't hold the clock up.
+  const stale = () => Date.now() - (trip.onLegAt || 0) > FIX_STALE_MS;
 
   // Without a recent good fix, how far the ride should have got by the clock.
   function onTick() {
@@ -482,9 +557,12 @@
   }
 
   // Where a point is along a leg, as a stop index with a fraction: 3.4 is 40% of the way
-  // from its fourth stop to its fifth. Measured on the nearest stretch between two stops,
-  // from the one before `from` on; null when the point isn't near the leg at all.
+  // from its fourth stop to its fifth, from the one before `from` on; null when the point isn't
+  // on the leg. On the leg's road if it has one (alongRoad); otherwise on the nearest stretch
+  // between two stops, allowing for the road to bend away from the straight line.
   function alongLeg(here, leg, from) {
+    const road = roadOf(leg);
+    if (road) return alongRoad(here, road, from);
     const pts = leg.points;
     const kx = 111320 * Math.cos((here[0] * Math.PI) / 180);
     const ky = 110540;
@@ -497,9 +575,48 @@
       const len2 = dx * dx + dy * dy;
       const t = len2 ? Math.max(0, Math.min(1, (px * dx + py * dy) / len2)) : 0;
       const m = Math.hypot(px - t * dx, py - t * dy);
-      if (m < bestM) [best, bestM] = [i + t, m];
+      if (m <= Math.max(ON_ROUTE_M, BEND_SHARE * Math.sqrt(len2)) && m < bestM) [best, bestM] = [i + t, m];
     }
-    return bestM <= ON_ROUTE_M ? best : null;
+    return best;
+  }
+
+  // The same on the leg's road: the nearest point on it within ON_ROAD_M, from the stop before
+  // `from` on, as a stop index with a fraction by distance along the road.
+  function alongRoad(here, { path, stops, cum }, from) {
+    const kx = 111320 * Math.cos((here[0] * Math.PI) / 180);
+    const ky = 110540;
+    const after = stops[Math.max(0, Math.min(stops.length - 1, Math.floor(from) - 1))];
+    let k0 = 0;
+    while (k0 < path.length - 2 && cum[k0 + 1] <= after) k0++;
+    let bestD = null;
+    let bestM = Infinity;
+    for (let k = k0; k < path.length - 1; k++) {
+      const ax = path[k][1] * kx, ay = path[k][0] * ky;
+      const dx = path[k + 1][1] * kx - ax, dy = path[k + 1][0] * ky - ay;
+      const px = here[1] * kx - ax, py = here[0] * ky - ay;
+      const len2 = dx * dx + dy * dy;
+      const t = len2 ? Math.max(0, Math.min(1, (px * dx + py * dy) / len2)) : 0;
+      const m = Math.hypot(px - t * dx, py - t * dy);
+      // A later stretch has to be clearly nearer to win, where the road comes back along itself.
+      if (m < bestM - (bestM <= ON_ROAD_M ? 15 : 0)) [bestD, bestM] = [cum[k] + t * (cum[k + 1] - cum[k]), m];
+    }
+    if (bestM > ON_ROAD_M) return null;
+    const last = stops.length - 1;
+    let i = 0;
+    while (i < last - 1 && stops[i + 1] <= bestD) i++;
+    const span = stops[i + 1] - stops[i];
+    return Math.min(last, i + (span > 0 ? Math.max(0, Math.min(1, (bestD - stops[i]) / span)) : 1));
+  }
+
+  // How far down a leg a place along it is, in metres: on its road, or the straight lines.
+  function metresAlong(leg, along) {
+    const road = roadOf(leg);
+    const i = Math.min(leg.points.length - 1, Math.floor(along));
+    const j = Math.min(leg.points.length - 1, i + 1);
+    if (road) return road.stops[i] + (road.stops[j] - road.stops[i]) * (along - i);
+    let m = 0;
+    for (let k = 0; k < i; k++) m += metres(leg.points[k], leg.points[k + 1]);
+    return m + metres(leg.points[i], leg.points[j]) * (along - i);
   }
 
   // ---------- get ready to board ----------
@@ -689,8 +806,22 @@
       setTimeout(() => stop(), 60 * 1000);
       return;
     }
-    save();
-    render();
+    soon();
+  }
+
+  // The bar and the saved trip brought up to date, at most every REDRAW_MS: fixes come many
+  // times a second.
+  let soonTimer = null;
+  let soonAt = 0;
+  function soon() {
+    if (soonTimer) return;
+    soonTimer = setTimeout(() => {
+      soonTimer = null;
+      soonAt = Date.now();
+      if (!trip) return;
+      save();
+      render();
+    }, Math.max(0, soonAt + REDRAW_MS - Date.now()));
   }
 
   // ---------- the alert ----------
@@ -717,12 +848,20 @@
     sync();
   }
 
-  // The server sent the alert while the app was in the background (sw.js passes it on):
-  // shown on the bar, and not sounded again.
-  function alertedElsewhere({ tripId, leg, text }) {
+  // The server sent the alert (it follows the bus too, from LTA's live positions): shown on
+  // the bar. From sw.js, which has already shown it as a notification, it isn't sounded again;
+  // from the app while it's in front (`sound`), where Android shows nothing for a push, it's
+  // sounded here as if the page had found it, unless the page already has.
+  function alertedElsewhere({ tripId, leg, text }, sound = false) {
     if (!trip || tripId !== trip.tripId || trip.alerted[leg]) return;
     trip.alerted[leg] = true;
     if (leg === trip.leg) {
+      if (sound && enabled()) {
+        if (navigator.vibrate) navigator.vibrate(VIBRATION);
+        beep();
+        if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text }).catch(() => {});
+        else notify({ title: "Get Off Alert", body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
+      }
       trip.alertText = text;
       trip.alertLeft = stopsLeft();
       flash();
@@ -1155,7 +1294,7 @@
     });
     // The same from the server through the app (js/alerts.js), while it's in front, where
     // Android leaves the push for the app to show.
-    window.addEventListener("push:get-off", (e) => alertedElsewhere(e.detail));
+    window.addEventListener("push:get-off", (e) => alertedElsewhere(e.detail, true));
     window.addEventListener("push:board", (e) => readiedElsewhere(e.detail, true));
     // A reload mid-trip carries on.
     try {
@@ -1168,6 +1307,8 @@
         trip.startedAt ??= trip.legStartedAt;
         // And from before Get ready to board.
         trip.readied ??= trip.legs.map(() => false);
+        // And from before the roads.
+        trip.roads ??= trip.legs.map(() => null);
         if (window.AppBridge?.native) AppBridge.ready(5000).then(() => trip && run());
         else run();
       }

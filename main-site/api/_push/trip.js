@@ -13,8 +13,10 @@
 // runs once a minute, so this tells you a little earlier than the app does (BOARD_MS there).
 
 export const ALERT_STOPS = 2;
-// Near enough to the leg to be on it.
+// Near enough to the leg to be on it: the straight line between two stops, or as much of it
+// as the road may bend away from it (BEND_SHARE), on a long stretch like an expressway.
 const ON_ROUTE_M = 250;
+const BEND_SHARE = 0.3;
 // How far, in stops, a bus may be from where yours should be and still be taken for it.
 const MATCH_STOPS = 2;
 // The cron runs once a minute, so the alert goes this much of a stop early rather than late.
@@ -30,7 +32,7 @@ function perStop(leg) {
 }
 
 // Where a point is along a leg, as a stop index with a fraction, or null when it isn't near
-// the leg at all. The same as alongLeg in js/trip.js, from the first stop.
+// the leg at all. The same as alongLeg in js/trip.js without a road, from the first stop.
 export function alongLeg(here, pts) {
   const kx = 111320 * Math.cos((here[0] * Math.PI) / 180);
   const ky = 110540;
@@ -43,9 +45,9 @@ export function alongLeg(here, pts) {
     const len2 = dx * dx + dy * dy;
     const t = len2 ? Math.max(0, Math.min(1, (px * dx + py * dy) / len2)) : 0;
     const m = Math.hypot(px - t * dx, py - t * dy);
-    if (m < bestM) [best, bestM] = [i + t, m];
+    if (m <= Math.max(ON_ROUTE_M, BEND_SHARE * Math.sqrt(len2)) && m < bestM) [best, bestM] = [i + t, m];
   }
-  return bestM <= ON_ROUTE_M ? best : null;
+  return best;
 }
 
 // Whether there's another ride after this leg, to change to: walks don't count.

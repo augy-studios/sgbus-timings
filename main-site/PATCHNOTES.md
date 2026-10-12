@@ -9,6 +9,23 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (evening): Apps 2.0.5
+
+### Web app
+
+- **Get Off Alert on expressways** - Fixed: on a bus that runs a long way between stops, like along an expressway to the airport, the trip didn't notice you'd boarded, so the dot stayed at your stop and the alert never came. The trip now follows the road the bus actually takes, and counts you on the bus once you're within 100 m of that road and moving along it, or once you reach a later stop.
+- **Get Off Alert with the app open** - Fixed: when the server spotted your bus nearing your stop before the app did, with the Android app open, the trip bar showed the alert without a buzz, beep or notification. It now sounds like any other alert.
+
+### Android app 2.0.5
+
+- **Smoother tracking** - On a trip, the app asks for your location 20 times a second (as fast as your phone's GPS can give it), so the dot follows the bus closely.
+
+### Desktop app 2.0.5
+
+- Kept in step with the Android app's version; the fixes above are in the web app it shows.
+
+---
+
 ## 12 October 2026: Apps 2.0.4
 
 ### Web app
