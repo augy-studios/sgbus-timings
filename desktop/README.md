@@ -63,8 +63,14 @@ only answers the site's own origin. The site's location and notification permiss
 allowed; anything else it asks for is refused. No key or secret is in the app.
 
 Location works where the computer can tell where it is: on Windows, with **Settings** >
-**Privacy & security** > **Location** on. Linux desktops usually can't, so Near me and the
-live map ask for a place instead.
+**Privacy & security** > **Location** on, and on macOS, once allowed. On Linux Chromium has
+only Google's location service, which needs an API key Electron doesn't have, so from 2.0.7
+the app finds it itself (`location.js`): it scans the Wi-Fi around with NetworkManager
+(`nmcli`) and asks [BeaconDB](https://beacondb.net) where those networks are (hardware
+addresses and strengths only; `_nomap` networks left out), turning down anything rougher
+than 3 km (an internet-address guess). GNOME's Location Services switch is respected. The
+page reaches it as `sgbusDesktop.locate`, and `main-site/js/desktop-location.js` points
+`navigator.geolocation` at it.
 
 ## Build it
 

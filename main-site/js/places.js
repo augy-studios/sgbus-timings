@@ -4,7 +4,7 @@
 //
 // Tapping a place plans the way there from where you are (Navigate). Its menu edits it, shares
 // it as a "How to get to" link (js/share.js), or deletes it (clears Home or Work). Every place
-// is also a button under each end of Navigate and Plan a route (js/nav.js, showSavedPlaces),
+// is also a button under each end of Navigate, on both its tabs (js/nav.js, showSavedPlaces),
 // after Home and Work, and is on the Saved tab of the search boxes (js/recents.js).
 //
 // Home and Work keep their own keys (LS.getPlace in script.js); the rest are one list,
@@ -233,9 +233,7 @@
         } catch { /* named plainly */ }
         choose({ label, lat, lng });
         resolve();
-      }, (err) => reject(new Error(err.code === 1
-        ? 'Location access is turned off for this site. Allow it in your browser to save where you are.'
-        : "Couldn't get your location. Please try again.")),
+      }, (err) => reject(new Error(locationMessage(err, 'to save where you are'))),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
     }));
   }

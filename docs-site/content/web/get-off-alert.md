@@ -21,8 +21,8 @@ Any of these starts one:
 
 - **Navigate**: open a way, then tap **Start trip**. See
   [Navigate by bus and train](nav.md).
-- **Plan a route**: open a journey, then tap **Start trip**. See
-  [Plan a route](route-planner.md#open-a-journey).
+- **Navigate by bus only**: open a journey, then tap **Start trip**. See
+  [Navigate by bus only](route-planner.md#open-a-journey).
 - **A bus's route**: open the route, tap **Get Off Alert**, then tap the stop
   you're getting off at. See [Bus routes](bus-routes.md).
 
@@ -46,6 +46,24 @@ walks between rides, and ends with the walk to where you're going. Each shows on
 the timeline as **Walk to** where it ends, with about how long is left. The trip
 moves on to the ride when you reach its stop, and on to the next walk when you
 get off. Without your location, it goes by how long each walk should take.
+
+### Walking or riding
+
+From 2.0.7, the trip also uses your phone's motion sensor (its accelerometer) to
+tell walking from riding, by the rhythm of your steps. It knows you're walking
+within a few steps, so:
+
+- Walking along a bus's route to your stop, past another stop on it, never counts
+  as being on the bus.
+- Once you've stopped walking, being 100 m down the next bus's route after a walk
+  is enough to put you on that bus, even if the trip never saw you reach the stop.
+- Getting off a bus near your stop, your first few steps end the ride and start
+  the walk.
+- On a walk with no GPS, it goes by the steps you take, not the clock, so waiting
+  at a crossing doesn't walk you on.
+
+On an iPhone, the site asks to use motion and orientation when you start a trip.
+Without the sensor, or if you say no, the trip works as it did before.
 
 There's no alert on a walk. The trip ends when you reach where you're going.
 
@@ -91,9 +109,9 @@ Only then does it count the stops down.
 
 It follows the road the bus actually takes, not a straight line from stop to
 stop, so a long stretch with no stops, like an expressway, still moves the dot
-along and counts the stops you pass. You count as on the bus once you're within
-100 m of its road and moving along it away from your stop, or once you reach a
-later stop on its route.
+along and counts the stops you pass. You count as on the bus once you're
+150 m down its route from your stop and not walking, or once you reach a later
+stop on its route.
 
 If the trip ever has you somewhere you aren't, say a few stops ahead while
 you're still at the interchange, it notices from your location and moves back

@@ -1,11 +1,32 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 12 October 2026**
+**Latest update: 13 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 13 October 2026: Apps 2.0.7
+
+### Web app
+
+- **Navigate, now with Bus only** - Plan a route is now a tab in Navigate: **Bus and train** for any two places, **Bus only** for two bus stops. Switching tab keeps your two ends (a place becomes the bus stop at it, or the nearest one) and your time. The Edge Tray has one **Navigate** button, the arrowhead, which opens on the tab you used last. Saved routes are under **Bus-only routes** in Favourites.
+- **Press and hold for a button's name** - On a phone or tablet, press and hold any button to see what it does, as hovering does with a mouse. Letting go doesn't press it.
+- **Bigger buttons and text** - The Edge Tray's buttons and icons are bigger, and the smallest text across the app is a size up.
+- **Birthday** - On your birthday the greeting says how old you're turning, "Happy 28th Birthday, Sam!", on two lines so your whole name shows. And there's confetti each time you open the app that day; turn it off in Settings with **Birthday confetti**.
+- **Get Off Alert notices you've boarded sooner** - You count as on the bus once you're 150 m down its route, rather than 300 m.
+- **Walking or riding** - On a trip, your phone's motion sensor tells walking from riding by your steps. Walking along a bus's route to your stop never counts as boarding; after a walk, 100 m down the next bus's route is enough once you've stopped walking; your first steps off a bus at your stop start the walk; and on a walk with no GPS, your steps move you along rather than the clock.
+
+### Android app 2.0.7
+
+- **Bus timings widget** - A new widget with no stop yet opens its setup wherever you tap it, as it says, not only on its title. Once set up, tapping anywhere but a bus or the refresh button opens the stop.
+
+### Desktop app 2.0.7
+
+- **Location on Linux** - Fixed: Stops near me, Navigate's "where I am", the live map and trips couldn't get your location in the Linux app (AppImage and .deb). It now works it out from the Wi-Fi networks around you, so Wi-Fi needs to be on. If it still can't, it says why.
 
 ---
 

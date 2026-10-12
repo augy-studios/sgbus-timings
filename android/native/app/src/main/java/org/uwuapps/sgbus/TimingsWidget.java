@@ -98,10 +98,15 @@ public class TimingsWidget extends AppWidgetProvider {
         Intent setup = new Intent(context, WidgetConfigActivity.class)
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
                 .setData(Uri.parse("sgbus-widget://setup/" + id));
-        views.setOnClickPendingIntent(R.id.widget_header, PendingIntent.getActivity(context, id, setup,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE));
+        PendingIntent openSetup = PendingIntent.getActivity(context, id, setup,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(R.id.widget_header, openSetup);
 
         if (config == null) {
+            // No stop yet: anywhere on it opens the setup, as its "Tap here to pick a stop" says,
+            // not just the title.
+            views.setOnClickPendingIntent(android.R.id.background, openSetup);
+            views.setOnClickPendingIntent(R.id.widget_empty, openSetup);
             views.setTextViewText(R.id.widget_title, context.getString(R.string.widget_pick));
             views.setTextViewText(R.id.widget_subtitle, "");
             views.setViewVisibility(R.id.widget_list, View.GONE);
@@ -131,6 +136,15 @@ public class TimingsWidget extends AppWidgetProvider {
                 .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         views.setPendingIntentTemplate(R.id.widget_list, PendingIntent.getActivity(context, 10000 + id, open,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE));
+        // Anywhere else on it (around the list, or its "No buses" note) opens the stop in the app.
+        Intent stop = new Intent(context, MainActivity.class)
+                .setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(MainActivity.EXTRA_URL, MainActivity.SITE + "/#" + code)
+                .setData(Uri.parse("sgbus-widget://stop/" + id));
+        PendingIntent openStop = PendingIntent.getActivity(context, 20000 + id, stop,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        views.setOnClickPendingIntent(android.R.id.background, openStop);
+        views.setOnClickPendingIntent(R.id.widget_empty, openStop);
 
         JSONObject data = WidgetStore.data(context, id);
         boolean none = data == null || data.optJSONArray("rows") == null || data.optJSONArray("rows").length() == 0;

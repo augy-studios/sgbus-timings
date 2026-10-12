@@ -16,6 +16,7 @@ const LS = {
     favNavKey:     'sgbus_fav_navs',
     pinKey:        'sgbus_pin_prefs',
     birthdayKey:   'sgbus_birthday',
+    confettiKey:   'sgbus_confetti',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -64,6 +65,12 @@ const LS = {
         if (v) localStorage.setItem(this.birthdayKey, v);
         else localStorage.removeItem(this.birthdayKey);
     },
+    // Confetti on your birthday: on unless turned off in Settings.
+    getConfetti() { return localStorage.getItem(this.confettiKey) !== 'off'; },
+    setConfetti(on) {
+        if (on) localStorage.removeItem(this.confettiKey);
+        else localStorage.setItem(this.confettiKey, 'off');
+    },
 
     // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
     // stop code when the place is a bus stop. Null while it isn't set.
@@ -100,10 +107,58 @@ function isBirthday(now = new Date()) {
     return Number(b.slice(5, 7)) === now.getMonth() + 1 && Number(b.slice(8, 10)) === now.getDate();
 }
 
+// 1st, 2nd, 3rd, 4th ... 11th, 12th, 13th ... 21st.
+function ordinal(n) {
+    const teen = n % 100 >= 11 && n % 100 <= 13;
+    const end = teen ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10] || 'th';
+    return `${n}${end}`;
+}
+
+// How old you turn this year, by the birthday's year; null without a likely one.
+function birthdayAge(now = new Date()) {
+    const year = Number(LS.getBirthday().slice(0, 4));
+    const age = now.getFullYear() - year;
+    return age >= 1 && age <= 130 ? age : null;
+}
+
+// On your birthday the greeting takes two lines, the wish and then your name, so a long name
+// isn't cut off: "Happy 25th Birthday," then "Sam!".
 function updateGreeting() {
     const name = LS.getName();
-    const g    = isBirthday() ? 'Happy Birthday' : getGreeting();
-    $('#greeting').textContent = name ? `${g}, ${name}!` : `${g}!`;
+    const h1 = $('#greeting');
+    const birthday = isBirthday();
+    h1.classList.toggle('birthday', birthday);
+    if (!birthday) {
+        const g = getGreeting();
+        h1.textContent = name ? `${g}, ${name}!` : `${g}!`;
+        return;
+    }
+    const age = birthdayAge();
+    const wish = `Happy ${age ? `${ordinal(age)} ` : ''}Birthday`;
+    h1.innerHTML = name
+        ? `<span class="greetLine">${escapeHtml(wish)},</span><span class="greetLine">${escapeHtml(name)}!</span>`
+        : `<span class="greetLine">${escapeHtml(wish)}!</span>`;
+}
+
+// Confetti each time the app's opened on your birthday: as the page loads, and as it comes
+// back after a while away (an installed app is often resumed rather than loaded again).
+const CONFETTI_AWAY_MS = 10 * 60 * 1000;
+let hiddenAt = null;
+function birthdayConfetti() {
+    if (isBirthday() && LS.getConfetti()) window.Confetti?.burst();
+}
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+    if (hiddenAt != null && Date.now() - hiddenAt >= CONFETTI_AWAY_MS) birthdayConfetti();
+    hiddenAt = null;
+});
+
+function syncConfettiButtons() {
+    $$('[data-confetti]').forEach(btn => {
+        const on = (btn.dataset.confetti === 'on') === LS.getConfetti();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
 }
 
 // ----------- Helpers -----------
@@ -545,20 +600,20 @@ function renderStopTools() {
     const parts = [];
     if (service) {
         parts.push(expanded
-            ? `<button type="button" class="iconBtn" data-tool="collapse">${ico('bus')} Only bus ${escapeHtml(service)}</button>`
-            : `<button type="button" class="iconBtn" data-tool="expand">Show all services</button>`);
-        if (!expanded) parts.push(`<button type="button" class="iconBtn" data-tool="onward">${ico('route')} Route from here</button>`);
+            ? `<button type="button" class="iconBtn" data-tool="collapse" title="Show just this bus's timings here">${ico('bus')} Only bus ${escapeHtml(service)}</button>`
+            : `<button type="button" class="iconBtn" data-tool="expand" title="Show every bus at this stop">Show all services</button>`);
+        if (!expanded) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="The stops this bus goes on to from here">${ico('route')} Route from here</button>`);
     }
-    parts.push(`<button type="button" class="iconBtn" data-tool="pick">${ico('bus')} Pick a bus</button>`);
+    parts.push(`<button type="button" class="iconBtn" data-tool="pick" title="Pick one bus to see just its timings here">${ico('bus')} Pick a bus</button>`);
 
     const stop = stopsIndex?.[code];
     if (stop && stop.lat != null && stop.lng != null) {
         parts.push(navOpen
-            ? `<button type="button" class="iconBtn" data-tool="livemap">${ico('map')} Live map</button>` +
+            ? `<button type="button" class="iconBtn" data-tool="livemap" title="Walk here on the live map">${ico('map')} Live map</button>` +
               MAP_APPS.map(app =>
-                `<a class="iconBtn" href="${escapeHtml(directionsUrl(stop, app.id))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
+                `<a class="iconBtn" title="Walking directions here in ${escapeHtml(app.label)}" href="${escapeHtml(directionsUrl(stop, app.id))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
               ).join('')
-            : `<button type="button" class="iconBtn" data-tool="navigate">${ico('navigate')} Directions</button>`);
+            : `<button type="button" class="iconBtn" data-tool="navigate" title="Walking directions to this stop">${ico('navigate')} Directions</button>`);
     }
     $('#stopTools').innerHTML = parts.join('');
 }
@@ -673,7 +728,7 @@ function renderArrivals() {
             `<div class="svcLeft">` +
             `<div class="svcNo">${fav ? favMark() : ''}${escapeHtml(svcNo)}</div>` +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
-            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}">Route</button>` +
+            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}" title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
             `</div>` +
             `<div class="etaWrap">${piece(s.next)}${piece(s.next2)}${piece(s.next3)}` +
             (fl ? `<div class="firstLast">${escapeHtml(fl)}</div>` : '') +
@@ -894,6 +949,16 @@ function stopsNear(lat, lng, limit = 8) {
         .slice(0, limit);
 }
 
+// What went wrong getting your location, to show: the desktop app's own explanation if it gave
+// one (js/desktop-location.js), otherwise by the error's code. `toDo` ends the sentence on
+// what location was wanted for.
+function locationMessage(err, toDo) {
+    if (err?.desktopMessage) return err.desktopMessage;
+    return err?.code === 1
+        ? `Location access is turned off for this site. Allow it in your browser ${toDo}.`
+        : "Couldn't get your location. Please try again.";
+}
+
 function findNearbyStops(limit = 8) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
@@ -902,9 +967,7 @@ function findNearbyStops(limit = 8) {
         }
         navigator.geolocation.getCurrentPosition(
             pos => resolve(stopsNear(pos.coords.latitude, pos.coords.longitude, limit)),
-            err => reject(new Error(err.code === 1
-                ? 'Location access is turned off for this site. Allow it in your browser to find stops near you.'
-                : "Couldn't get your location. Please try again.")),
+            err => reject(new Error(locationMessage(err, 'to find stops near you'))),
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
         );
     });
@@ -1067,6 +1130,7 @@ function openSettings() {
     $('#setBirthday').value = LS.getBirthday();
     syncPinButtons();
     syncTraySideButtons();
+    syncConfettiButtons();
     prepareSync();
     openModal('settingsModal');
 }
@@ -1111,7 +1175,16 @@ $('#settingsPlaces').addEventListener('click', () => { closeModal('settingsModal
 $('#settingsCalendar').addEventListener('click', () => { closeModal('settingsModal'); Calendar.openSettings(); });
 
 $('#setName').addEventListener('input', e => { LS.setName(e.target.value.trim()); updateGreeting(); });
-$('#setBirthday').addEventListener('change', e => { LS.setBirthday(e.target.value); updateGreeting(); });
+$('#setBirthday').addEventListener('change', e => {
+    LS.setBirthday(e.target.value);
+    updateGreeting();
+    birthdayConfetti();
+});
+$$('[data-confetti]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setConfetti(btn.dataset.confetti === 'on');
+    syncConfettiButtons();
+    birthdayConfetti();
+}));
 $('#clearBirthday').addEventListener('click', () => {
     LS.setBirthday('');
     $('#setBirthday').value = '';
@@ -1147,7 +1220,6 @@ Recents.attach($('#q'), $('#acList'), {
 
 $('#nearMeBtn').addEventListener('click', e =>
     withLocating(e.currentTarget, () => findNearbyStops().then(openNearbyList)));
-$('#planBtn').addEventListener('click', () => openPlanner());
 
 $('#refreshBtn').addEventListener('click', refreshStop);
 $('#stopFavBtn').addEventListener('click', () => {
@@ -1393,6 +1465,7 @@ function routeFromShare() {
 (async function init() {
     updateGreeting();
     setInterval(updateGreeting, 30_000);
+    birthdayConfetti();
     initPlanner();
     initNav();
     Share.init();

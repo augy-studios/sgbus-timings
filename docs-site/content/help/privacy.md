@@ -27,6 +27,12 @@ copied to another device, with [Sync](#sync).
 **Stops near me** uses your location inside your browser to measure how far
 away each stop is. Your location is not sent anywhere.
 
+In the Linux app, where the computer can't tell where it is by itself, the app
+asks [BeaconDB](https://beacondb.net) where the Wi-Fi networks around it are:
+their hardware addresses and signal strengths go to BeaconDB, never their names,
+your location or anything else of yours. See
+[Windows and Linux apps](../web/desktop-app.md#location).
+
 ### What goes to the server
 
 To show timings, the app asks its own server for the stop you opened, and the
@@ -92,7 +98,9 @@ OneMap.
 
 ### Get Off Alert
 
-On a trip, your live location is used in your browser to count the stops left.
+On a trip, your live location is used in your browser to count the stops left,
+and your phone's motion (its accelerometer) to tell walking from riding. Neither
+leaves your device for that.
 It never leaves your device, unless you share your ETA: then it's sent with it
 (see [Share links](#share-links)).
 

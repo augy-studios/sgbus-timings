@@ -1,7 +1,7 @@
 {
   "name": "sgbus-timings-desktop",
   "productName": "SG Bus Timings",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "SG Bus Timings for Windows, macOS and Linux: the site at sgbus.uwuapps.org in its own window, with a tray icon and Service Alerts as desktop notifications.",
   "author": "UwU Apps <augybiz@gmail.com>",
   "homepage": "https://sgbus.uwuapps.org",
@@ -31,6 +31,7 @@
       "preload.js",
       "updater.js",
       "widgets.js",
+      "location.js",
       "offline.html",
       "titlebar.html",
       "titlebar.js",

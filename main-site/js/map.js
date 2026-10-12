@@ -339,7 +339,8 @@
       return;
     }
     watchId = navigator.geolocation.watchPosition(onFix, (err) => {
-      if (err.code === 1) note('Location is off for this site, so the map can only show the way, not follow you. Allow location to be followed.');
+      if (err.desktopMessage) note(`${err.desktopMessage} Until then, the map can only show the way, not follow you.`);
+      else if (err.code === 1) note('Location is off for this site, so the map can only show the way, not follow you. Allow location to be followed.');
     }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
     drawTimer = setInterval(drawMe, DRAW_MS);
   }

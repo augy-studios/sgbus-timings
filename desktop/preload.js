@@ -1,7 +1,7 @@
 // What the site's page can ask of the desktop app, as window.sgbusDesktop: to show a
-// notification (main-site/js/alerts.js), to open a page in the app's window, and, in a widget
-// (widgets.js, main-site/widget.html), its own stop and window. main.js and widgets.js check
-// each request comes from the site itself.
+// notification (main-site/js/alerts.js), to open a page in the app's window, on Linux where you
+// are (location.js), and, in a widget (widgets.js, main-site/widget.html), its own stop and
+// window. main.js and widgets.js check each request comes from the site itself.
 const { contextBridge, ipcRenderer } = require('electron');
 
 const arg = (name) => (process.argv.find((a) => a.startsWith(`--${name}=`)) || '').split('=')[1] || null;
@@ -15,6 +15,10 @@ contextBridge.exposeInMainWorld('sgbusDesktop', {
   notify: (n) => ipcRenderer.send('notify', n),
   // A #address on the site, in the app's own window.
   open: (hash) => ipcRenderer.send('open-hash', hash),
+  // Linux only, where Chromium can't find your location: { lat, lng, accuracy, at } or
+  // { error: { code, message } } (location.js). The page's navigator.geolocation goes through
+  // it there (main-site/js/desktop-location.js).
+  ...(process.platform === 'linux' && { locate: (opts) => ipcRenderer.invoke('locate', opts) }),
   // Only in a widget's window: its stop, as { code, name, buses, onTop }.
   ...(widgetId && {
     widget: {

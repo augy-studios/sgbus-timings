@@ -33,9 +33,10 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
 ### The Edge Tray
-- Favourites, Stops near me, Plan a route, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
+- Favourites, Stops near me, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
 - Its arrow tab tucks it away at the edge of the screen and remembers that; Settings puts it on the left or the right
-- Navigate, Plan a route and Service alerts open as windows over the page (`.panelModal`, `showPanel` in `js/ui.js`); a tap outside closes them, and opening a stop's timings or starting a trip from one closes it
+- Navigate (both its tabs) and Service alerts open as windows over the page (`.panelModal`, `showPanel` in `js/ui.js`); a tap outside closes them, and opening a stop's timings or starting a trip from one closes it
+- On a touch screen, pressing and holding any button with a `title` (or `aria-label`) shows it in a label beside it, as a mouse's hover does, and the tap that ends the hold is swallowed (`js/ui.js`). A note says so the first time the site's opened on a touch screen
 
 ### Incoming Buses Bar
 - Visual summary of the next arriving bus across all services at the current stop
@@ -48,7 +49,8 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Route from here** lists only the stops still ahead of the one you're at
 - Tap any stop to open its timings for that bus
 
-### Route Planner
+### Route Planner (Navigate's Bus only tab)
+- Navigate has two tabs, **Bus and train** (`#navSection`, `js/nav.js`) and **Bus only** (`#plannerSection`, `js/planner.js`), each its own panel. Switching carries the ends across (a place to the stop at it, or the nearest within 150 m; a stop to its place) and the time picked; the Edge Tray's Navigate opens the tab used last (`sgbus_nav_mode`)
 - Pick a start and end stop (typed, or near your location) to see every bus that runs from one to the other without a change, heading the right way
 - With one end set, the stops offered for the other (typed suggestions, stops near you, or near a postal code) list those with a bus straight there first, tinted and naming the buses
 - When no single bus does, the quickest five journeys with up to three changes and short walks
@@ -67,7 +69,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops, Google Maps links or your location, at either end
 - A Google Maps link, full or short (`maps.app.goo.gl`), is read by `/api/places` (`api/_lib/gmaps.js`) for the place it points at: its pin where the link has one, otherwise its address looked up on OneMap. Things shared into the installed app (the manifest's `share_target`, `/?text=...&url=...`) go into **To**
 - Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
-- Open one part by part, with live timings for every bus ride; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. Plan a route has the same **Share**
+- Open one part by part, with live timings for every bus ride; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. The Bus only tab has the same **Share**
 - The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
 
 ### Get Off Alert
@@ -77,7 +79,8 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Each bus ride is followed along its road, not the straight lines between its stops: `GET /api/road?points=...` (the ride's stops) routes through them on OSRM's car router (cached a month at the edge), and a fix within 100 m of that road places you on it. Without it, the straight lines, with room for the road to bend away from them on a long stretch
 - Tap the trip bar for the timeline: the stops ahead, with a blue dot where you are, redrawn 20 times a second so it glides between stops. Tapping a bus stop on it closes it and scrolls down to that stop's timings for the bus (a bus ride's `codes`, from `/api/nav` or the route)
 - **Back** and **Next** on the trip bar move the trip a part (a ride or a walk) by hand. Back restores where you'd got to on the part before (or its start, if you'd finished it) and re-arms its alerts; the app sends `movedAt` with the trip, and the server's merge (`api/push/trips/[id].js`) lets a hand move stand over its own place
-- Boarding is noticed without the road too: a fix off the bus's road falls back on the straight lines between its stops, and one within 250 m of a stop 300 m or more down the route counts as on board. A fix 300 m down the next ride (further from the walk's end than you've been, or off the ride you were on) moves the trip on to it, on board
+- Boarding is noticed without the road too: a fix off the bus's road falls back on the straight lines between its stops, and one within 250 m of a stop 150 m or more down the route counts as on board, once you're 150 m from the first stop (less a rough fix's error). A fix 150 m down the next ride (100 m further from the walk's end than you've been, 300 m without the accelerometer, or off the ride you were on) moves the trip on to it, on board
+- Walking is told from riding by the accelerometer (`Motion` in `js/trip.js`, `devicemotion`): steps are peaks in the acceleration above gravity, and walking is 7 in 5 s at an even rhythm, which a bus's bumps aren't. Walking never counts as boarding; your first steps within 250 m of a ride's last stop end the ride; and on a walk with no good fix, steps (0.7 m each, against 1.3 times the straight line) move you along instead of the clock. iOS asks for it as the trip starts
 - **Get ready to board**: while you wait at the stop for a bus ride's bus (not yet seen on board), its live timing there is checked, and at about a minute away a notification, two buzzes and the bar say so, once per ride. The server sends it too while the app's in the background (`api/_push/trip.js`, `boardStep`), and each side tells the other it's been said (`readied`)
 - On by default; Settings turns it off
 
@@ -87,7 +90,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Trip Mix** (walking, waiting, riding) and **Trip Modes** (rides by bus operator, MRT and LRT); a trip can be planned again, shared as a directions link, or deleted
 
 ### Places
-- **Places** (the bookmark in the Edge Tray) keeps Home, Work and any other place, named as you like (`js/places.js`); each is a button under Navigate's and Plan a route's ends
+- **Places** (the bookmark in the Edge Tray) keeps Home, Work and any other place, named as you like (`js/places.js`); each is a button under Navigate's ends, on both its tabs
 - Tap one for the way there; its menu edits, shares (a `/go` link) or deletes it
 
 ### Past searches and calendar
@@ -109,6 +112,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ### In the desktop app
 - The site is also a Windows and Linux app (`../desktop/`), in Electron. `window.sgbusDesktop` (its `preload.js`) lets the page show desktop notifications: `js/alerts.js` checks `/api/service-alerts` every minute there instead of Web Push, by the same rules as the server
+- On Linux, where Chromium can't find its location, `sgbusDesktop.locate` (2.0.7 and later, `desktop/location.js`: a NetworkManager Wi-Fi scan looked up on BeaconDB) stands in for `navigator.geolocation` (`js/desktop-location.js`), and its errors' own explanation is shown (`locationMessage` in `script.js`)
 
 ### In Telegram
 - The site is also the Telegram bot's Mini App, opened from the bot's menu button, `/start`'s Open web app, or a `t.me/<bot>?startapp=` link (`../telegram-bot/src/mini_app.py`)
@@ -126,12 +130,13 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 
 ### Personalisation
 - Open settings from the gear or the app title to set your name and birthday, and to reach Places and Calendar
-- The greeting changes based on time of day, and wishes you a happy birthday on the day
+- The greeting changes based on time of day, and on your birthday wishes you a happy one with your age from the birthday's year, on two lines so a long name isn't cut off: "Happy 25th Birthday," then "Sam!"
+- Confetti (`js/confetti.js`, a canvas over the page) each time the app's opened on your birthday, and again on coming back after 10 minutes away; Settings turns it off (`sgbus_confetti`), and there's none with reduced motion
 - Settings are stored in local storage
 
 ### URL-based Navigation
 - Stops and services are reflected in the URL hash (e.g. `#84009` or `#84009,174`)
-- `#bus/22` opens a bus's route and `#route/84009/75009` opens the route planner
+- `#bus/22` opens a bus's route and `#route/84009/75009` opens Navigate's Bus only tab (the route planner)
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - `#alerts` opens the Service alerts card
 - `#nav/1.30050,103.85580~Bedok%20Mall/1.33320,103.92920~Name` opens Navigate between two points; an end can be `here` (the opener's location) or `-` (not set), and the name after `~` is optional. `#route/-/75009` likewise leaves a route's start empty, and `#route` opens the planner empty
@@ -151,8 +156,8 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 2. **View arrivals** - a card appears showing each bus service and the next 3 arrival times.
 3. **Filter by service** - append a bus service number to your search (e.g. `84009 174`) to show only that service.
 4. **See the full route** - tap **Route** next to any service, or search its number, to open a modal with the complete stop list.
-5. **Save a favourite** - tap **Save** on a stop card, **Save bus** on a route, or **Save route** in the planner.
-6. **Plan a route** - tap **Plan a route**, then pick a start and end stop.
+5. **Save a favourite** - tap **Save** on a stop card, **Save bus** on a route, or **Save route** on Navigate's Bus only tab.
+6. **Navigate** - tap **Navigate** (the arrowhead), then pick **Bus and train** for any two places or **Bus only** for two stops.
 7. **Switch themes** - tap the theme button at the bottom of the Edge Tray to pick a colour scheme.
 8. **Install as an app** - use your browser's "Add to Home Screen" or "Install" prompt to use the app offline, or on Android, install the APK from the [releases](https://github.com/augy-studios/sgbus-timings/releases).
 

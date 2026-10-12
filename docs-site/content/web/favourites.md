@@ -11,7 +11,7 @@ favourites, or tap the cross on its right to remove it.
 ## Save a favourite
 
 <figure>
-<img src="/screenshots/web/favourites-save.png" alt="The Favourites window with four groups: bus stops Bedok Int and Tampines Int, buses 60 and 14, the route Bedok Int to Serangoon Int, and the nav Bedok Mall to Changi Airport, each a chip with a cross to remove it." width="440" height="372" loading="lazy">
+<img src="/screenshots/web/favourites-save.png" alt="The Favourites window with four groups: bus stops Bedok Int and Tampines Int, buses 60 and 14, the bus-only route Bedok Int to Serangoon Int, and the nav Bedok Mall to Changi Airport, each a chip with a cross to remove it." width="416" height="405" loading="lazy">
 <figcaption>Each favourite is a chip. Tap it to open it, or its cross to remove it.</figcaption>
 </figure>
 
@@ -19,7 +19,7 @@ favourites, or tap the cross on its right to remove it.
 |---|---|---|
 | A bus stop | Tap **Save** on the stop's timings | That stop's timings |
 | A bus | Tap **Save bus** on the bus's [route](bus-routes.md) | That bus's route |
-| A route | Tap **Save route** in the [route planner](route-planner.md) | The planner, with both ends set |
+| A bus-only route | Tap **Save route** on Navigate's [Bus only](route-planner.md) tab | Bus only, with both ends set |
 | A nav | Tap **Save nav** in [Navigate](nav.md) | Navigate, with both ends set |
 
 A saved button reads **Saved**. Tap it again to remove the favourite.

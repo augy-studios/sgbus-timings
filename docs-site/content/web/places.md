@@ -8,7 +8,7 @@ of your own if you like: "Gym", "Mum's". Open it with the bookmark in the Edge
 Tray.
 
 <figure>
-<img src="/screenshots/web/places-list.png" alt="Places: Home at Bedok Mall with its menu open showing Edit Home, Share Home and Clear; Work at One Raffles Place; Gym at Our Tampines Hub; Mum's at Blk 101 Simei Street 1; and a Save a new place button." width="416" height="535" loading="lazy">
+<img src="/screenshots/web/places-list.png" alt="Places: Home at Bedok Mall with its menu open showing Edit Home, Share Home and Clear; Work at One Raffles Place; Gym at Our Tampines Hub; Mum's at Blk 101 Simei Street 1; and a Save a new place button." width="392" height="543" loading="lazy">
 <figcaption>Your places. The menu beside each edits, shares or deletes it.</figcaption>
 </figure>
 
@@ -17,8 +17,8 @@ Tray.
 Tap a place for the way there from where you are: [Navigate](nav.md) opens with
 it in **To**, and finds where you are for **From**.
 
-Every place is also a button under each end of Navigate and
-[Plan a route](route-planner.md), after Home and Work. The row scrolls sideways
+Every place is also a button under each end of Navigate, on its Bus and train
+and [Bus only](route-planner.md) tabs, after Home and Work. The row scrolls sideways
 once there are more than fit.
 
 <figure>

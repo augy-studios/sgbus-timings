@@ -31,10 +31,20 @@ function initNav() {
     runNav();
   });
 
+  // The Edge Tray's Navigate opens it on the tab last picked, Bus and train or Bus only (the
+  // route planner, js/planner.js), and closes whichever is open.
   $('#navBtn').addEventListener('click', () => {
-    if ($('#navSection').hidden) openNav();
-    else closeNav();
+    if (!$('#navSection').hidden) closeNav();
+    else if (!$('#plannerSection').hidden) closePlanner();
+    else if (lastNavMode() === 'bus') openPlanner();
+    else openNav();
   });
+  for (const id of ['#navSection', '#plannerSection']) {
+    $(id).querySelector('.navModes').addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-nav-mode]');
+      if (tab) switchNavMode(tab.dataset.navMode);
+    });
+  }
   $('#navClose').addEventListener('click', closeNav);
   wirePanel('navSection', closeNav);
   $('#navSwap').addEventListener('click', () => {
@@ -246,9 +256,7 @@ function locateNavEnd(field) {
       if (!navigator.geolocation) return reject(new Error("This browser can't share its location."));
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve(setNavEnd(field, { label: HERE_LABEL, lat: pos.coords.latitude, lng: pos.coords.longitude })),
-        (err) => reject(new Error(err.code === 1
-          ? 'Location access is turned off for this site. Allow it in your browser to start from where you are.'
-          : "Couldn't get your location. Please try again.")),
+        (err) => reject(new Error(locationMessage(err, 'to start from where you are'))),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
       );
     })
@@ -287,6 +295,54 @@ function showEnds() {
 }
 
 // ---- Opening and closing ----
+
+// Navigate's two tabs: Bus and train (this file) and Bus only, the route planner
+// (js/planner.js), each its own panel. Switching carries the ends across where it can: a place
+// to the bus stop at it, or the nearest within NEAR_STOP_M, and a stop to its place; and the
+// time picked. The tab picked is the one the Edge Tray's Navigate opens next time.
+const NAV_MODE_KEY = 'sgbus_nav_mode';
+const NEAR_STOP_M = 150;
+
+function lastNavMode() {
+  try {
+    return localStorage.getItem(NAV_MODE_KEY) === 'bus' ? 'bus' : 'all';
+  } catch {
+    return 'all';
+  }
+}
+
+function stopNear(place) {
+  if (!place || !stopsIndex) return null;
+  let best = null;
+  let bestM = NEAR_STOP_M;
+  for (const [code, s] of Object.entries(stopsIndex)) {
+    const m = haversine(place.lat, place.lng, s.lat, s.lng);
+    if (m != null && m < bestM) [best, bestM] = [code, m];
+  }
+  return best;
+}
+
+function placeOfStop(code) {
+  const s = code && stopsIndex?.[code];
+  return s ? { label: nameOf(code) || code, lat: s.lat, lng: s.lng } : null;
+}
+
+function switchNavMode(mode) {
+  try {
+    localStorage.setItem(NAV_MODE_KEY, mode);
+  } catch { /* opens on Bus and train next time */ }
+  if (mode === 'bus' && $('#plannerSection').hidden) {
+    const { from, to, when } = nav;
+    closeNav();
+    openPlanner(stopNear(from), stopNear(to), { when });
+  } else if (mode === 'all' && $('#navSection').hidden) {
+    const { start, end, when } = planner;
+    closePlanner();
+    nav.from = placeOfStop(start);
+    nav.to = placeOfStop(end);
+    openNav(nav.from, nav.to, { when });
+  }
+}
 
 // Opens over the page (a .panelModal, js/ui.js), at Leave now unless it's given a time: one
 // picked before isn't kept.

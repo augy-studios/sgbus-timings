@@ -22,7 +22,7 @@ Every search box shares one list, and each shows what it can use:
 |---|---|
 | The main search, for stops and buses | Stops, buses and postal codes |
 | [Navigate](nav.md)'s **From** and **To** | Places, stations and stops |
-| [Plan a route](route-planner.md)'s **Start** and **End** | Stops and postal codes |
+| Navigate's [Bus only](route-planner.md) **Start** and **End** | Stops and postal codes |
 | [Places](places.md)' **Where** | Places, stations and stops |
 
 So a stop you searched for in the main box is there in Navigate's **To** next

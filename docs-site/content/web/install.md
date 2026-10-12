@@ -18,20 +18,34 @@ stays in that browser.
   one. Tap the title for [Settings](settings.md).
 - **The Edge Tray** is the column of buttons at the top right of
   the screen. From the top: [**Favourites**](favourites.md) (the star),
-  **Stops near me**, **Plan a route**,
-  [**Navigate**](nav.md), [**Service alerts**](service-alerts.md),
+  **Stops near me**,
+  [**Navigate**](nav.md) (the arrowhead, with its **Bus only** tab for the
+  [route planner](route-planner.md)), [**Service alerts**](service-alerts.md),
   [**Your trips**](trips.md) (the bar chart) and [**Places**](places.md) (the
   bookmark), then, in the [Android app](android-app.md#card-value) on a phone with
   NFC, **Card value** (the card), on a phone or tablet, [SimplyGo](#simplygo) (its own icon), the
   Telegram bot, a page to buy Augy a coffee, this guide (the question mark),
   [Settings](settings.md) (the gear) and the [theme picker](settings.md#themes).
-  Hover over a button for its name. The arrow beside the Edge Tray tucks it away at
+  Hover over a button for its name, or, on a phone or tablet, press and hold it.
+  The arrow beside the Edge Tray tucks it away at
   the edge of the screen, and brings it back. To have it on the left, see
   [Settings](settings.md).
 - **The search box** finds a stop, a bus or an address. See
   [Find a bus stop](search.md). The [weather](weather.md) is under it, on the
   right.
 - **The timings card** opens below once you pick a stop.
+
+### What a button does
+
+<figure>
+<img src="/screenshots/web/tray-hold.png" alt="A finger held on the Edge Tray's arrowhead: a dark label beside it reads Navigate: by bus and train, or bus only." width="337" height="172" loading="lazy">
+<figcaption>Press and hold a button for its name.</figcaption>
+</figure>
+
+On a phone or tablet, press and hold any button, in the Edge Tray or elsewhere, to
+see what it does, as hovering does with a mouse. Letting go doesn't press it. The
+first time you open the app on a touch screen, a note beside the Edge Tray says
+so.
 
 ### SimplyGo
 

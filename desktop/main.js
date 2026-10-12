@@ -12,7 +12,8 @@
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
 // - checking for its own updates (updater.js), and from the tray's "Check for updates...";
-// - Bus timings widgets on the desktop (widgets.js).
+// - Bus timings widgets on the desktop (widgets.js);
+// - on Linux, your location, which Chromium can't find there by itself (location.js).
 //
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
 // site's own origin. Nothing here holds a key or a secret.
@@ -25,6 +26,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const updater = require('./updater');
 const widgets = require('./widgets');
+const location = require('./location');
 
 const SITE = 'https://sgbus.uwuapps.org';
 const ORIGIN = new URL(SITE).origin;
@@ -525,6 +527,18 @@ ipcMain.handle('bar-screenshot', async (e, long) => {
 ipcMain.on('open-hash', (e, hash) => {
   if (!isSite(e.senderFrame?.url || '') || typeof hash !== 'string' || !/^#[\w/.,~-]*$/.test(hash)) return;
   showWindow(hash);
+});
+
+// Linux only: where you are, for the page's navigator.geolocation (location.js). Answers
+// { lat, lng, accuracy, at }, or { error: { code, message } }, as an error can't cross intact.
+ipcMain.handle('locate', async (e, opts) => {
+  if (process.platform !== 'linux' || !isSite(e.senderFrame?.url || '')) return { error: { code: 1, message: 'Not allowed.' } };
+  const maxAge = Math.max(0, Math.min(10 * 60 * 1000, Number(opts?.maxAge) || 0));
+  try {
+    return await location.locate({ maxAge, userAgent: `SGBusTimingsDesktop/${app.getVersion()} (+https://sgbus.uwuapps.org)` });
+  } catch (err) {
+    return { error: { code: err.code === 1 ? 1 : 2, message: String(err.message || "Couldn't get your location.") } };
+  }
 });
 
 ipcMain.on('notify', (e, n) => {

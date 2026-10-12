@@ -34,7 +34,7 @@ they open it.
 > A link to your stop, added to your phone's home screen, opens straight onto
 > its timings. It is a handy shortcut for the stop outside your home or office.
 
-Navigate and Plan a route have a **Share** button of their own, which works
+Navigate, on both its tabs, has a **Share** button of its own, which works
 part filled in too. See [Navigate](nav.md#share-it) and the
 [route planner](route-planner.md#share-the-route).
 

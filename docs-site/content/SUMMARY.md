@@ -31,8 +31,8 @@ than about three taps to reach goes under Advanced.
 ## Web app: advanced
 
 * [More from a stop](web/more-from-a-stop.md)
-* [Plan a route](web/route-planner.md)
 * [Navigate by bus and train](web/nav.md)
+* [Navigate by bus only](web/route-planner.md)
 * [Live map](web/live-map.md)
 * [Places](web/places.md)
 * [Past searches](web/past-searches.md)
