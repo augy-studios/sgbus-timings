@@ -22,7 +22,7 @@ function legText(d) {
   const now = leg.kind === 'walk'
     ? `Walking to ${leg.to}`
     : `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}`;
-  return d.legCount > 1 ? `${now} (leg ${d.legIndex + 1} of ${d.legCount})` : now;
+  return d.legCount > 1 ? `${now} (part ${d.legIndex + 1} of ${d.legCount})` : now;
 }
 
 // Each kind's details: the cover's caption, the rows, a line about the app, and its link.

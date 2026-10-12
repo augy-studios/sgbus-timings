@@ -1,6 +1,6 @@
 ---
 title: Plan a route
-description: Find every bus between two stops, or the quickest journeys with a change or a short walk, with live timings for each leg.
+description: Find every bus between two stops, or the quickest journeys with a change or a short walk, with live timings for each part.
 ---
 
 The route planner answers "which bus gets me from here to there?" Give it a
@@ -126,11 +126,11 @@ it, unless getting off at the station's stop and walking is clearly quicker.
 ## Open a journey
 
 <figure>
-<img src="/screenshots/web/route-planner-journey.png" alt="A journey leg by leg: bus 60 for 2 stops to Blk 45, then bus 45 for 16 stops, each with live timings and a button for its stop, a short walk at the end, and a rough arrival time." width="906" height="767" loading="lazy">
-<figcaption>A journey leg by leg, with live timings for each bus and a rough arrival time.</figcaption>
+<img src="/screenshots/web/route-planner-journey.png" alt="A journey part by part: bus 60 for 2 stops to Blk 45, then bus 45 for 16 stops, each with live timings and a button for its stop, a short walk at the end, and a rough arrival time." width="906" height="767" loading="lazy">
+<figcaption>A journey part by part, with live timings for each bus and a rough arrival time.</figcaption>
 </figure>
 
-Tap a journey to see it leg by leg:
+Tap a journey to see it part by part:
 
 - each bus, how many stops you ride it, and roughly how long;
 - any walk, with its distance;
@@ -146,7 +146,7 @@ reach about half an hour ahead, so for a journey setting off later than that, ea
 bus says roughly when you'd board it instead, after an average wait, and its live
 timings show up from half an hour before you set off.
 
-Each leg has a button to open that stop's timings for the bus. Use
+Each bus has a button to open that stop's timings for the bus. Use
 **Refresh** to update the live timings, and **Back to route** to return to the
 list of journeys. **Start trip** follows you along the journey and buzzes two
 stops before each change and the end: see [Get Off Alert](get-off-alert.md).

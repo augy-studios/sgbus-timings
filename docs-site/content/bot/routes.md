@@ -96,7 +96,7 @@ like any other, so a long one is only suggested when it's worth it. If your firs
 goes on into the interchange your next one leaves from, the journey stays on
 it, unless getting off at the station's stop and walking is clearly quicker.
 
-Tap a journey to see it leg by leg, with the live timings of each bus at the
+Tap a journey to see it part by part, with the live timings of each bus at the
 stop you board it. From the second bus on, the bot estimates when you would
 reach that stop, strikes through the buses due before then, and bolds the one
 you would catch. It ends with a rough arrival time for the whole journey.
@@ -105,7 +105,7 @@ With a time picked, it starts with when to set off. For a journey setting off mo
 than half an hour from now, each bus says roughly when you'd board it instead of
 its live timings, which don't reach that far ahead.
 
-Each leg has a button to open that stop's timings for the bus, with
+Each bus has a button to open that stop's timings for the bus, with
 **Back to journey** to return.
 
 > [!NOTE]

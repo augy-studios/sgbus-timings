@@ -53,7 +53,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - With one end set, the stops offered for the other (typed suggestions, stops near you, or near a postal code) list those with a bus straight there first, tinted and naming the buses
 - When no single bus does, the quickest five journeys with up to three changes and short walks
 - Picked the stop on the wrong side of the road? When the buses for your trip go from the stop across the road, the planner says so, with a button to swap it in
-- Open a journey leg by leg with live timings, which bus you'd catch at each change, and a rough arrival time
+- Open a journey part by part with live timings, which bus you'd catch at each change, and a rough arrival time
 - A bus opened from a route or journey says how many stops it has left to go
 
 ### Service Alerts
@@ -67,16 +67,18 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops, Google Maps links or your location, at either end
 - A Google Maps link, full or short (`maps.app.goo.gl`), is read by `/api/places` (`api/_lib/gmaps.js`) for the place it points at: its pin where the link has one, otherwise its address looked up on OneMap. Things shared into the installed app (the manifest's `share_target`, `/?text=...&url=...`) go into **To**
 - Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
-- Open one leg by leg, with live timings for every bus leg; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. Plan a route has the same **Share**
+- Open one part by part, with live timings for every bus ride; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. Plan a route has the same **Share**
 - The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
 
 ### Get Off Alert
 - On a trip (**Start trip** on a nav or a planned journey, or **Get Off Alert** on a bus's route and then the stop you're getting off at), the site follows your live location and alerts you two stops before each change and the end: "OFF" vibrated in Morse code, three beeps and a notification
 - Keeps the screen awake while the trip runs, since a website only gets your location while it's open; underground it goes by the expected ride time
 - In the background, with notifications allowed, the server takes over: `api/push/trip-poll.js` (Vercel Cron, every minute) follows your bus from LTA's live bus positions, or the clock for trains, and pushes the alert. Uses the Service Alerts setup (Redis, VAPID keys, `CRON_SECRET`)
-- Each bus leg is followed along its road, not the straight lines between its stops: `GET /api/road?points=...` (the leg's stops) routes through them on OSRM's car router (cached a month at the edge), and a fix within 100 m of that road places you on it. Without it, the straight lines, with room for the road to bend away from them on a long stretch
-- Tap the trip bar for the timeline: the stops ahead, with a blue dot where you are, redrawn 20 times a second so it glides between stops. Tapping a bus stop on it closes it and scrolls down to that stop's timings for the bus (a bus leg's `codes`, from `/api/nav` or the route)
-- **Get ready to board**: while you wait at the stop for a bus leg's bus (not yet seen on board), its live timing there is checked, and at about a minute away a notification, two buzzes and the bar say so, once per leg. The server sends it too while the app's in the background (`api/_push/trip.js`, `boardStep`), and each side tells the other it's been said (`readied`)
+- Each bus ride is followed along its road, not the straight lines between its stops: `GET /api/road?points=...` (the ride's stops) routes through them on OSRM's car router (cached a month at the edge), and a fix within 100 m of that road places you on it. Without it, the straight lines, with room for the road to bend away from them on a long stretch
+- Tap the trip bar for the timeline: the stops ahead, with a blue dot where you are, redrawn 20 times a second so it glides between stops. Tapping a bus stop on it closes it and scrolls down to that stop's timings for the bus (a bus ride's `codes`, from `/api/nav` or the route)
+- **Back** and **Next** on the trip bar move the trip a part (a ride or a walk) by hand. Back restores where you'd got to on the part before (or its start, if you'd finished it) and re-arms its alerts; the app sends `movedAt` with the trip, and the server's merge (`api/push/trips/[id].js`) lets a hand move stand over its own place
+- Boarding is noticed without the road too: a fix off the bus's road falls back on the straight lines between its stops, and one within 250 m of a stop 300 m or more down the route counts as on board. A fix 300 m down the next ride (further from the walk's end than you've been, or off the ride you were on) moves the trip on to it, on board
+- **Get ready to board**: while you wait at the stop for a bus ride's bus (not yet seen on board), its live timing there is checked, and at about a minute away a notification, two buzzes and the bar say so, once per ride. The server sends it too while the app's in the background (`api/_push/trip.js`, `boardStep`), and each side tells the other it's been said (`readied`)
 - On by default; Settings turns it off
 
 ### Your trips and stats

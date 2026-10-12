@@ -31,10 +31,10 @@ last row, so the way out is always in the same place.
 | A search with several matches, or a list of stops near you | **Back** |
 | A bus number, or a bus in `/favbuses` | **Back to bus stop selection** |
 | A bus picked in a route | **Back to route** |
-| A leg of a journey | **Back to journey** |
+| A part of a journey | **Back to journey** |
 
 ## Stops left to go
 
 Timings opened from a [route or a journey](routes.md) also say how many stops
-the bus has left: to the end of your route, or to where you get off that leg,
+the bus has left: to the end of your route, or to where you get off that part,
 with the stops left in the whole journey.

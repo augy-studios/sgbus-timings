@@ -34,7 +34,7 @@ each, so a stop starred in the app is not starred in the bot.
 
 - You want to see a lot at once: every service at a stop, the incoming buses
   bar, and a route on one screen.
-- You want to compare journeys on a bigger screen, with every leg's timings
+- You want to compare journeys on a bigger screen, with every part's timings
   laid out at once.
 - You would rather not sign in to anything. The app keeps everything in your
   browser.

@@ -9,6 +9,25 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (night): Apps 2.0.6
+
+### Web app
+
+- **Get Off Alert notices you've boarded** - Fixed: on some buses, the trip didn't notice you'd got on, so it stayed at your first stop as the bus moved off. This happened when the bus used a road that the map's route for it missed, like a bus-only road. Now, if your location is off that road, the trip falls back on the line between the stops. Once you're near a stop further down the route, it counts you as on the bus whatever the road says.
+- **On to the bus after a walk** - Fixed: if you waited a little way from where the walk to your stop ends, the trip stayed on the walk after you'd boarded. Once you're on the next bus, a few hundred metres down its route, the trip moves on to it.
+- **Back on the trip bar** - Pressed **Next** by mistake? **Back** takes the trip back to the part before, where you'd got to on it, and its Get Off Alert can go off again. If you'd already finished that part, it starts again from the beginning, and your location puts you where you really are.
+- **Parts, not legs** - The trip bar now says "part 2 of 3" rather than "leg 2 of 3", and its buttons are **Back** and **Next**. Each ride and each walk is a part. A shared live ETA says the same.
+
+### Android app 2.0.6
+
+- Kept in step with the web app's version; the fixes above are in the web app it shows.
+
+### Desktop app 2.0.6
+
+- Kept in step with the Android app's version; the fixes above are in the web app it shows.
+
+---
+
 ## 12 October 2026 (evening): Apps 2.0.5
 
 ### Web app
@@ -244,7 +263,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Stop timings** - Pick a bus, first and last bus times, directions to the stop, and bendy buses marked.
 - **Favourites** - Favourite buses and routes as well as stops, pinned to the top or bottom.
 - **Stops near me** and **postal code search**.
-- **Plan a route** - Every bus between two stops, or journeys with up to three changes, with live leg-by-leg timings. Spots an end on the wrong side of the road and offers the stop across it.
+- **Plan a route** - Every bus between two stops, or journeys with up to three changes, with live part-by-part timings. Spots an end on the wrong side of the road and offers the stop across it.
 - **Settings** - Your name and a birthday greeting.
 - **Sync favourites** between devices on the same network, with a code or QR code.
 

@@ -53,8 +53,12 @@ export default async function handler(req, res) {
 // Except when the app has realigned since (js/trip.js): it found the trip had you somewhere
 // you weren't, moved you back, and re-armed an alert that went off too early. Then its place
 // and its alerts stand, and the bus the server was following is dropped as the wrong one.
+//
+// And when you've moved the trip by hand since (Back or Next): you know which part you're on,
+// so the app's place, alerts and Get ready to board stand outright, back a part or not.
 function merge(old, sent) {
   if (!old || old.tripId !== sent.tripId) return { ...sent, track: null };
+  if (sent.movedAt > (old.movedAt || 0)) return { ...sent, track: null };
   // Get ready to board, once given by either, stays given, realigned or not.
   const readied = sent.readied.map((r, i) => r || Boolean(old.readied?.[i]));
   if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, readied, track: null };

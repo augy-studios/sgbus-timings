@@ -312,18 +312,18 @@ right way, boarding before alighting on one run of its route, or a journey could
 ride out to a terminus and back. Journeys are ranked by time riding and walking,
 plus 6 minutes a change, and only the quickest one per sequence of buses is kept.
 
-Tapping a journey opens it leg by leg with the live timings of each bus at the
+Tapping a journey opens it part by part with the live timings of each bus at the
 stop it's boarded at. From the second bus on, it estimates when you'd reach that
 stop, strikes through the buses due before then and bolds the one you'd catch,
 then gives an arrival time for the whole journey. LTA publishes no journey times,
 so rides are estimated from the straight-line distance between consecutive stops
 at 15 km/h, and walks at 60 m a minute - fine for comparing journeys, rough as a
-clock. A **🚏** button per leg opens that stop's timings narrowed to the bus, with
+clock. A **🚏** button per bus opens that stop's timings narrowed to the bus, with
 **🔙 Back to journey** to return. Pairs no journey links, even with three changes,
 still say so.
 
 Whenever a bus is opened off a route or a journey, its timings view says how
-many stops it has left to go: to the route's end, or to where the leg gets off,
+many stops it has left to go: to the route's end, or to where that part gets off,
 with the stops left in the whole journey.
 
 #### The wrong side of the road
@@ -485,7 +485,7 @@ left out as a detour. Times are estimates (no timetables are published for
 trains), and where OneMap's timetable-based router rides the same way, its time
 is shown too. A line LTA reports a disruption on is marked ⚠️.
 
-Tap a way to see it leg by leg, with the live timings of each bus at the stop
+Tap a way to see it part by part, with the live timings of each bus at the stop
 it's boarded, and a **🚏** button opening that stop's timings for the bus.
 **⭐ Add favourite** stars the nav, and `/mynavs` lists starred navs.
 
@@ -637,10 +637,10 @@ telegram-bot/
     bus_route_view.py      builds a service's paginated stop keyboards: the whole route, or the rest of the run from one stop
     route_view.py          builds the route panel: both ends, and the buses running between them
     journeys.py            finds direct buses, journeys with a walk or up to three changes, and ends picked on the wrong side of the road, over an in-memory copy of every route
-    journey_view.py        builds one journey's leg-by-leg view with live timings, and the stops-left line
+    journey_view.py        builds one journey's part-by-part view with live timings, and the stops-left line
     nav_api.py             calls the site's /api/nav and /api/places for /nav's journeys and places
     navs.py                /nav's draft (the ends being set) and favourite navs (SQLite)
-    nav_view.py            builds the /nav panel, one way leg by leg, and the /mynavs list
+    nav_view.py            builds the /nav panel, one way part by part, and the /mynavs list
     service_alerts.py      Service Alerts subscriptions (SQLite), and what changed in LTA's train alerts and traffic incidents since the last poll
     service_alerts_view.py builds /alerts, the /sub reply and its mode buttons, and the updates sent to subscribers
     mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
