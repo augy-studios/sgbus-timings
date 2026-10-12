@@ -22,9 +22,9 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   screenshot and long screenshot buttons, in the site's colour. The address can't be typed
   in: clicking it copies the link. A screenshot is of the site (not the bar), as it is on
   screen; a long one is the whole page, top to bottom (up to 16384 pixels tall). Either is
-  copied, and saved in your **Downloads** folder. The
-  window's own buttons are the system's, drawn over it (the traffic lights on macOS; minimise,
-  maximise and close on Windows and Linux). Alt+Left and Alt+Right (⌘[ and ⌘] on a Mac) go
+  copied, and saved in your **Downloads** folder. On Windows and Linux the bar has its own
+  minimise, maximise and close at its right (close keeps it in the tray); macOS keeps its
+  traffic lights over the bar's left. Alt+Left and Alt+Right (⌘[ and ⌘] on a Mac) go
   back and forward, F5 or Ctrl+R reloads. The site itself is in a view below the bar
   (`main.js`, `createWindow`), and it hides while the site is full screen.
 - **A tray icon** (in the menu bar on macOS). Closing the window keeps the app running there;

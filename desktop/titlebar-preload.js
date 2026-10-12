@@ -1,6 +1,6 @@
 // What the title bar (titlebar.html) can ask of the app, as window.bar: to go back, forward or
-// reload the site, to copy its address, and to take a screenshot of it, or a long one of the
-// whole page. main.js only answers
+// reload the site, to go to an address typed in it, to copy its address, to take a screenshot of it, or a long one of the
+// whole page, and to minimise, maximise or close the window. main.js only answers
 // the window's own title bar.
 const { contextBridge, ipcRenderer } = require('electron');
 
@@ -9,11 +9,23 @@ contextBridge.exposeInMainWorld('bar', {
   back: () => ipcRenderer.send('bar-back'),
   forward: () => ipcRenderer.send('bar-forward'),
   reload: () => ipcRenderer.send('bar-reload'),
+  minimize: () => ipcRenderer.send('bar-minimize'),
+  // Maximises, or restores it if it's maximised already.
+  maximize: () => ipcRenderer.send('bar-maximize'),
+  close: () => ipcRenderer.send('bar-close'),
+  // 'site' once it's opening here, 'browser' once in your browser, null if it isn't an address.
+  go: (text) => ipcRenderer.invoke('bar-go', String(text)),
+  // The address is being typed in, so keys come here, not to the site; then they go back.
+  edit: () => ipcRenderer.send('bar-edit'),
+  done: () => ipcRenderer.send('bar-done'),
+  // Ctrl+L or F6, from the site: to the address.
+  onEdit: (cb) => ipcRenderer.on('bar-edit', () => cb()),
   // True once the link's on the clipboard.
   copy: () => ipcRenderer.invoke('bar-copy'),
   // True once it's on the clipboard and saved in Downloads. long: the whole page, not just
   // what's on screen.
   screenshot: (long) => ipcRenderer.invoke('bar-screenshot', Boolean(long)),
-  // { url, display, canBack, canForward, loading, fullscreen, color }, each time any changes.
+  // { url, display, canBack, canForward, loading, fullscreen, maximized, color }, each time
+  // any changes.
   onState: (cb) => ipcRenderer.on('bar-state', (_e, s) => cb(s)),
 });
