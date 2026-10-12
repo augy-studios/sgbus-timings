@@ -529,6 +529,8 @@ body.modal-open { overflow: hidden; }
 .glass-btn > [data-icon] { display: inline-flex; }
 .glass-btn.busy { opacity: 0.6; cursor: progress; }
 .telegramBtn { color: #229ED9; }
+/* Already in Telegram, as the bot's Mini App (js/telegram.js). */
+html[data-telegram] .telegramBtn { display: none; }
 /* A button that's another app's own icon (SimplyGo): the icon is the whole button, edge to
    edge, cut to the tray's rounded corners, with no glass, border or padding around it. */
 .glass-btn.appIconBtn {

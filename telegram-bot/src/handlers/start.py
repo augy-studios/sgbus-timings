@@ -2,6 +2,7 @@ from telethon import Button, events
 
 from ..config import config
 from ..format import escape_md
+from ..mini_app import open_button
 from ..reply import send_rich_message
 
 ABOUT = """\
@@ -24,6 +25,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Set up routines to get a bus stop's timings sent to you automatically at a time you choose
 - Subscribe to Service Alerts: train service alerts and traffic alerts, each all updates or disruptions only
 - Use this bot inline in any chat: type @{username} then a bus stop number or name
+- Open the full web app without leaving Telegram: tap Open web app below, in a chat with the bot
 
 ## Commands
 
@@ -66,7 +68,7 @@ def register_start(client):
             "fallback": ABOUT.format(username=username).replace("#", "").replace("*", ""),
         }
         buttons = [
-            [Button.url("🌐 Open web app", config.webapp_url)],
+            [open_button("🌐 Open web app", private=event.is_private)],
             [Button.url("📖 How to use this bot", config.guide_url)],
             [Button.url("💖 Donate", config.donate_url)],
         ]

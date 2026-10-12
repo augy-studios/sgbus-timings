@@ -39,6 +39,14 @@ them up to date, and **Add favourite** to save the stop. Read on in
 > [Command reference](commands.md). Tapping a command in a bot's message sends
 > it, so you rarely need to type one.
 
+## The web app inside Telegram
+
+The **Open app** button beside the message box opens the full
+[web app](../web/install.md) right inside Telegram, with nothing to install.
+**Open web app** on `/start` does the same. Everything works as it does in a
+browser: Telegram's **Back** closes the live map, and links out of the app open
+in your browser.
+
 ## Rich messages
 
 Timings come as proper headings and tables. That needs a recent version of

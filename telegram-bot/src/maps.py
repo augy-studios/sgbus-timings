@@ -4,6 +4,7 @@ from telethon import Button
 
 from .buttons import make_button
 from .config import config
+from .mini_app import mini_app_link
 
 # The choices a tapped Directions button offers, in the order they appear on the row: the
 # web app's own live map first, walking there turn by turn, then Citymapper.
@@ -16,7 +17,8 @@ MAP_APPS = [
 def directions_url(stop, app: str) -> "str | None":
     """A link to directions to `stop`: the web app's live map (main-site/js/map.js, opened by
     its #map/<code> address), which opens in SG Bus Timings' Android app where that's installed
-    and in the browser otherwise; or Citymapper, the app itself where it's installed, its
+    and in the browser otherwise, or as the bot's Mini App inside Telegram with MINI_APP_LINKS
+    on; or Citymapper, the app itself where it's installed, its
     website otherwise. None for a stop with no coordinates cached."""
     lat, lng = stop["lat"], stop["lng"]
     if lat is None or lng is None:
@@ -28,7 +30,7 @@ def directions_url(stop, app: str) -> "str | None":
             query += f"&endaddress={quote(stop['road'])}"
         return f"https://citymapper.com/directions?{query}"
 
-    return f"{config.webapp_url.rstrip('/')}/#map/{stop['code']}"
+    return mini_app_link(f"map-{stop['code']}") or f"{config.webapp_url.rstrip('/')}/#map/{stop['code']}"
 
 
 def navigate_buttons(stop, origin: dict, opened: bool) -> list:

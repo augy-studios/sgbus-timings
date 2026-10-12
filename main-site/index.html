@@ -42,6 +42,42 @@
             if (localStorage.getItem("sgbus_tray_closed") === "1") document.documentElement.setAttribute("data-tray-closed", "");
         } catch (e) { /* the tray opens on the right */ }
     </script>
+    <!-- Opened as the Telegram bot's Mini App (js/telegram.js): Telegram adds its launch data to
+         the address's hash, "#tgWebAppData=..." or "#84009?tgWebAppData=..." after a page of
+         ours. It's put where Telegram's own script reads it again on a reload (sessionStorage,
+         as that script keeps it) and taken off the address, before analytics sees the address
+         or script.js's router reads it. A t.me/<bot>?startapp= link's page comes as
+         tgWebAppStartParam, which can only hold letters, digits, "_" and "-": "-" stands for
+         "/" and "_" for ",", so "map-84009" opens #map/84009 (mini_app_link in the bot). -->
+    <script>
+        (function () {
+            var STORE = "__telegram__initParams";
+            var hash = location.hash.replace(/^#/, "");
+            var q = hash.indexOf("?");
+            var query = q >= 0 ? hash.slice(q + 1) : hash.indexOf("=") >= 0 ? hash : "";
+            var params = {};
+            query.split("&").forEach(function (pair) {
+                var kv = pair.split("=");
+                if (!kv[0]) return;
+                try {
+                    params[decodeURIComponent(kv[0])] = kv[1] == null ? null : decodeURIComponent(kv[1].replace(/\+/g, "%20"));
+                } catch (e) { /* not ours to read */ }
+            });
+            var stored = null;
+            try { stored = JSON.parse(sessionStorage.getItem(STORE)); } catch (e) { /* none */ }
+            if (!params.tgWebAppVersion) {
+                if (stored && stored.tgWebAppVersion) document.documentElement.setAttribute("data-telegram", "");
+                return;
+            }
+            document.documentElement.setAttribute("data-telegram", "");
+            var path = q >= 0 ? hash.slice(0, q) : query ? "" : hash;
+            var start = params.tgWebAppStartParam;
+            if (!path && start && /^[A-Za-z0-9_-]{1,512}$/.test(start)) path = start.replace(/-/g, "/").replace(/_/g, ",");
+            params._path = path;
+            try { sessionStorage.setItem(STORE, JSON.stringify(params)); } catch (e) { /* the SDK reads nothing; Telegram still works, minus its colours */ }
+            history.replaceState(null, "", location.pathname + location.search + (path ? "#" + path : ""));
+        })();
+    </script>
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-FMCYFTFPEL"></script>
@@ -731,6 +767,7 @@
     <script src="/js/icons.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/theme.js"></script>
+    <script src="/js/telegram.js"></script>
     <script src="/js/when.js"></script>
     <script src="/js/network.js"></script>
     <script src="/js/journeys.js"></script>

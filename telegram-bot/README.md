@@ -42,7 +42,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 
 | Command | What it does |
 |---|---|
-| `/start` | Shows what the bot does, all commands, and buttons for the web app and donations |
+| `/start` | Shows what the bot does, all commands, and buttons for the web app and donations. In a chat with the bot, **Open web app** opens it inside Telegram as a Mini App |
 | `/nearme` | Asks for your location, then lists the nearest bus stops as buttons - sending a location does the same thing without the command |
 | `/favstops` | Lists your favourite bus stops as buttons |
 | `/unfavstop` | Lists your favourite bus stops as paginated buttons to remove |
@@ -219,7 +219,8 @@ Every timings message has these buttons:
   directions to the stop; a refresh folds it back into the single button.
   **Live map** opens the web app's live map at `#map/<stop code>`, walking there
   turn by turn from where you are, in SG Bus Timings' Android app where it's
-  installed and the browser otherwise.
+  installed and the browser otherwise. With `MINI_APP_LINKS` on, it opens inside
+  Telegram as the bot's Mini App instead (see [Mini App](#mini-app)).
 
 These buttons keep working even after the bot restarts, since the button
 actions are stored in SQLite rather than only in memory.
@@ -533,6 +534,27 @@ is treated as a search, same as typing directly into the bot's chat. Picking
 a result posts a live timings message with just the refresh and navigate
 buttons - no favourite toggle, since the message can be posted into any chat.
 
+### Mini App
+
+The web app opens inside Telegram as the bot's Mini App, with nothing of its own
+to install:
+
+- **The menu button** beside the message box, **Open app**, opens it for everyone
+  who chats with the bot. The bot sets it on every start (`MINI_APP_MENU_TEXT`),
+  so the label or a switch back to Telegram's command list is a change to `.env`.
+- **Open web app** on `/start` opens it too, in a chat with the bot. In a group,
+  where Telegram allows no Mini App button on a message, it's a plain link.
+- **Live map** on a stop's Directions opens it at `#map/<stop code>` through a
+  `t.me/<bot>?startapp=map-<stop code>` link, which works in any chat and in inline
+  messages, once `MINI_APP_LINKS` is on and the bot's Main Mini App is set up in
+  BotFather ([SETUP.md](SETUP.md#mini-app)).
+
+The site notices it's inside Telegram by itself (`main-site/js/telegram.js`), so
+it's the same address as in a browser: Telegram's bar takes the theme's colour,
+Telegram's **Back** closes the live map, links out open in the browser, and a
+`startapp` link's page opens, with `-` for `/` and `_` for `,` (`map-84009` is
+`#map/84009`, `84009_174` is `#84009,174`, `bus-22` is `#bus/22`).
+
 ## Data source
 
 All bus stop and arrival data comes from LTA DataMall's `BusStops`,
@@ -608,6 +630,7 @@ telegram-bot/
     scheduler.py           SQLite-backed periodic job runner (asyncio)
     format.py              rich-message Markdown formatting (headings + tables)
     reply.py               rich-message send/edit helpers with plain-text fallback
+    mini_app.py            the web app as a Mini App: the menu button, Open web app, startapp links
     stop_view.py           builds a stop's timings message + keyboard
     list_view.py           builds a list-of-stops keyboard (with favourite pinning), and the context a stop view goes back by
     stop_buses_view.py     builds the grid of every bus number serving a stop
