@@ -49,8 +49,10 @@ public class TripService extends Service {
     static final String EXTRA_TEXT = "text";
 
     private static final int NOTIFICATION_ID = 7001;
-    private static final long FIX_MS = 5000;
-    private static final long FASTEST_MS = 2000;
+    // Twenty fixes a second, as fast as the GPS will give them, so the trip follows the bus
+    // closely along its road (js/trip.js); most phones' GPS gives one to ten a second at most.
+    private static final long FIX_MS = 50;
+    private static final long FASTEST_MS = 50;
     // No trip runs this long; the wake lock goes after it even if the page never says it's over.
     private static final long MAX_MS = 4L * 60 * 60 * 1000;
 

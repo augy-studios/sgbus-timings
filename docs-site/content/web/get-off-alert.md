@@ -84,6 +84,12 @@ stop you get on at until your location shows you moving along the bus's route,
 so waiting, even a long while inside an interchange, never counts as riding.
 Only then does it count the stops down.
 
+It follows the road the bus actually takes, not a straight line from stop to
+stop, so a long stretch with no stops, like an expressway, still moves the dot
+along and counts the stops you pass. You count as on the bus once you're within
+100 m of its road and moving along it away from your stop, or once you reach a
+later stop on its route.
+
 If the trip ever has you somewhere you aren't, say a few stops ahead while
 you're still at the interchange, it notices from your location and moves back
 to where you are. An alert that went off too early goes off again at the right
