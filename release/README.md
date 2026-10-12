@@ -6,11 +6,11 @@ number:
 ```text
 release/2.0.0/
   sg-bus-timings-2.0.0.apk                 Android     android\build-apk.ps1
-  sg-bus-timings-2.0.0-setup.exe           Windows     desktop: npm run build:win
-  sg-bus-timings-2.0.0.msi                 Windows     desktop: npm run build:win
-  sg-bus-timings-2.0.0-amd64.deb           Linux       desktop/build-linux.sh, on the VPS
-  sg-bus-timings-2.0.0-x86_64.AppImage     Linux       desktop/build-linux.sh, on the VPS
-  sg-bus-timings-2.0.0-mac-arm64.dmg       macOS       GitHub Actions: Build macOS app
+  sg-bus-timings-2.0.0-setup.exe           Windows     GitHub Actions: Build desktop apps
+  sg-bus-timings-2.0.0.msi                 Windows     the same (or desktop: npm run build:win)
+  sg-bus-timings-2.0.0-amd64.deb           Linux       the same (or desktop/build-linux.sh)
+  sg-bus-timings-2.0.0-x86_64.AppImage     Linux       the same (or desktop/build-linux.sh)
+  sg-bus-timings-2.0.0-mac-arm64.dmg       macOS       GitHub Actions: Build desktop apps
   sg-bus-timings-2.0.0-mac-x64.dmg         macOS       the same, for Intel Macs
   *-mac-*.zip, latest-mac.yml              macOS       what the Mac app reads to update itself
   latest.yml, *-setup.exe.blockmap         Windows     what the desktop app reads to update itself
@@ -29,18 +29,18 @@ Share them through a **GitHub Release**, where anyone can download them from
 
 ## Build them
 
-In PowerShell, from the project root:
+The APK, in PowerShell, from the project root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
-cd desktop; npm ci; npm run build:win; cd ..
-Copy-Item desktop\dist\sg-bus-timings-*-setup.exe, desktop\dist\sg-bus-timings-*.msi release\2.0.0\
 ```
 
-Then the Linux ones on the VPS, and bring them back: `desktop/LINUX-BUILD.md`.
-
-The Mac ones build on GitHub: publishing the release adds them to it by itself, a few minutes
-later (`desktop/README.md`, "macOS"). They aren't kept in `release\<version>\`.
+The desktop ones (Windows, Linux and macOS) build on GitHub (`desktop/README.md`, "Build
+it"): run **Build desktop apps** with the new tag, such as `android-v2.0.3`, and they land on
+a draft release of that tag, ready for the APK. Or publish the release first, and they're
+added to it by themselves a few minutes later. They aren't kept in
+`release\<version>\`. To build the Windows ones yourself, `cd desktop; npm ci; npm run
+build:win`; the Linux ones, `desktop/LINUX-BUILD.md`.
 
 For a new version, raise it first in both places (`android/README.md`, "Build the APK"), or
 phones with the old one won't take it as an update.
@@ -74,7 +74,7 @@ phones with the old one won't take it as an update.
    - Windows and Linux apps, with Service Alerts as desktop notifications
    ```
 
-6. Drag in every file from `release\<version>\`, into the box that says
+6. Drag in the APK from `release\<version>\` (the desktop installers follow by themselves), into the box that says
    **Attach binaries by dropping them here or selecting them**. Wait for them all to finish
    uploading.
 7. Tick **Set as the latest release**, then **Publish release**.

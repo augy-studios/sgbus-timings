@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- The app window's own title bar (main.js, createWindow): back, forward, reload, the page's
+     address, and screenshot and long screenshot buttons, with the site in a view of its own below it. The address
+     can't be typed in; clicking it copies the link. The window's own controls are the system's: the traffic
+     lights on macOS, drawn over the bar's left; minimise, maximise and close on Windows and
+     Linux, over its right (titleBarOverlay). -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'">
+  <title>SG Bus Timings</title>
+  <style>
+    :root { --bg: #ccffcc; --fg: #0c100e; --field: rgba(0, 0, 0, .08); --hover: rgba(0, 0, 0, .1); }
+    :root.dark { --fg: #f2fff2; --field: rgba(255, 255, 255, .14); --hover: rgba(255, 255, 255, .16); }
+    html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg);
+      font: 13px/1 system-ui, -apple-system, "Segoe UI", sans-serif; user-select: none; }
+    .bar { box-sizing: border-box; height: 40px; display: flex; align-items: center; gap: 2px;
+      /* Clear of the window's own controls: the system says where they are (Window Controls
+         Overlay), with each platform's usual room as the fallback. */
+      padding: 0 8px 0 max(8px, env(titlebar-area-x, 8px));
+      width: env(titlebar-area-width, calc(100% - 138px));
+      -webkit-app-region: drag; }
+    .mac .bar { padding-left: 78px; width: 100%; }
+    .mac.fullscreen .bar { padding-left: 8px; }
+    button { -webkit-app-region: no-drag; appearance: none; border: 0; background: none; color: inherit;
+      font: inherit; cursor: default; border-radius: 6px; }
+    .nav { flex: none; width: 30px; height: 28px; display: grid; place-items: center; }
+    #shot { margin-left: 4px; }
+    .shooting #shot, .shooting #longshot { opacity: .35; }
+    .nav:hover:not(:disabled) { background: var(--hover); }
+    .nav:disabled { opacity: .35; }
+    .nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round; }
+    .loading #reload svg { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #address { flex: 1; min-width: 0; height: 28px; margin-left: 6px; padding: 0 10px; display: flex;
+      align-items: center; gap: 6px; background: var(--field); border-radius: 14px; text-align: left; }
+    #address:hover { background: var(--hover); }
+    #address svg { flex: none; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round; opacity: .7; }
+    #url { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    #copied { display: none; flex: none; font-weight: 600; }
+    .copied #url { opacity: .45; }
+    .copied #copied { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="bar">
+    <button class="nav" id="back" title="Back (Alt+Left)" aria-label="Back" disabled>
+      <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </button>
+    <button class="nav" id="forward" title="Forward (Alt+Right)" aria-label="Forward" disabled>
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+    <button class="nav" id="reload" title="Reload (F5)" aria-label="Reload">
+      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.64-6.36M21 3v6h-6"/></svg>
+    </button>
+    <button id="address" title="Click to copy the link">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span id="url"></span>
+      <span id="copied"></span>
+    </button>
+    <button class="nav" id="shot" title="Screenshot: copies it, and saves it in Downloads" aria-label="Screenshot">
+      <svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <button class="nav" id="longshot" title="Long screenshot: the whole page, top to bottom; copies it, and saves it in Downloads" aria-label="Long screenshot">
+      <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v9M9 13l3 3 3-3"/></svg>
+    </button>
+  </div>
+  <script src="titlebar.js"></script>
+</body>
+</html>

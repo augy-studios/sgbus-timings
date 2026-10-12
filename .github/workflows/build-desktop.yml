@@ -1,0 +1,161 @@
+# Builds the desktop app (desktop/) for macOS, Windows and Linux on GitHub's own machines, each
+# on its own system: a Mac app can only be built on a Mac, and the .msi only on Windows.
+#
+# - Pushed changes to desktop/ (or this file): builds them all, and the installers are kept on
+#   the run, under Artifacts, for 30 days.
+# - Run by hand (Actions > Build desktop apps > Run workflow): the same, and with a release's tag,
+#   such as android-v2.0.3, the installers are also added to that GitHub release, replacing any
+#   of the same name. With no release of that tag yet, a draft one is made for them: add the
+#   APK to it and publish it. Until then nobody's app sees it, as a draft is never the latest.
+# - A release published: built from its tag and added to it, beside the APK; unless it has
+#   them all already (a draft made by a hand run, say).
+#
+# None of them is signed with a paid certificate: the Mac app is signed ad-hoc, so macOS says it
+# "can't be opened" the first time, and Windows SmartScreen warns before the first run
+# (desktop/README.md).
+name: Build desktop apps
+
+on:
+  push:
+    paths:
+      - 'desktop/**'
+      - '.github/workflows/build-desktop.yml'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "A release's tag to add the installers to, such as android-v2.0.3 (a draft release is made if there's none). Empty: only keep them on the run."
+        required: false
+        default: ''
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-desktop-${{ github.ref }}-${{ github.event.release.tag_name || inputs.release_tag }}
+  cancel-in-progress: true
+
+jobs:
+  # Where the installers go, and whether they need building at all.
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.check.outputs.build }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+    steps:
+      - id: check
+        run: |
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_EVENT_NAME" = release ]; then
+            # Published with every platform's update file on it already: nothing to build.
+            assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
+            missing=false
+            for f in latest.yml latest-mac.yml latest-linux.yml; do
+              grep -qx "$f" <<< "$assets" || missing=true
+            done
+            echo "build=$missing" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=true" >> "$GITHUB_OUTPUT"
+            if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+              version="${RELEASE_TAG#android-v}"
+              gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
+                --title "SG Bus Timings $version" \
+                --notes "The desktop installers for $version, built by GitHub Actions. Add the APK, write what's new, then publish."
+            fi
+          fi
+
+  build:
+    needs: release
+    if: needs.release.outputs.build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            name: mac
+            build: npm run build:mac
+            # latest-mac.yml and the .zip are what the Mac app reads to update itself (updater.js).
+            files: |
+              dist/*.dmg
+              dist/*.zip
+              dist/*.blockmap
+              dist/latest-mac.yml
+          - os: windows-latest
+            name: windows
+            build: npm run build:win
+            # latest.yml and the .exe's blockmap: the .exe's own updates.
+            files: |
+              dist/*-setup.exe
+              dist/*.msi
+              dist/*.blockmap
+              dist/latest.yml
+          - os: ubuntu-latest
+            name: linux
+            build: npm run build:linux
+            # latest-linux.yml: the AppImage's updates.
+            files: |
+              dist/*.deb
+              dist/*.AppImage
+              dist/latest-linux.yml
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: desktop
+        shell: bash
+    env:
+      # No paid certificate: don't look for one (package.json signs the Mac app ad-hoc).
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # A release builds from its own tag; a push or a hand run from the branch it's on.
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/package-lock.json
+
+      - run: npm ci
+
+      - name: Build
+        run: ${{ matrix.build }}
+
+      - name: List what was built
+        id: files
+        env:
+          FILES: ${{ matrix.files }}
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          # The files, one per line, for the release upload; and with desktop/ before each for
+          # upload-artifact, which doesn't follow working-directory.
+          {
+            echo 'list<<EOF'
+            echo "$FILES" | sed '/^$/d; s|^|desktop/|'
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+          ls -lh $FILES
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg-bus-timings-${{ steps.files.outputs.version }}-${{ matrix.name }}
+          path: ${{ steps.files.outputs.list }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add them to the release
+        if: env.RELEASE_TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FILES: ${{ matrix.files }}
+        run: |
+          gh release upload "$RELEASE_TAG" $FILES --repo "$GITHUB_REPOSITORY" --clobber

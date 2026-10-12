@@ -5,6 +5,8 @@
 //   come as desktop notifications (main-site/js/alerts.js checks for them every minute while
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
+// - its own title bar: back, forward, reload, the page's address, which copies the link
+//   when clicked, and screenshot and long screenshot buttons (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
 // - checking for its own updates (updater.js);
@@ -13,7 +15,10 @@
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
 // site's own origin. Nothing here holds a key or a secret.
 
-const { app, BrowserWindow, Menu, Notification, Tray, nativeImage, session, shell, ipcMain } = require('electron');
+const {
+  app, BrowserWindow, WebContentsView, ClipboardItem, Menu, Notification, Tray, clipboard, nativeImage, session, shell,
+  ipcMain,
+} = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const updater = require('./updater');
@@ -26,7 +31,8 @@ const APP_ID = 'org.uwuapps.sgbus';
 // notifications. Anything else it asks for is refused.
 const ALLOWED = new Set(['geolocation', 'notifications', 'clipboard-sanitized-write', 'fullscreen']);
 
-let win = null;
+let win = null; // the window, its own webContents the title bar (titlebar.html)
+let page = null; // the site's webContents, in a view below the title bar
 let tray = null;
 let quitting = false;
 // uwu://sgbus/ links. Windows, macOS and Linux give a scheme to one app only, unlike Android,
@@ -63,9 +69,9 @@ function openLink(link) {
   const target = fromAppLink(link);
   if (!win || !target) return showWindow();
   const hash = target.startsWith(`${SITE}/#`) ? target.slice(SITE.length + 1) : null;
-  if (hash && isSite(win.webContents.getURL())) showWindow(hash);
+  if (hash && isSite(page.getURL())) showWindow(hash);
   else {
-    win.loadURL(target);
+    page.loadURL(target);
     showWindow();
   }
 }
@@ -100,6 +106,11 @@ const isSite = (url) => {
   }
 };
 
+// The title bar's height, and its colour until the site says its own (its theme-color).
+const BAR_HEIGHT = 40;
+const BAR_COLOR = '#ccffcc';
+const mac = process.platform === 'darwin';
+
 function createWindow() {
   const { bounds } = readSettings();
   win = new BrowserWindow({
@@ -112,8 +123,28 @@ function createWindow() {
     show: false,
     title: 'SG Bus Timings',
     icon: path.join(__dirname, 'build', 'icon.png'),
-    backgroundColor: '#ccffcc',
+    backgroundColor: BAR_COLOR,
     autoHideMenuBar: true,
+    // The system's own title bar goes; titlebar.html is drawn there instead, around the
+    // window's controls: macOS keeps its traffic lights, and Windows and Linux draw minimise,
+    // maximise and close over the bar's right (titleBarOverlay).
+    titleBarStyle: 'hidden',
+    ...(mac
+      ? { trafficLightPosition: { x: 14, y: 13 } }
+      : { titleBarOverlay: { color: BAR_COLOR, symbolColor: '#0c100e', height: BAR_HEIGHT } }),
+    webPreferences: {
+      preload: path.join(__dirname, 'titlebar-preload.js'),
+      contextIsolation: true,
+      sandbox: true,
+      nodeIntegration: false,
+    },
+  });
+  win.removeMenu();
+  win.loadFile(path.join(__dirname, 'titlebar.html'));
+  // The window keeps its own name, not the title bar page's or the site's.
+  win.on('page-title-updated', (e) => e.preventDefault());
+
+  const view = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -124,46 +155,96 @@ function createWindow() {
       additionalArguments: [`--sgbus-version=${app.getVersion()}`],
     },
   });
-  win.removeMenu();
-  win.webContents.setUserAgent(`${win.webContents.getUserAgent()} SGBusTimingsDesktop/${app.getVersion()}`);
+  view.setBackgroundColor(BAR_COLOR);
+  win.contentView.addChildView(view);
+  page = view.webContents;
+  page.setUserAgent(`${page.getUserAgent()} SGBusTimingsDesktop/${app.getVersion()}`);
 
-  win.loadURL((startLink && fromAppLink(startLink)) || SITE);
+  // The site fills the window below the title bar; all of it while it's full screen (a video,
+  // say), when the bar hides.
+  let pageFullScreen = false;
+  const layout = () => {
+    const [width, height] = win.getContentSize();
+    const top = pageFullScreen ? 0 : BAR_HEIGHT;
+    view.setBounds({ x: 0, y: top, width, height: Math.max(0, height - top) });
+  };
+  layout();
+  for (const event of ['resize', 'maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen']) win.on(event, layout);
+  page.on('enter-html-full-screen', () => { pageFullScreen = true; layout(); });
+  page.on('leave-html-full-screen', () => { pageFullScreen = false; layout(); });
+
+  // What the title bar shows: where the site is, whether it can go back or forward, and the
+  // site's colour.
+  let color = null;
+  const sendState = () => {
+    if (win.isDestroyed() || page.isDestroyed()) return;
+    const url = shownUrl();
+    win.webContents.send('bar-state', {
+      url,
+      display: url.replace(/^https?:\/\//, '').replace(/^([^/]+)\/$/, '$1'),
+      canBack: page.navigationHistory.canGoBack(),
+      canForward: page.navigationHistory.canGoForward(),
+      loading: page.isLoading(),
+      fullscreen: win.isFullScreen(),
+      color,
+    });
+  };
+  for (const event of ['did-navigate', 'did-navigate-in-page', 'did-start-loading', 'did-stop-loading']) page.on(event, sendState);
+  win.webContents.on('did-finish-load', sendState);
+  win.on('enter-full-screen', sendState);
+  win.on('leave-full-screen', sendState);
+  page.on('did-change-theme-color', (_e, c) => {
+    if (!/^#[0-9a-f]{6}$/i.test(c || '')) return;
+    color = c;
+    view.setBackgroundColor(c);
+    if (!mac) win.setTitleBarOverlay({ color: c, symbolColor: isDarkColor(c) ? '#f2fff2' : '#0c100e', height: BAR_HEIGHT });
+    sendState();
+  });
+
+  page.loadURL((startLink && fromAppLink(startLink)) || SITE);
   // Can't reach the site, and there's no copy of it kept yet (the first launch offline).
-  win.webContents.on('did-fail-load', (_e, code, _desc, url, isMainFrame) => {
-    if (isMainFrame && code !== -3 && isSite(url)) win.loadFile(path.join(__dirname, 'offline.html'));
+  page.on('did-fail-load', (_e, code, _desc, url, isMainFrame) => {
+    if (isMainFrame && code !== -3 && isSite(url)) page.loadFile(path.join(__dirname, 'offline.html'));
   });
 
   win.once('ready-to-show', () => {
     firstShow();
   });
+  // Typing goes to the site, not the title bar.
+  win.on('focus', () => page.focus());
 
   // The site's own pages stay here; everything else opens in your browser.
-  win.webContents.setWindowOpenHandler(({ url }) => {
+  page.setWindowOpenHandler(({ url }) => {
     if (isSite(url)) {
-      win.loadURL(url);
+      page.loadURL(url);
     } else if (/^https?:|^mailto:/.test(url)) {
       shell.openExternal(url);
     }
     return { action: 'deny' };
   });
-  win.webContents.on('will-navigate', (e, url) => {
+  page.on('will-navigate', (e, url) => {
     if (isSite(url) || url.startsWith('file:')) return;
     e.preventDefault();
     if (/^https?:|^mailto:/.test(url)) shell.openExternal(url);
   });
 
-  // Back and reload, as a browser has them.
-  win.webContents.on('before-input-event', (e, input) => {
+  // Back, forward and reload, as a browser has them, from the site or the title bar.
+  const keys = (e, input) => {
     if (input.type !== 'keyDown') return;
     const ctrl = input.control || input.meta;
     if (input.key === 'F5' || (ctrl && input.key.toLowerCase() === 'r')) {
-      win.webContents.reload();
+      page.reload();
       e.preventDefault();
-    } else if (input.alt && input.key === 'ArrowLeft' && win.webContents.navigationHistory.canGoBack()) {
-      win.webContents.navigationHistory.goBack();
+    } else if ((input.alt && input.key === 'ArrowLeft') || (mac && input.meta && input.key === '[')) {
+      if (page.navigationHistory.canGoBack()) page.navigationHistory.goBack();
+      e.preventDefault();
+    } else if ((input.alt && input.key === 'ArrowRight') || (mac && input.meta && input.key === ']')) {
+      if (page.navigationHistory.canGoForward()) page.navigationHistory.goForward();
       e.preventDefault();
     }
-  });
+  };
+  page.on('before-input-event', keys);
+  win.webContents.on('before-input-event', keys);
 
   // Closing puts it in the tray; Quit, from the tray, closes it.
   win.on('close', (e) => {
@@ -172,7 +253,6 @@ function createWindow() {
     e.preventDefault();
     win.hide();
     if (!readSettings().trayHintShown && Notification.isSupported()) {
-      const mac = process.platform === 'darwin';
       new Notification({
         title: 'SG Bus Timings is still running',
         body: mac
@@ -183,6 +263,23 @@ function createWindow() {
       writeSettings({ trayHintShown: true });
     }
   });
+}
+
+// The site's address, for the title bar to show and copy: the site itself while the offline
+// page is up.
+const shownUrl = () => {
+  const url = page?.getURL() || '';
+  return /^https?:/.test(url) ? url : `${SITE}/`;
+};
+
+// Light writing on the site's colour, or dark? (As titlebar.js decides for the bar.)
+function isDarkColor(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.4;
 }
 
 // The window shows maximised, unless it was last closed un-maximised.
@@ -196,9 +293,8 @@ function firstShow() {
 function showWindow(hash) {
   if (!win) return;
   if (hash) {
-    const url = new URL(win.webContents.getURL() || SITE);
-    if (url.origin === ORIGIN) win.webContents.executeJavaScript(`location.hash = ${JSON.stringify(hash)}`).catch(() => {});
-    else win.loadURL(`${SITE}/${hash}`);
+    if (isSite(page.getURL())) page.executeJavaScript(`location.hash = ${JSON.stringify(hash)}`).catch(() => {});
+    else page.loadURL(`${SITE}/${hash}`);
   }
   if (win.isMinimized()) win.restore();
   if (!shown) firstShow();
@@ -266,6 +362,97 @@ function createTray() {
   // Linux trays show the menu on any click; refreshed so the checkbox is right.
   tray.on('right-click', () => tray.setContextMenu(menu()));
 }
+
+// ---------- from the title bar (titlebar-preload.js) ----------
+
+const fromBar = (e) => win && !win.isDestroyed() && e.sender === win.webContents;
+ipcMain.on('bar-back', (e) => {
+  if (fromBar(e) && page.navigationHistory.canGoBack()) page.navigationHistory.goBack();
+});
+ipcMain.on('bar-forward', (e) => {
+  if (fromBar(e) && page.navigationHistory.canGoForward()) page.navigationHistory.goForward();
+});
+ipcMain.on('bar-reload', (e) => {
+  if (fromBar(e)) page.reload();
+});
+// The address can't be typed in: clicking it copies the link.
+ipcMain.handle('bar-copy', async (e) => {
+  if (!fromBar(e)) return false;
+  await clipboard.writeText(shownUrl());
+  return true;
+});
+// The whole page, top to bottom, as a PNG, not just the part on screen: drawn in one go by
+// Chromium (the DevTools protocol's captureBeyondViewport), the site's own scrolling being
+// the page's. Up to the tallest picture Chromium draws, 16384 pixels; the top of it, past that.
+// Taken from the top, so headers that stick as you scroll are at the top, then scrolled back.
+const SCROLL_TO = (x, y) => `new Promise((done) => {
+  const was = [scrollX, scrollY];
+  const html = document.documentElement;
+  const behavior = html.style.scrollBehavior;
+  html.style.scrollBehavior = 'auto';
+  scrollTo(${x}, ${y});
+  html.style.scrollBehavior = behavior;
+  requestAnimationFrame(() => requestAnimationFrame(() => done(was)));
+})`;
+
+async function longScreenshot() {
+  const dbg = page.debugger;
+  const attach = !dbg.isAttached();
+  if (attach) dbg.attach('1.3');
+  const [x, y] = await page.executeJavaScript(SCROLL_TO(0, 0));
+  try {
+    const { cssContentSize: size } = await dbg.sendCommand('Page.getLayoutMetrics');
+    const dpr = await page.executeJavaScript('devicePixelRatio');
+    const width = Math.ceil(size.width);
+    const height = Math.min(Math.ceil(size.height), Math.floor(16384 / dpr));
+    const { data } = await dbg.sendCommand('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: true,
+      clip: { x: 0, y: 0, width, height, scale: 1 },
+    });
+    return Buffer.from(data, 'base64');
+  } finally {
+    if (attach) dbg.detach();
+    await page.executeJavaScript(SCROLL_TO(Number(x) || 0, Number(y) || 0)).catch(() => {});
+  }
+}
+
+// The site as it is now, without the title bar, or all of it for a long one: copied, and saved
+// in your Downloads folder, where a notification shows it.
+ipcMain.handle('bar-screenshot', async (e, long) => {
+  if (!fromBar(e)) return false;
+  try {
+    let png;
+    if (long) {
+      png = await longScreenshot();
+    } else {
+      const image = await page.capturePage();
+      if (image.isEmpty()) return false;
+      png = image.toPNG();
+    }
+    await clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]);
+    const dir = app.getPath('downloads');
+    const d = new Date();
+    const two = (n) => String(n).padStart(2, '0');
+    const stamp = `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}.${two(d.getMinutes())}.${two(d.getSeconds())}`;
+    const file = path.join(dir, `SG Bus Timings ${stamp}${long ? ' (long)' : ''}.png`);
+    await fs.promises.mkdir(dir, { recursive: true });
+    await fs.promises.writeFile(file, png);
+    if (Notification.isSupported()) {
+      const note = new Notification({
+        title: long ? 'Long screenshot saved' : 'Screenshot saved',
+        body: `It's copied too, and in Downloads. Click to show it.`,
+        icon: path.join(__dirname, 'build', 'icon.png'),
+      });
+      note.on('click', () => shell.showItemInFolder(file));
+      note.show();
+    }
+    return true;
+  } catch (err) {
+    console.warn('screenshot failed:', err?.message || err);
+    return false;
+  }
+});
 
 // ---------- from the page (preload.js) ----------
 
