@@ -106,6 +106,7 @@ export function parseTrip(body, now = Date.now()) {
     anchor = { pos: body.anchor.pos, t: body.anchor.t };
   }
   if (body.realignedAt != null && !isNum(body.realignedAt, 0, now + DAY_MS)) fail('bad realignedAt');
+  if (body.movedAt != null && !isNum(body.movedAt, 0, now + DAY_MS)) fail('bad movedAt');
 
   return {
     tripId: body.tripId,
@@ -118,6 +119,8 @@ export function parseTrip(body, now = Date.now()) {
     seenAt: Math.min(now, body.seenAt),
     anchor,
     realignedAt: Math.min(now, body.realignedAt || 0),
+    // When the trip was last moved on or back by hand (Back or Next); an older app doesn't say.
+    movedAt: Math.min(now, body.movedAt || 0),
     // False while the app waits to be sure you're on the bus; an older app doesn't say.
     clockRuns: body.clockRuns !== false,
     alerted: body.alerted.map(Boolean),

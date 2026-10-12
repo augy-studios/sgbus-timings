@@ -342,7 +342,7 @@
       $('#etaLeg').textContent = (leg.kind === 'walk'
         ? `Walking to ${leg.to}`
         : `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}`) +
-        (d.legCount > 1 ? ` · leg ${d.legIndex + 1} of ${d.legCount}` : '');
+        (d.legCount > 1 ? ` · part ${d.legIndex + 1} of ${d.legCount}` : '');
     }
     renderViewTimeline(live ? d.timeline : null);
     $('#etaLiveMap').hidden = gone;

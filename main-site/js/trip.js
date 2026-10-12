@@ -51,6 +51,14 @@
 // to the next can be kilometres off an expressway. So at the start each bus leg's road is
 // fetched (/api/road, kept in `trip.roads`), and you're followed along it, within ON_ROAD_M.
 // Without it (the router's down), the straight lines are used with room for the road to bend.
+// The road can miss a bus's real way (a bus-only road the car router won't take), so a fix off
+// it falls back on the straight lines, and a fix near a stop well down the route counts as on
+// board whatever the road says.
+//
+// On the bar, a trip of more than one part (each ride and each walk; `legs` here) has Back and
+// Next, to move it by hand. Back puts you where you were on the part before, or at its start if
+// you'd finished it, and re-arms its alerts; the server hears it was by hand (`movedAt`), so
+// it doesn't move you on again with what it had.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -118,6 +126,7 @@
   const BOARD_VIBRATION = [200, 120, 200];
 
   let trip = null;
+  let arrivedTimer = null; // ends the trip a minute after you've arrived
   let watchId = null;
   let nativeSubs = null; // the app's location and end events, while it follows the trip
   let nativeText = null; // what its notification last said
@@ -303,6 +312,8 @@
     }
     clearInterval(tick);
     tick = null;
+    clearTimeout(arrivedTimer);
+    arrivedTimer = null;
     releaseAwake();
     if (clear) {
       // A trip being shared as a live ETA link says it's over (js/share.js).
@@ -322,8 +333,15 @@
     const accuracy = pos.coords.accuracy;
     if (!trip || accuracy > ROUGH_FIX_M) return;
     const here = [pos.coords.latitude, pos.coords.longitude];
-    const leg = trip.legs[trip.leg];
+    let leg = trip.legs[trip.leg];
     if (accuracy <= GOOD_FIX_M) trip.me = { lat: here[0], lng: here[1], accuracy: Math.round(accuracy), t: Date.now() };
+    // Already on a later ride: on to it, on board.
+    const ahead = accuracy <= GOOD_FIX_M ? rideAhead(here, leg) : -1;
+    if (ahead !== -1) {
+      while (trip.leg < ahead) nextLeg();
+      leg = trip.legs[trip.leg];
+      boardedNow(alongLeg(here, leg, 0) ?? 0);
+    }
     if (isWalk(leg)) return onWalkFix(here, accuracy, leg);
     if (realign(here, accuracy, leg)) return;
     if (accuracy > GOOD_FIX_M) return;
@@ -376,6 +394,7 @@
     const start = leg.points[0];
     const end = leg.points[leg.points.length - 1];
     const left = metres(here, end);
+    trip.nearEnd = Math.min(trip.nearEnd ?? Infinity, left);
     const pos = Math.min(1, Math.max(0, 1 - left / Math.max(1, metres(start, end))));
     trip.pos = Math.max(trip.pos || 0, pos);
     trip.anchor = { pos: trip.pos, t: now };
@@ -405,27 +424,43 @@
   // MOVE_M further down than a fix in the last MOVE_WINDOW_MS (or the leg's whole time, if
   // that's longer, for a long stretch with no stop); or at or past the second stop and
   // MOVE_STOPS on from such a fix; or at any stop after the first, within ON_ROAD_M of it.
-  // Says whether you're now on board.
+  // Or, LEFT_STOP_M from the stop, within ON_ROUTE_M of a later one, whether or not the fix is
+  // on the route's road. Says whether you're now on board.
   function noteMove(here, along) {
-    if (along == null) return false;
     const now = Date.now();
     const leg = trip.legs[trip.leg];
+    const fromStop = metres(here, leg.points[0]);
+    // A stop by the one you got on at (across the road, on a route that comes back) doesn't count.
+    let near = -1;
+    let nearM = Infinity;
+    leg.points.forEach((p, i) => {
+      const d = metres(here, p);
+      if (i > 0 && d < nearM && metres(p, leg.points[0]) >= LEFT_STOP_M) [near, nearM] = [i, d];
+    });
+    const atStop = near !== -1 && (nearM <= ON_ROAD_M || (fromStop >= LEFT_STOP_M && nearM <= ON_ROUTE_M));
+    along ??= atStop ? near : null;
+    if (along == null) return false;
     const m = metresAlong(leg, along);
     const span = Math.max(MOVE_WINDOW_MS, (leg.minutes || 0) * 60000);
     const moves = (trip.moves || []).filter((x) => now - x.t <= span);
-    const fromStop = metres(here, leg.points[0]);
-    // A stop by the one you got on at (across the road, on a route that comes back) doesn't count.
-    const atStop = leg.points.some((p, i) => i > 0 && metres(here, p) <= ON_ROAD_M && metres(p, leg.points[0]) >= LEFT_STOP_M);
     const moved = atStop
       || (fromStop >= LEFT_STOP_M && moves.some((x) => m - (x.m ?? 0) >= MOVE_M))
       || (along >= 1 && fromStop > ON_ROAD_M && moves.some((x) => along - x.along >= MOVE_STOPS));
     const lastT = moves.length ? moves[moves.length - 1].t : 0;
     trip.moves = now - lastT >= MOVE_SAMPLE_MS ? [...moves.slice(-240), { along, m, t: now }] : moves;
     if (!moved) return false;
+    boardedNow(along, moves);
+    return true;
+  }
+
+  // On board for sure, `along` the leg now. Boarded about as long ago as riding this far along
+  // takes, by the leg's own time per stop, though not before the last fix in `moves` that still
+  // had you at the stop.
+  function boardedNow(along, moves = []) {
+    const now = Date.now();
+    const leg = trip.legs[trip.leg];
     trip.boarded = true;
     trip.moves = [];
-    // Boarded about as long ago as riding this far along takes, by the leg's own time per
-    // stop, though not before the last fix that still had you at the stop.
     const t = trip.times[trip.leg];
     if (t) {
       const perStopMs = ((leg.minutes || 0) / Math.max(1, leg.points.length - 1)) * 60000;
@@ -435,7 +470,23 @@
     }
     sync();
     record();
-    return true;
+  }
+
+  // The next ride after this part, past any walk before it, if a fix shows you already on it:
+  // LEFT_STOP_M from its first stop and half a stop down its route. Then this part's over,
+  // though it never saw you get to its end: a walk whose end is off from where you waited,
+  // or a ride the fixes lost. From a walk, only once you're LEFT_STOP_M further from its end
+  // than you've been, so walking to your stop past a later one on the route isn't riding. From
+  // a ride, only once the fix isn't on it any more, so a ride that carries on along the same
+  // road, or comes back along it, doesn't end early. The index of that ride, or -1.
+  function rideAhead(here, leg) {
+    if (isWalk(leg)) {
+      if (!(metres(here, leg.points[leg.points.length - 1]) - (trip.nearEnd ?? Infinity) >= LEFT_STOP_M)) return -1;
+    } else if (alongLeg(here, leg, trip.at) != null) return -1;
+    const k = trip.legs.findIndex((l, i) => i > trip.leg && !isWalk(l));
+    const ride = trip.legs[k];
+    if (!ride || ride.points.length < 2 || metres(here, ride.points[0]) < LEFT_STOP_M) return -1;
+    return (alongLeg(here, ride, 0) ?? 0) >= MOVE_STOPS ? k : -1;
   }
 
   // Checked on every fix, rough ones too: if you're clearly not where the trip has you, it
@@ -558,11 +609,13 @@
 
   // Where a point is along a leg, as a stop index with a fraction: 3.4 is 40% of the way
   // from its fourth stop to its fifth, from the one before `from` on; null when the point isn't
-  // on the leg. On the leg's road if it has one (alongRoad); otherwise on the nearest stretch
-  // between two stops, allowing for the road to bend away from the straight line.
+  // on the leg. On the leg's road if it has one (alongRoad); otherwise, or when the road's lost
+  // you (the bus took a road the car router wouldn't), on the nearest stretch between two
+  // stops, allowing for the road to bend away from the straight line.
   function alongLeg(here, leg, from) {
     const road = roadOf(leg);
-    if (road) return alongRoad(here, road, from);
+    const onRoad = road ? alongRoad(here, road, from) : null;
+    if (onRoad != null) return onRoad;
     const pts = leg.points;
     const kx = 111320 * Math.cos((here[0] * Math.PI) / 180);
     const ky = 110540;
@@ -735,10 +788,17 @@
     setTimeout(() => bar.classList.remove("alerting"), 8000);
   }
 
-  function nextLeg() {
+  // On to the next part, by itself or by hand (Next). Where you'd got to on this one is kept,
+  // for Back.
+  function nextLeg(byHand = false) {
     endLegTime();
+    (trip.left ??= [])[trip.leg] = {
+      at: trip.at, pos: trip.pos || 0, anchor: trip.anchor || null, boarded: Boolean(trip.boarded), legStartedAt: trip.legStartedAt,
+    };
+    if (byHand) handMoved();
     trip.leg += 1;
     trip.times[trip.leg] = { start: Date.now() };
+    delete trip.nearEnd;
     trip.at = 0;
     trip.pos = 0;
     trip.anchor = null;
@@ -753,6 +813,57 @@
     record();
     boardCheckedAt = 0;
     watchBoard();
+  }
+
+  // Back to the part before, by hand: it's on again where you'd got to on it, or from its start
+  // if you'd finished it (the move on was wrong, so you hadn't), and your location takes it from
+  // there. Its alert, if you're back before its stop, and every alert and Get ready to board
+  // after it, can go off again.
+  function prevLeg() {
+    if (!trip || trip.leg === 0) return;
+    const from = trip.leg;
+    trip.times[from] = {};
+    trip.leg -= 1;
+    const leg = trip.legs[trip.leg];
+    const last = leg.points.length - 1;
+    const was = trip.left?.[trip.leg];
+    const t = trip.times[trip.leg] || (trip.times[trip.leg] = { start: Date.now() });
+    delete t.end;
+    if (was && was.at < last) {
+      Object.assign(trip, { at: was.at, pos: was.pos, anchor: was.anchor, boarded: was.boarded, legStartedAt: was.legStartedAt });
+    } else {
+      Object.assign(trip, { at: 0, pos: 0, anchor: null, boarded: false, legStartedAt: Date.now() });
+      delete t.board;
+      delete t.gps;
+    }
+    if (trip.left) trip.left.length = trip.leg;
+    trip.moves = [];
+    trip.onLegAt = 0;
+    delete trip.nearEnd;
+    trip.alertText = null;
+    trip.boardText = null;
+    trip.arrived = false;
+    clearTimeout(arrivedTimer);
+    arrivedTimer = null;
+    for (let i = trip.leg; i < trip.legs.length; i++) {
+      if (i > trip.leg || trip.at < last - ALERT_STOPS) trip.alerted[i] = false;
+      if (i > trip.leg || !trip.boarded) trip.readied[i] = false;
+    }
+    handMoved();
+    shown = null;
+    save();
+    sync();
+    record();
+    boardCheckedAt = 0;
+    watchBoard();
+  }
+
+  // Moved by hand: the server's told so its place doesn't win (sync), and an answer to a sync
+  // sent before it is ignored (adopt).
+  let handMoves = 0;
+  function handMoved() {
+    handMoves += 1;
+    trip.movedAt = Date.now();
   }
 
   // ---------- Your trips (js/history.js) ----------
@@ -803,7 +914,10 @@
         record();
       }
       render("You've arrived.");
-      setTimeout(() => stop(), 60 * 1000);
+      arrivedTimer ??= setTimeout(() => {
+        arrivedTimer = null;
+        stop();
+      }, 60 * 1000);
       return;
     }
     soon();
@@ -906,11 +1020,14 @@
       // the server takes the app's place and alerts over its own after that.
       anchor: trip.anchor || null,
       realignedAt: trip.realignedAt || 0,
+      // When you last moved the trip by hand (Back or Next): its place stands over the server's.
+      movedAt: trip.movedAt || 0,
       // Whether the clock may move you on: not on a bus until you're on board for sure.
       clockRuns: underWay(trip.legs[trip.leg]),
       alerted: trip.alerted,
       readied: trip.readied,
     });
+    const moves = handMoves;
     try {
       const res = await fetch(`${TRIPS_API}/${pushTo.deviceId}`, {
         method: "PUT",
@@ -921,7 +1038,9 @@
         body,
       });
       if (!res.ok) throw new Error(`replied ${res.status}`);
-      adopt(await res.json());
+      const state = await res.json();
+      // Moved by hand since this went: what the server had then is out of date.
+      if (moves === handMoves) adopt(state);
     } catch (err) {
       console.warn("get off alert server unavailable:", err);
     }
@@ -943,7 +1062,7 @@
       const t = trip.times[trip.leg];
       if (t && !t.end) t.end = began;
       trip.times[state.leg] = { start: began };
-      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, boardText: null, legStartedAt: began });
+      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, boardText: null, legStartedAt: began, nearEnd: undefined });
       shown = null;
     }
     save();
@@ -1045,7 +1164,7 @@
 
   // ---------- the trip bar ----------
 
-  // The trip bar's line: where you are on this leg, or the alert while it stands.
+  // The trip bar's line: where you are on this part, or the alert while it stands.
   function statusText(message) {
     const leg = trip.legs[trip.leg];
     const left = stopsLeft();
@@ -1056,7 +1175,7 @@
     const where = isWalk(leg)
       ? `Walk to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
       : `${leg.label}: ${left === 0 ? `at ${leg.to}` : `${left} stop${left === 1 ? "" : "s"} to ${leg.to}`}`;
-    return where + (trip.legs.length > 1 ? ` · leg ${trip.leg + 1} of ${trip.legs.length}` : "");
+    return where + (trip.legs.length > 1 ? ` · part ${trip.leg + 1} of ${trip.legs.length}` : "");
   }
 
   function render(message) {
@@ -1076,6 +1195,7 @@
     else if (Date.now() - trip.lastFixAt > FIX_STALE_MS && trip.lastFixAt) notes.push("Location weak: going by the clock.");
     $("#tripNote").textContent = notes.join(" ");
     $("#tripNote").hidden = !notes.length;
+    $("#tripPrev").hidden = trip.leg === 0;
     $("#tripNext").hidden = trip.leg >= trip.legs.length - 1;
     const icon = $("#tripBar [data-icon]");
     icon.setAttribute("data-icon", leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus");
@@ -1246,7 +1366,7 @@
     // Anywhere on the bar but its buttons opens or closes the timeline; the title is the
     // button for keyboards and screen readers.
     $("#tripBar .tripBarInner").addEventListener("click", (e) => {
-      if (e.target.closest("#tripEnd, #tripNext, #tripShare, #tripMap")) return;
+      if (e.target.closest("#tripEnd, #tripPrev, #tripNext, #tripShare, #tripMap")) return;
       setExpanded(!expanded);
     });
     $("#tripEnd").addEventListener("click", () => stop());
@@ -1260,8 +1380,13 @@
     });
     $("#tripMap").addEventListener("click", () => window.LiveMap?.trip());
     $("#tripNext").addEventListener("click", () => {
+      if (!trip || trip.leg >= trip.legs.length - 1) return;
+      nextLeg(true);
+      render();
+    });
+    $("#tripPrev").addEventListener("click", () => {
       if (!trip) return;
-      nextLeg();
+      prevLeg();
       render();
     });
     // The stop marked for the alert goes or comes back with the setting.

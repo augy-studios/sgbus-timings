@@ -27,7 +27,8 @@ Any of these starts one:
   you're getting off at. See [Bus routes](bus-routes.md).
 
 A bar along the bottom of the screen shows where you are: the bus or line, how
-many stops are left, and which leg of the journey you're on. The first time, the
+many stops are left, and which part of the journey you're on (each ride and
+each walk is a part). The first time, the
 browser asks for your location and for notifications; allow both.
 
 Tap the bar to open the timeline: every stop still ahead, with a blue dot where
@@ -63,8 +64,12 @@ Two stops before you get off, the phone:
 - shows a **notification**, "Get off in 2 stops, at Bedok Int";
 - and the trip bar lights up with the same.
 
-At a change, the trip moves on to the next leg by itself once you're near its
-first stop. **Next leg** moves it on by hand, and **End trip** stops it.
+At a change, the trip moves on to the next part by itself once you're near its
+first stop, or once you're on the next bus even if it never saw you reach the
+stop. **Next** moves it on by hand, and **Back** takes it back to the part
+before: where you'd got to on it, or its start if you'd finished it, with its
+alert ready to go off again. Your location then puts you where you really are.
+**End trip** stops it.
 
 ## Waiting for the bus
 

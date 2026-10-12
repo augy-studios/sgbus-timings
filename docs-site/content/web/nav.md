@@ -207,7 +207,7 @@ route. The name is the one in [Settings](settings.md), if you set one.
 </figure>
 
 <figure>
-<img src="/screenshots/web/nav-share-eta-view.png" alt="The Live progress window a friend sees: the map, Sam will arrive in 36 min at One Raffles Place, around 06:08, On Bus 28: 11 stops to Paya Lebar Stn Exit D, leg 1 of 2, Updated just now, and a Directions there button." width="444" height="516" loading="lazy">
+<img src="/screenshots/web/nav-share-eta-view.png" alt="The Live progress window a friend sees: the map, Sam will arrive in 36 min at One Raffles Place, around 06:08, On Bus 28: 11 stops to Paya Lebar Stn Exit D, part 1 of 2, Updated just now, and a Directions there button." width="444" height="516" loading="lazy">
 <figcaption>What your friend sees when they open the link. Directions there plans their own way to you.</figcaption>
 </figure>
 

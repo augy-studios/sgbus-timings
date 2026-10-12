@@ -44,7 +44,7 @@ target button under it brings the map back in close, following you.
 ## Your trip on a map
 
 <figure>
-<img src="/screenshots/web/live-map-trip.png" alt="The overview of a trip from Bedok to ION Orchard: the East-West Line in green from Bedok to City Hall with a dot for each station, the North-South Line in red on to Orchard, and a pink pin at the end, with To ION Orchard, 28 min left at the top and Walk to the first bus stop, about 2 min, leg 1 of 5 at the bottom." width="400" height="820" loading="lazy">
+<img src="/screenshots/web/live-map-trip.png" alt="The overview of a trip from Bedok to ION Orchard: the East-West Line in green from Bedok to City Hall with a dot for each station, the North-South Line in red on to Orchard, and a pink pin at the end, with To ION Orchard, 28 min left at the top and Walk to the first bus stop, about 2 min, part 1 of 5 at the bottom." width="400" height="820" loading="lazy">
 <figcaption>A trip's overview: each line in its own colour, with its stops.</figcaption>
 </figure>
 
