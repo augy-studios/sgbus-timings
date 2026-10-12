@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- The app window's own title bar (main.js, createWindow): back, forward, reload, the page's
-     address and a screenshot button, with the site in a view of its own below it. The address
+     address, and screenshot and long screenshot buttons, with the site in a view of its own below it. The address
      can't be typed in; clicking it copies the link. The window's own controls are the system's: the traffic
      lights on macOS, drawn over the bar's left; minimise, maximise and close on Windows and
      Linux, over its right (titleBarOverlay). -->
@@ -26,6 +26,7 @@
       font: inherit; cursor: default; border-radius: 6px; }
     .nav { flex: none; width: 30px; height: 28px; display: grid; place-items: center; }
     #shot { margin-left: 4px; }
+    .shooting #shot, .shooting #longshot { opacity: .35; }
     .nav:hover:not(:disabled) { background: var(--hover); }
     .nav:disabled { opacity: .35; }
     .nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;
@@ -61,6 +62,9 @@
     </button>
     <button class="nav" id="shot" title="Screenshot: copies it, and saves it in Pictures" aria-label="Screenshot">
       <svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
+    </button>
+    <button class="nav" id="longshot" title="Long screenshot: the whole page, top to bottom; copies it, and saves it in Pictures" aria-label="Long screenshot">
+      <svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v9M9 13l3 3 3-3"/></svg>
     </button>
   </div>
   <script src="titlebar.js"></script>

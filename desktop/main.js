@@ -6,7 +6,7 @@
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
 // - its own title bar: back, forward, reload, the page's address, which copies the link
-//   when clicked, and a screenshot button (titlebar.html);
+//   when clicked, and screenshot and long screenshot buttons (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
 // - checking for its own updates (updater.js);
@@ -381,25 +381,66 @@ ipcMain.handle('bar-copy', async (e) => {
   await clipboard.writeText(shownUrl());
   return true;
 });
-// The site as it is now, without the title bar: copied, and saved in Pictures/SG Bus Timings,
-// where a notification opens it.
-ipcMain.handle('bar-screenshot', async (e) => {
+// The whole page, top to bottom, as a PNG, not just the part on screen: drawn in one go by
+// Chromium (the DevTools protocol's captureBeyondViewport), the site's own scrolling being
+// the page's. Up to the tallest picture Chromium draws, 16384 pixels; the top of it, past that.
+// Taken from the top, so headers that stick as you scroll are at the top, then scrolled back.
+const SCROLL_TO = (x, y) => `new Promise((done) => {
+  const was = [scrollX, scrollY];
+  const html = document.documentElement;
+  const behavior = html.style.scrollBehavior;
+  html.style.scrollBehavior = 'auto';
+  scrollTo(${x}, ${y});
+  html.style.scrollBehavior = behavior;
+  requestAnimationFrame(() => requestAnimationFrame(() => done(was)));
+})`;
+
+async function longScreenshot() {
+  const dbg = page.debugger;
+  const attach = !dbg.isAttached();
+  if (attach) dbg.attach('1.3');
+  const [x, y] = await page.executeJavaScript(SCROLL_TO(0, 0));
+  try {
+    const { cssContentSize: size } = await dbg.sendCommand('Page.getLayoutMetrics');
+    const dpr = await page.executeJavaScript('devicePixelRatio');
+    const width = Math.ceil(size.width);
+    const height = Math.min(Math.ceil(size.height), Math.floor(16384 / dpr));
+    const { data } = await dbg.sendCommand('Page.captureScreenshot', {
+      format: 'png',
+      captureBeyondViewport: true,
+      clip: { x: 0, y: 0, width, height, scale: 1 },
+    });
+    return Buffer.from(data, 'base64');
+  } finally {
+    if (attach) dbg.detach();
+    await page.executeJavaScript(SCROLL_TO(Number(x) || 0, Number(y) || 0)).catch(() => {});
+  }
+}
+
+// The site as it is now, without the title bar, or all of it for a long one: copied, and saved
+// in Pictures/SG Bus Timings, where a notification opens it.
+ipcMain.handle('bar-screenshot', async (e, long) => {
   if (!fromBar(e)) return false;
   try {
-    const image = await page.capturePage();
-    if (image.isEmpty()) return false;
-    const png = image.toPNG();
+    let png;
+    if (long) {
+      png = await longScreenshot();
+    } else {
+      const image = await page.capturePage();
+      if (image.isEmpty()) return false;
+      png = image.toPNG();
+    }
     await clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]);
     const dir = path.join(app.getPath('pictures'), 'SG Bus Timings');
     const d = new Date();
     const two = (n) => String(n).padStart(2, '0');
     const stamp = `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}.${two(d.getMinutes())}.${two(d.getSeconds())}`;
-    const file = path.join(dir, `SG Bus Timings ${stamp}.png`);
+    const file = path.join(dir, `SG Bus Timings ${stamp}${long ? ' (long)' : ''}.png`);
     await fs.promises.mkdir(dir, { recursive: true });
     await fs.promises.writeFile(file, png);
     if (Notification.isSupported()) {
       const note = new Notification({
-        title: 'Screenshot saved',
+        title: long ? 'Long screenshot saved' : 'Screenshot saved',
         body: `It's copied too, and in Pictures > SG Bus Timings. Click to show it.`,
         icon: path.join(__dirname, 'build', 'icon.png'),
       });

@@ -21,14 +21,19 @@ $('address').addEventListener('click', async () => {
   if (await window.bar.copy()) say('Link copied');
 });
 
-$('shot').addEventListener('click', async () => {
-  $('shot').disabled = true;
+// One screenshot at a time; a long one can take a moment.
+async function screenshot(long) {
+  if (root.classList.contains('shooting')) return;
+  root.classList.add('shooting');
   try {
-    say((await window.bar.screenshot()) ? 'Screenshot copied and saved' : "Couldn't take a screenshot");
+    const ok = await window.bar.screenshot(long);
+    say(ok ? `${long ? 'Long screenshot' : 'Screenshot'} copied and saved` : "Couldn't take a screenshot");
   } finally {
-    $('shot').disabled = false;
+    root.classList.remove('shooting');
   }
-});
+}
+$('shot').addEventListener('click', () => screenshot(false));
+$('longshot').addEventListener('click', () => screenshot(true));
 
 // Light or dark writing, whichever reads on the site's colour.
 function isDark(hex) {
