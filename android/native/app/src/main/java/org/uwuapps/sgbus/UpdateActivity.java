@@ -4,6 +4,11 @@
  * than this one. A small window over the page that downloads the APK, checks it, and hands it
  * to Android's own installer, which asks "Do you want to update this app?" as for any APK.
  *
+ * From 2.0.8 the Edge Tray's "Check for app updates" opens it too, as
+ * org.uwuapps.sgbus://update/check (CHECK): it looks first, says if this is the newest version,
+ * and asks before downloading one that isn't. The update bar's link, without /check, has
+ * already asked, so downloads straight away.
+ *
  * Checks before anything is installed:
  * - The APK comes only from this repository's releases on GitHub (RELEASES).
  * - Its SHA-256 matches the checksum GitHub publishes for the file, when it has one.
@@ -11,8 +16,9 @@
  * Android checks the rest: it only updates an app with an APK signed by the same key.
  *
  * Android 8 and later also want this app allowed to install apps, once, in its "Install unknown
- * apps" setting; this sends you there first. Android 8 to 10 restart the app when it's allowed,
- * which brings this window back with the setting on, and it carries on from there.
+ * apps" setting; once there's an update to install, this sends you there first. Android 8 to
+ * 10 restart the app when it's allowed, which brings this window back with the setting on, and
+ * it carries on from there.
  *
  * One of this app's own screens (see android/README.md).
  */
@@ -64,6 +70,8 @@ public class UpdateActivity extends Activity {
     // Where its APK may come from: this repository's releases, and nowhere else.
     private static final String RELEASES =
             "https://github.com/augy-studios/sgbus-timings/releases/download/";
+    // The Edge Tray's "Check for app updates", rather than the update bar's Update.
+    private static final String CHECK = "/check";
 
     // The window on screen, for InstallStatus to report back to.
     private static WeakReference<UpdateActivity> sShowing = new WeakReference<>(null);
@@ -76,6 +84,11 @@ public class UpdateActivity extends Activity {
     private Thread mWork;
     private volatile boolean mCancelled;
     private boolean mAskedToAllow;
+    // Only checking, so ask before downloading what it finds.
+    private boolean mCheckOnly;
+    // The update to install, once found and wanted: kept while you're in "Install unknown
+    // apps", and for "Try again", so neither looks it up again.
+    private Release mRelease;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,8 +96,9 @@ public class UpdateActivity extends Activity {
         setFinishOnTouchOutside(false);
         buildWindow();
         sShowing = new WeakReference<>(this);
-        if (allowedToInstall()) start();
-        else askToAllow();
+        Uri link = getIntent().getData();
+        mCheckOnly = link != null && CHECK.equals(link.getPath());
+        start();
     }
 
     @Override
@@ -114,7 +128,8 @@ public class UpdateActivity extends Activity {
     }
 
     private void askToAllow() {
-        show("To update itself, SG Bus Timings needs your OK to install apps. Turn on "
+        String found = mRelease != null ? "Version " + mRelease.version + " is out. " : "";
+        show(found + "To update itself, SG Bus Timings needs your OK to install apps. Turn on "
                 + "\"Allow from this source\" on the next screen, then come back.",
                 "Continue", () -> {
                     mAskedToAllow = true;
@@ -123,15 +138,31 @@ public class UpdateActivity extends Activity {
                 }, "Not now", this::finish);
     }
 
+    // Looks for the update, or carries on with the one already found.
     private void start() {
         mCancelled = false;
-        progress("Looking for the update…", -1);
+        Release found = mRelease;
+        progress(found != null ? "Downloading version " + found.version + "…"
+                : mCheckOnly ? "Checking for updates…" : "Looking for the update…", -1);
         mWork = new Thread(() -> {
             try {
-                Release release = latest();
+                Release release = found != null ? found : latest();
                 if (release == null) {
                     ui(() -> show("You have the newest version, " + installedVersion() + ".",
                             "Close", this::finish, null, null));
+                    return;
+                }
+                if (found == null && mCheckOnly) {
+                    ui(() -> show("Version " + release.version + " is out. You have "
+                                    + installedVersion() + ".",
+                            "Update", () -> update(release), "Not now", this::finish));
+                    return;
+                }
+                if (!allowedToInstall()) {
+                    ui(() -> {
+                        mRelease = release;
+                        askToAllow();
+                    });
                     return;
                 }
                 File apk = download(release);
@@ -149,6 +180,14 @@ public class UpdateActivity extends Activity {
             }
         }, "update");
         mWork.start();
+    }
+
+    // "Update" on what a check found: on to downloading it, by way of "Install unknown apps"
+    // if this app isn't allowed to install it yet.
+    private void update(Release release) {
+        mRelease = release;
+        if (allowedToInstall()) start();
+        else askToAllow();
     }
 
     // The newest release if it's newer than this app, or null.

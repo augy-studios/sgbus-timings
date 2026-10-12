@@ -127,6 +127,10 @@ When there's a new version, a bar at the top of the app says so:
 Everything you've saved stays. **Not now** hides the bar until you next open
 the app.
 
+From version 2.0.8 you can also check whenever you like: tap the download
+arrow in the Edge Tray (**Check for app updates**). It says if you already have
+the newest version, or which one is out, with **Update** to install it as above.
+
 On version 1.1.0, the bar says **Download** instead: it opens the
 [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest),
 where you download the newer `.apk` and install it over the old one, once.

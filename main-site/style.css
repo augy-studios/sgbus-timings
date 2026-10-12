@@ -616,6 +616,10 @@ html[data-telegram] .telegramBtn { display: none; }
 .tray-buttons > :nth-child(9) { --i: 8; }
 .tray-buttons > :nth-child(10) { --i: 9; }
 .tray-buttons > :nth-child(11) { --i: 10; }
+.tray-buttons > :nth-child(12) { --i: 11; }
+.tray-buttons > :nth-child(13) { --i: 12; }
+.tray-buttons > :nth-child(14) { --i: 13; }
+.tray-buttons > :nth-child(15) { --i: 14; }
 :root[data-tray-closed] .tray-buttons > * {
     opacity: 0;
     translate: 12px 0;

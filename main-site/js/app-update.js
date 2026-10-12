@@ -8,9 +8,14 @@
 //
 // Looked up as the page opens, and again on coming back to it after UPDATE_CHECK_MS, as the
 // app stays open for days. "Not now" lasts this page view only, like js/sw-update.js.
+//
+// From 2.0.8 the Edge Tray also has "Check for app updates", which opens the update window to
+// look whenever you like (CHECK_LINK): it says if you have the newest version, and asks before
+// downloading one. Builds before 2.0.8 ask to install apps before looking, so don't get it.
 // Plain script: this project does not use ES modules.
 (function () {
   const LINK = 'intent://update#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
+  const CHECK_LINK = 'intent://update/check#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
   const UPDATE_CHECK_MS = 6 * 3600 * 1000;
 
   let checkedAt = 0;
@@ -72,6 +77,11 @@
   if (!window.AppBridge) return;
   AppBridge.ready(5000).then((inApp) => {
     if (!inApp) return;
+    if (AppBridge.has('checkupdate')) {
+      const btn = document.getElementById('appUpdateBtn');
+      btn.href = CHECK_LINK;
+      btn.hidden = false;
+    }
     check();
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - checkedAt > UPDATE_CHECK_MS) check();
