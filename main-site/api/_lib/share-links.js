@@ -290,6 +290,32 @@ export function describeLink(link) {
   };
 }
 
+// "Leave at 08:30 on Mon 12 Oct", with the day always named: an Instant View page is kept by
+// Telegram, so "today" would soon be wrong.
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export function whenText(when) {
+  if (!when) return 'Leave now: the ways there from whenever it’s opened';
+  const [y, m, d] = when.at.slice(0, 10).split('-').map(Number);
+  const dow = DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${when.mode === 'arrive' ? 'Arrive by' : 'Leave at'} ${when.at.slice(11)} on ${dow} ${d} ${MONTHS[m - 1]}`;
+}
+
+// ---------- Telegram's Instant View ----------
+// A /trip/ page has its details in an <article> that Telegram's Instant View reads with the
+// template in telegram-instant-view.txt. Until Telegram approves that template, Instant View
+// shows only for links through t.me/iv with the template's rhash (TELEGRAM_IV_SETUP.md), which
+// is what Share's Telegram button sends when TELEGRAM_IV_RHASH is set.
+
+export const IV_KINDS = ['directions'];
+
+export function instantViewUrl(kind, url) {
+  const rhash = (process.env.TELEGRAM_IV_RHASH || '').trim();
+  if (!rhash || !IV_KINDS.includes(kind)) return null;
+  return `https://t.me/iv?url=${encodeURIComponent(url)}&rhash=${encodeURIComponent(rhash)}`;
+}
+
 // ---------- the map ----------
 // OneMap's static map: free, with no key, Singapore's own. Pins are one letter; the route is
 // a line through up to MAP_POINTS of its points, so the address stays a sensible length.
