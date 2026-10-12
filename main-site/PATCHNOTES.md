@@ -16,7 +16,13 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Your places fit in Navigate** - Fixed: with more than a few places saved, the buttons under From and To ran off the side of Navigate and pushed it wider than the screen. They now wrap onto as many lines as they need, on both the Bus and train and Bus only tabs.
 - **Your trips open smoothly** - Tapping a trip in Your trips now slides its details open, and tapping it again (or another trip) slides them shut, rather than snapping.
 
-### Android app 2.0.8 and Desktop app 2.0.8
+### Android app 2.0.8
+
+- **Walking or riding, by speed** - On a trip, the app also goes by how fast you're moving, so it tells walking from riding with the screen off, when your steps can't be counted. Up to about 10 km/h is walking; a bus or train's speed, about 40 km/h on average, is riding. Riding speed 150 m down your bus's route counts as boarding, and riding speed is never taken for walking, whatever the motion sensor says.
+- **Hold a card to the phone** - Hold an EZ-Link or NETS FlashPay card to your phone and Android offers SG Bus Timings for it, even with the app closed: the card's value opens straight away. While the app is open, it takes the card without asking.
+- The web app's changes above.
+
+### Desktop app 2.0.8
 
 - The web app's changes above.
 

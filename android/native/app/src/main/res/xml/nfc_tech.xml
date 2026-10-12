@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The cards Android offers this app when one's held to the phone (AndroidManifest.xml):
+     smart cards (IsoDep), which EZ-Link and NETS FlashPay are (CardPlugin). Bank cards are too,
+     so they're offered as well, and the page says they've no value to read. -->
+<resources>
+    <tech-list>
+        <tech>android.nfc.tech.IsoDep</tech>
+    </tech-list>
+</resources>

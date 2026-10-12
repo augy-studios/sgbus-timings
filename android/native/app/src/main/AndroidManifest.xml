@@ -22,7 +22,8 @@
          when you choose it. -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
-    <!-- A card's value (CardPlugin). Phones without NFC still install the app. -->
+    <!-- A card's value (CardPlugin), and Android offering this app when a card's held to the
+         phone. Phones without NFC still install the app. -->
     <uses-permission android:name="android.permission.NFC" />
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
@@ -92,6 +93,14 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
+
+            <!-- A card held to the phone (CardPlugin.tapped): Android offers this app for it,
+                 with the app closed or in the background. -->
+            <intent-filter>
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="android.nfc.action.TECH_DISCOVERED" android:resource="@xml/nfc_tech" />
 
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>

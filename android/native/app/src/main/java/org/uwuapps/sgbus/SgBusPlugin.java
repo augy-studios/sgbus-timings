@@ -57,6 +57,7 @@ public class SgBusPlugin extends Plugin {
         features.put("update"); // UpdateActivity
         features.put("checkupdate"); // UpdateActivity's check, for the Edge Tray (2.0.8)
         features.put("trip"); // TripPlugin
+        features.put("pace"); // TripPlugin's walking or riding by speed (Pace, 2.0.8)
         features.put("notify");
         features.put("board"); // the board channel, for Get ready to board (Notifications)
         features.put("share");
@@ -65,7 +66,10 @@ public class SgBusPlugin extends Plugin {
                 && getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
             features.put("pip");
         }
-        if (NfcAdapter.getDefaultAdapter(getContext()) != null) features.put("card"); // CardPlugin
+        if (NfcAdapter.getDefaultAdapter(getContext()) != null) {
+            features.put("card"); // CardPlugin
+            features.put("cardtap"); // CardPlugin's "tapped", a card held to the phone (2.0.8)
+        }
         // Firebase is set up for this build (google-services.json): the server can push.
         if (getContext().getResources().getIdentifier("google_app_id", "string", getContext().getPackageName()) != 0) {
             features.put("push");

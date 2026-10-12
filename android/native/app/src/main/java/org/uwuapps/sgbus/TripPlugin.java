@@ -13,8 +13,10 @@
  *   stop()                   the trip's over
  *   status()                 { running, location, background, notifications }
  *
- * Events: "location" { lat, lng, accuracy, heading, speed, time } for each fix, and "end" when
- * the notification's End trip is tapped.
+ * Events: "location" { lat, lng, accuracy, heading, speed, time, pace, kmh } for each fix, and
+ * "end" when the notification's End trip is tapped. `pace` is "walking", "riding" or "still" by
+ * your average speed over the last few seconds, `kmh` (Pace, 2.0.8); both are left out with
+ * nothing recent to go by.
  */
 package org.uwuapps.sgbus;
 
@@ -176,6 +178,11 @@ public class TripPlugin extends Plugin {
         if (l.hasBearing()) out.put("heading", l.getBearing());
         if (l.hasSpeed()) out.put("speed", l.getSpeed());
         out.put("time", l.getTime());
+        Pace pace = TripService.pace();
+        String state = pace.state();
+        if (state != null) out.put("pace", state);
+        double kmh = pace.kmh();
+        if (kmh >= 0) out.put("kmh", Math.round(kmh * 10) / 10.0);
         return out;
     }
 

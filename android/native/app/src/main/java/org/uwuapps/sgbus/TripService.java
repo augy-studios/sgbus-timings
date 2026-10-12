@@ -6,7 +6,8 @@
  * keeps up to date. Its End button ends the trip in the page too.
  *
  * Each fix goes to the page (TripPlugin.onFix), which works out the rest as it does in a
- * browser. A partial wake lock keeps the page's clock running between fixes, as underground,
+ * browser, with whether you're walking or riding by your average speed (Pace), as the page
+ * can't feel your steps with the screen off. A partial wake lock keeps the page's clock running between fixes, as underground,
  * where GPS gives out and the trip goes by the time each ride should take; it's let go when
  * the trip ends, and after MAX_MS whatever happens.
  *
@@ -58,6 +59,7 @@ public class TripService extends Service {
 
     private static volatile boolean sRunning;
     private static volatile Location sLast;
+    private static volatile Pace sPace = new Pace();
 
     private FusedLocationProviderClient mLocations;
     private PowerManager.WakeLock mWake;
@@ -70,6 +72,7 @@ public class TripService extends Service {
             Location fix = result.getLastLocation();
             if (fix == null) return;
             sLast = fix;
+            sPace.add(fix);
             TripPlugin.onFix(fix);
         }
     };
@@ -81,6 +84,10 @@ public class TripService extends Service {
     @Nullable
     static Location last() {
         return sLast;
+    }
+
+    static Pace pace() {
+        return sPace;
     }
 
     static void start(Context context, String title, String text) {
@@ -123,6 +130,7 @@ public class TripService extends Service {
                     Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q ? ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION : 0);
             sRunning = true;
             sLast = null;
+            sPace = new Pace();
             follow();
             hold();
         } else {

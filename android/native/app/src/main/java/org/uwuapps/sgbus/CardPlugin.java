@@ -11,6 +11,12 @@
  *             "off" or "cancelled"
  *   cancel()  stops waiting
  *
+ * Event: "tapped", a card held to the phone while it wasn't waiting for one, which Android
+ * offers to this app (AndroidManifest.xml's TECH_DISCOVERED, res/xml/nfc_tech.xml), even with
+ * the app closed: the card's read at once, before it's taken away, and the page gets what
+ * read() would have answered, or { error, message, raw } (2.0.8). Kept until the page is
+ * listening, as on a tap that opens the app it's still loading.
+ *
  * The purse's layout (from FareBot and Metrodroid, which read the same cards):
  *   0 CEPAS version, 1 purse status (bit 0: purse enabled, bit 1: auto top-up on),
  *   2-4 balance (signed, cents),
@@ -37,10 +43,13 @@
 package org.uwuapps.sgbus;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
 import android.os.Bundle;
+
+import androidx.core.content.IntentCompat;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -50,6 +59,7 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.util.Arrays;
 
 @CapacitorPlugin(name = "Card")
@@ -66,6 +76,69 @@ public class CardPlugin extends Plugin {
     private static final long DAY_MS = 86400000L;
 
     private PluginCall mWaiting;
+
+    private static WeakReference<CardPlugin> sPlugin = new WeakReference<>(null);
+    // A tapped card's read, waiting for the plugin to load.
+    private static JSObject sTapped;
+
+    // What reading a card came to: the card, or why not.
+    private static final class Read {
+        JSObject card;
+        String code;
+        String message;
+        JSObject data;
+
+        static Read failed(String code, String message, JSObject data) {
+            Read r = new Read();
+            r.code = code;
+            r.message = message;
+            r.data = data;
+            return r;
+        }
+    }
+
+    @Override
+    public void load() {
+        sPlugin = new WeakReference<>(this);
+        JSObject tapped;
+        synchronized (CardPlugin.class) {
+            tapped = sTapped;
+            sTapped = null;
+        }
+        if (tapped != null) notifyListeners("tapped", tapped, true);
+    }
+
+    // A card Android gave the app (MainActivity), read off the main thread while it's still
+    // there. Says whether the intent was one.
+    static boolean tapped(Intent intent) {
+        // Opened again from recents with the intent it was first opened with: that card's long gone.
+        if (intent == null || (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return false;
+        String action = intent.getAction();
+        if (!NfcAdapter.ACTION_TECH_DISCOVERED.equals(action) && !NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)) return false;
+        Tag tag = IntentCompat.getParcelableExtra(intent, NfcAdapter.EXTRA_TAG, Tag.class);
+        if (tag == null) return false;
+        new Thread(() -> {
+            Read r = readCard(tag);
+            JSObject out;
+            if (r.card != null) {
+                out = r.card;
+            } else {
+                out = new JSObject();
+                out.put("error", r.code);
+                out.put("message", r.message);
+                if (r.data != null && r.data.has("raw")) out.put("raw", r.data.getString("raw"));
+            }
+            CardPlugin plugin = sPlugin.get();
+            if (plugin != null) {
+                plugin.notifyListeners("tapped", out, true);
+            } else {
+                synchronized (CardPlugin.class) {
+                    sTapped = out;
+                }
+            }
+        }, "card-tapped").start();
+        return true;
+    }
 
     @PluginMethod
     public void status(PluginCall call) {
@@ -129,41 +202,45 @@ public class CardPlugin extends Plugin {
     private void onTag(Tag tag) {
         PluginCall call = mWaiting;
         if (call == null) return;
-        IsoDep iso = IsoDep.get(tag);
-        if (iso == null) {
-            call.reject("That isn't an EZ-Link or NETS FlashPay card", "not-cepas");
-        } else {
-            try {
-                iso.connect();
-                iso.setTimeout(2000);
-                byte[] purse = command(iso, READ_PURSE);
-                if (purse == null || purse.length < MIN_PURSE || (purse[0] & 0xff) >= 0x30) {
-                    JSObject data = new JSObject();
-                    if (purse != null) data.put("raw", hex(purse));
-                    call.reject("That isn't an EZ-Link or NETS FlashPay card", "not-cepas", null, data);
-                } else {
-                    JSObject out = parse(purse);
-                    // The history's a nicety: a card that won't give it still has its value.
-                    try {
-                        out.put("history", history(command(iso, READ_HISTORY)));
-                    } catch (IOException e) {
-                        out.put("history", new JSArray());
-                    }
-                    call.resolve(out);
-                }
-            } catch (IOException e) {
-                call.reject("The card moved away too soon. Hold it still and try again.", "lost");
-            } finally {
-                try {
-                    iso.close();
-                } catch (IOException ignored) {
-                    // Already gone.
-                }
-            }
-        }
+        Read r = readCard(tag);
+        if (r.card != null) call.resolve(r.card);
+        else call.reject(r.message, r.code, null, r.data);
         mWaiting = null;
         call.setKeepAlive(false);
         finish();
+    }
+
+    private static Read readCard(Tag tag) {
+        IsoDep iso = IsoDep.get(tag);
+        if (iso == null) return Read.failed("not-cepas", "That isn't an EZ-Link or NETS FlashPay card", null);
+        try {
+            iso.connect();
+            iso.setTimeout(2000);
+            byte[] purse = command(iso, READ_PURSE);
+            if (purse == null || purse.length < MIN_PURSE || (purse[0] & 0xff) >= 0x30) {
+                JSObject data = new JSObject();
+                if (purse != null) data.put("raw", hex(purse));
+                return Read.failed("not-cepas", "That isn't an EZ-Link or NETS FlashPay card", data);
+            }
+            Read r = new Read();
+            r.card = parse(purse);
+            // The history's a nicety: a card that won't give it still has its value.
+            try {
+                r.card.put("history", history(command(iso, READ_HISTORY)));
+            } catch (IOException e) {
+                r.card.put("history", new JSArray());
+            }
+            return r;
+        } catch (IOException | SecurityException e) {
+            // SecurityException: the tag's gone stale, as an intent's can be by the time it's read.
+            return Read.failed("lost", "The card moved away too soon. Hold it still and try again.", null);
+        } finally {
+            try {
+                iso.close();
+            } catch (IOException | SecurityException ignored) {
+                // Already gone.
+            }
+        }
     }
 
     // A command's answer without its 90 00 ("done"), or null if it didn't end so.
