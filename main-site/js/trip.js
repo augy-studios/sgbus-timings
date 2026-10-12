@@ -37,7 +37,15 @@
 //
 // Tapping the trip bar opens that timeline: the stops still ahead, with a blue dot where you
 // are, gliding between stops like a progress bar. It's drawn once a frame only while the dot
-// is moving, and moved with transforms, so an open timeline doesn't make the page lag.
+// is moving, and moved with transforms, so an open timeline doesn't make the page lag. A bus
+// leg's `codes` (optional) are the stop codes of its points: with them, tapping a stop on the
+// timeline closes it and opens that stop's timings for the bus, below.
+//
+// Get ready to board: while you wait at the stop for a bus leg's bus (not on board yet: the
+// fixes haven't shown you moving along its route), its live timing at your stop (`board`) is
+// checked, and once it's about a minute away you're told, once per leg: a notification, a buzz
+// and the bar. The server does the same while the app's in the background (api/_push/trip.js),
+// and each side hears of the other's (`readied`), so it's said only once.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -79,6 +87,18 @@
   const EASE = 0.15;
   // With no fix, the clock moves the dot on slowly; this often it's checked for that.
   const NUDGE_MS = 1000;
+
+  // Get ready to board: the bus's timing at your stop is checked this often while you wait,
+  // and more often once it's close, and you're told once it's this near. Keep BOARD_MS and the
+  // wording in step with api/_push/trip.js.
+  const BOARD_CHECK_MS = 30 * 1000;
+  const BOARD_CHECK_NEAR_MS = 15 * 1000;
+  const BOARD_NEAR_MS = 3 * 60 * 1000;
+  const BOARD_MS = 75 * 1000;
+  // A bus LTA has as already at the stop for longer than this has likely gone.
+  const BOARD_GONE_MS = -30 * 1000;
+  // Two short buzzes: not the Get Off Alert's "OFF".
+  const BOARD_VIBRATION = [200, 120, 200];
 
   let trip = null;
   let watchId = null;
@@ -139,6 +159,8 @@
       record();
     }
     stop(false);
+    boardCheckedAt = 0;
+    boardEta = null;
     const now = Date.now();
     trip = {
       tripId: crypto.randomUUID(),
@@ -153,6 +175,8 @@
       legStartedAt: now,
       lastFixAt: 0,
       alerted: legs.map(() => false),
+      // Whether each leg's Get ready to board was given.
+      readied: legs.map(() => false),
       noLocation: false,
       // When each leg began, was boarded (`gps` when the fixes showed it) and ended.
       times: legs.map((_, i) => (i === 0 ? { start: now } : {})),
@@ -173,6 +197,7 @@
     tick = setInterval(onTick, TICK_MS);
     keepAwake();
     sync();
+    watchBoard();
   }
 
   function watchHere() {
@@ -427,6 +452,7 @@
         check();
       }
     }
+    watchBoard();
     render();
   }
 
@@ -476,6 +502,122 @@
     return bestM <= ON_ROUTE_M ? best : null;
   }
 
+  // ---------- get ready to board ----------
+
+  // Whether you're waiting at the stop for this leg's bus: a bus leg with a stop and service to
+  // ask about, its ping not yet given, and you not on board. On board is when the fixes have
+  // shown you moving along its route (noteMove); without location, once the clock's moved you
+  // half a stop on. A recent good fix already along the route counts as on board too, before
+  // noteMove is sure of it.
+  function waitingForBus() {
+    const leg = trip?.legs[trip.leg];
+    if (leg?.kind !== "bus" || !leg.service || !leg.board) return false;
+    if (trip.readied?.[trip.leg] || trip.boarded || target() >= 0.5) return false;
+    if (trip.me && Date.now() - trip.me.t < FIX_STALE_MS && (alongLeg([trip.me.lat, trip.me.lng], leg, 0) ?? 0) >= 0.5) return false;
+    return true;
+  }
+
+  let boardCheckedAt = 0;
+  let boardEta = null; // the last timing heard, to check more often once it's close
+  let boardAsking = false;
+  async function watchBoard() {
+    if (!trip || !waitingForBus() || boardAsking) return;
+    const every = boardEta != null && boardEta <= BOARD_NEAR_MS ? BOARD_CHECK_NEAR_MS : BOARD_CHECK_MS;
+    // It's run on the tick, so half a tick's slack keeps it from slipping a whole tick late.
+    if (Date.now() - boardCheckedAt < every - TICK_MS / 2) return;
+    boardCheckedAt = Date.now();
+    boardAsking = true;
+    const asked = trip;
+    const legAt = trip.leg;
+    const leg = trip.legs[legAt];
+    try {
+      const res = await fetch(`/api/bus-arrivals?stop=${encodeURIComponent(leg.board)}&service=${encodeURIComponent(leg.service)}`, { cache: "no-store" });
+      if (!res.ok) return;
+      const svc = (await res.json()).services?.find((s) => String(s.serviceNo).toUpperCase() === String(leg.service).toUpperCase());
+      const eta = svc?.next?.eta_ms;
+      boardEta = eta ?? null;
+      // Checked again after the wait: still the same leg, and still not on board.
+      if (trip !== asked || trip.leg !== legAt || eta == null || !waitingForBus()) return;
+      if (eta <= BOARD_MS && eta > BOARD_GONE_MS) readyToBoard(leg, eta);
+    } catch {
+    } finally {
+      boardAsking = false;
+    }
+  }
+
+  function boardText(leg, eta) {
+    const where = stopName(leg, 0);
+    return eta <= 20 * 1000
+      ? `${leg.label} is arriving at ${where}. Get ready to board.`
+      : `${leg.label} is 1 min away from ${where}. Get ready to board.`;
+  }
+
+  function readyToBoard(leg, eta) {
+    const text = boardText(leg, eta);
+    trip.readied[trip.leg] = true;
+    trip.boardText = text;
+    if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
+    notify({ title: "Get ready to board", body: text, tag: "board", vibrate: BOARD_VIBRATION, channel: "board" });
+    flash();
+    save();
+    render();
+    sync();
+  }
+
+  // The server said it while the app was in the background (sw.js, or the app's push through
+  // js/alerts.js): shown on the bar, and not said again. If the page hasn't, and you're still
+  // waiting, it's shown as a notification here too, as a push to an app in front isn't.
+  function readiedElsewhere({ tripId, leg, text }, show = false) {
+    if (!trip || tripId !== trip.tripId || trip.readied?.[leg]) return;
+    const waiting = leg === trip.leg && waitingForBus();
+    trip.readied[leg] = true;
+    if (waiting) {
+      trip.boardText = text;
+      if (show) notify({ title: "Get ready to board", body: text, tag: "board", vibrate: BOARD_VIBRATION, channel: "board" });
+      flash();
+    }
+    save();
+    render();
+  }
+
+  // A notification, wherever the site is: in the Android app, through the app (on `channel`,
+  // if this build has it); in the desktop app, through it; otherwise from the service worker.
+  function notify({ title, body, tag, vibrate, channel }) {
+    if (window.AppBridge?.native) {
+      if (AppBridge.has("notify")) {
+        // Every 2.0 build has alerts and get_off; board came in 2.0.4.
+        const ch = channel === "board" && !AppBridge.has("board") ? "alerts" : channel;
+        AppBridge.notify({ channel: ch, tag, title, body, url: "/" });
+      }
+      return;
+    }
+    if (window.sgbusDesktop?.notify) {
+      window.sgbusDesktop.notify({ title, body });
+      return;
+    }
+    navigator.serviceWorker?.ready
+      .then((reg) => {
+        if (Notification.permission !== "granted") return;
+        return reg.showNotification(title, {
+          body,
+          tag,
+          renotify: true,
+          requireInteraction: true,
+          vibrate,
+          icon: "/sgbusicon1.png",
+          badge: "/sgbusnotificon.png",
+          data: { url: "/", kind: tag },
+        });
+      })
+      .catch(() => {});
+  }
+
+  function flash() {
+    const bar = $("#tripBar");
+    bar.classList.add("alerting");
+    setTimeout(() => bar.classList.remove("alerting"), 8000);
+  }
+
   function nextLeg() {
     endLegTime();
     trip.leg += 1;
@@ -486,11 +628,14 @@
     trip.boarded = false;
     trip.moves = [];
     trip.alertText = null;
+    trip.boardText = null;
     trip.legStartedAt = Date.now();
     shown = null;
     save();
     sync();
     record();
+    boardCheckedAt = 0;
+    watchBoard();
   }
 
   // ---------- Your trips (js/history.js) ----------
@@ -562,23 +707,8 @@
     // In the app, its own notification, which sounds over the lock screen even with the page
     // in the background.
     if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text }).catch(() => {});
-    else navigator.serviceWorker?.ready
-      .then((reg) => {
-        if (Notification.permission !== "granted") return;
-        return reg.showNotification("Get Off Alert", {
-          body: text,
-          tag: "get-off",
-          renotify: true,
-          requireInteraction: true,
-          vibrate: VIBRATION,
-          icon: "/sgbusicon1.png",
-          badge: "/sgbusnotificon.png",
-        });
-      })
-      .catch(() => {});
-    const bar = $("#tripBar");
-    bar.classList.add("alerting");
-    setTimeout(() => bar.classList.remove("alerting"), 8000);
+    else notify({ title: "Get Off Alert", body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
+    flash();
     // The bar keeps saying so until you pass another stop, rather than until the next
     // redraw, which comes straight after this.
     trip.alertText = text;
@@ -595,9 +725,7 @@
     if (leg === trip.leg) {
       trip.alertText = text;
       trip.alertLeft = stopsLeft();
-      const bar = $("#tripBar");
-      bar.classList.add("alerting");
-      setTimeout(() => bar.classList.remove("alerting"), 8000);
+      flash();
     }
     save();
     render();
@@ -625,6 +753,8 @@
       legs: trip.legs.map((l) => ({
         kind: l.kind, to: l.to, points: l.points, minutes: l.minutes || 0, wait: l.wait || 0, service: l.service, alight: l.alight,
         label: l.label, walkAfter: l.walkAfter || 0,
+        // For Get ready to board: the stop you get on at, and its name.
+        board: l.board, boardName: l.kind === "bus" ? stopName(l, 0).slice(0, 80) : undefined,
       })),
       // A live ETA link, kept updated by the server while the app is in the background.
       share: trip.share || null,
@@ -640,6 +770,7 @@
       // Whether the clock may move you on: not on a bus until you're on board for sure.
       clockRuns: underWay(trip.legs[trip.leg]),
       alerted: trip.alerted,
+      readied: trip.readied,
     });
     try {
       const res = await fetch(`${TRIPS_API}/${pushTo.deviceId}`, {
@@ -662,6 +793,9 @@
     state.alerted.forEach((a, i) => {
       if (a) trip.alerted[i] = true;
     });
+    state.readied?.forEach((r, i) => {
+      if (r) trip.readied[i] = true;
+    });
     const moved = state.leg > trip.leg && state.leg < trip.legs.length;
     if (moved) {
       // The server moved the trip on while the app was away: the leg it left ended about when
@@ -670,7 +804,7 @@
       const t = trip.times[trip.leg];
       if (t && !t.end) t.end = began;
       trip.times[state.leg] = { start: began };
-      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, legStartedAt: began });
+      Object.assign(trip, { leg: state.leg, at: 0, pos: 0, anchor: null, boarded: false, moves: [], alertText: null, boardText: null, legStartedAt: began });
       shown = null;
     }
     save();
@@ -777,6 +911,8 @@
     const leg = trip.legs[trip.leg];
     const left = stopsLeft();
     if (!message && trip.alertText && trip.alertLeft === left) message = trip.alertText;
+    // Get ready to board stands while you're still waiting for the bus.
+    if (!message && trip.boardText && trip.readied?.[trip.leg] && leg.kind === "bus" && !trip.boarded && target() < 0.5) message = trip.boardText;
     if (message) return message;
     const where = isWalk(leg)
       ? `Walk to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
@@ -836,7 +972,12 @@
               : i === alertAt && alertAt > 0 && enabled()
                 ? `<span class="tlTag">${window.icon("bell")} Alert</span>`
                 : "";
-            return `<li class="tlStop${i === last ? " end" : ""}"><span class="tlNode"></span><span class="tlName">${esc(stopName(leg, i))}</span>${tag}</li>`;
+            // A bus stop with its code: a button to its timings for this bus (init).
+            const code = leg.kind === "bus" && leg.codes?.length === leg.points.length ? leg.codes[i] : null;
+            const name = code
+              ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(leg.service || "")}" title="Timings for ${esc(leg.label)} here">${esc(stopName(leg, i))}</button>`
+              : `<span class="tlName">${esc(stopName(leg, i))}</span>`;
+            return `<li class="tlStop${i === last ? " end" : ""}"><span class="tlNode"></span>${name}${tag}</li>`;
           })
           .join("");
         return (
@@ -970,6 +1111,14 @@
       setExpanded(!expanded);
     });
     $("#tripEnd").addEventListener("click", () => stop());
+    // A stop on the timeline: the timeline closes, and the page goes down to its timings for
+    // that bus.
+    $("#tripTimeline").addEventListener("click", (e) => {
+      const go = e.target.closest("[data-tl-stop]");
+      if (!go || typeof window.loadStop !== "function") return;
+      setExpanded(false);
+      window.loadStop(go.dataset.tlStop, { service: go.dataset.tlBus || null, scroll: true });
+    });
     $("#tripMap").addEventListener("click", () => window.LiveMap?.trip());
     $("#tripNext").addEventListener("click", () => {
       if (!trip) return;
@@ -1002,9 +1151,12 @@
     });
     navigator.serviceWorker?.addEventListener("message", (event) => {
       if (event.data?.type === "get-off") alertedElsewhere(event.data);
+      if (event.data?.type === "board") readiedElsewhere(event.data);
     });
-    // The same from the server through the app (js/alerts.js), while it's in front.
+    // The same from the server through the app (js/alerts.js), while it's in front, where
+    // Android leaves the push for the app to show.
     window.addEventListener("push:get-off", (e) => alertedElsewhere(e.detail));
+    window.addEventListener("push:board", (e) => readiedElsewhere(e.detail, true));
     // A reload mid-trip carries on.
     try {
       const saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || "null");
@@ -1014,6 +1166,8 @@
         // A trip saved by a version from before Your trips.
         trip.times ??= trip.legs.map((_, i) => (i === trip.leg ? { start: trip.legStartedAt } : {}));
         trip.startedAt ??= trip.legStartedAt;
+        // And from before Get ready to board.
+        trip.readied ??= trip.legs.map(() => false);
         if (window.AppBridge?.native) AppBridge.ready(5000).then(() => trip && run());
         else run();
       }

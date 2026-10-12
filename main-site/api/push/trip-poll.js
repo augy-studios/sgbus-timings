@@ -1,13 +1,14 @@
 // Run by Vercel Cron every minute (vercel.json): moves every trip on by a minute
 // (api/_push/trip.js), from where LTA says its bus is or by the clock, and pushes the Get Off
-// Alert to the ones that have reached it. The app does the same itself while it's open; this
+// Alert to the ones that have reached it, and Get ready to board to the ones whose bus is a
+// minute from the stop they're waiting at. The app does the same itself while it's open; this
 // is for when it's in the background, where a website gets no location.
 
 import webpush from 'web-push';
 import { sendPush } from '../_push/send.js';
-import { fetchBusPositions } from '../_push/lta.js';
+import { fetchBusPositions, fetchNextArrival } from '../_push/lta.js';
 import { releaseLock, storeConfigured, takeLock, trips } from '../_push/store.js';
-import { step, ttlSeconds } from '../_push/trip.js';
+import { boardStep, step, ttlSeconds, waitingToBoard } from '../_push/trip.js';
 import { etaFromTrip, updateEta } from '../_lib/share-links.js';
 import { supabaseConfigured } from '../_lib/supabase.js';
 
@@ -54,6 +55,17 @@ async function poll(accountKey) {
     }
     return asked.get(key);
   };
+  const arrivals = new Map();
+  const nextArrival = (stop, service) => {
+    const key = `${stop}|${service}`;
+    if (!arrivals.has(key)) {
+      arrivals.set(key, fetchNextArrival(accountKey, stop, service).catch((err) => {
+        console.warn(`next ${service} at ${stop} failed: ${err.message}`);
+        return null;
+      }));
+    }
+    return arrivals.get(key);
+  };
 
   const now = Date.now();
   let sent = 0;
@@ -63,7 +75,13 @@ async function poll(accountKey) {
       const buses = leg.kind === 'bus' && leg.service && leg.alight ? await positions(leg.alight, leg.service) : null;
       const { alert, done } = step(trip, buses?.length ? buses : null, now);
 
-      if (alert && (await send(id, trip, alert))) sent++;
+      if (alert && (await send(id, trip, { type: 'get-off', tripId: trip.tripId, leg: alert.leg, body: alert.text }))) sent++;
+      // Still waiting for the bus, after this minute's step: is it a minute away?
+      if (!done && waitingToBoard(trip)) {
+        const l = trip.legs[trip.leg];
+        const board = boardStep(trip, await nextArrival(l.board, l.service));
+        if (board && (await send(id, trip, { type: 'board', title: 'Get ready to board', tripId: trip.tripId, leg: board.leg, body: board.text }))) sent++;
+      }
       if (trip.share) await shareProgress(trip, done, now);
       if (done) await trips.delete(id);
       else await trips.update(id, trip, ttlSeconds(trip, now));
@@ -88,8 +106,9 @@ async function shareProgress(trip, done, now) {
   }
 }
 
-async function send(id, trip, alert) {
-  const payload = JSON.stringify({ type: 'get-off', tripId: trip.tripId, leg: alert.leg, body: alert.text });
+// `message` is { type: 'get-off' | 'board', tripId, leg, body }, and a title for 'board'.
+async function send(id, trip, message) {
+  const payload = JSON.stringify(message);
   try {
     await sendPush(trip.subscription, payload, { ttl: PUSH_TTL, urgency: 'high' });
     return true;
@@ -99,7 +118,7 @@ async function send(id, trip, alert) {
       await trips.delete(id).catch(() => {});
       return false;
     }
-    console.error(`get off alert to ${id} failed:`, err.statusCode ?? '', err.body ?? err.message);
+    console.error(`${message.type} push to ${id} failed:`, err.statusCode ?? '', err.body ?? err.message);
     return false;
   }
 }

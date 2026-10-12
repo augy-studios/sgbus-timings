@@ -23,6 +23,15 @@ export async function fetchBusPositions(accountKey, stop, service) {
     .filter((b) => b.lat && b.lng);
 }
 
+// How long until a service's next bus reaches a stop, in ms (below 0 once it's there), or
+// null when there's none coming. For Get ready to board, at the stop you wait at.
+export async function fetchNextArrival(accountKey, stop, service) {
+  const data = await get(`/v3/BusArrival?BusStopCode=${encodeURIComponent(stop)}&ServiceNo=${encodeURIComponent(service)}`, accountKey);
+  const svc = (data?.Services ?? []).find((s) => String(s.ServiceNo) === String(service));
+  const at = Date.parse(svc?.NextBus?.EstimatedArrival || '');
+  return Number.isFinite(at) ? at - Date.now() : null;
+}
+
 // TrainServiceAlerts as it comes: { Status, AffectedSegments, Message }.
 export async function fetchTrainAlerts(accountKey) {
   const data = await get('/TrainServiceAlerts', accountKey);

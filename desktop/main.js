@@ -6,11 +6,12 @@
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
 // - its own title bar: back, forward, reload, the page's address, which can be typed over,
-//   and a button to copy it, screenshot and long screenshot buttons, and minimise, maximise and close
+//   and a button to copy it, screenshot and long screenshot buttons, a green Restart to update
+//   button once an update's downloaded, and minimise, maximise and close
 //   on Windows and Linux (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
-// - checking for its own updates (updater.js);
+// - checking for its own updates (updater.js), and from the tray's "Check for updates...";
 // - Bus timings widgets on the desktop (widgets.js).
 //
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
@@ -35,6 +36,7 @@ const ALLOWED = new Set(['geolocation', 'notifications', 'clipboard-sanitized-wr
 let win = null; // the window, its own webContents the title bar (titlebar.html)
 let page = null; // the site's webContents, in a view below the title bar
 let tray = null;
+let refreshBar = () => {}; // sends the title bar what it shows again (createWindow)
 let quitting = false;
 // uwu://sgbus/ links. Windows, macOS and Linux give a scheme to one app only, unlike Android,
 // which shares uwu:// out by host, so this answers every uwu:// link and opens only sgbus's.
@@ -208,8 +210,11 @@ function createWindow() {
       fullscreen: win.isFullScreen(),
       maximized: win.isMaximized(),
       color,
+      // A downloaded update's version, for the bar's green Restart to update button.
+      update: updater.ready(),
     });
   };
+  refreshBar = sendState;
   for (const event of ['did-navigate', 'did-navigate-in-page', 'did-start-loading', 'did-stop-loading']) page.on(event, sendState);
   win.webContents.on('did-finish-load', sendState);
   win.on('enter-full-screen', sendState);
@@ -359,6 +364,7 @@ function createTray() {
     { label: 'Navigate', click: () => showWindow('#nav') },
     { label: 'Add a Bus timings widget', click: () => widgets.add() },
     { type: 'separator' },
+    updater.checkItem(),
     {
       label: 'Start when I sign in',
       type: 'checkbox',
@@ -372,8 +378,11 @@ function createTray() {
     { label: 'Quit', click: () => { quitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(menu());
-  // An update found or downloaded: the menu offers it.
-  updater.start(() => tray.setContextMenu(menu()));
+  // An update found or downloaded, or a check starting or done: the menu says so.
+  updater.start(() => {
+    tray.setContextMenu(menu());
+    refreshBar();
+  });
   // macOS opens the menu on a click, so only Windows and Linux show and hide the window with it.
   if (process.platform !== 'darwin') tray.on('click', () => (win.isVisible() && win.isFocused() ? win.hide() : showWindow()));
   // Linux trays show the menu on any click; refreshed so the checkbox is right.
@@ -391,6 +400,10 @@ ipcMain.on('bar-forward', (e) => {
 });
 ipcMain.on('bar-reload', (e) => {
   if (fromBar(e)) page.reload();
+});
+// The green update button, there once an update's downloaded.
+ipcMain.on('bar-update', (e) => {
+  if (fromBar(e)) updater.restart();
 });
 // The window's own buttons, on Windows and Linux. Closing puts it in the tray, as ever.
 ipcMain.on('bar-minimize', (e) => {

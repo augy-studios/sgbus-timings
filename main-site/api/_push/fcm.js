@@ -75,12 +75,13 @@ class PushError extends Error {
 }
 
 // `payload` is the same JSON string a Web Push carries: { type: 'service-alert', title, body,
-// url } or { type: 'get-off', tripId, leg, body }.
+// url }, { type: 'get-off', tripId, leg, body } or { type: 'board', title, tripId, leg, body }.
 export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' } = {}) {
   if (!fcmConfigured()) throw new PushError(503, 'FIREBASE_SERVICE_ACCOUNT is not set');
   const msg = JSON.parse(payload);
   const getOff = msg.type === 'get-off';
-  const title = msg.title || (getOff ? 'Get Off Alert' : 'Service Alerts');
+  const board = msg.type === 'board';
+  const title = msg.title || (getOff ? 'Get Off Alert' : board ? 'Get ready to board' : 'Service Alerts');
   const data = {};
   for (const [k, v] of Object.entries({ ...msg, title })) if (v != null) data[k] = String(v);
 
@@ -92,11 +93,12 @@ export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' 
       priority: urgency === 'high' ? 'HIGH' : 'NORMAL',
       ttl: `${ttl}s`,
       notification: {
-        // The app's channels (Notifications.java): the Get Off Alert's buzzes "OFF".
-        channel_id: getOff ? 'get_off' : 'alerts',
-        tag: getOff ? 'get-off' : 'service-alert',
+        // The app's channels (Notifications.java): the Get Off Alert's buzzes "OFF". An app from
+        // before 2.0.4 has no board channel, and Android puts it on its default one.
+        channel_id: getOff ? 'get_off' : board ? 'board' : 'alerts',
+        tag: getOff ? 'get-off' : board ? 'board' : 'service-alert',
         icon: 'ic_notification_icon',
-        notification_priority: getOff ? 'PRIORITY_MAX' : 'PRIORITY_DEFAULT',
+        notification_priority: getOff ? 'PRIORITY_MAX' : board ? 'PRIORITY_HIGH' : 'PRIORITY_DEFAULT',
         visibility: 'PUBLIC',
       },
     },

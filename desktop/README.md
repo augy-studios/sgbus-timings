@@ -22,13 +22,15 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   screenshot and long screenshot buttons, in the site's colour. The address can't be typed
   in: clicking it copies the link. A screenshot is of the site (not the bar), as it is on
   screen; a long one is the whole page, top to bottom (up to 16384 pixels tall). Either is
-  copied, and saved in your **Downloads** folder. On Windows and Linux the bar has its own
+  copied, and saved in your **Downloads** folder. Once an update's downloaded, a green update
+  button right of them restarts the app to install it (`updater.js`). On Windows and Linux the bar has its own
   minimise, maximise and close at its right (close keeps it in the tray); macOS keeps its
   traffic lights over the bar's left. Alt+Left and Alt+Right (⌘[ and ⌘] on a Mac) go
   back and forward, F5 or Ctrl+R reloads. The site itself is in a view below the bar
   (`main.js`, `createWindow`), and it hides while the site is full screen.
 - **A tray icon** (in the menu bar on macOS). Closing the window keeps the app running there;
-  Quit is in the tray's menu.
+  Quit is in the tray's menu, and **Check for updates...** checks now, with a notification of
+  what it found, up to date or not.
 - **Service Alerts as desktop notifications.** Electron has no Web Push, so while the app
   runs, the page checks `/api/service-alerts` every minute, by the same rules as the server
   (`main-site/js/alerts.js`, "the desktop app"), and hands what's new to the app to show

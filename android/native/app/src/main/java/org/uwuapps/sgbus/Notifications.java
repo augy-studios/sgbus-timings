@@ -4,6 +4,7 @@
  *
  *   alerts   Service Alerts: train disruptions and traffic incidents, from the server
  *   get_off  the Get Off Alert: loud, buzzing "OFF" in Morse code, over the lock screen
+ *   board    Get ready to board: your bus is a minute from the stop you're waiting at
  *   trip     the trip being followed, while it runs (TripService): silent
  *
  * The server's pushes name the same channels (main-site/api/_push/fcm.js), and Android only
@@ -27,6 +28,7 @@ import androidx.core.app.NotificationManagerCompat;
 final class Notifications {
     static final String ALERTS = "alerts";
     static final String GET_OFF = "get_off";
+    static final String BOARD = "board";
     static final String TRIP = "trip";
 
     // "OFF" in Morse code (--- ..-. ..-.), as main-site/js/trip.js buzzes it in the page: a wait
@@ -36,6 +38,9 @@ final class Notifications {
             120, 120, 120, 120, 360, 120, 120, 360,
             120, 120, 120, 120, 360, 120, 120,
     };
+
+    // Two short buzzes for Get ready to board, as main-site/js/trip.js buzzes it in the page.
+    static final long[] BOARD_BUZZ = {0, 200, 120, 200};
 
     private Notifications() {}
 
@@ -59,6 +64,13 @@ final class Notifications {
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build());
 
+        NotificationChannel board = new NotificationChannel(BOARD, "Get ready to board",
+                NotificationManager.IMPORTANCE_HIGH);
+        board.setDescription("On a trip, when the bus you're waiting for is a minute away");
+        board.enableVibration(true);
+        board.setVibrationPattern(BOARD_BUZZ);
+        board.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
         NotificationChannel trip = new NotificationChannel(TRIP, "Trip in progress",
                 NotificationManager.IMPORTANCE_LOW);
         trip.setDescription("Shown while a trip follows where you are, for the Get Off Alert");
@@ -66,6 +78,7 @@ final class Notifications {
 
         manager.createNotificationChannel(alerts);
         manager.createNotificationChannel(getOff);
+        manager.createNotificationChannel(board);
         manager.createNotificationChannel(trip);
     }
 
@@ -99,6 +112,12 @@ final class Notifications {
                     .setCategory(NotificationCompat.CATEGORY_ALARM)
                     .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                     .setVibrate(OFF)
+                    .setDefaults(NotificationCompat.DEFAULT_SOUND);
+        } else if (BOARD.equals(channel)) {
+            n.setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_REMINDER)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setVibrate(BOARD_BUZZ)
                     .setDefaults(NotificationCompat.DEFAULT_SOUND);
         }
         NotificationManagerCompat.from(context).notify(tag, 0, n.build());

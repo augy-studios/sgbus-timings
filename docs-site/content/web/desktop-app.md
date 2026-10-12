@@ -73,11 +73,14 @@ first, as AppImageLauncher or Gear Lever do.
 
 ## Updates
 
-The app checks for a new version when it starts and every few hours after.
+The app checks for a new version when it starts and every few hours after. To
+check now, right-click the tray's bus and pick **Check for updates...**: a
+notification says what it found, even if you're up to date.
 
-- Installed with the `.exe`, or as an AppImage: it downloads the update itself,
-  then a notification and the tray's menu offer **Restart to update**. If you
-  don't, it updates the next time you quit.
+- Installed with the `.exe`, as an AppImage, or on a Mac: it downloads the
+  update itself, then a notification, the tray's menu and a green **update**
+  button in the title bar, right of the screenshot buttons, offer **Restart to
+  update**. If you don't, it updates the next time you quit.
 - Installed with the `.msi` or `.deb`: a notification says there's a new version;
   click it to download the new installer, and install it over the old one.
 

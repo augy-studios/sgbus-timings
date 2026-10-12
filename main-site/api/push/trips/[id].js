@@ -3,8 +3,9 @@
 // and takes it back when the trip ends (DELETE). The cron in api/push/trip-poll.js follows
 // it from there.
 //
-// The answer to a PUT is how far the server has got, { tripId, leg, legStartedAt, alerted }, so an app
-// coming back from the background picks up a change of leg or an alert sent while it was away.
+// The answer to a PUT is how far the server has got, { tripId, leg, legStartedAt, alerted, readied }, so
+// an app coming back from the background picks up a change of leg, an alert or a Get ready to
+// board sent while it was away.
 
 import { trips, rateLimited, storeConfigured } from '../../_push/store.js';
 import { ttlSeconds } from '../../_push/trip.js';
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
       const sent = parseTrip(req.body, now);
       const trip = merge(await trips.get(id), sent);
       await trips.set(id, trip, ttlSeconds(trip, now));
-      return res.status(200).json({ tripId: trip.tripId, leg: trip.leg, legStartedAt: trip.legStartedAt, alerted: trip.alerted });
+      return res.status(200).json({ tripId: trip.tripId, leg: trip.leg, legStartedAt: trip.legStartedAt, alerted: trip.alerted, readied: trip.readied });
     }
 
     if (req.method === 'DELETE') {
@@ -54,11 +55,13 @@ export default async function handler(req, res) {
 // and its alerts stand, and the bus the server was following is dropped as the wrong one.
 function merge(old, sent) {
   if (!old || old.tripId !== sent.tripId) return { ...sent, track: null };
-  if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, track: null };
+  // Get ready to board, once given by either, stays given, realigned or not.
+  const readied = sent.readied.map((r, i) => r || Boolean(old.readied?.[i]));
+  if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, readied, track: null };
   const alerted = sent.alerted.map((a, i) => a || Boolean(old.alerted[i]));
   // The share link always as the app has it: started, or stopped, since it last sent.
-  if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted, share: sent.share };
-  if (old.leg < sent.leg) return { ...sent, alerted, track: null };
+  if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted, readied, share: sent.share };
+  if (old.leg < sent.leg) return { ...sent, alerted, readied, track: null };
   // The bus being followed stays, unless the app has since seen you well past it: then it
   // was the wrong bus.
   const known = Math.max(sent.at, sent.pos);
@@ -67,6 +70,7 @@ function merge(old, sent) {
     ...sent,
     seenAt: Math.max(sent.seenAt, old.seenAt),
     alerted,
+    readied,
     track,
   };
 }

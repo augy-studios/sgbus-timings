@@ -627,6 +627,18 @@ async function refreshNav() {
 // link (js/share.js), or before the first ride, towards the trip, for Your trips (js/history.js).
 const WALK_LEG_MIN_M = 60;
 
+// A bus leg's stop codes, one per point: from /api/nav, or for a nav saved before it sent them,
+// from the bus's route once it's loaded (js/network.js). Null if neither fits.
+function busCodes(l) {
+  if (l.codes?.length === l.path.length) return l.codes;
+  if (!window.BusNet?.isReady() || l.dir == null || !l.from?.code || !l.to?.code) return null;
+  const stops = BusNet.runStops(l.route, l.dir);
+  const i = stops.indexOf(l.from.code);
+  const j = stops.indexOf(l.to.code, i + 1);
+  const codes = i !== -1 && j !== -1 ? stops.slice(i, j + 1) : null;
+  return codes?.length === l.path.length ? codes : null;
+}
+
 function tripFromNav(o, to, from = nav.from) {
   const legs = [];
   let walkBefore = 0;
@@ -666,7 +678,8 @@ function tripFromNav(o, to, from = nav.from) {
       wait: l.wait,
       walkAfter: 0,
       // For the server to find the bus while the app is in the background.
-      ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code }),
+      // `codes`, each stop's, so the timeline's stops open their timings.
+      ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l) }),
       // The line, for Your trips' chips and Trip Modes.
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
     });

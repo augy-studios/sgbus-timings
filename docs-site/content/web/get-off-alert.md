@@ -35,6 +35,9 @@ you are that glides along between stops as you go, the stop the alert goes off a
 and where to get off or change. Tap it again to close it. The map button on the
 bar shows the trip on the [live map](live-map.md).
 
+Tap a bus stop on the timeline to see that stop's timings for your bus: the
+timeline closes and the page scrolls down to them, with the trip still running.
+
 ## Walks
 
 A trip from [Navigate](nav.md) starts with the walk to your first stop, has the
@@ -65,7 +68,18 @@ first stop. **Next leg** moves it on by hand, and **End trip** stops it.
 
 ## Waiting for the bus
 
-You can start a trip while you wait at the stop. On a bus, the trip stays at the
+You can start a trip while you wait at the stop.
+
+### Get ready to board
+
+While you wait at the stop for a bus on your trip, the site keeps an eye on its
+live timing there. When it's **1 minute away**, the phone buzzes twice and shows
+a notification, "Bus 174 is 1 min away from Tampines Int. Get ready to board.",
+and the trip bar says the same. It comes once for each bus on the trip, and only
+while you're still waiting: once your location shows you on the bus, it doesn't.
+With the site in the background, the server sends it instead, as it does the
+alert.
+ On a bus, the trip stays at the
 stop you get on at until your location shows you moving along the bus's route,
 so waiting, even a long while inside an interchange, never counts as riding.
 Only then does it count the stops down.

@@ -2133,6 +2133,14 @@ body.on-trip { padding-bottom: 96px; }
 .tlStop.passed { color: var(--muted-strong); }
 .tlStop.passed .tlNode { background: var(--trip-dot); border-color: var(--trip-dot); }
 .tlStop.end { font-weight: 700; }
+/* A bus stop on the timeline opens its timings for the bus (js/trip.js). */
+.tlGo {
+    appearance: none; border: 0; background: none; padding: 4px 0; margin: 0; font: inherit; color: inherit;
+    text-align: left; cursor: pointer; text-decoration: underline; text-decoration-color: transparent;
+    text-underline-offset: 3px; transition: text-decoration-color 0.15s ease;
+}
+.tlGo:hover, .tlGo:focus-visible { text-decoration-color: currentColor; }
+.tlGo:focus-visible { outline: 2px solid var(--trip-dot); outline-offset: 2px; border-radius: 4px; }
 .tlTag {
     display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 8px; border-radius: 999px;
     font-size: 11px; font-weight: 700; background: var(--brand-fill); color: var(--brand-ink);

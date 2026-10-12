@@ -57,6 +57,7 @@ public class SgBusPlugin extends Plugin {
         features.put("update"); // UpdateActivity
         features.put("trip"); // TripPlugin
         features.put("notify");
+        features.put("board"); // the board channel, for Get ready to board (Notifications)
         features.put("share");
         features.put("widget");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
@@ -76,7 +77,8 @@ public class SgBusPlugin extends Plugin {
     @PluginMethod
     public void notify(PluginCall call) {
         String channel = call.getString("channel", Notifications.ALERTS);
-        if (!Notifications.ALERTS.equals(channel) && !Notifications.GET_OFF.equals(channel)) {
+        if (!Notifications.ALERTS.equals(channel) && !Notifications.GET_OFF.equals(channel)
+                && !Notifications.BOARD.equals(channel)) {
             call.reject("Unknown channel");
             return;
         }
