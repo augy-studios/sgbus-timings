@@ -270,6 +270,9 @@ export function nodesNear(graph, lat, lng, metres) {
 // ---------- loading, cached for the life of the instance ----------
 
 const TTL_MS = 6 * 3600 * 1000;
+// /api/bus-routes is rebuilt from LTA whenever the edge has no copy (after every deploy),
+// and LTA sometimes turns that away. It's asked again once after this long before giving up.
+const RETRY_MS = 1500;
 let cached = null;
 let loading = null;
 
@@ -278,17 +281,28 @@ export async function getGraph(origin) {
   if (!loading) {
     loading = (async () => {
       const get = async (path) => {
-        const r = await fetch(`${origin}${path}`);
-        if (!r.ok) throw new Error(`${path} replied ${r.status}`);
-        return r.json();
+        for (let attempt = 0; ; attempt++) {
+          const r = await fetch(`${origin}${path}`).catch((err) => ({ ok: false, status: err.message }));
+          if (r.ok) return r.json();
+          if (attempt >= 1) throw new Error(`${path} replied ${r.status}`);
+          await new Promise((resolve) => setTimeout(resolve, RETRY_MS));
+        }
       };
       const [stops, routes] = await Promise.all([get("/api/bus-stops"), get("/api/bus-routes")]);
       const graph = buildGraph(stops, routes);
       cached = { graph, at: Date.now() };
       return graph;
-    })().finally(() => {
-      loading = null;
-    });
+    })()
+      // Routes hardly change, so a graph past its six hours beats no journeys at all; the
+      // next request tries for a fresh one again.
+      .catch((err) => {
+        if (!cached) throw err;
+        console.warn("nav: kept the old network, couldn't refresh it:", err.message);
+        return cached.graph;
+      })
+      .finally(() => {
+        loading = null;
+      });
   }
   return loading;
 }

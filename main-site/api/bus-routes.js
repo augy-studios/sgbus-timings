@@ -7,16 +7,30 @@ const BASE = "https://datamall2.mytransport.sg/ltaodataservice";
 const PAGE_SIZE = 500;
 // LTA pages are fetched this many at a time, until one comes back short.
 const BATCH = 8;
+// LTA turns away the odd page, more so with a burst of them at once, and one lost page
+// would fail the whole response (and /api/nav, which builds on it). Each page gets this
+// many more tries, the waits growing between them.
+const RETRIES = 3;
+const RETRY_MS = 600;
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 async function page(path, skip) {
     const url = new URL(`${BASE}/${path}`);
     url.searchParams.set("$skip", String(skip));
-    const r = await fetch(url, {
-        headers: { AccountKey: process.env.LTA_ACCOUNT_KEY, accept: "application/json" },
-        cache: "no-store",
-    });
-    if (!r.ok) throw new Error(`${path} failed: ${r.status}`);
-    return (await r.json())?.value || [];
+    for (let attempt = 0; ; attempt++) {
+        try {
+            const r = await fetch(url, {
+                headers: { AccountKey: process.env.LTA_ACCOUNT_KEY, accept: "application/json" },
+                cache: "no-store",
+            });
+            if (!r.ok) throw new Error(`${path} failed: ${r.status}`);
+            return (await r.json())?.value || [];
+        } catch (err) {
+            if (attempt >= RETRIES) throw err;
+            await wait(RETRY_MS * 2 ** attempt + Math.random() * RETRY_MS);
+        }
+    }
 }
 
 async function fetchAll(path) {
@@ -88,6 +102,7 @@ export default async function handler(req, res) {
         res.setHeader("Cache-Control", "public, max-age=21600, s-maxage=86400, stale-while-revalidate=86400");
         return res.status(200).json({ services, runs });
     } catch (err) {
+        console.error("bus-routes failed:", err);
         return res.status(502).json({ error: "Failed to fetch bus routes", detail: String(err) });
     }
 }
