@@ -9,6 +9,18 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (afternoon): The web app inside Telegram
+
+### Telegram bot
+
+- **Open app** - The menu button beside the message box now opens the full web app inside Telegram, as a Mini App. **Open web app** on `/start` opens it there too.
+
+### Web app
+
+- **In Telegram** - Opened from the bot, the app takes on its theme's colours in Telegram's bar, Telegram's **Back** closes the live map, links out open in your browser, and swiping down no longer closes the app while you're moving the live map.
+
+---
+
 ## 12 October 2026 (morning): Apps 2.0.2
 
 ### Web app

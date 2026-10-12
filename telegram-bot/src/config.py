@@ -23,6 +23,9 @@ class Config:
     lta_account_key: str
     db_path: Path
     webapp_url: str
+    mini_app_url: str
+    mini_app_menu_text: str
+    mini_app_links: bool
     donate_url: str
     guide_url: str
     bus_stops_refresh_hours: float
@@ -40,6 +43,10 @@ config = Config(
     lta_account_key=_required("LTA_ACCOUNT_KEY"),
     db_path=(ROOT_DIR / os.environ.get("DB_PATH", "./data/bot.db")).resolve(),
     webapp_url=os.environ.get("WEBAPP_URL", "https://sgbus.uwuapps.org/"),
+    mini_app_url=os.environ.get("MINI_APP_URL") or os.environ.get("WEBAPP_URL", "https://sgbus.uwuapps.org/"),
+    # Blank (set, but to nothing) puts the command list back on the menu button.
+    mini_app_menu_text=os.environ.get("MINI_APP_MENU_TEXT", "Open app").strip(),
+    mini_app_links=os.environ.get("MINI_APP_LINKS", "").strip().lower() in ("1", "true", "yes", "on"),
     donate_url=os.environ.get("DONATE_URL", "https://donate.stripe.com/28o2akeAr3hv0DK6oo"),
     guide_url=os.environ.get("GUIDE_URL", "https://guide.sgbus.uwuapps.org/bot/start"),
     bus_stops_refresh_hours=float(os.environ.get("BUS_STOPS_REFRESH_HOURS", "24")),

@@ -104,6 +104,41 @@ Only do this for groups you control the membership of, since a bot with
 privacy mode disabled receives every message sent in the group, not just
 ones addressed to it.
 
+### Mini App
+
+The web app opens inside Telegram as the bot's Mini App, from the menu button
+beside the message box and from **Open web app** on `/start`. Neither needs
+anything from BotFather.
+
+**Menu button.** The bot sets it for everyone itself, every time it starts, to
+**Open app** opening `MINI_APP_URL` (which defaults to `WEBAPP_URL`). So:
+
+- to rename it, set `MINI_APP_MENU_TEXT` in `.env` and restart the bot;
+- to put Telegram's command list back on the button, leave it set but blank
+  (`MINI_APP_MENU_TEXT=`) and restart.
+
+BotFather's own menu button setting (`/mybots`, pick your bot, **Bot Settings**,
+**Menu Button**) works too, but the bot's next start puts it back to what `.env`
+says.
+
+**Main Mini App (optional).** This adds an **Open App** button to the bot's
+profile and lets `t.me/yourbotusername?startapp=...` links open the Mini App at a
+page from any chat. The bot only sends such links, for the **Live map** button on
+stop timings, with `MINI_APP_LINKS=1`, so set this up before turning that on:
+
+1. Send `/mybots` to BotFather, pick your bot, then **Bot Settings** and
+   **Configure Mini App**.
+2. Choose **Enable Mini App** and send the web app's address, the same as
+   `MINI_APP_URL`, e.g. `https://sgbus.uwuapps.org/`. It must be `https`.
+3. Open `https://t.me/yourbotusername?startapp=map-84009` on a phone: the Mini
+   App should open on the live map, walking to stop 84009.
+4. Set `MINI_APP_LINKS=1` in `.env` and restart the bot.
+
+A `startapp` link's page is the web app's own `#...` address with `-` for `/` and
+`_` for `,`, since that's all Telegram lets the link hold: `84009` opens a stop,
+`84009_174` one bus at it, `bus-22` a bus's route, `map-84009` the live map,
+`route-84009-75009` the route planner, and `alerts`, `near` and `nav` those pages.
+
 ## 2. Get Telegram API credentials (API_ID / API_HASH)
 
 The bot talks to Telegram over MTProto (via the [Telethon](https://docs.telethon.dev/)
@@ -140,6 +175,9 @@ API_HASH=your-api-hash-from-my.telegram.org
 LTA_ACCOUNT_KEY=your-lta-account-key
 DB_PATH=./data/bot.db
 WEBAPP_URL=https://sgbus.uwuapps.org/
+MINI_APP_URL=
+MINI_APP_MENU_TEXT=Open app
+MINI_APP_LINKS=0
 DONATE_URL=https://donate.stripe.com/28o2akeAr3hv0DK6oo
 GUIDE_URL=https://guide.sgbus.uwuapps.org/bot/start
 BUS_STOPS_REFRESH_HOURS=24
@@ -147,6 +185,11 @@ SERVICE_ALERT_POLL_SECONDS=60
 NAV_API_URL=
 BOT_API_TOKEN=the-same-long-random-string-as-on-vercel
 ```
+
+`MINI_APP_URL` is the web app as opened inside Telegram, from the menu button and
+`/start`; it defaults to `WEBAPP_URL`. `MINI_APP_MENU_TEXT` is the menu button's
+label, and `MINI_APP_LINKS=1` has the Live map buttons open the Mini App rather
+than the browser, once the Main Mini App is set up ([Mini App](#mini-app) above).
 
 `/nav` plans its journeys with the site's `/api/nav`, so the bot and the web app
 always agree. `NAV_API_URL` defaults to `WEBAPP_URL`. `BOT_API_TOKEN` is a long
@@ -226,7 +269,10 @@ python -m src.main
 ## 7. Verifying it works
 
 1. Open a chat with your bot on Telegram and send `/start`. You should see
-   the about message with "Open web app" and "Donate" buttons.
+   the about message with "Open web app" and "Donate" buttons. Tap "Open web
+   app" and confirm the web app opens inside Telegram, and that the button
+   beside the message box now reads **Open app** and opens it too (on a phone,
+   restart Telegram if it still shows the command list; it can take a moment).
 2. Type a bus stop number you know, e.g. `84009`, and confirm live timings
    come back.
 3. Send `/nearme`, share your location, and confirm nearby stops appear as
@@ -287,3 +333,11 @@ python -m src.main
    for its bus legs. Tap **⭐ Add favourite**, send `/mynavs`, and confirm it's
    listed and reopens. If `/nav` says it couldn't plan, check `NAV_API_URL` and
    that `https://sgbus.uwuapps.org/api/nav` answers.
+16. In the Mini App, confirm Telegram's bar takes the web app's colour, and
+   changes with it when you pick another theme or dark mode in Settings. Open a
+   stop's **Directions** then **Live map**, and confirm Telegram's **Back** closes
+   the map, and that swiping down moves the map rather than closing the app.
+   Tap the donate button and confirm it opens in your browser rather than inside
+   the Mini App. With `MINI_APP_LINKS=1`, tap **🧭 Directions** then
+   **🧭 Live map** on any stop's timings, in a group or an inline message too,
+   and confirm it opens the Mini App on the live map.

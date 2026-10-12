@@ -10,6 +10,7 @@ from .bus_services import bus_services_count, refresh_bus_services
 from .bus_stops import bus_stops_count, refresh_bus_stops
 from .config import config
 from .format import escape_md
+from .mini_app import setup_mini_app
 from .handlers.addfavbus import register_addfavbus
 from .handlers.addroutine import register_addroutine
 from .handlers.calendar import register_calendar
@@ -50,6 +51,7 @@ SESSION_PATH = config.db_path.parent / "bot"
 async def main() -> None:
     client = TelegramClient(str(SESSION_PATH), config.api_id, config.api_hash)
     await client.start(bot_token=config.bot_token)
+    await setup_mini_app(client)
 
     register_start(client)
     # Both interceptors it carries have to come before the handler they take a message off:

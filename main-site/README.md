@@ -106,6 +106,11 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### In the desktop app
 - The site is also a Windows and Linux app (`../desktop/`), in Electron. `window.sgbusDesktop` (its `preload.js`) lets the page show desktop notifications: `js/alerts.js` checks `/api/service-alerts` every minute there instead of Web Push, by the same rules as the server
 
+### In Telegram
+- The site is also the Telegram bot's Mini App, opened from the bot's menu button, `/start`'s Open web app, or a `t.me/<bot>?startapp=` link (`../telegram-bot/src/mini_app.py`)
+- The head of `index.html` notices Telegram's launch data in the hash, keeps it where Telegram's script looks on a reload (sessionStorage) and takes it off the address before analytics or the router read it. A `startapp` page comes as its start parameter, with `-` for `/` and `_` for `,` (`map-84009` opens `#map/84009`)
+- `js/telegram.js` then loads Telegram's script (only there) and fits the page to Telegram: its bar and background take the page's colour, its Back button steps back through what the page pushed (the live map), links out open in the browser and t.me links in Telegram, and swiping down doesn't close the app while the live map is open. The tray's Telegram button hides
+
 ### Weather
 - The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
