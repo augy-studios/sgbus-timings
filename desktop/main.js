@@ -432,6 +432,9 @@ ipcMain.handle('bar-copy', async (e) => {
 // Chromium (the DevTools protocol's captureBeyondViewport), the site's own scrolling being
 // the page's. Up to the tallest picture Chromium draws, 16384 pixels; the top of it, past that.
 // Taken from the top, so headers that stick as you scroll are at the top, then scrolled back.
+// Rows the site leaves undrawn until they scroll near (content-visibility) are drawn for it, or
+// the bottom of a long stop comes out as empty boxes.
+const DRAW_ALL = '* { content-visibility: visible !important; }';
 const SCROLL_TO = (x, y) => `new Promise((done) => {
   const was = [scrollX, scrollY];
   const html = document.documentElement;
@@ -446,6 +449,7 @@ async function longScreenshot() {
   const dbg = page.debugger;
   const attach = !dbg.isAttached();
   if (attach) dbg.attach('1.3');
+  const css = await page.insertCSS(DRAW_ALL, { cssOrigin: 'user' });
   const [x, y] = await page.executeJavaScript(SCROLL_TO(0, 0));
   try {
     const { cssContentSize: size } = await dbg.sendCommand('Page.getLayoutMetrics');
@@ -460,6 +464,7 @@ async function longScreenshot() {
     return Buffer.from(data, 'base64');
   } finally {
     if (attach) dbg.detach();
+    await page.removeInsertedCSS(css).catch(() => {});
     await page.executeJavaScript(SCROLL_TO(Number(x) || 0, Number(y) || 0)).catch(() => {});
   }
 }
