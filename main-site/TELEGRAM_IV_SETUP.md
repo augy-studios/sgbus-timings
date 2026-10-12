@@ -6,9 +6,9 @@ and its map, read right in Telegram, with a link on to the app.
 
 The page is ready for it already ([`api/share-page.js`](api/share-page.js)). Telegram
 also needs a template that says how to read it,
-[`telegram-instant-view.txt`](telegram-instant-view.txt), and until Telegram approves that
-template, Instant View only shows for links sent through `t.me/iv` with the template's
-`rhash`. Share's Telegram button sends that link once `TELEGRAM_IV_RHASH` is set.
+[`telegram-instant-view.txt`](telegram-instant-view.txt), and shows Instant View for
+plain `/trip/…` links only once it has approved that template. Share always sends the
+plain link, never a `t.me/iv` one, so nothing changes in the app until then.
 
 1. Share some directions from the web app, and copy its `/trip/…` link.
 2. Open [instantview.telegram.org](https://instantview.telegram.org/) and log in with
@@ -19,26 +19,10 @@ template, Instant View only shows for links sent through `t.me/iv` with the temp
    [`telegram-instant-view.txt`](telegram-instant-view.txt). The preview on the right
    should show the trip's title, its map, and a list of From, To and When, with no errors.
    Try a second link or two, such as one with **Your location** at one end.
-5. Click **View in Telegram**. The link it opens looks like
-   `https://t.me/iv?url=…&rhash=abc123def456`; copy the `rhash` value from it.
-6. In the Vercel project's **Settings → Environment Variables**, set:
-
-   | Name | Value |
-   |---|---|
-   | `TELEGRAM_IV_RHASH` | the `rhash` from step 5 |
-
-   It isn't a secret: it's in every link the Telegram button sends.
-7. Redeploy.
-
-Now Share's **Telegram** button sends `https://t.me/iv?url=<the trip link>&rhash=…`,
-and the message in Telegram gets an **Instant View** button. Copy link, WhatsApp and
-More still give the plain `/trip/…` link.
-
-## Getting plain links to open in Instant View too
-
-In the template editor, **Submit template** sends it to Telegram for review. If they
-approve it, every `/trip/…` link on the domain gets Instant View, and the `rhash` isn't
-needed (leave it set; the `t.me/iv` links keep working).
+5. **View in Telegram** opens a `t.me/iv?url=…&rhash=…` link to check it in Telegram
+   yourself. Keep that link to yourself: it's for testing, not for sharing.
+6. Click **Submit template** to send it to Telegram for review. Once they approve it,
+   every `/trip/…` link on the domain gets an **Instant View** button in Telegram.
 
 ## Changing the page
 
