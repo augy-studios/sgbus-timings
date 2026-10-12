@@ -5,8 +5,9 @@
 //   come as desktop notifications (main-site/js/alerts.js checks for them every minute while
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
-// - its own title bar: back, forward, reload, the page's address, which copies the link
-//   when clicked, and screenshot and long screenshot buttons (titlebar.html);
+// - its own title bar: back, forward, reload, the page's address, which can be typed over,
+//   and a button to copy it, screenshot and long screenshot buttons, and minimise, maximise and close
+//   on Windows and Linux (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
 // - checking for its own updates (updater.js);
@@ -76,6 +77,26 @@ function openLink(link) {
   }
 }
 
+// What's typed in the title bar's address, as an address: the site's own (sgbus.uwuapps.org/#84009),
+// another site's (example.com, https://…), a path or # address on the site (/#bus/22,
+// #84009), or a uwu://sgbus/ link. Null for anything else.
+function typedAddress(text) {
+  const typed = String(text || '').trim();
+  if (!typed) return null;
+  if (typed.toLowerCase().startsWith(`${SCHEME}://`)) return fromAppLink(typed);
+  if (/^[#/]/.test(typed)) return new URL(typed, `${SITE}/`).href;
+  const scheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(typed);
+  // A word, or a number, is not an address (84009 would be taken as an IP address).
+  if (!scheme && !/^[^\s/?#]+\.[^\s/?#]+/.test(typed)) return null;
+  let url;
+  try {
+    url = new URL(scheme ? typed : `https://${typed}`);
+  } catch {
+    return null;
+  }
+  return /^https?:$/.test(url.protocol) ? url.href : null;
+}
+
 // ---------- settings: where the window was, and the tray hint shown once ----------
 
 const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
@@ -125,13 +146,12 @@ function createWindow() {
     icon: path.join(__dirname, 'build', 'icon.png'),
     backgroundColor: BAR_COLOR,
     autoHideMenuBar: true,
-    // The system's own title bar goes; titlebar.html is drawn there instead, around the
-    // window's controls: macOS keeps its traffic lights, and Windows and Linux draw minimise,
-    // maximise and close over the bar's right (titleBarOverlay).
+    // The system's own title bar goes; titlebar.html is drawn there instead. macOS keeps its
+    // traffic lights over the bar's left; on Windows and Linux the bar draws its own minimise,
+    // maximise and close on its right, as the system's (titleBarOverlay) don't always show
+    // over the site's view below it.
     titleBarStyle: 'hidden',
-    ...(mac
-      ? { trafficLightPosition: { x: 14, y: 13 } }
-      : { titleBarOverlay: { color: BAR_COLOR, symbolColor: '#0c100e', height: BAR_HEIGHT } }),
+    ...(mac ? { trafficLightPosition: { x: 14, y: 13 } } : {}),
     webPreferences: {
       preload: path.join(__dirname, 'titlebar-preload.js'),
       contextIsolation: true,
@@ -186,6 +206,7 @@ function createWindow() {
       canForward: page.navigationHistory.canGoForward(),
       loading: page.isLoading(),
       fullscreen: win.isFullScreen(),
+      maximized: win.isMaximized(),
       color,
     });
   };
@@ -193,11 +214,12 @@ function createWindow() {
   win.webContents.on('did-finish-load', sendState);
   win.on('enter-full-screen', sendState);
   win.on('leave-full-screen', sendState);
+  win.on('maximize', sendState);
+  win.on('unmaximize', sendState);
   page.on('did-change-theme-color', (_e, c) => {
     if (!/^#[0-9a-f]{6}$/i.test(c || '')) return;
     color = c;
     view.setBackgroundColor(c);
-    if (!mac) win.setTitleBarOverlay({ color: c, symbolColor: isDarkColor(c) ? '#f2fff2' : '#0c100e', height: BAR_HEIGHT });
     sendState();
   });
 
@@ -235,6 +257,11 @@ function createWindow() {
     if (input.key === 'F5' || (ctrl && input.key.toLowerCase() === 'r')) {
       page.reload();
       e.preventDefault();
+    } else if (input.key === 'F6' || (ctrl && input.key.toLowerCase() === 'l')) {
+      // To the address, to type over it, as in a browser.
+      win.webContents.focus();
+      win.webContents.send('bar-edit');
+      e.preventDefault();
     } else if ((input.alt && input.key === 'ArrowLeft') || (mac && input.meta && input.key === '[')) {
       if (page.navigationHistory.canGoBack()) page.navigationHistory.goBack();
       e.preventDefault();
@@ -271,16 +298,6 @@ const shownUrl = () => {
   const url = page?.getURL() || '';
   return /^https?:/.test(url) ? url : `${SITE}/`;
 };
-
-// Light writing on the site's colour, or dark? (As titlebar.js decides for the bar.)
-function isDarkColor(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => {
-    const v = c / 255;
-    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.4;
-}
 
 // The window shows maximised, unless it was last closed un-maximised.
 let shown = false;
@@ -375,7 +392,37 @@ ipcMain.on('bar-forward', (e) => {
 ipcMain.on('bar-reload', (e) => {
   if (fromBar(e)) page.reload();
 });
-// The address can't be typed in: clicking it copies the link.
+// The window's own buttons, on Windows and Linux. Closing puts it in the tray, as ever.
+ipcMain.on('bar-minimize', (e) => {
+  if (fromBar(e)) win.minimize();
+});
+ipcMain.on('bar-maximize', (e) => {
+  if (fromBar(e)) (win.isMaximized() ? win.unmaximize() : win.maximize());
+});
+ipcMain.on('bar-close', (e) => {
+  if (fromBar(e)) win.close();
+});
+// Typed in the address: the site's own pages open here, anything else in your browser, as
+// links do. 'site', 'browser', or null when it isn't an address.
+ipcMain.handle('bar-go', (e, text) => {
+  if (!fromBar(e)) return null;
+  const url = typedAddress(text);
+  if (!url) return null;
+  if (isSite(url)) {
+    page.loadURL(url);
+    page.focus();
+    return 'site';
+  }
+  shell.openExternal(url);
+  return 'browser';
+});
+// Typing goes to the title bar while the address is clicked into, not the site.
+ipcMain.on('bar-edit', (e) => {
+  if (fromBar(e)) win.webContents.focus();
+});
+ipcMain.on('bar-done', (e) => {
+  if (fromBar(e)) page.focus();
+});
 ipcMain.handle('bar-copy', async (e) => {
   if (!fromBar(e)) return false;
   await clipboard.writeText(shownUrl());
