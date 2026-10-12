@@ -10,6 +10,9 @@ release/2.0.0/
   sg-bus-timings-2.0.0.msi                 Windows     desktop: npm run build:win
   sg-bus-timings-2.0.0-amd64.deb           Linux       desktop/build-linux.sh, on the VPS
   sg-bus-timings-2.0.0-x86_64.AppImage     Linux       desktop/build-linux.sh, on the VPS
+  sg-bus-timings-2.0.0-mac-arm64.dmg       macOS       GitHub Actions: Build macOS app
+  sg-bus-timings-2.0.0-mac-x64.dmg         macOS       the same, for Intel Macs
+  *-mac-*.zip, latest-mac.yml              macOS       what the Mac app reads to update itself
   latest.yml, *-setup.exe.blockmap         Windows     what the desktop app reads to update itself
   latest-linux.yml                         Linux       the same, for the AppImage
 ```
@@ -36,6 +39,9 @@ Copy-Item desktop\dist\sg-bus-timings-*-setup.exe, desktop\dist\sg-bus-timings-*
 
 Then the Linux ones on the VPS, and bring them back: `desktop/LINUX-BUILD.md`.
 
+The Mac ones build on GitHub: publishing the release adds them to it by itself, a few minutes
+later (`desktop/README.md`, "macOS"). They aren't kept in `release\<version>\`.
+
 For a new version, raise it first in both places (`android/README.md`, "Build the APK"), or
 phones with the old one won't take it as an update.
 
@@ -57,6 +63,8 @@ phones with the old one won't take it as an update.
    Windows: `sg-bus-timings-2.0.0-setup.exe` (or the `.msi`). If SmartScreen warns,
    More info > Run anyway.
    Linux: the `.deb` for Debian and Ubuntu, or the `.AppImage` for anything else.
+   macOS: the `-mac-arm64.dmg` for Apple silicon, `-mac-x64.dmg` for Intel. The first
+   time, right-click the app > Open.
 
    New:
    - Android: follows your trip with the screen off, reads your card's value over NFC,
