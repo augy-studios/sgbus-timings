@@ -1,7 +1,7 @@
-// SG Bus Timings for Windows and Linux: the site at sgbus.uwuapps.org in a window of its own,
+// SG Bus Timings for Windows, macOS and Linux: the site at sgbus.uwuapps.org in a window of its own,
 // so the site's updates reach it at once, as with the Android app (android/). What it adds:
 //
-// - a tray icon: closing the window keeps the app running there, so Service Alerts still
+// - a tray icon (the menu bar on macOS): closing the window keeps the app running there, so Service Alerts still
 //   come as desktop notifications (main-site/js/alerts.js checks for them every minute while
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
@@ -29,12 +29,13 @@ const ALLOWED = new Set(['geolocation', 'notifications', 'clipboard-sanitized-wr
 let win = null;
 let tray = null;
 let quitting = false;
-// uwu://sgbus/ links. Windows and Linux give a scheme to one app only, unlike Android, which
-// shares uwu:// out by host, so this answers every uwu:// link and opens only sgbus's.
+// uwu://sgbus/ links. Windows, macOS and Linux give a scheme to one app only, unlike Android,
+// which shares uwu:// out by host, so this answers every uwu:// link and opens only sgbus's.
 const SCHEME = 'uwu';
 const LINK_HOST = 'sgbus';
 const linkIn = (argv) => argv.find((a) => a.toLowerCase().startsWith(`${SCHEME}://`)) || null;
-const startLink = linkIn(process.argv);
+// Windows and Linux pass it in argv; macOS sends it as open-url (at the end of this file).
+let startLink = linkIn(process.argv);
 
 
 // uwu://sgbus/ links, to the page they name, as MainActivity.fromAppLink does in the Android
@@ -171,9 +172,12 @@ function createWindow() {
     e.preventDefault();
     win.hide();
     if (!readSettings().trayHintShown && Notification.isSupported()) {
+      const mac = process.platform === 'darwin';
       new Notification({
         title: 'SG Bus Timings is still running',
-        body: 'It keeps checking for Service Alerts from the tray. Quit it from the tray icon.',
+        body: mac
+          ? 'It keeps checking for Service Alerts from the menu bar. Quit it from the menu bar icon, or with ⌘Q.'
+          : 'It keeps checking for Service Alerts from the tray. Quit it from the tray icon.',
         icon: path.join(__dirname, 'build', 'icon.png'),
       }).show();
       writeSettings({ trayHintShown: true });
@@ -257,7 +261,8 @@ function createTray() {
   tray.setContextMenu(menu());
   // An update found or downloaded: the menu offers it.
   updater.start(() => tray.setContextMenu(menu()));
-  tray.on('click', () => (win.isVisible() && win.isFocused() ? win.hide() : showWindow()));
+  // macOS opens the menu on a click, so only Windows and Linux show and hide the window with it.
+  if (process.platform !== 'darwin') tray.on('click', () => (win.isVisible() && win.isFocused() ? win.hide() : showWindow()));
   // Linux trays show the menu on any click; refreshed so the checkbox is right.
   tray.on('right-click', () => tray.setContextMenu(menu()));
 }
@@ -293,6 +298,14 @@ if (!app.requestSingleInstanceLock()) {
     else showWindow();
   });
   app.setAppUserModelId(APP_ID);
+  // macOS: uwu://sgbus/ links come as this, whether the app's running or the link started it.
+  app.on('open-url', (e, link) => {
+    e.preventDefault();
+    if (win) openLink(link);
+    else startLink = link;
+  });
+  // macOS: clicking the Dock icon with the window hidden.
+  app.on('activate', () => showWindow());
   // uwu:// links come here. The installers register it too; this keeps it so after an update
   // or a move. Run from source (npm start), Windows has to be told the script as well.
   if (process.defaultApp && process.argv.length >= 2) {

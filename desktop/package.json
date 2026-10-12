@@ -2,7 +2,7 @@
   "name": "sgbus-timings-desktop",
   "productName": "SG Bus Timings",
   "version": "2.0.2",
-  "description": "SG Bus Timings for Windows and Linux: the site at sgbus.uwuapps.org in its own window, with a tray icon and Service Alerts as desktop notifications.",
+  "description": "SG Bus Timings for Windows, macOS and Linux: the site at sgbus.uwuapps.org in its own window, with a tray icon and Service Alerts as desktop notifications.",
   "author": "UwU Apps <augybiz@gmail.com>",
   "homepage": "https://sgbus.uwuapps.org",
   "license": "MIT",
@@ -11,7 +11,8 @@
   "scripts": {
     "start": "electron .",
     "build:win": "electron-builder --win nsis msi --x64 --publish never",
-    "build:linux": "electron-builder --linux deb AppImage --x64 --publish never"
+    "build:linux": "electron-builder --linux deb AppImage --x64 --publish never",
+    "build:mac": "electron-builder --mac dmg zip --x64 --arm64 --publish never"
   },
   "devDependencies": {
     "electron": "44.7.0",
@@ -72,6 +73,24 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "shortcutName": "SG Bus Timings"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.travel",
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "artifactName": "sg-bus-timings-${version}-mac-${arch}.${ext}",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "extendInfo": {
+        "NSLocationUsageDescription": "SG Bus Timings uses your location to find the bus stops near you and to follow your trip.",
+        "NSLocationWhenInUseUsageDescription": "SG Bus Timings uses your location to find the bus stops near you and to follow your trip."
+      }
+    },
+    "dmg": {
+      "artifactName": "sg-bus-timings-${version}-mac-${arch}.${ext}"
     },
     "linux": {
       "icon": "build/icon.png",

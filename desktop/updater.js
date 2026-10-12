@@ -1,19 +1,21 @@
 // The desktop app checking for its own updates, with electron-updater: soon after it starts,
 // then every CHECK_EVERY_MS while it runs (it lives in the tray for days).
 //
-// It reads latest.yml (Windows) or latest-linux.yml (Linux), which the build writes beside the
-// installers, from the newest GitHub release: releases/latest/download/ always points at it,
-// whatever its tag (they're android-v<version>, shared with the Android app). Each lists the
-// version, the installer's file name and its SHA-512, which is checked before installing.
+// It reads latest.yml (Windows), latest-mac.yml (macOS) or latest-linux.yml (Linux), which the
+// build writes beside the installers, from the newest GitHub release: releases/latest/download/
+// always points at it, whatever its tag (they're android-v<version>, shared with the Android
+// app). Each lists the version, the installer's file name and its SHA-512, which is checked
+// before installing.
 //
 // How it updates depends on how it was installed:
 //   Windows .exe (NSIS), Linux .AppImage   downloaded in the background; a notification and the
 //                                          tray offer Restart to update, and it's installed on
 //                                          quit anyway.
-//   Windows .msi, Linux .deb, from source  told only: an updater can't replace these safely (it
-//                                          would put a second copy beside the .msi's, and a
-//                                          .deb needs your password), so it opens the release
-//                                          page to download the new one.
+//   Windows .msi, Linux .deb, macOS,       told only: an updater can't replace these safely (it
+//   from source                            would put a second copy beside the .msi's, a .deb
+//                                          needs your password, and macOS only installs updates
+//                                          signed with an Apple Developer ID, which this isn't),
+//                                          so it opens the release page to download the new one.
 
 const { app, Notification, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');

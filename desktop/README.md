@@ -1,4 +1,4 @@
-# SG Bus Timings for Windows and Linux
+# SG Bus Timings for Windows, macOS and Linux
 
 The desktop app: the web app at sgbus.uwuapps.org in a window of its own, made with
 [Electron](https://www.electronjs.org) and [electron-builder](https://www.electron.build). As
@@ -11,10 +11,13 @@ only needs building again for its own parts. It shares the Android app's version
 | `sg-bus-timings-<version>.msi` | Windows, for installing with Group Policy or `msiexec` | Windows (`npm run build:win`) |
 | `sg-bus-timings-<version>-amd64.deb` | Debian, Ubuntu, Mint and the like | Linux: the VPS (`LINUX-BUILD.md`) |
 | `sg-bus-timings-<version>-x86_64.AppImage` | Any 64-bit Linux, without installing | Linux: the VPS (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-mac-arm64.dmg` | Macs with Apple silicon (M1 and later) | GitHub Actions (`.github/workflows/build-macos.yml`) |
+| `sg-bus-timings-<version>-mac-x64.dmg` | Macs with an Intel processor | GitHub Actions (`.github/workflows/build-macos.yml`) |
 
 ## What it adds to the site
 
-- **A tray icon.** Closing the window keeps the app running there; Quit is in the tray's menu.
+- **A tray icon** (in the menu bar on macOS). Closing the window keeps the app running there;
+  Quit is in the tray's menu.
 - **Service Alerts as desktop notifications.** Electron has no Web Push, so while the app
   runs, the page checks `/api/service-alerts` every minute, by the same rules as the server
   (`main-site/js/alerts.js`, "the desktop app"), and hands what's new to the app to show
@@ -25,9 +28,9 @@ only needs building again for its own parts. It shares the Android app's version
   a stop's timings from `main-site/widget.html`, resizable, optionally on top, restored where
   they were at start-up. Added from the tray. A Windows app outside the Microsoft Store can't
   add to Windows 11's Widgets board, so they live on the desktop instead.
-- **Updates itself** (`updater.js`): reads `latest.yml` / `latest-linux.yml` from the newest
-  GitHub release. The `.exe` and AppImage download and install with a restart; the `.msi` and
-  `.deb` only say there's a new version. Upload the `.yml` files and the `.blockmap` with the
+- **Updates itself** (`updater.js`): reads `latest.yml` / `latest-mac.yml` / `latest-linux.yml`
+  from the newest GitHub release. The `.exe` and AppImage download and install with a restart;
+  the `.msi`, `.deb` and the Mac app only say there's a new version. Upload the `.yml` files and the `.blockmap` with the
   installers on every release.
 - **Links elsewhere open in your browser**; the site's own pages stay in the app.
 - **`uwu://sgbus/` links open it**, on the page they name, mapped as the Android app maps
@@ -60,12 +63,35 @@ npm run build:win
 ```
 
 The `.exe` and `.msi` land in `desktop\dist\`; copy them to `release\<version>\` beside the
-APK. For Linux, see `LINUX-BUILD.md`.
+APK. For Linux, see `LINUX-BUILD.md`. For macOS, see below.
 
 The installers aren't code-signed, so Windows SmartScreen says "Windows protected your PC"
 the first time: **More info** > **Run anyway**. A code-signing certificate would remove that.
 
 To try it without installing: `npm start`.
+
+### macOS
+
+A Mac app can only be built on a Mac, so GitHub builds it (`.github/workflows/build-macos.yml`):
+a `.dmg` and a `.zip` each for Apple silicon (`arm64`) and Intel (`x64`), and `latest-mac.yml`
+for the updater.
+
+- **Every push that changes `desktop/`** builds it. The files are on the run's page, under
+  **Artifacts** (Actions > Build macOS app > the run), for 30 days.
+- **To add it to a release**: Actions > **Build macOS app** > **Run workflow**, on `main`, with
+  the release's tag (such as `android-v2.0.2`). The files are added to that release, replacing
+  any of the same name.
+- **Publishing a release** builds it from the release's tag and adds it there by itself.
+
+Locally on a Mac, `npm ci` then `npm run build:mac` does the same, into `desktop/dist/`.
+
+It isn't signed with an Apple Developer ID (only ad-hoc), so the first time it's opened macOS
+says it "can't be opened because Apple cannot check it for malicious software". Open it from
+**Finder** with right-click > **Open** > **Open**, or on macOS 15 and later: **System Settings**
+> **Privacy & Security**, **Open Anyway**. If macOS says it's "damaged", run
+`xattr -cr "/Applications/SG Bus Timings.app"` in Terminal. Updates can't install themselves
+either: the app says there's a new version, and you download the new `.dmg`. An Apple Developer
+ID ($99 a year) would fix all of that.
 
 ## A new version
 
