@@ -3,8 +3,28 @@ title: Navigate by bus and train
 description: Get from any place to any other by bus and train, with every worthwhile mix of the two to choose from.
 ---
 
-**Plan a route** links two bus stops. **Navigate** goes further: from any place
-to any other, by bus, train or both, including the walk at each end.
+**Navigate** gets you from any place to any other, by bus, train or both,
+including the walk at each end.
+
+## Bus and train, or bus only
+
+<figure>
+<img src="/screenshots/web/nav-tabs.png" alt="Navigate with its two tabs at the top, Bus and train picked and Bus only beside it, then the From and To boxes with Home and Work under each, the swap button, and Leave now, Leave at and Arrive by." width="396" height="531" loading="lazy">
+<figcaption>Navigate's two tabs: Bus and train, and Bus only.</figcaption>
+</figure>
+
+Navigate has two tabs at the top:
+
+- **Bus and train**, this page: from any place to any other, by every
+  worthwhile mix of buses and trains.
+- **Bus only**, the [route planner](route-planner.md): between two bus stops,
+  every bus that runs the whole way, or the quickest journeys with a change of
+  bus or a short walk.
+
+Switching tab keeps your two ends where it can: a stop stays that stop, and a
+place becomes the bus stop at it, or the nearest one within 150 m. The time you
+picked comes too. The Edge Tray's arrowhead opens Navigate on whichever tab you
+used last.
 
 ## Set where you're going
 

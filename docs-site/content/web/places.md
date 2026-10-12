@@ -17,8 +17,8 @@ Tray.
 Tap a place for the way there from where you are: [Navigate](nav.md) opens with
 it in **To**, and finds where you are for **From**.
 
-Every place is also a button under each end of Navigate and
-[Plan a route](route-planner.md), after Home and Work. The row scrolls sideways
+Every place is also a button under each end of Navigate, on its Bus and train
+and [Bus only](route-planner.md) tabs, after Home and Work. The row scrolls sideways
 once there are more than fit.
 
 <figure>

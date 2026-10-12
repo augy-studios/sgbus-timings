@@ -1,11 +1,18 @@
 ---
-title: Plan a route
+title: Navigate by bus only
 description: Find every bus between two stops, or the quickest journeys with a change or a short walk, with live timings for each part.
 ---
 
-The route planner answers "which bus gets me from here to there?" Give it a
-start and an end, and it lists every bus that runs from one to the other. When
-no single bus does, it finds the quickest journeys with up to three changes.
+The route planner, Navigate's **Bus only** tab, answers "which bus gets me from
+here to there?" Give it a start and an end stop, and it lists every bus that
+runs from one to the other. When no single bus does, it finds the quickest
+journeys with up to three changes. For trains as well, and any place rather than
+a stop, use the **Bus and train** tab: see [Navigate](nav.md).
+
+<figure>
+<img src="/screenshots/web/route-planner-tab.png" alt="Navigate on its Bus only tab: Start and End boxes for a stop name, code or postal code, each with a pin button and Home and Work under it, the swap button, and Leave now, Leave at and Arrive by." width="396" height="513" loading="lazy">
+<figcaption>Navigate's Bus only tab, the route planner.</figcaption>
+</figure>
 
 ## Set the two ends
 
@@ -14,7 +21,8 @@ no single bus does, it finds the quickest journeys with up to three changes.
 <figcaption>Start and End, each with a pin for the stops near you, and the swap button between them.</figcaption>
 </figure>
 
-1. Tap **Plan a route**, the winding path in the Edge Tray.
+1. Tap **Navigate**, the arrowhead in the Edge Tray, then the **Bus only** tab.
+   (It opens on Bus only by itself if that's the tab you used last.)
 2. In **Start**, type a stop's name, its code, or a 6-digit postal code, and pick
    it from the list. Or tap the pin next to the box to pick from the stops near
    you, or **Home** or **Work** under it to pick from the stops near the place
@@ -184,7 +192,8 @@ you save is the right one.
 <figcaption>Save route turns into Saved.</figcaption>
 </figure>
 
-Tap **Save route** to add it to your [favourites](favourites.md). A route is
+Tap **Save route** to add it to your [favourites](favourites.md), under
+**Bus-only routes**. A route is
 saved in the direction you set it: Bedok Int to Serangoon Int, and Serangoon Int
 to Bedok Int, are two different favourites.
 

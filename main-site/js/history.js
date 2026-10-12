@@ -355,7 +355,7 @@
     const trips = load();
     const body = $('#tripsBody');
     if (!trips.length) {
-      body.innerHTML = `<div class="empty">No trips yet. Start a trip from Navigate, Plan a route or a bus's route (Get Off Alert), and each one you take shows here, with your stats.</div>`;
+      body.innerHTML = `<div class="empty">No trips yet. Start a trip from Navigate (Bus and train or Bus only) or a bus's route (Get Off Alert), and each one you take shows here, with your stats.</div>`;
       return;
     }
     const shown = showAll ? trips : trips.slice(0, RECENT);

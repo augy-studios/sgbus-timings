@@ -72,7 +72,9 @@ Put a stop's live timings on your home screen:
 Press and hold the widget to resize it any way: it shows as many buses as fit,
 and scrolls for the rest. The refresh button fetches the latest timings; it also
 refreshes itself about every 15 minutes, and says when it last did. Tap the
-stop's name to pick another, or a bus to open it in the app. Add as many as you
+stop's name to pick another, a bus to open it in the app, or anywhere else on
+it to open the stop. A new widget with no stop yet opens its setup wherever you
+tap it. Add as many as you
 like, each for its own stop.
 
 ## Picture-in-picture

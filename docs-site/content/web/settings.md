@@ -6,7 +6,7 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Open Places, Calendar settings, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, the Edge Tray's side, and syncing favourites with another device." width="420" height="1138" loading="lazy">
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti On or Off, Open Places, Calendar settings, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, the Edge Tray's side, and syncing with another device." width="396" height="1271" loading="lazy">
 <figcaption>Settings. Changes save as you make them.</figcaption>
 </figure>
 
@@ -15,7 +15,8 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | Setting | What it does |
 |---|---|
 | **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
-| **Birthday** | On the day, the greeting becomes "Happy Birthday, Sam!" **Clear** removes it. Only the day and month are used. |
+| **Birthday** | On the day, the greeting becomes "Happy 28th Birthday, Sam!", on two lines so your whole name shows. The age comes from the year you were born. **Clear** removes it. |
+| **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |
 | **Home, Work and your places** | **Open Places** opens [Places](places.md), where Home, Work and your other places are set. |
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
@@ -33,6 +34,19 @@ Changes save as you make them. There is no Save button.
 
 The greeting follows the time of day, good morning, afternoon or evening, and
 keeps up while the app stays open.
+
+### Your birthday
+
+<figure>
+<img src="/screenshots/web/settings-birthday.png" alt="The top of the app on your birthday: Happy 28th Birthday, on one line and Samantha Tan Wei Ling! on the next, with confetti falling over the page." width="390" height="300" loading="lazy">
+<figcaption>On your birthday: your age, your whole name, and confetti.</figcaption>
+</figure>
+
+On your birthday, the greeting wishes you a happy one, with the birthday you're
+turning, worked out from the year in **Birthday**. Confetti falls each time you
+open the app that day, and again when you come back to it after ten minutes or
+more away. Turn it off with **Birthday confetti** in Settings. With your device
+set to reduce motion, there's no confetti.
 
 ### Home and Work
 

@@ -24,8 +24,8 @@ It comes in two forms, built on the same live data from LTA:
 - **Find the stops near you** from your phone's location.
 - **Browse a bus's route** from end to end, or just the stops still ahead of
   you.
-- **Plan a route** between two stops: every bus that runs the whole way, or the
-  quickest journeys with up to three changes when none does.
+- **Navigate by bus only** between two stops: every bus that runs the whole way,
+  or the quickest journeys with up to three changes when none does.
 - **Navigate** from any place to any other by bus and train, with every
   worthwhile mix of the two, and a **Get Off Alert** two stops before you get off.
 - **Check the weather**: today's temperature, PSI and PM2.5, in one button.

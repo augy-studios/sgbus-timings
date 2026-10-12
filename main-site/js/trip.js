@@ -55,6 +55,13 @@
 // it falls back on the straight lines, and a fix near a stop well down the route counts as on
 // board whatever the road says.
 //
+// Walking is told from riding by the phone's accelerometer (Motion, below): the rhythm of your
+// steps. Walking along a bus's route to your stop is never taken for riding it; once you've
+// stopped walking, being 150 m down the route is enough to be on board (100 m down the next
+// ride after a walk), and after you get off a bus your first steps near its last stop end
+// the ride. On a walk with no good fix, your steps say how far you've got, not the clock.
+// Without an accelerometer (or with it not allowed), the distances are as before it.
+//
 // On the bar, a trip of more than one part (each ride and each walk; `legs` here) has Back and
 // Next, to move it by hand. Back puts you where you were on the part before, or at its start if
 // you'd finished it, and re-arms its alerts; the server hears it was by hand (`movedAt`), so
@@ -80,8 +87,13 @@
   // On board for sure once the fixes have moved you this many stops along the route within
   // this long (noteMove), or this far down its road, away from the stop you got on at.
   const MOVE_STOPS = 0.5;
-  const MOVE_M = 200;
-  const LEFT_STOP_M = 300;
+  const MOVE_M = 150;
+  const LEFT_STOP_M = 150;
+  // From a walk to the next ride, by how much further from the walk's end than you've been:
+  // WALK_LEFT_M once the accelerometer says you've stopped walking, WALK_LEFT_UNSURE_M
+  // without it, so walking past a later stop on the route to yours doesn't count.
+  const WALK_LEFT_M = 100;
+  const WALK_LEFT_UNSURE_M = 300;
   const MOVE_WINDOW_MS = 10 * 60 * 1000;
   // Fixes come many times a second; one this often is kept to tell you've moved.
   const MOVE_SAMPLE_MS = 3 * 1000;
@@ -175,6 +187,105 @@
     } catch {}
   }
 
+  // ---------- walking or not, by the accelerometer ----------
+
+  // A step is a rise in the phone's acceleration above the pull of gravity, past STEP_HIGH, and
+  // its fall back below STEP_LOW, at least STEP_GAP_MS after the last. Walking is
+  // WALK_STEPS of them in the last WALK_WINDOW_MS at a walker's even rhythm; a bus's bumps
+  // come unevenly. "still" (riding, or standing) once there's been no step for STILL_MS.
+  const STEP_HIGH = 1.3; // m/s², above the slow average (gravity)
+  const STEP_LOW = -0.4;
+  const STEP_GAP_MS = 280;
+  const WALK_WINDOW_MS = 5000;
+  const WALK_STEPS = 7;
+  const STEP_EVENNESS = 0.3; // the steps' gaps vary by at most this share of their average
+  const STILL_MS = 8000;
+  // No reading for this long and there's no accelerometer to go by (or the page is hidden).
+  const MOTION_STALE_MS = 3000;
+  const STRIDE_M = 0.7;
+  const WALK_DETOUR = 1.3;
+
+  const Motion = (() => {
+    let listening = false;
+    let base = null;
+    let smooth = null;
+    let rising = false;
+    let lastStep = 0;
+    let lastReading = 0;
+    let firstReading = 0;
+    let steps = [];
+
+    function onMotion(e) {
+      const a = e.accelerationIncludingGravity;
+      if (!a || a.x == null || a.y == null || a.z == null) return;
+      const now = Date.now();
+      if (!firstReading || now - lastReading > MOTION_STALE_MS) {
+        firstReading = now;
+        base = null;
+        steps = [];
+      }
+      lastReading = now;
+      const mag = Math.hypot(a.x, a.y, a.z);
+      base = base == null ? mag : base + (mag - base) * 0.02;
+      smooth = smooth == null ? mag : smooth + (mag - smooth) * 0.35;
+      const d = smooth - base;
+      if (!rising && d > STEP_HIGH) rising = true;
+      else if (rising && d < STEP_LOW) {
+        rising = false;
+        if (now - lastStep >= STEP_GAP_MS) {
+          lastStep = now;
+          steps.push(now);
+          if (steps.length > 2000) steps = steps.slice(-1000);
+        }
+      }
+    }
+
+    // Whether the steps in the window are a walk: enough of them, evenly spaced.
+    function walking(now) {
+      const recent = steps.filter((t) => now - t <= WALK_WINDOW_MS);
+      if (recent.length < WALK_STEPS) return false;
+      const gaps = recent.slice(1).map((t, i) => t - recent[i]);
+      const mean = gaps.reduce((x, y) => x + y, 0) / gaps.length;
+      const spread = Math.sqrt(gaps.reduce((x, g) => x + (g - mean) ** 2, 0) / gaps.length);
+      return mean <= 1100 && spread / mean <= STEP_EVENNESS;
+    }
+
+    return {
+      // From a tap, for iOS. Elsewhere there's nothing to ask.
+      allow() {
+        try {
+          if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+            DeviceMotionEvent.requestPermission().then((r) => r === "granted" && trip && Motion.start()).catch(() => {});
+          }
+        } catch {}
+      },
+      start() {
+        if (listening || typeof window.DeviceMotionEvent === "undefined") return;
+        listening = true;
+        window.addEventListener("devicemotion", onMotion);
+      },
+      stop() {
+        if (!listening) return;
+        listening = false;
+        window.removeEventListener("devicemotion", onMotion);
+        steps = [];
+        firstReading = lastReading = 0;
+      },
+      // "walking", "still", or null with no readings to go by.
+      state() {
+        const now = Date.now();
+        if (!listening || now - lastReading > MOTION_STALE_MS || now - firstReading < 2000) return null;
+        if (walking(now)) return "walking";
+        return now - lastStep >= STILL_MS && now - firstReading >= STILL_MS ? "still" : null;
+      },
+      // Whether readings are coming in; the steps since a time; and since when the readings
+      // have run unbroken.
+      reading: () => listening && Date.now() - lastReading <= MOTION_STALE_MS,
+      stepsSince: (t) => steps.filter((x) => x > t).length,
+      since: () => firstReading || Infinity,
+    };
+  })();
+
   // ---------- starting and ending ----------
 
   function start({ title, legs, to = null, from = null, walkBefore = 0 }) {
@@ -185,6 +296,8 @@
       record();
     }
     stop(false);
+    // iOS asks before a page may read the accelerometer, and only from a tap: this one.
+    Motion.allow();
     boardCheckedAt = 0;
     boardEta = null;
     roadsAsked = null;
@@ -224,6 +337,7 @@
     render();
     if (inApp()) followNatively();
     else watchHere();
+    Motion.start();
     tick = setInterval(onTick, TICK_MS);
     keepAwake();
     sync();
@@ -312,6 +426,7 @@
     }
     clearInterval(tick);
     tick = null;
+    Motion.stop();
     clearTimeout(arrivedTimer);
     arrivedTimer = null;
     releaseAwake();
@@ -350,7 +465,7 @@
 
     // Not yet on the bus for sure: you stay at the first stop, and the clock waits, until the
     // fixes show you moving along its route (noteMove).
-    if (!underWay(leg) && !noteMove(here, alongLeg(here, leg, 0))) {
+    if (!underWay(leg) && !noteMove(here, alongLeg(here, leg, 0), accuracy)) {
       trip.anchor = { pos: 0, t: Date.now() };
       soon();
       return;
@@ -377,6 +492,13 @@
     }
     // The clock goes on from here if the fixes stop.
     trip.anchor = { pos: Math.max(trip.pos || 0, trip.at), t: Date.now() };
+
+    // Off the bus: walking, by the accelerometer, near its last stop, once you're nearly there.
+    const lastStop = leg.points.length - 1;
+    if (leg.kind === "bus" && trip.at >= lastStop - 1 && Motion.state() === "walking" && metres(here, leg.points[lastStop]) <= ON_ROUTE_M) {
+      trip.at = lastStop;
+      trip.pos = lastStop;
+    }
 
     // Off at the end of this leg and already near the next one's first stop: on to it.
     const next = trip.legs[trip.leg + 1];
@@ -426,10 +548,16 @@
   // MOVE_STOPS on from such a fix; or at any stop after the first, within ON_ROAD_M of it.
   // Or, LEFT_STOP_M from the stop, within ON_ROUTE_M of a later one, whether or not the fix is
   // on the route's road. Says whether you're now on board.
-  function noteMove(here, along) {
+  function noteMove(here, along, accuracy = 0) {
     const now = Date.now();
     const leg = trip.legs[trip.leg];
-    const fromStop = metres(here, leg.points[0]);
+    // On foot, by the accelerometer: walking to the stop, or about it, not riding.
+    if (Motion.state() === "walking") {
+      trip.moves = [];
+      return false;
+    }
+    // A rough fix can be LEFT_STOP_M out on its own.
+    const fromStop = metres(here, leg.points[0]) - Math.max(0, accuracy - 50);
     // A stop by the one you got on at (across the road, on a route that comes back) doesn't count.
     let near = -1;
     let nearM = Infinity;
@@ -475,13 +603,17 @@
   // The next ride after this part, past any walk before it, if a fix shows you already on it:
   // LEFT_STOP_M from its first stop and half a stop down its route. Then this part's over,
   // though it never saw you get to its end: a walk whose end is off from where you waited,
-  // or a ride the fixes lost. From a walk, only once you're LEFT_STOP_M further from its end
-  // than you've been, so walking to your stop past a later one on the route isn't riding. From
+  // or a ride the fixes lost. From a walk, never while the accelerometer says you're walking,
+  // and only once you're WALK_LEFT_M further from its end than you've been (WALK_LEFT_UNSURE_M
+  // without the accelerometer), so walking to your stop past a later one isn't riding. From
   // a ride, only once the fix isn't on it any more, so a ride that carries on along the same
   // road, or comes back along it, doesn't end early. The index of that ride, or -1.
   function rideAhead(here, leg) {
     if (isWalk(leg)) {
-      if (!(metres(here, leg.points[leg.points.length - 1]) - (trip.nearEnd ?? Infinity) >= LEFT_STOP_M)) return -1;
+      const motion = Motion.state();
+      if (motion === "walking") return -1;
+      const need = motion === "still" ? WALK_LEFT_M : WALK_LEFT_UNSURE_M;
+      if (!(metres(here, leg.points[leg.points.length - 1]) - (trip.nearEnd ?? Infinity) >= need)) return -1;
     } else if (alongLeg(here, leg, trip.at) != null) return -1;
     const k = trip.legs.findIndex((l, i) => i > trip.leg && !isWalk(l));
     const ride = trip.legs[k];
@@ -554,9 +686,15 @@
   // fix, a realignment, or the leg's start once the wait for the bus is over) and the time
   // it was there. Null for a leg with no time to go by.
   function clockPos(leg) {
-    if (!leg.minutes) return null;
     const last = leg.points.length - 1;
     const from = trip.anchor || { pos: 0, t: trip.legStartedAt + (leg.wait || 0) * 60000 };
+    // On a walk, with the accelerometer: by the steps taken since, so waiting at a crossing
+    // doesn't walk you on. The way's taken as WALK_DETOUR times the straight line.
+    if (isWalk(leg) && Motion.reading() && Motion.since() <= from.t) {
+      const way = Math.max(1, metres(leg.points[0], leg.points[last]) * WALK_DETOUR);
+      return Math.min(last, from.pos + (Motion.stepsSince(from.t) * STRIDE_M) / way);
+    }
+    if (!leg.minutes) return null;
     const perStop = leg.minutes / Math.max(1, last);
     return Math.min(last, from.pos + Math.max(0, Date.now() - from.t) / 60000 / perStop);
   }

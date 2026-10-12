@@ -129,8 +129,7 @@
             <div id="trayButtons" class="tray-buttons">
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
                 <button id="nearMeBtn" class="glass-btn" type="button" aria-label="Stops near me" title="Stops near me"><span data-icon="pin"></span></button>
-                <button id="planBtn" class="glass-btn" type="button" aria-label="Plan a route" title="Plan a route"><span data-icon="route"></span></button>
-                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate"><span data-icon="train"></span></button>
+                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" aria-label="Service alerts" title="Service alerts"><span data-icon="bell"></span></button>
                 <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
                 <button id="placesBtn" class="glass-btn" type="button" aria-label="Places" title="Places"><span data-icon="bookmark"></span></button>
@@ -185,22 +184,27 @@
 
         <!-- Today's weather and air, which stays out of the Edge Tray so its reading shows: js/weather.js -->
         <div class="quickActions">
-            <button id="weatherBtn" class="iconBtn weatherBtn" type="button" aria-label="Today's weather"><span data-icon="cloud-sun"></span> <span id="weatherBtnText">Weather</span></button>
+            <button id="weatherBtn" class="iconBtn weatherBtn" type="button" aria-label="Today's weather" title="Today's weather and air"><span data-icon="cloud-sun"></span> <span id="weatherBtnText">Weather</span></button>
         </div>
 
-        <!-- Navigate by bus and train between any two places: js/nav.js -->
+        <!-- Navigate by bus and train between any two places: js/nav.js. Its Bus only tab is the
+             route planner below (js/planner.js), two stops and the buses between them. -->
         <section id="navSection" class="panelModal plannerSection navSection" role="dialog" aria-modal="true" aria-label="Navigate by bus and train" hidden>
             <div class="card glass">
                 <div class="cardHeader">
-                    <div class="cardTitle"><span data-icon="navigate"></span> Navigate by bus and train</div>
+                    <div class="cardTitle"><span data-icon="navigate"></span> Navigate</div>
                     <div class="actions">
-                        <button id="navRefresh" class="iconBtn" type="button" hidden><span data-icon="sync"></span> Refresh</button>
-                        <button id="navShare" class="iconBtn" type="button"><span data-icon="share"></span><span class="lbl">Share</span></button>
-                        <button id="navFavBtn" class="iconBtn" type="button" aria-pressed="false" hidden><span data-icon="star"></span><span class="lbl">Save nav</span></button>
+                        <button id="navRefresh" class="iconBtn" type="button" title="Refresh the live timings" hidden><span data-icon="sync"></span> Refresh</button>
+                        <button id="navShare" class="iconBtn" type="button" title="Share these directions, a place, or your ETA"><span data-icon="share"></span><span class="lbl">Share</span></button>
+                        <button id="navFavBtn" class="iconBtn" type="button" aria-pressed="false" title="Save to favourites" hidden><span data-icon="star"></span><span class="lbl">Save nav</span></button>
                         <button id="navClose" class="icon-btn small" type="button" aria-label="Close Navigate"><span data-icon="close"></span></button>
                     </div>
                 </div>
                 <div class="cardBody">
+                    <div class="dirTabs navModes" role="tablist" aria-label="Navigate by">
+                        <button class="tab active" type="button" role="tab" aria-selected="true" data-nav-mode="all"><span data-icon="train"></span> Bus and train</button>
+                        <button class="tab" type="button" role="tab" aria-selected="false" data-nav-mode="bus"><span data-icon="bus"></span> Bus only</button>
+                    </div>
                     <div class="plannerFields navFields">
                         <div class="plannerField">
                             <label for="navFrom">From</label>
@@ -239,7 +243,7 @@
                 <div class="cardHeader">
                     <div class="cardTitle"><span data-icon="bell"></span> Service alerts</div>
                     <div class="actions">
-                        <button id="alertsRefresh" class="iconBtn" type="button"><span data-icon="sync"></span> Refresh</button>
+                        <button id="alertsRefresh" class="iconBtn" type="button" title="Check for alerts again"><span data-icon="sync"></span> Refresh</button>
                         <button id="alertsClose" class="icon-btn small" type="button" aria-label="Close service alerts"><span data-icon="close"></span></button>
                     </div>
                 </div>
@@ -265,24 +269,28 @@
             </div>
         </section>
 
-        <!-- Route planner -->
-        <section id="plannerSection" class="panelModal plannerSection" role="dialog" aria-modal="true" aria-label="Plan a route" hidden>
+        <!-- Navigate's Bus only tab, the route planner: js/planner.js -->
+        <section id="plannerSection" class="panelModal plannerSection" role="dialog" aria-modal="true" aria-label="Navigate by bus only" hidden>
             <div class="card glass">
                 <div class="cardHeader">
-                    <div class="cardTitle"><span data-icon="route"></span> Plan a route</div>
+                    <div class="cardTitle"><span data-icon="navigate"></span> Navigate</div>
                     <div class="actions">
-                        <button id="routeShare" class="iconBtn" type="button"><span data-icon="share"></span><span class="lbl">Share</span></button>
-                        <button id="routeFavBtn" class="iconBtn" type="button" aria-pressed="false" hidden><span data-icon="star"></span><span class="lbl">Save route</span></button>
-                        <button id="plannerClose" class="icon-btn small" type="button" aria-label="Close route planner"><span data-icon="close"></span></button>
+                        <button id="routeShare" class="iconBtn" type="button" title="Share this route"><span data-icon="share"></span><span class="lbl">Share</span></button>
+                        <button id="routeFavBtn" class="iconBtn" type="button" aria-pressed="false" title="Save to favourites" hidden><span data-icon="star"></span><span class="lbl">Save route</span></button>
+                        <button id="plannerClose" class="icon-btn small" type="button" aria-label="Close Navigate"><span data-icon="close"></span></button>
                     </div>
                 </div>
                 <div class="cardBody">
+                    <div class="dirTabs navModes" role="tablist" aria-label="Navigate by">
+                        <button class="tab" type="button" role="tab" aria-selected="false" data-nav-mode="all"><span data-icon="train"></span> Bus and train</button>
+                        <button class="tab active" type="button" role="tab" aria-selected="true" data-nav-mode="bus"><span data-icon="bus"></span> Bus only</button>
+                    </div>
                     <div class="plannerFields">
                         <div class="plannerField">
                             <label for="routeStart">Start</label>
                             <div class="plannerInputRow">
                                 <div class="ac">
-                                    <input id="routeStart" class="input" placeholder="Stop name, code or postal code"autocomplete="off" enterkeyhint="next" />
+                                    <input id="routeStart" class="input" placeholder="Stop name, code or postal code" autocomplete="off" enterkeyhint="next" />
                                     <div id="routeStartAc" class="acList" hidden></div>
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="start" title="Pick a stop near me" aria-label="Pick a start stop near me"><span data-icon="pin"></span></button>
@@ -294,7 +302,7 @@
                             <label for="routeEnd">End</label>
                             <div class="plannerInputRow">
                                 <div class="ac">
-                                    <input id="routeEnd" class="input" placeholder="Stop name, code or postal code"autocomplete="off" enterkeyhint="go" />
+                                    <input id="routeEnd" class="input" placeholder="Stop name, code or postal code" autocomplete="off" enterkeyhint="go" />
                                     <div id="routeEndAc" class="acList" hidden></div>
                                 </div>
                                 <button class="iconBtn" type="button" data-near-for="end" title="Pick a stop near me" aria-label="Pick an end stop near me"><span data-icon="pin"></span></button>
@@ -332,7 +340,7 @@
                     </div>
                 </div>
                 <div class="cardBody">
-                    <p class="alertsIntro">Tap a place for the way there from where you are. Each one is also a button under the ends of Navigate and Plan a route.</p>
+                    <p class="alertsIntro">Tap a place for the way there from where you are. Each one is also a button under Navigate's From and To.</p>
                     <div id="placesList" class="placesList"></div>
                     <button id="placeNewBtn" class="btn placeNewBtn" type="button"><span data-icon="pin"></span> Save a new place</button>
                     <form id="placeForm" class="placeForm" hidden>
@@ -476,14 +484,14 @@
                 <div id="favBusChips" class="favChips"></div>
             </div>
             <div id="favRoutesGroup" class="favGroup">
-                <div class="favGroupLabel">Routes</div>
+                <div class="favGroupLabel">Bus-only routes</div>
                 <div id="favRouteChips" class="favChips"></div>
             </div>
             <div id="favNavsGroup" class="favGroup">
                 <div class="favGroupLabel">Navs</div>
                 <div id="favNavChips" class="favChips"></div>
             </div>
-            <div id="favEmpty" class="empty">No favourites yet. Star a stop&rsquo;s timings, a bus on its route, a planned route or a nav.</div>
+            <div id="favEmpty" class="empty">No favourites yet. Star a stop&rsquo;s timings, a bus on its route, or a nav (bus and train, or bus only).</div>
         </div>
     </div>
 
@@ -503,7 +511,13 @@
                 <input id="setBirthday" class="input settingsInput" type="date" />
                 <button id="clearBirthday" class="iconBtn" type="button">Clear</button>
             </div>
-            <p class="mode-note">On your birthday, the greeting wishes you a happy one.</p>
+            <p class="mode-note">On your birthday, the greeting wishes you a happy one, with your age if the year's set.</p>
+            <p class="modal-section-label">Birthday confetti</p>
+            <div class="mode-toggle">
+                <button class="mode-btn" type="button" data-confetti="on" aria-pressed="false">On</button>
+                <button class="mode-btn" type="button" data-confetti="off" aria-pressed="false">Off</button>
+            </div>
+            <p class="mode-note">Confetti each time you open the app on your birthday.</p>
             <!-- Home, Work and other places live in Places (js/places.js); calendar in js/calendar.js -->
             <p class="modal-section-label">Home, Work and your places</p>
             <button id="settingsPlaces" class="iconBtn settingsWide" type="button"><span data-icon="bookmark"></span> Open Places</button>
@@ -740,7 +754,7 @@
             <!-- Back and Next move the trip a part (a ride or a walk) by hand. -->
             <button id="tripPrev" class="iconBtn" type="button" title="Back to the part before" aria-label="Back to the part before" hidden>Back</button>
             <button id="tripNext" class="iconBtn" type="button" title="On to the next part" aria-label="On to the next part" hidden>Next</button>
-            <button id="tripEnd" class="iconBtn" type="button">End trip</button>
+            <button id="tripEnd" class="iconBtn" type="button" title="End the trip">End trip</button>
         </div>
     </div>
 
@@ -766,8 +780,10 @@
     </div>
 
     <script src="/js/app-bridge.js"></script>
+    <script src="/js/desktop-location.js"></script>
     <script src="/js/icons.js"></script>
     <script src="/js/ui.js"></script>
+    <script src="/js/confetti.js"></script>
     <script src="/js/theme.js"></script>
     <script src="/js/telegram.js"></script>
     <script src="/js/when.js"></script>

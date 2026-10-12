@@ -19,7 +19,7 @@ favourites, or tap the cross on its right to remove it.
 |---|---|---|
 | A bus stop | Tap **Save** on the stop's timings | That stop's timings |
 | A bus | Tap **Save bus** on the bus's [route](bus-routes.md) | That bus's route |
-| A route | Tap **Save route** in the [route planner](route-planner.md) | The planner, with both ends set |
+| A bus-only route | Tap **Save route** on Navigate's [Bus only](route-planner.md) tab | Bus only, with both ends set |
 | A nav | Tap **Save nav** in [Navigate](nav.md) | Navigate, with both ends set |
 
 A saved button reads **Saved**. Tap it again to remove the favourite.

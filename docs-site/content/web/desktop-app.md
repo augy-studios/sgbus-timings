@@ -90,4 +90,12 @@ Your favourites and settings stay.
 
 **Stops near me** and the [live map](live-map.md) need to know where the computer
 is. On Windows, turn on **Settings** > **Privacy & security** > **Location**.
-Most Linux computers can't tell where they are; type a place instead.
+On Linux, from 2.0.7, the app works out where the computer is from the Wi-Fi
+networks around it, so Wi-Fi needs to be on (connected or not). It scans them
+with NetworkManager and asks [BeaconDB](https://beacondb.net), an open database
+of where Wi-Fi networks are, as GeoClue does. Only the networks' hardware
+addresses and signal strengths are sent, never their names or anything of
+yours, and networks named to opt out (ending `_nomap`) are left out. If Location
+Services are off in GNOME's **Settings** > **Privacy**, it doesn't look. On a
+computer with no Wi-Fi, or one BeaconDB doesn't know the networks around, it
+can't tell where it is: type a place instead.

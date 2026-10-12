@@ -66,7 +66,7 @@ function initPlanner() {
     const title = start && end ? `${nameOf(start) || start} to ${nameOf(end) || end}`
       : end ? `To ${nameOf(end) || end}`
       : start ? `From ${nameOf(start) || start}`
-      : 'Plan a route';
+      : 'Navigate by bus only';
     shareLink(e.currentTarget, `${location.origin}/${hash}`, title);
   });
 

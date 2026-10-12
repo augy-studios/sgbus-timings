@@ -57,7 +57,7 @@ Type a 6-digit Singapore postal code, such as `519599`, into the search box.
 The app looks the address up with OneMap, Singapore's official map, and lists
 the 8 stops nearest it, titled with the address it found. This works in the
 route planner's Start and End boxes too, for planning a trip from somewhere you
-are not; see [Plan a route](route-planner.md).
+are not; see [Navigate by bus only](route-planner.md).
 
 ## Narrow a stop to one bus
 

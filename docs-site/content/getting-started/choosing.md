@@ -15,7 +15,7 @@ each, so a stop starred in the app is not starred in the bot.
 | Search by name, code, road or postal code | Yes | Yes |
 | Stops near your location | Yes | Yes |
 | A bus's whole route, and the stops still ahead | Yes | Yes |
-| Plan a route, with up to three changes | Yes | Yes |
+| Bus-only routes between two stops, with up to three changes | Yes, Navigate's [Bus only](../web/route-planner.md) tab | Yes |
 | Navigate between any two places by bus and train | Yes, with [Navigate](../web/nav.md) | Yes, with [/nav](../bot/nav.md) |
 | An alert two stops before you get off | Yes, with the [Get Off Alert](../web/get-off-alert.md) | No |
 | Weather and air quality | Yes, with the [weather button](../web/weather.md) | No |
