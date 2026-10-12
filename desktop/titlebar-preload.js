@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('bar', {
   reload: () => ipcRenderer.send('bar-reload'),
   // True once the link's on the clipboard.
   copy: () => ipcRenderer.invoke('bar-copy'),
-  // True once it's on the clipboard and saved in Pictures. long: the whole page, not just
+  // True once it's on the clipboard and saved in Downloads. long: the whole page, not just
   // what's on screen.
   screenshot: (long) => ipcRenderer.invoke('bar-screenshot', Boolean(long)),
   // { url, display, canBack, canForward, loading, fullscreen, color }, each time any changes.

@@ -418,7 +418,7 @@ async function longScreenshot() {
 }
 
 // The site as it is now, without the title bar, or all of it for a long one: copied, and saved
-// in Pictures/SG Bus Timings, where a notification opens it.
+// in your Downloads folder, where a notification shows it.
 ipcMain.handle('bar-screenshot', async (e, long) => {
   if (!fromBar(e)) return false;
   try {
@@ -431,7 +431,7 @@ ipcMain.handle('bar-screenshot', async (e, long) => {
       png = image.toPNG();
     }
     await clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]);
-    const dir = path.join(app.getPath('pictures'), 'SG Bus Timings');
+    const dir = app.getPath('downloads');
     const d = new Date();
     const two = (n) => String(n).padStart(2, '0');
     const stamp = `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}.${two(d.getMinutes())}.${two(d.getSeconds())}`;
@@ -441,7 +441,7 @@ ipcMain.handle('bar-screenshot', async (e, long) => {
     if (Notification.isSupported()) {
       const note = new Notification({
         title: long ? 'Long screenshot saved' : 'Screenshot saved',
-        body: `It's copied too, and in Pictures > SG Bus Timings. Click to show it.`,
+        body: `It's copied too, and in Downloads. Click to show it.`,
         icon: path.join(__dirname, 'build', 'icon.png'),
       });
       note.on('click', () => shell.showItemInFolder(file));

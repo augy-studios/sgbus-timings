@@ -22,7 +22,7 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   screenshot and long screenshot buttons, in the site's colour. The address can't be typed
   in: clicking it copies the link. A screenshot is of the site (not the bar), as it is on
   screen; a long one is the whole page, top to bottom (up to 16384 pixels tall). Either is
-  copied, and saved in **Pictures** > **SG Bus Timings**. The
+  copied, and saved in your **Downloads** folder. The
   window's own buttons are the system's, drawn over it (the traffic lights on macOS; minimise,
   maximise and close on Windows and Linux). Alt+Left and Alt+Right (⌘[ and ⌘] on a Mac) go
   back and forward, F5 or Ctrl+R reloads. The site itself is in a view below the bar
