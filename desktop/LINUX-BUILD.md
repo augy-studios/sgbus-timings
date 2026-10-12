@@ -1,7 +1,9 @@
 # Building the Linux app on the VPS
 
-The Linux installers (`.deb` and `.AppImage`) have to be built on Linux. The Debian 13
-VPS does it. It builds files and nothing else: no website, no port, and nginx isn't touched.
+The Linux installers (`.deb` and `.AppImage`) have to be built on Linux. GitHub Actions
+builds them with the others (`desktop/README.md`, "Build it"), so this is only needed to build
+them yourself. The Debian 13 VPS can: it builds files and nothing else, no website, no port,
+and nginx isn't touched.
 
 You need about 2 GB free on the VPS for the tools and the build. Each build takes a few
 minutes.

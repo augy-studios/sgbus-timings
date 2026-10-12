@@ -7,15 +7,23 @@ only needs building again for its own parts. It shares the Android app's version
 
 | Installer | For | Built on |
 |---|---|---|
-| `sg-bus-timings-<version>-setup.exe` | Windows 10 and 11: a normal installer that asks where to install | Windows (`npm run build:win`) |
-| `sg-bus-timings-<version>.msi` | Windows, for installing with Group Policy or `msiexec` | Windows (`npm run build:win`) |
-| `sg-bus-timings-<version>-amd64.deb` | Debian, Ubuntu, Mint and the like | Linux: the VPS (`LINUX-BUILD.md`) |
-| `sg-bus-timings-<version>-x86_64.AppImage` | Any 64-bit Linux, without installing | Linux: the VPS (`LINUX-BUILD.md`) |
-| `sg-bus-timings-<version>-mac-arm64.dmg` | Macs with Apple silicon (M1 and later) | GitHub Actions (`.github/workflows/build-macos.yml`) |
-| `sg-bus-timings-<version>-mac-x64.dmg` | Macs with an Intel processor | GitHub Actions (`.github/workflows/build-macos.yml`) |
+| `sg-bus-timings-<version>-setup.exe` | Windows 10 and 11: a normal installer that asks where to install | GitHub Actions, or Windows (`npm run build:win`) |
+| `sg-bus-timings-<version>.msi` | Windows, for installing with Group Policy or `msiexec` | GitHub Actions, or Windows (`npm run build:win`) |
+| `sg-bus-timings-<version>-amd64.deb` | Debian, Ubuntu, Mint and the like | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-x86_64.AppImage` | Any 64-bit Linux, without installing | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-mac-arm64.dmg` | Macs with Apple silicon (M1 and later) | GitHub Actions |
+| `sg-bus-timings-<version>-mac-x64.dmg` | Macs with an Intel processor | GitHub Actions |
+
+GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Build it").
 
 ## What it adds to the site
 
+- **Its own title bar** (`titlebar.html`): back, forward, reload, and the page's address,
+  in the site's colour. The address can't be typed in: clicking it copies the link. The
+  window's own buttons are the system's, drawn over it (the traffic lights on macOS; minimise,
+  maximise and close on Windows and Linux). Alt+Left and Alt+Right (⌘[ and ⌘] on a Mac) go
+  back and forward, F5 or Ctrl+R reloads. The site itself is in a view below the bar
+  (`main.js`, `createWindow`), and it hides while the site is full screen.
 - **A tray icon** (in the menu bar on macOS). Closing the window keeps the app running there;
   Quit is in the tray's menu.
 - **Service Alerts as desktop notifications.** Electron has no Web Push, so while the app
@@ -29,9 +37,10 @@ only needs building again for its own parts. It shares the Android app's version
   they were at start-up. Added from the tray. A Windows app outside the Microsoft Store can't
   add to Windows 11's Widgets board, so they live on the desktop instead.
 - **Updates itself** (`updater.js`): reads `latest.yml` / `latest-mac.yml` / `latest-linux.yml`
-  from the newest GitHub release. The `.exe` and AppImage download and install with a restart;
-  the `.msi`, `.deb` and the Mac app only say there's a new version. Upload the `.yml` files and the `.blockmap` with the
-  installers on every release.
+  from the newest GitHub release. The `.exe`, the AppImage and the Mac app download and
+  install with a restart; the `.msi` and `.deb` only say there's a new version. Upload the
+  `.yml` files, the Mac `.zip`s and the `.blockmap`s with the installers on every release (the
+  workflow does).
 - **Links elsewhere open in your browser**; the site's own pages stay in the app.
 - **`uwu://sgbus/` links open it**, on the page they name, mapped as the Android app maps
   them (`fromAppLink` in `main.js`). On Windows the app registers the `uwu` scheme for your
@@ -54,7 +63,16 @@ live map ask for a place instead.
 
 ## Build it
 
-On Windows, in PowerShell:
+GitHub builds every one of them, each on its own system (`.github/workflows/build-desktop.yml`):
+
+- **Every push that changes `desktop/`** builds them. The files are on the run's page, under
+  **Artifacts** (Actions > Build desktop apps > the run), for 30 days.
+- **To add them to a release**: Actions > **Build desktop apps** > **Run workflow**, on
+  `main`, with the release's tag (such as `android-v2.0.2`). The files are added to that
+  release, replacing any of the same name.
+- **Publishing a release** builds them from the release's tag and adds them there by itself.
+
+To build them yourself instead, on Windows, in PowerShell:
 
 ```powershell
 cd desktop
@@ -72,16 +90,8 @@ To try it without installing: `npm start`.
 
 ### macOS
 
-A Mac app can only be built on a Mac, so GitHub builds it (`.github/workflows/build-macos.yml`):
-a `.dmg` and a `.zip` each for Apple silicon (`arm64`) and Intel (`x64`), and `latest-mac.yml`
-for the updater.
-
-- **Every push that changes `desktop/`** builds it. The files are on the run's page, under
-  **Artifacts** (Actions > Build macOS app > the run), for 30 days.
-- **To add it to a release**: Actions > **Build macOS app** > **Run workflow**, on `main`, with
-  the release's tag (such as `android-v2.0.2`). The files are added to that release, replacing
-  any of the same name.
-- **Publishing a release** builds it from the release's tag and adds it there by itself.
+A Mac app can only be built on a Mac, so GitHub builds it (above): a `.dmg` and a `.zip` each
+for Apple silicon (`arm64`) and Intel (`x64`), and `latest-mac.yml` for the updater.
 
 Locally on a Mac, `npm ci` then `npm run build:mac` does the same, into `desktop/dist/`.
 
@@ -89,9 +99,17 @@ It isn't signed with an Apple Developer ID (only ad-hoc), so the first time it's
 says it "can't be opened because Apple cannot check it for malicious software". Open it from
 **Finder** with right-click > **Open** > **Open**, or on macOS 15 and later: **System Settings**
 > **Privacy & Security**, **Open Anyway**. If macOS says it's "damaged", run
-`xattr -cr "/Applications/SG Bus Timings.app"` in Terminal. Updates can't install themselves
-either: the app says there's a new version, and you download the new `.dmg`. An Apple Developer
-ID ($99 a year) would fix all of that.
+`xattr -cr "/Applications/SG Bus Timings.app"` in Terminal. An Apple Developer ID ($99 a
+year) would fix that.
+
+It still updates itself, though not as signed Mac apps do: macOS's own updater (Squirrel.Mac)
+only takes apps signed with a Developer ID. So `updater.js` downloads the new `.zip` (its
+SHA-512 checked against `latest-mac.yml`), unzips it, and once the app quits, swaps the new
+`SG Bus Timings.app` in for the old one, and opens it again for **Restart to update**. That
+needs the app in a folder you can write to, as `/Applications` is for an admin; run from the
+`.dmg`, or straight from Downloads (macOS runs that from a read-only copy), it only says
+there's a new version. macOS may ask again for your location after an update, as it can't
+tell an ad-hoc signed app's new version is the same app.
 
 ## A new version
 
