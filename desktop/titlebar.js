@@ -8,12 +8,26 @@ $('back').addEventListener('click', () => window.bar.back());
 $('forward').addEventListener('click', () => window.bar.forward());
 $('reload').addEventListener('click', () => window.bar.reload());
 
+// Said for a moment in the address bar, over the address.
 let copiedTimer = null;
-$('address').addEventListener('click', async () => {
-  if (!(await window.bar.copy())) return;
+function say(text) {
+  $('copied').textContent = text;
   root.classList.add('copied');
   clearTimeout(copiedTimer);
   copiedTimer = setTimeout(() => root.classList.remove('copied'), 1500);
+}
+
+$('address').addEventListener('click', async () => {
+  if (await window.bar.copy()) say('Link copied');
+});
+
+$('shot').addEventListener('click', async () => {
+  $('shot').disabled = true;
+  try {
+    say((await window.bar.screenshot()) ? 'Screenshot copied and saved' : "Couldn't take a screenshot");
+  } finally {
+    $('shot').disabled = false;
+  }
 });
 
 // Light or dark writing, whichever reads on the site's colour.

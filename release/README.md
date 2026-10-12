@@ -35,8 +35,10 @@ The APK, in PowerShell, from the project root:
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 ```
 
-The desktop ones (Windows, Linux and macOS) build on GitHub: publishing the release adds them
-to it by itself, a few minutes later (`desktop/README.md`, "Build it"). They aren't kept in
+The desktop ones (Windows, Linux and macOS) build on GitHub (`desktop/README.md`, "Build
+it"): run **Build desktop apps** with the new tag, such as `android-v2.0.3`, and they land on
+a draft release of that tag, ready for the APK. Or publish the release first, and they're
+added to it by themselves a few minutes later. They aren't kept in
 `release\<version>\`. To build the Windows ones yourself, `cd desktop; npm ci; npm run
 build:win`; the Linux ones, `desktop/LINUX-BUILD.md`.
 

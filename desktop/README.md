@@ -18,8 +18,10 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
 
 ## What it adds to the site
 
-- **Its own title bar** (`titlebar.html`): back, forward, reload, and the page's address,
-  in the site's colour. The address can't be typed in: clicking it copies the link. The
+- **Its own title bar** (`titlebar.html`): back, forward, reload, the page's address and a
+  screenshot button, in the site's colour. The address can't be typed in: clicking it copies
+  the link. The screenshot is of the site (not the bar): it's copied, and saved in
+  **Pictures** > **SG Bus Timings**. The
   window's own buttons are the system's, drawn over it (the traffic lights on macOS; minimise,
   maximise and close on Windows and Linux). Alt+Left and Alt+Right (⌘[ and ⌘] on a Mac) go
   back and forward, F5 or Ctrl+R reloads. The site itself is in a view below the bar
@@ -68,9 +70,12 @@ GitHub builds every one of them, each on its own system (`.github/workflows/buil
 - **Every push that changes `desktop/`** builds them. The files are on the run's page, under
   **Artifacts** (Actions > Build desktop apps > the run), for 30 days.
 - **To add them to a release**: Actions > **Build desktop apps** > **Run workflow**, on
-  `main`, with the release's tag (such as `android-v2.0.2`). The files are added to that
-  release, replacing any of the same name.
-- **Publishing a release** builds them from the release's tag and adds them there by itself.
+  `main`, with the release's tag (such as `android-v2.0.3`). The files are added to that
+  release, replacing any of the same name. With no release of that tag yet, a **draft**
+  release is made for them: add the APK, write what's new, and publish it. Nobody's app sees a
+  draft, so nothing updates until then.
+- **Publishing a release** builds them from the release's tag and adds them there by itself,
+  unless they're on it already.
 
 To build them yourself instead, on Windows, in PowerShell:
 

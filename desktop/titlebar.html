@@ -1,7 +1,7 @@
 <!doctype html>
-<!-- The app window's own title bar (main.js, createWindow): back, forward, reload and the page's
-     address, with the site in a view of its own below it. The address can't be typed in;
-     clicking it copies the link. The window's own controls are the system's: the traffic
+<!-- The app window's own title bar (main.js, createWindow): back, forward, reload, the page's
+     address and a screenshot button, with the site in a view of its own below it. The address
+     can't be typed in; clicking it copies the link. The window's own controls are the system's: the traffic
      lights on macOS, drawn over the bar's left; minimise, maximise and close on Windows and
      Linux, over its right (titleBarOverlay). -->
 <html lang="en">
@@ -25,6 +25,7 @@
     button { -webkit-app-region: no-drag; appearance: none; border: 0; background: none; color: inherit;
       font: inherit; cursor: default; border-radius: 6px; }
     .nav { flex: none; width: 30px; height: 28px; display: grid; place-items: center; }
+    #shot { margin-left: 4px; }
     .nav:hover:not(:disabled) { background: var(--hover); }
     .nav:disabled { opacity: .35; }
     .nav svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2;
@@ -56,7 +57,10 @@
     <button id="address" title="Click to copy the link">
       <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
       <span id="url"></span>
-      <span id="copied">Link copied</span>
+      <span id="copied"></span>
+    </button>
+    <button class="nav" id="shot" title="Screenshot: copies it, and saves it in Pictures" aria-label="Screenshot">
+      <svg viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2.5l1.5-2h6l1.5 2H19a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="3.5"/></svg>
     </button>
   </div>
   <script src="titlebar.js"></script>

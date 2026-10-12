@@ -5,8 +5,8 @@
 //   come as desktop notifications (main-site/js/alerts.js checks for them every minute while
 //   it runs, as Electron has no Web Push, and hands them here through preload.js);
 // - starting when you sign in, from the tray's menu, quietly into the tray;
-// - its own title bar: back, forward, reload, and the page's address, which copies the link
-//   when clicked (titlebar.html);
+// - its own title bar: back, forward, reload, the page's address, which copies the link
+//   when clicked, and a screenshot button (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
 // - checking for its own updates (updater.js);
@@ -16,7 +16,8 @@
 // site's own origin. Nothing here holds a key or a secret.
 
 const {
-  app, BrowserWindow, WebContentsView, Menu, Notification, Tray, clipboard, nativeImage, session, shell, ipcMain,
+  app, BrowserWindow, WebContentsView, ClipboardItem, Menu, Notification, Tray, clipboard, nativeImage, session, shell,
+  ipcMain,
 } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -375,10 +376,41 @@ ipcMain.on('bar-reload', (e) => {
   if (fromBar(e)) page.reload();
 });
 // The address can't be typed in: clicking it copies the link.
-ipcMain.handle('bar-copy', (e) => {
+ipcMain.handle('bar-copy', async (e) => {
   if (!fromBar(e)) return false;
-  clipboard.writeText(shownUrl());
+  await clipboard.writeText(shownUrl());
   return true;
+});
+// The site as it is now, without the title bar: copied, and saved in Pictures/SG Bus Timings,
+// where a notification opens it.
+ipcMain.handle('bar-screenshot', async (e) => {
+  if (!fromBar(e)) return false;
+  try {
+    const image = await page.capturePage();
+    if (image.isEmpty()) return false;
+    const png = image.toPNG();
+    await clipboard.write([new ClipboardItem({ 'image/png': new Blob([png], { type: 'image/png' }) })]);
+    const dir = path.join(app.getPath('pictures'), 'SG Bus Timings');
+    const d = new Date();
+    const two = (n) => String(n).padStart(2, '0');
+    const stamp = `${d.getFullYear()}-${two(d.getMonth() + 1)}-${two(d.getDate())} ${two(d.getHours())}.${two(d.getMinutes())}.${two(d.getSeconds())}`;
+    const file = path.join(dir, `SG Bus Timings ${stamp}.png`);
+    await fs.promises.mkdir(dir, { recursive: true });
+    await fs.promises.writeFile(file, png);
+    if (Notification.isSupported()) {
+      const note = new Notification({
+        title: 'Screenshot saved',
+        body: `It's copied too, and in Pictures > SG Bus Timings. Click to show it.`,
+        icon: path.join(__dirname, 'build', 'icon.png'),
+      });
+      note.on('click', () => shell.showItemInFolder(file));
+      note.show();
+    }
+    return true;
+  } catch (err) {
+    console.warn('screenshot failed:', err?.message || err);
+    return false;
+  }
 });
 
 // ---------- from the page (preload.js) ----------
