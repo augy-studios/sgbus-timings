@@ -1,12 +1,12 @@
 // Navigate's short share links (api/_lib/share-links.js), from js/share.js.
 //
-//   POST  { kind, data }            → { id, path, secret? }  a link, made or found again
+//   POST  { kind, data }            → { id, path, secret?, telegramUrl? }  a link, made or found again
 //   GET   ?id=                      → { kind, data, updatedAt }  what a link holds
 //   PATCH ?id=  { secret, data }    → 204  an ETA link's new progress
 
 import { rateLimited, storeConfigured } from './_push/store.js';
 import { supabaseConfigured } from './_lib/supabase.js';
-import { PATHS, ValidationError, createLink, getLink, isLinkId, parseLink, updateEta } from './_lib/share-links.js';
+import { PATHS, ValidationError, createLink, getLink, instantViewUrl, isLinkId, parseLink, updateEta } from './_lib/share-links.js';
 
 const RATE_LIMIT = 60; // writes per IP per minute
 
@@ -35,7 +35,11 @@ export default async function handler(req, res) {
       if (!PATHS[kind]) return res.status(400).json({ error: 'bad kind' });
       const data = parseLink(kind, req.body.data);
       const { id, secret } = await createLink(kind, data);
-      return res.status(200).json({ id, path: `/${PATHS[kind]}/${id}`, ...(secret && { secret }) });
+      const path = `/${PATHS[kind]}/${id}`;
+      const origin = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers['x-forwarded-host'] || req.headers.host}`;
+      // The link for Share's Telegram button, with Instant View, when that's set up.
+      const telegramUrl = instantViewUrl(kind, `${origin}${path}`);
+      return res.status(200).json({ id, path, ...(secret && { secret }), ...(telegramUrl && { telegramUrl }) });
     }
 
     if (req.method === 'PATCH') {

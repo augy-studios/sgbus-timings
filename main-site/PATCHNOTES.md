@@ -9,6 +9,14 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (evening): Instant View for shared trips
+
+### Web app
+
+- **Share to Telegram** - Directions shared with Share's **Telegram** button open in Telegram's **Instant View**: both ends, the time and the map, right in the chat, with a link on to the app.
+
+---
+
 ## 12 October 2026 (afternoon): The web app inside Telegram
 
 ### Telegram bot
