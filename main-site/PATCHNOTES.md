@@ -9,6 +9,14 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 12 October 2026 (late night): A sharp launch screen
+
+### Android app
+
+- **Launch screen** - The bus icon on the screen you see while the app opens is sharp now, not blurry.
+
+---
+
 ## 12 October 2026 (night): Instant View for every share link
 
 ### Web app
