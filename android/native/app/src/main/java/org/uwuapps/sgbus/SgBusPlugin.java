@@ -55,6 +55,7 @@ public class SgBusPlugin extends Plugin {
         JSArray features = new JSArray();
         features.put("calendar"); // PhoneCalendarPlugin
         features.put("update"); // UpdateActivity
+        features.put("checkupdate"); // UpdateActivity's check, for the Edge Tray (2.0.8)
         features.put("trip"); // TripPlugin
         features.put("notify");
         features.put("board"); // the board channel, for Get ready to board (Notifications)
