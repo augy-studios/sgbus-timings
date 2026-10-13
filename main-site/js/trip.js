@@ -488,6 +488,8 @@
     if (accuracy > GOOD_FIX_M) return;
     trip.lastFixAt = Date.now();
     trip.noLocation = false;
+    // Alerted well before the stop, by the server about another bus: it can go off again.
+    if (trip.alerted[trip.leg] && wellShort()) overrule();
 
     // Not yet on the bus for sure: you stay at the first stop, and the clock waits, until the
     // fixes show you moving along its route (noteMove).
@@ -1133,6 +1135,7 @@
   // sounded here as if the page had found it, unless the page already has.
   function alertedElsewhere({ tripId, leg, text }, sound = false) {
     if (!trip || tripId !== trip.tripId || trip.alerted[leg]) return;
+    if (leg === trip.leg && wellShort()) return overrule();
     trip.alerted[leg] = true;
     if (leg === trip.leg) {
       if (sound && enabled()) {
@@ -1147,6 +1150,26 @@
     }
     save();
     render();
+  }
+
+  // Whether a fresh fix has you well short of the Get Off Alert on this part: more than a stop
+  // before where it goes off. Then an alert from the server, which follows a bus rather than
+  // you, was about the wrong one (one that left the stop before you got there, say), and the
+  // app's own place stands.
+  function wellShort() {
+    const leg = trip.legs[trip.leg];
+    return !isWalk(leg) && trip.lastFixAt > 0 && Date.now() - trip.lastFixAt <= FIX_STALE_MS && stopsLeft() > ALERT_STOPS + 1;
+  }
+
+  // Turns down the server's alert for this part: it can go off again, and the server hears the
+  // app's place stands over the bus it was following (realignedAt, as realign does).
+  function overrule() {
+    trip.alerted[trip.leg] = false;
+    trip.alertText = null;
+    trip.realignedAt = Date.now();
+    save();
+    render();
+    sync();
   }
 
   // ---------- the server, for while the app is in the background ----------
@@ -1213,8 +1236,11 @@
 
   function adopt(state) {
     if (!trip || state?.tripId !== trip.tripId) return;
+    // An alert the server sent for this part while a fresh fix has you well short of it: turned
+    // down, rather than taken as given, which would keep the app's own from going off.
+    const wrong = state.leg === trip.leg && state.alerted[trip.leg] && wellShort();
     state.alerted.forEach((a, i) => {
-      if (a) trip.alerted[i] = true;
+      if (a && !(wrong && i === trip.leg)) trip.alerted[i] = true;
     });
     state.readied?.forEach((r, i) => {
       if (r) trip.readied[i] = true;
@@ -1233,6 +1259,7 @@
     save();
     render();
     if (moved) record();
+    if (wrong) overrule();
   }
 
   function unsync() {

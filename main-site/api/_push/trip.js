@@ -21,6 +21,10 @@ const BEND_SHARE = 0.3;
 const MATCH_STOPS = 2;
 // The cron runs once a minute, so the alert goes this much of a stop early rather than late.
 const LEAD_STOPS = 0.5;
+// While you wait at the first stop, a bus only counts as having left with you if it could
+// have left in about this long: the cron's minute, and a missed one. Any further on, it was
+// already on its way before the last look, likely before you got to the stop at all.
+const LEFT_WINDOW_MS = 3 * 60 * 1000;
 
 export const BOARD_MS = 90 * 1000;
 // A bus LTA has as already at the stop for longer than this has likely gone.
@@ -125,8 +129,10 @@ function whereNow(trip, leg, buses, now) {
     pick = closest(seen.filter((p) => p >= known - 0.5), known + stopsSince(trip.seenAt));
     if (pick == null) return { pos: clock, track: null };
   } else {
-    // Still waiting at the first stop: of the buses that could have left it since, the first.
-    const left = seen.filter((p) => p <= stopsSince(trip.seenAt) + 0.5);
+    // Still waiting at the first stop: of the buses that could have left it since the app saw
+    // you there, and lately (LEFT_WINDOW_MS), the first. Not just since the app saw you: after
+    // a long wait, that would take a bus that left well before you got there, stops ahead.
+    const left = seen.filter((p) => p <= stopsSince(Math.max(trip.seenAt, now - LEFT_WINDOW_MS)) + 0.5);
     if (!left.length) return { pos: known, track: null };
     pick = Math.max(...left);
   }
