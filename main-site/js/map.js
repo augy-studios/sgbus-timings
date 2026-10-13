@@ -104,6 +104,7 @@
   let following = true; // the map keeps you in view, until you move it yourself
   let pushed = false; // whether opening added a step to the page's history
   let builtTripLeg = null;
+  let tripTrack = null; // the train you're on's track, from js/rail-tracks.js
 
   const routes = new Map(); // walks already asked for, this page view
 
@@ -140,6 +141,27 @@
     let d = 0;
     for (let i = 0; i < path.length - 1; i++) d += metres(path[i], path[i + 1]);
     return d;
+  }
+
+  // Where the trip has you on a train ride, on its track ({ path, stops }, js/rail-tracks.js):
+  // `pos` is a stop index with a fraction, as Trip has it, and you're that far along the track
+  // between the two stations. Null without a position.
+  function onTrack({ path, stops }, pos) {
+    if (pos == null || !(pos >= 0)) return null;
+    const last = stops.length - 1;
+    const i = Math.min(last, Math.floor(pos));
+    const j = Math.min(last, i + 1);
+    const way = path.slice(stops[i], stops[j] + 1);
+    let left = lengthOf(way) * Math.min(1, pos - i);
+    for (let k = 0; k < way.length - 1; k++) {
+      const d = metres(way[k], way[k + 1]);
+      if (left <= d) {
+        const f = d ? left / d : 0;
+        return [way[k][0] + (way[k + 1][0] - way[k][0]) * f, way[k][1] + (way[k + 1][1] - way[k][1]) * f];
+      }
+      left -= d;
+    }
+    return way[way.length - 1];
   }
 
   function bearing(a, b) {
@@ -532,6 +554,7 @@
     }
     if (builtTripLeg !== p.legIndex) {
       builtTripLeg = p.legIndex;
+      tripTrack = null;
       groups.lines.clearLayers();
       groups.stops.clearLayers();
       groups.marks.clearLayers();
@@ -539,10 +562,19 @@
         const done = i < p.legIndex;
         const colour = done ? COLOURS.done : leg.kind === 'walk' ? COLOURS.walk
           : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
-        L.polyline(leg.points, {
+        const line = L.polyline(leg.points, {
           color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95,
           dashArray: leg.kind === 'walk' ? '2 9' : null, lineCap: 'round', interactive: false,
         }).addTo(groups.lines);
+        // A train ride along its line's track (js/rail-tracks.js), once that's in; straight from
+        // station to station till then.
+        if (leg.kind === 'train' && window.RailTracks) {
+          RailTracks.path(leg.route || String(leg.label || '').split(' ')[0], leg.points).then((track) => {
+            if (!track || mode !== 'trip' || builtTripLeg !== p.legIndex || !groups.lines.hasLayer(line)) return;
+            line.setLatLngs(track.path);
+            if (i === p.legIndex) tripTrack = track;
+          });
+        }
         if (leg.kind !== 'walk' && !done) {
           leg.points.forEach((pt, k) => {
             if (k === 0 || k === leg.points.length - 1) return;
@@ -576,7 +608,8 @@
     // No fix of your own yet: where the trip has you.
     if (!here) {
       hideMe();
-      groups.me.addLayer(L.circleMarker(p.at, { radius: 7, color: '#fff', weight: 3, fillColor: COLOURS.me, fillOpacity: 0.7, interactive: false }));
+      const at = (tripTrack && onTrack(tripTrack, p.timeline?.pos)) || p.at;
+      groups.me.addLayer(L.circleMarker(at, { radius: 7, color: '#fff', weight: 3, fillColor: COLOURS.me, fillOpacity: 0.7, interactive: false }));
     }
   }
 

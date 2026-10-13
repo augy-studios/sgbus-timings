@@ -51,7 +51,10 @@ target button under it brings the map back in close, following you.
 While a trip runs, tap the map button on the trip bar. The map shows the whole
 trip: each ride in its own colour with its stops, each walk as a dotted line,
 where you change, and where it ends, with you on it. On a walk, the streets to
-take are drawn too.
+take are drawn too. A train ride follows its line's track, the way
+[sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station
+you board at to the one you get off at, and underground, where there's no GPS,
+your dot moves along the track too.
 
 ## Follow someone's trip
 

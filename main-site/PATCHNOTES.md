@@ -9,6 +9,14 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 13 October 2026 (evening): Trains on the live map follow the track
+
+### Web app
+
+- **Train rides follow the track** - On a trip's live map, a train ride is drawn along its line's real track, the way [sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station you board at to the one you get off at, rather than straight from station to station. Underground, where there's no GPS, your dot moves along the track too. A website update, so the Android and desktop apps have it as soon as they open, with no new version to install.
+
+---
+
 ## 13 October 2026 (later): Apps 2.0.8
 
 ### Web app
