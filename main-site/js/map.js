@@ -26,9 +26,9 @@
 //   offline.
 // - Nothing runs while the map's closed: no location, no timers.
 //
-// Tiles are OpenStreetMap's own, under its tile usage policy (attribution, light use). If
-// they won't load, it switches to OneMap's, Singapore's official map, for the rest of the
-// session.
+// Tiles are OpenStreetMap's own, under its tile usage policy (attribution, light use), and
+// only theirs: OneMap's lag. Tiles that don't load (underground, on a weak signal) are asked
+// for again a little later, and as soon as the phone's back online.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -37,25 +37,12 @@
   const LEAFLET_JS = '/vendor/leaflet/leaflet.js';
   const LEAFLET_CSS = '/vendor/leaflet/leaflet.css';
   const TILES = {
-    osm: {
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-      // CORS (both send it), so sw.js can keep them without the size an opaque response costs.
-      crossOrigin: true,
-    },
-    onemap: {
-      url: 'https://www.onemap.gov.sg/maps/tiles/Default/{z}/{x}/{y}.png',
-      attribution: '<a href="https://www.onemap.gov.sg/" target="_blank" rel="noopener">OneMap</a> &copy; contributors | <a href="https://www.sla.gov.sg/" target="_blank" rel="noopener">Singapore Land Authority</a>',
-      minZoom: 11,
-      maxZoom: 19,
-      bounds: [[1.144, 103.535], [1.494, 104.131]],
-      crossOrigin: true,
-    },
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    maxZoom: 19,
   };
-  const TILE_KEY = 'sgbus.mapTiles';
-  // Failed tiles before giving up on OpenStreetMap's, with none loaded.
-  const TILE_FAILS = 6;
+  // Tiles that didn't load are asked for again this long after the last one failed.
+  const TILE_RETRY_MS = 10 * 1000;
 
   const SG_CENTRE = [1.3521, 103.8198];
   const DRAW_MS = 1000;
@@ -71,7 +58,7 @@
   // A fix rougher than this isn't drawn as where you are.
   const ROUGH_M = 200;
   const TRIP_EVERY_MS = 5000;
-  // Street level: the closest both tile servers draw.
+  // Street level: the closest OpenStreetMap's tiles go.
   const STREET_ZOOM = 19;
 
   const COLOURS = { walk: '#2f7dff', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
@@ -82,7 +69,7 @@
   let leaflet = null; // the promise of Leaflet loaded
   let map = null;
   let tileLayer = null;
-  let tileSource = null;
+  let tileRetry = null; // tiles failed: the timer to ask for them again, or true while closed
   let groups = null; // { lines, stops, marks, me }
   let meDot = null;
   let meRing = null;
@@ -195,42 +182,39 @@
     return leaflet;
   }
 
-  function chosenTiles() {
-    try {
-      return sessionStorage.getItem(TILE_KEY) === 'onemap' ? 'onemap' : 'osm';
-    } catch {
-      return 'osm';
-    }
-  }
-
-  function useTiles(source) {
-    if (tileSource === source) return;
-    tileSource = source;
-    const t = TILES[source];
-    if (tileLayer) map.removeLayer(tileLayer);
-    let loaded = 0;
-    let failed = 0;
-    tileLayer = L.tileLayer(t.url, {
-      attribution: t.attribution,
-      maxZoom: t.maxZoom,
-      minZoom: t.minZoom || 0,
-      bounds: t.bounds,
-      crossOrigin: t.crossOrigin || undefined,
+  // OpenStreetMap's tiles. A tile that fails stays blank until asked for again, so once tiles
+  // stop failing for TILE_RETRY_MS, or the phone's back online, or the map's opened again, the
+  // ones on screen are: those that loaded come straight from sw.js's cache.
+  function addTiles() {
+    tileLayer = L.tileLayer(TILES.url, {
+      attribution: TILES.attribution,
+      maxZoom: TILES.maxZoom,
+      // CORS (OpenStreetMap sends it), so sw.js can keep them without the size an opaque
+      // response costs.
+      crossOrigin: true,
       updateWhenIdle: true,
       updateWhenZooming: false,
       keepBuffer: 3,
       detectRetina: false,
     });
-    if (source === 'osm') {
-      tileLayer.on('tileload', () => { loaded++; });
-      tileLayer.on('tileerror', () => {
-        if (++failed >= TILE_FAILS && loaded === 0 && navigator.onLine !== false) {
-          try { sessionStorage.setItem(TILE_KEY, 'onemap'); } catch { /* this map only */ }
-          useTiles('onemap');
-        }
-      });
-    }
+    tileLayer.on('tileerror', () => {
+      clearTimeout(tileRetry);
+      tileRetry = setTimeout(retryTiles, TILE_RETRY_MS);
+    });
+    window.addEventListener('online', retryTiles);
     tileLayer.addTo(map);
+  }
+
+  function retryTiles() {
+    if (!tileRetry) return;
+    clearTimeout(tileRetry);
+    // Closed, or still offline: kept for when the map's opened or the phone's online again.
+    if ($('#mapPanel').hidden || navigator.onLine === false) {
+      tileRetry = true;
+      return;
+    }
+    tileRetry = null;
+    tileLayer.redraw();
   }
 
   async function ensureMap() {
@@ -247,7 +231,7 @@
       minZoom: 10,
     }).setView(SG_CENTRE, 12);
     map.attributionControl.setPrefix(false);
-    useTiles(chosenTiles());
+    addTiles();
     groups = {
       lines: L.layerGroup().addTo(map),
       stops: L.layerGroup().addTo(map),
@@ -321,6 +305,7 @@
       throw err;
     }
     map.invalidateSize();
+    retryTiles();
     groups.lines.clearLayers();
     groups.stops.clearLayers();
     groups.marks.clearLayers();

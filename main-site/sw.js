@@ -77,8 +77,7 @@ const FONT_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 const TILE_CACHE = "sgbus-tiles";
 const TILE_MAX = 2000;
 const TILE_REFRESH_MS = 14 * 24 * 3600 * 1000;
-const isTile = (url) => url.hostname === "tile.openstreetmap.org" ||
-  (url.hostname === "www.onemap.gov.sg" && url.pathname.startsWith("/maps/tiles/"));
+const isTile = (url) => url.hostname === "tile.openstreetmap.org";
 
 // No skipWaiting() here: a new worker installs and then waits until somebody
 // presses Reload on the update bar (js/sw-update.js).
@@ -478,7 +477,7 @@ async function tile(event, request) {
   const hit = await cache.match(request);
   const fresh = async () => {
     const res = await fetch(request);
-    // Only what can be read: both tile servers send CORS (js/map.js asks with it), and an
+    // Only what can be read: OpenStreetMap sends CORS (js/map.js asks with it), and an
     // opaque answer would count as megabytes against the site's storage in Chrome.
     if (res.ok) {
       await cache.put(request, res.clone());

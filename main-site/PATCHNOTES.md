@@ -15,6 +15,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 - **Train rides follow the track** - On a trip's live map, a train ride is drawn along its line's real track, the way [sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station you board at to the one you get off at, rather than straight from station to station. Underground, where there's no GPS, your dot moves along the track too.
 - **On someone's shared trip too** - Following a friend's live ETA on the map, their train rides follow the track as well, and underground their dot moves along it. Links shared before this update are drawn as before.
+- **Live map stays on OpenStreetMap** - The live map no longer switches to OneMap's map when OpenStreetMap's is slow to load, as OneMap's lags. Parts of the map that didn't load, on a weak signal or underground, are fetched again once the signal's back. Shared links' preview images still use OneMap.
 - A website update, so the Android and desktop apps have it as soon as they open, with no new version to install.
 
 ---

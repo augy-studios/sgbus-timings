@@ -81,5 +81,5 @@ Every bit of map you've seen is kept on your device, so a place looked at before
 opens at once, even offline. Map tiles are small, but the first look at a new
 area uses some data.
 
-If OpenStreetMap's maps won't load, it switches to OneMap's, Singapore's official
-map, for the rest of the visit.
+Somewhere with a weak signal, like underground, parts of the map that didn't load
+are fetched again once the signal's back.
