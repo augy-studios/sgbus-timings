@@ -75,6 +75,7 @@
       legCount: p.legCount,
       at: p.at,
       path: thin(p.path, PATH_POINTS),
+      trains: p.trains,
       me: p.me,
       timeline: p.timeline,
       ended: p.arrived,

@@ -618,6 +618,48 @@
   let themDot = null;
   let themRing = null;
   let themPath = null;
+  let themAsked = 0; // the newest update whose tracks are being worked out
+
+  // Where a point is on a path, from `from` on: the first point within a few metres of it, or
+  // if thinning (js/share.js) left it out, the nearest within NEAR_STATION_M. Null if neither.
+  const NEAR_STATION_M = 300;
+  function indexOn(path, p, from) {
+    let best = null;
+    let bestM = NEAR_STATION_M;
+    for (let k = from; k < path.length; k++) {
+      const m = metres(path[k], p);
+      if (m <= 5) return k;
+      if (m < bestM) [best, bestM] = [k, m];
+    }
+    return best;
+  }
+
+  // Their path with each train ride on its line's track (js/rail-tracks.js), in place of the
+  // straight lines from station to station; and the track of the one they're on, if a train.
+  // A ride that can't be placed stays as it was.
+  async function followTracks(data) {
+    let path = data.path;
+    let current = null;
+    let from = 0;
+    for (const ride of data.trains || []) {
+      const track = await RailTracks.path(ride.route, ride.points);
+      if (!track) continue;
+      if (ride.leg === data.legIndex) current = track;
+      const i = indexOn(path, ride.points[0], from);
+      const j = i == null ? null : indexOn(path, ride.points[ride.points.length - 1], i + 1);
+      if (j == null) continue;
+      path = [...path.slice(0, i), ...track.path, ...path.slice(j + 1)];
+      from = i + track.path.length;
+    }
+    return { path, current };
+  }
+
+  // Their dot: where they really are, or else where their trip has them, on the track if
+  // they're on a train.
+  function themAt(data, track) {
+    if (data.me) return [data.me.lat, data.me.lng];
+    return (track && onTrack(track, data.timeline?.pos)) || data.at;
+  }
 
   async function follow(data, { title = null } = {}) {
     await show(title || (data.name ? `${data.name}'s trip` : 'Shared trip'), '');
@@ -631,10 +673,23 @@
   function updateFollow(data, fit = false) {
     if (mode !== 'follow' || !data) return;
     followData = data;
-    const at = data.me ? [data.me.lat, data.me.lng] : data.at;
+    const at = themAt(data, null);
     if (data.path?.length >= 2) {
       if (!themPath) themPath = L.polyline(data.path, { color: COLOURS.them, weight: 5, opacity: 0.85, lineCap: 'round', interactive: false }).addTo(groups.lines);
       else themPath.setLatLngs(data.path);
+      // Their train rides on the track, once it's in; straight till then.
+      if (data.trains?.length && window.RailTracks) {
+        const asked = ++themAsked;
+        followTracks(data).then(({ path, current }) => {
+          if (mode !== 'follow' || asked !== themAsked || !themPath) return;
+          themPath.setLatLngs(path);
+          if (themDot && current && !data.me) {
+            const on = themAt(data, current);
+            themDot.setLatLng(on);
+            themRing.setLatLng(on);
+          }
+        }).catch(() => {});
+      }
     }
     if (!destMark && data.to) destMark = flag([data.to.lat, data.to.lng], data.to.label).addTo(groups.marks);
     if (at) {

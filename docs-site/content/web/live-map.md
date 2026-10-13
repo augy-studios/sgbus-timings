@@ -66,7 +66,8 @@ your dot moves along the track too.
 When someone shares their ETA with you, their link opens **Live progress**. Tap
 **Follow on the map** to see their dot move along their trip, or read the
 timeline under the arrival time: their stops ahead, with **Here** where they
-are. Both update every 10 seconds.
+are. Both update every 10 seconds. Their train rides follow the track too, and
+underground their dot moves along it.
 
 ## Moving around the map
 

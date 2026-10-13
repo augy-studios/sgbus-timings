@@ -114,6 +114,24 @@ function me(m, now) {
   return { lat, lng, accuracy: Number.isFinite(m.accuracy) ? Math.min(1000, Math.max(0, Math.round(m.accuracy))) : null, t: Math.round(m.t) };
 }
 
+// Each train ride's line and stations (progress in js/trip.js), for the live map to draw it
+// along its track (js/rail-tracks.js). A ride that doesn't fit is left out rather than turning
+// the whole update away: it's drawn straight, as before. A link from before them has none.
+const TRAIN_ROUTE_RE = /^[A-Z]{2,3}$/;
+
+function trains(t) {
+  if (!Array.isArray(t)) return null;
+  const out = [];
+  for (const r of t.slice(0, 8)) {
+    if (!r || typeof r !== 'object' || !TRAIN_ROUTE_RE.test(r.route) || !Number.isInteger(r.leg) || r.leg < 0 || r.leg > 20) continue;
+    if (!Array.isArray(r.points) || r.points.length < 2) continue;
+    try {
+      out.push({ leg: r.leg, route: r.route, points: path(r.points, 60) });
+    } catch {}
+  }
+  return out;
+}
+
 function timeline(t) {
   if (t == null) return null;
   if (typeof t !== 'object' || !Array.isArray(t.legs) || !Number.isFinite(t.pos)) throw new ValidationError('bad timeline');
@@ -143,6 +161,7 @@ function parseEta(data, now) {
     legCount: int(data.legCount ?? 1, 1, 20),
     at: data.at == null ? null : point(data.at[0], data.at[1]),
     path: path(data.path, 400),
+    trains: trains(data.trains),
     // Where the sharer really is, from their last good fix: the dot on the live map their
     // friend sees (js/map.js), rather than where the trip has them.
     me: me(data.me, now),
@@ -260,6 +279,8 @@ export function etaFromTrip(trip, now, { ended = false } = {}) {
     legCount: legs.length,
     at: point(...along(leg.points, pos)),
     path: legs.flatMap((l) => l.points).slice(0, 400).map(([lat, lng]) => point(lat, lng)),
+    // The line from the ride's label, "EW Line" or "BP LRT" (tripFromNav in js/nav.js).
+    trains: trains(legs.map((l, i) => l.kind === 'train' && { leg: i, route: String(l.label || '').split(' ')[0], points: l.points }).filter(Boolean)),
     ended,
   };
 }
