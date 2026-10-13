@@ -100,7 +100,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### The live map
 - **Live map** (`js/map.js`): OpenStreetMap with Leaflet (`vendor/leaflet/`, loaded the first time it opens), full screen, following your location. Replaces Google Maps: a stop's Directions, a walk in a nav, `#map/<stop>` and `#map/<lat>,<lng>~<name>` (the Telegram bot's Live map button) walk you there turn by turn, from `GET /api/walk` (OneMap's walking router, OSRM's as a fallback, a straight line without either; cached a day at the edge), asked again if you stray
 - On a trip, the trip bar's map button shows every ride and walk, the stops and you; a shared trip's viewer follows the sharer's dot on it
-- Kept light: one canvas, markers moved rather than redrawn, fixes drawn at most once a second, tiles cached by `sw.js` (cache-first, 2,000 tiles, refreshed after 14 days); OneMap's tiles if OpenStreetMap's won't load
+- Kept light: one canvas, markers moved rather than redrawn, fixes drawn at most once a second, tiles cached by `sw.js` (cache-first, 2,000 tiles, refreshed after 14 days); OpenStreetMap's tiles only (OneMap's lag), with tiles that failed asked for again once the signal's back
 
 ### In the Android app
 - The site is also an Android app, `org.uwuapps.sgbus` (`../android/`): from 2.0.0 the site in Capacitor's WebView, with native plugins for what a web page can't do

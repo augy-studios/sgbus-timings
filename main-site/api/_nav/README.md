@@ -25,6 +25,13 @@ git clone --depth 1 https://github.com/cheeaun/sgraildata.git <somewhere>
 node scripts/vendor-rail.mjs <mrtroute-game clone> <somewhere>/sgraildata/data/v1/sg-rail.geojson
 ```
 
+And the tracks the live map draws train rides along (`main-site/data/rail-tracks.json`,
+read by `js/rail-tracks.js`), from the same snapshot:
+
+```
+node scripts/vendor-rail-tracks.mjs <somewhere>/sgraildata/data/v1/sg-rail.geojson
+```
+
 Then check `railSequences` in `network.js` still matches how the trains run
 (it fails loudly if a code it names has gone), update the commit and date above,
 and bump `VERSION` in `sw.js`.

@@ -1289,6 +1289,9 @@
       legCount: trip.legs.length,
       at: [leg.points[i][0] + (leg.points[j][0] - leg.points[i][0]) * f, leg.points[i][1] + (leg.points[j][1] - leg.points[i][1]) * f],
       path: trip.legs.flatMap((l) => l.points),
+      // Each train ride's line and stations, so a shared ETA's live map draws it along its
+      // track (js/rail-tracks.js).
+      trains: trip.legs.map((l, i) => l.kind === "train" && { leg: i, route: l.route || String(l.label || "").split(" ")[0], points: l.points }).filter(Boolean),
       arrived: stopsLeft() === 0 && trip.leg === trip.legs.length - 1,
       share: trip.share || null,
       // Your last good fix, if it's recent: on a shared ETA, where you really are.

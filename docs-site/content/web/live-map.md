@@ -51,7 +51,10 @@ target button under it brings the map back in close, following you.
 While a trip runs, tap the map button on the trip bar. The map shows the whole
 trip: each ride in its own colour with its stops, each walk as a dotted line,
 where you change, and where it ends, with you on it. On a walk, the streets to
-take are drawn too.
+take are drawn too. A train ride follows its line's track, the way
+[sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station
+you board at to the one you get off at, and underground, where there's no GPS,
+your dot moves along the track too.
 
 ## Follow someone's trip
 
@@ -63,7 +66,8 @@ take are drawn too.
 When someone shares their ETA with you, their link opens **Live progress**. Tap
 **Follow on the map** to see their dot move along their trip, or read the
 timeline under the arrival time: their stops ahead, with **Here** where they
-are. Both update every 10 seconds.
+are. Both update every 10 seconds. Their train rides follow the track too, and
+underground their dot moves along it.
 
 ## Moving around the map
 
@@ -77,5 +81,5 @@ Every bit of map you've seen is kept on your device, so a place looked at before
 opens at once, even offline. Map tiles are small, but the first look at a new
 area uses some data.
 
-If OpenStreetMap's maps won't load, it switches to OneMap's, Singapore's official
-map, for the rest of the visit.
+Somewhere with a weak signal, like underground, parts of the map that didn't load
+are fetched again once the signal's back.

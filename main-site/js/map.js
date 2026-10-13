@@ -26,9 +26,9 @@
 //   offline.
 // - Nothing runs while the map's closed: no location, no timers.
 //
-// Tiles are OpenStreetMap's own, under its tile usage policy (attribution, light use). If
-// they won't load, it switches to OneMap's, Singapore's official map, for the rest of the
-// session.
+// Tiles are OpenStreetMap's own, under its tile usage policy (attribution, light use), and
+// only theirs: OneMap's lag. Tiles that don't load (underground, on a weak signal) are asked
+// for again a little later, and as soon as the phone's back online.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -37,25 +37,12 @@
   const LEAFLET_JS = '/vendor/leaflet/leaflet.js';
   const LEAFLET_CSS = '/vendor/leaflet/leaflet.css';
   const TILES = {
-    osm: {
-      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-      // CORS (both send it), so sw.js can keep them without the size an opaque response costs.
-      crossOrigin: true,
-    },
-    onemap: {
-      url: 'https://www.onemap.gov.sg/maps/tiles/Default/{z}/{x}/{y}.png',
-      attribution: '<a href="https://www.onemap.gov.sg/" target="_blank" rel="noopener">OneMap</a> &copy; contributors | <a href="https://www.sla.gov.sg/" target="_blank" rel="noopener">Singapore Land Authority</a>',
-      minZoom: 11,
-      maxZoom: 19,
-      bounds: [[1.144, 103.535], [1.494, 104.131]],
-      crossOrigin: true,
-    },
+    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    maxZoom: 19,
   };
-  const TILE_KEY = 'sgbus.mapTiles';
-  // Failed tiles before giving up on OpenStreetMap's, with none loaded.
-  const TILE_FAILS = 6;
+  // Tiles that didn't load are asked for again this long after the last one failed.
+  const TILE_RETRY_MS = 10 * 1000;
 
   const SG_CENTRE = [1.3521, 103.8198];
   const DRAW_MS = 1000;
@@ -71,7 +58,7 @@
   // A fix rougher than this isn't drawn as where you are.
   const ROUGH_M = 200;
   const TRIP_EVERY_MS = 5000;
-  // Street level: the closest both tile servers draw.
+  // Street level: the closest OpenStreetMap's tiles go.
   const STREET_ZOOM = 19;
 
   const COLOURS = { walk: '#2f7dff', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
@@ -82,7 +69,7 @@
   let leaflet = null; // the promise of Leaflet loaded
   let map = null;
   let tileLayer = null;
-  let tileSource = null;
+  let tileRetry = null; // tiles failed: the timer to ask for them again, or true while closed
   let groups = null; // { lines, stops, marks, me }
   let meDot = null;
   let meRing = null;
@@ -104,6 +91,7 @@
   let following = true; // the map keeps you in view, until you move it yourself
   let pushed = false; // whether opening added a step to the page's history
   let builtTripLeg = null;
+  let tripTrack = null; // the train you're on's track, from js/rail-tracks.js
 
   const routes = new Map(); // walks already asked for, this page view
 
@@ -142,6 +130,27 @@
     return d;
   }
 
+  // Where the trip has you on a train ride, on its track ({ path, stops }, js/rail-tracks.js):
+  // `pos` is a stop index with a fraction, as Trip has it, and you're that far along the track
+  // between the two stations. Null without a position.
+  function onTrack({ path, stops }, pos) {
+    if (pos == null || !(pos >= 0)) return null;
+    const last = stops.length - 1;
+    const i = Math.min(last, Math.floor(pos));
+    const j = Math.min(last, i + 1);
+    const way = path.slice(stops[i], stops[j] + 1);
+    let left = lengthOf(way) * Math.min(1, pos - i);
+    for (let k = 0; k < way.length - 1; k++) {
+      const d = metres(way[k], way[k + 1]);
+      if (left <= d) {
+        const f = d ? left / d : 0;
+        return [way[k][0] + (way[k + 1][0] - way[k][0]) * f, way[k][1] + (way[k + 1][1] - way[k][1]) * f];
+      }
+      left -= d;
+    }
+    return way[way.length - 1];
+  }
+
   function bearing(a, b) {
     const rad = (d) => (d * Math.PI) / 180;
     const y = Math.sin(rad(b[1] - a[1])) * Math.cos(rad(b[0]));
@@ -173,42 +182,39 @@
     return leaflet;
   }
 
-  function chosenTiles() {
-    try {
-      return sessionStorage.getItem(TILE_KEY) === 'onemap' ? 'onemap' : 'osm';
-    } catch {
-      return 'osm';
-    }
-  }
-
-  function useTiles(source) {
-    if (tileSource === source) return;
-    tileSource = source;
-    const t = TILES[source];
-    if (tileLayer) map.removeLayer(tileLayer);
-    let loaded = 0;
-    let failed = 0;
-    tileLayer = L.tileLayer(t.url, {
-      attribution: t.attribution,
-      maxZoom: t.maxZoom,
-      minZoom: t.minZoom || 0,
-      bounds: t.bounds,
-      crossOrigin: t.crossOrigin || undefined,
+  // OpenStreetMap's tiles. A tile that fails stays blank until asked for again, so once tiles
+  // stop failing for TILE_RETRY_MS, or the phone's back online, or the map's opened again, the
+  // ones on screen are: those that loaded come straight from sw.js's cache.
+  function addTiles() {
+    tileLayer = L.tileLayer(TILES.url, {
+      attribution: TILES.attribution,
+      maxZoom: TILES.maxZoom,
+      // CORS (OpenStreetMap sends it), so sw.js can keep them without the size an opaque
+      // response costs.
+      crossOrigin: true,
       updateWhenIdle: true,
       updateWhenZooming: false,
       keepBuffer: 3,
       detectRetina: false,
     });
-    if (source === 'osm') {
-      tileLayer.on('tileload', () => { loaded++; });
-      tileLayer.on('tileerror', () => {
-        if (++failed >= TILE_FAILS && loaded === 0 && navigator.onLine !== false) {
-          try { sessionStorage.setItem(TILE_KEY, 'onemap'); } catch { /* this map only */ }
-          useTiles('onemap');
-        }
-      });
-    }
+    tileLayer.on('tileerror', () => {
+      clearTimeout(tileRetry);
+      tileRetry = setTimeout(retryTiles, TILE_RETRY_MS);
+    });
+    window.addEventListener('online', retryTiles);
     tileLayer.addTo(map);
+  }
+
+  function retryTiles() {
+    if (!tileRetry) return;
+    clearTimeout(tileRetry);
+    // Closed, or still offline: kept for when the map's opened or the phone's online again.
+    if ($('#mapPanel').hidden || navigator.onLine === false) {
+      tileRetry = true;
+      return;
+    }
+    tileRetry = null;
+    tileLayer.redraw();
   }
 
   async function ensureMap() {
@@ -225,7 +231,7 @@
       minZoom: 10,
     }).setView(SG_CENTRE, 12);
     map.attributionControl.setPrefix(false);
-    useTiles(chosenTiles());
+    addTiles();
     groups = {
       lines: L.layerGroup().addTo(map),
       stops: L.layerGroup().addTo(map),
@@ -299,6 +305,7 @@
       throw err;
     }
     map.invalidateSize();
+    retryTiles();
     groups.lines.clearLayers();
     groups.stops.clearLayers();
     groups.marks.clearLayers();
@@ -532,6 +539,7 @@
     }
     if (builtTripLeg !== p.legIndex) {
       builtTripLeg = p.legIndex;
+      tripTrack = null;
       groups.lines.clearLayers();
       groups.stops.clearLayers();
       groups.marks.clearLayers();
@@ -539,10 +547,19 @@
         const done = i < p.legIndex;
         const colour = done ? COLOURS.done : leg.kind === 'walk' ? COLOURS.walk
           : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
-        L.polyline(leg.points, {
+        const line = L.polyline(leg.points, {
           color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95,
           dashArray: leg.kind === 'walk' ? '2 9' : null, lineCap: 'round', interactive: false,
         }).addTo(groups.lines);
+        // A train ride along its line's track (js/rail-tracks.js), once that's in; straight from
+        // station to station till then.
+        if (leg.kind === 'train' && window.RailTracks) {
+          RailTracks.path(leg.route || String(leg.label || '').split(' ')[0], leg.points).then((track) => {
+            if (!track || mode !== 'trip' || builtTripLeg !== p.legIndex || !groups.lines.hasLayer(line)) return;
+            line.setLatLngs(track.path);
+            if (i === p.legIndex) tripTrack = track;
+          });
+        }
         if (leg.kind !== 'walk' && !done) {
           leg.points.forEach((pt, k) => {
             if (k === 0 || k === leg.points.length - 1) return;
@@ -576,7 +593,8 @@
     // No fix of your own yet: where the trip has you.
     if (!here) {
       hideMe();
-      groups.me.addLayer(L.circleMarker(p.at, { radius: 7, color: '#fff', weight: 3, fillColor: COLOURS.me, fillOpacity: 0.7, interactive: false }));
+      const at = (tripTrack && onTrack(tripTrack, p.timeline?.pos)) || p.at;
+      groups.me.addLayer(L.circleMarker(at, { radius: 7, color: '#fff', weight: 3, fillColor: COLOURS.me, fillOpacity: 0.7, interactive: false }));
     }
   }
 
@@ -585,6 +603,48 @@
   let themDot = null;
   let themRing = null;
   let themPath = null;
+  let themAsked = 0; // the newest update whose tracks are being worked out
+
+  // Where a point is on a path, from `from` on: the first point within a few metres of it, or
+  // if thinning (js/share.js) left it out, the nearest within NEAR_STATION_M. Null if neither.
+  const NEAR_STATION_M = 300;
+  function indexOn(path, p, from) {
+    let best = null;
+    let bestM = NEAR_STATION_M;
+    for (let k = from; k < path.length; k++) {
+      const m = metres(path[k], p);
+      if (m <= 5) return k;
+      if (m < bestM) [best, bestM] = [k, m];
+    }
+    return best;
+  }
+
+  // Their path with each train ride on its line's track (js/rail-tracks.js), in place of the
+  // straight lines from station to station; and the track of the one they're on, if a train.
+  // A ride that can't be placed stays as it was.
+  async function followTracks(data) {
+    let path = data.path;
+    let current = null;
+    let from = 0;
+    for (const ride of data.trains || []) {
+      const track = await RailTracks.path(ride.route, ride.points);
+      if (!track) continue;
+      if (ride.leg === data.legIndex) current = track;
+      const i = indexOn(path, ride.points[0], from);
+      const j = i == null ? null : indexOn(path, ride.points[ride.points.length - 1], i + 1);
+      if (j == null) continue;
+      path = [...path.slice(0, i), ...track.path, ...path.slice(j + 1)];
+      from = i + track.path.length;
+    }
+    return { path, current };
+  }
+
+  // Their dot: where they really are, or else where their trip has them, on the track if
+  // they're on a train.
+  function themAt(data, track) {
+    if (data.me) return [data.me.lat, data.me.lng];
+    return (track && onTrack(track, data.timeline?.pos)) || data.at;
+  }
 
   async function follow(data, { title = null } = {}) {
     await show(title || (data.name ? `${data.name}'s trip` : 'Shared trip'), '');
@@ -598,10 +658,23 @@
   function updateFollow(data, fit = false) {
     if (mode !== 'follow' || !data) return;
     followData = data;
-    const at = data.me ? [data.me.lat, data.me.lng] : data.at;
+    const at = themAt(data, null);
     if (data.path?.length >= 2) {
       if (!themPath) themPath = L.polyline(data.path, { color: COLOURS.them, weight: 5, opacity: 0.85, lineCap: 'round', interactive: false }).addTo(groups.lines);
       else themPath.setLatLngs(data.path);
+      // Their train rides on the track, once it's in; straight till then.
+      if (data.trains?.length && window.RailTracks) {
+        const asked = ++themAsked;
+        followTracks(data).then(({ path, current }) => {
+          if (mode !== 'follow' || asked !== themAsked || !themPath) return;
+          themPath.setLatLngs(path);
+          if (themDot && current && !data.me) {
+            const on = themAt(data, current);
+            themDot.setLatLng(on);
+            themRing.setLatLng(on);
+          }
+        }).catch(() => {});
+      }
     }
     if (!destMark && data.to) destMark = flag([data.to.lat, data.to.lng], data.to.label).addTo(groups.marks);
     if (at) {
