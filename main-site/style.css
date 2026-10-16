@@ -2625,7 +2625,8 @@ body.on-trip { padding-bottom: 96px; }
 .ac:has(.searchExtra:not([hidden]) + .searchExtra:not([hidden])) .input { padding-right: 86px; }
 
 /* ---- Will I make it? (js/make-it.js) ---- */
-.makeIt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 14px; color: var(--ink); }
+/* In from the card's edges as .stopTools is, so it lines up with the buttons above. */
+.makeIt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 18px; border-bottom: 1px solid var(--surface-border); font-size: 14px; color: var(--ink); }
 .makeIt .ico svg { width: 18px; height: 18px; }
 .eta.tooSoon { opacity: 0.4; }
 
