@@ -590,9 +590,7 @@ html[data-telegram] .telegramBtn { display: none; }
     flex-direction: column;
     align-items: center;
     gap: 8px;
-    margin-right: var(--hud-edge);
 }
-:root[data-tray-side="left"] .tray-buttons { margin-right: 0; margin-left: var(--hud-edge); }
 
 /* Each button rides out with the tray and fades in a beat after the one above it, so the
    column unrolls top to bottom; closing, they fade together as the tray slides away. They
@@ -636,22 +634,23 @@ html[data-telegram] .telegramBtn { display: none; }
     background: color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
-/* A phone on its side, or with its keyboard open, has no room for the whole column: it
-   scrolls, with room kept for the buttons' shadows. The buttons keep their size rather than
-   being squashed to fit. */
-@media (max-height: 560px) {
-    .tray-buttons > * { flex-shrink: 0; }
-    .tray { --tray-shift: calc(var(--glass-btn) + 18px + var(--hud-edge)); }
-    .tray-buttons {
-        max-height: calc(100dvh - var(--hud-top) - 60px);
-        overflow-y: auto;
-        scrollbar-width: none;
-        padding: 4px 10px 12px;
-        margin-top: -4px;
-    }
-    :root:not([data-tray-side="left"]) .tray-buttons { margin-right: calc(var(--hud-edge) - 10px); }
-    :root[data-tray-side="left"] .tray-buttons { margin-left: calc(var(--hud-edge) - 10px); }
+/* Wherever the screen's too short for the whole column (a phone on its side, its keyboard
+   open, or just the many buttons the apps add), it scrolls, with room kept for the buttons'
+   shadows and the favourites badge. The buttons keep their size rather than being squashed
+   to fit. */
+.tray-buttons > * { flex-shrink: 0; }
+.tray { --tray-shift: calc(var(--glass-btn) + 18px + var(--hud-edge)); }
+.tray-buttons {
+    max-height: calc(100dvh - var(--hud-top) - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    padding: 6px 10px 12px;
+    margin-top: -6px;
 }
+.tray-buttons::-webkit-scrollbar { display: none; }
+:root:not([data-tray-side="left"]) .tray-buttons { margin-right: calc(var(--hud-edge) - 10px); }
+:root[data-tray-side="left"] .tray-buttons { margin-right: 0; margin-left: calc(var(--hud-edge) - 10px); }
 
 /* ===== Cards ===== */
 .card {

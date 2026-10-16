@@ -19,6 +19,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Shake to refresh** - On a phone, a firm shake refreshes the stop's timings, for when one hand's on a pole. It can be turned off in Settings.
 - **Search by voice** - In browsers that can listen, such as Chrome, the microphone in the search box takes a stop, its code or a bus, said out loud.
 - **Train lines found by OneMap get their colours** - Fixed: in Navigate, train rides in the ways OneMap found (marked "Found by OneMap") had no line colour dot. They now have the same dot as the rest.
+- **The Edge Tray scrolls** - When its buttons run past the bottom of the screen, as they can now in the apps, the column scrolls rather than leaving the last ones out of reach.
 - **For AI assistants** - [`llms.txt`](https://sgbus.uwuapps.org/llms.txt) tells an AI assistant how to open the app at a stop, a bus or a journey for you, and how to read the live timings.
 
 ### Android app 2.1.0

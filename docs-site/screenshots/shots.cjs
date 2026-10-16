@@ -2,7 +2,12 @@
 // serve.cjs first, then from docs-site/, `node screenshots/shots.cjs [group ...]` (every group
 // without any). Then `python3 screenshots/sizes.py <names>` to set their sizes in the pages.
 // Take the ones with live timings (*-live, install-tour) in the day, while buses run.
-// Needs Playwright (npm i -g playwright, or Chromium where Playwright finds it).
+// Needs Playwright (npm i -g playwright, or Chromium where Playwright finds it). CHROME=<path
+// to chrome.exe> uses an installed Chrome instead of Playwright's own.
+//
+// The app-* groups show the page as the Android app has it (2.1.0's reminders, Offline
+// Sharing, the search box's mic and camera): `app: true` stands a fake window.Capacitor in for
+// the app, answering as the app would (APP_ANSWERS), so the page draws what it does there.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -38,12 +43,49 @@ const STATE = {
   ]),
 };
 
-async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false } = {}) {
+// What the fake Android app (see the top) says to the page, by plugin and method; anything else
+// answers {}. "never" stays waiting, as the app does for a sticker or a card.
+const APP_FEATURES = ['calendar', 'update', 'checkupdate', 'trip', 'pace', 'notify', 'board', 'share', 'shareto', 'sharetap', 'sharenearby',
+  'widget', 'places', 'flag', 'torch', 'earphones', 'battery', 'lastbus', 'leavetime', 'nearstops', 'onabus', 'scan', 'sticker', 'listen', 'pip', 'card', 'cardtap'];
+const APP_ANSWERS = {
+  'SgBus.info': { version: '2.1.0', versionCode: 13, android: 35, features: APP_FEATURES },
+  'OfflineShare.status': { nfc: 'on', tap: true, nearby: true, allowed: true },
+  'OfflineShare.write': 'never',
+  'Reminders.status': {
+    nearStops: ['84009'], lastBus: [{ code: '84009', service: '14' }], leaveTime: true, onABus: false,
+    background: true, notifications: true, calendar: true, activity: true,
+  },
+};
+// Run in the page: a window.Capacitor that answers as above, and finds a phone nearby when
+// Offline Sharing looks for one.
+function fakeApp(answers) {
+  const listeners = {};
+  const emit = (plugin, event, data) => (listeners[`${plugin}.${event}`] || []).forEach((fn) => fn(data));
+  window.Capacitor = {
+    getPlatform: () => 'android',
+    nativePromise(plugin, method) {
+      if (plugin === 'OfflineShare' && method === 'find') setTimeout(() => emit('OfflineShare', 'found', { id: 'p1', name: 'Alex' }), 300);
+      const a = answers[`${plugin}.${method}`];
+      return a === 'never' ? new Promise(() => {}) : Promise.resolve(a ?? {});
+    },
+    addListener(plugin, event, fn) {
+      (listeners[`${plugin}.${event}`] ||= []).push(fn);
+      return { remove() {} };
+    },
+  };
+}
+
+async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: 3, isMobile: touch, hasTouch: touch, colorScheme: 'light', locale: 'en-SG', timezoneId: 'Asia/Singapore',
     ...(geo && { geolocation: geo, permissions: ['geolocation'] }),
   });
   await ctx.route(/^(?!http:\/\/127\.0\.0\.1|https:\/\/fonts\.(googleapis|gstatic)\.com)/, (r) => r.abort());
+  // A share card makes a short link: a made-up one here, not a real one on the live site.
+  await ctx.route(/\/api\/share$/, (r) => (r.request().method() === 'POST'
+    ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'k3v9q2x7ma', path: '/go/k3v9q2x7ma' }) })
+    : r.continue()));
+  if (app) await ctx.addInitScript(fakeApp, APP_ANSWERS);
   await ctx.addInitScript((s) => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
@@ -80,7 +122,7 @@ async function el(page, sel, name) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
   const R = '#plannerSection .card';
   const N = '#navSection .card';
 
@@ -224,6 +266,86 @@ async function el(page, sel, name) {
     await page.waitForTimeout(300);
     await page.screenshot({ path: OUT + 'settings-birthday.png', clip: { x: 0, y: 0, width: 390, height: 300 } });
     console.log('wrote settings-birthday.png');
+    await ctx.close();
+  }
+  // ---- 2.1.0 ----
+  // A stop's buttons and "Will I make it?", from about 500 m away. Live timings.
+  if (want('stop-live')) {
+    const { ctx, page } = await open(browser, {
+      width: 420, height: 1400, hash: '#84009', geo: { latitude: 1.3285, longitude: 103.9335, accuracy: 20 },
+      extra: { sgbus_makeit: 'on' },
+    });
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => {});
+    await page.waitForFunction(() => /walk from you/.test(document.querySelector('#makeIt')?.textContent || ''), null, { timeout: 15000 }).catch(() => console.log('no walk line'));
+    await page.waitForTimeout(800);
+    await cardDown(page, '#resultCard', '#services .svc:nth-of-type(2)', 'timings-make-it.png');
+    // The flag-down screen, for the first bus there.
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('#services [data-flag]').first().click();
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: OUT + 'timings-flag.png' });
+    console.log('wrote timings-flag.png 390 844');
+    await ctx.close();
+  }
+  if (want('board-live')) {
+    const { ctx, page } = await open(browser, { width: 1000, height: 600, hash: '#board/84009' });
+    await page.waitForSelector('#boardRows .boardRow', { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: OUT + 'timings-board.png' });
+    console.log('wrote timings-board.png 1000 600');
+    await ctx.close();
+  }
+  if (want('app-search')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 600, app: true });
+    await blur(page);
+    await el(page, '.searchWrap', 'search-voice-scan.png');
+    await ctx.close();
+  }
+  const lastBusExtra = {
+    sgbus_lastbus: JSON.stringify([
+      { code: '84009', name: 'Bedok Int', service: '14', wd: '2330', sat: '2330', sun: '2330' },
+      { code: '75009', name: 'Tampines Int', service: '10', wd: '2315', sat: '2315', sun: '2315' },
+    ]),
+    sgbus_nearstops: JSON.stringify(['84009']),
+  };
+  if (want('app-reminders')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 2600, app: true, extra: lastBusExtra });
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(1200);
+    await el(page, '#remindersSettings', 'android-reminders.png');
+    await page.click('#nearStopsBtn');
+    await page.waitForTimeout(800);
+    await el(page, '#nearStopsModal .modal', 'android-near-stops.png');
+    await ctx.close();
+  }
+  // The bell by a bus's last bus at a stop. Live timings.
+  if (want('app-lastbus-live')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 1400, hash: '#84009', app: true, extra: lastBusExtra });
+    await page.waitForSelector('#services .lastBusBell.on', { timeout: 30000 }).catch(() => console.log('no bell'));
+    await page.waitForTimeout(800);
+    await el(page, '#services .svc:has(.lastBusBell.on)', 'android-last-bus.png');
+    await ctx.close();
+  }
+  if (want('app-share')) {
+    let { ctx, page } = await open(browser, { width: 420, height: 1000, app: true });
+    await page.evaluate((p) => Share.place(p), P.raffles);
+    await page.waitForSelector('#shareTargets [data-share-to="offline"]:not([disabled])', { timeout: 10000 }).catch(() => {});
+    await page.waitForTimeout(800);
+    await el(page, '#shareTargets', 'android-share-targets.png');
+    await page.click('#shareTargets [data-share-to="offline"]');
+    await page.waitForSelector('#offlineBody [data-offline-peer]', { timeout: 10000 }).catch(() => console.log('no phone found'));
+    await page.waitForTimeout(800);
+    await el(page, '#offlineModal .modal', 'android-offline-sharing.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 420, height: 1000, app: true }));
+    await page.click('#receiveBtn');
+    await page.waitForTimeout(1200);
+    await el(page, '#offlineModal .modal', 'android-receive.png');
+    await page.evaluate(() => closeModal('offlineModal'));
+    await page.evaluate(() => OfflineShare.sticker({ url: `${location.origin}/#84009`, title: 'Bedok Int (84009)' }));
+    await page.waitForTimeout(1000);
+    await el(page, '#offlineModal .modal', 'android-sticker.png');
     await ctx.close();
   }
   await browser.close();

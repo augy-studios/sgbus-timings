@@ -33,6 +33,11 @@ open the best match.
 
 ## Say it, or scan it
 
+<figure>
+<img src="/screenshots/web/search-voice-scan.png" alt="The search box with 84009 typed in, and a microphone and a camera button at its right end, beside Get Timings." width="310" height="48" loading="lazy">
+<figcaption>The microphone, and in the Android app the camera.</figcaption>
+</figure>
+
 Hands full? The **microphone** in the search box searches by voice: say a stop's
 name, its code ("eight four zero zero nine") or a bus ("bus twenty-two"). It's
 there in the [Android app](android-app.md#search-by-voice-and-scan-a-stop), and

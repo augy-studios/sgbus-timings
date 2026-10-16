@@ -219,7 +219,10 @@
 
   function init() {
     if (!native()) return;
-    window.addEventListener('app:ready', show);
+    // The app may have answered before this file loaded, and show() needs script.js's helpers:
+    // once the page's scripts have all run, if it's already said, and whenever it does.
+    window.addEventListener('app:ready', () => { if (document.readyState !== 'loading') show(); });
+    document.addEventListener('DOMContentLoaded', () => { if (AppBridge.has('places')) show(); });
     window.addEventListener('places:change', sendPlaces);
 
     document.querySelectorAll('[data-earphones]').forEach((btn) => btn.addEventListener('click', () => {

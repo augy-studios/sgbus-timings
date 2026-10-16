@@ -99,6 +99,11 @@ like, each for its own stop.
 From version 2.1.0, in **Settings**, the app can tell you things with itself
 closed. Each is off until you turn it on, and asks for what it needs then.
 
+<figure>
+<img src="/screenshots/web/android-reminders.png" alt="The app's reminders in Settings: Timings near a stop with 1 stop watched, Time to leave turned on, On a bus? turned off, and two last bus reminders, for the 14 at Bedok Int and the 10 at Tampines Int, each with a button to remove it." width="358" height="494" loading="lazy">
+<figcaption>The reminders in Settings, each off until you turn it on.</figcaption>
+</figure>
+
 - **Timings near a stop**: tap **Pick stops** and choose some of your favourite
   stops. As you walk up to one (within about 120 m), a quiet notification shows
   its next buses, refreshed every minute until you leave. It needs location
@@ -116,6 +121,11 @@ closed. Each is off until you turn it on, and asks for what it needs then.
   Settings lists them, to remove. Public holidays run Sunday's times, which the
   reminder doesn't know about.
 
+<figure>
+<img src="/screenshots/web/android-near-stops.png" alt="Timings near a stop: the favourite stops Bedok Int, ticked, and Tampines Int, not, above a Save button." width="396" height="310" loading="lazy">
+<figcaption>Timings near a stop: pick which favourite stops to watch.</figcaption>
+</figure>
+
 ## Home and Work, a tap away
 
 From version 2.1.0, once Home or Work is set in [Places](places.md):
@@ -130,6 +140,11 @@ From version 2.1.0, once Home or Work is set in [Places](places.md):
 
 From version 2.1.0, the search box has two more buttons:
 
+<figure>
+<img src="/screenshots/web/search-voice-scan.png" alt="The search box with 84009 typed in, and a microphone and a camera button at its right end, beside Get Timings." width="310" height="48" loading="lazy">
+<figcaption>The microphone and the camera, in the search box.</figcaption>
+</figure>
+
 - The **microphone**: say a stop, its code or a bus. It uses Android's own speech
   screen, so SG Bus Timings itself never hears you.
 - The **camera**: point it at the 5-digit code on a bus stop's pole, and that
@@ -143,6 +158,11 @@ From version 2.1.0, write a stop, a place or a way home onto a blank NFC sticker
 stop's timings have **NFC sticker**; for a place or directions, use
 [Offline Sharing](#offline-sharing)'s **Write it to an NFC sticker**. Hold the
 sticker to the back of the phone until it says it's written.
+
+<figure>
+<img src="/screenshots/web/android-sticker.png" alt="NFC sticker: hold a blank NFC sticker to the back of the phone, near the camera on most phones, until it's written." width="396" height="274" loading="lazy">
+<figcaption>Waiting for a sticker to write to.</figcaption>
+</figure>
 
 ## Picture-in-picture
 
@@ -187,13 +207,20 @@ access only when you pick **Use this phone's calendar**.
   and **Card value**, or, with Home or Work set, **Bus home** and **Bus to work**
   in place of the last two (see [Home and Work](#home-and-work-a-tap-away)).
 - AI assistants on your phone or elsewhere can open the app at the right place
-  with the links in [`sgbus.uwuapps.org/llms.txt`](https://sgbus.uwuapps.org/llms.txt).
+  with the links in its [guide for AI assistants](https://sgbus.uwuapps.org/llms.txt).
 
 ## Offline Sharing
 
 From version 2.1.0, **Offline Sharing** on a share card hands a place,
 directions or your live ETA to a phone next to you, with no internet on either
-phone. Tap it, then either:
+phone.
+
+<figure>
+<img src="/screenshots/web/android-share-targets.png" alt="A share card's buttons: Telegram, WhatsApp, Copy link, More and Offline Sharing." width="358" height="81" loading="lazy">
+<figcaption>Offline Sharing, the share card's fifth button in the app.</figcaption>
+</figure>
+
+Tap it, then either:
 
 - **Hold the backs of your phones together.** Their phone needs NFC on and to be
   unlocked, but nothing open: it opens in SG Bus Timings if they have it, or in
@@ -203,6 +230,16 @@ phone. Tap it, then either:
   the Edge Tray. Their phone shows up on yours by the name in their
   [Settings](settings.md), or its model; tap it to send. The first time, both
   phones ask to use **Nearby devices**.
+
+<figure>
+<img src="/screenshots/web/android-offline-sharing.png" alt="Offline Sharing for One Raffles Place: hold the backs of your phones together, or tap Alex under Phones nearby to send it; and a button to write it to an NFC sticker." width="396" height="541" loading="lazy">
+<figcaption>Sharing: hold the phones together, or pick a phone nearby.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/android-receive.png" alt="Receive nearby: ready to receive; on their phone, Share, then Offline Sharing, and pick Sam." width="396" height="300" loading="lazy">
+<figcaption>Receive nearby, on the phone getting it.</figcaption>
+</figure>
 
 Directions go across with both ends and the time, so they get every way there,
 not just the one you'd picked. Planning the way, and following a live ETA, still
