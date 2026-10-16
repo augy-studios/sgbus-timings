@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bus to work's launcher shortcut (PlaceShortcuts): the briefcase from main-site/js/icons.js. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#2B6E45" android:pathData="M0,0h48v48h-48z" />
+    <group android:translateX="12" android:translateY="12">
+        <path
+            android:strokeColor="#A6EDB9"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M5,7 H19 A2,2 0 0 1 21,9 V18 A2,2 0 0 1 19,20 H5 A2,2 0 0 1 3,18 V9 A2,2 0 0 1 5,7 Z M9,7 V5 A2,2 0 0 1 11,3 H13 A2,2 0 0 1 15,5 V7 M3,13 H21" />
+    </group>
+</vector>

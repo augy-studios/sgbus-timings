@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 16 October 2026**
+**Latest update: 17 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
@@ -9,16 +9,43 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 16 October 2026: Apps 2.0.9
+## 17 October 2026: Apps 2.1.0, and a watch app
 
-### Android app 2.0.9
+### Web app
+
+- **Flag down your bus** - **Flag** by each bus on a stop's timings shows its number as big as the screen allows, white on black, to hold up at a dark stop. The screen stays on while it's up.
+- **Departures board** - **Board** on a stop's timings shows its buses full screen, like an interchange's screens: where each is going, its next three, how full they are, a page at a time. Leave a TV or spare monitor on one with a `#board/` link.
+- **Will I make it?** - **How far's my walk?** under a stop's buttons says roughly how long the walk there is from where you are, and which buses you'd make if you left now; the ones you wouldn't are greyed.
+- **Shake to refresh** - On a phone, a firm shake refreshes the stop's timings, for when one hand's on a pole. It can be turned off in Settings.
+- **Search by voice** - In browsers that can listen, such as Chrome, the microphone in the search box takes a stop, its code or a bus, said out loud.
+- **Train lines found by OneMap get their colours** - Fixed: in Navigate, train rides in the ways OneMap found (marked "Found by OneMap") had no line colour dot. They now have the same dot as the rest.
+- **For AI assistants** - [`llms.txt`](https://sgbus.uwuapps.org/llms.txt) tells an AI assistant how to open the app at a stop, a bus or a journey for you, and how to read the live timings.
+
+### Android app 2.1.0
 
 - **Share straight to Telegram and WhatsApp** - On the share card, Telegram and WhatsApp now open the app itself, ready to pick a chat, rather than a web page in the browser that then passes you on to the app. If the app isn't installed, the web page opens as before.
 - **Offline Sharing** - A fifth button on the share card hands a place, directions or your live ETA to a phone next to you, with no internet on either. Hold the backs of your phones together, and it opens on theirs in SG Bus Timings, or in their browser if they don't have it. Or, without touching, send it over Bluetooth to a phone with **Receive nearby** open, a new button in the Edge Tray. The receiving phone needs the internet to plan the way there.
+- **NFC stickers** - Write a stop, a place or the way home onto a blank NFC sticker, and a tap of any phone opens it: **NFC sticker** on a stop's timings, or from Offline Sharing.
+- **Timings near a stop** - Pick favourite stops in Settings, and as you walk up to one, a quiet notification shows its next buses until you leave, with the app closed.
+- **Time to leave** - For events in your phone's calendar with a place, a notification when it's time to set off by bus and train, with the way to go.
+- **Last bus reminders** - The bell by a bus's last bus time reminds you 20 minutes before it, every day it runs.
+- **"On a bus?"** - When you seem to be riding with no trip running, a quiet notification offers to start one for the Get Off Alert.
+- **Bus home and Bus to work** - With Home or Work set in Places, long-press the app's icon, or add their Quick Settings tiles, to go to Navigate from where you are.
+- **Search by voice, and scan a stop** - The search box's microphone uses Android's own speech screen, and its camera reads the 5-digit code off a stop's pole.
+- **Earphones-only Get Off Alert** - In Settings, the alert's beeps can play only in your earphones, never out loud; without earphones in, it just buzzes.
+- **Flag-down screen** - In the app, it also goes to full brightness, with the torch, steady, if you want it.
+- **Trips that keep running** - The first trip offers to leave the app out of battery optimisation, so phones that stop apps in the background don't stop the trip.
+- The web app's changes above.
 
-### Desktop app 2.0.9
+### Wear OS app 2.1.0 (new)
 
-- Same version as the Android app; nothing new here yet.
+- **A Bus timings tile** - On Wear OS 3 and later, the next buses at your nearest favourite stop, counting down on the watch by itself. Your favourites come from the phone's app. Tap it for every favourite stop. Installed from a computer for now: see the guide's Wear OS page.
+
+### Desktop app 2.1.0
+
+- **A stop's buses in the tray** - **Tray countdown** on a stop's timings puts its next buses in the tray icon's tooltip, and on a Mac beside the icon in the menu bar and on the Dock icon, refreshed every 30 seconds.
+- **Favourites on the taskbar and Dock** - Your favourite stops in the Windows taskbar icon's right-click menu and the Mac's Dock menu; on Windows, Refresh and the previous and next favourite under the taskbar preview too.
+- The web app's changes above.
 
 ---
 

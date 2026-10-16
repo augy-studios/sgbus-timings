@@ -208,6 +208,20 @@
     return null;
   }
 
+  // A service's last bus at a stop on each day type, as LTA gives it ("HHMM", or "-" where it
+  // doesn't run that day): { wd, sat, sun }, for a last bus reminder (js/reminders.js).
+  function lastBuses(serviceNo, code) {
+    for (const dir of directions(serviceNo)) {
+      const run = runs[serviceNo][dir];
+      const i = run.stops.indexOf(code);
+      if (i === -1) continue;
+      const t = run.times[i] || "";
+      const at = (offset) => (/^\d{4}$/.test(t.slice(offset + 4, offset + 8)) ? t.slice(offset + 4, offset + 8) : "-");
+      return { wd: at(0), sat: at(8), sun: at(16) };
+    }
+    return null;
+  }
+
   // ---- Hubs ----
 
   // The hub a stop belongs to, from its name: what comes before "Int", "Ter" or "Stn", with
@@ -345,6 +359,7 @@
     terminals,
     landmarks,
     firstLast,
+    lastBuses,
     stopsTo,
     graph: getGraph,
     haversine,

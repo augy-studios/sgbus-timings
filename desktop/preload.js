@@ -15,6 +15,15 @@ contextBridge.exposeInMainWorld('sgbusDesktop', {
   notify: (n) => ipcRenderer.send('notify', n),
   // A #address on the site, in the app's own window.
   open: (hash) => ipcRenderer.send('open-hash', hash),
+  // The tray countdown (glance.js, 2.1.0): set({ code, name, service }) or set(null), and
+  // get(), each resolving to the stop it's on now, or null.
+  tray: {
+    set: (stop) => ipcRenderer.invoke('tray-stop', stop),
+    get: () => ipcRenderer.invoke('tray-stop-get'),
+  },
+  // The favourite stops, [{ code, name }], for the Jump List, the Dock menu and the taskbar
+  // thumbnail's buttons (glance.js, 2.1.0).
+  favourites: (list) => ipcRenderer.send('favourites', list),
   // Linux only, where Chromium can't find your location: { lat, lng, accuracy, at } or
   // { error: { code, message } } (location.js). The page's navigator.geolocation goes through
   // it there (main-site/js/desktop-location.js).

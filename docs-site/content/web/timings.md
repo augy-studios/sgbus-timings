@@ -1,6 +1,6 @@
 ---
 title: Live timings
-description: Everything on a stop's timings card: the next buses for every service, the incoming buses bar, and the first and last bus.
+description: Everything on a stop's timings card: the next buses for every service, the incoming buses bar, the first and last bus, the flag-down screen, the departures board, and how long your walk is.
 ---
 
 When you open a stop, a card shows its name, its code and its road, then every
@@ -20,9 +20,24 @@ first.
 | **Save** | Adds the stop to your [favourites](favourites.md). It turns into **Saved**; tap again to remove it. |
 | **Refresh** | Fetches the latest timings. They do not refresh by themselves. |
 | **Route** | On each service's row: opens [that bus's route](bus-routes.md). |
+| **Flag** | On each service's row: its number as big as your screen allows, white on black, to hold up at a dark stop so the bus captain sees which bus you want. The screen stays on; in the Android app it also goes to full brightness, and **Torch** turns the torch on, steady. **Done** closes it. |
+| **Board** | The stop's departures board, full screen, like an interchange's screens: each bus, where it's going, its next three and how full they are, a page at a time. Good on a TV or a spare monitor; `#board/` and the stop's code is its [link to bookmark](links.md). |
 
 **Pick a bus**, **Route from here** and **Directions** are covered in
 [More from a stop](more-from-a-stop.md).
+
+On a phone, a firm shake also refreshes the timings: handy with one hand on a
+pole. **Shake to refresh** in [Settings](settings.md) turns it off.
+
+## Will I make it?
+
+Under the stop's buttons, **How far's my walk?** works out roughly how long it'd
+take to walk to the stop from where you are, and which buses you'd make if you set
+off now. Buses that would leave before you got there are greyed. After the first
+time you allow your location, it does this by itself for each stop you open.
+
+It's the walk in a straight line with a bit added for corners, at an easy pace:
+an estimate. For the real walk, use **Directions**.
 
 ## Incoming buses
 
@@ -45,6 +60,9 @@ soonest first, coloured by how full it is. It is the quickest way to answer
 Under each service's three buses is its first and last bus at this stop
 today, using the weekday, Saturday or Sunday timetable as fits. A service that
 does not run today says so instead.
+
+In the [Android app](android-app.md#reminders), a bell beside it sets a
+reminder 20 minutes before that last bus, every day.
 
 ## Arriving from a list
 

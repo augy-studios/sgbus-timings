@@ -1114,12 +1114,7 @@
       ? `Get off now at ${leg.to}.`
       : `Get off in ${left} stop${left === 1 ? "" : "s"}, at ${leg.to}${last ? "" : ", to change"}.`;
 
-    if (navigator.vibrate) navigator.vibrate(VIBRATION);
-    beep();
-    // In the app, its own notification, which sounds over the lock screen even with the page
-    // in the background.
-    if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text }).catch(() => {});
-    else notify({ title: "Get Off Alert", body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
+    soundAlert(text);
     flash();
     // The bar keeps saying so until you pass another stop, rather than until the next
     // redraw, which comes straight after this.
@@ -1127,6 +1122,18 @@
     trip.alertLeft = left;
     render(text);
     sync();
+  }
+
+  // The alert's buzz, beeps and notification. In the app, its own notification, which sounds
+  // over the lock screen even with the page in the background; with Settings' earphones only
+  // (js/reminders.js), the app plays the beeps itself, in the earphones if they're in, and
+  // never out loud (TripPlugin.alert's quiet).
+  function soundAlert(text) {
+    const quiet = nativeSubs && Boolean(window.Reminders?.earphonesOnly());
+    if (navigator.vibrate) navigator.vibrate(VIBRATION);
+    if (!quiet) beep();
+    if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text, quiet }).catch(() => {});
+    else notify({ title: "Get Off Alert", body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
   }
 
   // The server sent the alert (it follows the bus too, from LTA's live positions): shown on
@@ -1138,12 +1145,7 @@
     if (leg === trip.leg && wellShort()) return overrule();
     trip.alerted[leg] = true;
     if (leg === trip.leg) {
-      if (sound && enabled()) {
-        if (navigator.vibrate) navigator.vibrate(VIBRATION);
-        beep();
-        if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text }).catch(() => {});
-        else notify({ title: "Get Off Alert", body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
-      }
+      if (sound && enabled()) soundAlert(text);
       trip.alertText = text;
       trip.alertLeft = stopsLeft();
       flash();

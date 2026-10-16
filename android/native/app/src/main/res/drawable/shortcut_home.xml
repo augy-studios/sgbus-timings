@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bus home's launcher shortcut (PlaceShortcuts), in the look of shortcut_0 to shortcut_2:
+     a light glyph on the app's green, the house from main-site/js/icons.js. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#2B6E45" android:pathData="M0,0h48v48h-48z" />
+    <group android:translateX="12" android:translateY="12">
+        <path
+            android:strokeColor="#A6EDB9"
+            android:strokeWidth="1.8"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M3,10.5 L12,3 L21,10.5 M5,9 V20 H19 V9 M10,20 V14 H14 V20" />
+    </group>
+</vector>

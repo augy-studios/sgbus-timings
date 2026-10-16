@@ -41,6 +41,14 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   a stop's timings from `main-site/widget.html`, resizable, optionally on top, restored where
   they were at start-up. Added from the tray. A Windows app outside the Microsoft Store can't
   add to Windows 11's Widgets board, so they live on the desktop instead.
+- **At a glance** (`glance.js`, 2.1.0): a stop picked with the page's **Tray countdown**, its
+  next buses in the tray icon's tooltip, and on macOS beside the icon in the menu bar and as
+  the Dock badge, every 30 s; and the favourite stops (from the page's
+  `shareFavsWithWidgets`) in the Windows Jump List (`app.setUserTasks`, each a
+  `uwu://sgbus/<code>` link back to the app), the macOS Dock menu, and Windows' taskbar
+  thumbnail buttons (Refresh, previous and next favourite; their 16 px icons are drawn in
+  code). The departures board (`#board/<code>`) goes full screen through the page's own
+  fullscreen, which `main.js` already handles.
 - **Updates itself** (`updater.js`): reads `latest.yml` / `latest-mac.yml` / `latest-linux.yml`
   from the newest GitHub release. The `.exe`, the AppImage and the Mac app download and
   install with a restart; the `.msi` and `.deb` only say there's a new version. Upload the

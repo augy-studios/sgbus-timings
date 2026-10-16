@@ -41,7 +41,8 @@ export default async function handler(req, res) {
     const version = TAG.exec(rel.tag_name || "")?.[1];
     if (!version || rel.draft || rel.prerelease) continue;
     const assets = rel.assets || [];
-    const apk = assets.find((a) => a.name === `sg-bus-timings-${version}.apk`) || assets.find((a) => /\.apk$/i.test(a.name));
+    // The phone's: from 2.1.0 a release also has the Wear OS app (-watch.apk), never offered here.
+    const apk = assets.find((a) => a.name === `sg-bus-timings-${version}.apk`) || assets.find((a) => /\.apk$/i.test(a.name) && !/watch/i.test(a.name));
     // A release published before its APK finished uploading: not one to offer yet.
     if (!apk || apk.state !== "uploaded") continue;
     if (best && !newer(version, best.version)) continue;

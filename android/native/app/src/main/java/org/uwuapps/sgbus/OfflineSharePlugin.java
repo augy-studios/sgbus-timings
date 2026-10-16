@@ -455,6 +455,101 @@ public class OfflineSharePlugin extends Plugin {
         if (mUsedNearby && mUrl == null) client().stopAllEndpoints();
     }
 
+    // ---------- an NFC sticker (2.1.0) ----------
+    // write({ url }) waits for a sticker held to the phone and writes the link onto it, so a tap
+    // on it opens the link, in this app (MainActivity's NDEF_DISCOVERED) or the browser.
+    // Resolves once it's written, or rejects "readonly", "small" (too little room on it),
+    // "not-ndef" (a card or tag that can't hold a link), "lost", "off" or "cancelled".
+    // cancelWrite() stops waiting.
+
+    private PluginCall mWriting;
+
+    @PluginMethod
+    public void write(PluginCall call) {
+        String url = call.getString("url");
+        NfcAdapter nfc = NfcAdapter.getDefaultAdapter(getContext());
+        if (!ours(url)) {
+            call.reject("Not a link to the site");
+            return;
+        }
+        if (nfc == null || !nfc.isEnabled()) {
+            call.reject("NFC is off", "off");
+            return;
+        }
+        if (mWriting != null) mWriting.reject("Another write started", "cancelled");
+        mWriting = call;
+        call.setKeepAlive(true);
+        NdefMessage message = new NdefMessage(NdefRecord.createUri(Uri.parse(url)));
+        Activity activity = getActivity();
+        activity.runOnUiThread(() -> nfc.enableReaderMode(activity, tag -> onSticker(tag, message),
+                NfcAdapter.FLAG_READER_NFC_A | NfcAdapter.FLAG_READER_NFC_B | NfcAdapter.FLAG_READER_NFC_F
+                        | NfcAdapter.FLAG_READER_NFC_V, null));
+    }
+
+    @PluginMethod
+    public void cancelWrite(PluginCall call) {
+        stopWriting("cancelled");
+        call.resolve();
+    }
+
+    private void stopWriting(String why) {
+        NfcAdapter nfc = NfcAdapter.getDefaultAdapter(getContext());
+        Activity activity = getActivity();
+        if (nfc != null && activity != null) activity.runOnUiThread(() -> nfc.disableReaderMode(activity));
+        if (mWriting != null && why != null) {
+            mWriting.setKeepAlive(false);
+            mWriting.reject("Cancelled", why);
+        }
+        mWriting = null;
+    }
+
+    private void onSticker(android.nfc.Tag tag, NdefMessage message) {
+        PluginCall call = mWriting;
+        if (call == null) return;
+        String code = null;
+        String text = null;
+        try {
+            android.nfc.tech.Ndef ndef = android.nfc.tech.Ndef.get(tag);
+            if (ndef != null) {
+                ndef.connect();
+                try {
+                    if (!ndef.isWritable()) {
+                        code = "readonly";
+                        text = "That sticker's locked: it can't be written to.";
+                    } else if (ndef.getMaxSize() < message.toByteArray().length) {
+                        code = "small";
+                        text = "That sticker's too small for this link.";
+                    } else {
+                        ndef.writeNdefMessage(message);
+                    }
+                } finally {
+                    ndef.close();
+                }
+            } else {
+                android.nfc.tech.NdefFormatable blank = android.nfc.tech.NdefFormatable.get(tag);
+                if (blank == null) {
+                    code = "not-ndef";
+                    text = "That can't hold a link. Use a blank NFC sticker (NTAG213 or bigger).";
+                } else {
+                    blank.connect();
+                    try {
+                        blank.format(message);
+                    } finally {
+                        blank.close();
+                    }
+                }
+            }
+        } catch (java.io.IOException | android.nfc.FormatException | SecurityException e) {
+            code = "lost";
+            text = "The sticker moved away too soon. Hold it still and try again.";
+        }
+        mWriting = null;
+        call.setKeepAlive(false);
+        if (code == null) call.resolve();
+        else call.reject(text, code);
+        stopWriting(null);
+    }
+
     // ---------- the app coming and going ----------
 
     @Override
@@ -467,6 +562,8 @@ public class OfflineSharePlugin extends Plugin {
     protected void handleOnPause() {
         super.handleOnPause();
         unpreferTag();
+        // Reader mode ends with the app leaving the screen: the page asks again when it's back.
+        if (mWriting != null) stopWriting("cancelled");
     }
 
     @Override

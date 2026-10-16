@@ -136,7 +136,7 @@
                 <span class="tray-rule" aria-hidden="true"></span>
                 <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js) -->
                 <button id="cardBtn" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
-                <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.0.9
+                <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.1.0
                      with Google Play services only (js/offline-share.js) -->
                 <button id="receiveBtn" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
                 <!-- Check for updates: the Android app from 2.0.8 only (js/app-update.js) -->
@@ -181,6 +181,11 @@
                 <input id="q" class="input"
                     placeholder="Search by name or code (e.g. Bedok Interchange or 84009)"
                     autocomplete="off" enterkeyhint="search" inputmode="text" />
+                <!-- Say it (js/voice.js), or scan a stop's pole (js/scan.js): shown where they work -->
+                <div class="searchExtras">
+                    <button id="voiceBtn" class="searchExtra" type="button" aria-label="Search by voice" title="Search by voice" hidden><span data-icon="mic"></span></button>
+                    <button id="scanBtn" class="searchExtra" type="button" aria-label="Scan a stop's code" title="Scan the code on a bus stop's pole" hidden><span data-icon="camera"></span></button>
+                </div>
                 <div id="acList" class="acList" hidden></div>
             </div>
             <button id="searchBtn" class="btn">Get Timings</button>
@@ -400,6 +405,9 @@
 
                 <div id="stopTools" class="stopTools"></div>
 
+                <!-- How long the walk here is, and which buses you'd make: js/make-it.js -->
+                <div id="makeIt" class="makeIt" role="status" hidden></div>
+
                 <!-- Incoming Buses Bar -->
                 <div id="incomingBar" class="incomingBar" hidden>
                     <div class="incomingHeader">
@@ -540,6 +548,46 @@
                 <button class="mode-btn" type="button" data-getoff="off" aria-pressed="false">Off</button>
             </div>
             <p class="mode-note">Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification. Keep the site open on a trip.</p>
+            <!-- Where the Get Off Alert's beeps go: the Android app only (js/reminders.js) -->
+            <div id="earphonesSetting" hidden>
+                <p class="modal-section-label">Get Off Alert's sound</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-earphones="off" aria-pressed="false">Out loud</button>
+                    <button class="mode-btn" type="button" data-earphones="on" aria-pressed="false">Earphones only</button>
+                </div>
+                <p class="mode-note">Earphones only: with earphones in, the beeps play just in them; without, the phone only buzzes. Never out loud on a quiet bus.</p>
+            </div>
+            <!-- js/shake.js -->
+            <div id="shakeSetting" hidden>
+                <p class="modal-section-label">Shake to refresh</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-shake="on" aria-pressed="false">On</button>
+                    <button class="mode-btn" type="button" data-shake="off" aria-pressed="false">Off</button>
+                </div>
+                <p class="mode-note">Give the phone a firm shake to refresh the timings on screen.</p>
+            </div>
+            <!-- The Android app's reminders: js/reminders.js -->
+            <div id="remindersSettings" hidden>
+                <p class="modal-section-label" data-need="nearstops">Timings near a stop</p>
+                <button id="nearStopsBtn" class="iconBtn settingsWide" type="button" data-need="nearstops"><span data-icon="pin"></span> <span id="nearStopsLabel">Pick stops</span></button>
+                <p class="mode-note" data-need="nearstops">As you walk up to a favourite stop you pick, a quiet notification shows its next buses. Needs location all the time.</p>
+                <p class="modal-section-label">Time to leave</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-leavetime="on" aria-pressed="false">On</button>
+                    <button class="mode-btn" type="button" data-leavetime="off" aria-pressed="false">Off</button>
+                </div>
+                <p class="mode-note">For events in this phone's calendar with a place: a notification when it's time to set off by bus and train, from where you are, or from Home.</p>
+                <p class="modal-section-label" data-need="onabus">&ldquo;On a bus?&rdquo;</p>
+                <div class="mode-toggle" data-need="onabus">
+                    <button class="mode-btn" type="button" data-onabus="on" aria-pressed="false">On</button>
+                    <button class="mode-btn" type="button" data-onabus="off" aria-pressed="false">Off</button>
+                </div>
+                <p class="mode-note" data-need="onabus">When you seem to be riding with no trip running, a quiet notification offers to start one, for the Get Off Alert. Needs Physical activity.</p>
+                <p class="modal-section-label">Last bus reminders</p>
+                <div id="lastBusList" class="lastBusList"></div>
+                <p class="mode-note">Tap the bell by a bus's last bus time at a stop: a reminder <span id="lastBusLead">20</span> minutes before it, every day it runs.</p>
+                <p id="remindersNote" class="remindersNote" role="status" hidden></p>
+            </div>
             <p class="modal-section-label">Pin favourite stops in lists</p>
             <div class="mode-toggle" data-pin-kind="stop">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -675,7 +723,7 @@
                 <button class="shareTarget" type="button" data-share-to="whatsapp" disabled><span data-icon="chat"></span><span class="lbl">WhatsApp</span></button>
                 <button class="shareTarget" type="button" data-share-to="copy" disabled><span data-icon="copy"></span><span class="lbl">Copy link</span></button>
                 <button class="shareTarget" type="button" data-share-to="more" disabled><span data-icon="share"></span><span class="lbl">More</span></button>
-                <!-- The Android app from 2.0.9 only: a tap or Nearby, no internet (js/offline-share.js) -->
+                <!-- The Android app from 2.1.0 only: a tap or Nearby, no internet (js/offline-share.js) -->
                 <button class="shareTarget" type="button" data-share-to="offline" disabled hidden><span data-icon="nearby"></span><span class="lbl">Offline Sharing</span></button>
             </div>
             <button id="shareStopEta" class="iconBtn" type="button" hidden>Stop sharing my ETA</button>
@@ -759,6 +807,50 @@
         </div>
     </div>
 
+    <!-- Timings near a stop: which favourite stops to watch (js/reminders.js) -->
+    <div id="nearStopsModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="nearStopsTitle">
+            <div class="modal-head">
+                <h2 id="nearStopsTitle">Timings near a stop</h2>
+                <button class="icon-btn small" type="button" data-close-modal="nearStopsModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="nearStopsList" class="nearStopsList"></div>
+            <button id="nearStopsSave" class="btn" type="button">Save</button>
+            <p class="mode-note">Up to 20. Walk within about 120 m of one and its next buses show in a quiet notification, refreshed every minute until you leave. Android asks for location all the time, as it's watched with the app closed.</p>
+        </div>
+    </div>
+
+    <!-- The flag-down screen: a bus's number as big as it goes (js/flag.js) -->
+    <div id="flagScreen" class="flagScreen" role="dialog" aria-modal="true" aria-label="Flag down a bus" hidden>
+        <p id="flagNo" class="flagNo"></p>
+        <div class="flagButtons">
+            <button id="flagTorch" class="flagBtn" type="button" aria-pressed="false" hidden><span data-icon="sun"></span> Torch</button>
+            <button id="flagClose" class="flagBtn" type="button"><span data-icon="close"></span> Done</button>
+        </div>
+    </div>
+
+    <!-- A stop's departures board, full screen (js/board.js) -->
+    <div id="boardScreen" class="boardScreen" role="dialog" aria-modal="true" aria-labelledby="boardStop" hidden>
+        <div class="boardHead">
+            <div><h2 id="boardStop" class="boardStop"></h2><span id="boardCode" class="boardCode"></span></div>
+            <div class="boardRight"><span id="boardClock" class="boardClock"></span>
+                <button id="boardClose" class="flagBtn" type="button"><span data-icon="close"></span> Close</button></div>
+        </div>
+        <div class="boardRow boardLabels" aria-hidden="true"><span>Bus</span><span>To</span><span>Next</span><span>Then</span><span>Then</span></div>
+        <div id="boardRows" class="boardRows" role="status" aria-live="polite"></div>
+        <div class="boardFoot"><span id="boardNote"></span><span>Minutes · <span class="load-ok">seats</span> · <span class="load-warn">standing</span> · <span class="load-busy">full</span></span><span id="boardPage"></span></div>
+    </div>
+
+    <!-- Scan a stop's code with the camera: the Android app only (js/scan.js) -->
+    <div id="scanScreen" class="scanScreen" role="dialog" aria-modal="true" aria-label="Scan a stop's code" hidden>
+        <video id="scanVideo" class="scanVideo" playsinline muted></video>
+        <div class="scanFrame" aria-hidden="true"></div>
+        <p id="scanStatus" class="scanStatus" role="status">Point the camera at the 5-digit code on the bus stop's pole</p>
+        <button id="scanClose" class="flagBtn scanClose" type="button"><span data-icon="close"></span> Close</button>
+    </div>
+
     <!-- A trip in progress, and its Get Off Alert: js/trip.js -->
     <div id="tripBar" class="tripBar hidden" role="region" aria-label="Trip in progress">
         <!-- Tapping the bar opens the stops ahead, with a dot where you are. -->
@@ -823,6 +915,13 @@
     <script src="/js/map.js"></script>
     <script src="/js/card.js"></script>
     <script src="/js/offline-share.js"></script>
+    <script src="/js/reminders.js"></script>
+    <script src="/js/shake.js"></script>
+    <script src="/js/voice.js"></script>
+    <script src="/js/scan.js"></script>
+    <script src="/js/flag.js"></script>
+    <script src="/js/make-it.js"></script>
+    <script src="/js/board.js"></script>
     <script src="/js/pip.js"></script>
     <script src="/js/history.js"></script>
     <script src="/js/places.js"></script>

@@ -20,6 +20,7 @@ screen can be bookmarked, added to your home screen, or sent to a friend.
 | `sgbus.uwuapps.org/#alerts` | The [Service alerts](service-alerts.md) card, where a tapped alert notification also lands |
 | `sgbus.uwuapps.org/#map/84009` | The [live map](live-map.md), walking to that stop, with its timings behind |
 | `sgbus.uwuapps.org/#map/1.31533,103.81554~Botanic%20Gardens` | The live map, walking to a place |
+| `sgbus.uwuapps.org/#board/84009` | Stop 84009's departures board, full screen, for a TV or a spare screen |
 
 ## Share a stop
 

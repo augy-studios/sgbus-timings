@@ -36,6 +36,21 @@ by the clock on Windows), so [Service alerts](service-alerts.md) still reach you
 Click the bus to bring the window back. Right-click it for **Service alerts**,
 **Navigate**, **Start when I sign in**, and **Quit**, which closes it for good.
 
+### A stop's buses in the tray
+
+From version 2.1.0, open a stop and click **Tray countdown**: its next buses
+then show when you hover over the tray's bus on Windows and Linux, and beside it
+in the menu bar on a Mac, with the next bus's minutes on the Dock icon too.
+Narrowed to one bus first, it follows just that bus. It refreshes every 30
+seconds. Right-click the tray's bus for **Stop the tray countdown**.
+
+### Your favourites on the taskbar and Dock
+
+From version 2.1.0, your favourite stops are a right-click away on the app's
+taskbar icon on Windows (its Jump List), and on its Dock icon on a Mac. On
+Windows, hovering over the taskbar icon also gives **Refresh**, and the previous
+and next favourite stop, under its preview.
+
 ## Service alerts on your desktop
 
 Turn them on as on the website: the bell in the Edge Tray, then pick what to hear

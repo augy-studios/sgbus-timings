@@ -45,6 +45,34 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
+    <!-- The reminders (RemindersPlugin): set again after a restart (BootReceiver); the last bus
+         and Time to leave on time to the minute (USE_EXACT_ALARM, granted at install; not
+         allowed on Google Play for an app like this one, like REQUEST_INSTALL_PACKAGES); "On a
+         bus?" by Play services' activity recognition, which asks for Physical activity. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Asked on the first trip, so a phone's battery saver doesn't stop it in the background
+         (TripPlugin). Not allowed on Google Play for an app like this one. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Scan a stop's code: the page's camera (Capacitor asks for it), read by ML Kit
+         (ScanPlugin). The torch for the flag-down screen needs no permission. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
+
+    <!-- Search by voice: Android's own speech screen, which Android 11 and later hide from this
+         app unless it's named here (SgBusPlugin.listen). -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
     <!-- The app updating itself from GitHub (UpdateActivity.java). Each update still asks you on
          Android's own install screen. Not allowed on Google Play: drop it for a Play build. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -70,6 +98,12 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
             android:value="alerts" />
+
+        <!-- ML Kit's text recognition model, fetched by Play services with the app rather than
+             on the first scan (ScanPlugin). -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
 
         <activity
             android:name=".MainActivity"
@@ -200,6 +234,40 @@
             </intent-filter>
             <meta-data android:name="android.nfc.cardemulation.host_apdu_service"
                 android:resource="@xml/share_tag_service" />
+        </service>
+
+        <!-- The reminders (RemindersPlugin): each one's events from Play services or the alarm,
+             which no other app may send (not exported), and setting them again after a restart
+             or an update (BootReceiver), broadcasts only Android sends. -->
+        <receiver android:name=".NearStops$Receiver" android:exported="false" />
+        <receiver android:name=".LastBus$Receiver" android:exported="false" />
+        <receiver android:name=".LeaveTime$Receiver" android:exported="false" />
+        <receiver android:name=".OnABus$Receiver" android:exported="false" />
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Quick Settings tiles: Bus home and Bus to work (PlaceTile.java, PlaceShortcuts.java). -->
+        <service android:name=".PlaceTile$Home"
+            android:label="@string/tile_home"
+            android:icon="@drawable/tile_home"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service android:name=".PlaceTile$Work"
+            android:label="@string/tile_work"
+            android:icon="@drawable/tile_work"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
         </service>
 
         <!-- The trip being followed (TripService.java). Ends with the app swiped away. -->

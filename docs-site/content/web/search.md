@@ -31,6 +31,16 @@ open the best match.
 > Once you know the code of a stop you use often, typing it is the quickest way
 > in. Better still, [save it as a favourite](favourites.md).
 
+## Say it, or scan it
+
+Hands full? The **microphone** in the search box searches by voice: say a stop's
+name, its code ("eight four zero zero nine") or a bus ("bus twenty-two"). It's
+there in the [Android app](android-app.md#search-by-voice-and-scan-a-stop), and
+in browsers that can listen, such as Chrome, which asks to use the microphone.
+
+In the Android app, the **camera** beside it reads the code off a stop's pole:
+point it at the 5-digit number and the stop opens.
+
 ## Stops near me
 
 <figure>

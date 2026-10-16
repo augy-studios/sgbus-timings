@@ -13,6 +13,9 @@
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
 // - checking for its own updates (updater.js), and from the tray's "Check for updates...";
 // - Bus timings widgets on the desktop (widgets.js);
+// - a stop's next buses in the tray (the macOS menu bar, and its Dock badge), and favourite
+//   stops in the Windows Jump List, the taskbar thumbnail's buttons and the macOS Dock menu
+//   (glance.js);
 // - on Linux, your location, which Chromium can't find there by itself (location.js).
 //
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
@@ -26,6 +29,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const updater = require('./updater');
 const widgets = require('./widgets');
+const glance = require('./glance');
 const location = require('./location');
 
 const SITE = 'https://sgbus.uwuapps.org';
@@ -39,6 +43,7 @@ let win = null; // the window, its own webContents the title bar (titlebar.html)
 let page = null; // the site's webContents, in a view below the title bar
 let tray = null;
 let refreshBar = () => {}; // sends the title bar what it shows again (createWindow)
+let refreshTrayMenu = () => {}; // builds the tray's menu again (createTray)
 let quitting = false;
 // uwu://sgbus/ links. Windows, macOS and Linux give a scheme to one app only, unlike Android,
 // which shares uwu:// out by host, so this answers every uwu:// link and opens only sgbus's.
@@ -312,6 +317,7 @@ function firstShow() {
   shown = true;
   if (readSettings().maximized !== false) win.maximize();
   win.show();
+  glance.windowShown();
 }
 
 function showWindow(hash) {
@@ -361,6 +367,7 @@ function createTray() {
   tray.setToolTip('SG Bus Timings');
   const menu = () => Menu.buildFromTemplate([
     ...(updater.menuItem() ? [updater.menuItem(), { type: 'separator' }] : []),
+    ...glance.menuItems(),
     { label: 'Open SG Bus Timings', click: () => showWindow() },
     { label: 'Service alerts', click: () => showWindow('#alerts') },
     { label: 'Navigate', click: () => showWindow('#nav') },
@@ -380,6 +387,7 @@ function createTray() {
     { label: 'Quit', click: () => { quitting = true; app.quit(); } },
   ]);
   tray.setContextMenu(menu());
+  refreshTrayMenu = () => tray.setContextMenu(menu());
   // An update found or downloaded, or a check starting or done: the menu says so.
   updater.start(() => {
     tray.setContextMenu(menu());
@@ -541,6 +549,17 @@ ipcMain.handle('locate', async (e, opts) => {
   }
 });
 
+// The tray countdown's stop, { code, name, service } or null to stop it, and what it is now
+// (glance.js).
+ipcMain.handle('tray-stop', (e, s) => (isSite(e.senderFrame?.url || '') ? glance.setStop(s && typeof s === 'object' ? s : null) : null));
+ipcMain.handle('tray-stop-get', (e) => (isSite(e.senderFrame?.url || '') ? glance.stop() : null));
+
+// The favourite stops, [{ code, name }], for the Jump List, the Dock menu and the thumbnail's
+// buttons (glance.js).
+ipcMain.on('favourites', (e, list) => {
+  if (isSite(e.senderFrame?.url || '')) glance.setFavourites(list);
+});
+
 ipcMain.on('notify', (e, n) => {
   if (!isSite(e.senderFrame?.url || '') || !n || typeof n !== 'object' || !Notification.isSupported()) return;
   const title = String(n.title || 'SG Bus Timings').slice(0, 120);
@@ -592,6 +611,11 @@ if (!app.requestSingleInstanceLock()) {
     }
     createWindow();
     createTray();
+    glance.init({
+      site: SITE, readSettings, writeSettings, showWindow,
+      tray: () => tray, win: () => win, page: () => page,
+      refreshMenu: () => refreshTrayMenu(),
+    });
     widgets.init({
       site: SITE, version: app.getVersion(), readSettings, writeSettings,
       isQuitting: () => quitting,

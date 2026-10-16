@@ -2597,3 +2597,151 @@ body.on-trip { padding-bottom: 96px; }
 @media (pointer: coarse) {
     button, .glass-btn, [role=tab] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 }
+
+/* ---- the search box's mic and camera (js/voice.js, js/scan.js) ---- */
+.searchExtras {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 2px;
+}
+.searchExtra {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--muted-strong);
+    cursor: pointer;
+}
+.searchExtra:hover { background: var(--surface-strong); color: var(--ink); }
+.searchExtra [data-icon] svg { width: 20px; height: 20px; }
+.searchExtra.listening { background: var(--brand-fill); color: var(--on-brand); }
+.ac:has(.searchExtra:not([hidden])) .input { padding-right: 48px; }
+.ac:has(.searchExtra:not([hidden]) + .searchExtra:not([hidden])) .input { padding-right: 86px; }
+
+/* ---- Will I make it? (js/make-it.js) ---- */
+.makeIt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 4px; font-size: 14px; color: var(--ink); }
+.makeIt .ico svg { width: 18px; height: 18px; }
+.eta.tooSoon { opacity: 0.4; }
+
+/* ---- last bus reminders (js/reminders.js) ---- */
+.lastBusBell {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    margin-left: 6px;
+    vertical-align: middle;
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    background: var(--surface-strong);
+    color: var(--muted-strong);
+    cursor: pointer;
+}
+.lastBusBell .ico svg { width: 15px; height: 15px; }
+.lastBusBell.on { background: var(--brand-fill); color: var(--on-brand); border-color: transparent; }
+.lastBusList { display: flex; flex-direction: column; gap: 4px; }
+.lastBusRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
+.lastBusRow .sub, .nearStopsList .sub { color: var(--muted); font-size: 12px; }
+.nearStopsList { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; margin-bottom: 10px; }
+.remindersNote { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface-strong); font-size: 13px; }
+.remindersNote .iconBtn { margin-top: 6px; }
+
+/* ---- the departures board (js/board.js): dark whatever the theme, like the real ones ---- */
+.boardScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+    background: #0b0f0c;
+    color: #f2f2e6;
+    font-variant-numeric: tabular-nums;
+}
+.boardHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+.boardStop { margin: 0; font-size: clamp(22px, 4vw, 44px); font-weight: 800; line-height: 1.1; }
+.boardCode { font-size: clamp(14px, 2vw, 22px); color: #9fb3a4; }
+.boardRight { display: flex; align-items: center; gap: 16px; }
+.boardClock { font-size: clamp(22px, 4vw, 44px); font-weight: 700; color: #ffd166; }
+.boardRows { flex: 1; overflow: hidden; }
+.boardRow {
+    display: grid;
+    grid-template-columns: 3.5em minmax(0, 1fr) 3em 3em 3em;
+    align-items: center;
+    gap: 12px;
+    height: 64px;
+    border-bottom: 1px solid #243028;
+    font-size: clamp(18px, 3vw, 34px);
+}
+.boardLabels { height: auto; padding-bottom: 6px; font-size: 14px; color: #9fb3a4; text-transform: uppercase; letter-spacing: 0.06em; }
+.boardNo { font-weight: 800; color: #ffd166; }
+.boardTo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.boardEta { text-align: right; font-weight: 700; }
+.boardEmpty { font-size: 24px; color: #9fb3a4; }
+.boardFoot { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 14px; color: #9fb3a4; }
+.boardScreen .flagBtn { padding: 8px 14px; font-size: 14px; }
+
+/* ---- the flag-down screen (js/flag.js) and the stop code scanner (js/scan.js) ---- */
+.flagScreen, .scanScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: #000;
+    color: #fff;
+}
+.flagScreen { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
+.flagNo {
+    margin: 0;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+.flagButtons {
+    position: absolute;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    display: flex;
+    gap: 12px;
+}
+.flagBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+}
+.flagBtn [data-icon] svg { width: 20px; height: 20px; }
+.flagBtn.on { background: #fff; color: #000; }
+.scanVideo { width: 100%; height: 100%; object-fit: cover; }
+.scanFrame {
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 25%;
+    bottom: 25%;
+    border: 3px solid rgba(255, 255, 255, 0.85);
+    border-radius: 16px;
+    box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.35);
+}
+.scanStatus {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: max(24px, env(safe-area-inset-top));
+    margin: 0;
+    text-align: center;
+    font-size: 16px;
+    text-shadow: 0 1px 4px #000;
+}
+.scanClose { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); }

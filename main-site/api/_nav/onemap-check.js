@@ -4,7 +4,7 @@
 // as OneMap's. Nav works the same without it: any failure here is ignored.
 
 import { route } from "../_lib/onemap.js";
-import { rail } from "./network.js";
+import { LRT_LINES, rail } from "./network.js";
 
 const TIMEOUT_MS = 8000;
 
@@ -26,9 +26,19 @@ function toOption(it) {
     // Every stop or station on the ride, for following it on a trip (the Get Off Alert), as
     // the router's own legs have: without a path, Start trip had nothing to follow.
     const stops = [l.from, ...(l.intermediateStops || []), l.to].filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lon));
+    const route = bus ? String(l.route || l.routeShortName || "") : lineCode(l.route || l.routeShortName || l.routeId);
+    // A train leg's line as the router's own legs have it (router.js), so it gets its colour
+    // dot and name in Navigate too.
+    // The Changi Airport branch (CG) is the East-West Line's, as network.js has it.
+    const line = bus ? null : rail.lines.find((x) => x.code === (route === "CG" ? "EW" : route));
     return {
       mode: bus ? "bus" : "train",
-      route: bus ? String(l.route || l.routeShortName || "") : lineCode(l.route || l.routeShortName || l.routeId),
+      route,
+      ...(line && {
+        name: route === "CG" ? "East-West Line (Changi Airport branch)" : line.name,
+        color: line.color,
+        lrt: LRT_LINES.has(line.code),
+      }),
       from: place(l.from),
       to: place(l.to),
       stops: (l.intermediateStops?.length ?? 0) + 1,

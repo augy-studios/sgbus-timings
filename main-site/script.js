@@ -82,6 +82,8 @@ const LS = {
         const key = kind === 'work' ? this.workKey : this.homeKey;
         if (place) localStorage.setItem(key, JSON.stringify(place));
         else localStorage.removeItem(key);
+        // The Android app's Bus home and Bus to work (js/reminders.js).
+        window.dispatchEvent(new Event('places:change'));
     },
 
     getStops() {
@@ -467,11 +469,22 @@ function renderFavs() {
 // The favourite stops, copied where the installed app's Bus timings widget can offer them in
 // its setup (sw.js). The cache is the one storage a service worker and a page both reach.
 // The Android app's widget (TimingsWidget.java) gets them too, for its own setup.
-function shareFavsWithWidgets(favs) {
-    const list = favs.map(({ code, name }) => ({ code, name: name || nameOf(code) || '' }));
+function shareFavsWithWidgets(favs, waited = false) {
+    // Names and places come from the stops list: shared once it's in, or without if it can't be.
+    if (!stopsIndex && !waited) {
+        const again = () => shareFavsWithWidgets(favs, true);
+        ensureStopsIndex().then(again, again);
+        return;
+    }
+    // With where each is, for the Wear OS tile's nearest favourite (android WearSync.java).
+    const list = favs.map(({ code, name }) => ({
+        code, name: name || nameOf(code) || '', lat: stopsIndex?.[code]?.lat ?? null, lng: stopsIndex?.[code]?.lng ?? null,
+    }));
     if (window.AppBridge?.native) {
         AppBridge.ready(5000).then(() => AppBridge.has('widget') && AppBridge.call('SgBus', 'setFavourites', { stops: list })).catch(() => {});
     }
+    // The desktop app's Jump List, Dock menu and taskbar thumbnail buttons (desktop/glance.js).
+    window.sgbusDesktop?.favourites?.(list);
     if (!('caches' in window)) return;
     caches.open('sgbus-widgets')
         .then(c => c.put('/widget/favourites', new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json' } })))
@@ -615,6 +628,15 @@ function renderStopTools() {
               ).join('')
             : `<button type="button" class="iconBtn" data-tool="navigate" title="Walking directions to this stop">${ico('navigate')} Directions</button>`);
     }
+    parts.push(`<button type="button" class="iconBtn" data-tool="board" title="This stop's buses full screen, like an interchange's departure screens">${ico('clock')} Board</button>`);
+    // The desktop app: this stop's (or bus's) next buses in the tray (desktop/glance.js).
+    if (window.sgbusDesktop?.tray) {
+        parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="Show ${service && !expanded ? `bus ${escapeHtml(service)}'s` : "this stop's"} next buses in the tray, and stop it from the tray's menu">${ico('bell')} Tray countdown</button>`);
+    }
+    // The Android app with NFC: this stop on a sticker (js/offline-share.js).
+    if (window.OfflineShare?.canSticker()) {
+        parts.push(`<button type="button" class="iconBtn" data-tool="sticker" title="Write this stop onto an NFC sticker">${ico('nearby')} NFC sticker</button>`);
+    }
     $('#stopTools').innerHTML = parts.join('');
 }
 
@@ -696,6 +718,7 @@ function renderArrivals() {
             ? `No live arrivals for bus ${service} right now.${fl ? ` ${fl}.` : ''}`
             : 'No live buses right now.';
         $('#emptySvc').hidden = false;
+        window.MakeIt?.render(code, []);
         return;
     }
     $('#emptySvc').hidden = true;
@@ -717,7 +740,9 @@ function renderArrivals() {
             ? `<span class="badge badge-dist">${dist}</span>`
             : `<span class="badge badge-dist badge-dist-na">~ &#8734;m</span>`;
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
-        return `<div class="eta">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${badges}</div>`;
+        // Gone before you could walk here (js/make-it.js): greyed.
+        const late = window.MakeIt?.tooSoon(code, bus.eta_ms) ? ' tooSoon' : '';
+        return `<div class="eta${late}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${badges}</div>`;
     };
 
     svcWrap.innerHTML = svcs.map(s => {
@@ -729,12 +754,16 @@ function renderArrivals() {
             `<div class="svcNo">${fav ? favMark() : ''}${escapeHtml(svcNo)}</div>` +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
             `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}" title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
+            // The flag-down screen (js/flag.js).
+            `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="Show ${escapeHtml(svcNo)} full screen, to flag the bus down">Flag</button>` +
             `</div>` +
             `<div class="etaWrap">${piece(s.next)}${piece(s.next2)}${piece(s.next3)}` +
-            (fl ? `<div class="firstLast">${escapeHtml(fl)}</div>` : '') +
+            // With the Android app's last bus reminder bell (js/reminders.js).
+            (fl ? `<div class="firstLast">${escapeHtml(fl)}${window.Reminders?.bell(svcNo, code) || ''}</div>` : '') +
             `</div>` +
             `</div>`;
     }).join('');
+    window.MakeIt?.render(code, svcs);
 }
 
 async function loadStop(code, { service = null, expanded = false, ctx = null, dir = null, pushHistory = true, scroll = false } = {}) {
@@ -748,6 +777,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     renderStopHeader();
     renderStopTools();
     renderStopContext();
+    window.MakeIt?.forStop(code);
     $('#services').innerHTML = '<div class="empty">Loading live arrivals&hellip;</div>';
     $('#emptySvc').hidden   = true;
     $('#resultCard').hidden = false;
@@ -1247,6 +1277,18 @@ $('#stopTools').addEventListener('click', e => {
     } else if (tool === 'navigate') {
         navOpen = true;
         renderStopTools();
+    } else if (tool === 'board') {
+        Board.open(current.code);
+    } else if (tool === 'tray') {
+        const btn = e.target.closest('[data-tool]');
+        window.sgbusDesktop.tray.set({
+            code: current.code, name: nameOf(current.code) || '', service: current.service && !current.expanded ? current.service : null,
+        }).then(() => {
+            btn.lastChild.textContent = ' In the tray';
+            setTimeout(() => { if (btn.isConnected) btn.lastChild.textContent = ' Tray countdown'; }, 2500);
+        }).catch(() => {});
+    } else if (tool === 'sticker') {
+        OfflineShare.sticker({ url: `${location.origin}/#${current.code}`, title: `${nameOf(current.code) || 'Bus stop'} (${current.code})` });
     }
 });
 
@@ -1391,7 +1433,8 @@ $('#favsModal').addEventListener('click', e => {
 // ----------- URL -----------
 // "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync with,
-// "#share/<id>" for a short share link (js/share.js),
+// "#share/<id>" for a short share link (js/share.js), "#board/84009" for a stop's departures
+// board (js/board.js),
 // "#alerts" for the service alerts card, "#nav/lat,lng~Name/here" for Navigate (navHash in
 // js/nav.js), and "#near" and "#nav" for the installed app's shortcuts. Either end of a route
 // or nav can be "-", not set yet, as Share gives them part filled in, and "#route" opens the
@@ -1428,6 +1471,13 @@ function routeFromHash() {
     if ((m = hash.match(/^map\/(-?[\d.]+,-?[\d.]+(?:~.*)?)$/))) { LiveMap.openFromHash(m[1]); return false; }
     // The Android app's Card value shortcut (js/card.js).
     if (hash === 'card') { window.Card?.open(); return false; }
+    // A stop's departures board (js/board.js), over its timings.
+    if ((m = hash.match(/^board\/(\d{5})$/))) {
+        const code = m[1];
+        loadStop(code, { pushHistory: false });
+        Board.open(code);
+        return true;
+    }
     // A short share link (js/share.js), sent on here by api/share-page.js: a place or
     // directions open Navigate, live progress opens over the page.
     if ((m = hash.match(/^share\/([a-z0-9]{10})$/))) { Share.open(m[1]); return true; }

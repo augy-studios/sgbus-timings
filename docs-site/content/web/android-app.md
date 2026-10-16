@@ -1,6 +1,6 @@
 ---
 title: The Android app
-description: What only SG Bus Timings' Android app does: trips with the screen off, card value over NFC, notifications, your phone's calendar, opening SimplyGo, and updating itself.
+description: What only SG Bus Timings' Android app does: trips with the screen off, card value over NFC, reminders, Home and Work tiles, voice and camera search, Offline Sharing, notifications, your phone's calendar, opening SimplyGo, and updating itself.
 ---
 
 SG Bus Timings for Android is the web app with extras only an app can do. This
@@ -42,6 +42,14 @@ down your bus's route is enough.
 
 Swiping the app away from your recent apps ends that; the server's alert takes
 over, as it does for the website.
+
+From version 2.1.0, your first trip also asks to leave the app out of battery
+optimisation, once. Some phones (Xiaomi, Samsung, Oppo and others) otherwise stop
+a trip in the background to save battery. The trip starts whichever you choose.
+
+In **Settings**, **Get Off Alert's sound** can be **Earphones only**: with
+earphones in, the beeps play just in them; with none, the phone only buzzes.
+Never out loud on a quiet bus.
 
 ## Card value
 
@@ -86,6 +94,56 @@ it to open the stop. A new widget with no stop yet opens its setup wherever you
 tap it. Add as many as you
 like, each for its own stop.
 
+## Reminders
+
+From version 2.1.0, in **Settings**, the app can tell you things with itself
+closed. Each is off until you turn it on, and asks for what it needs then.
+
+- **Timings near a stop**: tap **Pick stops** and choose some of your favourite
+  stops. As you walk up to one (within about 120 m), a quiet notification shows
+  its next buses, refreshed every minute until you leave. It needs location
+  **All the time**, as it's watched with the app closed.
+- **Time to leave**: for events in your phone's calendar with a place for a
+  location, a notification when it's time to set off by bus and train to get
+  there on time, with the way to go. Planned from where you are, or, when the
+  phone won't say with the app closed, from Home in [Places](places.md).
+- **"On a bus?"**: when the phone notices you're riding and no trip is running, a
+  quiet notification offers to start one, for the Get Off Alert. It can't tell a
+  bus from a car, so it only offers. At most once every two hours. It needs
+  **Physical activity**.
+- **Last bus reminders**: on a stop's timings, tap the bell by a bus's last bus
+  time. You're reminded 20 minutes before its last bus there, every day it runs.
+  Settings lists them, to remove. Public holidays run Sunday's times, which the
+  reminder doesn't know about.
+
+## Home and Work, a tap away
+
+From version 2.1.0, once Home or Work is set in [Places](places.md):
+
+- Long-press the app's icon for **Bus home** and **Bus to work**: each opens
+  Navigate from where you are. With them there, the shortcuts are Near me,
+  Navigate, Bus home and Bus to work.
+- Add the **Bus home** and **Bus to work** tiles to Quick Settings: pull down
+  twice from the top of the screen, tap the pencil, and drag them in.
+
+## Search by voice, and scan a stop
+
+From version 2.1.0, the search box has two more buttons:
+
+- The **microphone**: say a stop, its code or a bus. It uses Android's own speech
+  screen, so SG Bus Timings itself never hears you.
+- The **camera**: point it at the 5-digit code on a bus stop's pole, and that
+  stop's timings open. The text is read on your phone, by Google's ML Kit; nothing
+  is sent anywhere.
+
+## NFC stickers
+
+From version 2.1.0, write a stop, a place or a way home onto a blank NFC sticker
+(an NTAG213 or bigger): stick it by the door, and a tap of any phone opens it. A
+stop's timings have **NFC sticker**; for a place or directions, use
+[Offline Sharing](#offline-sharing)'s **Write it to an NFC sticker**. Hold the
+sticker to the back of the phone until it says it's written.
+
 ## Picture-in-picture
 
 During a trip, or with the [live map](live-map.md) open, going to your home
@@ -103,7 +161,9 @@ If it doesn't shrink, picture-in-picture may be off for the app: Android
 with the app closed. Android's settings for the app list them by kind: **Service
 alerts**, **Get Off Alert**, **Get ready to board** (from 2.0.4: your bus is a
 minute away, on a trip; see [Get Off Alert](get-off-alert.md#get-ready-to-board))
-and **Trip in progress**, each of which you can turn off on its own.
+and **Trip in progress**, and from 2.1.0 the [reminders](#reminders): **Near a
+stop**, **Last bus**, **Time to leave**, **On a bus?**, and **Get Off Alert,
+earphones only**. Each can be turned off on its own.
 
 ## Your phone's calendar
 
@@ -116,19 +176,22 @@ access only when you pick **Use this phone's calendar**.
 - The [SimplyGo](install.md#simplygo) button opens the SimplyGo app itself,
   rather than its store page.
 - **More** on a share card, and anywhere else the app shares, opens Android's own
-  share sheet. From version 2.0.9, **Telegram** and **WhatsApp** open those apps
+  share sheet. From version 2.1.0, **Telegram** and **WhatsApp** open those apps
   straight away, ready to pick a chat.
-- From version 2.0.9, a share card also has **Offline Sharing**: see
+- From version 2.1.0, a share card also has **Offline Sharing**: see
   [Offline Sharing](#offline-sharing) below.
 - The website's own links, `uwu://sgbus/` links (see
   [Links you can share](links.md#app-links)) and places shared from Google Maps
   open in the app.
 - Long-press the app's icon for shortcuts: **Near me**, **Navigate**, **Alerts**
-  and **Card value**.
+  and **Card value**, or, with Home or Work set, **Bus home** and **Bus to work**
+  in place of the last two (see [Home and Work](#home-and-work-a-tap-away)).
+- AI assistants on your phone or elsewhere can open the app at the right place
+  with the links in [`sgbus.uwuapps.org/llms.txt`](https://sgbus.uwuapps.org/llms.txt).
 
 ## Offline Sharing
 
-From version 2.0.9, **Offline Sharing** on a share card hands a place,
+From version 2.1.0, **Offline Sharing** on a share card hands a place,
 directions or your live ETA to a phone next to you, with no internet on either
 phone. Tap it, then either:
 
@@ -195,9 +258,12 @@ get each one twice.
 | Permission | When | Why |
 |---|---|---|
 | **Location** | The first time you use Stops near me, Your location, the live map or a trip | Finding stops near you, the live map, and following your trip |
-| **Location all the time** | Once, on your first trip | Asked so trips can keep your location in the background. Trips work without it too: you can say no |
-| **Notifications** | Your first trip, or turning on Service alerts | Service alerts, the Get Off Alert, and the "On a trip" notification while a trip runs |
-| **Calendar** | Only if you choose **Use this phone's calendar** | Listing your events with a location in Navigate |
+| **Location all the time** | Once, on your first trip, and when you pick stops for **Timings near a stop** | Asked so trips can keep your location in the background; trips work without it too. Timings near a stop needs it |
+| **Notifications** | Your first trip, turning on Service alerts, or a reminder | Service alerts, the Get Off Alert, the "On a trip" notification while a trip runs, and the [reminders](#reminders) |
+| **Calendar** | Only if you choose **Use this phone's calendar**, or turn on **Time to leave** | Listing your events with a location in Navigate, and planning when to leave for them |
+| **Physical activity** | Only if you turn on **"On a bus?"** | Noticing you're riding |
+| **Camera** | The first time you scan a stop's code | Reading the code on its pole. Nothing is recorded or sent |
+| **Battery optimisation** | Once, on your first trip | Keeping a trip running in the background. You can say no |
 | **NFC** | Not asked: Android allows it | Reading a card, opening the app when you hold a card to the phone, and Offline Sharing by tap |
 | **Nearby devices** | The first time you send without touching, or tap **Receive nearby** | Offline Sharing to and from phones nearby, over Bluetooth. Before Android 12, it's location instead |
 | **Install unknown apps** | The first time you tap **Update** | Installing its own updates from GitHub. Android still asks before each one |

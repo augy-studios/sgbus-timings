@@ -137,6 +137,8 @@ final class WidgetStore {
 
     static void setFavourites(Context c, JSONArray stops) {
         prefs(c).edit().putString(FAVOURITES, stops.toString()).apply();
+        // And to the watch, for its tile (2.1.0).
+        WearSync.send(c, stops);
     }
 
     static JSONArray favourites(Context c) {

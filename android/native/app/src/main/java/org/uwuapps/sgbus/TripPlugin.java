@@ -9,7 +9,10 @@
  *                            of their own; the trip works without it. Rejects "permission" if
  *                            location is refused.
  *   update({ title, text })  the notification's text, as the trip goes on
- *   alert({ title, body })   the Get Off Alert, as a notification over the lock screen
+ *   alert({ title, body, quiet })   the Get Off Alert, as a notification over the lock screen;
+ *                            `quiet`, its sound in earphones only (2.1.0)
+ *                            The first trip also asks to leave the app out of battery
+ *                            optimisation, once (2.1.0).
  *   stop()                   the trip's over
  *   status()                 { running, location, background, notifications }
  *
@@ -53,6 +56,7 @@ public class TripPlugin extends Plugin {
     private static final String PREFS = "trip";
     private static final String ASKED_BACKGROUND = "asked_background";
     private static final String ASKED_NOTIFICATIONS = "asked_notifications";
+    private static final String ASKED_BATTERY = "asked_battery";
 
     private static WeakReference<TripPlugin> sPlugin = new WeakReference<>(null);
 
@@ -129,6 +133,16 @@ public class TripPlugin extends Plugin {
             call.reject("The trip ended", "ended");
             return;
         }
+        // Once, on the first trip: Android's own yes/no to leaving the app out of battery
+        // optimisation, which some phones (Xiaomi, Samsung, Oppo) use to stop a trip in the
+        // background (2.1.0). The trip starts either way.
+        if (!SgBusPlugin.batteryFree(getContext()) && firstTime(ASKED_BATTERY)) {
+            try {
+                getActivity().startActivity(SgBusPlugin.batteryIntent(getContext()));
+            } catch (android.content.ActivityNotFoundException ignored) {
+                // A phone without the screen: nothing to ask.
+            }
+        }
         TripService.start(getContext(), call.getString("title", "On a trip"), call.getString("text", ""));
         call.resolve(status());
     }
@@ -139,12 +153,35 @@ public class TripPlugin extends Plugin {
         call.resolve();
     }
 
+    // `quiet`: Settings has the alert's sound in earphones only (2.1.0). It buzzes, and sounds in
+    // earphones if there are any, never out loud.
     @PluginMethod
     public void alert(PluginCall call) {
+        boolean quiet = Boolean.TRUE.equals(call.getBoolean("quiet", false));
         JSObject out = new JSObject();
-        out.put("shown", Notifications.post(getContext(), Notifications.GET_OFF, "get-off",
+        out.put("shown", Notifications.post(getContext(), quiet ? Notifications.GET_OFF_QUIET : Notifications.GET_OFF, "get-off",
                 call.getString("title", "Get Off Alert"), call.getString("body", ""), null));
+        if (quiet && SgBusPlugin.earphones(getContext())) beepInEarphones();
         call.resolve(out);
+    }
+
+    // Three short beeps on the media stream, which goes to the earphones while they're in, as
+    // the page's own beeps (js/trip.js) would.
+    private void beepInEarphones() {
+        new Thread(() -> {
+            android.media.ToneGenerator tone = null;
+            try {
+                tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 80);
+                for (int i = 0; i < 3; i++) {
+                    tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 180);
+                    Thread.sleep(250);
+                }
+            } catch (RuntimeException | InterruptedException ignored) {
+                // No tone this time: it still buzzes.
+            } finally {
+                if (tone != null) tone.release();
+            }
+        }, "get-off-beep").start();
     }
 
     @PluginMethod

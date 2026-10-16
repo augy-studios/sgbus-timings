@@ -14,6 +14,9 @@
     <string name="shortcut_card_short">Card value</string>
     <!-- Offline Sharing's tap (ShareTagService.java), as Android's NFC settings may list it -->
     <string name="share_tag_service">SG Bus Timings Offline Sharing</string>
+    <!-- Quick Settings tiles (PlaceTile.java) -->
+    <string name="tile_home">Bus home</string>
+    <string name="tile_work">Bus to work</string>
     <!-- The Bus timings widget (TimingsWidget.java) -->
     <string name="widget_name">Bus timings</string>
     <string name="widget_description">Live arrivals at a bus stop you pick, for every bus there or just the ones you choose</string>

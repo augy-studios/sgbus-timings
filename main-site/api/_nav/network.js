@@ -61,7 +61,7 @@ export const STATION_ACCESS_MIN = 2;
 // same as CHANGE_WALK_MIN in js/journeys.js and the bot's journeys.py.
 const CHANGE_WALK_MIN = 1;
 
-const LRT_LINES = new Set(["BP", "SK", "PG"]);
+export const LRT_LINES = new Set(["BP", "SK", "PG"]);
 
 export function haversine(lat1, lng1, lat2, lng2) {
   const rad = (d) => (d * Math.PI) / 180;

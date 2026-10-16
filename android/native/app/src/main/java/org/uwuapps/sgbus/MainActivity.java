@@ -7,7 +7,10 @@
  *   PhoneCalendarPlugin  the phone's calendar, for Navigate's Calendar tab
  *   TripPlugin           following a trip with the screen off, for the Get Off Alert
  *   CardPlugin           an EZ-Link or NETS FlashPay card's value, over NFC
- *   OfflineSharePlugin   the share card's Offline Sharing, by NFC tap or Nearby (2.0.9)
+ *   OfflineSharePlugin   the share card's Offline Sharing, by NFC tap or Nearby, and NFC
+ *                        stickers (2.1.0)
+ *   RemindersPlugin      Timings near a stop, last bus, Time to leave, "On a bus?" (2.1.0)
+ *   ScanPlugin           reading a stop's code off its pole with the camera (2.1.0)
  *   PushNotifications    Capacitor's, for Service Alerts and the Get Off Alert from the server
  *
  * Here: what the app was opened with (a uwu://sgbus/ link, one of the site's own links, a
@@ -53,6 +56,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(TripPlugin.class);
         registerPlugin(CardPlugin.class);
         registerPlugin(OfflineSharePlugin.class);
+        registerPlugin(RemindersPlugin.class);
+        registerPlugin(ScanPlugin.class);
         Notifications.createChannels(this);
         super.onCreate(savedInstanceState);
 
@@ -92,6 +97,8 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    // Callers check for Android 8 first.
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
     private PictureInPictureParams pipParams() {
         PictureInPictureParams.Builder b = new PictureInPictureParams.Builder().setAspectRatio(mPipRatio);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) b.setAutoEnterEnabled(mAutoPip).setSeamlessResizeEnabled(true);

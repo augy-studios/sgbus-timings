@@ -1,0 +1,64 @@
+# SG Bus Timings
+
+> Live bus arrivals for every bus stop in Singapore, and journeys by bus and train, at
+> https://sgbus.uwuapps.org, with Android, Windows, macOS and Linux apps and a Telegram bot.
+> This file tells an AI assistant how to open the app at the right place for someone, and
+> how to read the same live data it shows. Everything here is free to use, with no key.
+
+An assistant helping someone in Singapore can either open a link below (the person sees it in
+the app if they have it, or in their browser) or fetch the read-only API and answer itself.
+Prefer a link when the person wants to see or follow something; fetch when they asked a
+question ("when's the next 190 at 84009?").
+
+## Open the app at a place
+
+Every link below opens in the Android app where it's installed (Android checks this site's
+assetlinks.json), and in the browser everywhere else. The same address after
+`uwu://sgbus/` opens the Android or desktop app directly (`uwu://sgbus/84009`), but chat apps
+often won't let custom links be tapped, so the https links are the safe choice.
+
+- `https://sgbus.uwuapps.org/#84009`: bus stop 84009's live timings (stop codes are 5 digits).
+- `https://sgbus.uwuapps.org/#84009,174`: stop 84009, just bus 174.
+- `https://sgbus.uwuapps.org/#bus/22`: bus 22's route and stops.
+- `https://sgbus.uwuapps.org/#route/84009/75009`: buses from stop 84009 to stop 75009.
+- `https://sgbus.uwuapps.org/#nav/here/1.31533,103.81554~Botanic%20Gardens`: directions by
+  bus and train from wherever the person is to a place: `lat,lng` to 5 decimals, then `~` and
+  its name, URL-encoded. Either end can be `here` (the person's location) or `-` (left for
+  them to fill in): `#nav/<from>/<to>`.
+- Add `/leave/2026-10-17T08:30` or `/arrive/2026-10-17T08:30` (Singapore time, within the
+  next week) to a `#nav/` or `#route/` link to leave at, or arrive by, a time.
+- `https://sgbus.uwuapps.org/#map/84009`: the live map, walking to stop 84009. Also
+  `#map/<lat,lng~Name>` for a place.
+- `https://sgbus.uwuapps.org/#board/84009`: stop 84009 as a full-screen departures board.
+- `https://sgbus.uwuapps.org/#near`: the stops around the person.
+- `https://sgbus.uwuapps.org/#nav`: Navigate, empty. `#alerts`: train and traffic alerts.
+
+Don't make up stop codes: look them up (below) or ask.
+
+## Read the data
+
+All GET and JSON; Navigate's and the walk's are limited to a few dozen requests a minute from
+one address, so don't loop on them. Times are Singapore time (UTC+8).
+
+- `/api/bus-stops`: every stop, as `[{ c: code, n: name, r: road, la: lat, lo: lng }]`.
+  Large: fetch once and search it by name or road.
+- `/api/bus-arrivals?stop=84009` (optionally `&service=174`): the next three buses for each
+  service there: `{ services: [{ serviceNo, operator, next, next2, next3 }] }`, each bus
+  `{ eta_ms (milliseconds from now), load ("SEA" seats, "SDA" standing, "LSD" full), deck,
+  wheelchair, lat, lng, dest (its last stop's code) }`, or null.
+- `/api/bus-routes`: every service's stops in order, per direction, with first and last bus
+  times. Large.
+- `/api/places?q=raffles%20place`: places, stations and stops matching a name, address or
+  6-digit postal code: `[{ kind, label, sub, code?, lat, lng }]`. Also takes a Google Maps
+  link.
+- `/api/nav?from=1.30050,103.85580&to=1.31533,103.81554` (optionally
+  `&when=leave|arrive&at=2026-10-17T08:30`): journeys by bus and train, quickest first:
+  `{ options: [{ minutes, legs: [{ mode: "walk"|"bus"|"train", route, from, to, ... }] }] }`.
+- `/api/walk?from=lat,lng&to=lat,lng`: a walking route: `{ distance (m), minutes, path, steps }`.
+- `/api/service-alerts`: train disruptions and traffic incidents now.
+
+## More
+
+- The guide, with every feature explained: https://guide.sgbus.uwuapps.org
+- Links, in full: https://guide.sgbus.uwuapps.org/web/links
+- The Telegram bot, for chat: https://t.me/UwUsgbus_bot

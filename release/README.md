@@ -6,6 +6,7 @@ number:
 ```text
 release/2.0.0/
   sg-bus-timings-2.0.0.apk                 Android     android\build-apk.ps1
+  sg-bus-timings-2.1.0-watch.apk           Wear OS     the same, from 2.1.0, built with the phone's
   sg-bus-timings-2.0.0-setup.exe           Windows     GitHub Actions: Build desktop apps
   sg-bus-timings-2.0.0.msi                 Windows     the same (or desktop: npm run build:win)
   sg-bus-timings-2.0.0-amd64.deb           Linux       the same (or desktop/build-linux.sh)
@@ -29,7 +30,8 @@ Share them through a **GitHub Release**, where anyone can download them from
 
 ## Build them
 
-The APK, in PowerShell, from the project root:
+The APKs, the phone's and (from 2.1.0) the watch's, in one go, in PowerShell, from the
+project root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
@@ -74,7 +76,8 @@ phones with the old one won't take it as an update.
    - Windows and Linux apps, with Service Alerts as desktop notifications
    ```
 
-6. Drag in the APK from `release\<version>\` (the desktop installers follow by themselves), into the box that says
+6. Drag in both APKs from `release\<version>\`, the phone's and the `-watch` one (the
+   desktop installers follow by themselves), into the box that says
    **Attach binaries by dropping them here or selecting them**. Wait for them all to finish
    uploading.
 7. Tick **Set as the latest release**, then **Publish release**.

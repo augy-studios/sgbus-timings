@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SG Bus Timings</string>
+    <string name="tile_name">Bus timings</string>
+    <string name="tile_description">The next buses at your nearest favourite stop</string>
+</resources>

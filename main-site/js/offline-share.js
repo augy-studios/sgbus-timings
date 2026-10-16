@@ -1,4 +1,4 @@
-// Offline Sharing: the share card's fifth button in the Android app (2.0.9 and later), which
+// Offline Sharing: the share card's fifth button in the Android app (2.1.0 and later), which
 // hands the link to a phone nearby with no internet on either (OfflineSharePlugin.java, through
 // js/app-bridge.js). Two ways, both ready while the sheet is open:
 //
@@ -22,10 +22,13 @@
   const canTap = () => native() && AppBridge.has('sharetap');
   const canNearby = () => native() && AppBridge.has('sharenearby');
   const canSend = () => canTap() || canNearby();
+  const canSticker = () => native() && AppBridge.has('sticker');
 
   const call = (method, options) => AppBridge.call('OfflineShare', method, options);
 
-  let mode = null; // 'send' or 'receive', while the sheet's open
+  let mode = null; // 'send', 'receive' or 'sticker', while the sheet's open
+  // Writing to an NFC sticker: null, 'waiting', 'done', or what went wrong.
+  let writing = null;
   let status = null; // OfflineSharePlugin.status()
   // Sending: the link, how many phones it's gone to by tap, and the phones found by Nearby, by
   // their id: { name, state: 'found' | 'sending' | 'sent' | 'failed', message }.
@@ -48,6 +51,50 @@
     listening = false;
     incoming = null;
     problem = null;
+    writing = null;
+  }
+
+  // ---------- an NFC sticker (2.1.0) ----------
+  // The link written onto a blank NFC sticker, so tapping it later opens it: a stop at the
+  // front door, Bus home by the desk. From Offline Sharing's sheet, or a stop's own tools.
+
+  function sticker({ url, title }) {
+    if (!canSticker()) return;
+    reset('sticker');
+    sending = { url, title };
+    $('#offlineTitle').textContent = 'NFC sticker';
+    $('#offlineNote').textContent = 'Any blank NFC sticker (NTAG213 or bigger) will do. Writing over one replaces what was on it.';
+    openModal('offlineModal');
+    write();
+  }
+
+  async function write() {
+    writing = 'waiting';
+    render();
+    try {
+      await call('write', { url: sending.url });
+      writing = 'done';
+      navigator.vibrate?.(60);
+    } catch (e) {
+      writing = e?.code === 'cancelled' ? null : e?.code === 'off' ? 'off' : (e?.message || 'Couldn’t write it. Try again.');
+    }
+    if (mode) render();
+  }
+
+  function renderSticker() {
+    if (writing === 'waiting') {
+      return `<div class="cardWait">${ico('nearby')}<p><strong>Hold a blank NFC sticker to the back of the phone</strong></p>` +
+        `<p class="sub">Near the camera on most phones. Keep it still until it's written.</p></div>`;
+    }
+    if (writing === 'done') {
+      return `<p class="offlineSent">${ico('check')} Written.</p><p class="sub">Tap the sticker with a phone to open it: in SG Bus Timings, or the browser.</p>` +
+        `<button type="button" class="btn" data-offline="write">${ico('nearby')} Write another</button>`;
+    }
+    if (writing === 'off') {
+      return `<p>NFC is off. Turn it on, then come back here.</p>` +
+        `<button type="button" class="btn" data-offline="nfc">${ico('settings')} Turn on NFC</button>`;
+    }
+    return `${writing ? `<p>${esc(writing)}</p>` : ''}<button type="button" class="btn" data-offline="write">${ico('nearby')} Write it</button>`;
   }
 
   // ---------- sending ----------
@@ -130,6 +177,10 @@
         html += `<p class="sub">${rows ? 'Not there? ' : 'Looking… '}On their phone, open SG Bus Timings and tap Receive nearby in the Edge Tray.</p>`;
       }
     }
+    if (canSticker()) {
+      html += `<p class="modal-section-label">NFC sticker</p>` +
+        `<button type="button" class="btn" data-offline="sticker">${ico('nearby')} Write it to an NFC sticker</button>`;
+    }
     return html;
   }
 
@@ -197,10 +248,11 @@
 
   function render() {
     if (!mode) return;
-    $('#offlineBody').innerHTML = mode === 'send' ? renderSend() : renderReceive();
+    $('#offlineBody').innerHTML = mode === 'send' ? renderSend() : mode === 'sticker' ? renderSticker() : renderReceive();
   }
 
   function stop() {
+    if (writing === 'waiting') call('cancelWrite').catch(() => {});
     if (mode === 'send') call('stop').catch(() => {});
     if (mode === 'receive') call('stopReceiving').catch(() => {});
     mode = null;
@@ -223,6 +275,14 @@
       else if (action === 'settings') AppBridge.call('SgBus', 'openSettings', { what: 'app' });
       else if (action === 'find') find();
       else if (action === 'receive') receive();
+      else if (action === 'write') write();
+      else if (action === 'sticker' && sending) {
+        // From the sharing sheet: the same link, to a sticker. Sharing by tap stops meanwhile,
+        // as the phone's reading rather than being read.
+        const { url, title } = sending;
+        call('stop').catch(() => {});
+        sticker({ url, title });
+      }
     });
 
     AppBridge.on('OfflineShare', 'found', ({ id, name }) => {
@@ -255,14 +315,16 @@
     });
     AppBridge.on('OfflineShare', 'received', received);
 
-    // Back from NFC's or the app's settings: as it is now.
+    // Back from NFC's or the app's settings: as it is now. A sticker being waited for stopped
+    // as the app went to the background (reader mode ends with it), so it's waited for again.
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible' || !mode) return;
       if (mode === 'send') startSending();
+      else if (mode === 'sticker' && (writing === 'off' || writing === null)) write();
       else if (problem === 'permission') receive();
     });
   }
 
-  window.OfflineShare = { canSend, send, receive };
+  window.OfflineShare = { canSend, canSticker, send, receive, sticker };
   init();
 })();

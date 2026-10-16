@@ -17,6 +17,13 @@ ext {
     playServicesLocationVersion = '21.3.0'
     // Not Capacitor's: Offline Sharing's Nearby (OfflineSharePlugin).
     playServicesNearbyVersion = '19.5.1'
+    // Not Capacitor's: Scan a stop's code (ScanPlugin), ML Kit's text recognition in Play services.
+    mlkitTextRecognitionVersion = '19.0.1'
+    // Not Capacitor's: the Wear OS app (wear/), and the phone handing it your favourite stops.
+    playServicesWearableVersion = '20.0.1'
+    wearTilesVersion = '1.6.2'
+    protolayoutVersion = '1.4.2'
+    concurrentFuturesVersion = '1.2.0'
     // Not Capacitor's: the widget's refresh (WidgetRefreshWorker).
     workVersion = '2.11.2'
 }
