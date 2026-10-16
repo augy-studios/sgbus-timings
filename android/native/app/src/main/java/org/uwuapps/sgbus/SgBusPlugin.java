@@ -13,6 +13,9 @@
  *                            (WidgetStore)
  *   share({ title, text, url })  Android's share sheet, as navigator.share is in Chrome: the
  *                            WebView has none (js/app-bridge.js stands this in for it)
+ *   share({ text, url, app })  straight to Telegram or WhatsApp ("telegram", "whatsapp"), for
+ *                            the share card's buttons (js/share.js): { sent: false } when it
+ *                            isn't installed
  *
  * And intent: links, which a WebView can't follow by itself as Chrome does: the site's
  * SimplyGo button, the calendar permission and the update bar each link to one of this app's
@@ -61,6 +64,7 @@ public class SgBusPlugin extends Plugin {
         features.put("notify");
         features.put("board"); // the board channel, for Get ready to board (Notifications)
         features.put("share");
+        features.put("shareto"); // share's app, straight to Telegram or WhatsApp (2.0.9)
         features.put("widget");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 && getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {
@@ -146,16 +150,45 @@ public class SgBusPlugin extends Plugin {
         call.resolve();
     }
 
+    // The apps share({ app }) sends straight to, each by its builds in the order tried: the Play
+    // Store's first, then Telegram's own download and Telegram X, and WhatsApp Business.
+    private static final java.util.Map<String, String[]> SHARE_APPS = new java.util.HashMap<>();
+    static {
+        SHARE_APPS.put("telegram", new String[]{"org.telegram.messenger", "org.telegram.messenger.web", "org.thunderdog.challegram"});
+        SHARE_APPS.put("whatsapp", new String[]{"com.whatsapp", "com.whatsapp.w4b"});
+    }
+
+    // With app ("telegram" or "whatsapp"), straight to that app's own chat picker rather than
+    // the share sheet: { sent: false } when it isn't installed, and the page opens its web link.
     @PluginMethod
     public void share(PluginCall call) {
         String text = call.getString("text", "");
         String url = call.getString("url", "");
         String body = text.isEmpty() ? url : url.isEmpty() ? text : text + " " + url;
         Intent send = new Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body);
+        JSObject out = new JSObject();
+        String[] packages = SHARE_APPS.get(call.getString("app", ""));
+        if (packages != null) {
+            // No subject: Telegram puts it above the message, and the text already says it.
+            for (String pkg : packages) {
+                try {
+                    getActivity().startActivity(new Intent(send).setPackage(pkg));
+                    out.put("sent", true);
+                    call.resolve(out);
+                    return;
+                } catch (ActivityNotFoundException e) {
+                    // Not installed: the next build of it.
+                }
+            }
+            out.put("sent", false);
+            call.resolve(out);
+            return;
+        }
         String title = call.getString("title");
         if (title != null && !title.isEmpty()) send.putExtra(Intent.EXTRA_SUBJECT, title);
         getActivity().startActivity(Intent.createChooser(send, title));
-        call.resolve();
+        out.put("sent", true);
+        call.resolve(out);
     }
 
     @PluginMethod

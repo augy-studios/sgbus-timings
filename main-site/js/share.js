@@ -190,6 +190,13 @@
   async function sendTo(target, btn) {
     if (!card?.url) return;
     const { url, text, title } = card;
+    // In the Android app, straight into the app's own chat picker rather than through its web
+    // link, which the WebView hands to the browser first. Its web link if it isn't installed,
+    // or on an app from before it could (SgBusPlugin.share).
+    if ((target === 'telegram' || target === 'whatsapp') && window.AppBridge?.has('shareto')) {
+      const got = await AppBridge.call('SgBus', 'share', { text, url, app: target }).catch(() => null);
+      if (got?.sent) return;
+    }
     if (target === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     else if (target === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
     else if (target === 'more') {

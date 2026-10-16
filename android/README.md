@@ -25,6 +25,7 @@ from there.
 | **Bus timings widget** on the home screen: any stop, resizable, refreshed every 15 minutes or on tap | `TimingsWidget`, `TimingsWidgetService`, `WidgetConfigActivity`, `WidgetStore`, `WidgetRefreshWorker` | favourites from `script.js` (`shareFavsWithWidgets`) |
 | **Picture-in-picture** during a trip or with the live map open | `MainActivity` (PiP), `SgBusPlugin.pip` | `js/pip.js` |
 | **Share sheet** for every share button (the WebView has no `navigator.share`) | `SgBusPlugin.share` | `js/app-bridge.js` |
+| **Telegram and WhatsApp** on the share card open the app's own chat picker, not its web link through the browser | `SgBusPlugin.share` (`app`) | `js/share.js` (`sendTo`) |
 | **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
 | **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates" | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
 | **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |

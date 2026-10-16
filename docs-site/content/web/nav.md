@@ -190,7 +190,9 @@ Tap **Share** at the top of Navigate, and pick what to send:
 
 Each opens a card with a map and the short link, and buttons to send it with
 Telegram or WhatsApp, copy it, or, on a phone, open your share sheet with
-**More**. In a chat, the link shows its map and what it is.
+**More**. In a chat, the link shows its map and what it is. In the
+[Android app](android-app.md), from version 2.0.9, Telegram and WhatsApp open
+straight in the app, ready to pick a chat, without going through the browser.
 
 <figure>
 <img src="/screenshots/web/nav-share-place.png" alt="The How to get to card: a map of Raffles Place with a pin, One Raffles Place, and its short link, above buttons for Telegram, WhatsApp, Copy link and More." width="444" height="454" loading="lazy">
