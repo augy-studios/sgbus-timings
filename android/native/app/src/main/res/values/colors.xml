@@ -4,7 +4,7 @@
     <color name="background">#CCFFCC</color>
     <color name="backgroundDark">#0C100E</color>
     <!-- sgbusicon1.png's own backdrop, behind the splash icon. -->
-    <color name="splashIcon">#262626</color>
+    <color name="splashIcon">#CCFFCC</color>
     <!-- The widget, light; dark in values-night. -->
     <color name="widget_bg">#F2F7F3</color>
     <color name="widget_row">#E2F5E5</color>
