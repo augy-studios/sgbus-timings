@@ -610,12 +610,15 @@ if (!app.requestSingleInstanceLock()) {
       writeSettings({ loginChosen: true });
     }
     createWindow();
-    createTray();
+    // Before the tray, whose menu asks it for its lines, and before the page can send it
+    // favourites; the countdown starts once the tray's there.
     glance.init({
       site: SITE, readSettings, writeSettings, showWindow,
       tray: () => tray, win: () => win, page: () => page,
       refreshMenu: () => refreshTrayMenu(),
     });
+    createTray();
+    glance.trayReady();
     widgets.init({
       site: SITE, version: app.getVersion(), readSettings, writeSettings,
       isQuitting: () => quitting,

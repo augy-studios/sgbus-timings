@@ -27,18 +27,25 @@ let lastTip = null;
 const mac = process.platform === 'darwin';
 const windows = process.platform === 'win32';
 
-const stop = () => ctx.readSettings().trayStop || null;
+// Each of these does nothing until init() has run, rather than throwing in the main process,
+// where an uncaught error stops the whole app.
+const stop = () => (ctx ? ctx.readSettings().trayStop || null : null);
 
 function init(context) {
   ctx = context;
   favourites = ctx.readSettings().favourites || [];
   applyFavourites();
-  restart();
+}
+
+// The tray's made (main.js createTray): the countdown can start.
+function trayReady() {
+  if (ctx) restart();
 }
 
 // ---------- the tray countdown ----------
 
 function setStop(s) {
+  if (!ctx) return null;
   const clean = s && /^\d{5}$/.test(String(s.code))
     ? { code: String(s.code), name: String(s.name || '').slice(0, 60), service: s.service ? String(s.service).toUpperCase().slice(0, 5) : null }
     : null;
@@ -114,7 +121,8 @@ function menuItems() {
 // ---------- favourites: the Jump List, the Dock menu, the thumbnail's buttons ----------
 
 function setFavourites(list) {
-  favourites = (Array.isArray(list) ? list : [])
+  if (!ctx) return;
+  favourites =(Array.isArray(list) ? list : [])
     .filter((f) => f && /^\d{5}$/.test(String(f.code)))
     .slice(0, 10)
     .map((f) => ({ code: String(f.code), name: String(f.name || '').slice(0, 60) }));
@@ -200,4 +208,4 @@ function windowShown() {
   if (ctx && windows) thumbButtons();
 }
 
-module.exports = { init, setStop, stop, setFavourites, menuItems, windowShown, lastTip: () => lastTip };
+module.exports = { init, trayReady, setStop, stop, setFavourites, menuItems, windowShown, lastTip: () => lastTip };
