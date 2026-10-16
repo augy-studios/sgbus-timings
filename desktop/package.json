@@ -31,6 +31,7 @@
       "preload.js",
       "updater.js",
       "widgets.js",
+      "glance.js",
       "location.js",
       "offline.html",
       "titlebar.html",
