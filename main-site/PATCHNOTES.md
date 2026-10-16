@@ -14,6 +14,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Android app 2.0.9
 
 - **Share straight to Telegram and WhatsApp** - On the share card, Telegram and WhatsApp now open the app itself, ready to pick a chat, rather than a web page in the browser that then passes you on to the app. If the app isn't installed, the web page opens as before.
+- **Offline Sharing** - A fifth button on the share card hands a place, directions or your live ETA to a phone next to you, with no internet on either. Hold the backs of your phones together, and it opens on theirs in SG Bus Timings, or in their browser if they don't have it. Or, without touching, send it over Bluetooth to a phone with **Receive nearby** open, a new button in the Edge Tray. The receiving phone needs the internet to plan the way there.
 
 ### Desktop app 2.0.9
 

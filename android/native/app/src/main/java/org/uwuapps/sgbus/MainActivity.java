@@ -7,13 +7,14 @@
  *   PhoneCalendarPlugin  the phone's calendar, for Navigate's Calendar tab
  *   TripPlugin           following a trip with the screen off, for the Get Off Alert
  *   CardPlugin           an EZ-Link or NETS FlashPay card's value, over NFC
+ *   OfflineSharePlugin   the share card's Offline Sharing, by NFC tap or Nearby (2.0.9)
  *   PushNotifications    Capacitor's, for Service Alerts and the Get Off Alert from the server
  *
  * Here: what the app was opened with (a uwu://sgbus/ link, one of the site's own links, a
- * shortcut, something shared into it, a tapped notification, or a card held to the phone)
- * opened in the page, the back button going back through the page's history, and the
- * notification channels. While the app's open, a card held to the phone comes straight to it
- * rather than Android asking which app should have it.
+ * shortcut, something shared into it, a tapped notification, a card held to the phone, or
+ * another phone's Offline Sharing held to it) opened in the page, the back button going back
+ * through the page's history, and the notification channels. While the app's open, a card held
+ * to the phone comes straight to it rather than Android asking which app should have it.
  */
 package org.uwuapps.sgbus;
 
@@ -23,10 +24,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.net.Uri;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
 import android.nfc.NfcAdapter;
+import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
+import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Rational;
 import android.webkit.WebView;
 
@@ -46,6 +52,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(PhoneCalendarPlugin.class);
         registerPlugin(TripPlugin.class);
         registerPlugin(CardPlugin.class);
+        registerPlugin(OfflineSharePlugin.class);
         Notifications.createChannels(this);
         super.onCreate(savedInstanceState);
 
@@ -145,10 +152,52 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        // Another phone's Offline Sharing, held to this one while the app's open: it comes as a
+        // tag, like a card, but with a link to the site on it.
+        String link = tappedLink(intent);
+        if (link != null) {
+            if (bridge != null) bridge.getWebView().loadUrl(link);
+            return;
+        }
+        // Sharing offline, this phone's a tag itself, and the phone it's held to can look like a
+        // card to it: that's not one to read.
+        if (ShareTagService.sharing() && isTag(intent)) return;
         // A card: the page shows it wherever it is, so it isn't reloaded.
         if (CardPlugin.tapped(intent)) return;
         String url = pageFor(intent);
         if (url != null && bridge != null) bridge.getWebView().loadUrl(url);
+    }
+
+    private static boolean isTag(Intent intent) {
+        String action = intent == null ? null : intent.getAction();
+        return NfcAdapter.ACTION_NDEF_DISCOVERED.equals(action) || NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)
+                || NfcAdapter.ACTION_TAG_DISCOVERED.equals(action);
+    }
+
+    // The link to the site on a tag, as Offline Sharing's (ShareTagService), or null. Android
+    // reads a tag's NDEF message before handing it over, and puts it on the intent; a tag
+    // that comes without, as some phones send them in foreground dispatch, is asked for it.
+    @SuppressWarnings("deprecation")
+    static String tappedLink(Intent intent) {
+        if (!isTag(intent) || (intent.getFlags() & Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0) return null;
+        java.util.List<NdefMessage> messages = new java.util.ArrayList<>();
+        Parcelable[] extra = intent.getParcelableArrayExtra(NfcAdapter.EXTRA_NDEF_MESSAGES);
+        if (extra != null) {
+            for (Parcelable p : extra) if (p instanceof NdefMessage) messages.add((NdefMessage) p);
+        }
+        if (messages.isEmpty()) {
+            Tag tag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            Ndef ndef = tag == null ? null : Ndef.get(tag);
+            NdefMessage cached = ndef == null ? null : ndef.getCachedNdefMessage();
+            if (cached != null) messages.add(cached);
+        }
+        for (NdefMessage message : messages) {
+            for (NdefRecord record : message.getRecords()) {
+                Uri uri = record.toUri();
+                if (uri != null && "https".equals(uri.getScheme()) && HOST.equalsIgnoreCase(uri.getHost())) return uri.toString();
+            }
+        }
+        return null;
     }
 
     // The site's page an intent asks for, or null for the home page as it is.

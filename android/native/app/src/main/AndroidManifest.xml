@@ -28,6 +28,23 @@
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 
+    <!-- Offline Sharing (OfflineSharePlugin): the phone as an NFC tag for a tap (host card
+         emulation), and Google's Nearby Connections over Bluetooth and Wi-Fi. Bluetooth's and
+         Nearby devices' are asked for the first time Nearby's used; before Android 12 it's
+         location, which the app has already. Phones without them still install the app. -->
+    <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
     <!-- The app updating itself from GitHub (UpdateActivity.java). Each update still asks you on
          Android's own install screen. Not allowed on Google Play: drop it for a Play build. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -92,6 +109,16 @@
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- Another phone's Offline Sharing held to this one (ShareTagService on that
+                 phone): a tag with a link to the site, opened here (MainActivity.tappedLink)
+                 rather than in the browser. Before the card's filter, as Android tries NDEF
+                 first. -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="https" android:host="sgbus.uwuapps.org" />
             </intent-filter>
 
             <!-- A card held to the phone (CardPlugin.tapped): Android offers this app for it,
@@ -161,6 +188,19 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+
+        <!-- Offline Sharing's tap: this phone as an NFC tag with the link on it
+             (ShareTagService.java), answering only while the share card's Offline Sharing is
+             open. Only Android's NFC service may bind it. -->
+        <service android:name=".ShareTagService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
+            </intent-filter>
+            <meta-data android:name="android.nfc.cardemulation.host_apdu_service"
+                android:resource="@xml/share_tag_service" />
+        </service>
 
         <!-- The trip being followed (TripService.java). Ends with the app swiped away. -->
         <service android:name=".TripService"

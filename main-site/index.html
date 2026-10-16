@@ -136,6 +136,9 @@
                 <span class="tray-rule" aria-hidden="true"></span>
                 <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js) -->
                 <button id="cardBtn" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
+                <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.0.9
+                     with Google Play services only (js/offline-share.js) -->
+                <button id="receiveBtn" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
                 <!-- Check for updates: the Android app from 2.0.8 only (js/app-update.js) -->
                 <a id="appUpdateBtn" href="#" class="glass-btn" aria-label="Check for app updates" title="Check for app updates" hidden><span data-icon="download"></span></a>
                 <!-- SimplyGo, for card balances and top-ups: phones only (script.js, "SimplyGo") -->
@@ -672,8 +675,25 @@
                 <button class="shareTarget" type="button" data-share-to="whatsapp" disabled><span data-icon="chat"></span><span class="lbl">WhatsApp</span></button>
                 <button class="shareTarget" type="button" data-share-to="copy" disabled><span data-icon="copy"></span><span class="lbl">Copy link</span></button>
                 <button class="shareTarget" type="button" data-share-to="more" disabled><span data-icon="share"></span><span class="lbl">More</span></button>
+                <!-- The Android app from 2.0.9 only: a tap or Nearby, no internet (js/offline-share.js) -->
+                <button class="shareTarget" type="button" data-share-to="offline" disabled hidden><span data-icon="nearby"></span><span class="lbl">Offline Sharing</span></button>
             </div>
             <button id="shareStopEta" class="iconBtn" type="button" hidden>Stop sharing my ETA</button>
+        </div>
+    </div>
+
+    <!-- Offline Sharing from the share card, and Receive nearby from the Edge Tray: the Android
+         app only. After the share card, so it opens over it. js/offline-share.js -->
+    <div id="offlineModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
+            <div class="modal-head">
+                <h2 id="offlineTitle">Offline Sharing</h2>
+                <button class="icon-btn small" type="button" data-close-modal="offlineModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="offlineBody" class="offlineBody cardRead" role="status" aria-live="polite"></div>
+            <p id="offlineNote" class="mode-note"></p>
         </div>
     </div>
 
@@ -802,6 +822,7 @@
     <script src="/js/rail-tracks.js"></script>
     <script src="/js/map.js"></script>
     <script src="/js/card.js"></script>
+    <script src="/js/offline-share.js"></script>
     <script src="/js/pip.js"></script>
     <script src="/js/history.js"></script>
     <script src="/js/places.js"></script>

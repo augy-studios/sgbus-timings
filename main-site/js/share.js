@@ -10,6 +10,9 @@
 //   Share start, Share end  "How to get to" one end: /go/<id>, opened from wherever the person
 //                           opening it is.
 //
+// In the Android app, the card also has Offline Sharing: a tap, phone to phone, or Nearby, with
+// no internet (js/offline-share.js).
+//
 // Share.place and Share.directions open the same card for a place from Places (js/places.js),
 // a past search (js/recents.js) or a calendar event (js/calendar.js), and for a trip from Your
 // trips (js/history.js), without the menu.
@@ -100,7 +103,7 @@
 
   // ---------- the card ----------
 
-  let card = null; // { kind, title, text, url } of the card open
+  let card = null; // { kind, title, text, url, data } of the card open
   let lastPick = null; // what the menu picked, for Try again
 
   function openCard(pick) {
@@ -154,7 +157,7 @@
 
   // Shows the card at once, and the link and map as soon as the link is made.
   async function showCard({ heading, name, sub = '', kind, data, text, made = null }) {
-    card = { kind, title: name, text, url: null };
+    card = { kind, title: name, text, url: null, data };
     $('#shareCardTitle').textContent = heading;
     $('#shareCardName').textContent = name;
     $('#shareCardSub').textContent = sub;
@@ -184,10 +187,29 @@
     el.classList.toggle('making', !url && !error);
     el.textContent = url || error || 'Making a short link…';
     $('#shareRetry').hidden = !error;
-    for (const btn of document.querySelectorAll('#shareTargets [data-share-to]')) btn.disabled = !url;
+    for (const btn of document.querySelectorAll('#shareTargets [data-share-to]')) {
+      btn.disabled = btn.dataset.shareTo === 'offline' ? !offlineUrl() : !url;
+    }
+  }
+
+  // Offline Sharing's link (js/offline-share.js): Navigate's own link for a place or directions,
+  // which opens with no server to look it up, so it goes across with no internet; the short
+  // link for live progress, which needs the internet to follow anyway. The way picked isn't
+  // in Navigate's link, so they get every way from the ends and the time.
+  function offlineUrl() {
+    if (!card) return null;
+    if (card.kind === 'eta') return card.url;
+    const d = card.data;
+    const hash = card.kind === 'place' ? navHashFor('here', d) : navHashFor(d.from, d.to, d.when);
+    return `${location.origin}/${hash}`;
   }
 
   async function sendTo(target, btn) {
+    if (target === 'offline') {
+      const url = offlineUrl();
+      if (url) OfflineShare.send({ url, title: card.title });
+      return;
+    }
     if (!card?.url) return;
     const { url, text, title } = card;
     // In the Android app, straight into the app's own chat picker rather than through its web
@@ -427,6 +449,10 @@
       if (btn) sendTo(btn.dataset.shareTo, btn);
     });
     $('#shareTargets [data-share-to="more"]').hidden = !navigator.share;
+    // Offline Sharing: the Android app only, once it's said it can.
+    const showOffline = () => { $('#shareTargets [data-share-to="offline"]').hidden = !window.OfflineShare?.canSend(); };
+    window.addEventListener('app:ready', showOffline);
+    showOffline();
     $('#shareRetry').addEventListener('click', () => {
       if (lastPick) openCard(lastPick);
     });

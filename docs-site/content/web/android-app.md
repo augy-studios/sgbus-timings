@@ -116,12 +116,37 @@ access only when you pick **Use this phone's calendar**.
 - The [SimplyGo](install.md#simplygo) button opens the SimplyGo app itself,
   rather than its store page.
 - **More** on a share card, and anywhere else the app shares, opens Android's own
-  share sheet.
+  share sheet. From version 2.0.9, **Telegram** and **WhatsApp** open those apps
+  straight away, ready to pick a chat.
+- From version 2.0.9, a share card also has **Offline Sharing**: see
+  [Offline Sharing](#offline-sharing) below.
 - The website's own links, `uwu://sgbus/` links (see
   [Links you can share](links.md#app-links)) and places shared from Google Maps
   open in the app.
 - Long-press the app's icon for shortcuts: **Near me**, **Navigate**, **Alerts**
   and **Card value**.
+
+## Offline Sharing
+
+From version 2.0.9, **Offline Sharing** on a share card hands a place,
+directions or your live ETA to a phone next to you, with no internet on either
+phone. Tap it, then either:
+
+- **Hold the backs of your phones together.** Their phone needs NFC on and to be
+  unlocked, but nothing open: it opens in SG Bus Timings if they have it, or in
+  their browser if not. Hold another phone to yours to send it again.
+- **Send it to a phone nearby**, without touching, over Bluetooth. On their
+  phone, they open SG Bus Timings and tap **Receive nearby** (the two phones) in
+  the Edge Tray. Their phone shows up on yours by the name in their
+  [Settings](settings.md), or its model; tap it to send. The first time, both
+  phones ask to use **Nearby devices**.
+
+Directions go across with both ends and the time, so they get every way there,
+not just the one you'd picked. Planning the way, and following a live ETA, still
+needs the internet on their phone once it's open.
+
+The phone sharing needs NFC (for a tap) or Google Play services (to send without
+touching). On a phone with neither, the button isn't there.
 
 ## Update it
 
@@ -173,7 +198,8 @@ get each one twice.
 | **Location all the time** | Once, on your first trip | Asked so trips can keep your location in the background. Trips work without it too: you can say no |
 | **Notifications** | Your first trip, or turning on Service alerts | Service alerts, the Get Off Alert, and the "On a trip" notification while a trip runs |
 | **Calendar** | Only if you choose **Use this phone's calendar** | Listing your events with a location in Navigate |
-| **NFC** | Not asked: Android allows it | Reading a card, and opening the app when you hold a card to the phone |
+| **NFC** | Not asked: Android allows it | Reading a card, opening the app when you hold a card to the phone, and Offline Sharing by tap |
+| **Nearby devices** | The first time you send without touching, or tap **Receive nearby** | Offline Sharing to and from phones nearby, over Bluetooth. Before Android 12, it's location instead |
 | **Install unknown apps** | The first time you tap **Update** | Installing its own updates from GitHub. Android still asks before each one |
 
 ## iPhone and iPad

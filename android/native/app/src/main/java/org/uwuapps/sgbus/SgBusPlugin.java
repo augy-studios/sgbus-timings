@@ -65,6 +65,9 @@ public class SgBusPlugin extends Plugin {
         features.put("board"); // the board channel, for Get ready to board (Notifications)
         features.put("share");
         features.put("shareto"); // share's app, straight to Telegram or WhatsApp (2.0.9)
+        // Offline Sharing (OfflineSharePlugin, 2.0.9): by tap, as an NFC tag, and by Nearby.
+        if (OfflineSharePlugin.canTap(getContext())) features.put("sharetap");
+        if (OfflineSharePlugin.canNearby(getContext())) features.put("sharenearby");
         features.put("widget");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
                 && getContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)) {

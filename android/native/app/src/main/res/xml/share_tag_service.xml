@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Offline Sharing's tap (ShareTagService.java): the NFC Forum's NDEF tag application, which
+     any phone reading a tag asks for. "other", not "payment": it's never a card to pay with. -->
+<host-apdu-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/share_tag_service"
+    android:requireDeviceUnlock="false">
+    <aid-group android:description="@string/share_tag_service" android:category="other">
+        <aid-filter android:name="D2760000850101" />
+    </aid-group>
+</host-apdu-service>

@@ -54,6 +54,7 @@ dependencies {
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
     implementation "com.google.android.gms:play-services-location:$playServicesLocationVersion"
+    implementation "com.google.android.gms:play-services-nearby:$playServicesNearbyVersion"
     implementation "androidx.work:work-runtime:$workVersion"
     implementation project(':capacitor-cordova-android-plugins')
 }

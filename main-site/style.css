@@ -1795,12 +1795,16 @@ html[data-telegram] .telegramBtn { display: none; }
 @keyframes share-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .shareUrl.making::before { animation: none; } }
 
+/* As many columns as there are buttons showing: More only where there's a share sheet, Offline
+   Sharing only in the Android app. */
 .shareTargets {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
     gap: 8px;
     margin-top: 4px;
 }
+.shareTarget .lbl { text-align: center; line-height: 1.2; }
 .shareTarget {
     display: flex;
     flex-direction: column;
@@ -2523,6 +2527,17 @@ body.on-trip { padding-bottom: 96px; }
 .cardWait svg { width: 56px; height: 56px; margin: 6px auto 10px; animation: card-hold 1.6s ease-in-out infinite; }
 .cardWait .ico { justify-content: center; width: 100%; }
 @keyframes card-hold { 50% { transform: translateY(-6px); } }
+
+/* ---- Offline Sharing (js/offline-share.js) ---- */
+.offlineBody { display: flex; flex-direction: column; gap: 10px; }
+.offlineBody > .sub { color: var(--muted); font-size: 13px; }
+.offlineBody .modal-section-label { margin: 6px 0 0; text-align: left; }
+.offlineBody > .btn { align-self: center; }
+.offlineWhat { font-weight: 600; }
+.offlineSent { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--ok); font-size: 14px; }
+.offlinePeers { display: flex; flex-direction: column; gap: 6px; }
+.offlinePeer.sent .sub { color: var(--ok); }
+.offlinePeer:disabled { opacity: 0.7; cursor: default; }
 .cardRead .sub { color: var(--muted); font-size: 13px; }
 .cardValue { font-size: 40px; font-weight: 700; line-height: 1.1; }
 .cardFacts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px auto 0; max-width: 300px; text-align: left; font-size: 14px; }

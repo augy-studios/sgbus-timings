@@ -383,14 +383,20 @@ const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 // "here" for Your location, so whoever opens the link starts or ends where they are; or "-"
 // while it isn't set. Just "#nav" with nothing set at all.
 function navHash() {
+  return navHashFor(nav.from, nav.to, nav.when);
+}
+
+// The same for any two ends, each a place, null, or "here" (as Share has them): Offline
+// Sharing's link (js/offline-share.js), which opens with no server to look it up.
+function navHashFor(from, to, when = null) {
   const end = (p) => {
     if (!p) return '-';
-    if (p.label === HERE_LABEL) return 'here';
+    if (p === 'here' || p.label === HERE_LABEL) return 'here';
     // The name escaped further than encodeURIComponent goes, so "~" only ever starts it and a
     // closing bracket doesn't end the link where it's pasted.
     return `${coord(p)}~${encodeURIComponent(p.label).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
   };
-  return nav.from || nav.to || nav.when ? `#nav/${end(nav.from)}/${end(nav.to)}${When.hashPart(nav.when)}` : '#nav';
+  return from || to || when ? `#nav/${end(from)}/${end(to)}${When.hashPart(when)}` : '#nav';
 }
 
 // Opens a nav link (navHash). A link from before ends carried names takes a saved nav's
