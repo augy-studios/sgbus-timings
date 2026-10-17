@@ -73,6 +73,15 @@ replaces the one before it in your notification tray rather than piling up.
   opened from there. Safari tabs can't receive notifications.
 - **Computers:** while the browser is running, even with the tab closed.
 
+### New versions of the app
+
+In the [Android app](android-app.md#hear-about-new-versions) and the
+[desktop app](desktop-app.md#updates), from version 2.1.1, a third choice sits
+under these two: **New versions of the app**, **Off** or **On**. On Android it
+sends a notification the moment a new version is out, and is off until you
+turn it on. On a computer it's on to start with, and says when the app has
+found a new version. The website has no choice here, as it updates itself.
+
 ## Turn them off
 
 Pick **Off** for both. The app tells the alerts server to forget this device. To stop the

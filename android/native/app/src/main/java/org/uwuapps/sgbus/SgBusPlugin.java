@@ -29,6 +29,11 @@
  *                            (js/trip.js) (2.1.0)
  *   openSettings({ what: "battery" })  asks Android to stop optimising the app's battery use,
  *                            so a trip isn't stopped in the background (2.1.0)
+ *   releases()               { on }: whether "New versions of the app" is on (2.1.1)
+ *   setReleases({ on })      turns it on or off, as the sgbus-releases FCM topic, which the
+ *                            server pushes to when a release is published
+ *                            (main-site/api/push/release.js), so it keeps no list of phones.
+ *                            Rejects with a sentence when Firebase can't be reached (2.1.1)
  *
  * And intent: links, which a WebView can't follow by itself as Chrome does: the site's
  * SimplyGo button, the calendar permission and the update bar each link to one of this app's
@@ -66,6 +71,7 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.net.URISyntaxException;
 
@@ -124,8 +130,9 @@ public class SgBusPlugin extends Plugin {
             features.put("cardtap"); // CardPlugin's "tapped", a card held to the phone (2.0.8)
         }
         // Firebase is set up for this build (google-services.json): the server can push.
-        if (getContext().getResources().getIdentifier("google_app_id", "string", getContext().getPackageName()) != 0) {
+        if (firebaseReady()) {
             features.put("push");
+            features.put("releases"); // setReleases, "New versions of the app" (2.1.1)
         }
         out.put("features", features);
         out.put("android", Build.VERSION.SDK_INT);
@@ -154,6 +161,49 @@ public class SgBusPlugin extends Plugin {
         JSObject out = new JSObject();
         out.put("allowed", Notifications.allowed(getContext()));
         call.resolve(out);
+    }
+
+    // ---------- new versions of the app (2.1.1) ----------
+
+    // FCM topics are shared by every app in the UwU Apps Firebase project, hence the prefix.
+    private static final String RELEASES_TOPIC = "sgbus-releases";
+    private static final String PREFS = "sgbus.releases";
+
+    // google-services.json was in the build, so Firebase starts with the app. Without it,
+    // FirebaseMessaging.getInstance() throws.
+    private boolean firebaseReady() {
+        return getContext().getResources().getIdentifier("google_app_id", "string", getContext().getPackageName()) != 0;
+    }
+
+    @PluginMethod
+    public void releases(PluginCall call) {
+        JSObject out = new JSObject();
+        out.put("on", getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("on", false));
+        call.resolve(out);
+    }
+
+    // The page asks for Android's notification permission first (js/app-update.js); this only
+    // joins or leaves the topic, and remembers which once Firebase has said it's done.
+    @PluginMethod
+    public void setReleases(PluginCall call) {
+        boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+        if (!firebaseReady()) {
+            call.reject("This copy of the app can't get notifications from the server yet.");
+            return;
+        }
+        FirebaseMessaging messaging = FirebaseMessaging.getInstance();
+        messaging.setAutoInitEnabled(true);
+        (on ? messaging.subscribeToTopic(RELEASES_TOPIC) : messaging.unsubscribeFromTopic(RELEASES_TOPIC))
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        call.reject("Couldn't reach Firebase. Check you're online, then try again.");
+                        return;
+                    }
+                    getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("on", on).apply();
+                    JSObject out = new JSObject();
+                    out.put("on", on);
+                    call.resolve(out);
+                });
     }
 
     private static java.lang.ref.WeakReference<SgBusPlugin> sPlugin = new java.lang.ref.WeakReference<>(null);

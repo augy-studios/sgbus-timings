@@ -159,6 +159,16 @@ public class MainActivity extends BridgeActivity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        // "SG Bus Timings 2.1.1 is out", tapped (main-site/api/push/release.js): FCM opens the
+        // app with the push's data as extras. Straight to the update window, which looks up
+        // that version and asks before downloading it (2.1.1). The extras go, so the window
+        // doesn't open again when Android recreates this screen.
+        if ("release".equals(intent.getStringExtra("type"))) {
+            UpdateActivity.check(this, intent.getStringExtra("version"));
+            intent.removeExtra("type");
+            intent.removeExtra("version");
+            return;
+        }
         // Another phone's Offline Sharing, held to this one while the app's open: it comes as a
         // tag, like a card, but with a link to the site on it.
         String link = tappedLink(intent);

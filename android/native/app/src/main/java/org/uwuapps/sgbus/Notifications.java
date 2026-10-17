@@ -12,6 +12,8 @@
  *   last_bus a heads-up before the last bus (LastBus)
  *   leave    time to leave for a calendar event (LeaveTime)
  *   on_a_bus "On a bus?", offering a trip when you seem to be riding (OnABus): silent
+ *   releases a new version of the app is out, from the server (main-site/api/push/release.js),
+ *            to the phones that turned it on (SgBusPlugin.setReleases) (2.1.1)
  *
  * The server's pushes name the same channels (main-site/api/_push/fcm.js), and Android only
  * takes a channel's sound and buzz from when it's made, so changing one means a new id.
@@ -41,6 +43,7 @@ final class Notifications {
     static final String LAST_BUS = "last_bus";
     static final String LEAVE = "leave";
     static final String ON_A_BUS = "on_a_bus";
+    static final String RELEASES = "releases";
 
     // "OFF" in Morse code (--- ..-. ..-.), as main-site/js/trip.js buzzes it in the page: a wait
     // first, then buzz and pause in turn.
@@ -113,6 +116,10 @@ final class Notifications {
         onABus.setDescription("When you seem to be riding with no trip running, offers to start one");
         onABus.setShowBadge(false);
 
+        NotificationChannel releases = new NotificationChannel(RELEASES, "New versions",
+                NotificationManager.IMPORTANCE_DEFAULT);
+        releases.setDescription("When a new version of the app is out, if you turned it on in Service alerts");
+
         manager.createNotificationChannel(alerts);
         manager.createNotificationChannel(getOff);
         manager.createNotificationChannel(board);
@@ -122,6 +129,7 @@ final class Notifications {
         manager.createNotificationChannel(lastBus);
         manager.createNotificationChannel(leave);
         manager.createNotificationChannel(onABus);
+        manager.createNotificationChannel(releases);
     }
 
     // Opens the app on `url` (one of the site's pages), or as it is when that's null.

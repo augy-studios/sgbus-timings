@@ -1,6 +1,17 @@
 // The desktop app checking for its own updates, with electron-updater: soon after it starts,
-// then every CHECK_EVERY_MS while it runs (it lives in the tray for days), and whenever the
-// tray's "Check for updates..." asks (checkNow), which says what it found either way.
+// then every CHECK_EVERY_MS while it runs (it lives in the tray for days), when the computer
+// wakes from sleep, and whenever the tray's "Check for updates..." asks (checkNow), which says
+// what it found either way.
+//
+// Electron has no Web Push or FCM, so the GitHub webhook that tells phones a release is out
+// (main-site/api/push/release.js) can't reach it: it looks for itself, hourly from 2.1.1. That's
+// soon enough, as the desktop installers reach a release a few minutes after it's published,
+// once GitHub Actions has built them. Each check is a few kB of latest*.yml from the release's
+// downloads, not GitHub's API, so its hourly limit doesn't come into it.
+//
+// The notifications it shows unasked ("2.1.1 is out", "2.1.1 is ready") can be turned off with
+// "New versions of the app" in the site's Service alerts (main.js, settings.json's
+// updateNotices, 2.1.1). The tray's menu and the title bar's button still offer the update.
 //
 // It reads latest.yml (Windows), latest-mac.yml (macOS) or latest-linux.yml (Linux), which the
 // build writes beside the installers, from the newest GitHub release: releases/latest/download/
@@ -25,7 +36,7 @@
 // opens it. That needs the app somewhere you can write to, as /Applications is for an admin;
 // not still on the .dmg, nor run straight from Downloads (macOS runs that from a read-only copy).
 
-const { app, Notification, shell } = require('electron');
+const { app, Notification, powerMonitor, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { execFile, spawn } = require('node:child_process');
 const fs = require('node:fs');
@@ -34,10 +45,13 @@ const path = require('node:path');
 
 const RELEASES = 'https://github.com/augy-studios/sgbus-timings/releases/latest';
 const FIRST_CHECK_MS = 30 * 1000;
-const CHECK_EVERY_MS = 6 * 60 * 60 * 1000;
+const CHECK_EVERY_MS = 60 * 60 * 1000;
+// After waking, the network takes a moment to come back.
+const AFTER_WAKE_MS = 20 * 1000;
 
 const state = { available: null, ready: null, checking: false }; // the newer version, and once it's downloaded
 let onChange = () => {};
+let notices = () => true; // whether to say so unasked (main.js)
 let notifiedFor = null;
 let asked = false; // this check was asked for from the tray, so its answer is shown whatever it is
 let install = false;
@@ -127,9 +141,12 @@ function restartToUpdate() {
   autoUpdater.quitAndInstall(true, true);
 }
 
-function start(changed) {
+// changed: called whenever there's something new for the tray's menu and the title bar.
+// wanted: whether "New versions of the app" is on, for the notifications it shows unasked.
+function start(changed, { wanted } = {}) {
   if (!app.isPackaged) return; // nothing to update when run from source (npm start)
   onChange = changed || onChange;
+  notices = wanted || notices;
   install = canInstall();
   autoUpdater.autoDownload = install;
   // macOS installs it itself (swapMacOnQuit), never through Squirrel.Mac.
@@ -155,6 +172,7 @@ function start(changed) {
       else notify(`SG Bus Timings ${info.version} is out`, "It's downloading. You'll be told when it's ready to install.", () => {});
     }
     if (install || (notifiedFor === info.version && !asked)) return;
+    if (!asked && !notices()) return;
     notifiedFor = info.version;
     notify(`SG Bus Timings ${info.version} is out`, 'Click to download it from GitHub, then install it over this one.', () => shell.openExternal(RELEASES));
   });
@@ -170,7 +188,7 @@ function start(changed) {
     }
     state.ready = info.version;
     onChange();
-    if (notifiedFor === info.version) return;
+    if (notifiedFor === info.version || !notices()) return;
     notifiedFor = info.version;
     notify(`SG Bus Timings ${info.version} is ready`, 'Click to restart and update. Otherwise it updates the next time you quit.', restartToUpdate);
   });
@@ -182,6 +200,8 @@ function start(changed) {
 
   setTimeout(check, FIRST_CHECK_MS);
   setInterval(check, CHECK_EVERY_MS);
+  // A laptop asleep overnight: what came out meanwhile, soon after it's opened.
+  powerMonitor.on('resume', () => setTimeout(check, AFTER_WAKE_MS));
 }
 
 async function check() {

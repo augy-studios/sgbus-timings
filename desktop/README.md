@@ -50,10 +50,18 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   code). The departures board (`#board/<code>`) goes full screen through the page's own
   fullscreen, which `main.js` already handles.
 - **Updates itself** (`updater.js`): reads `latest.yml` / `latest-mac.yml` / `latest-linux.yml`
-  from the newest GitHub release. The `.exe`, the AppImage and the Mac app download and
-  install with a restart; the `.msi` and `.deb` only say there's a new version. Upload the
-  `.yml` files, the Mac `.zip`s and the `.blockmap`s with the installers on every release (the
-  workflow does).
+  from the newest GitHub release, 30 seconds after it starts, then every hour (from 2.1.1;
+  every six hours before) and 20 seconds after the computer wakes. The `.exe`, the AppImage
+  and the Mac app download and install with a restart; the `.msi` and `.deb` only say there's
+  a new version. Upload the `.yml` files, the Mac `.zip`s and the `.blockmap`s with the
+  installers on every release (the workflow does).
+- **New versions as notifications** (2.1.1): "SG Bus Timings 2.1.1 is out" (or "is ready",
+  once downloaded), unless **New versions of the app** is turned off in the site's Service
+  alerts (`main-site/js/app-update.js`, through `preload.js`'s `sgbusDesktop.releases`, kept
+  as `updateNotices` in `settings.json`). It looks for itself rather than being told, as
+  Electron has no Web Push or FCM for the GitHub webhook the Android app hears from
+  (`main-site/api/push/release.js`). The tray's menu and the title bar's button offer the
+  update either way.
 - **Links elsewhere open in your browser**; the site's own pages stay in the app.
 - **`uwu://sgbus/` links open it**, on the page they name, mapped as the Android app maps
   them (`fromAppLink` in `main.js`). On Windows the app registers the `uwu` scheme for your

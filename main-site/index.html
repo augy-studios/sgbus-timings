@@ -274,6 +274,16 @@
                         </div>
                     </div>
                     <p id="alertsNote" class="mode-note" role="status"></p>
+                    <!-- New versions of the app: the Android app (with Firebase) and the desktop
+                         app, from 2.1.1 only (js/app-update.js) -->
+                    <div id="releaseAlerts" hidden>
+                        <p class="modal-section-label" id="alertReleasesLabel"><span data-icon="download"></span> New versions of the app</p>
+                        <div class="mode-toggle alertModes" role="group" aria-labelledby="alertReleasesLabel">
+                            <button class="mode-btn" type="button" data-release-mode="off" aria-pressed="false">Off</button>
+                            <button class="mode-btn" type="button" data-release-mode="on" aria-pressed="false">On</button>
+                        </div>
+                        <p id="releaseNote" class="mode-note" role="status"></p>
+                    </div>
                     <div id="alertsBody" class="alertsBody"></div>
                 </div>
             </div>

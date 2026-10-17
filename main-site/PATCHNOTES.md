@@ -1,11 +1,25 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 17 October 2026**
+**Latest update: 18 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 18 October 2026: Apps 2.1.1, new versions as notifications
+
+### Android app 2.1.1
+
+- **Hear about new versions** - Turn on **New versions of the app** in Service alerts, and a notification says the moment a new version is out, even with the app closed. Tap it to update. A watch paired with your phone shows it too. Needs Google Play services.
+- **Widget preview** - Adding the Bus timings widget, the widget list now shows it with some example buses rather than an empty card, in light and dark.
+
+### Desktop app 2.1.1
+
+- **New versions sooner** - The app looks for a new version every hour rather than every six, and again when your computer wakes from sleep.
+- **New versions of the app** - A choice in Service alerts: turn it **Off** to stop the notifications about new versions. The tray's menu and the title bar still offer the update.
 
 ---
 

@@ -88,9 +88,17 @@ first, as AppImageLauncher or Gear Lever do.
 
 ## Updates
 
-The app checks for a new version when it starts and every few hours after. To
-check now, right-click the tray's bus and pick **Check for updates...**: a
-notification says what it found, even if you're up to date.
+The app checks for a new version when it starts, then every hour (from 2.1.1),
+and again when your computer wakes from sleep. To check now, right-click the
+tray's bus and pick **Check for updates...**: a notification says what it found,
+even if you're up to date.
+
+A new version is only found once its installers are on the release, which is a
+few minutes after it's out on Android.
+
+To stop the notifications about new versions, open [Service alerts](service-alerts.md)
+(the bell in the Edge Tray) and pick **Off** under **New versions of the app**.
+The tray's menu and the title bar still offer the update.
 
 - Installed with the `.exe`, as an AppImage, or on a Mac: it downloads the
   update itself, then a notification, the tray's menu and a green **update**

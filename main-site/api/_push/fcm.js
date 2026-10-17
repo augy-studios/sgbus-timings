@@ -2,7 +2,7 @@
 // browsers: the app's WebView has no Web Push, so it registers with FCM and sends its token as
 // its subscription, { fcm: token } (js/alerts.js). Service Alerts (api/push/poll.js) and the
 // Get Off Alert (api/push/trip-poll.js) both come through here for the app, via sendPush in
-// api/_push/send.js.
+// api/_push/send.js; and "a new version is out" (api/push/release.js), to a topic (sendToTopic).
 //
 // FCM's HTTP v1 API, with an OAuth token made from the Firebase project's service account:
 // FIREBASE_SERVICE_ACCOUNT holds its JSON key, as downloaded or base64'd
@@ -104,6 +104,31 @@ export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' 
     },
   };
 
+  await post(message);
+}
+
+// To every phone that joined an FCM topic, rather than to one token: the app's switches join
+// them (SgBusPlugin.setReleases), so the server keeps no list of phones. Topics are shared by
+// every app in the UwU Apps Firebase project, hence the sgbus- prefix on each. Used for "a new
+// version is out" (api/push/release.js), which only the app shows: there's no Web Push to it.
+export async function sendToTopic(topic, { title, body = '', data = {}, channel, tag, ttl = 24 * 3600 }) {
+  if (!fcmConfigured()) throw new PushError(503, 'FIREBASE_SERVICE_ACCOUNT is not set');
+  const strings = {};
+  for (const [k, v] of Object.entries({ ...data, title, body })) if (v != null) strings[k] = String(v);
+  await post({
+    topic,
+    data: strings,
+    notification: { title, body },
+    android: {
+      // Not urgent: a phone dozing gets it when it next wakes, within the day.
+      priority: 'NORMAL',
+      ttl: `${ttl}s`,
+      notification: { channel_id: channel, tag, icon: 'ic_notification_icon', visibility: 'PUBLIC' },
+    },
+  });
+}
+
+async function post(message) {
   const send = async () => fetch(`https://fcm.googleapis.com/v1/projects/${serviceAccount().project_id}/messages:send`, {
     method: 'POST',
     headers: { authorization: `Bearer ${await accessToken()}`, 'content-type': 'application/json' },

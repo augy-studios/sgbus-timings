@@ -11,7 +11,9 @@
 //   on Windows and Linux (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
-// - checking for its own updates (updater.js), and from the tray's "Check for updates...";
+// - checking for its own updates (updater.js), every hour and from the tray's "Check for
+//   updates...", with a notification when there's one, unless the site's "New versions of the
+//   app" is off (2.1.1);
 // - Bus timings widgets on the desktop (widgets.js);
 // - a stop's next buses in the tray (the macOS menu bar, and its Dock badge), and favourite
 //   stops in the Windows Jump List, the taskbar thumbnail's buttons and the macOS Dock menu
@@ -388,11 +390,12 @@ function createTray() {
   ]);
   tray.setContextMenu(menu());
   refreshTrayMenu = () => tray.setContextMenu(menu());
-  // An update found or downloaded, or a check starting or done: the menu says so.
+  // An update found or downloaded, or a check starting or done: the menu says so. Its
+  // notifications only while "New versions of the app" is on (the releases-* handlers below).
   updater.start(() => {
     tray.setContextMenu(menu());
     refreshBar();
-  });
+  }, { wanted: () => readSettings().updateNotices !== false });
   // macOS opens the menu on a click, so only Windows and Linux show and hide the window with it.
   if (process.platform !== 'darwin') tray.on('click', () => (win.isVisible() && win.isFocused() ? win.hide() : showWindow()));
   // Linux trays show the menu on any click; refreshed so the checkbox is right.
@@ -558,6 +561,15 @@ ipcMain.handle('tray-stop-get', (e) => (isSite(e.senderFrame?.url || '') ? glanc
 // buttons (glance.js).
 ipcMain.on('favourites', (e, list) => {
   if (isSite(e.senderFrame?.url || '')) glance.setFavourites(list);
+});
+
+// "New versions of the app" in the site's Service alerts (main-site/js/app-update.js): whether
+// updater.js says unasked that a new version is out, or downloaded. On unless turned off (2.1.1).
+ipcMain.handle('releases-get', (e) => isSite(e.senderFrame?.url || '') && readSettings().updateNotices !== false);
+ipcMain.handle('releases-set', (e, on) => {
+  if (!isSite(e.senderFrame?.url || '')) return null;
+  writeSettings({ updateNotices: Boolean(on) });
+  return Boolean(on);
 });
 
 ipcMain.on('notify', (e, n) => {

@@ -12,6 +12,14 @@
 // From 2.0.8 the Edge Tray also has "Check for app updates", which opens the update window to
 // look whenever you like (CHECK_LINK): it says if you have the newest version, and asks before
 // downloading one. Builds before 2.0.8 ask to install apps before looking, so don't get it.
+//
+// From 2.1.1, "New versions of the app" in Service alerts (#releaseAlerts), in the apps only:
+//   Android  the sgbus-releases FCM topic (SgBusPlugin.setReleases), which api/push/release.js
+//            pushes to the moment a release is published. Off until turned on, as turning it on
+//            asks for Android's notification permission. Tapping the notification opens the
+//            update window (MainActivity); arriving with the app in front, it brings the bar.
+//   Desktop  the app's own "a new version is out" notifications (desktop/updater.js, which looks
+//            every hour, as Electron can't be pushed to). On unless turned off.
 // Plain script: this project does not use ES modules.
 (function () {
   const LINK = 'intent://update#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
@@ -22,7 +30,7 @@
   let dismissed = false;
 
   // Whether version a comes after version b, number by number: 1.10.0 after 1.9.0. The same
-  // as newer() in api/app-release.js.
+  // as newer() in api/_lib/release.js.
   function newer(a, b) {
     const x = String(a).split('.').map((n) => parseInt(n, 10) || 0);
     const y = String(b).split('.').map((n) => parseInt(n, 10) || 0);
@@ -33,11 +41,12 @@
     return false;
   }
 
-  async function check() {
+  // version: the one a push just said is out, which makes a URL the site's cache hasn't seen.
+  async function check(version) {
     checkedAt = Date.now();
     let latest;
     try {
-      const res = await fetch('/api/app-release');
+      const res = await fetch(`/api/app-release${version ? `?v=${encodeURIComponent(version)}` : ''}`);
       if (!res.ok) return;
       latest = await res.json();
     } catch {
@@ -74,6 +83,97 @@
     document.body.prepend(bar);
   }
 
+  // ---------- "New versions of the app" in Service alerts (2.1.1) ----------
+
+  const NOTES = {
+    appOn: "You'll get a notification the moment a new version is out, even with the app closed. Tap it to update.",
+    appOff: 'Off. While the app is open, the bar at the top still says when a new version is out.',
+    desktopOn: "A notification says when a new version is out. The app looks every hour while it's running, open or in the tray.",
+    desktopOff: "Off. The tray's menu still says when a new version is out.",
+    denied: "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again.",
+    failed: "Couldn't change that just now. Check you're online, then try again.",
+  };
+
+  function showReleases(on, note) {
+    document.querySelectorAll('[data-release-mode]').forEach((btn) => {
+      const active = (btn.dataset.releaseMode === 'on') === on;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', String(active));
+    });
+    document.getElementById('releaseNote').textContent = note;
+  }
+
+  // Android's notification permission, asked only as it's turned on. Once refused for good,
+  // Android won't prompt again: its settings are the only way.
+  async function allowed() {
+    const now = (await AppBridge.call('PushNotifications', 'checkPermissions')).receive;
+    if (now === 'granted') return true;
+    if (now === 'denied') return false;
+    return (await AppBridge.call('PushNotifications', 'requestPermissions')).receive === 'granted';
+  }
+
+  // Each says whether it's on now, and turns it on or off: { get(), set(on) }, set resolving
+  // to the note to show, or rejecting with one.
+  const android = {
+    async get() {
+      const { on } = await AppBridge.call('SgBus', 'releases');
+      // Turned on here, then notifications switched off in Android's settings: say why
+      // nothing arrives.
+      if (on && (await AppBridge.call('PushNotifications', 'checkPermissions')).receive !== 'granted') {
+        return { on, note: NOTES.denied };
+      }
+      return { on, note: on ? NOTES.appOn : NOTES.appOff };
+    },
+    async set(on) {
+      if (on && !(await allowed())) throw new Error(NOTES.denied);
+      await AppBridge.call('SgBus', 'setReleases', { on });
+      return on ? NOTES.appOn : NOTES.appOff;
+    },
+  };
+
+  const desktop = {
+    async get() {
+      const on = await window.sgbusDesktop.releases.get();
+      return { on, note: on ? NOTES.desktopOn : NOTES.desktopOff };
+    },
+    async set(on) {
+      const now = await window.sgbusDesktop.releases.set(on);
+      return now ? NOTES.desktopOn : NOTES.desktopOff;
+    },
+  };
+
+  async function initReleases(how) {
+    const box = document.getElementById('releaseAlerts');
+    let on = false;
+    try {
+      const now = await how.get();
+      on = now.on;
+      showReleases(on, now.note);
+    } catch {
+      return; // An app that can't say: no switch.
+    }
+    box.hidden = false;
+    let busy = false;
+    box.addEventListener('click', async (e) => {
+      const btn = e.target.closest('[data-release-mode]');
+      const want = btn?.dataset.releaseMode === 'on';
+      if (!btn || busy || want === on) return;
+      busy = true;
+      try {
+        const note = await how.set(want);
+        on = want;
+        showReleases(on, note);
+      } catch (err) {
+        showReleases(on, err?.message || NOTES.failed);
+      } finally {
+        busy = false;
+      }
+    });
+  }
+
+  // The desktop app from 2.1.1 (desktop/preload.js).
+  if (window.sgbusDesktop?.releases) initReleases(desktop);
+
   if (!window.AppBridge) return;
   AppBridge.ready(5000).then((inApp) => {
     if (!inApp) return;
@@ -86,5 +186,16 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && Date.now() - checkedAt > UPDATE_CHECK_MS) check();
     });
+
+    if (AppBridge.has('releases')) {
+      initReleases(android);
+      // A "new version" push with the app in front, which FCM leaves to the app: the bar,
+      // even after "Not now" on an older one, as this is news.
+      AppBridge.on('PushNotifications', 'pushNotificationReceived', (n) => {
+        if (n?.data?.type !== 'release') return;
+        dismissed = false;
+        check(n.data.version);
+      });
+    }
   });
 })();

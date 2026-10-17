@@ -26,4 +26,7 @@ ext {
     concurrentFuturesVersion = '1.2.0'
     // Not Capacitor's: the widget's refresh (WidgetRefreshWorker).
     workVersion = '2.11.2'
+    // The same Firebase Messaging the push plugin builds with (it reads this too), for
+    // SgBusPlugin's "new versions" topic (2.1.1).
+    firebaseMessagingVersion = '25.0.1'
 }

@@ -183,7 +183,8 @@ alerts**, **Get Off Alert**, **Get ready to board** (from 2.0.4: your bus is a
 minute away, on a trip; see [Get Off Alert](get-off-alert.md#get-ready-to-board))
 and **Trip in progress**, and from 2.1.0 the [reminders](#reminders): **Near a
 stop**, **Last bus**, **Time to leave**, **On a bus?**, and **Get Off Alert,
-earphones only**. Each can be turned off on its own.
+earphones only**, and from 2.1.1 **New versions** (see [Update it](#update-it)).
+Each can be turned off on its own.
 
 ## Your phone's calendar
 
@@ -264,6 +265,18 @@ the app.
 From version 2.0.8 you can also check whenever you like: tap the download
 arrow in the Edge Tray (**Check for app updates**). It says if you already have
 the newest version, or which one is out, with **Update** to install it as above.
+
+### Hear about new versions
+
+From version 2.1.1, the app can tell you the moment a new version is out, even
+when it's closed: open [Service alerts](service-alerts.md) (the bell in the Edge
+Tray) and pick **On** under **New versions of the app**. The first time, Android
+asks to allow notifications. Tap the notification ("SG Bus Timings 2.1.2 is
+out") and the app says which version you have and offers **Update**. A watch
+paired with your phone shows it too.
+
+It's off until you turn it on. It needs Google Play services, as most phones
+have.
 
 On version 1.1.0, the bar says **Download** instead: it opens the
 [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest),

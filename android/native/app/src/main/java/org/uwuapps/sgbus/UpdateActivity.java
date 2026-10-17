@@ -9,6 +9,10 @@
  * and asks before downloading one that isn't. The update bar's link, without /check, has
  * already asked, so downloads straight away.
  *
+ * From 2.1.1 a tapped "new version is out" notification opens it too (MainActivity, check()):
+ * a check, naming the version the push was about (VERSION), so the release just published is
+ * looked up fresh rather than from the site's few minutes of cache.
+ *
  * Checks before anything is installed:
  * - The APK comes only from this repository's releases on GitHub (RELEASES).
  * - Its SHA-256 matches the checksum GitHub publishes for the file, when it has one.
@@ -72,6 +76,8 @@ public class UpdateActivity extends Activity {
             "https://github.com/augy-studios/sgbus-timings/releases/download/";
     // The Edge Tray's "Check for app updates", rather than the update bar's Update.
     private static final String CHECK = "/check";
+    // The version a notification said is out, to look it up past the site's cache.
+    private static final String EXTRA_VERSION = "org.uwuapps.sgbus.update.VERSION";
 
     // The window on screen, for InstallStatus to report back to.
     private static WeakReference<UpdateActivity> sShowing = new WeakReference<>(null);
@@ -86,9 +92,19 @@ public class UpdateActivity extends Activity {
     private boolean mAskedToAllow;
     // Only checking, so ask before downloading what it finds.
     private boolean mCheckOnly;
+    private String mExpected;
     // The update to install, once found and wanted: kept while you're in "Install unknown
     // apps", and for "Try again", so neither looks it up again.
     private Release mRelease;
+
+    // A check for the version a tapped notification named (MainActivity).
+    static void check(Context context, String version) {
+        Intent intent = new Intent(context, UpdateActivity.class)
+                .setData(Uri.parse("org.uwuapps.sgbus://update" + CHECK));
+        if (version != null && version.matches("\\d+(\\.\\d+)*")) intent.putExtra(EXTRA_VERSION, version);
+        if (!(context instanceof Activity)) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -98,6 +114,7 @@ public class UpdateActivity extends Activity {
         sShowing = new WeakReference<>(this);
         Uri link = getIntent().getData();
         mCheckOnly = link != null && CHECK.equals(link.getPath());
+        mExpected = getIntent().getStringExtra(EXTRA_VERSION);
         start();
     }
 
@@ -192,7 +209,9 @@ public class UpdateActivity extends Activity {
 
     // The newest release if it's newer than this app, or null.
     private Release latest() throws IOException, JSONException, Problem {
-        HttpURLConnection conn = open(LATEST);
+        // A version from a notification makes a URL of its own, which the site's cache hasn't
+        // seen, so it's read from GitHub now rather than up to ten minutes ago.
+        HttpURLConnection conn = open(mExpected == null ? LATEST : LATEST + "?v=" + mExpected);
         if (conn.getResponseCode() != 200) {
             throw new Problem("Couldn't find out what the newest version is. Try again later.");
         }

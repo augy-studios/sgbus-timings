@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The Bus timings widget (TimingsWidget.java). Resizable either way, from one row of cells to
-     the whole screen; refreshed by WidgetRefreshWorker, not by updatePeriodMillis. -->
+     the whole screen; refreshed by WidgetRefreshWorker, not by updatePeriodMillis. The widget
+     picker shows previewLayout, example buses at a stop (Android 12 and later), or before that
+     previewImage, a picture of the same (drawable-nodpi/widget_preview.png, 260 x 216 dp at
+     3x). Change both together. -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="180dp"
     android:minHeight="110dp"
@@ -11,8 +14,8 @@
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/widget_timings"
-    android:previewLayout="@layout/widget_timings"
-    android:previewImage="@mipmap/ic_launcher"
+    android:previewLayout="@layout/widget_timings_preview"
+    android:previewImage="@drawable/widget_preview"
     android:description="@string/widget_description"
     android:configure="org.uwuapps.sgbus.WidgetConfigActivity"
     android:widgetFeatures="reconfigurable|configuration_optional"

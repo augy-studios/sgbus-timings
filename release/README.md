@@ -85,18 +85,28 @@ phones with the old one won't take it as an update.
 `https://github.com/augy-studios/sgbus-timings/releases/latest` always points at the newest
 one: a good link to share. GitHub also adds the source code as zips; those are fine to leave.
 
-## How phones hear about it
+## How phones and computers hear about it
 
-Within about 10 minutes of publishing, the Android app offers the new version in a bar at the
-top of the page. The bar comes from the site, which reads the releases through
+From 2.1.1, the moment a release is published, phones that turned on **New versions of the
+app** in Service alerts get a notification, "SG Bus Timings 2.1.1 is out", even with the app
+closed: GitHub calls the site (a webhook, `main-site/api/push/release.js`), which pushes it
+through Firebase. Tapping it opens the app's update window. That's why the APK has to be
+attached **before** you click **Publish release**: a release without its APK is skipped, and
+the webhook isn't called again. Setting it up: `android/FIREBASE-SETUP.md`, steps 5 and 6.
+
+Within about 10 minutes of publishing, the Android app also offers the new version in a bar at
+the top of the page. The bar comes from the site, which reads the releases through
 `main-site/api/app-release.js`. It skips drafts, pre-releases, tags that don't start
 `android-v`, and releases whose APK hasn't finished uploading. **Update** downloads the APK
 in the app, checks it against GitHub's checksum and hands it to Android's installer
 (`UpdateActivity.java`). From 1.1.0, which can't update itself, **Download** opens the release
 page instead. 1.2.0 updates itself to 2.0.0 like any other version.
 
-The desktop apps don't check for updates yet: people download the new installer and run it
-over the old one.
+The desktop apps look for themselves (`desktop/updater.js`): from 2.1.1, every hour while
+they run and when the computer wakes, as Electron can't be pushed to. They read the
+`latest*.yml` files on the newest release, so they hear once GitHub Actions has added the
+installers, a few minutes after publishing. A notification says it's out (or downloaded, ready
+to restart), unless **New versions of the app** is off in their Service alerts.
 
 ## Before you share it
 
@@ -120,3 +130,4 @@ over the old one.
 | Windows says "Windows protected your PC" | The installer isn't code-signed. **More info** > **Run anyway**. |
 | You uploaded the wrong file | On the release, **Edit**, delete the file with the bin icon, attach the right one, **Update release**. The Android app checks the file is newer and matches GitHub's checksum, so phones won't install a mismatch. |
 | No update bar in the Android app | The tag doesn't start `android-v`, the release is a draft or pre-release, or it's been under 10 minutes. `https://sgbus.uwuapps.org/api/app-release` shows what phones see. |
+| No "new version" notification on phones | Open the webhook in GitHub (**Settings** > **Webhooks**) and look at **Recent Deliveries**: the answer says why (`android/FIREBASE-SETUP.md`, "If something goes wrong"). Published before the APK finished uploading? **Redeliver** it now. |
