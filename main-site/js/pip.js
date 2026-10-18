@@ -13,7 +13,50 @@
   const MAP_SHAPE = [3, 4];
   const TRIP_SHAPE = [16, 9];
 
+  // The page's zoom is held at 1 while it's small, and until the window has grown back (2.1.2).
+  // A window that small makes the WebView zoom out to fit, and growing back it kept a zoom that
+  // no longer fit: the page came back zoomed in, the tray cut off, and it scrolled every way.
+  const SETTLE_MS = 500;
+  const viewport = document.querySelector('meta[name="viewport"]');
+  const VIEWPORT = viewport?.content;
+  const HELD = 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1';
+
   let sent = null;
+  let scrollY = 0;
+  let settle = null;
+
+  // After the last resize of the window growing back: back to the top-left at zoom 1, then
+  // let it be zoomed again.
+  function settled() {
+    window.removeEventListener('resize', growing);
+    settle = null;
+    if (document.documentElement.hasAttribute('data-pip')) return;
+    window.scrollTo(0, scrollY);
+    if (viewport) viewport.content = VIEWPORT;
+  }
+
+  function growing() {
+    clearTimeout(settle);
+    settle = setTimeout(settled, SETTLE_MS);
+  }
+
+  function setPip(active) {
+    const root = document.documentElement;
+    if (active === root.hasAttribute('data-pip')) return;
+    if (active) {
+      clearTimeout(settle);
+      window.removeEventListener('resize', growing);
+      scrollY = window.scrollY;
+    }
+    if (viewport) viewport.content = HELD;
+    root.toggleAttribute('data-pip', active);
+    if (!active) {
+      window.addEventListener('resize', growing);
+      growing();
+    }
+    // The map redraws for its new size.
+    window.dispatchEvent(new Event('resize'));
+  }
 
   function wanted() {
     if (window.LiveMap?.isOpen()) return { auto: true, ratio: MAP_SHAPE };
@@ -34,10 +77,6 @@
     if (!inApp || !AppBridge.has('pip')) return;
     check();
     setInterval(check, CHECK_MS);
-    AppBridge.on('SgBus', 'pip', ({ active }) => {
-      document.documentElement.toggleAttribute('data-pip', !!active);
-      // The map redraws for its new size.
-      window.dispatchEvent(new Event('resize'));
-    });
+    AppBridge.on('SgBus', 'pip', ({ active }) => setPip(!!active));
   });
 })();
