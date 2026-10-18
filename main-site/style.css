@@ -2556,6 +2556,7 @@ body.on-trip { padding-bottom: 96px; }
 /* ---- picture-in-picture, in the Android app (js/pip.js) ---- */
 /* A window a few centimetres across: the live map if it's open, otherwise the trip's line,
    large, and nothing else. */
+:root[data-pip], :root[data-pip] body { overflow: hidden; }
 :root[data-pip] #disruptionBar, :root[data-pip] .hud, :root[data-pip] .container,
 :root[data-pip] .modal-backdrop, :root[data-pip] .panelModal { display: none !important; }
 :root[data-pip] .mapTop, :root[data-pip] .mapFabs, :root[data-pip] .mapNote, :root[data-pip] .mapActions,
