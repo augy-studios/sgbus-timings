@@ -9,15 +9,11 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 18 October 2026: Apps 2.1.2, picture-in-picture fix
+## 18 October 2026: Picture-in-picture fix
 
-### Android app 2.1.2
+### Android app
 
-- **Back from picture-in-picture, the right size** - Opening the app again from its small picture-in-picture window no longer leaves the page zoomed in, with the side buttons cut off and the page scrolling every way. It got worse each time; now it comes back at its usual size, where you left it, however often you go in and out. Needs the 2.1.2 app.
-
-### Desktop app 2.1.2
-
-- No changes of its own: the same version number as the Android app.
+- **Back from picture-in-picture, the right size** - Opening the app again from its small picture-in-picture window no longer leaves the page zoomed in, with the side buttons cut off and the page scrolling every way, worse each time. It comes back at its usual size, where you left it; now and then it reloads to get there, and a trip carries on. No app update needed.
 
 ---
 

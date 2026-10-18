@@ -13,21 +13,31 @@
   const MAP_SHAPE = [3, 4];
   const TRIP_SHAPE = [16, 9];
 
-  // The page's zoom is held at 1 while it's small, and until the window has grown back (2.1.2).
-  // A window that small makes the WebView zoom out to fit, and growing back it kept a zoom that
-  // no longer fit: the page came back zoomed in, the tray cut off, and it scrolled every way.
-  // The app's WebView mostly ignores the viewport tag, so MainActivity also puts its zoom back
-  // (onPictureInPictureModeChanged); this covers the rest, and puts the scroll back.
+  // The page's zoom is held at 1 while it's small, and until the window has grown back.
+  // A window that small makes the WebView zoom out to fit, and growing back it kept some of
+  // that zoom, more each time: the page came back zoomed in, the tray cut off, and it
+  // scrolled every way. The app's WebView may ignore the viewport tag, so if the zoom is
+  // still off once the window has settled, the page reloads, which starts it at 1. A trip
+  // carries on through a reload (js/trip.js).
   const SETTLE_MS = 500;
   const viewport = document.querySelector('meta[name="viewport"]');
   const VIEWPORT = viewport?.content;
   const HELD = 'width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1';
+  // At most one reload a minute, should a reload not put it right.
+  const RELOADED_KEY = 'sgbus-pip-reloaded';
+  const RELOAD_GAP_MS = 60000;
 
   let sent = null;
   let scrollY = 0;
   let settle = null;
 
-  // After the last resize of the window growing back: back to the top-left at zoom 1, then
+  function zoomedOff() {
+    const scale = window.visualViewport?.scale ?? 1;
+    return Math.abs(scale - 1) > 0.02
+      || Math.abs(window.innerWidth - document.documentElement.clientWidth) > 2;
+  }
+
+  // After the last resize of the window growing back: back to where it was at zoom 1, then
   // let it be zoomed again.
   function settled() {
     window.removeEventListener('resize', growing);
@@ -35,6 +45,12 @@
     if (document.documentElement.hasAttribute('data-pip')) return;
     window.scrollTo(0, scrollY);
     if (viewport) viewport.content = VIEWPORT;
+    if (!zoomedOff()) return;
+    try {
+      if (Date.now() - Number(sessionStorage.getItem(RELOADED_KEY) || 0) < RELOAD_GAP_MS) return;
+      sessionStorage.setItem(RELOADED_KEY, String(Date.now()));
+    } catch {}
+    location.reload();
   }
 
   function growing() {

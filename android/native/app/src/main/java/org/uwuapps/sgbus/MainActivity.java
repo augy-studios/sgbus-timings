@@ -115,24 +115,6 @@ public class MainActivity extends BridgeActivity {
     public void onPictureInPictureModeChanged(boolean inPip, Configuration config) {
         super.onPictureInPictureModeChanged(inPip, config);
         SgBusPlugin.onPip(inPip);
-        // Back to full size, the WebView kept some of the zoom it took to fit the small window,
-        // and more each time (2.1.2): the page came back zoomed in, the tray cut off, scrolling
-        // every way. The page can't be zoomed in the app, so its zoom goes back to 1, once the
-        // window has grown and again in case it was still growing.
-        if (!inPip) {
-            WebView web = bridge == null ? null : bridge.getWebView();
-            if (web == null) return;
-            web.postDelayed(this::resetZoom, 300);
-            web.postDelayed(this::resetZoom, 1000);
-        }
-    }
-
-    @SuppressWarnings("deprecation") // getScale: still the WebView's only way to read its zoom
-    private void resetZoom() {
-        WebView web = bridge == null ? null : bridge.getWebView();
-        if (web == null || isInPictureInPictureMode()) return;
-        float zoom = web.getScale() / getResources().getDisplayMetrics().density;
-        if (zoom > 0 && Math.abs(zoom - 1) > 0.01f) web.zoomBy(Math.max(0.01f, Math.min(100f, 1 / zoom)));
     }
 
     // ---------- a card held to the phone ----------

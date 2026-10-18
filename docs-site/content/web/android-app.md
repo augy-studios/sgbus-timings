@@ -172,9 +172,6 @@ just the map or how far along your trip you are. Drag it where you like, tap it
 for its controls, or drag it off the screen to close it. Anywhere else in the
 app, going home closes it as usual.
 
-Tap it, then the full-screen button, to open the app again where you left it. Before
-2.1.2, the page could come back zoomed in, with the side buttons cut off.
-
 If it doesn't shrink, picture-in-picture may be off for the app: Android
 **Settings** > **Apps** > **SG Bus Timings** > **Picture-in-picture**.
 
