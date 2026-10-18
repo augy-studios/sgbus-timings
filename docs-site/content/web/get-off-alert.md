@@ -39,6 +39,11 @@ bar shows the trip on the [live map](live-map.md).
 Tap a bus stop on the timeline to see that stop's timings for your bus: the
 timeline closes and the page scrolls down to them, with the trip still running.
 
+While you wait at the stop for a bus, the bar also lists the other buses that go
+straight to the same stop, with how long each is: **Also direct: 51 in 3 min**.
+Any of them gets you there without a change. The timeline lists them under each
+bus ride too. The trip still shows the stops of the bus you planned.
+
 ## Walks
 
 A trip from [Navigate](nav.md) starts with the walk to your first stop, has the

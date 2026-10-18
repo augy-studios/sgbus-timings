@@ -45,6 +45,9 @@ function toOption(it) {
       minutes,
       path: stops.map((p) => [p.lat, p.lon]),
       names: stops.map((p) => p.name || ""),
+      // A bus leg's stop codes too, as the router's have them, so the trip's timeline can
+      // open each stop's timings. Null for a stop without a five-digit code.
+      ...(bus && { codes: stops.map((p) => (/^\d{5}$/.test(p.stopCode || "") ? p.stopCode : null)) }),
     };
   });
   const rides = legs.filter((l) => l.mode !== "walk");

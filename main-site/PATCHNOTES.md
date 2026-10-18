@@ -9,6 +9,15 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 18 October 2026: Direct buses on trips, timeline fix
+
+### Web app
+
+- **Other direct buses** - On a trip, while you wait at the stop, the trip bar lists the other buses that go straight to the same stop, with how long each is: **Also direct: 51 in 3 min**. The timeline lists them under each bus ride too.
+- **Timeline stops open their timings again** - On a trip, tapping a bus stop on the timeline shows that stop's timings for your bus again. Some trips' stops, such as ways found by OneMap in Navigate, were plain names that did nothing when tapped. A trip already under way gets its stops back too.
+
+---
+
 ## 18 October 2026: Picture-in-picture fix
 
 ### Android app

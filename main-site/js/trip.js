@@ -857,6 +857,9 @@
   let boardCheckedAt = 0;
   let boardEta = null; // the last timing heard, to check more often once it's close
   let boardAsking = false;
+  // The other direct buses' next arrivals at the stop, from the same check:
+  // { leg, at, etas: { "51": ms } }.
+  let alsoHeard = null;
   async function watchBoard() {
     if (!trip || !waitingForBus() || boardAsking) return;
     const every = boardEta != null && boardEta <= BOARD_NEAR_MS ? BOARD_CHECK_NEAR_MS : BOARD_CHECK_MS;
@@ -868,11 +871,19 @@
     const legAt = trip.leg;
     const leg = trip.legs[legAt];
     try {
-      const res = await fetch(`/api/bus-arrivals?stop=${encodeURIComponent(leg.board)}&service=${encodeURIComponent(leg.service)}`, { cache: "no-store" });
+      // Every bus at the stop, with the other direct buses (directBuses) wanted too.
+      const also = directBuses(leg);
+      const only = also.length ? "" : `&service=${encodeURIComponent(leg.service)}`;
+      const res = await fetch(`/api/bus-arrivals?stop=${encodeURIComponent(leg.board)}${only}`, { cache: "no-store" });
       if (!res.ok) return;
-      const svc = (await res.json()).services?.find((s) => String(s.serviceNo).toUpperCase() === String(leg.service).toUpperCase());
-      const eta = svc?.next?.eta_ms;
+      const services = (await res.json()).services || [];
+      const etaOf = (no) => services.find((s) => String(s.serviceNo).toUpperCase() === String(no).toUpperCase())?.next?.eta_ms;
+      const eta = etaOf(leg.service);
       boardEta = eta ?? null;
+      if (trip === asked && trip.leg === legAt && also.length) {
+        alsoHeard = { leg: legAt, at: Date.now(), etas: Object.fromEntries(also.map((no) => [no, etaOf(no)])) };
+        render();
+      }
       // Checked again after the wait: still the same leg, and still not on board.
       if (trip !== asked || trip.leg !== legAt || eta == null || !waitingForBus()) return;
       if (eta <= BOARD_MS && eta > BOARD_GONE_MS) readyToBoard(leg, eta);
@@ -1362,6 +1373,57 @@
   // ---------- the trip bar ----------
 
   // The trip bar's line: where you are on this part, or the alert while it stands.
+  // Other buses that go straight from a bus leg's stop to where it's left, from the route
+  // list (js/network.js): any of them gets you there without a change. Worked out once the
+  // routes are in, and kept with the leg.
+  function directBuses(leg) {
+    if (leg.kind !== "bus" || !leg.service || !leg.board || !leg.alight) return [];
+    if (leg.also) return leg.also;
+    if (!window.BusNet?.isReady()) return [];
+    const own = String(leg.service).toUpperCase();
+    leg.also = BusNet.servicesAtStop(leg.board).filter((no) => no.toUpperCase() !== own && BusNet.directions(no).some((dir) => {
+      const stops = BusNet.runStops(no, dir);
+      const i = stops.indexOf(leg.board);
+      return i !== -1 && stops.indexOf(leg.alight, i + 1) !== -1;
+    }));
+    return leg.also;
+  }
+
+  // The direct buses for the bar while you wait at the stop, soonest first, each with its
+  // time while the last check is fresh: "Also direct: 51 in 3 min, 63".
+  function alsoText(leg) {
+    const also = directBuses(leg);
+    if (!also.length) return "";
+    const heard = alsoHeard?.leg === trip.leg && Date.now() - alsoHeard.at < 2 * BOARD_CHECK_MS ? alsoHeard : null;
+    const left = (no) => {
+      const eta = heard?.etas[no];
+      return eta == null ? null : eta - (Date.now() - heard.at);
+    };
+    const buses = also
+      .map((no) => ({ no, ms: left(no) }))
+      .filter(({ ms }) => ms == null || ms > BOARD_GONE_MS)
+      .sort((a, b) => (a.ms ?? Infinity) - (b.ms ?? Infinity));
+    if (!buses.length) return "";
+    const when = (ms) => (ms == null ? "" : ms <= 60 * 1000 ? " arriving" : ` in ${Math.round(ms / 60000)} min`);
+    return `Also direct: ${buses.map(({ no, ms }) => no + when(ms)).join(", ")}`;
+  }
+
+  // The route list, for the stops' codes on the timeline and the direct buses; asked for
+  // once a trip, then everything's drawn again with them.
+  let routesAsked = false;
+  function needRoutes() {
+    if (routesAsked || !window.BusNet || BusNet.isReady()) return;
+    if (!trip.legs.some((leg) => leg.kind === "bus")) return;
+    routesAsked = true;
+    BusNet.load()
+      .then(() => {
+        if (!trip) return;
+        builtLeg = null;
+        render();
+      })
+      .catch(() => {});
+  }
+
   function statusText(message) {
     const leg = trip.legs[trip.leg];
     const left = stopsLeft();
@@ -1386,7 +1448,13 @@
       nativeText = status;
       AppBridge.call("Trip", "update", { title: trip.title, text: status }).catch(() => {});
     }
+    needRoutes();
     const notes = [];
+    // While you wait at the stop: the other buses that go straight there.
+    if (leg.kind === "bus" && !trip.boarded && target() < 0.5) {
+      const also = alsoText(leg);
+      if (also) notes.push(`${also}.`);
+    }
     if (!enabled()) notes.push("Get Off Alert is off in Settings.");
     if (trip.noLocation) notes.push("No location: going by the clock.");
     else if (Date.now() - trip.lastFixAt > FIX_STALE_MS && trip.lastFixAt) notes.push("Location weak: going by the clock.");
@@ -1412,6 +1480,22 @@
     return leg.names?.[i] || (i === last ? leg.to : i === 0 ? (isWalk(leg) ? "Where you set off" : "Where you got on") : `Stop ${i + 1}`);
   }
 
+  // A bus leg's stop codes, one per point, for the timeline's buttons: its own, or for a leg
+  // without them (a OneMap way, or a trip from before they were sent), worked out from the
+  // bus's route (js/network.js) by where it's boarded and left. Null if neither fits.
+  function stopCodes(leg) {
+    if (leg.kind !== "bus") return null;
+    if (leg.codes?.length === leg.points.length) return leg.codes;
+    if (!leg.service || !leg.board || !leg.alight || !window.BusNet?.isReady()) return null;
+    for (const dir of BusNet.directions(leg.service)) {
+      const stops = BusNet.runStops(leg.service, dir);
+      const i = stops.indexOf(leg.board);
+      const j = i === -1 ? -1 : stops.indexOf(leg.alight, i + 1);
+      if (j !== -1 && j - i + 1 === leg.points.length) return (leg.codes = stops.slice(i, j + 1));
+    }
+    return null;
+  }
+
   // Every leg from this one on, each a column of its stops. Only this leg has the dot.
   function buildTimeline() {
     const box = $("#tripTimeline");
@@ -1421,6 +1505,8 @@
         const last = leg.points.length - 1;
         const final = trip.leg + k === trip.legs.length - 1;
         const alertAt = last - ALERT_STOPS;
+        const codes = stopCodes(leg);
+        const also = directBuses(leg);
         const stops = leg.points
           .map((_, i) => {
             const tag = i === last
@@ -1429,7 +1515,7 @@
                 ? `<span class="tlTag">${window.icon("bell")} Alert</span>`
                 : "";
             // A bus stop with its code: a button to its timings for this bus (init).
-            const code = leg.kind === "bus" && leg.codes?.length === leg.points.length ? leg.codes[i] : null;
+            const code = codes?.[i] || null;
             const name = code
               ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(leg.service || "")}" title="Timings for ${esc(leg.label)} here">${esc(stopName(leg, i))}</button>`
               : `<span class="tlName">${esc(stopName(leg, i))}</span>`;
@@ -1439,6 +1525,7 @@
         return (
           `<section class="tlLeg${k === 0 ? " current" : ""}">` +
           `<p class="tlHead">${window.icon(leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus")} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
+          (also.length ? `<p class="tlAlso">Also direct: ${also.map(esc).join(", ")}</p>` : "") +
           `<ol class="tlStops"><span class="tlTrack"><span class="tlDone"></span></span>${stops}` +
           (k === 0 ? `<span class="tlDot" aria-hidden="true"></span>` : "") +
           `</ol></section>`
