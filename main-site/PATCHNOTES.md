@@ -13,7 +13,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Android app 2.1.2
 
-- **Back from picture-in-picture, the right size** - Opening the app again from its small picture-in-picture window no longer leaves the page zoomed in, with the side buttons cut off and the page scrolling every way. It comes back at its usual size, where you left it.
+- **Back from picture-in-picture, the right size** - Opening the app again from its small picture-in-picture window no longer leaves the page zoomed in, with the side buttons cut off and the page scrolling every way. It got worse each time; now it comes back at its usual size, where you left it, however often you go in and out. Needs the 2.1.2 app.
 
 ### Desktop app 2.1.2
 

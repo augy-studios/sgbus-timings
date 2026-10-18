@@ -16,6 +16,8 @@
   // The page's zoom is held at 1 while it's small, and until the window has grown back (2.1.2).
   // A window that small makes the WebView zoom out to fit, and growing back it kept a zoom that
   // no longer fit: the page came back zoomed in, the tray cut off, and it scrolled every way.
+  // The app's WebView mostly ignores the viewport tag, so MainActivity also puts its zoom back
+  // (onPictureInPictureModeChanged); this covers the rest, and puts the scroll back.
   const SETTLE_MS = 500;
   const viewport = document.querySelector('meta[name="viewport"]');
   const VIEWPORT = viewport?.content;
