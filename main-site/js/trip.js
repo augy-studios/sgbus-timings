@@ -1412,15 +1412,38 @@
     return leg.names?.[i] || (i === last ? leg.to : i === 0 ? (isWalk(leg) ? "Where you set off" : "Where you got on") : `Stop ${i + 1}`);
   }
 
+  // A bus leg's stop codes, one per point, for the timeline's buttons: its own, or for a leg
+  // without them (a OneMap way, or a trip from before they were sent), worked out from the
+  // bus's route (js/network.js) by where it's boarded and left. Null if neither fits.
+  function stopCodes(leg) {
+    if (leg.kind !== "bus") return null;
+    if (leg.codes?.length === leg.points.length) return leg.codes;
+    if (!leg.service || !leg.board || !leg.alight || !window.BusNet?.isReady()) return null;
+    for (const dir of BusNet.directions(leg.service)) {
+      const stops = BusNet.runStops(leg.service, dir);
+      const i = stops.indexOf(leg.board);
+      const j = i === -1 ? -1 : stops.indexOf(leg.alight, i + 1);
+      if (j !== -1 && j - i + 1 === leg.points.length) return (leg.codes = stops.slice(i, j + 1));
+    }
+    return null;
+  }
+
   // Every leg from this one on, each a column of its stops. Only this leg has the dot.
   function buildTimeline() {
     const box = $("#tripTimeline");
+    // A bus leg still without its codes gets them once the routes are in, and the timeline's
+    // built again with its stops as buttons.
+    const missing = trip.legs.slice(trip.leg).some((leg) => leg.kind === "bus" && leg.service && !stopCodes(leg));
+    if (missing && window.BusNet && !BusNet.isReady()) {
+      BusNet.load().then(() => trip && expanded && buildTimeline()).catch(() => {});
+    }
     box.innerHTML = trip.legs
       .slice(trip.leg)
       .map((leg, k) => {
         const last = leg.points.length - 1;
         const final = trip.leg + k === trip.legs.length - 1;
         const alertAt = last - ALERT_STOPS;
+        const codes = stopCodes(leg);
         const stops = leg.points
           .map((_, i) => {
             const tag = i === last
@@ -1429,7 +1452,7 @@
                 ? `<span class="tlTag">${window.icon("bell")} Alert</span>`
                 : "";
             // A bus stop with its code: a button to its timings for this bus (init).
-            const code = leg.kind === "bus" && leg.codes?.length === leg.points.length ? leg.codes[i] : null;
+            const code = codes?.[i] || null;
             const name = code
               ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(leg.service || "")}" title="Timings for ${esc(leg.label)} here">${esc(stopName(leg, i))}</button>`
               : `<span class="tlName">${esc(stopName(leg, i))}</span>`;

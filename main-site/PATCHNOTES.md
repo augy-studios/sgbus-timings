@@ -9,6 +9,14 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 18 October 2026: Trip timeline fix
+
+### Web app
+
+- **Timeline stops open their timings again** - On a trip, tapping a bus stop on the timeline shows that stop's timings for your bus again. Some trips' stops, such as ways found by OneMap in Navigate, were plain names that did nothing when tapped. A trip already under way gets its stops back too.
+
+---
+
 ## 18 October 2026: Picture-in-picture fix
 
 ### Android app
