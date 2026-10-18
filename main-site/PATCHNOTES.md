@@ -1,11 +1,19 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 18 October 2026**
+**Latest update: 19 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 19 October 2026: Desktop links shared with other UwU apps
+
+### Desktop app
+
+- **Other UwU apps' links reach them** - With another UwU desktop app installed, such as uwuPromptr, a `uwu://` link for it now opens that app rather than SG Bus Timings, whichever of the two you opened last. Links for SG Bus Timings open it as before.
 
 ---
 

@@ -10,7 +10,8 @@
 //   button once an update's downloaded, and minimise, maximise and close
 //   on Windows and Linux (titlebar.html);
 // - links to anywhere but the site opening in your own browser;
-// - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink);
+// - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink), and other
+//   UwU apps' uwu:// links passed on to them (links.js);
 // - checking for its own updates (updater.js), every hour and from the tray's "Check for
 //   updates...", with a notification when there's one, unless the site's "New versions of the
 //   app" is off (2.1.1);
@@ -33,6 +34,8 @@ const updater = require('./updater');
 const widgets = require('./widgets');
 const glance = require('./glance');
 const location = require('./location');
+const links = require('./links');
+const { readSettings, writeSettings } = require('./settings');
 
 const SITE = 'https://sgbus.uwuapps.org';
 const ORIGIN = new URL(SITE).origin;
@@ -48,7 +51,8 @@ let refreshBar = () => {}; // sends the title bar what it shows again (createWin
 let refreshTrayMenu = () => {}; // builds the tray's menu again (createTray)
 let quitting = false;
 // uwu://sgbus/ links. Windows, macOS and Linux give a scheme to one app only, unlike Android,
-// which shares uwu:// out by host, so this answers every uwu:// link and opens only sgbus's.
+// which shares uwu:// out by host, so this answers every uwu:// link, opens sgbus's, and hands
+// the rest to the UwU app that held uwu:// before it (links.js).
 const SCHEME = 'uwu';
 const LINK_HOST = 'sgbus';
 const linkIn = (argv) => argv.find((a) => a.toLowerCase().startsWith(`${SCHEME}://`)) || null;
@@ -76,9 +80,12 @@ function fromAppLink(link) {
   return `${SITE}/#${rest}`;
 }
 
-// A link while the app's open: the page it names, in the window there.
+// A link while the app's open: the page it names, in the window there. Another UwU app's link
+// is handed on to it, with this window left where it was; with nobody to hand it to, the window
+// comes forward as for any link.
 function openLink(link) {
   const target = fromAppLink(link);
+  if (!target && links.passOn(link)) return;
   if (!win || !target) return showWindow();
   const hash = target.startsWith(`${SITE}/#`) ? target.slice(SITE.length + 1) : null;
   if (hash && isSite(page.getURL())) showWindow(hash);
@@ -106,26 +113,6 @@ function typedAddress(text) {
     return null;
   }
   return /^https?:$/.test(url.protocol) ? url.href : null;
-}
-
-// ---------- settings: where the window was, and the tray hint shown once ----------
-
-const settingsFile = () => path.join(app.getPath('userData'), 'settings.json');
-
-function readSettings() {
-  try {
-    return JSON.parse(fs.readFileSync(settingsFile(), 'utf8'));
-  } catch {
-    return {};
-  }
-}
-
-function writeSettings(changes) {
-  try {
-    fs.writeFileSync(settingsFile(), JSON.stringify({ ...readSettings(), ...changes }));
-  } catch {
-    // Not kept: the window opens at its usual size next time.
-  }
 }
 
 // ---------- the window ----------
@@ -603,14 +590,21 @@ if (!app.requestSingleInstanceLock()) {
   });
   // macOS: clicking the Dock icon with the window hidden.
   app.on('activate', () => showWindow());
-  // uwu:// links come here. The installers register it too; this keeps it so after an update
-  // or a move. Run from source (npm start), Windows has to be told the script as well.
-  if (process.defaultApp && process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(SCHEME, process.execPath, [path.resolve(process.argv[1])]);
-  } else {
-    app.setAsDefaultProtocolClient(SCHEME);
-  }
   app.whenReady().then(() => {
+    // Started only to carry another UwU app's link: hand it over and go, before the window
+    // or the tray.
+    if (startLink && !fromAppLink(startLink) && links.passOn(startLink)) {
+      quitting = true;
+      app.quit();
+      return;
+    }
+    // Which app held uwu:// before this one, then uwu:// for this one, at every start (the
+    // installers register it too; this keeps it so after an update, a move, or another UwU
+    // app taking it). The name is what every copy of this app's handler has in it: the install
+    // folder and .app are "SG Bus Timings" but the .deb's menu entry is sgbus-timings.desktop,
+    // so "timings", which both share. Either alone would miss the other, take this app for
+    // another, and hand its links back to itself.
+    links.init({ name: 'timings' }).catch(() => {});
     session.defaultSession.setPermissionRequestHandler((wc, permission, done, details) => {
       done(ALLOWED.has(permission) && isSite(details.requestingUrl || wc.getURL()));
     });

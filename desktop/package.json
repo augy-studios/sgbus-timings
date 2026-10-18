@@ -33,6 +33,8 @@
       "widgets.js",
       "glance.js",
       "location.js",
+      "links.js",
+      "settings.js",
       "offline.html",
       "titlebar.html",
       "titlebar.js",

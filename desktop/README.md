@@ -67,12 +67,13 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   them (`fromAppLink` in `main.js`). On Windows the app registers the `uwu` scheme for your
   account each time it starts, so links work once it's been opened once (the `.exe` installer
   opens it as it finishes; after the `.msi`, open it yourself);
-  on Linux the `.deb`'s menu entry declares it (`protocols` in `package.json`). Windows and Linux
-  give a scheme to one app only, unlike Android, which shares `uwu://` out by host: so the
-  desktop app takes every `uwu://` link on the computer, and only opens `sgbus`'s. If
-  another UwU App ever wants `uwu://` on the desktop, the apps will need one shared handler
-  that passes each link on by its host. An AppImage only gets links once it's been set up
-  in the desktop's menu, as AppImageLauncher or Gear Lever do.
+  on Linux the `.deb`'s menu entry declares it (`protocols` in `package.json`). Windows, macOS
+  and Linux give a scheme to one app only, unlike Android, which shares `uwu://` out by host,
+  so every UwU desktop app shares `links.js` (copied as is from uwuPromptr): as it starts,
+  the app notes which app held `uwu://` (kept as `linkHandoff` in `settings.json`), then takes
+  it, and hands every link that isn't `sgbus`'s on to that app. With two UwU apps installed,
+  whichever started last holds the scheme and passes the other its links. An AppImage only
+  gets links once it's been set up in the desktop's menu, as AppImageLauncher or Gear Lever do.
 
 The page reaches the app only through `window.sgbusDesktop` (`preload.js`), and `main.js`
 only answers the site's own origin. The site's location and notification permissions are
