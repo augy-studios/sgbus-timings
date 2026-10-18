@@ -86,6 +86,10 @@ the Android app: see [App links](links.md#app-links). On Windows they work once
 you've opened the app once. An AppImage needs adding to your desktop's app menu
 first, as AppImageLauncher or Gear Lever do.
 
+From version 2.1.2, with another UwU app installed on the computer too, such as
+uwuPromptr, its `uwu://` links open that app, not this one, whichever of the
+two you opened last.
+
 ## Updates
 
 The app checks for a new version when it starts, then every hour (from 2.1.1),

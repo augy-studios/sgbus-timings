@@ -9,11 +9,15 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 19 October 2026: Desktop links shared with other UwU apps
+## 19 October 2026: Apps 2.1.2, desktop links shared with other UwU apps
 
-### Desktop app
+### Desktop app 2.1.2
 
 - **Other UwU apps' links reach them** - With another UwU desktop app installed, such as uwuPromptr, a `uwu://` link for it now opens that app rather than SG Bus Timings, whichever of the two you opened last. Links for SG Bus Timings open it as before.
+
+### Android app 2.1.2
+
+- **Same number as the desktop app** - Nothing new of its own: Android already sends each `uwu://` link to the app it's for.
 
 ---
 
