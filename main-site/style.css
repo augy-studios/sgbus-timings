@@ -487,7 +487,9 @@ body.modal-open { overflow: hidden; }
 :root[data-tray-hide~="simplygo"] [data-tray-extra="simplygo"],
 :root[data-tray-hide~="telegram"] [data-tray-extra="telegram"],
 :root[data-tray-hide~="coffee"] [data-tray-extra="coffee"],
-:root[data-tray-hide~="guide"] [data-tray-extra="guide"] { display: none !important; }
+:root[data-tray-hide~="guide"] [data-tray-extra="guide"],
+:root[data-tray-hide~="nearstops"] [data-tray-extra="nearstops"],
+:root[data-tray-hide~="routines"] [data-tray-extra="routines"] { display: none !important; }
 
 /* Clipped at the screen's edge: the tray tucked away slides past it, and anything out there
    would widen the page, which a phone then zooms out to fit, modals and all. Pinned to the
@@ -1777,6 +1779,8 @@ html[data-telegram] .telegramBtn { display: none; }
 select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .routineDays .mode-btn { padding: 8px 2px; font-size: 0.8rem; }
 .trayExtrasPick .mode-btn { text-align: center; }
+/* Routines' form for another, under the ones set (js/reminders.js). */
+.routineFormHead { margin-top: 16px; font-size: 1rem; }
 /* Home and Work's place suggestions: opaque, as in the planner's cards. */
 .modal .acList {
     background: color-mix(in srgb, var(--brand) 6%, var(--bg));

@@ -1280,7 +1280,8 @@ function syncTraySideButtons() {
     syncTrayExtras();
 }
 
-// The tray's optional buttons, SimplyGo, Telegram, Buy Augy a Coffee and the guide, each
+// The tray's optional buttons, SimplyGo, Telegram, Buy Augy a Coffee, the guide, and the
+// Android app's Timings near a stop and Routines (js/reminders.js), each
 // turned off or on in Settings: kept as data-tray-hide on <html>, "telegram coffee", which
 // index.html's head sets again before first paint.
 const trayHidden = () => (page.getAttribute('data-tray-hide') || '').split(' ').filter(Boolean);

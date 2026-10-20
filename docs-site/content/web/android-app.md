@@ -99,16 +99,19 @@ like, each for its own stop.
 
 ## Reminders
 
-From version 2.1.0, in **Settings**, the app can tell you things with itself
-closed. Each is off until you turn it on, and asks for what it needs then.
+From version 2.1.0, the app can tell you things with itself closed. Each is off
+until you turn it on, and asks for what it needs then. **Timings near a stop**
+and **Routines** have buttons of their own in the Edge Tray, a crosshair and a
+clock, under the line; the rest are in **Settings**. Either button can be turned off in **Settings** >
+**Edge Tray buttons**.
 
 <figure>
 <img src="/screenshots/web/android-reminders.png" alt="The app's reminders in Settings: Timings near a stop with 1 stop watched, Time to leave turned on, On a bus? turned off, and two last bus reminders, for the 14 at Bedok Int and the 10 at Tampines Int, each with a button to remove it." width="358" height="494" loading="lazy">
 <figcaption>The reminders in Settings, each off until you turn it on.</figcaption>
 </figure>
 
-- **Timings near a stop**: tap **Pick stops** and choose some of your favourite
-  stops. As you walk up to one (within about 120 m), a quiet notification shows
+- **Timings near a stop**: tap its button in the Edge Tray and tick some of your
+  favourite stops, then **Save**. As you walk up to one (within about 120 m), a quiet notification shows
   its next buses, refreshed every minute until you leave. It needs location
   **All the time**, as it's watched with the app closed.
 - **Time to leave**: for events in your phone's calendar with a place for a
@@ -123,12 +126,12 @@ closed. Each is off until you turn it on, and asks for what it needs then.
   time. You're reminded 20 minutes before its last bus there, every day it runs.
   Settings lists them, to remove. Public holidays run Sunday's times, which the
   reminder doesn't know about.
-- **Routines** (from version 2.2.0): tap **Add a routine**, pick a stop (the one
+- **Routines** (from version 2.2.0): tap its button in the Edge Tray. It lists
+  your routines, to remove, and under **Add a routine** you pick a stop (the one
   you have open, or a favourite), the buses you want or none for all of them, a
-  time and the days, such as 7:45 on weekdays. At that time a notification shows
-  the stop's next buses; tap it for their timings. Settings lists them, to
-  remove. Like the [Telegram bot's routines](../bot/routines.md), but on your
-  phone.
+  time and the days, such as 7:45 on weekdays, then **Add**. At that time a
+  notification shows the stop's next buses; tap it for their timings. Like the
+  [Telegram bot's routines](../bot/routines.md), but on your phone.
 
 ### Location turned off
 

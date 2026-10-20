@@ -1,11 +1,23 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 20 October 2026**
+**Latest update: 21 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 21 October 2026: Routines and Timings near a stop in the Edge Tray
+
+### Android app
+
+No update needed: these reach the app from the web.
+
+- **Their own buttons** - **Timings near a stop** and **Routines** move out of Settings onto buttons of their own in the Edge Tray, a crosshair and a clock, each opening its own window.
+- **Routines in one place** - Its window lists your routines, to remove, with **Add a routine** underneath, and stays open after adding so you can set up another.
+- **Turn them off** - Either button can be turned off in Settings, **Edge Tray buttons**, like SimplyGo and the guide.
 
 ---
 

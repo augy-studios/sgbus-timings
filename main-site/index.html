@@ -137,6 +137,10 @@
                 <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
                 <button id="placesBtn" class="glass-btn" type="button" aria-label="Places" title="Places"><span data-icon="bookmark"></span></button>
                 <span class="tray-rule" aria-hidden="true"></span>
+                <!-- The Android app's Timings near a stop (2.1.0) and Routines (2.2.0), where it has
+                     them (js/reminders.js). Either can be turned off in Settings, Edge Tray buttons -->
+                <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Timings near a stop" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="locate"></span></button>
+                <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Routines" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="clock"></span></button>
                 <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js) -->
                 <button id="cardBtn" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
                 <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.1.0
@@ -584,10 +588,9 @@
                 <p class="mode-note">Give the phone a firm shake to refresh the timings on screen.</p>
             </div>
             <!-- The Android app's reminders: js/reminders.js -->
+            <!-- Timings near a stop and Routines have their own buttons in the Edge Tray, and their
+                 own modals below -->
             <div id="remindersSettings" hidden>
-                <p class="modal-section-label" data-need="nearstops">Timings near a stop</p>
-                <button id="nearStopsBtn" class="iconBtn settingsWide" type="button" data-need="nearstops"><span data-icon="pin"></span> <span id="nearStopsLabel">Pick stops</span></button>
-                <p class="mode-note" data-need="nearstops">As you walk up to a favourite stop you pick, a quiet notification shows its next buses. Needs location all the time.</p>
                 <p class="modal-section-label">Time to leave</p>
                 <div class="mode-toggle">
                     <button class="mode-btn" type="button" data-leavetime="on" aria-pressed="false">On</button>
@@ -603,10 +606,6 @@
                 <p class="modal-section-label">Last bus reminders</p>
                 <div id="lastBusList" class="lastBusList"></div>
                 <p class="mode-note">Tap the bell by a bus's last bus time at a stop: a reminder <span id="lastBusLead">20</span> minutes before it, every day it runs.</p>
-                <p class="modal-section-label" data-need="routines">Routines</p>
-                <div id="routineList" class="lastBusList" data-need="routines"></div>
-                <button id="routineAddBtn" class="iconBtn settingsWide" type="button" data-need="routines"><span data-icon="clock"></span> Add a routine</button>
-                <p class="mode-note" data-need="routines">A stop&rsquo;s next buses as a notification at a time you set, on the days you pick: your stop at 7:45 on weekdays, say.</p>
                 <p id="remindersNote" class="remindersNote" role="status" hidden></p>
             </div>
             <p class="modal-section-label">Pin favourite stops in lists</p>
@@ -626,6 +625,9 @@
                 <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true">Telegram bot</button>
                 <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true">Buy Augy a Coffee</button>
                 <button class="mode-btn" type="button" data-tray-show="guide" aria-pressed="true">Guide</button>
+                <!-- Only where the app has them (js/reminders.js) -->
+                <button class="mode-btn" type="button" data-tray-show="nearstops" aria-pressed="true" hidden>Timings near a stop</button>
+                <button class="mode-btn" type="button" data-tray-show="routines" aria-pressed="true" hidden>Routines</button>
             </div>
             <p class="mode-note">Turn off the buttons you don&rsquo;t use, for a tidier tray. The guide is also at guide.sgbus.uwuapps.org.</p>
 
@@ -836,7 +838,8 @@
         </div>
     </div>
 
-    <!-- Timings near a stop: which favourite stops to watch (js/reminders.js) -->
+    <!-- Timings near a stop, from its Edge Tray button: which favourite stops to watch, the
+         Android app's only (js/reminders.js, NearStops.java) -->
     <div id="nearStopsModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="nearStopsTitle">
             <div class="modal-head">
@@ -845,21 +848,29 @@
                     <span data-icon="close"></span>
                 </button>
             </div>
+            <p class="mode-note">As you walk up to a favourite stop you pick, a quiet notification shows its next buses.</p>
             <div id="nearStopsList" class="nearStopsList"></div>
+            <p id="nearStopsNote" class="remindersNote" role="status" hidden></p>
             <button id="nearStopsSave" class="btn" type="button">Save</button>
             <p class="mode-note">Up to 20. Walk within about 120 m of one and its next buses show in a quiet notification, refreshed every minute until you leave. Android asks for location all the time, as it's watched with the app closed.</p>
         </div>
     </div>
 
-    <!-- A routine, the Android app's only (js/reminders.js, Routines.java) -->
+    <!-- Routines, from their Edge Tray button: the ones set, and a form for another, the Android
+         app's only (js/reminders.js, Routines.java) -->
     <div id="routineModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="routineTitle">
             <div class="modal-head">
-                <h2 id="routineTitle">Add a routine</h2>
+                <h2 id="routineTitle">Routines</h2>
                 <button class="icon-btn small" type="button" data-close-modal="routineModal" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
+            <p class="mode-note">A stop&rsquo;s next buses as a notification at a time you set, on the days you pick: your stop at 7:45 on weekdays, say.</p>
+            <div id="routineList" class="lastBusList"></div>
+            <p id="routinesNote" class="remindersNote" role="status" hidden></p>
+            <div id="routineForm">
+            <p class="modal-section-label routineFormHead">Add a routine</p>
             <label class="modal-section-label" for="routineStop">Stop</label>
             <select id="routineStop" class="input settingsInput"></select>
             <label class="modal-section-label" for="routineBuses">Buses</label>
@@ -877,8 +888,9 @@
                 <button class="mode-btn" type="button" data-day="7" aria-pressed="false">Sun</button>
             </div>
             <p id="routineError" class="remindersNote" role="alert" hidden></p>
-            <button id="routineSave" class="btn" type="button">Save</button>
+            <button id="routineSave" class="btn" type="button">Add</button>
             <p class="mode-note">At that time, on those days, a notification shows the stop&rsquo;s next buses. Tap it for their timings.</p>
+            </div>
         </div>
     </div>
 

@@ -1,11 +1,17 @@
-// The Android app's reminders (2.1.0 and later), set from Settings and a stop's timings, and
-// run by the app itself with the page closed (RemindersPlugin.java, through js/app-bridge.js):
+// The Android app's reminders (2.1.0 and later), set from Settings, the Edge Tray and a stop's
+// timings, and run by the app itself with the page closed (RemindersPlugin.java, through
+// js/app-bridge.js):
 //
-//   Timings near a stop  the favourite stops you pick, watched by geofence (NearStops.java)
+//   Timings near a stop  the favourite stops you pick, watched by geofence (NearStops.java);
+//                        its own Edge Tray button and modal
 //   Time to leave        for the phone's calendar events with a place (LeaveTime.java)
 //   "On a bus?"          offers a trip when you seem to be riding (OnABus.java)
 //   Last bus             a bell by a bus's last bus time at a stop (LastBus.java)
-//   Routines             a stop's next buses at a time, on the days picked (Routines.java, 2.2.0)
+//   Routines             a stop's next buses at a time, on the days picked (Routines.java,
+//                        2.2.0); its own Edge Tray button and modal
+//
+// The two Edge Tray buttons show only where the app has the feature, and either can be
+// turned off in Settings' Edge Tray buttons (script.js, setTrayExtra).
 //
 // Also here: the Get Off Alert's sound in earphones only (js/trip.js asks earphonesOnly()),
 // and Home and Work handed to the app for its Bus home and Bus to work shortcuts and Quick
@@ -70,20 +76,24 @@
     calendar: 'Time to leave needs to read this phone’s calendar: allow Calendar for SG Bus Timings.',
     activity: '“On a bus?” needs Physical activity: allow it for SG Bus Timings.',
   };
+  const NO_NOTIFICATIONS = 'Notifications are off for SG Bus Timings, so these reminders can’t show.';
 
-  function note(text, settings = false) {
-    const el = $('#remindersNote');
+  // Where each is said: Settings, Timings near a stop's modal, or Routines'.
+  const NOTES = { settings: '#remindersNote', near: '#nearStopsNote', routines: '#routinesNote' };
+
+  function note(text, settings = false, where = 'settings') {
+    const el = $(NOTES[where]);
     el.hidden = !text;
     el.innerHTML = text ? `${esc(text)}${settings ? ` <button type="button" class="iconBtn" data-reminders-settings>${ico('settings')} Open settings</button>` : ''}` : '';
   }
 
-  function failed(err) {
+  function failed(err, where = 'settings') {
     const need = err?.data?.need;
-    if (err?.code === 'permission' && NEEDS[need]) note(NEEDS[need], true);
-    else note(err?.message || 'Couldn’t set that up. Try again.');
+    if (err?.code === 'permission' && NEEDS[need]) note(NEEDS[need], true, where);
+    else note(err?.message || 'Couldn’t set that up. Try again.', false, where);
   }
 
-  // ---------- the switches in Settings ----------
+  // ---------- the switches in Settings, and the two modals ----------
 
   let status = null;
 
@@ -93,15 +103,13 @@
     syncSwitches();
     renderLastBus();
     renderRoutines();
-    const n = read(NEAR_KEY, []).length;
-    $('#nearStopsLabel').textContent = n ? `${n} stop${n === 1 ? '' : 's'} watched · change` : 'Pick stops';
-    if (status && !status.notifications && (status.nearStops.length || status.lastBus.length || status.routines || status.leaveTime || status.onABus)) {
-      note('Notifications are off for SG Bus Timings, so these reminders can’t show.', true);
-    } else if (status && status.nearStops.length && !status.background) {
-      note(NEEDS.background, true);
-    } else {
-      note('');
-    }
+    const off = status && !status.notifications;
+    // Each place says what stops its own reminders.
+    note(off && (status.lastBus.length || status.leaveTime || status.onABus) ? NO_NOTIFICATIONS : '', true, 'settings');
+    if (off && status.nearStops.length) note(NO_NOTIFICATIONS, true, 'near');
+    else if (status && status.nearStops.length && !status.background) note(NEEDS.background, true, 'near');
+    else note('', false, 'near');
+    note(off && status.routines ? NO_NOTIFICATIONS : '', true, 'routines');
   }
 
   function syncSwitches() {
@@ -139,23 +147,27 @@
       : '<p class="mode-note">Save some stops to your favourites first, with the star on a stop’s timings.</p>';
     $('#nearStopsSave').hidden = !favs.length;
     openModal('nearStopsModal');
+    refresh();
   }
 
+  // Closes the modal once the app has them; what went wrong stays in it.
   async function saveNearStops() {
     const codes = [...document.querySelectorAll('#nearStopsList input:checked')].map((i) => i.value).slice(0, MAX_NEAR);
     const idx = await ensureStopsIndex().catch(() => ({}));
     const stops = codes.map((code) => ({ code, name: nameOf(code) || code, lat: idx[code]?.lat, lng: idx[code]?.lng }))
       .filter((s) => s.lat != null && s.lng != null);
-    closeModal('nearStopsModal');
-    note('');
+    note('', false, 'near');
     try {
       await call('nearStops', { stops });
       write(NEAR_KEY, stops.map((s) => s.code));
+      closeModal('nearStopsModal');
     } catch (err) {
       // Turned off rather than left half set up.
       write(NEAR_KEY, []);
       call('nearStops', { stops: [] }).catch(() => {});
-      failed(err);
+      [...document.querySelectorAll('#nearStopsList input')].forEach((i) => { i.checked = false; });
+      failed(err, 'near');
+      return;
     }
     refresh();
   }
@@ -234,13 +246,19 @@
         `${esc(r.name)} <span class="sub">${esc(r.code)}${r.buses.length ? ` · ${esc(r.buses.join(', '))}` : ''}</span></span>` +
         `<button type="button" class="icon-btn small" data-routine-remove="${i}" aria-label="Remove">${ico('close')}</button></div>`).join('')
       : '<p class="mode-note">None yet.</p>';
-    $('#routineAddBtn').hidden = !has('routines') || list.length >= MAX_ROUTINES;
+    $('#routineForm').hidden = list.length >= MAX_ROUTINES;
   }
 
   async function saveRoutines(list) {
     write(ROUTINE_KEY, list);
     renderRoutines();
-    await call('routines', { list }).catch(failed);
+    note('', false, 'routines');
+    try {
+      await call('routines', { list });
+    } catch (err) {
+      failed(err, 'routines');
+      return;
+    }
     refresh();
   }
 
@@ -252,7 +270,16 @@
     });
   }
 
-  function openRoutine() {
+  // The modal, from its Edge Tray button: the routines set, and the form for another, filled
+  // in afresh.
+  function openRoutines() {
+    resetRoutineForm();
+    renderRoutines();
+    openModal('routineModal');
+    refresh();
+  }
+
+  function resetRoutineForm() {
     // The stop on screen first, then the favourites.
     const options = [];
     if (current?.code) options.push({ code: current.code, name: nameOf(current.code) || current.code });
@@ -266,7 +293,6 @@
     $('#routineBuses').value = current?.service || '';
     setDays([1, 2, 3, 4, 5]);
     $('#routineError').hidden = true;
-    openModal('routineModal');
   }
 
   function addRoutine() {
@@ -281,8 +307,9 @@
       return;
     }
     const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-    closeModal('routineModal');
+    // The modal stays open, the new one in its list and the form ready for another.
     saveRoutines([...routines(), { id, code, name: nameOf(code) || code, buses, time, days }].slice(0, MAX_ROUTINES));
+    resetRoutineForm();
   }
 
   // ---------- setting up ----------
@@ -291,6 +318,11 @@
     $('#earphonesSetting').hidden = !has('earphones');
     $('#remindersSettings').hidden = !has('lastbus');
     document.querySelectorAll('#remindersSettings [data-need]').forEach((el) => { el.hidden = !has(el.dataset.need); });
+    // The Edge Tray buttons, and their switches in Settings' Edge Tray buttons.
+    for (const [feature, extra, btn] of [['nearstops', 'nearstops', '#nearStopsTrayBtn'], ['routines', 'routines', '#routinesTrayBtn']]) {
+      $(btn).hidden = !has(feature);
+      document.querySelector(`#trayExtrasPick [data-tray-show="${extra}"]`).hidden = !has(feature);
+    }
     syncEarphones();
     sendPlaces();
     // The app's copy of the last bus reminders, after an update or a clear of its data.
@@ -313,16 +345,21 @@
     }));
     document.querySelectorAll('[data-leavetime]').forEach((btn) => btn.addEventListener('click', () => setSwitch('leaveTime', btn.dataset.leavetime === 'on')));
     document.querySelectorAll('[data-onabus]').forEach((btn) => btn.addEventListener('click', () => setSwitch('onABus', btn.dataset.onabus === 'on')));
-    $('#nearStopsBtn').addEventListener('click', openNearStops);
+    $('#nearStopsTrayBtn').addEventListener('click', openNearStops);
     $('#nearStopsSave').addEventListener('click', saveNearStops);
-    $('#remindersSettings').addEventListener('click', (e) => {
+    $('#routinesTrayBtn').addEventListener('click', openRoutines);
+    // Open settings, wherever a note offers it: Settings or either modal.
+    document.addEventListener('click', (e) => {
       if (e.target.closest('[data-reminders-settings]')) AppBridge.call('SgBus', 'openSettings', { what: 'app' });
+    });
+    $('#remindersSettings').addEventListener('click', (e) => {
       const rm = e.target.closest('[data-lastbus-remove]');
       if (rm) removeLast(Number(rm.dataset.lastbusRemove));
+    });
+    $('#routineList').addEventListener('click', (e) => {
       const rr = e.target.closest('[data-routine-remove]');
       if (rr) saveRoutines(routines().filter((_, i) => i !== Number(rr.dataset.routineRemove)));
     });
-    $('#routineAddBtn').addEventListener('click', openRoutine);
     $('#routineSave').addEventListener('click', addRoutine);
     $('#routineDays').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-day]');
@@ -339,9 +376,10 @@
     new MutationObserver(() => {
       if (!$('#settingsModal').classList.contains('hidden')) refresh();
     }).observe($('#settingsModal'), { attributes: true, attributeFilter: ['class'] });
-    // Back from Android's settings.
+    // Back from Android's settings, to Settings or either modal.
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && !$('#settingsModal').classList.contains('hidden')) refresh();
+      const open = ['#settingsModal', '#nearStopsModal', '#routineModal'].some((id) => !$(id).classList.contains('hidden'));
+      if (document.visibilityState === 'visible' && open) refresh();
     });
   }
 
