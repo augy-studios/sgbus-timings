@@ -1,6 +1,6 @@
 from telethon import Button
 
-from .bus_stops import get_bus_stop_by_code
+from .bus_stops import get_bus_stop_by_code, same_place_stops
 from .buttons import make_button
 from .favourite_buses import list_favourite_buses
 from .favourite_prefs import get_pref
@@ -131,6 +131,12 @@ async def build_stop_view(
             Button.inline("🔄 Refresh", make_button("refresh", {"code": code, **here})),
         ]
     ]
+    # The other half of a stop split in two under one name, as Woodlands Int is: some of its
+    # buses only ever stop at the other code.
+    for other in same_place_stops(code):
+        buttons.append(
+            [Button.inline(f"🚏 Also {other['name']} ({other['code']})", make_button("stop", {"code": other["code"]}))]
+        )
     if wanted:
         buttons.append(
             [

@@ -146,6 +146,17 @@ function railRuns(nodes, stationNode) {
   return runs;
 }
 
+// Stops behind a checkpoint, for authorised people only: no way gets on or off at these, and
+// where `through` is false, none rides through them either; a run through one is cut in two.
+// The same as RESTRICTED in js/network.js and the Telegram bot's restricted.py.
+const CARGO_AREA = { through: false }; // Changi Airport's cargo area
+const MINDEF = { through: true };
+const RESTRICTED = {
+  95141: CARGO_AREA, 95061: CARGO_AREA, 95051: CARGO_AREA, 95041: CARGO_AREA,
+  95039: CARGO_AREA, 95049: CARGO_AREA, 95069: CARGO_AREA, 95149: CARGO_AREA,
+  43721: MINDEF, 43719: MINDEF,
+};
+
 function busRuns(nodes, busNode, payload) {
   const runs = [];
   for (const [serviceNo, dirs] of Object.entries(payload.runs || {})) {
@@ -158,18 +169,31 @@ function busRuns(nodes, busNode, payload) {
       // A loop ends where it started, but the route list keeps one row per stop.
       if (loopOrigin && codes[0] === loopOrigin && codes[codes.length - 1] !== loopOrigin) codes.push(loopOrigin);
       // Each stop's first and last bus (see when.js), kept beside it; the loop's end, never
-      // boarded at, borrows its start's.
-      const kept = codes.map((c, k) => [busNode.get(c), run.times?.[k] ?? run.times?.[0] ?? ""]).filter(([id]) => id != null);
-      const path = kept.map(([id]) => id);
-      const times = kept.map(([, t]) => t);
-      if (path.length < 2) continue;
-      const cum = [0];
-      for (let i = 1; i < path.length; i++) {
-        const a = nodes[path[i - 1]];
-        const b = nodes[path[i]];
-        cum.push(cum[i - 1] + haversine(a.lat, a.lng, b.lat, b.lng) / BUS_M_PER_MIN);
+      // boarded at, borrows its start's. Split into the parts the public can ride.
+      const parts = [[]];
+      codes.forEach((c, k) => {
+        const r = RESTRICTED[c];
+        if (r) {
+          if (!r.through && parts[parts.length - 1].length) parts.push([]);
+          return;
+        }
+        const id = busNode.get(c);
+        if (id != null) parts[parts.length - 1].push([id, run.times?.[k] ?? run.times?.[0] ?? ""]);
+      });
+      // Where the bus is going, even on the part before a cut.
+      const end = busNode.get(codes[codes.length - 1]);
+      for (const kept of parts) {
+        const path = kept.map(([id]) => id);
+        const times = kept.map(([, t]) => t);
+        if (path.length < 2) continue;
+        const cum = [0];
+        for (let i = 1; i < path.length; i++) {
+          const a = nodes[path[i - 1]];
+          const b = nodes[path[i]];
+          cum.push(cum[i - 1] + haversine(a.lat, a.lng, b.lat, b.lng) / BUS_M_PER_MIN);
+        }
+        runs.push({ mode: "B", key: `B:${serviceNo}`, route: serviceNo, dir: Number(dir), towards: nodes[end ?? path[path.length - 1]].name, nodes: path, cum, times });
       }
-      runs.push({ mode: "B", key: `B:${serviceNo}`, route: serviceNo, dir: Number(dir), towards: nodes[path[path.length - 1]].name, nodes: path, cum, times });
     }
   }
   return runs;

@@ -64,6 +64,18 @@ does not run today says so instead.
 In the [Android app](android-app.md#reminders), a bell beside it sets a
 reminder 20 minutes before that last bus, every day.
 
+## Notes on some stops
+
+Under the stop's name, a few stops carry a note:
+
+- **One place, two stops.** Some interchanges are two stops under one name,
+  each with buses of its own: Woodlands Int is 46008 and 46009. A button,
+  such as **Also Woodlands Int (46009)**, opens the other one.
+- **Authorised personnel only.** The stops inside Changi Airport's cargo
+  area, and MINDEF's on Gombak Drive, are only for people allowed in. The
+  [route planner](route-planner.md) never has you get on or off at one, and
+  never rides through the cargo area.
+
 ## Arriving from a list
 
 <figure>

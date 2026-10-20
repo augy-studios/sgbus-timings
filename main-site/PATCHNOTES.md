@@ -1,11 +1,34 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 19 October 2026**
+**Latest update: 20 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 20 October 2026: Which way each bus is going, split and restricted stops
+
+### Web app
+
+- **Which way it's going** - At a stop a bus calls at going both ways, such as 136 at S'goon Gdn Circus, each of its two listings says where it's heading under its number, **→ Punggol Int**, in a colour of its own, and the Incoming buses bar matches. Its first and last bus, and its **Route** button, are now for that way, not always the first.
+- **Loops passing twice** - Where a loop service passes on its way out and again on its way back, such as 73, each bus says which time round it's on: **Out to Lor 6 Toa Payoh** or **Back to Ang Mo Kio Int**. The departures board too.
+- **One place, two stops** - Woodlands Int is two stops, 46008 and 46009, with different buses. Each now has a button to the other, as does any stop sharing its name with one close by.
+- **Authorised personnel only** - The stops inside Changi Airport's cargo area, and MINDEF's on Gombak Drive, say so. The route planner and Navigate never have you get on or off at one, and never ride through the cargo area. Route lists mark them.
+- **Room to type** - With the side tray out on a phone, **Get Timings** moves under the search box rather than squeezing it to a few letters.
+- **Location, second try** - When your location can't be found at full accuracy, as indoors where GPS can't reach, it tries again with Wi-Fi and the mobile network before giving up.
+
+### Telegram bot
+
+- **Which way it's going** - A bus listed twice at a stop says where each is heading in its heading, `136 (GAS) 🔵 → Punggol Int`, with that way's first and last bus. A loop passing twice gets a **Way** row: 🔵 Out or 🔴 Back.
+- **One place, two stops** - Woodlands Int's two stops each say so, with a button to the other.
+- **Authorised personnel only** - Those stops say so, and routes never get on or off at one or ride through the cargo area.
+
+### Android and desktop apps
+
+- All of the above, with no app update needed.
 
 ---
 

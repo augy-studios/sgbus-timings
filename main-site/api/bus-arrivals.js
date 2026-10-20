@@ -43,7 +43,10 @@ export default async function handler(req, res) {
                         lng,
                         rough: !monitored, // italicise if true (no live GPS tracking)
                         origin: nb.OriginCode,
-                        dest: nb.DestinationCode
+                        dest: nb.DestinationCode,
+                        // 2 for a bus on its second time past this stop: a loop service on
+                        // its way back to its interchange.
+                        visit: Number(nb.VisitNumber) || null
                     };
                 })() : null;
 

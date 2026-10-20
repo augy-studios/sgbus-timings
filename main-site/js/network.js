@@ -189,9 +189,10 @@
   }
 
   // Today's first and last bus for a service at a stop, by Singapore's day of the week.
-  // Uses the lowest direction on the rare stop served by more than one.
-  function firstLast(serviceNo, code) {
-    for (const dir of directions(serviceNo)) {
+  // On a stop it calls at both ways, `want` says which direction; otherwise the lowest.
+  function firstLast(serviceNo, code, want = null) {
+    const dirs = directions(serviceNo);
+    for (const dir of dirs.includes(want) ? [want, ...dirs.filter((d) => d !== want)] : dirs) {
       const run = runs[serviceNo][dir];
       const i = run.stops.indexOf(code);
       if (i === -1) continue;
@@ -244,6 +245,34 @@
   const HUB_WALK_M = 400;
   const WALK_LIMIT_M = 200;
 
+  // ---- Stops the public can't use ----
+
+  // Behind a checkpoint, for authorised people only: no journey gets on or off at these, and
+  // where `through` is false, none rides through them either. Their timings show a note
+  // (script.js). The same as RESTRICTED in the Telegram bot's restricted.py and
+  // api/_nav/network.js.
+  const CARGO_AREA = { place: "Changi Airport's cargo area", through: false };
+  const MINDEF = { place: "MINDEF", through: true };
+  const RESTRICTED = {
+    95141: CARGO_AREA, 95061: CARGO_AREA, 95051: CARGO_AREA, 95041: CARGO_AREA,
+    95039: CARGO_AREA, 95049: CARGO_AREA, 95069: CARGO_AREA, 95149: CARGO_AREA,
+    43721: MINDEF, 43719: MINDEF,
+  };
+
+  const restricted = (code) => RESTRICTED[code] || null;
+
+  // The parts of a run a journey can ride, as lists of indexes into it: the stops nobody
+  // may get on or off at left out, and the run cut in two where nobody may ride through.
+  function publicParts(seq) {
+    const parts = [[]];
+    seq.forEach((code, i) => {
+      const r = RESTRICTED[code];
+      if (!r) parts[parts.length - 1].push(i);
+      else if (!r.through && parts[parts.length - 1].length) parts.push([]);
+    });
+    return parts.filter((p) => p.length >= 2);
+  }
+
   // ---- Graph, for the journey planner and stop counts ----
 
   // Every run of every service held as a list, with the distance ridden to each stop and
@@ -274,6 +303,9 @@
       }
     }
     const list = [];
+    // Each run as the bus runs it, restricted stops and all, for counting the stops a bus
+    // already chosen rides (stopsTo).
+    const whole = [];
     // In the Telegram bot's order (its SQL sorts service numbers as text, then direction),
     // so two journeys that tie mostly resolve the way the bot's do. Only mostly: Python's and
     // the browser's trig differ in the last digit, which can tip a near-tie either way.
@@ -290,19 +322,24 @@
         // terminus is only there as the first stop. Put it back on the end, or no journey
         // could ever ride a loop service home to its interchange.
         if (loopOrigin && seq[0] === loopOrigin && seq[seq.length - 1] !== loopOrigin) seq.push(loopOrigin);
-        const cum = [0];
-        let total = 0;
-        for (let i = 1; i < seq.length; i++) {
-          const a = coords[seq[i - 1]];
-          const b = coords[seq[i]];
-          if (a && b) total += haversine(a, b);
-          cum.push(total);
-        }
         // Each stop's first and last bus, for whether it's running at a time (js/when.js).
         // The loop's end, never boarded at, borrows its start's.
         const own = dirs[dir].times || [];
-        const times = seq.map((_, i) => own[i] ?? own[0] ?? '');
-        list.push({ bus: serviceNo, dir: Number(dir), stops: seq, cum, times });
+        const allTimes = seq.map((_, i) => own[i] ?? own[0] ?? '');
+        whole.push({ bus: serviceNo, dir: Number(dir), stops: seq });
+        // A run through somewhere nobody may ride becomes two, either side of it.
+        for (const part of publicParts(seq)) {
+          const stops = part.map((i) => seq[i]);
+          const cum = [0];
+          let total = 0;
+          for (let i = 1; i < stops.length; i++) {
+            const a = coords[stops[i - 1]];
+            const b = coords[stops[i]];
+            if (a && b) total += haversine(a, b);
+            cum.push(total);
+          }
+          list.push({ bus: serviceNo, dir: Number(dir), stops, cum, times: part.map((i) => allTimes[i]) });
+        }
       }
     }
     const at = {};
@@ -310,7 +347,9 @@
     // Each service's runs, so looking one up doesn't scan them all.
     const byBus = new Map();
     for (const run of list) (byBus.get(run.bus) || byBus.set(run.bus, []).get(run.bus)).push(run);
-    graph = { coords, roads, runs: list, at, byBus, hubMates };
+    const wholeByBus = new Map();
+    for (const run of whole) (wholeByBus.get(run.bus) || wholeByBus.set(run.bus, []).get(run.bus)).push(run);
+    graph = { coords, roads, runs: list, at, byBus, wholeByBus, hubMates };
     return graph;
   }
 
@@ -327,7 +366,7 @@
   // bus serving the two stops on opposite runs gets there. { stops, via } where `via` is
   // that terminus's code, or null when there's no turn.
   function stopsTo(serviceNo, fromCode, toCode) {
-    const own = getGraph().byBus.get(serviceNo) || [];
+    const own = getGraph().wholeByBus.get(serviceNo) || [];
     for (const { stops: seq } of own) {
       const i = seq.indexOf(fromCode);
       if (i !== -1 && seq.indexOf(toCode, i + 1) !== -1) return { stops: seq.indexOf(toCode, i + 1) - i, via: null };
@@ -361,6 +400,7 @@
     firstLast,
     lastBuses,
     stopsTo,
+    restricted,
     graph: getGraph,
     haversine,
     byNumber,

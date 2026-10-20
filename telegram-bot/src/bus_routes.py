@@ -29,20 +29,36 @@ def bus_routes_count() -> int:
     return db.execute("SELECT COUNT(*) AS n FROM bus_routes").fetchone()["n"]
 
 
-def first_last_bus_times(service_no: str, stop_code: str) -> "dict | None":
+def first_last_bus_times(service_no: str, stop_code: str, direction: "int | None" = None) -> "dict | None":
     """First/last bus times (HHmm strings) for a service at a given stop, for
-    weekdays, Saturdays and Sundays. Uses the lowest-direction row on the rare
-    stop served by more than one direction."""
+    weekdays, Saturdays and Sundays. On a stop served both ways, `direction` says
+    which; otherwise the lowest-direction row."""
     return db.execute(
         """
         SELECT wd_first, wd_last, sat_first, sat_last, sun_first, sun_last
         FROM bus_routes
         WHERE service_no = ? AND stop_code = ?
+        ORDER BY direction = ? DESC, direction
+        LIMIT 1
+        """,
+        (service_no, stop_code, direction),
+    ).fetchone()
+
+
+def direction_ending_at(service_no: str, stop_code: str) -> "int | None":
+    """The direction of a service's route whose last stop this is, or None."""
+    row = db.execute(
+        """
+        SELECT direction FROM bus_routes AS r
+        WHERE service_no = ? AND stop_code = ?
+          AND stop_sequence = (SELECT MAX(stop_sequence) FROM bus_routes
+                               WHERE service_no = r.service_no AND direction = r.direction)
         ORDER BY direction
         LIMIT 1
         """,
         (service_no, stop_code),
     ).fetchone()
+    return row["direction"] if row else None
 
 
 def route_terminals(service_no: str) -> dict:

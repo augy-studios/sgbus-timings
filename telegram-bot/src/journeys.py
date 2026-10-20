@@ -17,6 +17,7 @@ from datetime import timedelta
 
 from .db import db
 from .lta import _natural_sort_key
+from .restricted import public_parts
 from .when import BUS_WAIT_MIN, bus_runs_at, first_last_string
 
 WALK_LIMIT_M = 200
@@ -134,17 +135,17 @@ class _Network:
                 "WHERE origin_code IS NOT NULL AND (loop_desc IS NOT NULL OR origin_code = destination_code)"
             )
         }
-        self.runs = defaultdict(list)
-        # Each stop's first and last bus on each run, for whether it's running at a time
-        # (when.py), beside self.runs.
-        self.times = defaultdict(list)
+        # Each run as the bus runs it, (service, direction) -> stops, restricted stops and all,
+        # for counting the stops a bus already chosen rides (stops_to).
+        self.whole = defaultdict(list)
+        whole_times = defaultdict(list)
         for row in db.execute(
             "SELECT service_no, direction, stop_code, wd_first, wd_last, sat_first, sat_last, sun_first, sun_last "
             "FROM bus_routes ORDER BY service_no, direction, stop_sequence"
         ):
-            self.runs[(row["service_no"], row["direction"])].append(row["stop_code"])
-            self.times[(row["service_no"], row["direction"])].append(first_last_string(row))
-        for run, stops in self.runs.items():
+            self.whole[(row["service_no"], row["direction"])].append(row["stop_code"])
+            whole_times[(row["service_no"], row["direction"])].append(first_last_string(row))
+        for run, stops in self.whole.items():
             # A loop ends where it started, but the route list keeps one row per stop, so
             # the terminus is only there as the first stop. Put it back on the end, or no
             # journey could ever ride a loop service home to its interchange. Never boarded
@@ -152,7 +153,18 @@ class _Network:
             origin = loops.get(run[0])
             if origin and stops[0] == origin and stops[-1] != origin:
                 stops.append(origin)
-                self.times[run].append(self.times[run][0])
+                whole_times[run].append(whole_times[run][0])
+
+        # The runs journeys ride, (service, direction, part) -> stops: the stops the public
+        # can't use left out, and a run through somewhere nobody may ride cut in two, either
+        # side of it (restricted.py). Each stop's first and last bus on each run, for whether
+        # it's running at a time (when.py), beside them in self.times.
+        self.runs = {}
+        self.times = {}
+        for (service_no, direction), stops in self.whole.items():
+            for part, indexes in enumerate(public_parts(stops)):
+                self.runs[(service_no, direction, part)] = [stops[i] for i in indexes]
+                self.times[(service_no, direction, part)] = [whole_times[(service_no, direction)][i] for i in indexes]
 
         self.cum = {}
         self.at = defaultdict(list)
@@ -230,6 +242,17 @@ def _change_walk(metres) -> float:
 def _leg(net, run, i, j) -> dict:
     stops = net.runs[run]
     return {"bus": run[0], "dir": run[1], "from": stops[i], "to": stops[j]}
+
+
+def _run_of(net, leg) -> "tuple | None":
+    """The run a leg rides: of its bus and direction, the part it gets on and off along."""
+    for part in range(len(net.runs)):
+        stops = net.runs.get((leg["bus"], leg["dir"], part))
+        if stops is None:
+            return None
+        if leg["from"] in stops and leg["to"] in stops[stops.index(leg["from"]) + 1 :]:
+            return (leg["bus"], leg["dir"], part)
+    return None
 
 
 def direct_services(start_code: str, end_code: str) -> list:
@@ -312,7 +335,7 @@ def _journey_runs(legs: list, start_code: str, end_code: str, timing: dict) -> b
     leave = timing["moment"] - timedelta(minutes=clock["total"]) if timing["mode"] == "arrive" else timing["moment"]
     net = _get_network()
     for leg, board in zip(legs, clock["boards"]):
-        run = (leg["bus"], leg["dir"])
+        run = _run_of(net, leg)
         if not bus_runs_at(net.times[run][net.runs[run].index(leg["from"])], leave + timedelta(minutes=board)):
             return False
     return True
@@ -530,13 +553,11 @@ def leg_details(leg: dict) -> "dict | None":
     None when the bus no longer runs that way - the route list is refreshed daily, and a
     journey on an old button may name a run that's since changed."""
     net = _get_network()
-    run = (leg["bus"], leg["dir"])
-    stops = net.runs.get(run)
-    if not stops or leg["from"] not in stops:
+    run = _run_of(net, leg)
+    if not run:
         return None
+    stops = net.runs[run]
     i = stops.index(leg["from"])
-    if leg["to"] not in stops[i + 1 :]:
-        return None
     j = stops.index(leg["to"], i + 1)
     return {"stops": j - i, "minutes": _ride_min(net, run, i, j)}
 
@@ -570,7 +591,7 @@ def stops_to(service_no: str, from_code: str, to_code: str) -> "dict | None":
     direction's run, which is how a bus that serves the two stops on opposite runs gets
     there. {stops, via} where `via` is that terminus's code, or None when there's no turn."""
     net = _get_network()
-    runs = [(run, stops) for run, stops in net.runs.items() if run[0] == service_no]
+    runs = [(run, stops) for run, stops in net.whole.items() if run[0] == service_no]
     for _, stops in runs:
         if from_code in stops and to_code in stops[stops.index(from_code) + 1 :]:
             i = stops.index(from_code)

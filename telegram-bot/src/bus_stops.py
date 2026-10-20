@@ -50,6 +50,26 @@ def get_bus_stop_by_code(code: str) -> Optional[sqlite3.Row]:
     return db.execute("SELECT * FROM bus_stops WHERE code = ?", (code,)).fetchone()
 
 
+# A stop with the same name as another this close is the same place under two codes: an
+# interchange split in two, each with buses of its own (Woodlands Int is 46008 and 46009).
+# The same as SAME_PLACE_M in main-site/script.js.
+SAME_PLACE_M = 250
+
+
+def same_place_stops(code: str) -> list:
+    """The other stops named the same as this one and within SAME_PLACE_M of it."""
+    stop = get_bus_stop_by_code(code)
+    if not stop or stop["lat"] is None or stop["lng"] is None:
+        return []
+    rows = db.execute(
+        "SELECT * FROM bus_stops WHERE name = ? COLLATE NOCASE AND code != ? AND lat IS NOT NULL AND lng IS NOT NULL",
+        (stop["name"], code),
+    ).fetchall()
+    return [
+        r for r in rows if _haversine_meters(stop["lat"], stop["lng"], r["lat"], r["lng"]) <= SAME_PLACE_M
+    ]
+
+
 # LTA's stop names always shorten a station to "Stn" ("Bedok Stn Exit B"), so a search
 # saying "station", "MRT" or "LRT" is also tried that way. Whole words only: the one stop
 # name with "station" spelled out is in "Substation", at Lim Chu Kang.

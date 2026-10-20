@@ -140,6 +140,11 @@ def _shape_next_bus(nb: Optional[dict]) -> Optional[dict]:
         "lat": lat,
         "lng": lng,
         "rough": lat is None or lng is None,
+        # Where it's going, for telling apart a bus listed twice at a stop it calls at both
+        # ways, and 2 for a bus on its second time past (a loop on its way back) (format.py).
+        "origin": nb.get("OriginCode") or None,
+        "dest": nb.get("DestinationCode") or None,
+        "visit": int(nb["VisitNumber"]) if str(nb.get("VisitNumber") or "").isdigit() else None,
     }
 
 

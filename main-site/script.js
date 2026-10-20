@@ -531,15 +531,77 @@ function favouritesChanged() {
     if (!$('#plannerSection').hidden) renderPlanner();
 }
 
+// ----------- Which way each bus is going -----------
+// Some stops have a bus calling both ways, on a road it runs up and back (136 at 66271, both
+// ways of 21 at 52129), and LTA lists it twice, once per way, with nothing on show to tell
+// the two apart. A loop service passing a stop on its way out and again on its way back (73
+// at 66271) mixes the two in one list instead. Each such bus gets where it's heading and a
+// tone, the same on its card and in the Incoming buses bar.
+
+const busesOf = s => [s.next, s.next2, s.next3];
+const destOf = s => busesOf(s).find(b => b?.dest)?.dest || null;
+
+// The direction of a service's route that ends at a stop, or null.
+function dirEndingAt(no, dest) {
+    const dirs = BusNet.isReady() ? BusNet.serviceInfo(no)?.dirs : null;
+    const hit = dirs && Object.entries(dirs).find(([, ends]) => ends[1] === dest);
+    return hit ? Number(hit[0]) : null;
+}
+
+// Each service listed more than once, one per way: Map of entry -> { to, dir, tone }. The
+// tone goes by where it's heading, so each way keeps its colour from one refresh to the next.
+function twoWayHeadings(services) {
+    const byNo = new Map();
+    for (const s of services) (byNo.get(s.serviceNo) || byNo.set(s.serviceNo, []).get(s.serviceNo)).push(s);
+    const out = new Map();
+    for (const [no, group] of byNo) {
+        if (group.length < 2) continue;
+        const dests = group.map(destOf);
+        if (dests.some(d => !d) || new Set(dests).size < group.length) continue;
+        const order = [...dests].sort();
+        group.forEach((s, i) => out.set(s, { to: dests[i], dir: dirEndingAt(no, dests[i]), tone: order.indexOf(dests[i]) % 3 }));
+    }
+    return out;
+}
+
+// The services with a bus on its second time past the stop.
+function passingTwice(services) {
+    return new Set(services.filter(s => busesOf(s).some(b => b?.visit === 2)).map(s => s.serviceNo));
+}
+
+// Which time round one bus is on, at a stop its service passes twice: { label, short, tone }.
+function timeRound(no, bus) {
+    if (!bus?.visit) return null;
+    // Where it loops, once the route list is in.
+    const loop = (BusNet.isReady() && BusNet.serviceInfo(no)?.loop) || '';
+    const isLoop = !!(loop || (bus.origin && bus.origin === bus.dest));
+    const home = nameOf(bus.dest) || bus.dest || '';
+    if (bus.visit === 2) {
+        return isLoop
+            ? { label: `Back to ${home}`, short: `↩ ${home}`, tone: 1 }
+            : { label: 'Second time past here', short: '2nd time', tone: 1 };
+    }
+    return isLoop
+        ? { label: loop ? `Out to ${loop}` : 'On its way out', short: `→ ${loop || 'Out'}`, tone: 0 }
+        : { label: 'First time past here', short: '1st time', tone: 0 };
+}
+
 // ----------- Incoming Buses Bar -----------
 function renderIncomingBar(data) {
     const bar       = $('#incomingBar');
     const container = $('#incomingBuses');
     const svcs      = data?.services || [];
+    const headings  = data?.headings || new Map();
+    const twice     = data?.twice || new Set();
 
     const items = svcs
         .filter(s => s.next && s.next.eta_ms != null)
-        .map(s => ({ svcNo: s.serviceNo, eta_ms: s.next.eta_ms, load: s.next.load }))
+        .map(s => {
+            const way = headings.get(s);
+            const round = twice.has(s.serviceNo) ? timeRound(s.serviceNo, s.next) : null;
+            const to = way ? { short: `→ ${nameOf(way.to) || way.to}`, label: `To ${nameOf(way.to) || way.to}`, tone: way.tone } : round;
+            return { svcNo: s.serviceNo, eta_ms: s.next.eta_ms, load: s.next.load, to };
+        })
         .sort((a, b) => a.eta_ms - b.eta_ms);
 
     if (!items.length) { bar.hidden = true; return; }
@@ -549,9 +611,11 @@ function renderIncomingBar(data) {
         const m         = Math.floor(secs / 60), s = secs % 60;
         const timeLabel = m > 0 ? `${m} min` : `${s}s`;
         const cls       = loadTextClass(item.load);
-        return `<div class="incomingBusItem">` +
+        const to        = item.to;
+        return `<div class="incomingBusItem${to ? ` toned tone${to.tone}` : ''}"${to ? ` title="${escapeHtml(`${item.svcNo}: ${to.label}`)}"` : ''}>` +
             `<div class="incomingBusTime${cls ? ' ' + cls : ''}">${timeLabel}</div>` +
             `<div class="incomingBusNo">${escapeHtml(item.svcNo)}</div>` +
+            (to ? `<div class="incomingBusTo">${escapeHtml(to.short)}</div>` : '') +
             `</div>`;
     }).join('');
 
@@ -663,6 +727,41 @@ function renderStopContext() {
     $('#stopContext').hidden = !ctx;
 }
 
+// A stop with the same name as another this close is the same place under two codes: an
+// interchange split in two, each with buses of its own (Woodlands Int is 46008 and 46009).
+// The same as SAME_PLACE_M in the Telegram bot's bus_stops.py.
+const SAME_PLACE_M = 250;
+
+function samePlaceStops(code) {
+    const here = stopsIndex?.[code];
+    if (!here?.n) return [];
+    const name = here.n.toLowerCase();
+    return Object.entries(stopsIndex)
+        .filter(([c, s]) => c !== code && s.n?.toLowerCase() === name && haversine(here.lat, here.lng, s.lat, s.lng) <= SAME_PLACE_M)
+        .map(([c]) => c);
+}
+
+// Under the stop's name: a stop only authorised people may use (js/network.js), and a way to
+// the other half of one split in two, where some buses only ever stop.
+function renderStopAside() {
+    const { code } = current;
+    const parts = [];
+    const r = BusNet.restricted(code);
+    if (r) {
+        parts.push(`<p class="stopAsideNote">${ico('alert')} <span><strong>Authorised personnel only.</strong> ` +
+            escapeHtml(r.through
+                ? `This stop is at ${r.place}: the public can't get on or off here, but can ride past.`
+                : `This stop is inside ${r.place}: the public can't get on or off here, or ride through.`) +
+            `</span></p>`);
+    }
+    for (const other of samePlaceStops(code)) {
+        parts.push(`<button type="button" class="iconBtn" data-same-place="${escapeHtml(other)}" title="Some buses here only stop at the other code">` +
+            `${ico('bus')} Also ${escapeHtml(nameOf(other) || other)} (${escapeHtml(other)})</button>`);
+    }
+    $('#stopAside').innerHTML = parts.join('');
+    $('#stopAside').hidden = !parts.length;
+}
+
 function goBack(ctx) {
     if (ctx.kind === 'route')        openPlanner(ctx.start, ctx.end, { when: ctx.when });
     else if (ctx.kind === 'journey') openPlanner(ctx.start, ctx.end, { journey: ctx.legs, when: ctx.when });
@@ -685,8 +784,8 @@ const wheelchairBadge = `<span class="badge"><svg class="icon" viewBox="0 0 512 
 
 const DAY_NAMES = { Weekday: 'weekday', Sat: 'Saturday', Sun: 'Sunday' };
 
-function firstLastText(svcNo, code) {
-    const fl = BusNet.isReady() ? BusNet.firstLast(svcNo, code) : null;
+function firstLastText(svcNo, code, dir = null) {
+    const fl = BusNet.isReady() ? BusNet.firstLast(svcNo, code, dir) : null;
     if (!fl) return '';
     // LTA gives "-" for both on a day type the bus doesn't run.
     if (fl.first === '-' && fl.last === '-') return `No ${DAY_NAMES[fl.label]} service at this stop`;
@@ -707,7 +806,10 @@ function renderArrivals() {
     if (service && !expanded) svcs = svcs.filter(s => (s.serviceNo || '').toUpperCase() === service);
     svcs = pinFavourites(svcs, favBuses, LS.getPin('bus'), s => s.serviceNo);
 
-    renderIncomingBar({ services: svcs });
+    // Over every bus at the stop, so narrowing to one still tells its two ways apart.
+    const headings = twoWayHeadings(data?.services || []);
+    const twice = passingTwice(data?.services || []);
+    renderIncomingBar({ services: svcs, headings, twice });
 
     const svcWrap = $('#services');
     if (!svcs.length) {
@@ -726,7 +828,7 @@ function renderArrivals() {
     const stopLat = stopsIndex?.[code]?.lat ?? null;
     const stopLng = stopsIndex?.[code]?.lng ?? null;
 
-    const piece = (bus) => {
+    const piece = (bus, svcNo) => {
         if (!bus) return `<div class="eta"><strong>-</strong></div>`;
         const mins  = msToMins(bus.eta_ms);
         const cls   = loadTextClass(bus.load);
@@ -742,22 +844,30 @@ function renderArrivals() {
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         // Gone before you could walk here (js/make-it.js): greyed.
         const late = window.MakeIt?.tooSoon(code, bus.eta_ms) ? ' tooSoon' : '';
-        return `<div class="eta${late}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${badges}</div>`;
+        // At a stop its loop passes twice, which time round this bus is on.
+        const round = twice.has(svcNo) ? timeRound(svcNo, bus) : null;
+        const toned = round ? ` toned tone${round.tone}` : '';
+        const roundLine = round ? `<div class="etaTo">${escapeHtml(round.label)}</div>` : '';
+        return `<div class="eta${late}${toned}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${roundLine}${badges}</div>`;
     };
 
     svcWrap.innerHTML = svcs.map(s => {
         const svcNo = s.serviceNo || '?';
         const fav = favBuses.has(svcNo);
-        const fl = firstLastText(svcNo, code);
-        return `<div class="svc" data-svc="${escapeHtml(svcNo)}">` +
+        const way = headings.get(s);
+        const fl = firstLastText(svcNo, code, way?.dir);
+        const toName = way ? nameOf(way.to) || way.to : '';
+        return `<div class="svc${way ? ` toned tone${way.tone}` : ''}" data-svc="${escapeHtml(svcNo)}">` +
             `<div class="svcLeft">` +
             `<div class="svcNo">${fav ? favMark() : ''}${escapeHtml(svcNo)}</div>` +
+            // Which way this one's going, where the stop has the bus going both ways.
+            (way ? `<div class="svcTo" title="Bus ${escapeHtml(svcNo)} towards ${escapeHtml(toName)}">→ ${escapeHtml(toName)}</div>` : '') +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
-            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}" title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
+            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
             // The flag-down screen (js/flag.js).
             `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="Show ${escapeHtml(svcNo)} full screen, to flag the bus down">Flag</button>` +
             `</div>` +
-            `<div class="etaWrap">${piece(s.next)}${piece(s.next2)}${piece(s.next3)}` +
+            `<div class="etaWrap">${piece(s.next, svcNo)}${piece(s.next2, svcNo)}${piece(s.next3, svcNo)}` +
             // With the Android app's last bus reminder bell (js/reminders.js).
             (fl ? `<div class="firstLast">${escapeHtml(fl)}${window.Reminders?.bell(svcNo, code) || ''}</div>` : '') +
             `</div>` +
@@ -777,6 +887,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     renderStopHeader();
     renderStopTools();
     renderStopContext();
+    renderStopAside();
     window.MakeIt?.forStop(code);
     $('#services').innerHTML = '<div class="empty">Loading live arrivals&hellip;</div>';
     $('#emptySvc').hidden   = true;
@@ -946,7 +1057,8 @@ function renderServiceModal() {
     const row = (code, seq) =>
         `<button type="button" class="routeStop${code === fromStop ? ' me' : ''}" data-stop="${escapeHtml(code)}">` +
         `<span class="seq">${seq}</span>` +
-        `<span class="name">${favs.has(code) ? favMark() : ''}${escapeHtml(nameOf(code) || code)}</span>` +
+        `<span class="name">${favs.has(code) ? favMark() : ''}${escapeHtml(nameOf(code) || code)}` +
+        (BusNet.restricted(code) ? `<span class="road">Authorised personnel only</span>` : '') + `</span>` +
         `<span class="pill">${escapeHtml(code)}</span>` +
         `</button>`;
 
@@ -1259,6 +1371,10 @@ $('#stopFavBtn').addEventListener('click', () => {
     renderStopHeader();
 });
 $('#stopBackBtn').addEventListener('click', () => { if (current?.ctx) goBack(current.ctx); });
+$('#stopAside').addEventListener('click', e => {
+    const btn = e.target.closest('[data-same-place]');
+    if (btn) loadStop(btn.dataset.samePlace);
+});
 
 $('#stopTools').addEventListener('click', e => {
     const tool = e.target.closest('[data-tool]')?.dataset.tool;
@@ -1296,7 +1412,9 @@ $('#services').addEventListener('click', e => {
     const btn = e.target.closest('[data-view-route]');
     if (!btn) return;
     const svc = btn.getAttribute('data-view-route');
-    openService(svc, { fromStop: current?.code, dir: svc === current?.service ? current.dir : null });
+    // A bus listed once per way at this stop opens its route the way that card's going.
+    const dir = btn.dataset.dir ? Number(btn.dataset.dir) : (svc === current?.service ? current.dir : null);
+    openService(svc, { fromStop: current?.code, dir });
 });
 
 $('#busPickGrid').addEventListener('click', e => {

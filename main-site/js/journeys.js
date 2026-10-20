@@ -199,7 +199,15 @@
     });
   }
 
-  const runOf = (leg) => (BusNet.graph().byBus.get(leg.bus) || []).find((r) => r.dir === leg.dir);
+  // A run cut in two around somewhere nobody may ride through (js/network.js) is two runs of
+  // one direction: the leg's is the one it gets on and off along.
+  const runOf = (leg) => {
+    const runs = (BusNet.graph().byBus.get(leg.bus) || []).filter((r) => r.dir === leg.dir);
+    return runs.find((r) => {
+      const i = r.stops.indexOf(leg.from);
+      return i !== -1 && r.stops.indexOf(leg.to, i + 1) !== -1;
+    }) || runs[0];
+  };
 
   // The last few searches, since the planner asks findJourneys and then wrongSideEnds the
   // same question, and each walks the whole network. Cleared when the network changes.

@@ -58,6 +58,21 @@ LTA reports one of three loads for each bus.
 | <span class="badge">Single</span> <span class="badge">Double</span> <span class="badge">Bendy</span> | Single deck, double deck, or a bendy bus. |
 | <span class="badge">~ 850m</span> | How far the bus is from the stop, in a straight line, right now. |
 
+## A bus going both ways
+
+At a few stops one bus calls going both ways: on a road it runs up and back,
+such as 136 at S'goon Gdn Circus (66271), or a loop service passing on its way
+out and again on its way back, such as 73 at the same stop.
+
+- **Both ways:** the bus is listed twice, once per way. Each says where it's
+  heading under its number, such as **→ Punggol Int**, in a colour of its own
+  that the incoming buses bar matches. Its first and last bus, and its
+  **Route** button, are for that way. The bot puts the way in the heading,
+  such as `136 (GAS) 🔵 → Punggol Int`.
+- **A loop passing twice:** each bus says which time round it's on, **Out to
+  Lor 6 Toa Payoh** or **Back to Ang Mo Kio Int**. The bot adds a **Way** row to
+  the table, 🔵 Out or 🔴 Back.
+
 ## In the web app
 
 <figure>

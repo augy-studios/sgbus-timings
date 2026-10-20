@@ -4,7 +4,7 @@
 // every REFRESH_MS. "Board" in a stop's tools opens it, and so does #board/84009, so a screen
 // can be left on one. Full screen where the browser allows (the desktop app does).
 // Loaded before script.js and uses its helpers (fetchArrivals, nameOf, ensureStopsIndex,
-// loadTextClass, stopHash) only once the page is running. Plain script: exports go on window.
+// loadTextClass, stopHash, passingTwice, timeRound) only once the page is running. Plain script: exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -77,9 +77,12 @@
     const pages = Math.max(1, Math.ceil(board.services.length / n));
     if (board.page >= pages) board.page = 0;
     const rows = board.services.slice(board.page * n, board.page * n + n);
+    // A loop passing twice: which time round its next bus is on (script.js), not just its end.
+    const twice = passingTwice(board.services);
     $('#boardRows').innerHTML = rows.length
       ? rows.map((s) => {
-        const dest = s.next?.dest ? nameOf(s.next.dest) || s.next.dest : '';
+        const round = twice.has(s.serviceNo) ? timeRound(s.serviceNo, s.next) : null;
+        const dest = round ? round.label : s.next?.dest ? nameOf(s.next.dest) || s.next.dest : '';
         return `<div class="boardRow"><span class="boardNo">${esc(s.serviceNo)}</span><span class="boardTo">${esc(dest)}</span>` +
           `<span class="boardEta">${when(s.next, board.fetched)}</span><span class="boardEta">${when(s.next2, board.fetched)}</span>` +
           `<span class="boardEta">${when(s.next3, board.fetched)}</span></div>`;
