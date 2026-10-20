@@ -87,8 +87,10 @@ def _plain_match(q: str, stop) -> bool:
 def search_bus_stops(query: str, limit: int = 10) -> list:
     """Search cached bus stops by exact code, code prefix, or a substring of the name/road.
     A station, as "Bedok MRT" or "Senja LRT", lists the stops at it instead, nearest first
-    and with their distance from the closest exit. A word LTA shortens matches all its forms
-    (contractions.py), so "Bukit Batok" finds "Bt Batok Int"."""
+    and with their distance from the closest exit. A word LTA shortens matches all its forms,
+    so "Bukit Batok" finds "Bt Batok Int", and a search of several words matches them in any
+    order across name and road, so "blk 109 bedok" finds Blk 109 on Bedok Nth Rd
+    (contractions.py)."""
     q = query.strip().lower()
     if not q:
         return []
@@ -107,15 +109,19 @@ def search_bus_stops(query: str, limit: int = 10) -> list:
 
     as_stn = _STN_WORDS_RE.sub("stn", q)
     swaps = matcher(q)
-    if swaps:
-        # Checked here rather than in SQL, which has no regular expressions; the order is the
-        # query's below.
-        found = [
-            row for row in db.execute("SELECT * FROM bus_stops").fetchall()
-            if _plain_match(q, row) or swaps.test((row["name"] or "").lower()) or swaps.test((row["road"] or "").lower())
-        ]
-        found.sort(key=lambda r: (0 if r["name"].lower().startswith((q, as_stn)) else 1, r["name"]))
-        return found[:limit]
+    if swaps.widens:
+        # Checked here rather than in SQL, which has no regular expressions. Matches in one
+        # piece come first, in the query's order below, then those word by word, so a road
+        # typed in full still lists its own stops first.
+        found = []
+        for row in db.execute("SELECT * FROM bus_stops").fetchall():
+            name, road = (row["name"] or "").lower(), (row["road"] or "").lower()
+            if _plain_match(q, row) or swaps.test(name) or swaps.test(road):
+                found.append((0, row))
+            elif swaps.words(f"{name}\n{road}"):
+                found.append((1, row))
+        found.sort(key=lambda f: (f[0], 0 if f[1]["name"].lower().startswith((q, as_stn)) else 1, f[1]["name"]))
+        return [row for _, row in found[:limit]]
     return db.execute(
         """
         SELECT * FROM bus_stops
@@ -134,7 +140,7 @@ def search_note(query: str, matches: list) -> str:
     swapping a word for another of its forms; otherwise ""."""
     q = query.strip().lower()
     swaps = matcher(q) if q and not q.isdigit() else None
-    if not swaps:
+    if not swaps or not swaps.widens:
         return ""
     swapped_only = [
         text for stop in matches if not _plain_match(q, stop)

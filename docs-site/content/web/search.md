@@ -17,6 +17,7 @@ suggestion, and the stop's timings open underneath.
 |---|---|---|
 | A stop's name | `Orchard`, `Bedok Int` | Lists the matching stops to pick from |
 | A road | `Tampines Ave 4` | Lists the stops along it |
+| A stop's name and its road | `Blk 109 Bedok` | Lists the Blk 109s on a road with Bedok in its name |
 | A 5-digit stop code | `84009` | Opens that stop straight away |
 | A stop code and a bus | `84009 174` | Opens that stop narrowed to bus 174 |
 | A bus number | `22`, `NR7`, `971E` | Opens [that bus's route](bus-routes.md) |
@@ -26,6 +27,15 @@ suggestion, and the stop's timings open underneath.
 As you type, a list drops down with matching buses first, then up to 20
 matching stops. Tap one to open it, or press **Enter** or tap **Get Timings** to
 open the best match.
+
+### Several words
+
+Words can come in any order, and from the stop's name or its road, so
+`blk 109 bedok` and `bedok blk 109` both find Blk 109 on Bedok Nth Rd and on
+Bedok Nth Ave 3, out of every Blk 109 in Singapore. Each word matches the start
+of a word, and whole words other than the last, which you may still be typing,
+so `109` doesn't find Blk 1090. Stops matching what you typed exactly, in one
+piece, still come first.
 
 ### Shortened names
 

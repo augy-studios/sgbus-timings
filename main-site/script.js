@@ -307,10 +307,13 @@ async function buildAc() {
 }
 
 // The stops a search matches, as { stops, note }. Stops are checked in order and the search
-// stops at `limit`, so a short query doesn't run through all five thousand. A station ("Bedok
-// MRT") gives the stops at it, nearest an exit first, each with its `distance`. Otherwise a
-// word LTA shortens matches all its forms (js/contractions.js), and `note` says which, when
-// some stops were only found that way.
+// stops at `limit` matches of the query in one piece, so a short query doesn't run through
+// all five thousand. A station ("Bedok MRT") gives the stops at it, nearest an exit first,
+// each with its `distance`. Otherwise a word LTA shortens matches all its forms, and a query
+// of several words matches them in any order across name and road, so "blk 109 bedok" finds
+// Blk 109 on Bedok Nth Rd (js/contractions.js); those come after the matches in one piece, so
+// a road typed in full still lists its own stops first. `note` says which forms were
+// searched, when some stops were only found that way.
 function matchStops(q, limit = 20) {
     q = q.trim().toLowerCase();
     if (!q) return { stops: [], note: '' };
@@ -327,6 +330,7 @@ function matchStops(q, limit = 20) {
     const isCode = /^\d+$/.test(q);
     const swaps = isCode ? null : Contractions.matcher(q);
     const out = [];
+    const loose = [];
     const swappedOnly = [];
     for (const it of acData) {
         const plain = isCode ? it.code.startsWith(q) : it.find.includes(q);
@@ -334,9 +338,14 @@ function matchStops(q, limit = 20) {
             out.push(it);
             if (!plain) swappedOnly.push(it.find);
             if (out.length >= limit) break;
+        } else if (loose.length < limit && swaps?.words(it.find)) {
+            loose.push(it);
         }
     }
-    return { stops: out, note: swappedOnly.length ? swaps.note(swappedOnly) : '' };
+    // Word by word only fills what's left, and counts as swapped for the note.
+    const extra = loose.slice(0, limit - out.length);
+    swappedOnly.push(...extra.map(it => it.find));
+    return { stops: [...out, ...extra], note: swappedOnly.length ? swaps.note(swappedOnly) : '' };
 }
 
 // How many matches are checked for a direct bus before the list is cut to its usual 20, so

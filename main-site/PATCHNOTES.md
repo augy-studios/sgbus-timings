@@ -13,6 +13,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Web app
 
+- **Name and road together** - Type a stop's name and its road in any order, **Blk 109 Bedok**, and the list narrows to the Blk 109s on Bedok's roads rather than every Blk 109 in Singapore. Stops matching what you typed in one piece still come first.
 - **Shortened names** - Search finds a stop whichever way the word is typed: **Bukit Batok** finds Bt Batok Int, **Opposite Block 10** finds Opp Blk 10, and Ctr and Ctrl both find Centre and Central, among about 90 of LTA's short forms. A line above the matches says when some were only found that way: **Also searched Bt for Bukit**.
 - **Stops at a station** - Type **Bedok MRT**, **Senja LRT** or **Botanic Gardens station** and the list is the stops within about 250 m of its exits, nearest first, with how far each is, as in the Telegram bot.
 - **Loops in two** - A loop service passing a stop twice, such as 73, is now listed twice, **→ Lor 6 Toa Payoh** on its way out and **↩ Ang Mo Kio Int** on its way back, each in its own colour, as a bus going both ways is. Each may show fewer than three buses, since LTA gives three for the two. The departures board too.
@@ -20,6 +21,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Telegram bot
 
+- **Name and road together** - The same: `blk 109 bedok` finds the Blk 109s on Bedok Nth Rd and Bedok Nth Ave 3.
 - **Shortened names** - The same: `bukit batok` finds Bt Batok Int, and the list says **Did you mean (also searched Bt for Bukit)**.
 - **Loops in two** - A loop passing twice gets a heading per time round, `73 (SBST) 🔵 → Out to Lor 6 Toa Payoh` and `🔴 ↩ Back to Ang Mo Kio Int`, in place of the Way row.
 - **Across the border** - Those stops say so under their name, and their buttons in a list carry 🛂.

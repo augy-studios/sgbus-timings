@@ -3,9 +3,10 @@ so a search finds a stop however the word is typed: Bukit finds "Bt Batok Int", 
 "Avenue 3". Each group is one word's forms, and a word typed as any of them is matched as all
 of them. LTA is not consistent (Ctr and Ctrl both stand for Centre and Central), so some groups
 are wider than one word. The long forms are matched too, since a few road names keep them
-("Lower Peirce Reservoir", "Upper Bukit Timah Rd").
+("Lower Peirce Reservoir", "Upper Bukit Timah Rd"). And a query of several words matches them
+in any order, across a stop's name and road.
 
-The same as GROUPS in main-site/js/contractions.js."""
+The same as GROUPS and matcher in main-site/js/contractions.js."""
 
 import re
 
@@ -65,21 +66,41 @@ for _group in GROUPS:
         _FORMS[_key(_form)] += [f for f in _group if f not in _FORMS[_key(_form)]]
 
 
+def _forms(part) -> str:
+    return f"(?:{'|'.join(_pattern(f) for f in part['forms'])}){_END}"
+
+
 class Matcher:
     """A query with its shortened words swapped for all their forms."""
 
-    def __init__(self, parts):
+    def __init__(self, parts, swapped):
         self._parts = parts
-        source = " +".join(
-            re.escape(p["literal"]) if "literal" in p
-            else f"{_START if i == 0 else ''}(?:{'|'.join(_pattern(f) for f in p['forms'])}){_END}"
+        # In one piece, words apart by spaces only.
+        self._whole = re.compile(" +".join(
+            re.escape(p["literal"]) if "literal" in p else f"{_START if i == 0 else ''}{_forms(p)}"
             for i, p in enumerate(parts)
-        )
-        self._re = re.compile(source)
+        )) if swapped else None
+        # Word by word, in any order and across name and road, so "blk 109 bedok" finds Blk
+        # 109 on Bedok Nth Rd. Each word starts one of the stop's words, and each but the last,
+        # which may still be being typed, is all of it: 109 doesn't find Blk 1090, or Blk 2109.
+        self._each = [
+            re.compile(_START + (
+                re.escape(p["literal"]) + (_END if i < len(parts) - 1 else "") if "literal" in p else _forms(p)
+            ))
+            for i, p in enumerate(parts)
+        ] if len(parts) > 1 else None
+        # Whether it finds anything a search as typed wouldn't.
+        self.widens = bool(self._whole or self._each)
 
     def test(self, text: str) -> bool:
-        """Whether a lowercased stop name or road matches."""
-        return bool(self._re.search(text or ""))
+        """Whether a lowercased stop name or road matches in one piece with words swapped for
+        their other forms: False for a query with none to swap, matched as typed instead."""
+        return bool(self._whole and self._whole.search(text or ""))
+
+    def words(self, text: str) -> bool:
+        """Whether a lowercased stop name and road, a line apart, match word by word: False
+        for a query of one word."""
+        return bool(self._each and all(r.search(text or "") for r in self._each))
 
     def note(self, texts: list) -> str:
         """ "Also searched Bt for Bukit": only the forms the stops given really have, other
@@ -100,8 +121,10 @@ class Matcher:
 
 
 def matcher(query: str) -> "Matcher | None":
-    """A Matcher for the query, or None when it has none of these words."""
+    """A Matcher for the query, or None for an empty one."""
     words = query.split()
+    if not words:
+        return None
     parts = []
     swapped = False
     i = 0
@@ -117,4 +140,4 @@ def matcher(query: str) -> "Matcher | None":
         else:
             parts.append({"literal": words[i].lower()})
             i += 1
-    return Matcher(parts) if swapped else None
+    return Matcher(parts, swapped)

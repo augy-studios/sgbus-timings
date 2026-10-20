@@ -5,11 +5,11 @@
 // some groups are wider than one word. The long forms are matched too, since a few road names
 // keep them ("Lower Peirce Reservoir", "Upper Bukit Timah Rd").
 //
-// Contractions.matcher(query) gives { test(text), note(texts) }, or null when the query has
-// none of these words: `test` is whether a stop's lowercased name and road match the query
-// with its words swapped for their other forms, and `note` the line saying so, from the
-// forms the stops it's given actually have. The same as GROUPS in the Telegram bot's
-// contractions.py.
+// Contractions.matcher(query) gives { test(text), words(text), note(texts) }, or null for an
+// empty query: `test` is whether a stop's lowercased name and road match the query in one
+// piece with its words swapped for their other forms, `words` whether they match it word by
+// word, and `note` the line saying which forms were searched, from the ones the stops it's
+// given actually have. The same as GROUPS and Matcher in the Telegram bot's contractions.py.
 // Plain script: this project does not use ES modules, so it goes on window.
 (function () {
   const GROUPS = [
@@ -66,6 +66,7 @@
 
   function matcher(query) {
     const words = query.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return null;
     const parts = [];
     let swapped = false;
     for (let i = 0; i < words.length;) {
@@ -81,17 +82,28 @@
         i++;
       }
     }
-    if (!swapped) return null;
+    const forms = (p) => `(?:${p.forms.map(pattern).join('|')})${END}`;
 
-    // Words apart by spaces only: a stop's name and road are apart by a line break, and a
-    // query isn't matched across the two.
-    const source = parts.map((p, i) => p.literal != null
-      ? escape(p.literal)
-      : `${i === 0 ? START : ''}(?:${p.forms.map(pattern).join('|')})${END}`).join(' +');
-    const re = new RegExp(source);
+    // In one piece, words apart by spaces only: a stop's name and road are apart by a line
+    // break, and a query isn't matched across the two.
+    const whole = swapped
+      ? new RegExp(parts.map((p, i) => p.literal != null ? escape(p.literal) : `${i === 0 ? START : ''}${forms(p)}`).join(' +'))
+      : null;
+    // Word by word, in any order and across name and road, so "blk 109 bedok" finds Blk 109
+    // on Bedok Nth Rd. Each word starts one of the stop's words, and each but the last, which
+    // may still be being typed, is all of it: 109 doesn't find Blk 1090, or Blk 2109.
+    const each = parts.length > 1
+      ? parts.map((p, i) => new RegExp(START + (p.literal != null
+        ? escape(p.literal) + (i < parts.length - 1 ? END : '')
+        : forms(p))))
+      : null;
 
     return {
-      test: (text) => re.test(text),
+      // Whether a stop's lowercased name and road match in one piece with words swapped for
+      // their other forms: false for a query with none to swap, matched as typed instead.
+      test: (text) => !!whole?.test(text),
+      // Whether they match word by word: false for a query of one word.
+      words: (text) => !!each?.every((re) => re.test(text)),
       // "Also searched Bt for Bukit": only the forms the stops given really have, other than
       // the one typed.
       note(texts) {

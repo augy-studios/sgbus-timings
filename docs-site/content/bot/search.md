@@ -21,6 +21,9 @@ question it has just asked, is treated as a search.
   Ctr and Ctrl both find Centre and Central. The full word and the short one
   both work, and when some matches were only found that way, the list says
   so: **Did you mean (also searched Bt for Bukit)**.
+- **A stop's name and its road**, in any order, such as `blk 109 bedok`, finds
+  the Blk 109s on roads with Bedok in their name. Stops matching what you typed
+  in one piece still come first.
 - **An MRT or LRT station**, such as `bedok mrt`, `senja lrt` or
   `botanic gardens station`, lists the stops within about 250 m of its exits,
   nearest first, whatever they're named.
