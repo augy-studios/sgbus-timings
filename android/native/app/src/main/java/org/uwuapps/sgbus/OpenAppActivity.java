@@ -3,7 +3,8 @@
  * PackageManager.getLaunchIntentForPackage. A web page can't, since Chrome only opens apps that
  * answer a link, and SimplyGo's own links aren't safe to use (sg.com.transitlink://main loops).
  *
- * The site links here with an intent link naming this app (main-site/script.js, "SimplyGo"):
+ * The site links here with an intent link naming this app (main-site/script.js, "SimplyGo", and
+ * main-site/js/trip.js, MyICA):
  * in this app, SgBusPlugin.shouldOverrideLoad hands it here; in Chrome on a phone with this app,
  * Chrome does, and on one without it, Chrome goes to the link's fallback (the store page):
  *
@@ -32,6 +33,9 @@ public class OpenAppActivity extends Activity {
     static {
         Map<String, String> apps = new HashMap<>();
         apps.put("simplygo", "sg.com.transitlink");
+        // MyICA Mobile, for its immigration QR code, from a trip to a checkpoint (2.2.1,
+        // main-site/js/trip.js).
+        apps.put("myica", "sg.gov.ica.mobile.app");
         APPS = Collections.unmodifiableMap(apps);
     }
 

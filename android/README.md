@@ -38,6 +38,7 @@ from there.
 | **Battery optimisation**, asked once on the first trip (2.1.0) | `TripPlugin`, `SgBusPlugin.batteryIntent` | |
 | **Wear OS** (2.1.0): favourite stops handed to the watch app over the Wearable Data Layer | `WearSync`, and the watch app in `native/wear/` (its README) | `script.js` (`shareFavsWithWidgets`) |
 | **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
+| **Opening MyICA Mobile** (2.2.1), from a trip to a checkpoint, for its immigration QR code | `OpenAppActivity` (`myica`), the `myica` feature | `js/trip.js` ("MyICA"), `js/network.js` (`ICA_CHECKPOINTS`) |
 | **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates" | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
 | **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |
 

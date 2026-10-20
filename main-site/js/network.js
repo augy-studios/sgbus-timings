@@ -266,13 +266,30 @@
   // they're planned through as usual, but their timings and route lists say so (script.js).
   // The same as CROSS_BORDER in the Telegram bot's restricted.py.
   const CHECKPOINT = { label: "Immigration checkpoint", note: "Passport needed to go on." };
-  const MALAYSIA = { label: "In Malaysia", note: "Passport needed." };
+  // `abroad`: past Singapore's checkpoint, so a ride to one goes through it (js/trip.js).
+  const MALAYSIA = { label: "In Malaysia", note: "Passport needed.", abroad: true };
   const CROSS_BORDER = {
     46101: CHECKPOINT, 46109: CHECKPOINT,
     46211: MALAYSIA, 46219: MALAYSIA, 46239: MALAYSIA, 47711: MALAYSIA,
   };
 
   const crossBorder = (code) => CROSS_BORDER[code] || null;
+
+  // Singapore's land checkpoints, where ICA clears you on the way out and back in: Tuas,
+  // Woodlands, and Woodlands Train Checkpoint for the KTM Shuttle Tebrau. A trip that rides or
+  // walks to one offers MyICA Mobile, for its QR code (js/trip.js). Each stop's [lat, lng], so
+  // a walk there counts too, and nothing waits on the stop list.
+  const ICA_CHECKPOINTS = {
+    25269: [1.347772, 103.637469], // Tuas Checkpt
+    46101: [1.446160, 103.768541], 46109: [1.445706, 103.768683], // W'lands Checkpt
+    46069: [1.442783, 103.769356], // W'lands Train Checkpt
+  };
+  // How near a checkpoint's stop a trip's point can be and still be at it.
+  const CHECKPOINT_M = 150;
+
+  const isCheckpoint = (code) => code in ICA_CHECKPOINTS;
+  const nearCheckpoint = (point) =>
+    point?.length === 2 && Object.values(ICA_CHECKPOINTS).some((at) => haversine(point, at) <= CHECKPOINT_M);
 
   // The parts of a run a journey can ride, as lists of indexes into it: the stops nobody
   // may get on or off at left out, and the run cut in two where nobody may ride through.
@@ -415,6 +432,8 @@
     stopsTo,
     restricted,
     crossBorder,
+    isCheckpoint,
+    nearCheckpoint,
     graph: getGraph,
     haversine,
     byNumber,

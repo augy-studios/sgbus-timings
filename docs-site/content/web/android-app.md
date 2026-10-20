@@ -215,6 +215,9 @@ access only when you pick **Use this phone's calendar**.
 
 - The [SimplyGo](install.md#simplygo) button opens the SimplyGo app itself,
   rather than its store page.
+- From version 2.2.1, a trip's **MyICA** button, on a trip to Tuas or Woodlands
+  Checkpoint (see [Get Off Alert](get-off-alert.md)), opens MyICA Mobile itself
+  too, or its Play Store page if it isn't installed.
 - **More** on a share card, and anywhere else the app shares, opens Android's own
   share sheet. From version 2.1.0, **Telegram** and **WhatsApp** open those apps
   straight away, ready to pick a chat.

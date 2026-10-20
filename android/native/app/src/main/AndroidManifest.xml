@@ -81,6 +81,7 @@
          they're named here. -->
     <queries>
         <package android:name="sg.com.transitlink" />
+        <package android:name="sg.gov.ica.mobile.app" />
     </queries>
 
     <application

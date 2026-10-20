@@ -9,6 +9,22 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 21 October 2026: Apps 2.2.1, MyICA on trips to the checkpoints
+
+### Web app
+
+- **MyICA at the checkpoint** - On a phone, a trip to Tuas or Woodlands Checkpoint (or Woodlands Train Checkpoint), or on across the Causeway, has a **MyICA** button on the trip bar, for ICA's app and its immigration QR code. It opens MyICA Mobile's Play Store or App Store page, which says **Open** once it's installed. From the route planner and Navigate alike.
+
+### Android app 2.2.1
+
+- **Opens MyICA itself** - The trip's **MyICA** button opens MyICA Mobile straight away, as the SimplyGo button does SimplyGo, or its Play Store page if it isn't installed.
+
+### Desktop app 2.2.1
+
+- The web app's change above. Nothing new of its own: the same number as the Android app.
+
+---
+
 ## 21 October 2026: Routines and Timings near a stop in the Edge Tray
 
 ### Android app

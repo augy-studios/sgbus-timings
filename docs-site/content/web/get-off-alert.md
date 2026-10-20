@@ -36,6 +36,12 @@ you are that glides along between stops as you go, the stop the alert goes off a
 and where to get off or change. Tap it again to close it. The map button on the
 bar shows the trip on the [live map](live-map.md).
 
+On a phone, a trip to Tuas or Woodlands Checkpoint, or across the Causeway, has
+a **MyICA** button on the bar, for ICA's MyICA Mobile app and its immigration QR
+code. It opens the app's Play Store or App Store page, which says **Open** once
+it's installed; in the [Android app](android-app.md#simplygo-sharing-and-links)
+from 2.2.1 it opens MyICA itself.
+
 Tap a bus stop on the timeline to see that stop's timings for your bus: the
 timeline closes and the page scrolls down to them, with the trip still running.
 

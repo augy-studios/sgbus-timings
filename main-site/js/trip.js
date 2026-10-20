@@ -70,6 +70,14 @@
 // Next, to move it by hand. Back puts you where you were on the part before, or at its start if
 // you'd finished it, and re-arms its alerts; the server hears it was by hand (`movedAt`), so
 // it doesn't move you on again with what it had.
+//
+// A trip that rides or walks to Tuas or Woodlands Checkpoint (BusNet.isCheckpoint and
+// nearCheckpoint, js/network.js), from the route planner or Navigate, has a MyICA button on the
+// bar, for ICA's app and its immigration QR code, on phones only. In the Android app from 2.2.1
+// (feature "myica") it opens MyICA itself, as the SimplyGo button does SimplyGo
+// (OpenAppActivity.java), or its Play Store page where it isn't installed; anywhere else on
+// Android, the Play Store page, and on iPhone and iPad, the App Store's. Either says Open once
+// it's installed.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -1437,6 +1445,54 @@
     return where + (trip.legs.length > 1 ? ` · part ${trip.leg + 1} of ${trip.legs.length}` : "");
   }
 
+  // ---------- MyICA, on a trip to a checkpoint ----------
+
+  const ICA_PLAY = "https://play.google.com/store/apps/details?id=sg.gov.ica.mobile.app";
+  const ICA_APP_STORE = "https://apps.apple.com/sg/app/myica-mobile/id1584952674";
+  const ICA_ANDROID = "intent://open/myica#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;" +
+    `S.browser_fallback_url=${encodeURIComponent(ICA_PLAY)};end`;
+
+  // Where the button goes, or null off a phone.
+  function icaLink() {
+    const ua = navigator.userAgent;
+    // iPadOS asks for desktop sites, so says it's a Mac; a touch screen gives it away.
+    if (/iPhone|iPad|iPod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 0)) return ICA_APP_STORE;
+    if (!/Android/i.test(ua)) return null;
+    // Only an app that knows MyICA: an older one's OpenAppActivity would do nothing with it.
+    return window.AppBridge?.native && AppBridge.has("myica") ? ICA_ANDROID : ICA_PLAY;
+  }
+
+  // Whether a trip goes to a checkpoint: gets on or off a ride at one, rides on across the
+  // border (where everyone gets off to clear it), or walks or ends there. Not a ride that only
+  // passes one, as buses along Woodlands Centre Rd pass the train checkpoint's stop. Worked out
+  // once a trip.
+  const atCheckpoint = new WeakMap();
+  function toCheckpoint(t) {
+    if (!atCheckpoint.has(t)) {
+      const net = window.BusNet;
+      const ends = (l) => [l.points?.[0], l.points?.[l.points.length - 1]];
+      atCheckpoint.set(t, !!net && (
+        t.legs.some((l) => [l.board, l.alight, l.codes?.[0], l.codes?.[l.codes.length - 1]].some((c) => c && (net.isCheckpoint(c) || net.crossBorder(c)?.abroad)) ||
+          (l.codes || []).some((c) => net.crossBorder(c)?.abroad) ||
+          ends(l).some(net.nearCheckpoint)) ||
+        (!!t.to && net.nearCheckpoint([t.to.lat, t.to.lng]))));
+    }
+    return atCheckpoint.get(t);
+  }
+
+  function renderIca() {
+    const btn = $("#tripIca");
+    const href = toCheckpoint(trip) ? icaLink() : null;
+    btn.hidden = !href;
+    if (!href) return;
+    btn.href = href;
+    // An intent is handed to Android, not opened in a tab. A store page is, so this page and
+    // its trip stay put even where the store's own app doesn't take it.
+    if (href === ICA_ANDROID) btn.removeAttribute("target");
+    else btn.target = "_blank";
+    btn.rel = "noopener noreferrer";
+  }
+
   function render(message) {
     if (!trip) return;
     const leg = trip.legs[trip.leg];
@@ -1462,6 +1518,7 @@
     $("#tripNote").hidden = !notes.length;
     $("#tripPrev").hidden = trip.leg === 0;
     $("#tripNext").hidden = trip.leg >= trip.legs.length - 1;
+    renderIca();
     const icon = $("#tripBar [data-icon]");
     icon.setAttribute("data-icon", leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus");
     window.hydrateIcons($("#tripBar"));
@@ -1650,7 +1707,7 @@
     // Anywhere on the bar but its buttons opens or closes the timeline; the title is the
     // button for keyboards and screen readers.
     $("#tripBar .tripBarInner").addEventListener("click", (e) => {
-      if (e.target.closest("#tripEnd, #tripPrev, #tripNext, #tripShare, #tripMap")) return;
+      if (e.target.closest("#tripEnd, #tripPrev, #tripNext, #tripShare, #tripMap, #tripIca")) return;
       setExpanded(!expanded);
     });
     $("#tripEnd").addEventListener("click", () => stop());

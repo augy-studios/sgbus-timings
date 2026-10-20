@@ -146,6 +146,8 @@ public class SgBusPlugin extends Plugin {
         // 2.2.0
         features.put("locationon"); // location, turnOnLocation: the phone's Location switch
         features.put("routines"); // RemindersPlugin.routines (Routines)
+        // 2.2.1
+        features.put("myica"); // OpenAppActivity opens MyICA Mobile, from a trip to a checkpoint
         features.put("cardreading"); // CardPlugin's "reading" event
         // Firebase is set up for this build (google-services.json): the server can push.
         if (firebaseReady()) {
