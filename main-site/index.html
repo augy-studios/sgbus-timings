@@ -139,8 +139,8 @@
                 <span class="tray-rule" aria-hidden="true"></span>
                 <!-- The Android app's Timings near a stop (2.1.0) and Routines (2.2.0), where it has
                      them (js/reminders.js). Either can be turned off in Settings, Edge Tray buttons -->
-                <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Timings near a stop" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="locate"></span></button>
-                <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Routines" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="clock"></span></button>
+                <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Timings near a stop" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="clock"></span></button>
+                <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Routines" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="alarm"></span></button>
                 <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js) -->
                 <button id="cardBtn" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
                 <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.1.0
@@ -660,7 +660,9 @@
                     <button class="tab" type="button" role="tab" data-sync-tab="export">Export</button>
                 </div>
                 <p id="syncListNote" class="mode-note"></p>
-                <label class="syncItem syncAll"><input id="syncAll" type="checkbox"> <span>Select all</span></label>
+                <!-- A button per kind of thing on offer, to show just that one (js/sync.js) -->
+                <div id="syncCats" class="syncCats" role="group" aria-label="Show"></div>
+                <label class="syncItem syncAll"><input id="syncAll" type="checkbox"> <span id="syncAllLabel">Select all</span></label>
                 <div id="syncList" class="syncList"></div>
                 <button id="syncGo" class="btn" type="button" disabled></button>
             </div>

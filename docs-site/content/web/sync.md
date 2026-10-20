@@ -59,8 +59,13 @@ Once connected, both devices show two tabs:
 - **Import** lists the other device's favourites that this one does not have.
 - **Export** lists this device's favourites that the other one does not have.
 
-Tick the ones you want, or **Select all**, then tap the button underneath to copy
-them. The other device saves them straight away and says how many were new.
+Above the list, a button for each kind of thing, such as **Bus stops**,
+**Places** or **Routines**, with how many of it are on offer, shows just that
+kind; **All** shows everything again. Tick the ones you want, or **Select all**
+for the kind on show, then tap the button underneath to copy them. Ticks in
+other kinds stay ticked, and their button is highlighted, so one tap copies
+everything you ticked. The other device saves them straight away and says how
+many were new.
 
 Copying only ever adds, except where there's only one of a thing: your name, your
 birthday, your calendar's link and each setting (see below). Nothing else is

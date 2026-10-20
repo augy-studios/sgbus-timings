@@ -180,6 +180,7 @@ const sync = {
   theirKinds: LEGACY_KINDS, // what the other side keeps
   tab: 'import',
   picked: { import: new Set(), export: new Set() },
+  cat: { import: 'all', export: 'all' }, // the kind on show in each tab (FAV_KINDS' `kind`), or 'all'
   pending: new Map(), // add id -> timer, for sends not yet answered
   lastId: 0,
   retriedTaken: false,
@@ -221,10 +222,20 @@ function initSync() {
     else picked.delete(key);
     renderSyncPicks();
   });
+  $('#syncCats').addEventListener('click', (e) => {
+    const cat = e.target.closest('[data-sync-cat]');
+    if (!cat) return;
+    sync.cat[sync.tab] = cat.dataset.syncCat;
+    renderSyncList();
+    $('#syncList').scrollTop = 0;
+  });
+  // Ticks or unticks what's on show: the kind picked, or everything. Ticks in other kinds stay.
   $('#syncAll').addEventListener('change', (e) => {
     const picked = sync.picked[sync.tab];
-    picked.clear();
-    if (e.target.checked) for (const { key } of syncAvailable()) picked.add(key);
+    for (const { key } of shownAvailable()) {
+      if (e.target.checked) picked.add(key);
+      else picked.delete(key);
+    }
     $$('#syncList [data-sync-key]:not(:disabled)').forEach((box) => { box.checked = picked.has(box.dataset.syncKey); });
     renderSyncPicks();
   });
@@ -484,6 +495,7 @@ function beginSession(role) {
   sync.tab = 'import';
   sync.picked.import.clear();
   sync.picked.export.clear();
+  sync.cat = { import: 'all', export: 'all' };
   showSyncNote('');
   holdScreenOn();
 }
@@ -756,6 +768,10 @@ function syncAvailable() {
   return syncListed().filter((f) => !there.has(f.key));
 }
 
+// Of those, the ones in the kind on show.
+const inShownCat = (f) => sync.cat[sync.tab] === 'all' || f.kind === sync.cat[sync.tab];
+const shownAvailable = () => syncAvailable().filter(inShownCat);
+
 function copyPicked() {
   const picked = sync.picked[sync.tab];
   if (!picked.size || !syncSource()) return;
@@ -922,7 +938,11 @@ function renderSyncList() {
   // A pick the other end has since saved some other way isn't on offer any more.
   for (const key of picked) if (!available.has(key)) picked.delete(key);
 
-  const items = syncListed();
+  const listed = syncListed();
+  // Back to everything when the kind on show has nothing left in this tab.
+  if (sync.cat[sync.tab] !== 'all' && !listed.some((f) => f.kind === sync.cat[sync.tab])) sync.cat[sync.tab] = 'all';
+  const all = sync.cat[sync.tab] === 'all';
+  const items = listed.filter(inShownCat);
   const row = ({ key, kind, item }) => {
     const done = !available.has(key);
     const sub = favSubtitle(kind, item);
@@ -936,24 +956,50 @@ function renderSyncList() {
       `</label>`;
   };
 
+  // Each kind under its heading when they're all on show; one kind needs none.
   $('#syncList').innerHTML = FAV_KINDS.map(({ kind, label }) => {
     const rows = items.filter((f) => f.kind === kind);
-    return rows.length ? `<div class="favGroupLabel">${label}</div>${rows.map(row).join('')}` : '';
+    return rows.length ? `${all ? `<div class="favGroupLabel">${label}</div>` : ''}${rows.map(row).join('')}` : '';
   }).join('') || `<div class="empty">${importing ? `${OtherSide()} has` : 'This device has'} nothing to share yet.</div>`;
 
   renderSyncPicks();
 }
 
-// The Select all box and the button, which follow the ticks without redrawing the list.
+// A button per kind in the tab, with how many of it are on offer: highlighted with some of it
+// ticked. Only with more than one kind to choose between.
+function renderSyncCats() {
+  const listed = syncListed();
+  const kinds = FAV_KINDS.filter(({ kind }) => listed.some((f) => f.kind === kind));
+  const box = $('#syncCats');
+  box.hidden = kinds.length < 2;
+  if (box.hidden) { box.innerHTML = ''; return; }
+  const available = syncAvailable();
+  const picked = sync.picked[sync.tab];
+  const button = (cat, label, offered) => {
+    const on = sync.cat[sync.tab] === cat;
+    const some = offered.some((f) => picked.has(f.key));
+    return `<button type="button" class="tab${on ? ' active' : ''}${some ? ' picked' : ''}" data-sync-cat="${cat}" aria-pressed="${on}">` +
+      `${escapeHtml(label)}<span class="syncCatCount">${offered.length}</span></button>`;
+  };
+  box.innerHTML = button('all', 'All', available) +
+    kinds.map(({ kind, label }) => button(kind, label, available.filter((f) => f.kind === kind))).join('');
+}
+
+// The Select all box, the kinds' buttons and the button under the list, which follow the
+// ticks without redrawing the list. Select all is for the kind on show.
 function renderSyncPicks() {
   const importing = sync.tab === 'import';
   const n = sync.picked[sync.tab].size;
-  const offered = syncAvailable().length;
+  const shown = shownAvailable();
+  const ticked = shown.filter((f) => sync.picked[sync.tab].has(f.key)).length;
+  const cat = FAV_KINDS.find((k) => k.kind === sync.cat[sync.tab]);
 
+  renderSyncCats();
   const all = $('#syncAll');
-  all.disabled = !offered;
-  all.checked = offered > 0 && n === offered;
-  all.indeterminate = n > 0 && n < offered;
+  all.disabled = !shown.length;
+  all.checked = shown.length > 0 && ticked === shown.length;
+  all.indeterminate = ticked > 0 && ticked < shown.length;
+  $('#syncAllLabel').textContent = cat ? `Select all: ${cat.label}` : 'Select all';
 
   const go = $('#syncGo');
   go.disabled = !n;

@@ -101,8 +101,8 @@ like, each for its own stop.
 
 From version 2.1.0, the app can tell you things with itself closed. Each is off
 until you turn it on, and asks for what it needs then. **Timings near a stop**
-and **Routines** have buttons of their own in the Edge Tray, a crosshair and a
-clock, under the line; the rest are in **Settings**. Either button can be turned off in **Settings** >
+and **Routines** have buttons of their own in the Edge Tray, a clock and an
+alarm clock, under the line; the rest are in **Settings**. Either button can be turned off in **Settings** >
 **Edge Tray buttons**.
 
 <figure>

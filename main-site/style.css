@@ -1990,6 +1990,36 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 
 #syncLive .dirTabs { margin: 0; }
 
+/* What's on offer by kind, a button each (js/sync.js): one row that scrolls sideways on a
+   phone rather than wrapping into several. */
+.syncCats {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+}
+.syncCats .tab {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    white-space: nowrap;
+}
+.syncCatCount {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+}
+/* Some of this kind ticked. */
+.syncCats .tab.picked .syncCatCount { background: var(--brand-ink); color: var(--surface); }
+
 .syncList {
     max-height: 40vh;
     overflow: auto;

@@ -14,6 +14,8 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Web app
 
 - **Sync with the Telegram bot** - In Settings, **Sync with the Telegram bot** shows a code and **Open the bot**, which opens the bot with it filled in (or send it `/sync` and the code). Then Import and Export work as between two devices: your name and birthday, favourite stops, buses, routes and navs, places, routines, your calendar's link and where favourites pin, either way. It goes through the site's server, kept there 10 minutes at most.
+- **New tray icons** - In the Android app, the Edge Tray's **Timings near a stop** button is now a clock, and **Routines** an alarm clock.
+- **Sync by kind** - Above what's on offer, a button for each kind (Bus stops, Places, Routines, Settings and so on), with how many of it there are, shows just that one, and **Select all** ticks just those. Ticks in other kinds stay, so one tap still copies the lot.
 - **Sync more** - Between two devices, sync now copies routines and last bus reminders (between two phones with the Android app), your calendar's link, and the settings you've changed, such as dark mode, the colour, the Edge Tray's side and buttons, the Get Off Alert and Shake to refresh. Each side is only offered what the other can keep.
 
 ### Telegram bot
