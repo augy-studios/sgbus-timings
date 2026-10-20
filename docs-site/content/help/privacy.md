@@ -19,8 +19,8 @@ browsing data for the site deletes them.
 
 Your trips keep where each trip started and ended, the buses and trains it used,
 and how long you waited and rode. Past searches keep what you picked in a search
-box: up to the last 50. Both stay in the browser; only places and trips can be
-copied to another device, with [Sync](#sync).
+box: up to the last 50. Both stay in the browser, unless you copy them to another
+device with [Sync](#sync).
 
 ### Your location
 
@@ -51,8 +51,17 @@ policy covers what it collects. There are no ads.
 Sync uses a free public service from PeerJS to introduce your two devices. It
 sees the sync code and both devices' IP addresses, and each device learns the
 other's IP address. What you pick to copy (favourites, your name and birthday,
-places, trips and past searches) travels directly between the two devices,
-encrypted, and never through that service.
+places, trips, past searches, routines, your calendar's link and settings)
+travels directly between the two devices, encrypted, and never through that
+service.
+
+Syncing with the Telegram bot is different: the bot can't connect to your
+device directly, so what's copied either way passes through SG Bus Timings'
+server. It's held there, in the same database as Service Alerts, for 10 minutes
+at most from when you tap **Sync with the Telegram bot**, and deleted as soon as
+either side ends the sync. Only your device, with a secret it makes up for that
+sync, and the bot can read it. What you send to the bot is then kept in the
+bot's own database, as anything you save in the bot is.
 
 ### Service alert notifications
 

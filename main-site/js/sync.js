@@ -1,22 +1,35 @@
-// Syncing favourites with another device, from the Settings modal.
+// Syncing favourites, and everything else of yours, with another device or the Telegram bot,
+// from the Settings modal.
 //
-// One device shows a code (with a link and a QR code of it) and the other enters it. PeerJS's
-// public broker introduces the two, then favourites go straight from one to the other over a
-// WebRTC data channel, STUN only (js/p2p.js; STUN-p2p-spec.md in the repo root says why). So
-// both have to be on the same network, or one on the other's hotspot.
+// With another device, one shows a code (with a link and a QR code of it) and the other enters
+// it. PeerJS's public broker introduces the two, then everything goes straight from one to the
+// other over a WebRTC data channel, STUN only (js/p2p.js; STUN-p2p-spec.md in the repo root
+// says why). So both have to be on the same network, or one on the other's hotspot.
 //
-// Once connected, each device sees the other's favourites and ticks which to import, or which
-// of its own to send over, or all of them. Copying only ever adds: nothing on either device is
-// removed or replaced. Closing Settings ends the session.
+// With the Telegram bot, this device shows a code and the bot's /sync takes it: the bot can't
+// join a WebRTC channel, so the same messages go through the site's server instead
+// (js/sync-relay.js, api/sync.js), kept there 10 minutes at most. This device is the host.
+//
+// Once connected, each side sees the other's and ticks which to import, or which of its own to
+// send over, or all of them. Copying only adds, except where there's only one of a thing (your
+// name, your calendar's link, a setting): taking the other's replaces this one's. Nothing is
+// ever removed. Closing Settings ends the session.
+//
+// Each side says which kinds it can keep (`kinds`), and only those are offered to it: the
+// website has no routines, and the bot no trips. Whatever the bot and the website both keep,
+// two devices sync too.
 //
 // Loaded before script.js and uses its helpers ($, LS, nameOf, ...), so nothing here runs until
 // script.js calls initSync().
 //
 // The wire, on top of p2p.js's hello and bye:
-//   { type: 'favs', favs }        either way: all of the sender's favourites, on connecting
-//                                 (the host in answer to hello) and whenever they change
-//   { type: 'add', id, favs }     either way: add these to yours
-//   { type: 'added', id, count }  the answer to add, with how many were new there
+//   { type: 'favs', favs, kinds }  either way: all of the sender's, on connecting (the host in
+//                                  answer to hello) and whenever they change, and the kinds it
+//                                  can keep (FAV_KINDS' `kind`, and `setting:<field>` for each
+//                                  setting). One without `kinds` is from before there were any
+//                                  beyond LEGACY_KINDS.
+//   { type: 'add', id, favs }      either way: add these to yours
+//   { type: 'added', id, count }   the answer to add, with how many were new there
 
 const SYNC_HOST_KEY = 'sgbus_sync_host_code';
 const SYNC_LAST_KEY = 'sgbus_sync_last_code';
@@ -24,8 +37,10 @@ const SYNC_LAST_KEY = 'sgbus_sync_last_code';
 // More than anybody saves, and it keeps one message to tens of kilobytes.
 const SYNC_MAX_ITEMS = 500;
 
-// How long a device has to answer an `add` before this one says it heard nothing.
+// How long a device has to answer an `add` before this one says it heard nothing. The bot
+// longer, as both it and this device only check the relay every couple of seconds.
 const SYNC_ACK_MS = 5000;
+const SYNC_BOT_ACK_MS = 15000;
 
 const FAV_KINDS = [
   // You: your name and birthday from Settings, as { field, value }. Keyed by value too, so one
@@ -45,15 +60,124 @@ const FAV_KINDS = [
   { kind: 'trip',  list: 'trips',  label: 'Trips',     key: (t) => `trip:${t.id}` },
   // Past searches (js/recents.js), merged in by when each was searched.
   { kind: 'search', list: 'searches', label: 'Past searches', key: (r) => `search:${Recents.syncKey(r)}` },
+  // The Android app's routines and last bus reminders (js/reminders.js), the bot's routines too.
+  { kind: 'routine', list: 'routines', label: 'Routines', key: (r) => `routine:${r.code}@${r.time}/${[...r.days].sort().join('')}/${[...r.buses].sort().join(',')}` },
+  { kind: 'lastbus', list: 'lastbus', label: 'Last bus reminders', key: (r) => `lastbus:${r.code}/${r.service}` },
+  // Your calendar's link (js/calendar.js), the bot's /calendar too. One of it, as with your name.
+  // webcal:// is https://, as the bot keeps it.
+  { kind: 'calendar', list: 'calendar', label: 'Calendar', key: (c) => `calendar:${c.url.replace(/^webcals?:\/\//i, 'https://')}` },
+  // Settings, as { field, value }, each one as your name is (SYNC_SETTINGS below). Only those
+  // changed from how they start, so taking another device's never just undoes a choice.
+  { kind: 'setting', list: 'settings', label: 'Settings', key: (s) => `setting:${s.field}=${s.value}` },
 ];
+
+// What a device from before `kinds` keeps.
+const LEGACY_KINDS = ['profile', 'stop', 'bus', 'route', 'nav', 'place', 'trip', 'search'];
 
 const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}`;
 
+// ---- Settings ----
+// Each: what Settings calls it, its value as words, what it starts as, and how it's read and
+// put in place, through the same buttons Settings has, so the page follows as if tapped.
+// `here` is whether this device has it. The bot keeps only the two pins.
+
+const tap = (selector) => document.querySelector(selector)?.click();
+const onOff = (v) => (v === 'on' ? 'On' : 'Off');
+const TRAY_EXTRAS = ['simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines'];
+
+const SYNC_SETTINGS = {
+  'pin.stop': {
+    label: 'Pin favourite stops in lists', values: ['top', 'bottom'], start: 'top',
+    text: (v) => (v === 'bottom' ? 'Bottom' : 'Top'),
+    get: () => LS.getPin('stop'), set: (v) => tap(`[data-pin-kind="stop"] [data-pin="${v}"]`),
+  },
+  'pin.bus': {
+    label: 'Pin favourite buses at a stop', values: ['top', 'bottom'], start: 'top',
+    text: (v) => (v === 'bottom' ? 'Bottom' : 'Top'),
+    get: () => LS.getPin('bus'), set: (v) => tap(`[data-pin-kind="bus"] [data-pin="${v}"]`),
+  },
+  'theme.mode': {
+    label: 'Light or dark', values: () => window.MODE_PREFERENCES || [], start: 'light',
+    text: (v) => ({ light: 'Light', dark: 'Dark', time: 'By the time of day' })[v] || v,
+    get: () => window.getModePreference?.() || 'light', set: (v) => window.applyMode?.(v),
+  },
+  'theme.colour': {
+    label: 'Colour', values: () => (window.COLOR_THEMES || []).map((t) => t.id), start: 'classic',
+    text: (v) => (window.COLOR_THEMES || []).find((t) => t.id === v)?.label || v,
+    get: () => window.getStoredColorTheme?.() || 'classic', set: (v) => window.applyColorTheme?.(v),
+  },
+  getoff: {
+    label: 'Get Off Alert on a trip', values: ['on', 'off'], start: 'on', text: onOff,
+    get: () => (Trip.enabled() ? 'on' : 'off'), set: (v) => tap(`[data-getoff="${v}"]`),
+  },
+  earphones: {
+    label: 'Get Off Alert’s sound', values: ['on', 'off'], start: 'off',
+    text: (v) => (v === 'on' ? 'Earphones only' : 'Out loud'),
+    here: () => Reminders.has('earphones'),
+    get: () => (Reminders.earphonesOnly() ? 'on' : 'off'), set: (v) => tap(`[data-earphones="${v}"]`),
+  },
+  shake: {
+    label: 'Shake to refresh', values: ['on', 'off'], start: 'on', text: onOff,
+    get: () => { try { return localStorage.getItem('sgbus_shake') === 'off' ? 'off' : 'on'; } catch { return 'on'; } },
+    set: (v) => { try { localStorage.setItem('sgbus_shake', v); } catch { /* this visit only */ } tap(`[data-shake="${v}"]`); },
+  },
+  confetti: {
+    label: 'Birthday confetti', values: ['on', 'off'], start: 'on', text: onOff,
+    get: () => (LS.getConfetti() ? 'on' : 'off'), set: (v) => tap(`[data-confetti="${v}"]`),
+  },
+  'tray.side': {
+    label: 'Edge Tray side', values: ['left', 'right'], start: 'right',
+    text: (v) => (v === 'left' ? 'Left' : 'Right'),
+    get: () => (page.getAttribute('data-tray-side') === 'left' ? 'left' : 'right'), set: (v) => setTraySide(v),
+  },
+  // The buttons turned off, as "coffee telegram".
+  'tray.hide': {
+    label: 'Edge Tray buttons turned off', start: '',
+    ok: (v) => v.split(' ').filter(Boolean).every((n) => TRAY_EXTRAS.includes(n)),
+    text: (v) => v.split(' ').filter(Boolean).map((n) => $(`#trayExtrasPick [data-tray-show="${n}"]`)?.textContent || n).join(', ') || 'None',
+    get: () => [...trayHidden()].sort().join(' '),
+    set: (v) => { const off = v.split(' '); for (const n of TRAY_EXTRAS) setTrayExtra(n, !off.includes(n)); },
+  },
+  'nav.mode': {
+    label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',
+    text: (v) => (v === 'bus' ? 'Bus only' : 'Bus and train'),
+    get: () => { try { return localStorage.getItem('sgbus_nav_mode') === 'bus' ? 'bus' : 'all'; } catch { return 'all'; } },
+    set: (v) => { try { localStorage.setItem('sgbus_nav_mode', v); } catch { /* opens on Bus and train */ } },
+  },
+};
+
+const settingValues = (s) => (typeof s.values === 'function' ? s.values() : s.values);
+const settingOk = (field, value) => {
+  const s = SYNC_SETTINGS[field];
+  if (!s || typeof value !== 'string' || value.length > 100) return false;
+  return s.ok ? s.ok(value) : settingValues(s).includes(value);
+};
+const settingHere = (field) => !SYNC_SETTINGS[field].here || SYNC_SETTINGS[field].here();
+
+function ownSettings() {
+  return Object.entries(SYNC_SETTINGS)
+    .filter(([field, s]) => settingHere(field) && s.get() !== s.start)
+    .map(([field, s]) => ({ field, value: s.get() }));
+}
+
+// The kinds this device keeps, for the other side to offer only those.
+function ownKinds() {
+  return [
+    ...LEGACY_KINDS, 'calendar',
+    ...(Reminders.has('routines') ? ['routine'] : []),
+    ...(Reminders.has('lastbus') ? ['lastbus'] : []),
+    ...Object.keys(SYNC_SETTINGS).filter(settingHere).map((field) => `setting:${field}`),
+  ];
+}
+
+const keeps = (kinds, { kind, item }) => kinds.includes(kind === 'setting' ? `setting:${item.field}` : kind);
+
 const sync = {
-  role: null,        // 'host' | 'guest' while a session runs
-  conn: null,        // its P2P.Host or P2P.Guest
+  role: null,        // 'host' | 'guest' | 'bot' (hosting for the Telegram bot) while a session runs
+  conn: null,        // its P2P.Host, P2P.Guest or BotRelay
   status: 'idle',
-  theirs: null,      // the other device's favourites, once they've arrived
+  theirs: null,      // the other side's favourites, once they've arrived
+  theirKinds: LEGACY_KINDS, // what the other side keeps
   tab: 'import',
   picked: { import: new Set(), export: new Set() },
   pending: new Map(), // add id -> timer, for sends not yet answered
@@ -67,6 +191,12 @@ function initSync() {
   $('#syncHostBtn').addEventListener('click', () => {
     sync.retriedTaken = false;
     startHosting();
+  });
+  $('#syncBotBtn').addEventListener('click', startBotSync);
+  $('#syncBotCommand').addEventListener('click', () => {
+    navigator.clipboard?.writeText($('#syncBotCommand').textContent)
+      .then(() => showSyncNote('Command copied. Paste it to the bot.'))
+      .catch(() => {});
   });
   $('#syncJoinBtn').addEventListener('click', () => joinSync($('#syncCodeInput').value));
   $('#syncCodeInput').addEventListener('keydown', (e) => {
@@ -171,16 +301,25 @@ function ownFavs() {
     profile: ownProfile(),
     stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes(), navs: LS.getFavNavs(),
     places: Places.syncList(), trips: TripHistory.list().slice(0, SYNC_MAX_ITEMS), searches: Recents.syncList(),
+    routines: Reminders.syncRoutines(), lastbus: Reminders.syncLastBus(), calendar: Calendar.syncList(),
+    settings: ownSettings(),
   };
 }
 
 // Every favourite as one flat list, each with a key that names it the same way on both devices.
 function favItems(favs) {
-  return FAV_KINDS.flatMap(({ kind, list, key }) => favs[list].map((item) => ({ key: key(item), kind, item })));
+  return FAV_KINDS.flatMap(({ kind, list, key }) => (favs[list] || []).map((item) => ({ key: key(item), kind, item })));
 }
 
 function pickFavs(favs, keys) {
-  return Object.fromEntries(FAV_KINDS.map(({ list, key }) => [list, favs[list].filter((item) => keys.has(key(item)))]));
+  return Object.fromEntries(FAV_KINDS.map(({ list, key }) => [list, (favs[list] || []).filter((item) => keys.has(key(item)))]));
+}
+
+// What the other side said it keeps: the kinds it named that this version knows.
+function cleanKinds(raw) {
+  if (!Array.isArray(raw)) return LEGACY_KINDS;
+  const known = new Set([...FAV_KINDS.map((k) => k.kind), ...Object.keys(SYNC_SETTINGS).map((f) => `setting:${f}`)]);
+  return raw.filter((k) => typeof k === 'string' && known.has(k));
 }
 
 // Favourites from the other device, checked field by field. They're input from another
@@ -217,6 +356,26 @@ function cleanFavs(raw) {
     places: list(raw.places).map(Places.clean).filter((p) => p && once(Places.syncKey(p))),
     trips: list(raw.trips).map(TripHistory.clean).filter((t) => t && once(`trip:${t.id}`)),
     searches: list(raw.searches).map(Recents.clean).filter((r) => r && once(`search:${Recents.syncKey(r)}`)),
+    routines: list(raw.routines)
+      .filter((r) => isStop(r?.code) && /^([01]\d|2[0-3])[0-5]\d$/.test(r.time)
+        && Array.isArray(r.days) && r.days.length && r.days.every((d) => Number.isInteger(d) && d >= 1 && d <= 7)
+        && Array.isArray(r.buses) && r.buses.length <= 20 && r.buses.every((b) => typeof b === 'string' && /^[0-9A-Z]{1,5}$/.test(b)))
+      .map((r) => ({ code: r.code, name: text(r.name), buses: [...new Set(r.buses)], time: r.time, days: [...new Set(r.days)].sort() }))
+      .filter((r) => once(FAV_KINDS.find((k) => k.kind === 'routine').key(r)))
+      .slice(0, Reminders.MAX_ROUTINES),
+    lastbus: list(raw.lastbus)
+      .filter((r) => isStop(r?.code) && typeof r.service === 'string' && /^[0-9A-Z]{1,5}$/.test(r.service)
+        && ['wd', 'sat', 'sun'].every((d) => /^(\d{4}|-)$/.test(r[d])) && once(`lastbus:${r.code}/${r.service}`))
+      .map((r) => ({ code: r.code, name: text(r.name), service: r.service, wd: r.wd, sat: r.sat, sun: r.sun }))
+      .slice(0, 20),
+    // A link to a calendar, https or webcal (which is https).
+    calendar: list(raw.calendar)
+      .filter((c) => typeof c?.url === 'string' && c.url.length <= 2000 && /^(https|webcal):\/\/[^\s]+$/i.test(c.url))
+      .slice(0, 1)
+      .map((c) => ({ url: c.url })),
+    settings: list(raw.settings)
+      .filter((s) => settingOk(s?.field, s?.value) && once(`setting:${s.field}`))
+      .map((s) => ({ field: s.field, value: s.value })),
   };
 }
 
@@ -231,12 +390,33 @@ function mergeFavs(favs) {
   const places = [];
   const trips = [];
   const searches = [];
+  const routines = [];
+  const lastbus = [];
+  const kinds = ownKinds();
   let added = 0;
   let profile = false;
 
-  for (const { key, kind, item } of favItems(favs)) {
-    if (have.has(key)) continue;
+  for (const fav of favItems(favs)) {
+    const { key, kind, item } = fav;
+    if (have.has(key) || !keeps(kinds, fav)) continue;
     have.add(key);
+    if (kind === 'routine') {
+      routines.push(item);
+      continue;
+    }
+    if (kind === 'lastbus') {
+      lastbus.push(item);
+      continue;
+    }
+    if (kind === 'calendar') {
+      added += Calendar.mergeSync(item.url);
+      continue;
+    }
+    if (kind === 'setting') {
+      SYNC_SETTINGS[item.field].set(item.value);
+      added++;
+      continue;
+    }
     if (kind === 'profile') {
       if (item.field === 'name') LS.setName(item.value);
       else LS.setBirthday(item.value);
@@ -288,6 +468,8 @@ function mergeFavs(favs) {
   if (places.length) added += Places.merge(places);
   if (trips.length) added += TripHistory.merge(trips);
   if (searches.length) added += Recents.merge(searches);
+  if (routines.length) added += Reminders.mergeRoutines(routines);
+  if (lastbus.length) added += Reminders.mergeLastBus(lastbus);
   return added;
 }
 
@@ -297,6 +479,7 @@ function beginSession(role) {
   sync.role = role;
   sync.status = 'connecting';
   sync.theirs = null;
+  sync.theirKinds = LEGACY_KINDS;
   sync.droppedCode = '';
   sync.tab = 'import';
   sync.picked.import.clear();
@@ -380,6 +563,43 @@ async function startHosting() {
   }
 }
 
+// The Telegram bot's username, for its links. The same as index.html's Telegram button.
+const SYNC_BOT = 'UwUsgbus_bot';
+const botLink = (code) => `https://t.me/${SYNC_BOT}?start=sync_${code}`;
+
+// Syncing with the Telegram bot: a fresh code each time, which the bot takes with its /sync
+// (or its link, which says it for you), through the site's relay (js/sync-relay.js).
+async function startBotSync() {
+  if (sync.role) return;
+  const code = P2P.generateCode();
+  beginSession('bot');
+  $('#syncCode').textContent = code;
+  $('#syncLink').textContent = botLink(code);
+  $('#syncQr').innerHTML = qrToSvg(botLink(code));
+  $('#syncBotOpen').href = botLink(code);
+  $('#syncBotCommand').textContent = `/sync ${code}`;
+
+  const relay = new BotRelay();
+  sync.conn = relay;
+  relay.addEventListener('status', ({ detail }) => {
+    if (sync.conn !== relay) return;
+    if (detail.status === 'ended') endSession({ text: detail.message, tone: 'warn' });
+    else if (detail.status === 'error') endSession({ text: detail.message, tone: 'error' });
+    else onSyncStatus(detail.status);
+  });
+  relay.addEventListener('message', ({ detail }) => {
+    if (sync.conn === relay) onSyncMessage(detail.message);
+  });
+  renderSync();
+  revealSync();
+
+  try {
+    await relay.start(code);
+  } catch (err) {
+    if (sync.conn === relay) endSession({ text: err.message, tone: 'error' });
+  }
+}
+
 // Gives up the code on show for a fresh one, which the old one stops working the moment it does.
 async function newHostCode(note = '') {
   endSession();
@@ -438,9 +658,10 @@ function onSyncStatus(status) {
   sync.status = status;
   if (status !== 'connected') {
     sync.theirs = null;
-  } else if (was !== 'connected' && sync.role === 'guest') {
-    // The host answers p2p.js's hello with its favourites; these are ours for it.
-    sendSync({ type: 'favs', favs: ownFavs() });
+  } else if (was !== 'connected' && sync.role !== 'host') {
+    // The host answers p2p.js's hello with its favourites; these are ours for it. The bot has
+    // sent its own on joining, and hears ours now.
+    sendFavs();
   }
   renderSync();
   if (status === 'connected' && was !== 'connected') revealSync();
@@ -450,18 +671,27 @@ function sendSync(message) {
   sync.conn?.send(message);
 }
 
+function sendFavs() {
+  sendSync({ type: 'favs', favs: ownFavs(), kinds: ownKinds() });
+}
+
+// The other side, in the notes.
+const otherSide = () => (sync.role === 'bot' ? 'the Telegram bot' : 'the other device');
+const OtherSide = () => (sync.role === 'bot' ? 'The Telegram bot' : 'The other device');
+
 // Everything the other device sends goes through here. Unknown types are ignored, never
 // thrown on: the other device may be a version ahead or behind.
 function onSyncMessage(message) {
   switch (message.type) {
     case 'hello':
-      if (sync.role === 'host') sendSync({ type: 'favs', favs: ownFavs() });
+      if (sync.role === 'host') sendFavs();
       break;
 
     case 'favs': {
       const favs = cleanFavs(message.favs);
       if (!favs) break;
       sync.theirs = favs;
+      sync.theirKinds = cleanKinds(message.kinds);
       renderSyncList();
       break;
     }
@@ -471,10 +701,10 @@ function onSyncMessage(message) {
       if (!favs || !Number.isInteger(message.id)) break;
       const added = mergeFavs(favs);
       sendSync({ type: 'added', id: message.id, count: added });
-      if (added) sendSync({ type: 'favs', favs: ownFavs() });
+      if (added) sendFavs();
       showSyncNote(added
-        ? `The other device sent ${plural(added, 'favourite')}, now saved here.`
-        : 'The other device sent favourites this device already has.');
+        ? `${OtherSide()} sent ${plural(added, 'thing')}, now saved here.`
+        : `${OtherSide()} sent things this device already has.`);
       renderSyncList();
       break;
     }
@@ -486,8 +716,8 @@ function onSyncMessage(message) {
       sync.pending.delete(message.id);
       const count = Math.max(0, Math.min(SYNC_MAX_ITEMS * FAV_KINDS.length, Math.floor(Number(message.count)) || 0));
       showSyncNote(count
-        ? `Sent. The other device saved ${plural(count, 'new favourite')}.`
-        : 'Sent. The other device already had all of those.');
+        ? `Sent. ${OtherSide()} saved ${plural(count, 'new thing')}.`
+        : `Sent. ${OtherSide()} already had all of those.`);
       break;
     }
 
@@ -508,12 +738,22 @@ function syncSource() {
   return sync.tab === 'import' ? sync.theirs : ownFavs();
 }
 
-function syncAvailable() {
+// The kinds the receiving end of the tab on show keeps.
+const destKinds = () => (sync.tab === 'import' ? ownKinds() : sync.theirKinds);
+
+// What's listed in the tab on show: only what the receiving end can keep.
+function syncListed() {
   const source = syncSource();
+  if (!source) return [];
+  const kinds = destKinds();
+  return favItems(source).filter((f) => keeps(kinds, f));
+}
+
+function syncAvailable() {
   const dest = sync.tab === 'import' ? ownFavs() : sync.theirs;
-  if (!source || !dest) return [];
+  if (!syncSource() || !dest) return [];
   const there = new Set(favItems(dest).map((f) => f.key));
-  return favItems(source).filter((f) => !there.has(f.key));
+  return syncListed().filter((f) => !there.has(f.key));
 }
 
 function copyPicked() {
@@ -525,16 +765,16 @@ function copyPicked() {
 
   if (sync.tab === 'import') {
     const added = mergeFavs(chosen);
-    if (added) sendSync({ type: 'favs', favs: ownFavs() });
-    showSyncNote(`Imported ${plural(added, 'favourite')} to this device.`);
+    if (added) sendFavs();
+    showSyncNote(`Imported ${plural(added, 'thing')} to this device.`);
   } else {
     const id = ++sync.lastId;
     sendSync({ type: 'add', id, favs: chosen });
     sync.pending.set(id, setTimeout(() => {
       sync.pending.delete(id);
-      showSyncNote('No answer from the other device. Check it still says connected, then try again.', 'error');
-    }, SYNC_ACK_MS));
-    showSyncNote(`Sending ${plural(count, 'favourite')}…`);
+      showSyncNote(`No answer from ${otherSide()}. Check it still says connected, then try again.`, 'error');
+    }, sync.role === 'bot' ? SYNC_BOT_ACK_MS : SYNC_ACK_MS));
+    showSyncNote(`Sending ${plural(count, 'thing')}…`);
   }
   renderSyncList();
 }
@@ -588,19 +828,23 @@ function renderSync() {
   const { role, status } = sync;
   const connected = status === 'connected';
 
+  const hosting = role === 'host' || role === 'bot';
   $('#syncStart').hidden = !!role;
-  $('#syncHost').hidden = role !== 'host' || connected;
+  $('#syncHost').hidden = !hosting || connected;
+  $('#syncBot').hidden = role !== 'bot';
   $('#syncLive').hidden = !connected;
   $('#syncControls').hidden = !role;
   $('#syncNewCode').hidden = role !== 'host';
-  $('#syncEnd').textContent = connected ? 'Disconnect' : role === 'host' ? 'Stop' : 'Cancel';
+  $('#syncEnd').textContent = connected ? 'Disconnect' : hosting ? 'Stop' : 'Cancel';
 
   if (role === 'host' && status === 'waiting') {
     showSyncStatus('Waiting for the other device. In its Settings, enter this code, or scan the QR code with its camera.', 'warn');
+  } else if (role === 'bot' && status === 'waiting') {
+    showSyncStatus(`Waiting for the Telegram bot. Tap Open the bot, or send it the command below. On a computer, scan the QR code with your phone.`, 'warn');
   } else if (role && status === 'connecting') {
-    showSyncStatus(role === 'host' ? 'Getting the code ready…' : 'Connecting to the other device…', 'busy');
+    showSyncStatus(hosting ? 'Getting the code ready…' : 'Connecting to the other device…', 'busy');
   } else if (connected) {
-    showSyncStatus('Connected to the other device.', 'ok');
+    showSyncStatus(role === 'bot' ? 'Connected to the Telegram bot.' : 'Connected to the other device.', 'ok');
   }
 
   renderSyncList();
@@ -614,7 +858,20 @@ function favTitle(kind, item) {
   if (kind === 'place') return Places.FIXED[item.key]?.name || item.name || item.label;
   if (kind === 'trip') return `To ${item.to.label}`;
   if (kind === 'search') return item.label;
+  if (kind === 'routine') return `${item.time.slice(0, 2)}:${item.time.slice(2)} at ${nameOf(item.code) || item.name || item.code}`;
+  if (kind === 'lastbus') return `Last ${item.service} at ${nameOf(item.code) || item.name || item.code}`;
+  if (kind === 'calendar') return 'Your calendar’s link';
+  if (kind === 'setting') return SYNC_SETTINGS[item.field].label;
   return `${nameOf(item.start) || item.startName || item.start} → ${nameOf(item.end) || item.endName || item.end}`;
+}
+
+// "Weekdays", "Every day", "Weekends" or the days, as the routines in js/reminders.js say.
+function syncDays(days) {
+  const set = [...days].sort().join(',');
+  if (set === '1,2,3,4,5,6,7') return 'Every day';
+  if (set === '1,2,3,4,5') return 'Weekdays';
+  if (set === '6,7') return 'Weekends';
+  return days.map((d) => ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d]).join(', ');
 }
 
 function favSubtitle(kind, item) {
@@ -632,6 +889,11 @@ function favSubtitle(kind, item) {
   if (kind === 'place') return item.label;
   if (kind === 'search') return item.sub;
   if (kind === 'trip') return `${TripHistory.day(item.startedAt)} · ${item.legs.map((l) => (l.kind === 'bus' ? `Bus ${l.route}` : l.route)).join(', ')}`;
+  if (kind === 'routine') return `${syncDays(item.days)} · ${item.buses.length ? `Bus ${item.buses.join(', ')}` : 'Every bus'}`;
+  if (kind === 'lastbus') return item.code;
+  // Enough of the link to tell which, not the private part.
+  if (kind === 'calendar') return item.url.replace(/^(\w+:\/\/[^/]+).*$/, '$1/…');
+  if (kind === 'setting') return SYNC_SETTINGS[item.field].text(item.value);
   return `${item.start} → ${item.end}`;
 }
 
@@ -644,14 +906,14 @@ function renderSyncList() {
     tab.setAttribute('aria-selected', String(on));
   });
   $('#syncListNote').textContent = importing
-    ? "The other device's favourites. Tick the ones to add to this device."
-    : "This device's favourites. Tick the ones to add to the other device.";
+    ? `${sync.role === 'bot' ? 'The Telegram bot’s' : 'The other device’s'} favourites, places and more. Tick the ones to add to this device.`
+    : `This device’s favourites, places and more${sync.role === 'bot' ? ' that the bot keeps' : ''}. Tick the ones to add to ${otherSide()}.`;
 
   const source = syncSource();
   const picked = sync.picked[sync.tab];
   if (!source || !sync.theirs) {
     picked.clear();
-    $('#syncList').innerHTML = `<div class="empty">Waiting for the other device's favourites…</div>`;
+    $('#syncList').innerHTML = `<div class="empty">Waiting for ${otherSide()}…</div>`;
     renderSyncPicks();
     return;
   }
@@ -660,7 +922,7 @@ function renderSyncList() {
   // A pick the other end has since saved some other way isn't on offer any more.
   for (const key of picked) if (!available.has(key)) picked.delete(key);
 
-  const items = favItems(source);
+  const items = syncListed();
   const row = ({ key, kind, item }) => {
     const done = !available.has(key);
     const sub = favSubtitle(kind, item);
@@ -677,7 +939,7 @@ function renderSyncList() {
   $('#syncList').innerHTML = FAV_KINDS.map(({ kind, label }) => {
     const rows = items.filter((f) => f.kind === kind);
     return rows.length ? `<div class="favGroupLabel">${label}</div>${rows.map(row).join('')}` : '';
-  }).join('') || `<div class="empty">${importing ? 'The other device has' : 'This device has'} no favourites yet.</div>`;
+  }).join('') || `<div class="empty">${importing ? `${OtherSide()} has` : 'This device has'} nothing to share yet.</div>`;
 
   renderSyncPicks();
 }
@@ -696,8 +958,8 @@ function renderSyncPicks() {
   const go = $('#syncGo');
   go.disabled = !n;
   go.textContent = !n
-    ? (importing ? 'Tick favourites to import' : 'Tick favourites to send')
+    ? (importing ? 'Tick what to import' : 'Tick what to send')
     : importing
-      ? `Import ${plural(n, 'favourite')} to this device`
-      : `Send ${plural(n, 'favourite')} to the other device`;
+      ? `Import ${plural(n, 'thing')} to this device`
+      : `Send ${plural(n, 'thing')} to ${otherSide()}`;
 }

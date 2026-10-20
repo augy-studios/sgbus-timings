@@ -195,7 +195,9 @@ than the browser, once the Main Mini App is set up ([Mini App](#mini-app) above)
 always agree. `NAV_API_URL` defaults to `WEBAPP_URL`. `BOT_API_TOKEN` is a long
 random string (e.g. from `openssl rand -hex 32`), set to the same value here and in
 the site's Vercel project: without it, every chat's `/nav` shares the site's per-IP
-limit of 30 a minute, since they all come from this one server.
+limit of 30 a minute, since they all come from this one server. `/sync` needs it
+too: the site's sync relay (`/api/sync`) only lets the bot in with it, and uses
+the same Upstash Redis as Service Alerts, so that has to be set up on the site.
 
 ## 5. Install and run on a Debian 13 VPS
 

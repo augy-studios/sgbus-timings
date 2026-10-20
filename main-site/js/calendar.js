@@ -669,5 +669,25 @@
     });
   }
 
-  window.Calendar = { init, render, openSettings, parseIcs, upcoming, occurrences };
+  // ---------- Sync (js/sync.js) ----------
+  // The calendar's link, to another device or the Telegram bot's /calendar and back. Not a
+  // file (a snapshot, and large) or the phone's own calendar, which are this device's.
+  const syncList = () => {
+    const { url } = settings();
+    return url ? [{ url }] : [];
+  };
+
+  // Takes a link from the other device in place of this one's calendar.
+  function mergeSync(url) {
+    const same = (u) => (u || '').replace(/^webcals?:\/\//i, 'https://');
+    if (same(settings().url) === same(url)) return 0;
+    try {
+      saveSettings({ hidden: [], url });
+    } catch {
+      return 0;
+    }
+    return 1;
+  }
+
+  window.Calendar = { init, render, openSettings, parseIcs, upcoming, occurrences, syncList, mergeSync };
 })();

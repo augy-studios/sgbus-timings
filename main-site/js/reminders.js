@@ -383,6 +383,40 @@
     });
   }
 
-  window.Reminders = { earphonesOnly, bell };
+  // ---------- Sync (js/sync.js) ----------
+  // Routines and last bus reminders go to another device with the app, and routines to the
+  // Telegram bot and back. Each side's run on their own, so one synced is set on both.
+
+  const routineKey = (r) => `${r.code}@${r.time}/${[...r.days].sort().join('')}/${[...r.buses].sort().join(',')}`;
+  const syncRoutines = () => (has('routines') ? routines().map(({ code, name, buses, time, days }) => ({ code, name, buses, time, days })) : []);
+  const syncLastBus = () => (has('lastbus') ? lastList() : []);
+
+  // Adds whichever aren't here yet, and says how many.
+  function mergeRoutines(list) {
+    if (!has('routines')) return 0;
+    const have = new Set(routines().map(routineKey));
+    const fresh = list.filter((r) => !have.has(routineKey(r)) && have.add(routineKey(r)));
+    const room = Math.max(0, MAX_ROUTINES - routines().length);
+    const added = fresh.slice(0, room).map((r, i) => ({ id: `${Date.now().toString(36)}${i}${Math.random().toString(36).slice(2, 6)}`, ...r, name: nameOf(r.code) || r.name || r.code }));
+    if (added.length) saveRoutines([...routines(), ...added]);
+    return added.length;
+  }
+
+  function mergeLastBus(list) {
+    if (!has('lastbus')) return 0;
+    const added = list.filter((r) => !isLast(r.code, r.service)).map((r) => ({ ...r, name: nameOf(r.code) || r.name || r.code }));
+    if (!added.length) return 0;
+    const next = [...lastList(), ...added].slice(-20);
+    write(LAST_KEY, next);
+    call('lastBus', { list: next }).catch(failed);
+    renderLastBus();
+    if (typeof renderArrivals === 'function' && lastArrivals) renderArrivals();
+    return added.length;
+  }
+
+  window.Reminders = {
+    earphonesOnly, bell,
+    has, syncRoutines, syncLastBus, mergeRoutines, mergeLastBus, MAX_ROUTINES,
+  };
   init();
 })();

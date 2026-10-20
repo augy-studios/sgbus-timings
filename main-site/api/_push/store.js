@@ -15,7 +15,9 @@ const DEVICES = `${KEY}:devices`;
 
 export const storeConfigured = () => Boolean(REDIS_URL && TOKEN);
 
-async function redis(...command) {
+// Also for syncing with the Telegram bot (api/_lib/sync-relay.js), which keeps its sessions
+// in the same Redis.
+export async function redis(...command) {
   const res = await fetch(REDIS_URL, {
     method: 'POST',
     headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
@@ -25,6 +27,21 @@ async function redis(...command) {
   const data = await res.json().catch(() => null);
   if (!res.ok || data?.error) throw new Error(`redis ${command[0]} failed: ${data?.error ?? res.status}`);
   return data.result;
+}
+
+// Several commands as one transaction (Upstash's /multi-exec): all of them or none, answered
+// with each one's result in order.
+export async function multi(...commands) {
+  const res = await fetch(`${REDIS_URL.replace(/\/+$/, '')}/multi-exec`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(commands.map((c) => c.map(String))),
+    cache: 'no-store',
+  });
+  const data = await res.json().catch(() => null);
+  const failed = !Array.isArray(data) ? data?.error ?? res.status : data.find((r) => r?.error)?.error;
+  if (!res.ok || failed) throw new Error(`redis multi failed: ${failed ?? res.status}`);
+  return data.map((r) => r.result);
 }
 
 const parse = (value) => (value == null ? null : JSON.parse(value));

@@ -65,6 +65,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/addplace` | Asks for a new place (searched like a `/nav` end, or your location), then a name for it, or `/done` to keep it as it's called |
 | `/calendar` | Lists your calendar's events with a location for the next two weeks, each a button that plans the way there to arrive by its start; asks for the calendar's private iCal link the first time |
 | `/settings` | Lists your settings (name, birthday, home, work, routine notifications) with buttons to change them |
+| `/sync <code>` | Syncs with the web app or the Android app, by the code its Settings shows under Sync with the Telegram bot (also `/start sync_<code>`, from its Open the bot link): sends what the chat has, and saves what the device sends, for up to 10 minutes, through the site's `/api/sync` relay. `/sync stop` ends it |
 | `/done` | Finishes whatever multi-step flow the chat is in the middle of |
 | `/cancel` | Stops whatever multi-step flow the chat is in the middle of |
 
@@ -631,6 +632,7 @@ telegram-bot/
     format.py              rich-message Markdown formatting (headings + tables)
     reply.py               rich-message send/edit helpers with plain-text fallback
     mini_app.py            the web app as a Mini App: the menu button, Open web app, startapp links
+    sync_bot.py            /sync: the chat's favourites, places, routines and more to and from the web app, through the site's relay
     stop_view.py           builds a stop's timings message + keyboard
     list_view.py           builds a list-of-stops keyboard (with favourite pinning), and the context a stop view goes back by
     stop_buses_view.py     builds the grid of every bus number serving a stop

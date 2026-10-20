@@ -1936,6 +1936,21 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .syncQr .qr-bg { fill: #ffffff; }
 .syncQr .qr-fg { fill: #121815; }
 
+/* Syncing with the Telegram bot: its link as a button, and the command to send it by hand. */
+.syncBot { display: flex; flex-direction: column; gap: 8px; text-align: center; }
+.syncBot .btn { justify-content: center; text-decoration: none; }
+.syncBotCommand {
+    font: inherit;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+    background: var(--surface-strong);
+    color: var(--ink);
+    cursor: pointer;
+}
+
 .syncLink {
     font-size: 13px;
     color: var(--muted-strong);

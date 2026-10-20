@@ -4,6 +4,7 @@ from ..config import config
 from ..format import escape_md
 from ..mini_app import open_button
 from ..reply import send_rich_message
+from .sync import begin as begin_sync
 
 ABOUT = """\
 # SG Bus Timings
@@ -26,6 +27,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Subscribe to Service Alerts: train service alerts and traffic alerts, each all updates or disruptions only
 - Use this bot inline in any chat: type @{username} then a bus stop number or name
 - Open the full web app without leaving Telegram: tap Open web app below, in a chat with the bot
+- Sync your favourites, places, routines and calendar with the web app or the Android app
 
 ## Commands
 
@@ -53,6 +55,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /addplace - save a new place, with a name of your own
 - /calendar - your calendar's events with a location, to plan the way there
 - /settings - view and change your settings (name, birthday, home, work, routine notifications)
+- /sync - sync with the web app or the Android app, by the code its Settings shows
 - /done - finish whatever you're in the middle of
 - /cancel - stop whatever you're in the middle of
 """
@@ -61,6 +64,11 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 def register_start(client):
     @client.on(events.NewMessage(pattern=r"^/start(@\w+)?(\s|$)"))
     async def handler(event):
+        # The web app's Sync with the Telegram bot links here as t.me/<bot>?start=sync_<code>.
+        param = event.raw_text.split(maxsplit=1)[1].strip() if len(event.raw_text.split()) > 1 else ""
+        if param.lower().startswith("sync_"):
+            await begin_sync(client, event, param[5:])
+            return
         me = await client.get_me()
         username = escape_md(me.username) if me.username else "this bot"
         rich = {

@@ -63,6 +63,7 @@ than about three taps to reach goes under Advanced.
 * [Calendar with /calendar](bot/calendar.md)
 * [Routines](bot/routines.md)
 * [Service Alerts](bot/service-alerts.md)
+* [Sync with the web app](bot/sync.md)
 * [Inline mode](bot/inline.md)
 * [Lists, flows and cancelling](bot/flows.md)
 * [Command reference](bot/commands.md)

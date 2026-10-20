@@ -31,6 +31,7 @@ from .handlers.servicealerts import poll_service_alerts, register_servicealerts
 from .handlers.setname import register_setname
 from .handlers.settings import register_settings
 from .handlers.start import register_start
+from .handlers.sync import register_sync
 from .handlers.unfavbus import register_unfavbus
 from .handlers.unfavstop import register_unfavstop
 from .reply import send_rich_message
@@ -73,6 +74,7 @@ async def main() -> None:
     register_routines(client)
     register_favroutes(client)
     register_servicealerts(client)
+    register_sync(client)
     register_flow_control(client)
     register_callbacks(client)
     register_inline(client)

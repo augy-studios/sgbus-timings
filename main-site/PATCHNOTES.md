@@ -9,6 +9,19 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 21 October 2026 (later): Sync with the Telegram bot, and sync more
+
+### Web app
+
+- **Sync with the Telegram bot** - In Settings, **Sync with the Telegram bot** shows a code and **Open the bot**, which opens the bot with it filled in (or send it `/sync` and the code). Then Import and Export work as between two devices: your name and birthday, favourite stops, buses, routes and navs, places, routines, your calendar's link and where favourites pin, either way. It goes through the site's server, kept there 10 minutes at most.
+- **Sync more** - Between two devices, sync now copies routines and last bus reminders (between two phones with the Android app), your calendar's link, and the settings you've changed, such as dark mode, the colour, the Edge Tray's side and buttons, the Get Off Alert and Shake to refresh. Each side is only offered what the other can keep.
+
+### Telegram bot
+
+- **/sync** - Syncs with the web app or the Android app by the code its Settings shows: the bot sends what it has, and says what it saved from your device. `/sync stop` ends it.
+
+---
+
 ## 21 October 2026: Apps 2.2.1, MyICA on trips to the checkpoints
 
 ### Web app

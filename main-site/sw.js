@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v81";
+const VERSION = "v82";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -26,6 +26,7 @@ const ASSETS = [
   "/js/planner-worker.js",
   "/js/p2p.js",
   "/js/qr.js",
+  "/js/sync-relay.js",
   "/js/sync.js",
   "/js/mrt-stations.js",
   "/js/alerts.js",
@@ -459,6 +460,8 @@ self.addEventListener("fetch", (event) => {
     if (url.pathname === "/api/share" || url.pathname === "/api/share-map") return;
     // The Android app's newest version: an old answer offers an update already installed.
     if (url.pathname === "/api/app-release") return;
+    // Syncing with the Telegram bot: what it's said is only ever news.
+    if (url.pathname === "/api/sync") return;
     if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops") {
       event.respondWith(staleWhileRevalidate(event, request));
       return;

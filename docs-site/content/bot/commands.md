@@ -30,6 +30,7 @@ description: Every command the bot understands, and what you can send it without
 | `/addplace` | Save a new place, with a name of your own | [Places](places.md#save-a-new-place) |
 | `/calendar` | Your calendar's events with a location, each a button to plan the way there | [Calendar](calendar.md) |
 | `/settings` | Your name, birthday, home, work, notifications and favourites | [Settings](settings.md) |
+| `/sync` | Sync with the web app or the Android app, by the code its Settings shows; `/sync stop` ends it | [Sync with the web app](sync.md) |
 | `/done` | Finish what you are in the middle of | [Flows](flows.md#done) |
 | `/cancel` | Stop what you are in the middle of | [Flows](flows.md#cancel) |
 
