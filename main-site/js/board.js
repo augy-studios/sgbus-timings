@@ -4,7 +4,7 @@
 // every REFRESH_MS. "Board" in a stop's tools opens it, and so does #board/84009, so a screen
 // can be left on one. Full screen where the browser allows (the desktop app does).
 // Loaded before script.js and uses its helpers (fetchArrivals, nameOf, ensureStopsIndex,
-// loadTextClass, stopHash, passingTwice, timeRound) only once the page is running. Plain script: exports go on window.
+// loadTextClass, stopHash, busWays) only once the page is running. Plain script: exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -12,7 +12,7 @@
   const PAGE_MS = 8 * 1000;
   const ROW_PX = 64;
 
-  let board = null; // { code, services, page, fetched, timers }
+  let board = null; // { code, services, ways, page, fetched, timers }
 
   const clock = () => new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' });
 
@@ -45,7 +45,10 @@
     try {
       const data = await fetchArrivals(code);
       if (board?.code !== code) return;
-      board.services = [...(data?.services || [])].sort((a, b) => (a.next?.eta_ms ?? Infinity) - (b.next?.eta_ms ?? Infinity));
+      // A loop passing twice gets a row per time round, as on its cards (script.js).
+      const { services, ways } = busWays(data?.services || []);
+      board.services = services.sort((a, b) => (a.next?.eta_ms ?? Infinity) - (b.next?.eta_ms ?? Infinity));
+      board.ways = ways;
       board.fetched = Date.now();
       $('#boardNote').textContent = '';
     } catch {
@@ -77,12 +80,11 @@
     const pages = Math.max(1, Math.ceil(board.services.length / n));
     if (board.page >= pages) board.page = 0;
     const rows = board.services.slice(board.page * n, board.page * n + n);
-    // A loop passing twice: which time round its next bus is on (script.js), not just its end.
-    const twice = passingTwice(board.services);
     $('#boardRows').innerHTML = rows.length
       ? rows.map((s) => {
-        const round = twice.has(s.serviceNo) ? timeRound(s.serviceNo, s.next) : null;
-        const dest = round ? round.label : s.next?.dest ? nameOf(s.next.dest) || s.next.dest : '';
+        // A loop's row: which time round (script.js), not just where it ends.
+        const way = board.ways?.get(s);
+        const dest = way?.round ? way.label : s.next?.dest ? nameOf(s.next.dest) || s.next.dest : '';
         return `<div class="boardRow"><span class="boardNo">${esc(s.serviceNo)}</span><span class="boardTo">${esc(dest)}</span>` +
           `<span class="boardEta">${when(s.next, board.fetched)}</span><span class="boardEta">${when(s.next2, board.fetched)}</span>` +
           `<span class="boardEta">${when(s.next3, board.fetched)}</span></div>`;

@@ -296,6 +296,8 @@ function nameOf(code) {
 let acData = [];
 
 async function buildAc() {
+    // The stations, for a search like "Bedok MRT" (js/station-search.js).
+    StationSearch.load();
     const idx = await ensureStopsIndex();
     // Lowercased once here rather than for every stop on every keystroke.
     acData = Object.entries(idx).map(([code, v]) => {
@@ -304,20 +306,37 @@ async function buildAc() {
     });
 }
 
-// Stops are checked in order and the search stops at `limit`, so a short query doesn't run
-// through all five thousand.
+// The stops a search matches, as { stops, note }. Stops are checked in order and the search
+// stops at `limit`, so a short query doesn't run through all five thousand. A station ("Bedok
+// MRT") gives the stops at it, nearest an exit first, each with its `distance`. Otherwise a
+// word LTA shortens matches all its forms (js/contractions.js), and `note` says which, when
+// some stops were only found that way.
 function matchStops(q, limit = 20) {
     q = q.trim().toLowerCase();
-    if (!q) return [];
+    if (!q) return { stops: [], note: '' };
+
+    const station = StationSearch.find(q);
+    const atStation = station ? StationSearch.stopsAt(station, stopsIndex, haversine).slice(0, limit) : [];
+    if (atStation.length) {
+        return {
+            stops: atStation.map(s => ({ code: s.code, name: nameOf(s.code), road: stopsIndex[s.code]?.road || '', distance: s.distance })),
+            note: `Bus stops at ${StationSearch.label(station)}`,
+        };
+    }
+
     const isCode = /^\d+$/.test(q);
+    const swaps = isCode ? null : Contractions.matcher(q);
     const out = [];
+    const swappedOnly = [];
     for (const it of acData) {
-        if (isCode ? it.code.startsWith(q) : it.find.includes(q)) {
+        const plain = isCode ? it.code.startsWith(q) : it.find.includes(q);
+        if (plain || swaps?.test(it.find)) {
             out.push(it);
+            if (!plain) swappedOnly.push(it.find);
             if (out.length >= limit) break;
         }
     }
-    return out;
+    return { stops: out, note: swappedOnly.length ? swaps.note(swappedOnly) : '' };
 }
 
 // How many matches are checked for a direct bus before the list is cut to its usual 20, so
@@ -350,7 +369,10 @@ function renderAcList(box, stops, services = [], postal = null, direct = null, n
             return `<div class="acItem${buses ? ' direct' : ''}" data-code="${it.code}">` +
                 `<span class="code">${it.code}` +
                 (buses ? `<span class="acDirect">${ico('bus')} ${escapeHtml(buses.join(', '))}</span>` : '') + `</span>` +
-                `<span class="name">${escapeHtml(it.name)}${it.road ? `<span class="road"> · ${escapeHtml(it.road)}</span>` : ''}</span>` +
+                `<span class="name">${escapeHtml(it.name)}${it.road ? `<span class="road"> · ${escapeHtml(it.road)}</span>` : ''}` +
+                // How far from the station's nearest exit, for a search like "Bedok MRT".
+                (it.distance != null ? `<span class="road"> · ${formatDistance(it.distance)}</span>` : '') +
+                (BusNet.crossBorder(it.code) ? `<span class="road"> · ${escapeHtml(BusNet.crossBorder(it.code).label)}</span>` : '') + `</span>` +
                 `</div>`;
         }).join('');
     box.hidden = false;
@@ -368,15 +390,15 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
         .catch(e => alert(e.message));
     // The stops to suggest, in the order shown, so Enter picks the one at the top.
     const suggest = (v) => {
-        if (!directFor) return { stops: matchStops(v), direct: null, note: '' };
-        const all = matchStops(v, DIRECT_CHECK_LIMIT);
+        if (!directFor) return { ...matchStops(v), direct: null };
+        const { stops: all, note } = matchStops(v, DIRECT_CHECK_LIMIT);
         const direct = new Map();
         for (const s of all) {
             const buses = directFor(s.code);
             if (buses) direct.set(s.code, buses);
         }
         const stops = [...all.filter(s => direct.has(s.code)), ...all.filter(s => !direct.has(s.code))].slice(0, 20);
-        return { stops, direct, note: direct.size ? directNote?.(direct.size) || '' : '' };
+        return { stops, direct, note: [direct.size ? directNote?.(direct.size) : '', note].filter(Boolean).join(' · ') };
     };
     const render = () => {
         const v = input.value;
@@ -535,8 +557,9 @@ function favouritesChanged() {
 // Some stops have a bus calling both ways, on a road it runs up and back (136 at 66271, both
 // ways of 21 at 52129), and LTA lists it twice, once per way, with nothing on show to tell
 // the two apart. A loop service passing a stop on its way out and again on its way back (73
-// at 66271) mixes the two in one list instead. Each such bus gets where it's heading and a
-// tone, the same on its card and in the Incoming buses bar.
+// at 66271) mixes the two in one list instead, and is split in two the same way, one entry
+// per time round, at the cost of fewer than three buses in each. Each way gets where it's
+// heading and a tone, the same on its card, in the Incoming buses bar and on the board.
 
 const busesOf = s => [s.next, s.next2, s.next3];
 const destOf = s => busesOf(s).find(b => b?.dest)?.dest || null;
@@ -564,14 +587,37 @@ function twoWayHeadings(services) {
     return out;
 }
 
-// The services with a bus on its second time past the stop.
-function passingTwice(services) {
-    return new Set(services.filter(s => busesOf(s).some(b => b?.visit === 2)).map(s => s.serviceNo));
+// The services at a stop with each way apart, as { services, ways }: `services` has a service
+// passing the stop twice split into an entry per time round, its buses in order, and `ways`
+// maps each entry going one of two ways to { label, short, tone, dir, round }, `round` for a
+// time round rather than a way.
+function busWays(services) {
+    const headings = twoWayHeadings(services);
+    const out = [];
+    const ways = new Map();
+    for (const s of services) {
+        const heading = headings.get(s);
+        if (heading) {
+            const to = nameOf(heading.to) || heading.to;
+            ways.set(s, { label: `To ${to}`, short: `→ ${to}`, tone: heading.tone, dir: heading.dir });
+            out.push(s);
+            continue;
+        }
+        const buses = busesOf(s).filter(Boolean);
+        if (!buses.some(b => b.visit === 2)) { out.push(s); continue; }
+        for (const visit of [1, 2]) {
+            const these = buses.filter(b => (b.visit === 2 ? 2 : 1) === visit);
+            if (!these.length) continue;
+            const entry = { ...s, next: these[0] || null, next2: these[1] || null, next3: these[2] || null };
+            ways.set(entry, { ...timeRound(s.serviceNo, these[0]), dir: null, round: true });
+            out.push(entry);
+        }
+    }
+    return { services: out, ways };
 }
 
-// Which time round one bus is on, at a stop its service passes twice: { label, short, tone }.
+// Which time round a bus is on, at a stop its service passes twice: { label, short, tone }.
 function timeRound(no, bus) {
-    if (!bus?.visit) return null;
     // Where it loops, once the route list is in.
     const loop = (BusNet.isReady() && BusNet.serviceInfo(no)?.loop) || '';
     const isLoop = !!(loop || (bus.origin && bus.origin === bus.dest));
@@ -591,17 +637,11 @@ function renderIncomingBar(data) {
     const bar       = $('#incomingBar');
     const container = $('#incomingBuses');
     const svcs      = data?.services || [];
-    const headings  = data?.headings || new Map();
-    const twice     = data?.twice || new Set();
+    const ways      = data?.ways || new Map();
 
     const items = svcs
         .filter(s => s.next && s.next.eta_ms != null)
-        .map(s => {
-            const way = headings.get(s);
-            const round = twice.has(s.serviceNo) ? timeRound(s.serviceNo, s.next) : null;
-            const to = way ? { short: `→ ${nameOf(way.to) || way.to}`, label: `To ${nameOf(way.to) || way.to}`, tone: way.tone } : round;
-            return { svcNo: s.serviceNo, eta_ms: s.next.eta_ms, load: s.next.load, to };
-        })
+        .map(s => ({ svcNo: s.serviceNo, eta_ms: s.next.eta_ms, load: s.next.load, to: ways.get(s) || null }))
         .sort((a, b) => a.eta_ms - b.eta_ms);
 
     if (!items.length) { bar.hidden = true; return; }
@@ -741,8 +781,9 @@ function samePlaceStops(code) {
         .map(([c]) => c);
 }
 
-// Under the stop's name: a stop only authorised people may use (js/network.js), and a way to
-// the other half of one split in two, where some buses only ever stop.
+// Under the stop's name: a stop only authorised people may use or one across the border
+// (js/network.js), and a way to the other half of one split in two, where some buses only
+// ever stop.
 function renderStopAside() {
     const { code } = current;
     const parts = [];
@@ -753,6 +794,11 @@ function renderStopAside() {
                 ? `This stop is at ${r.place}: the public can't get on or off here, but can ride past.`
                 : `This stop is inside ${r.place}: the public can't get on or off here, or ride through.`) +
             `</span></p>`);
+    }
+    const border = BusNet.crossBorder(code);
+    if (border) {
+        parts.push(`<p class="stopAsideNote">${ico('alert')} <span><strong>${escapeHtml(border.label)}.</strong> ` +
+            `${escapeHtml(border.note)}</span></p>`);
     }
     for (const other of samePlaceStops(code)) {
         parts.push(`<button type="button" class="iconBtn" data-same-place="${escapeHtml(other)}" title="Some buses here only stop at the other code">` +
@@ -802,14 +848,13 @@ function renderArrivals() {
     }
 
     const favBuses = new Set(LS.getFavBuses());
-    let svcs = [...(data?.services || [])].sort((a, b) => BusNet.byNumber(a.serviceNo || '', b.serviceNo || ''));
+    // Over every bus at the stop, so narrowing to one still tells its two ways apart.
+    const { services: apart, ways } = busWays(data?.services || []);
+    let svcs = [...apart].sort((a, b) => BusNet.byNumber(a.serviceNo || '', b.serviceNo || ''));
     if (service && !expanded) svcs = svcs.filter(s => (s.serviceNo || '').toUpperCase() === service);
     svcs = pinFavourites(svcs, favBuses, LS.getPin('bus'), s => s.serviceNo);
 
-    // Over every bus at the stop, so narrowing to one still tells its two ways apart.
-    const headings = twoWayHeadings(data?.services || []);
-    const twice = passingTwice(data?.services || []);
-    renderIncomingBar({ services: svcs, headings, twice });
+    renderIncomingBar({ services: svcs, ways });
 
     const svcWrap = $('#services');
     if (!svcs.length) {
@@ -844,24 +889,19 @@ function renderArrivals() {
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         // Gone before you could walk here (js/make-it.js): greyed.
         const late = window.MakeIt?.tooSoon(code, bus.eta_ms) ? ' tooSoon' : '';
-        // At a stop its loop passes twice, which time round this bus is on.
-        const round = twice.has(svcNo) ? timeRound(svcNo, bus) : null;
-        const toned = round ? ` toned tone${round.tone}` : '';
-        const roundLine = round ? `<div class="etaTo">${escapeHtml(round.label)}</div>` : '';
-        return `<div class="eta${late}${toned}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${roundLine}${badges}</div>`;
+        return `<div class="eta${late}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${badges}</div>`;
     };
 
     svcWrap.innerHTML = svcs.map(s => {
         const svcNo = s.serviceNo || '?';
         const fav = favBuses.has(svcNo);
-        const way = headings.get(s);
+        const way = ways.get(s);
         const fl = firstLastText(svcNo, code, way?.dir);
-        const toName = way ? nameOf(way.to) || way.to : '';
         return `<div class="svc${way ? ` toned tone${way.tone}` : ''}" data-svc="${escapeHtml(svcNo)}">` +
             `<div class="svcLeft">` +
             `<div class="svcNo">${fav ? favMark() : ''}${escapeHtml(svcNo)}</div>` +
-            // Which way this one's going, where the stop has the bus going both ways.
-            (way ? `<div class="svcTo" title="Bus ${escapeHtml(svcNo)} towards ${escapeHtml(toName)}">→ ${escapeHtml(toName)}</div>` : '') +
+            // Which way this one's going, or which time round, where the stop has it both ways.
+            (way ? `<div class="svcTo" title="Bus ${escapeHtml(svcNo)}: ${escapeHtml(way.label)}">${escapeHtml(way.short)}</div>` : '') +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
             `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
             // The flag-down screen (js/flag.js).
@@ -1058,7 +1098,8 @@ function renderServiceModal() {
         `<button type="button" class="routeStop${code === fromStop ? ' me' : ''}" data-stop="${escapeHtml(code)}">` +
         `<span class="seq">${seq}</span>` +
         `<span class="name">${favs.has(code) ? favMark() : ''}${escapeHtml(nameOf(code) || code)}` +
-        (BusNet.restricted(code) ? `<span class="road">Authorised personnel only</span>` : '') + `</span>` +
+        (BusNet.restricted(code) ? `<span class="road">Authorised personnel only</span>` : '') +
+        (BusNet.crossBorder(code) ? `<span class="road">${escapeHtml(BusNet.crossBorder(code).label)}: passport needed</span>` : '') + `</span>` +
         `<span class="pill">${escapeHtml(code)}</span>` +
         `</button>`;
 
@@ -1141,6 +1182,7 @@ function openStopList(title, stops, { pin = true, onPick, direct = null, note = 
         return `<button type="button" class="routeStop${buses ? ' direct' : ''}" data-stop="${escapeHtml(s.code)}">` +
             `<span class="name">${favs.has(s.code) ? favMark() : ''}${escapeHtml(nameOf(s.code) || s.code)}` +
             (road ? `<span class="road">${escapeHtml(road)}</span>` : '') +
+            (BusNet.crossBorder(s.code) ? `<span class="road">${escapeHtml(BusNet.crossBorder(s.code).label)}: passport needed</span>` : '') +
             (buses ? `<span class="via">${ico('bus')} Direct: ${escapeHtml(buses.join(', '))}</span>` : '') + `</span>` +
             (s.distance != null ? `<span class="dist">${formatDistance(s.distance)}</span>` : '') +
             `<span class="pill">${escapeHtml(s.code)}</span>` +
@@ -1330,7 +1372,10 @@ async function runSearch() {
         if (BusNet.hasService(svc)) { searchBus(svc); return; }
     }
 
-    const first = matchStops(v)[0];
+    const { stops, note } = matchStops(v);
+    // A station ("Bedok MRT") lists its stops to pick from, as a postal code does.
+    if (stops[0]?.distance != null) { openNearbyList(stops, note); return; }
+    const first = stops[0];
     if (first) {
         Recents.add(Recents.stopItem(first.code));
         loadStop(first.code);

@@ -5,7 +5,7 @@ from telethon import events
 
 from ..bus_route_view import build_bus_stops_view
 from ..bus_services import is_valid_service
-from ..bus_stops import get_bus_stop_by_code, nearest_bus_stops, search_bus_stops
+from ..bus_stops import get_bus_stop_by_code, nearest_bus_stops, search_bus_stops, search_note
 from ..list_view import build_stop_list_view
 from ..postal import POSTAL_CODE_RE, lookup_postal_code
 from ..reply import send_rich_message
@@ -77,6 +77,11 @@ def register_search(client):
             return
 
         station = find_station(text)
-        title = f"Bus stops at {station_label(station)}" if station and "distance" in matches[0].keys() else "Did you mean"
+        if station and "distance" in matches[0].keys():
+            title = f"Bus stops at {station_label(station)}"
+        else:
+            # Saying which shortened forms were searched too, as LTA's names use them.
+            note = search_note(text, matches)
+            title = f"Did you mean ({note[0].lower()}{note[1:]})" if note else "Did you mean"
         rich, buttons = build_stop_list_view(event.chat_id, title, matches)
         await send_rich_message(client, event.chat_id, rich, buttons)

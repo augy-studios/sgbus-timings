@@ -3,6 +3,7 @@ import re
 import sqlite3
 from typing import Optional
 
+from .contractions import matcher
 from .db import db
 from .journeys import invalidate_network
 from .lta import fetch_all_bus_stops
@@ -76,10 +77,18 @@ def same_place_stops(code: str) -> list:
 _STN_WORDS_RE = re.compile(r"\b(?:(?:mrt|lrt)\s+(?:station|stn)|mrt|lrt|station)\b")
 
 
+def _plain_match(q: str, stop) -> bool:
+    """Whether a stop matches a search as typed, as the query below does: the search in its
+    name or road, or in its name with MRT or station as LTA's "Stn"."""
+    name, road = (stop["name"] or "").lower(), (stop["road"] or "").lower()
+    return q in name or q in road or _STN_WORDS_RE.sub("stn", q) in name
+
+
 def search_bus_stops(query: str, limit: int = 10) -> list:
     """Search cached bus stops by exact code, code prefix, or a substring of the name/road.
     A station, as "Bedok MRT" or "Senja LRT", lists the stops at it instead, nearest first
-    and with their distance from the closest exit."""
+    and with their distance from the closest exit. A word LTA shortens matches all its forms
+    (contractions.py), so "Bukit Batok" finds "Bt Batok Int"."""
     q = query.strip().lower()
     if not q:
         return []
@@ -97,6 +106,16 @@ def search_bus_stops(query: str, limit: int = 10) -> list:
         ).fetchall()
 
     as_stn = _STN_WORDS_RE.sub("stn", q)
+    swaps = matcher(q)
+    if swaps:
+        # Checked here rather than in SQL, which has no regular expressions; the order is the
+        # query's below.
+        found = [
+            row for row in db.execute("SELECT * FROM bus_stops").fetchall()
+            if _plain_match(q, row) or swaps.test((row["name"] or "").lower()) or swaps.test((row["road"] or "").lower())
+        ]
+        found.sort(key=lambda r: (0 if r["name"].lower().startswith((q, as_stn)) else 1, r["name"]))
+        return found[:limit]
     return db.execute(
         """
         SELECT * FROM bus_stops
@@ -108,6 +127,20 @@ def search_bus_stops(query: str, limit: int = 10) -> list:
         """,
         (f"%{q}%", f"%{q}%", f"%{as_stn}%", f"{q}%", f"{as_stn}%", limit),
     ).fetchall()
+
+
+def search_note(query: str, matches: list) -> str:
+    """ "Also searched Bt for Bukit", when some of a search's matches were only found by
+    swapping a word for another of its forms; otherwise ""."""
+    q = query.strip().lower()
+    swaps = matcher(q) if q and not q.isdigit() else None
+    if not swaps:
+        return ""
+    swapped_only = [
+        text for stop in matches if not _plain_match(q, stop)
+        for text in ((stop["name"] or "").lower(), (stop["road"] or "").lower())
+    ]
+    return swaps.note(swapped_only) if swapped_only else ""
 
 
 # How far from a station exit a stop can be and still count as at the station: across the

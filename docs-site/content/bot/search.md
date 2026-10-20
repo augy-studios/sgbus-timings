@@ -16,7 +16,11 @@ question it has just asked, is treated as a search.
   instead.
 - **Part of a stop's name or road**, such as `bedok` or `changi`, finds the
   matching stops. Stop names shorten "station" to "Stn", so `bedok mrt exit b`
-  finds Bedok Stn Exit B.
+  finds Bedok Stn Exit B, and the same goes for the other words LTA shortens:
+  `bukit batok` finds Bt Batok Int, `opposite block 10` finds Opp Blk 10, and
+  Ctr and Ctrl both find Centre and Central. The full word and the short one
+  both work, and when some matches were only found that way, the list says
+  so: **Did you mean (also searched Bt for Bukit)**.
 - **An MRT or LRT station**, such as `bedok mrt`, `senja lrt` or
   `botanic gardens station`, lists the stops within about 250 m of its exits,
   nearest first, whatever they're named.

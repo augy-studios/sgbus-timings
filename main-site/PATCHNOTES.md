@@ -9,6 +9,23 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 20 October 2026: Shortened names in search, stations on the web, loops split in two
+
+### Web app
+
+- **Shortened names** - Search finds a stop whichever way the word is typed: **Bukit Batok** finds Bt Batok Int, **Opposite Block 10** finds Opp Blk 10, and Ctr and Ctrl both find Centre and Central, among about 90 of LTA's short forms. A line above the matches says when some were only found that way: **Also searched Bt for Bukit**.
+- **Stops at a station** - Type **Bedok MRT**, **Senja LRT** or **Botanic Gardens station** and the list is the stops within about 250 m of its exits, nearest first, with how far each is, as in the Telegram bot.
+- **Loops in two** - A loop service passing a stop twice, such as 73, is now listed twice, **→ Lor 6 Toa Payoh** on its way out and **↩ Ang Mo Kio Int** on its way back, each in its own colour, as a bus going both ways is. Each may show fewer than three buses, since LTA gives three for the two. The departures board too.
+- **Across the border** - Woodlands Checkpoint says **Immigration checkpoint**, and the stops in Johor Bahru (its checkpoint, JB Sentral and Larkin Terminal) say **In Malaysia**, both with a passport reminder, on the stop, in search results and in route lists.
+
+### Telegram bot
+
+- **Shortened names** - The same: `bukit batok` finds Bt Batok Int, and the list says **Did you mean (also searched Bt for Bukit)**.
+- **Loops in two** - A loop passing twice gets a heading per time round, `73 (SBST) 🔵 → Out to Lor 6 Toa Payoh` and `🔴 ↩ Back to Ang Mo Kio Int`, in place of the Way row.
+- **Across the border** - Those stops say so under their name, and their buttons in a list carry 🛂.
+
+---
+
 ## 20 October 2026: Apps 2.2.0, which way each bus is going, routines on Android
 
 ### Web app

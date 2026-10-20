@@ -1031,7 +1031,7 @@ html[data-telegram] .telegramBtn { display: none; }
     border: 1px solid var(--surface-border);
 }
 
-/* ---- which way a bus is going, at a stop it calls at both ways (script.js) ---- */
+/* ---- which way a bus is going, or which time round, at a stop it calls at twice (script.js) ---- */
 /* Each way has its colour, and its words too, so the colour's never all there is. */
 .toned.tone0 { --tone: var(--tone0); }
 .toned.tone1 { --tone: var(--tone1); }
@@ -1060,15 +1060,6 @@ html[data-telegram] .telegramBtn { display: none; }
     text-align: center;
     color: var(--tone);
     overflow-wrap: anywhere;
-}
-
-.eta.toned { border-color: var(--tone); }
-
-.etaTo {
-    margin: 2px 0 4px;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--tone);
 }
 
 /* ===== Services Grid ===== */

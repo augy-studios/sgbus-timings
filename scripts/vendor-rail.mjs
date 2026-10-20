@@ -59,8 +59,11 @@ const lines = network.lines.map((line) => {
 const out = { source: `${network.source} (sgraildata, via mrtroute-game)`, stations, lines };
 writeFileSync("main-site/api/_nav/rail.json", JSON.stringify(out));
 
-// The Telegram bot's copy: just the stations and their exits, so a search for "Bedok MRT"
-// can list the bus stops at the station (telegram-bot/src/stations.py).
+// The Telegram bot's copy and the web app's: just the stations and their exits, so a search
+// for "Bedok MRT" can list the bus stops at the station (telegram-bot/src/stations.py,
+// main-site/js/station-search.js).
 const botStations = stations.map(({ name, codes, lat, lng, exits }) => ({ name: name.trim(), codes, lat, lng, exits }));
-writeFileSync("telegram-bot/src/rail_stations.json", JSON.stringify({ source: out.source, stations: botStations }));
+const stationsJson = JSON.stringify({ source: out.source, stations: botStations });
+writeFileSync("telegram-bot/src/rail_stations.json", stationsJson);
+writeFileSync("main-site/data/rail-stations.json", stationsJson);
 console.log(`${stations.length} stations, ${exits} exits, ${lines.length} lines, from ${network.source}`);

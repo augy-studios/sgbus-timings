@@ -69,9 +69,11 @@ out and again on its way back, such as 73 at the same stop.
   that the incoming buses bar matches. Its first and last bus, and its
   **Route** button, are for that way. The bot puts the way in the heading,
   such as `136 (GAS) 🔵 → Punggol Int`.
-- **A loop passing twice:** each bus says which time round it's on, **Out to
-  Lor 6 Toa Payoh** or **Back to Ang Mo Kio Int**. The bot adds a **Way** row to
-  the table, 🔵 Out or 🔴 Back.
+- **A loop passing twice:** the bus is listed twice the same way, once per time
+  round, **→ Lor 6 Toa Payoh** on its way out and **↩ Ang Mo Kio Int** on its
+  way back. LTA gives three buses for the two together, so each listing may
+  have fewer than three. The bot puts it in the heading, such as
+  `73 (SBST) 🔵 → Out to Lor 6 Toa Payoh`.
 
 ## In the web app
 

@@ -7,7 +7,7 @@ from .bus_routes import direction_ending_at, first_last_bus_times
 from .bus_services import service_terminals
 from .bus_stops import get_bus_stop_by_code, same_place_stops
 from .favourite_prefs import pin_favourites
-from .restricted import restricted_note
+from .restricted import CROSS_BORDER, cross_border_note, restricted_note
 
 _MD_SPECIAL = re.compile(r"([\\*_~`|\[\]#>=])")
 
@@ -101,9 +101,8 @@ def _deck_cell(deck) -> str:
     return "🚍 Single"
 
 
-def _build_service_table(svc, stop, twice=False) -> "str | None":
-    """Builds a GFM Markdown table (Next 1/2/3 columns) of a service's upcoming buses.
-    `twice` adds which time round each bus is on, at a stop its loop passes twice."""
+def _build_service_table(svc, stop) -> "str | None":
+    """Builds a GFM Markdown table (Next 1/2/3 columns) of a service's upcoming buses."""
     nexts = [n for n in (svc.get("next"), svc.get("next2"), svc.get("next3")) if n]
     if not nexts:
         return None
@@ -111,7 +110,6 @@ def _build_service_table(svc, stop, twice=False) -> "str | None":
     headers = [f"Next {i + 1}" for i in range(len(nexts))]
     rows = [
         ["Time", *(_format_eta(n["etaMs"]) for n in nexts)],
-        *([["Way", *(_round_cell(svc["serviceNo"], n) for n in nexts)]] if twice else []),
         ["Dist", *(_format_distance(_bus_distance(stop, n)) for n in nexts)],
         ["Type", *(_deck_cell(n["deck"]) for n in nexts)],
         ["Seats", *(_load_cell(n["load"]) for n in nexts)],
@@ -127,15 +125,19 @@ def _build_service_table(svc, stop, twice=False) -> "str | None":
     return "\n".join(lines)
 
 
-def _pin_favourite_services(services, favourite_service_nos, pin_position) -> list:
-    return pin_favourites(services, favourite_service_nos, pin_position, key=lambda s: s["serviceNo"])
+def _pin_favourite_ways(services, favourite_service_nos, pin_position) -> list:
+    """The stop's (entry, way) pairs (_bus_ways), favourite buses pinned. The ways are worked
+    out over every bus at the stop, before any are moved."""
+    return pin_favourites(_bus_ways(services), favourite_service_nos, pin_position, key=lambda p: p[0]["serviceNo"])
 
 
 # ---- Which way each bus is going ----
 # Some stops have a bus calling both ways, on a road it runs up and back (136 at 66271, both
 # ways of 21 at 52129), and LTA lists it twice, once per way. A loop service passing a stop
-# on its way out and again on its way back (73 at 66271) mixes the two in one list instead.
-# Each way gets a colour and its words, as on the web app (main-site/script.js).
+# on its way out and again on its way back (73 at 66271) mixes the two in one list instead,
+# and is split in two the same way, one entry per time round, at the cost of fewer than
+# three buses in each. Each way gets a colour and its words, as on the web app
+# (busWays in main-site/script.js).
 _TONES = ("🔵", "🔴", "🟣")
 
 
@@ -172,36 +174,47 @@ def _two_way_headings(services) -> dict:
     return out
 
 
-def _passing_twice(services) -> set:
-    """The services with a bus on its second time past the stop."""
-    return {s["serviceNo"] for s in services if any(b and b.get("visit") == 2 for b in _buses(s))}
-
-
 def _is_loop(service_no, bus) -> bool:
     terminals = service_terminals(service_no) or {}
     return bool(terminals.get("loop_desc") or (bus.get("origin") and bus.get("origin") == bus.get("dest")))
 
 
-def _round_cell(service_no, bus) -> str:
-    """Which time round one bus is on, for its column of the table."""
-    if not bus or not bus.get("visit"):
-        return "-"
-    back = bus["visit"] == 2
-    if _is_loop(service_no, bus):
-        return f"{_TONES[1]} Back" if back else f"{_TONES[0]} Out"
-    return f"{_TONES[1]} 2nd" if back else f"{_TONES[0]} 1st"
-
-
-def _round_key(service_no, svc) -> str:
-    """What the table's Way row means, for a loop passing twice."""
-    bus = next((b for b in _buses(svc) if b and b.get("visit")), None)
-    if not bus:
-        return ""
+def _time_round(service_no, bus) -> tuple:
+    """(tone, words) for which time round a bus is on, at a stop its service passes twice."""
+    if bus.get("visit") == 2:
+        if _is_loop(service_no, bus):
+            return _TONES[1], f"↩ Back to {_stop_name(bus.get('dest'))}"
+        return _TONES[1], "2nd time past here"
     if _is_loop(service_no, bus):
         loop = (service_terminals(service_no) or {}).get("loop_desc")
-        out = f"out to {loop}" if loop else "on its way out"
-        return f"{_TONES[0]} Out: {out} · {_TONES[1]} Back: back to {_stop_name(bus.get('dest'))}"
-    return f"{_TONES[0]} 1st / {_TONES[1]} 2nd: its first or second time past this stop"
+        return _TONES[0], f"→ Out to {loop}" if loop else "→ On its way out"
+    return _TONES[0], "1st time past here"
+
+
+def _bus_ways(services) -> list:
+    """The services at a stop with each way apart, as (entry, way) pairs: a service passing
+    the stop twice is split into an entry per time round, its buses in order, and `way` is
+    (tone, words, direction) for an entry going one of two ways, otherwise None."""
+    headings = _two_way_headings(services)
+    out = []
+    for svc in services:
+        heading = headings.get(id(svc))
+        if heading:
+            tone, dest, direction = heading
+            out.append((svc, (tone, f"→ {dest}", direction)))
+            continue
+        buses = [b for b in _buses(svc) if b]
+        if not any(b.get("visit") == 2 for b in buses):
+            out.append((svc, None))
+            continue
+        for visit in (1, 2):
+            these = [b for b in buses if (2 if b.get("visit") == 2 else 1) == visit]
+            if not these:
+                continue
+            entry = {**svc, "next": these[0], "next2": these[1] if len(these) > 1 else None,
+                     "next3": these[2] if len(these) > 2 else None}
+            out.append((entry, (*_time_round(svc["serviceNo"], these[0]), None)))
+    return out
 
 
 def _stop_notes(stop) -> list:
@@ -210,6 +223,9 @@ def _stop_notes(stop) -> list:
     restricted = restricted_note(stop["code"])
     if restricted:
         notes.append(restricted)
+    border = cross_border_note(stop["code"])
+    if border:
+        notes.append(border)
     for other in same_place_stops(stop["code"]):
         notes.append(f"🚏 {other['name']} is also stop {other['code']}, with buses of its own.")
     return notes
@@ -232,21 +248,15 @@ def format_arrival_message(
         lines += ["", escape_md(note)]
     lines.append("")
 
-    headings = _two_way_headings(arrivals["services"])
-    twice = _passing_twice(arrivals["services"])
-    services = _pin_favourite_services(arrivals["services"], favourite_service_nos, bus_pin_position)
+    services = _pin_favourite_ways(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:
         lines.append("No bus services currently reported for this stop.")
     else:
-        for svc in services:
+        for svc, way in services:
             svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
-            way = headings.get(id(svc))
-            to = f" {way[0]} → {escape_md(way[1])}" if way else ""
+            to = f" {way[0]} {escape_md(way[1])}" if way else ""
             lines.append(f"## {svc_star}{escape_md(svc['serviceNo'])} ({escape_md(svc.get('operator') or '?')}){to}")
-            is_twice = svc["serviceNo"] in twice
-            if is_twice and _round_key(svc["serviceNo"], svc):
-                lines.append(escape_md(_round_key(svc["serviceNo"], svc)))
-            table = _build_service_table(svc, stop, is_twice)
+            table = _build_service_table(svc, stop)
             lines.append(table if table else "No arrival data.")
             first_last = _first_last_bus_line(svc["serviceNo"], stop["code"], way[2] if way else None)
             if first_last:
@@ -275,21 +285,15 @@ def _build_fallback_text(
     if note:
         lines.append(note)
 
-    headings = _two_way_headings(arrivals["services"])
-    twice = _passing_twice(arrivals["services"])
-    services = _pin_favourite_services(arrivals["services"], favourite_service_nos, bus_pin_position)
+    services = _pin_favourite_ways(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:
         lines.append("No bus services currently reported for this stop.")
     else:
-        for svc in services:
+        for svc, way in services:
             svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
-            way = headings.get(id(svc))
-            to = f" {way[0]} → {way[1]}" if way else ""
+            to = f" {way[0]} {way[1]}" if way else ""
             nexts = [n for n in (svc.get("next"), svc.get("next2"), svc.get("next3")) if n]
-            is_twice = svc["serviceNo"] in twice
-            etas = ", ".join(
-                _format_eta(n["etaMs"]) + (f" {_round_cell(svc['serviceNo'], n)}" if is_twice else "") for n in nexts
-            ) or "no data"
+            etas = ", ".join(_format_eta(n["etaMs"]) for n in nexts) or "no data"
             lines.append(f"{svc_star}{svc['serviceNo']} ({svc.get('operator') or '?'}){to}: {etas}")
             first_last = _first_last_bus_line(svc["serviceNo"], stop["code"], way[2] if way else None)
             if first_last:
@@ -308,8 +312,9 @@ def stop_label(stop, place=None) -> str:
 def stop_button_label(stop, distance_meters=None, is_favourite=False, place=None) -> str:
     """Label for a bus stop selection button, kept under Telegram's 64-char limit by
     shortening the name, so the code, `place` and distance always show. The distance is
-    left off for a stop that has none, as a name search's matches don't."""
-    icon = "⭐" if is_favourite else "🚌"
+    left off for a stop that has none, as a name search's matches don't. A stop across the
+    border, or at its checkpoint, gets a 🛂."""
+    icon = "⭐" if is_favourite else "🛂" if stop["code"] in CROSS_BORDER else "🚌"
     tail = f" ({stop['code']})" + (f" · {place}" if place else "")
     if distance_meters is not None:
         tail += f" ~{distance_meters / 1000:.1f}km" if distance_meters >= 1000 else f" ~{distance_meters}m"

@@ -261,6 +261,19 @@
 
   const restricted = (code) => RESTRICTED[code] || null;
 
+  // Across the Causeway: Woodlands Checkpoint, the last stop before Malaysia, and the stops
+  // in Johor Bahru. Anyone can ride to them with a passport, so unlike the restricted stops
+  // they're planned through as usual, but their timings and route lists say so (script.js).
+  // The same as CROSS_BORDER in the Telegram bot's restricted.py.
+  const CHECKPOINT = { label: "Immigration checkpoint", note: "Passport needed to go on." };
+  const MALAYSIA = { label: "In Malaysia", note: "Passport needed." };
+  const CROSS_BORDER = {
+    46101: CHECKPOINT, 46109: CHECKPOINT,
+    46211: MALAYSIA, 46219: MALAYSIA, 46239: MALAYSIA, 47711: MALAYSIA,
+  };
+
+  const crossBorder = (code) => CROSS_BORDER[code] || null;
+
   // The parts of a run a journey can ride, as lists of indexes into it: the stops nobody
   // may get on or off at left out, and the run cut in two where nobody may ride through.
   function publicParts(seq) {
@@ -401,6 +414,7 @@
     lastBuses,
     stopsTo,
     restricted,
+    crossBorder,
     graph: getGraph,
     haversine,
     byNumber,

@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v77";
+const VERSION = "v78";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -17,6 +17,10 @@ const ASSETS = [
   "/js/theme.js",
   "/js/when.js",
   "/js/network.js",
+  "/js/contractions.js",
+  // A search for "Bedok MRT" lists the stops at the station's exits (js/station-search.js).
+  "/js/station-search.js",
+  "/data/rail-stations.json",
   "/js/journeys.js",
   "/js/planner.js",
   "/js/planner-worker.js",

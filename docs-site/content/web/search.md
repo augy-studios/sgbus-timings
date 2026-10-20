@@ -21,10 +21,28 @@ suggestion, and the stop's timings open underneath.
 | A stop code and a bus | `84009 174` | Opens that stop narrowed to bus 174 |
 | A bus number | `22`, `NR7`, `971E` | Opens [that bus's route](bus-routes.md) |
 | A 6-digit postal code | `519599` | Lists the 8 stops nearest that address |
+| An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists the stops at its exits |
 
 As you type, a list drops down with matching buses first, then up to 20
 matching stops. Tap one to open it, or press **Enter** or tap **Get Timings** to
 open the best match.
+
+### Shortened names
+
+LTA shortens a lot of words in stop and road names: **Bt** for Bukit, **W'lands**
+for Woodlands, **Opp** for Opposite, **Ctr** and **Ctrl** for Centre and
+Central. Type either the full word or the short one and the search finds both,
+so `Bukit Batok` finds Bt Batok Int and `Opposite Block 10` finds Opp Blk 10.
+When some of the stops were only found that way, a line above them says so,
+such as **Also searched Bt for Bukit**.
+
+### MRT and LRT stations
+
+LTA names the stops at a station "Bedok Stn", or after a block or a road, never
+"MRT". Type the station with **MRT**, **LRT** or **station** after it, such as
+`Bedok MRT`, `Senja LRT` or `Botanic Gardens station`, and the list is the stops
+within about 250 m of its exits, nearest first, with how far each one is.
+**Enter** opens them as a list to pick from.
 
 > [!TIP]
 > The stop code is printed on the pole at every bus stop, and never changes.

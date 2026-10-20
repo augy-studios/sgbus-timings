@@ -75,6 +75,10 @@ Under the stop's name, a few stops carry a note:
   area, and MINDEF's on Gombak Drive, are only for people allowed in. The
   [route planner](route-planner.md) never has you get on or off at one, and
   never rides through the cargo area.
+- **Across the border.** Woodlands Checkpoint (46101, 46109) says
+  **Immigration checkpoint**, and the stops in Johor Bahru, at its checkpoint,
+  JB Sentral and Larkin Terminal, say **In Malaysia**: you'll need your
+  passport to go on. Search results and route lists mark them too.
 
 ## Arriving from a list
 
