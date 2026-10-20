@@ -483,6 +483,11 @@ body.modal-open { overflow: hidden; }
     --tray-pad-left: var(--tray-pad);
 }
 :root[data-tray-closed] { --tray-room: 0px; }
+/* The optional buttons turned off in Settings (script.js, setTrayExtra). */
+:root[data-tray-hide~="simplygo"] [data-tray-extra="simplygo"],
+:root[data-tray-hide~="telegram"] [data-tray-extra="telegram"],
+:root[data-tray-hide~="coffee"] [data-tray-extra="coffee"],
+:root[data-tray-hide~="guide"] [data-tray-extra="guide"] { display: none !important; }
 
 /* Clipped at the screen's edge: the tray tucked away slides past it, and anything out there
    would widen the page, which a phone then zooms out to fit, modals and all. Pinned to the
@@ -1776,6 +1781,11 @@ html[data-telegram] .telegramBtn { display: none; }
 
 /* ===== Settings ===== */
 .settingsInput { padding: 12px 14px; height: auto; }
+/* A routine's days, a week in a row (js/reminders.js). */
+.routineDays { grid-template-columns: repeat(7, 1fr); gap: 4px; }
+select.settingsInput { appearance: auto; -webkit-appearance: auto; }
+.routineDays .mode-btn { padding: 8px 2px; font-size: 0.8rem; }
+.trayExtrasPick .mode-btn { text-align: center; }
 /* Home and Work's place suggestions: opaque, as in the planner's cards. */
 .modal .acList {
     background: color-mix(in srgb, var(--brand) 6%, var(--bg));
@@ -2597,6 +2607,18 @@ body.on-trip { padding-bottom: 96px; }
 .cardWait svg { width: 56px; height: 56px; margin: 6px auto 10px; animation: card-hold 1.6s ease-in-out infinite; }
 .cardWait .ico { justify-content: center; width: 100%; }
 @keyframes card-hold { 50% { transform: translateY(-6px); } }
+/* Found and being read (js/card.js): held still, pulsing, until it's done. */
+.cardReading svg { animation: card-reading 0.8s ease-in-out infinite; }
+@keyframes card-reading { 50% { opacity: 0.45; } }
+.cardDone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+    font-weight: 700;
+    color: var(--ok);
+}
 
 /* ---- Offline Sharing (js/offline-share.js) ---- */
 .offlineBody { display: flex; flex-direction: column; gap: 10px; }

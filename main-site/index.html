@@ -40,6 +40,9 @@
         try {
             if (localStorage.getItem("sgbus_tray_side") === "left") document.documentElement.setAttribute("data-tray-side", "left");
             if (localStorage.getItem("sgbus_tray_closed") === "1") document.documentElement.setAttribute("data-tray-closed", "");
+            // The tray's optional buttons turned off in Settings, as "telegram coffee".
+            var trayHide = localStorage.getItem("sgbus_tray_hide");
+            if (trayHide) document.documentElement.setAttribute("data-tray-hide", trayHide);
         } catch (e) { /* the tray opens on the right */ }
     </script>
     <!-- Opened as the Telegram bot's Mini App (js/telegram.js): Telegram adds its launch data to
@@ -142,16 +145,17 @@
                 <!-- Check for updates: the Android app from 2.0.8 only (js/app-update.js) -->
                 <a id="appUpdateBtn" href="#" class="glass-btn" aria-label="Check for app updates" title="Check for app updates" hidden><span data-icon="download"></span></a>
                 <!-- SimplyGo, for card balances and top-ups: phones only (script.js, "SimplyGo") -->
-                <a id="simplyGoBtn" href="https://apps.apple.com/sg/app/simplygo/id667933103" target="_blank" rel="noopener noreferrer" class="glass-btn appIconBtn" aria-label="Open SimplyGo" title="Open SimplyGo: card balance, top-ups and travel history" hidden>
+                <!-- These four can each be turned off in Settings, Edge Tray buttons (data-tray-extra) -->
+                <a id="simplyGoBtn" data-tray-extra="simplygo" href="https://apps.apple.com/sg/app/simplygo/id667933103" target="_blank" rel="noopener noreferrer" class="glass-btn appIconBtn" aria-label="Open SimplyGo" title="Open SimplyGo: card balance, top-ups and travel history" hidden>
                     <img src="/images/icons/simplygo.png" alt="" width="512" height="512" decoding="async">
                 </a>
-                <a href="https://t.me/UwUsgbus_bot" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" aria-label="Singapore Bus Timings on Telegram" title="Singapore Bus Timings on Telegram">
+                <a href="https://t.me/UwUsgbus_bot" data-tray-extra="telegram" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" aria-label="Singapore Bus Timings on Telegram" title="Singapore Bus Timings on Telegram">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M248 8C111 8 0 119 0 256S111 504 248 504 496 393 496 256 385 8 248 8zM365.3 169.6l-40.1 189.7c-3 13.4-11 16.7-22.3 10.4l-61.6-45.5-29.7 28.6c-3.3 3.3-6.1 6.1-12.4 6.1l4.4-63.1 114.9-103.8c5-4.5-1.1-6.9-7.7-2.5l-141.9 89.4-61.1-19.1c-13.3-4.2-13.5-13.3 2.8-19.6l238.9-92.1c11-4.2 20.7 2.6 17.1 19.6z"/></svg>
                 </a>
-                <a href="https://donate.stripe.com/28o2akeAr3hv0DK6oo" target="_blank" rel="noopener noreferrer" class="glass-btn" aria-label="Buy Augy a Coffee" title="Buy Augy a Coffee">
+                <a href="https://donate.stripe.com/28o2akeAr3hv0DK6oo" data-tray-extra="coffee" target="_blank" rel="noopener noreferrer" class="glass-btn" aria-label="Buy Augy a Coffee" title="Buy Augy a Coffee">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M192 384h192c53 0 96-43 96-96h32c70.6 0 128-57.4 128-128S582.6 32 512 32H120c-13.3 0-24 10.7-24 24v232c0 53 43 96 96 96zM512 96c35.3 0 64 28.7 64 64s-28.7 64-64 64h-32V96h32zm47.7 384H48.3c-47.6 0-61-64-36-64h583.4c25 0 11.8 64-36 64z"/></svg>
                 </a>
-                <a href="https://guide.sgbus.uwuapps.org/" target="_blank" rel="noopener noreferrer" class="glass-btn" aria-label="How to use SG Bus Timings" title="How to use SG Bus Timings">
+                <a href="https://guide.sgbus.uwuapps.org/" data-tray-extra="guide" target="_blank" rel="noopener noreferrer" class="glass-btn" aria-label="How to use SG Bus Timings" title="How to use SG Bus Timings">
                     <span data-icon="help"></span>
                 </a>
                 <button class="glass-btn" id="settingsBtn" type="button" aria-label="Settings" title="Settings">
@@ -599,6 +603,10 @@
                 <p class="modal-section-label">Last bus reminders</p>
                 <div id="lastBusList" class="lastBusList"></div>
                 <p class="mode-note">Tap the bell by a bus's last bus time at a stop: a reminder <span id="lastBusLead">20</span> minutes before it, every day it runs.</p>
+                <p class="modal-section-label" data-need="routines">Routines</p>
+                <div id="routineList" class="lastBusList" data-need="routines"></div>
+                <button id="routineAddBtn" class="iconBtn settingsWide" type="button" data-need="routines"><span data-icon="clock"></span> Add a routine</button>
+                <p class="mode-note" data-need="routines">A stop&rsquo;s next buses as a notification at a time you set, on the days you pick: your stop at 7:45 on weekdays, say.</p>
                 <p id="remindersNote" class="remindersNote" role="status" hidden></p>
             </div>
             <p class="modal-section-label">Pin favourite stops in lists</p>
@@ -612,6 +620,14 @@
                 <button class="mode-btn" type="button" data-side="right" aria-pressed="false">Right</button>
             </div>
             <p class="mode-note">The Edge Tray is the column of buttons at the top of the screen. Its arrow tucks it away at the edge.</p>
+            <p class="modal-section-label">Edge Tray buttons</p>
+            <div id="trayExtrasPick" class="mode-toggle trayExtrasPick">
+                <button class="mode-btn" type="button" data-tray-show="simplygo" aria-pressed="true">SimplyGo</button>
+                <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true">Telegram bot</button>
+                <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true">Buy Augy a Coffee</button>
+                <button class="mode-btn" type="button" data-tray-show="guide" aria-pressed="true">Guide</button>
+            </div>
+            <p class="mode-note">Turn off the buttons you don&rsquo;t use, for a tidier tray. The guide is also at guide.sgbus.uwuapps.org.</p>
 
             <!-- Sync with another device: js/sync.js -->
             <p class="modal-section-label">Sync with another device</p>
@@ -832,6 +848,37 @@
             <div id="nearStopsList" class="nearStopsList"></div>
             <button id="nearStopsSave" class="btn" type="button">Save</button>
             <p class="mode-note">Up to 20. Walk within about 120 m of one and its next buses show in a quiet notification, refreshed every minute until you leave. Android asks for location all the time, as it's watched with the app closed.</p>
+        </div>
+    </div>
+
+    <!-- A routine, the Android app's only (js/reminders.js, Routines.java) -->
+    <div id="routineModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="routineTitle">
+            <div class="modal-head">
+                <h2 id="routineTitle">Add a routine</h2>
+                <button class="icon-btn small" type="button" data-close-modal="routineModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <label class="modal-section-label" for="routineStop">Stop</label>
+            <select id="routineStop" class="input settingsInput"></select>
+            <label class="modal-section-label" for="routineBuses">Buses</label>
+            <input id="routineBuses" class="input settingsInput" autocomplete="off" autocapitalize="characters" placeholder="All of them, or some: 22, 222" />
+            <label class="modal-section-label" for="routineTime">Time</label>
+            <input id="routineTime" class="input settingsInput" type="time" value="07:45" />
+            <p class="modal-section-label">Days</p>
+            <div id="routineDays" class="mode-toggle routineDays">
+                <button class="mode-btn" type="button" data-day="1" aria-pressed="false">Mon</button>
+                <button class="mode-btn" type="button" data-day="2" aria-pressed="false">Tue</button>
+                <button class="mode-btn" type="button" data-day="3" aria-pressed="false">Wed</button>
+                <button class="mode-btn" type="button" data-day="4" aria-pressed="false">Thu</button>
+                <button class="mode-btn" type="button" data-day="5" aria-pressed="false">Fri</button>
+                <button class="mode-btn" type="button" data-day="6" aria-pressed="false">Sat</button>
+                <button class="mode-btn" type="button" data-day="7" aria-pressed="false">Sun</button>
+            </div>
+            <p id="routineError" class="remindersNote" role="alert" hidden></p>
+            <button id="routineSave" class="btn" type="button">Save</button>
+            <p class="mode-note">At that time, on those days, a notification shows the stop&rsquo;s next buses. Tap it for their timings.</p>
         </div>
     </div>
 

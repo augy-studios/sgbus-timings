@@ -1091,14 +1091,14 @@ function stopsNear(lat, lng, limit = 8) {
         .slice(0, limit);
 }
 
-// What went wrong getting your location, to show: the desktop app's own explanation if it gave
-// one (js/desktop-location.js), otherwise by the error's code. `toDo` ends the sentence on
-// what location was wanted for.
+// What went wrong getting your location, to show: the desktop or Android app's own explanation
+// if it gave one (js/desktop-location.js, js/geo-retry.js), otherwise by the error's code.
+// `toDo` ends the sentence on what location was wanted for.
 function locationMessage(err, toDo) {
-    if (err?.desktopMessage) return err.desktopMessage;
+    if (err?.desktopMessage || err?.appMessage) return err.desktopMessage || err.appMessage;
     return err?.code === 1
         ? `Location access is turned off for this site. Allow it in your browser ${toDo}.`
-        : "Couldn't get your location. Please try again.";
+        : "Couldn't get your location. Check that Location is turned on for this device, then try again.";
 }
 
 function findNearbyStops(limit = 8) {
@@ -1191,7 +1191,7 @@ function syncPinButtons() {
 // tucked away and brought back by its arrow tab. Both are kept as attributes on <html>, set
 // before first paint by the script in index.html's head; per-browser conveniences, so
 // storage failing only means the defaults: on the right, out.
-const TRAY = { sideKey: 'sgbus_tray_side', closedKey: 'sgbus_tray_closed' };
+const TRAY = { sideKey: 'sgbus_tray_side', closedKey: 'sgbus_tray_closed', hideKey: 'sgbus_tray_hide' };
 const page = document.documentElement;
 
 function storeTray(key, value) {
@@ -1223,6 +1223,30 @@ function syncTraySideButtons() {
     const side = page.getAttribute('data-tray-side') === 'left' ? 'left' : 'right';
     $$('#traySidePick [data-side]').forEach(btn => {
         const on = btn.dataset.side === side;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+    syncTrayExtras();
+}
+
+// The tray's optional buttons, SimplyGo, Telegram, Buy Augy a Coffee and the guide, each
+// turned off or on in Settings: kept as data-tray-hide on <html>, "telegram coffee", which
+// index.html's head sets again before first paint.
+const trayHidden = () => (page.getAttribute('data-tray-hide') || '').split(' ').filter(Boolean);
+
+function setTrayExtra(name, show) {
+    const hidden = trayHidden().filter(n => n !== name);
+    if (!show) hidden.push(name);
+    if (hidden.length) page.setAttribute('data-tray-hide', hidden.join(' '));
+    else page.removeAttribute('data-tray-hide');
+    storeTray(TRAY.hideKey, hidden.join(' '));
+    syncTrayExtras();
+}
+
+function syncTrayExtras() {
+    const hidden = trayHidden();
+    $$('#trayExtrasPick [data-tray-show]').forEach(btn => {
+        const on = !hidden.includes(btn.dataset.trayShow);
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
     });
@@ -1265,6 +1289,10 @@ $('#trayTab').addEventListener('click', () => setTrayOpen(page.hasAttribute('dat
 $('#traySidePick').addEventListener('click', e => {
     const btn = e.target.closest('[data-side]');
     if (btn) setTraySide(btn.dataset.side);
+});
+$('#trayExtrasPick').addEventListener('click', e => {
+    const btn = e.target.closest('[data-tray-show]');
+    if (btn) setTrayExtra(btn.dataset.trayShow, btn.getAttribute('aria-pressed') !== 'true');
 });
 
 function openSettings() {

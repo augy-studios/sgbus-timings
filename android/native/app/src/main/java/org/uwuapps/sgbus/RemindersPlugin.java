@@ -13,6 +13,8 @@
  *                            notifications. Rejects "permission" { need: "calendar" }
  *   onABus({ on })           "On a bus?" (OnABus): physical activity, then notifications.
  *                            Rejects "permission" { need: "activity" }
+ *   routines({ list })       the routines, [{ id, code, name, buses, time, days }] (Routines):
+ *                            notifications (2.2.0)
  *
  * A notifications permission that's refused doesn't stop any of them being turned on; status()
  * says, and the page says so.
@@ -75,6 +77,7 @@ public class RemindersPlugin extends Plugin {
             last.put(o);
         }
         out.put("lastBus", last);
+        out.put("routines", Routines.list(getContext()).length());
         out.put("leaveTime", LeaveTime.on(getContext()));
         out.put("onABus", OnABus.on(getContext()));
         out.put("background", NearStops.canWatch(getContext()));
@@ -165,6 +168,24 @@ public class RemindersPlugin extends Plugin {
 
     @PermissionCallback
     private void afterNotifications(PluginCall call) {
+        call.resolve();
+    }
+
+    // ---------- Routines (2.2.0) ----------
+
+    @PluginMethod
+    public void routines(PluginCall call) {
+        JSArray list = call.getArray("list", new JSArray());
+        JSONArray kept = new JSONArray();
+        for (int i = 0; i < list.length() && kept.length() < Routines.MAX; i++) {
+            JSONObject r = list.optJSONObject(i);
+            if (Routines.valid(r)) kept.put(r);
+        }
+        Routines.set(getContext(), kept);
+        if (kept.length() > 0 && !hasNotifications()) {
+            requestPermissionForAlias("notifications", call, "afterNotifications");
+            return;
+        }
         call.resolve();
     }
 

@@ -14,6 +14,7 @@
  *   on_a_bus "On a bus?", offering a trip when you seem to be riding (OnABus): silent
  *   releases a new version of the app is out, from the server (main-site/api/push/release.js),
  *            to the phones that turned it on (SgBusPlugin.setReleases) (2.1.1)
+ *   routine  a routine's stop timings, at the time you set (Routines) (2.2.0)
  *
  * The server's pushes name the same channels (main-site/api/_push/fcm.js), and Android only
  * takes a channel's sound and buzz from when it's made, so changing one means a new id.
@@ -44,6 +45,7 @@ final class Notifications {
     static final String LEAVE = "leave";
     static final String ON_A_BUS = "on_a_bus";
     static final String RELEASES = "releases";
+    static final String ROUTINE = "routine";
 
     // "OFF" in Morse code (--- ..-. ..-.), as main-site/js/trip.js buzzes it in the page: a wait
     // first, then buzz and pause in turn.
@@ -120,7 +122,12 @@ final class Notifications {
                 NotificationManager.IMPORTANCE_DEFAULT);
         releases.setDescription("When a new version of the app is out, if you turned it on in Service alerts");
 
+        NotificationChannel routine = new NotificationChannel(ROUTINE, "Routines",
+                NotificationManager.IMPORTANCE_DEFAULT);
+        routine.setDescription("A stop's next buses at the times you set in Settings, Routines");
+
         manager.createNotificationChannel(alerts);
+        manager.createNotificationChannel(routine);
         manager.createNotificationChannel(getOff);
         manager.createNotificationChannel(board);
         manager.createNotificationChannel(trip);
@@ -145,7 +152,7 @@ final class Notifications {
         return NotificationManagerCompat.from(context).areNotificationsEnabled();
     }
 
-    // The start of one, for the app's own reminders (NearStops, LastBus, LeaveTime, OnABus) to
+    // The start of one, for the app's own reminders (NearStops, LastBus, LeaveTime, OnABus, Routines) to
     // finish and show().
     static NotificationCompat.Builder builder(Context context, String channel, String tag, String title, String body, String url) {
         return new NotificationCompat.Builder(context, channel)

@@ -5,6 +5,7 @@
 //   Time to leave        for the phone's calendar events with a place (LeaveTime.java)
 //   "On a bus?"          offers a trip when you seem to be riding (OnABus.java)
 //   Last bus             a bell by a bus's last bus time at a stop (LastBus.java)
+//   Routines             a stop's next buses at a time, on the days picked (Routines.java, 2.2.0)
 //
 // Also here: the Get Off Alert's sound in earphones only (js/trip.js asks earphonesOnly()),
 // and Home and Work handed to the app for its Bus home and Bus to work shortcuts and Quick
@@ -91,9 +92,10 @@
     status = await call('status').catch(() => null);
     syncSwitches();
     renderLastBus();
+    renderRoutines();
     const n = read(NEAR_KEY, []).length;
     $('#nearStopsLabel').textContent = n ? `${n} stop${n === 1 ? '' : 's'} watched · change` : 'Pick stops';
-    if (status && !status.notifications && (status.nearStops.length || status.lastBus.length || status.leaveTime || status.onABus)) {
+    if (status && !status.notifications && (status.nearStops.length || status.lastBus.length || status.routines || status.leaveTime || status.onABus)) {
       note('Notifications are off for SG Bus Timings, so these reminders can’t show.', true);
     } else if (status && status.nearStops.length && !status.background) {
       note(NEEDS.background, true);
@@ -205,6 +207,84 @@
     if (typeof renderArrivals === 'function' && lastArrivals) renderArrivals();
   }
 
+  // ---------- Routines (2.2.0) ----------
+  // A stop's next buses as a notification at a time, on the days picked (Routines.java):
+  // { id, code, name, buses: ['22'], time: 'HHMM', days: [1..7, Monday first] }.
+
+  const ROUTINE_KEY = 'sgbus_routines';
+  const MAX_ROUTINES = 20;
+  const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const routines = () => read(ROUTINE_KEY, []);
+
+  // "Weekdays", "Every day", "Weekends" or the days themselves.
+  function daysText(days) {
+    const set = [...days].sort((a, b) => a - b).join(',');
+    if (set === '1,2,3,4,5,6,7') return 'Every day';
+    if (set === '1,2,3,4,5') return 'Weekdays';
+    if (set === '6,7') return 'Weekends';
+    return days.map((d) => DAY_NAMES[d]).join(', ');
+  }
+
+  const clockText = (hhmm) => `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`;
+
+  function renderRoutines() {
+    const list = routines();
+    $('#routineList').innerHTML = list.length
+      ? list.map((r, i) => `<div class="lastBusRow"><span><strong>${esc(clockText(r.time))}</strong> ${esc(daysText(r.days))} · ` +
+        `${esc(r.name)} <span class="sub">${esc(r.code)}${r.buses.length ? ` · ${esc(r.buses.join(', '))}` : ''}</span></span>` +
+        `<button type="button" class="icon-btn small" data-routine-remove="${i}" aria-label="Remove">${ico('close')}</button></div>`).join('')
+      : '<p class="mode-note">None yet.</p>';
+    $('#routineAddBtn').hidden = !has('routines') || list.length >= MAX_ROUTINES;
+  }
+
+  async function saveRoutines(list) {
+    write(ROUTINE_KEY, list);
+    renderRoutines();
+    await call('routines', { list }).catch(failed);
+    refresh();
+  }
+
+  function setDays(days) {
+    document.querySelectorAll('#routineDays [data-day]').forEach((btn) => {
+      const on = days.includes(Number(btn.dataset.day));
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  function openRoutine() {
+    // The stop on screen first, then the favourites.
+    const options = [];
+    if (current?.code) options.push({ code: current.code, name: nameOf(current.code) || current.code });
+    for (const f of LS.getFavs()) {
+      if (!options.some((o) => o.code === f.code)) options.push({ code: f.code, name: f.name || nameOf(f.code) || f.code });
+    }
+    $('#routineStop').innerHTML = options.length
+      ? options.map((o) => `<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join('')
+      : '<option value="">Open a stop or save a favourite first</option>';
+    $('#routineSave').disabled = !options.length;
+    $('#routineBuses').value = current?.service || '';
+    setDays([1, 2, 3, 4, 5]);
+    $('#routineError').hidden = true;
+    openModal('routineModal');
+  }
+
+  function addRoutine() {
+    const code = $('#routineStop').value;
+    const time = $('#routineTime').value.replace(':', '');
+    const days = [...document.querySelectorAll('#routineDays [data-day].active')].map((b) => Number(b.dataset.day));
+    const buses = [...new Set($('#routineBuses').value.toUpperCase().split(/[\s,]+/).filter((b) => /^[0-9A-Z]{1,5}$/.test(b)))];
+    const why = !/^\d{5}$/.test(code) ? 'Pick a stop.' : !/^\d{4}$/.test(time) ? 'Set a time.' : !days.length ? 'Pick at least one day.' : '';
+    if (why) {
+      $('#routineError').textContent = why;
+      $('#routineError').hidden = false;
+      return;
+    }
+    const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+    closeModal('routineModal');
+    saveRoutines([...routines(), { id, code, name: nameOf(code) || code, buses, time, days }].slice(0, MAX_ROUTINES));
+  }
+
   // ---------- setting up ----------
 
   function show() {
@@ -215,6 +295,8 @@
     sendPlaces();
     // The app's copy of the last bus reminders, after an update or a clear of its data.
     if (has('lastbus') && lastList().length) call('lastBus', { list: lastList() }).catch(() => {});
+    // And of the routines, the same way (2.2.0).
+    if (has('routines') && routines().length) call('routines', { list: routines() }).catch(() => {});
   }
 
   function init() {
@@ -237,6 +319,17 @@
       if (e.target.closest('[data-reminders-settings]')) AppBridge.call('SgBus', 'openSettings', { what: 'app' });
       const rm = e.target.closest('[data-lastbus-remove]');
       if (rm) removeLast(Number(rm.dataset.lastbusRemove));
+      const rr = e.target.closest('[data-routine-remove]');
+      if (rr) saveRoutines(routines().filter((_, i) => i !== Number(rr.dataset.routineRemove)));
+    });
+    $('#routineAddBtn').addEventListener('click', openRoutine);
+    $('#routineSave').addEventListener('click', addRoutine);
+    $('#routineDays').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-day]');
+      if (!btn) return;
+      const on = !btn.classList.contains('active');
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
     });
     $('#services').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-lastbus]');

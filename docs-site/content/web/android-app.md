@@ -61,7 +61,10 @@ On a phone with NFC, the app reads an **EZ-Link** or **NETS FlashPay** card.
    the value opens straight away. While the app is open, it takes the card
    without asking.
 2. Hold the card flat against the back of the phone, near the camera on most
-   phones, until it's read.
+   phones. From version 2.2.0, the moment the phone finds it the app says
+   **Reading your card…**: keep holding. It takes about a second, and when it's
+   done the phone buzzes twice and the app says **Done: you can take your card
+   away**.
 
 It shows the value, when the card expires, its auto top-up if it has one turned
 on, and **Recent rides and top-ups**: the last rides the card remembers, with
@@ -120,6 +123,19 @@ closed. Each is off until you turn it on, and asks for what it needs then.
   time. You're reminded 20 minutes before its last bus there, every day it runs.
   Settings lists them, to remove. Public holidays run Sunday's times, which the
   reminder doesn't know about.
+- **Routines** (from version 2.2.0): tap **Add a routine**, pick a stop (the one
+  you have open, or a favourite), the buses you want or none for all of them, a
+  time and the days, such as 7:45 on weekdays. At that time a notification shows
+  the stop's next buses; tap it for their timings. Settings lists them, to
+  remove. Like the [Telegram bot's routines](../bot/routines.md), but on your
+  phone.
+
+### Location turned off
+
+From version 2.2.0, when you tap **Near me**, start from where you are in
+Navigate, or save where you are in Places with your phone's Location turned
+off, the app asks to turn it on with one tap, then carries on. Without Google
+Play services it opens Android's Location settings instead.
 
 <figure>
 <img src="/screenshots/web/android-near-stops.png" alt="Timings near a stop: the favourite stops Bedok Int, ticked, and Tampines Int, not, above a Save button." width="396" height="310" loading="lazy">

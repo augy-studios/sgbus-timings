@@ -9,8 +9,8 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Raise both for a new version: a phone only takes a higher versionCode as an update.
         // 1.0.0 to 1.2.0 (versionCode 1 to 3) were the Bubblewrap app.
-        versionCode 15
-        versionName "2.1.2"
+        versionCode 16
+        versionName "2.2.0"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61

@@ -10,6 +10,9 @@
 // meaningless for them; SimplyGo's button is next to this one for those. A value outside what
 // a card can hold isn't shown at all, and the card's data can be copied (without its numbers)
 // to work out why.
+//
+// From 2.2.0 the app says the moment it finds a card, so the page can say to keep holding it,
+// and once it's read the page says it's done, with a short double buzz.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -62,11 +65,24 @@
     }
   }
 
+  // The app's found a card and is reading it (2.2.0): it isn't done until the value shows.
+  function readingNow() {
+    if ($('#cardModal').classList.contains('hidden')) openModal('cardModal');
+    show(`<div class="cardWait cardReading">${ico('card')}<p><strong>Reading your card…</strong></p>` +
+      `<p class="sub">Keep holding it still. It takes about a second.</p></div>`);
+  }
+
+  // Read: a short double buzz, and a line saying the card can come away now.
+  const DONE_BUZZ = [40, 60, 40];
+  const doneLine = () => `<p class="cardDone">${ico('check')} Done: you can take your card away.</p>`;
+
   function showCard(c) {
     lastRaw = c.raw || null;
+    navigator.vibrate?.(DONE_BUZZ);
     const expired = c.expiry < Date.now();
     if (!(c.balance >= MIN_CENTS && c.balance <= MAX_CENTS)) {
       show(
+        doneLine() +
         `<p><strong>This card's value couldn't be read.</strong></p>` +
         `<p class="sub">Check it in the SimplyGo app for now. To help fix this, open Card data below, copy it and send it to us: it doesn't include your card's number.</p>` +
         rawBlock(),
@@ -75,6 +91,7 @@
       return;
     }
     show(
+      doneLine() +
       `<p class="cardValue">${dollars(c.balance)}</p>` +
       `<p class="sub">on card ${esc(can(c.can))}</p>` +
       `<dl class="cardFacts">` +
@@ -139,6 +156,7 @@
     showButton();
     $('#cardBtn').addEventListener('click', open);
     AppBridge.on('Card', 'tapped', tapped);
+    AppBridge.on('Card', 'reading', readingNow);
     $('#cardAgain').addEventListener('click', read);
     $('#cardBody').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-card-copy]');

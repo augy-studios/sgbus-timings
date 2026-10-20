@@ -5,7 +5,11 @@
  *   notify({ channel, tag, title, body, url })   a notification (Notifications.java)
  *   notificationsAllowed()   { allowed }
  *   openSettings({ what })   the app's page in Android's settings ("app"), its notification
- *                            settings ("notifications"), or NFC's ("nfc")
+ *                            settings ("notifications"), NFC's ("nfc"), or Location's
+ *                            ("location", 2.2.0)
+ *   location()               { on }: whether the phone's Location is on at all (2.2.0)
+ *   turnOnLocation()         Play services' "Turn on location" dialog, or Android's Location
+ *                            settings without it: { on, settings } (2.2.0)
  *   pip({ auto, ratio })     whether leaving the app now shrinks it into picture-in-picture,
  *                            and its shape as [width, height] (MainActivity); "pip" events
  *                            say { active } as it goes in and out
@@ -49,6 +53,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -63,6 +68,10 @@ import android.speech.RecognizerIntent;
 import android.view.WindowManager;
 
 import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.IntentSenderRequest;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.core.location.LocationManagerCompat;
 
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
@@ -71,6 +80,11 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.Priority;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.net.URISyntaxException;
@@ -129,6 +143,10 @@ public class SgBusPlugin extends Plugin {
             features.put("card"); // CardPlugin
             features.put("cardtap"); // CardPlugin's "tapped", a card held to the phone (2.0.8)
         }
+        // 2.2.0
+        features.put("locationon"); // location, turnOnLocation: the phone's Location switch
+        features.put("routines"); // RemindersPlugin.routines (Routines)
+        features.put("cardreading"); // CardPlugin's "reading" event
         // Firebase is set up for this build (google-services.json): the server can push.
         if (firebaseReady()) {
             features.put("push");
@@ -211,6 +229,79 @@ public class SgBusPlugin extends Plugin {
     @Override
     public void load() {
         sPlugin = new java.lang.ref.WeakReference<>(this);
+        // Registered as the app starts, as Android needs: Play services' "Turn on location" dialog.
+        mLocationDialog = bridge.registerForActivityResult(new ActivityResultContracts.StartIntentSenderForResult(), result -> {
+            PluginCall call = mLocationCall;
+            mLocationCall = null;
+            if (call != null) resolveLocation(call, false);
+        });
+    }
+
+    // ---------- the phone's Location switch (2.2.0) ----------
+    // Location can be allowed for the app and still be off for the whole phone, when nothing
+    // finds where you are and the page only hears "couldn't get your location". The page asks
+    // first (main-site/js/geo-retry.js), and offers to turn it on.
+
+    private ActivityResultLauncher<IntentSenderRequest> mLocationDialog;
+    private PluginCall mLocationCall;
+
+    private boolean locationOn() {
+        LocationManager lm = getContext().getSystemService(LocationManager.class);
+        return lm != null && LocationManagerCompat.isLocationEnabled(lm);
+    }
+
+    private void resolveLocation(PluginCall call, boolean settings) {
+        JSObject out = new JSObject();
+        out.put("on", locationOn());
+        if (settings) out.put("settings", true);
+        call.resolve(out);
+    }
+
+    @PluginMethod
+    public void location(PluginCall call) {
+        resolveLocation(call, false);
+    }
+
+    // Play services' own "Turn on location" dialog, one tap to say OK: { on } after it. Without
+    // Play services, or where it can't ask, Android's Location settings instead, and
+    // { on: false, settings: true }, for the page to try again when it's back.
+    @PluginMethod
+    public void turnOnLocation(PluginCall call) {
+        if (locationOn()) {
+            resolveLocation(call, false);
+            return;
+        }
+        LocationSettingsRequest ask = new LocationSettingsRequest.Builder()
+                .addLocationRequest(new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 10000).build())
+                .setAlwaysShow(true)
+                .build();
+        try {
+            LocationServices.getSettingsClient(getActivity()).checkLocationSettings(ask)
+                    .addOnSuccessListener(r -> resolveLocation(call, false))
+                    .addOnFailureListener(e -> {
+                        if (e instanceof ResolvableApiException && mLocationDialog != null && mLocationCall == null) {
+                            mLocationCall = call;
+                            try {
+                                mLocationDialog.launch(new IntentSenderRequest.Builder(((ResolvableApiException) e).getResolution()).build());
+                                return;
+                            } catch (RuntimeException failed) {
+                                mLocationCall = null;
+                            }
+                        }
+                        openLocationSettings(call);
+                    });
+        } catch (RuntimeException e) {
+            openLocationSettings(call);
+        }
+    }
+
+    private void openLocationSettings(PluginCall call) {
+        try {
+            getActivity().startActivity(new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+        } catch (ActivityNotFoundException e) {
+            getActivity().startActivity(new Intent(Settings.ACTION_SETTINGS));
+        }
+        resolveLocation(call, true);
     }
 
     static void onPip(boolean active) {
@@ -301,6 +392,8 @@ public class SgBusPlugin extends Plugin {
             intent = batteryIntent(getContext());
         } else if ("nfc".equals(what)) {
             intent = new Intent(Settings.ACTION_NFC_SETTINGS);
+        } else if ("location".equals(what)) {
+            intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
         } else {
             intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", pkg, null));
         }

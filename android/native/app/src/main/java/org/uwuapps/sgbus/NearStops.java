@@ -206,6 +206,36 @@ final class NearStops {
         }
     }
 
+    // A stop's next buses, a line each ("22  3 min, 14 min"), soonest first, at most MAX_LINES:
+    // just `buses` when it names any. For this and a routine's notification (Routines). Throws
+    // when the timings can't be had.
+    static String timingLines(String code, java.util.Set<String> buses) throws Exception {
+        List<long[]> soonest = new ArrayList<>();
+        List<String> services = new ArrayList<>();
+        JSONObject res = new JSONObject(WidgetStore.get(MainActivity.SITE + "/api/bus-arrivals?stop=" + URLEncoder.encode(code, "UTF-8")));
+        JSONArray list = res.optJSONArray("services");
+        for (int i = 0; list != null && i < list.length(); i++) {
+            JSONObject s = list.getJSONObject(i);
+            if (!buses.isEmpty() && !buses.contains(s.optString("serviceNo").toUpperCase(java.util.Locale.ROOT))) continue;
+            List<Long> mins = new ArrayList<>();
+            for (String k : new String[]{"next", "next2"}) {
+                JSONObject bus = s.optJSONObject(k);
+                if (bus != null && !bus.isNull("eta_ms")) mins.add(Math.max(0, bus.optLong("eta_ms")) / 60000);
+            }
+            if (mins.isEmpty()) continue;
+            services.add(s.optString("serviceNo") + "  " + (mins.get(0) == 0 ? "Arr" : mins.get(0) + " min")
+                    + (mins.size() > 1 ? ", " + (mins.get(1) == 0 ? "Arr" : mins.get(1) + " min") : ""));
+            soonest.add(new long[]{mins.get(0), services.size() - 1});
+        }
+        soonest.sort((a, b) -> Long.compare(a[0], b[0]));
+        StringBuilder lines = new StringBuilder();
+        for (int i = 0; i < soonest.size() && i < MAX_LINES; i++) {
+            if (i > 0) lines.append('\n');
+            lines.append(services.get((int) soonest.get(i)[1]));
+        }
+        return lines.length() == 0 ? "No buses due right now." : lines.toString();
+    }
+
     private static void show(Context c, String code) {
         String name = code;
         JSONArray stops = stops(c);
@@ -213,31 +243,9 @@ final class NearStops {
             JSONObject s = stops.optJSONObject(i);
             if (s != null && code.equals(s.optString("code"))) name = s.optString("name", code);
         }
-        List<long[]> soonest = new ArrayList<>();
-        List<String> services = new ArrayList<>();
         String body;
         try {
-            JSONObject res = new JSONObject(WidgetStore.get(MainActivity.SITE + "/api/bus-arrivals?stop=" + URLEncoder.encode(code, "UTF-8")));
-            JSONArray list = res.optJSONArray("services");
-            for (int i = 0; list != null && i < list.length(); i++) {
-                JSONObject s = list.getJSONObject(i);
-                List<Long> mins = new ArrayList<>();
-                for (String k : new String[]{"next", "next2"}) {
-                    JSONObject bus = s.optJSONObject(k);
-                    if (bus != null && !bus.isNull("eta_ms")) mins.add(Math.max(0, bus.optLong("eta_ms")) / 60000);
-                }
-                if (mins.isEmpty()) continue;
-                services.add(s.optString("serviceNo") + "  " + (mins.get(0) == 0 ? "Arr" : mins.get(0) + " min")
-                        + (mins.size() > 1 ? ", " + (mins.get(1) == 0 ? "Arr" : mins.get(1) + " min") : ""));
-                soonest.add(new long[]{mins.get(0), services.size() - 1});
-            }
-            soonest.sort((a, b) -> Long.compare(a[0], b[0]));
-            StringBuilder lines = new StringBuilder();
-            for (int i = 0; i < soonest.size() && i < MAX_LINES; i++) {
-                if (i > 0) lines.append('\n');
-                lines.append(services.get((int) soonest.get(i)[1]));
-            }
-            body = lines.length() == 0 ? "No buses due right now." : lines.toString();
+            body = timingLines(code, java.util.Collections.emptySet());
         } catch (Exception e) {
             body = "Couldn't get the timings just now.";
         }

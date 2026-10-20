@@ -241,6 +241,7 @@
              or an update (BootReceiver), broadcasts only Android sends. -->
         <receiver android:name=".NearStops$Receiver" android:exported="false" />
         <receiver android:name=".LastBus$Receiver" android:exported="false" />
+        <receiver android:name=".Routines$Receiver" android:exported="false" />
         <receiver android:name=".LeaveTime$Receiver" android:exported="false" />
         <receiver android:name=".OnABus$Receiver" android:exported="false" />
         <receiver android:name=".BootReceiver" android:exported="true">

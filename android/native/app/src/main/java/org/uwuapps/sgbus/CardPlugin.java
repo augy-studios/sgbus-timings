@@ -11,6 +11,9 @@
  *             "off" or "cancelled"
  *   cancel()  stops waiting
  *
+ * Event: "reading", a card's been found and is being read, for the page to say to keep holding
+ * it until it's done (2.2.0); not sent for a tapped card that opens the app.
+ *
  * Event: "tapped", a card held to the phone while it wasn't waiting for one, which Android
  * offers to this app (AndroidManifest.xml's TECH_DISCOVERED, res/xml/nfc_tech.xml), even with
  * the app closed: the card's read at once, before it's taken away, and the page gets what
@@ -117,6 +120,8 @@ public class CardPlugin extends Plugin {
         if (!NfcAdapter.ACTION_TECH_DISCOVERED.equals(action) && !NfcAdapter.ACTION_TAG_DISCOVERED.equals(action)) return false;
         Tag tag = IntentCompat.getParcelableExtra(intent, NfcAdapter.EXTRA_TAG, Tag.class);
         if (tag == null) return false;
+        CardPlugin loaded = sPlugin.get();
+        if (loaded != null) loaded.notifyListeners("reading", new JSObject());
         new Thread(() -> {
             Read r = readCard(tag);
             JSObject out;
@@ -202,6 +207,8 @@ public class CardPlugin extends Plugin {
     private void onTag(Tag tag) {
         PluginCall call = mWaiting;
         if (call == null) return;
+        // Found: the page says to keep holding until it's read (2.2.0).
+        notifyListeners("reading", new JSObject());
         Read r = readCard(tag);
         if (r.card != null) call.resolve(r.card);
         else call.reject(r.message, r.code, null, r.data);

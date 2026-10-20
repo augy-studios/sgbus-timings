@@ -9,7 +9,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 20 October 2026: Which way each bus is going, split and restricted stops
+## 20 October 2026: Apps 2.2.0, which way each bus is going, routines on Android
 
 ### Web app
 
@@ -18,7 +18,8 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **One place, two stops** - Woodlands Int is two stops, 46008 and 46009, with different buses. Each now has a button to the other, as does any stop sharing its name with one close by.
 - **Authorised personnel only** - The stops inside Changi Airport's cargo area, and MINDEF's on Gombak Drive, say so. The route planner and Navigate never have you get on or off at one, and never ride through the cargo area. Route lists mark them.
 - **Room to type** - With the side tray out on a phone, **Get Timings** moves under the search box rather than squeezing it to a few letters.
-- **Location, second try** - When your location can't be found at full accuracy, as indoors where GPS can't reach, it tries again with Wi-Fi and the mobile network before giving up.
+- **Location, second try** - When your location can't be found at full accuracy, as indoors where GPS can't reach, it tries again with Wi-Fi and the mobile network before giving up. If it still can't, it says to check Location is turned on.
+- **A tidier Edge Tray** - **Edge Tray buttons** in Settings turns off any of SimplyGo, the Telegram bot, Buy Augy a Coffee and the guide.
 
 ### Telegram bot
 
@@ -26,9 +27,17 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **One place, two stops** - Woodlands Int's two stops each say so, with a button to the other.
 - **Authorised personnel only** - Those stops say so, and routes never get on or off at one or ride through the cargo area.
 
-### Android and desktop apps
+### Android app 2.2.0
 
-- All of the above, with no app update needed.
+All of the web app's changes above reach the app as they are. These need the update:
+
+- **Routines** - In Settings, **Add a routine**: a stop, the buses you want or all of them, a time and the days. At that time a notification shows the stop's next buses, like the Telegram bot's routines. Tap it for their timings.
+- **Turn on location** - Tapping Near me, Navigate's "from where you are" or Places' "where you are" with the phone's Location off now asks to turn it on with one tap, then carries on, rather than saying it couldn't find you.
+- **Card value, read** - Holding a card to the phone, the app says **Reading your card…** the moment it finds it, then **Done: you can take your card away** with two short buzzes, so you know how long to hold it.
+
+### Desktop app 2.2.0
+
+- All of the web app's changes above. Nothing new of its own: the same number as the Android app.
 
 ---
 
