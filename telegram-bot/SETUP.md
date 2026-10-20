@@ -64,7 +64,8 @@ places - your home, work and other places: get there, share or change them
 addplace - save a new place, with a name of your own
 calendar - your calendar's events with a location, to plan the way there
 settings - view and change your settings
-done - finish adding favourite buses
+sync - sync with the web app or the Android app, by the code its Settings shows
+done - finish whatever you're in the middle of
 cancel - cancel the current operation
 ```
 
