@@ -26,7 +26,9 @@ The bot confirms the routine, with its time, days, stop and buses. Send
 ## What arrives
 
 At the time you set, on the days you set, the bot sends the stop's live timings
-narrowed to the buses you picked. An **All services** button widens it to
+narrowed to the buses you picked. A routine [synced](sync.md) from the Android app
+can name buses with a wildcard, such as `22*` for every bus starting with 22, and
+the bot keeps to it. An **All services** button widens it to
 every bus at the stop. The message starts with a greeting for the time of day,
 good morning, afternoon or evening, and your name: your Telegram first name, or
 the one you set with `/setname`.

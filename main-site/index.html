@@ -616,6 +616,16 @@
                 <button class="mode-btn" type="button" data-restricted="on" aria-pressed="false">I have a pass</button>
             </div>
             <p class="mode-note">For people who work there: with a pass, Navigate can get on and off inside Changi Airport's cargo area and at MINDEF's stops, which it otherwise keeps away from.</p>
+            <!-- Clearing Woodlands and the Johor Bahru checkpoint on a bus across the Causeway (script.js, When.customsMin) -->
+            <p class="modal-section-label">Immigration time</p>
+            <div class="mode-toggle customsPick">
+                <button class="mode-btn" type="button" data-customs="auto" aria-pressed="false">By the time</button>
+                <button class="mode-btn" type="button" data-customs="15" aria-pressed="false">15 min</button>
+                <button class="mode-btn" type="button" data-customs="30" aria-pressed="false">30 min</button>
+                <button class="mode-btn" type="button" data-customs="45" aria-pressed="false">45 min</button>
+                <button class="mode-btn" type="button" data-customs="60" aria-pressed="false">1 hr</button>
+            </div>
+            <p class="mode-note">Journeys across the Causeway count this for getting off, clearing both checkpoints and getting on again. By the time: about 15 min when it's quiet, up to an hour at the rush (weekday mornings into Singapore, evenings and Friday nights out to JB, Sunday nights back).</p>
             <p class="modal-section-label">Pin favourite stops in lists</p>
             <div class="mode-toggle" data-pin-kind="stop">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -891,7 +901,7 @@
             <label class="modal-section-label" for="routineStop">Stop</label>
             <select id="routineStop" class="input settingsInput"></select>
             <label class="modal-section-label" for="routineBuses">Buses</label>
-            <input id="routineBuses" class="input settingsInput" autocomplete="off" autocapitalize="characters" placeholder="All of them, or some: 22, 222" />
+            <input id="routineBuses" class="input settingsInput" autocomplete="off" autocapitalize="characters" placeholder="All of them, or some: 22, 222, or 22* for every 22" />
             <label class="modal-section-label" for="routineTime">Time</label>
             <input id="routineTime" class="input settingsInput" type="time" value="07:45" />
             <p class="modal-section-label">Days</p>

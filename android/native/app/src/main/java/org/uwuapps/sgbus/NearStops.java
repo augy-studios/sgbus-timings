@@ -206,6 +206,15 @@ final class NearStops {
         }
     }
 
+    // Whether a bus is one of `buses`: by its number, or a wildcard, "22*" for every bus
+    // starting 22, as a routine can have from 2.2.3 (main-site/js/reminders.js).
+    static boolean wanted(java.util.Set<String> buses, String serviceNo) {
+        for (String b : buses) {
+            if (b.endsWith("*") ? serviceNo.startsWith(b.substring(0, b.length() - 1)) : serviceNo.equals(b)) return true;
+        }
+        return false;
+    }
+
     // A stop's next buses, a line each ("22  3 min, 14 min"), soonest first, at most MAX_LINES:
     // just `buses` when it names any. For this and a routine's notification (Routines). Throws
     // when the timings can't be had.
@@ -216,7 +225,7 @@ final class NearStops {
         JSONArray list = res.optJSONArray("services");
         for (int i = 0; list != null && i < list.length(); i++) {
             JSONObject s = list.getJSONObject(i);
-            if (!buses.isEmpty() && !buses.contains(s.optString("serviceNo").toUpperCase(java.util.Locale.ROOT))) continue;
+            if (!buses.isEmpty() && !wanted(buses, s.optString("serviceNo").toUpperCase(java.util.Locale.ROOT))) continue;
             List<Long> mins = new ArrayList<>();
             for (String k : new String[]{"next", "next2"}) {
                 JSONObject bus = s.optJSONObject(k);

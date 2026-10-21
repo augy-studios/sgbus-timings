@@ -137,7 +137,8 @@ alarm clock, under the line; the rest are in **Settings**. Either button can be 
   your routines, to change with the pencil or remove, and under **Add a routine**
   you pick a stop (the one you have open, or a favourite), the buses you want or
   none for all of them, a time and the days, such as 7:45 on weekdays, then
-  **Add**. The pencil fills the form in with that routine instead: change what
+  **Add**. From 2.2.3 a bus can be a wildcard, `22*` for every bus starting with
+  22. The pencil fills the form in with that routine instead: change what
   you like and tap **Save**, or **Cancel**. At that time a notification shows the
   stop's next buses; tap it for their timings, just the routine's buses (from
   2.2.2). Like the [Telegram bot's routines](../bot/routines.md), but on your

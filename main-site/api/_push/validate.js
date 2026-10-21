@@ -56,7 +56,8 @@ const text = (v, name) => {
 export function parseTrip(body, now = Date.now()) {
   if (!body || typeof body !== 'object') fail('body must be an object');
   if (!isId(body.tripId)) fail('bad tripId');
-  if (!Array.isArray(body.legs) || !body.legs.length || body.legs.length > 8) fail('legs must be 1 to 8 legs');
+  // Up to 12: a ride across the Causeway is three legs (js/trip.js, acrossTheCauseway).
+  if (!Array.isArray(body.legs) || !body.legs.length || body.legs.length > 12) fail('legs must be 1 to 12 legs');
 
   const legs = body.legs.map((l, i) => {
     if (!l || typeof l !== 'object') fail(`leg ${i} must be an object`);

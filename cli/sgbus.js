@@ -70,7 +70,7 @@ const EMPTY = {
   favs: [], buses: [], routes: [], navs: [],
   places: { home: null, work: null, others: [] },
   routines: [], calendar: null,
-  settings: { pinStop: 'top', pinBus: 'top', restricted: false },
+  settings: { pinStop: 'top', pinBus: 'top', restricted: false, customs: 'auto' },
 };
 
 let configCache = null;
@@ -329,21 +329,31 @@ async function showStop(code, filter, opts) {
     out(...lines);
   };
   if (!opts.watch) return once();
-  const every = Math.max(10, Number(opts.watch) || 30) * 1000;
-  for (;;) {
-    let lines;
-    try {
-      lines = await stopTimings(code, filter, opts);
-    } catch (e) {
-      lines = [red(e.message)];
-    }
-    process.stdout.write('\x1b[2J\x1b[H');
-    out(...lines, '', dim(`Updated ${clockNow()}. Every ${every / 1000}s; Ctrl+C to stop.`));
-    await new Promise((resolve) => setTimeout(resolve, every));
-  }
+  return watch(() => stopTimings(code, filter, opts), opts.watch);
 }
 
 const clockNow = () => new Date(Date.now() + SG_OFFSET_MS).toISOString().slice(11, 16);
+
+// -w: lines drawn afresh every so often, until Ctrl+C. At the sgbus prompt (repl), Ctrl+C
+// ends just this, through stopWatching, and the prompt comes back.
+let stopWatching = null;
+async function watch(draw, seconds) {
+  const every = Math.max(10, Number(seconds) || 30) * 1000;
+  let stopped = false;
+  let wake = () => {};
+  stopWatching = () => { stopped = true; wake(); };
+  try {
+    while (!stopped) {
+      const lines = await draw().catch((e) => [red(e.message)]);
+      if (stopped) break;
+      process.stdout.write('\x1b[2J\x1b[H');
+      out(...lines, '', dim(`Updated ${clockNow()}. Every ${every / 1000}s; Ctrl+C to stop.`));
+      await new Promise((resolve) => { wake = resolve; setTimeout(resolve, every); });
+    }
+  } finally {
+    stopWatching = null;
+  }
+}
 
 // ---------- finding stops ----------
 
@@ -516,6 +526,14 @@ async function routePlan(a, b, opts) {
   if (late) throw new Fail(late);
   const timing = { mode: when?.mode || 'leave', ms: when ? W.atToMs(when.at) : Date.now() };
   const then = when ? 'at that time' : 'right now';
+  // Immigration across the Causeway, as customsFor in main-site/js/planner.js: your setting,
+  // or by when you'd cross, about 45 minutes after setting off (or before arriving by).
+  const own = config().settings.customs;
+  const crossMs = timing.ms + (timing.mode === 'arrive' ? -1 : 1) * 45 * 60000;
+  net.BusNet.setCustoms({ out: own === 'auto' ? W.customsMin('out', crossMs) : Number(own), in: own === 'auto' ? W.customsMin('in', crossMs) : Number(own) });
+  const abroad = (code) => !!net.BusNet.crossBorder(code)?.abroad;
+  const customsLine = abroad(start) === abroad(end) ? []
+    : [dim(`Counts ~${net.BusNet.customs[abroad(end) ? 'out' : 'in']} min to clear immigration at both checkpoints${own === 'auto' ? ', by the time of day' : ''} (sgbus settings customs).`)];
 
   if (opts.save) {
     const routes = config().routes;
@@ -552,7 +570,7 @@ async function routePlan(a, b, opts) {
         ? `Leave at ${W.clockDay(ms)} and you'd get in around ${W.clock(ms + fast)}${fast !== slow ? ` to ${W.clock(ms + slow)}` : ''}, counting an average wait.`
         : `To arrive by ${W.clockDay(ms)}, leave around ${W.clock(ms - slow)}${fast !== slow ? ` to ${W.clock(ms - fast)}` : ''}, counting an average wait.`);
     }
-    return out(...lines, ...idleLine);
+    return out(...lines, ...idleLine, ...customsLine);
   }
 
   const none = idle.length ? `No bus runs straight between these stops ${then}.` : 'No single bus links these two stops.';
@@ -577,7 +595,7 @@ async function routePlan(a, b, opts) {
     lines.push(`${dim(`${i + 1}.`)} ${legs.map((l) => bold(l.bus)).join(dim(' → '))}  ${time} · ${plural(changes, 'change')}`);
     lines.push(dim(`   ${journeyDetail(legs, start, end)}`));
   });
-  lines.push(...idleLine, dim(when ? 'Times are rough estimates from distance, counting an average wait for each bus.' : J.ESTIMATE_NOTE));
+  lines.push(...idleLine, ...customsLine, dim(when ? 'Times are rough estimates from distance, counting an average wait for each bus.' : J.ESTIMATE_NOTE));
   const show = Number(opts.show || 0);
   if (show) lines.push('', ...(await journeySteps(net, journeys[show - 1], start, end, when)));
   else lines.push(dim('--show N for a journey step by step.'));
@@ -593,6 +611,13 @@ function journeyDetail(legs, start, end) {
   if (last.to !== end) parts.push(`off at ${nameOf(last.to) || last.to}`);
   const text = parts.join(', ');
   return text ? text[0].toUpperCase() + text.slice(1) : 'Walk to a stop nearby';
+}
+
+// A crossing of the Causeway on a ride, { way, from, to, minutes }: off, through both
+// checkpoints, and on again, as the web app's steps say it.
+function crossingLine(c) {
+  const [first, second] = c.way === 'out' ? ["Singapore's", "Malaysia's"] : ["Malaysia's", "Singapore's"];
+  return yellow(`  Get off at ${stopText(c.from)} and clear ${first} immigration, ride any bus across to ${stopText(c.to)} and clear ${second}, then get on again: ~${c.minutes} min for both`);
 }
 
 // One journey leg by leg, with each bus's live timings where you set off now.
@@ -617,6 +642,7 @@ async function journeySteps(net, legs, start, end, when) {
     } else {
       lines.push(dim(`    Board around ${W.clock(leaveMs + clock.boards[k] * 60000)}, after an average wait.`));
     }
+    lines.push(...J.legCrossings(leg).map(crossingLine));
     here = leg.to;
   });
   const last = J.walkDetails(here, end);
@@ -670,7 +696,9 @@ async function navPlan(fromText, toText, opts) {
   }
   const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
   const open = config().settings.restricted ? '&restricted=1' : '';
-  const data = await get(`/api/nav?from=${coord(from)}&to=${coord(to)}${at}${open}`, { timeout: 60000 });
+  const own = config().settings.customs;
+  const customs = own === 'auto' ? '' : `&customs=${own}`;
+  const data = await get(`/api/nav?from=${coord(from)}&to=${coord(to)}${at}${open}${customs}`, { timeout: 60000 });
   if (opts.json) return out(JSON.stringify({ from, to, ...data }, null, 2));
   const options = data.options || [];
   const lines = [`${bold(from.label)} → ${bold(to.label)}  ${dim(W.describe(when))}`];
@@ -728,6 +756,7 @@ async function waySteps(o, when, endLabel) {
       const k = buses.indexOf(l);
       const svc = live[k]?.services?.find((s) => s.serviceNo === l.route);
       if (!when) lines.push(svc ? `    Next: ${[svc.next, svc.next2, svc.next3].map(etaCell).join(' ')}` : dim('    No live timings for this bus right now.'));
+      lines.push(...(l.customs || []).map(crossingLine));
     }
   });
   return lines;
@@ -782,13 +811,7 @@ async function favsTimings(opts) {
     return opts.json ? [JSON.stringify(blocks, null, 2)] : blocks.flatMap((b, i) => (i ? ['', ...b] : b));
   };
   if (!opts.watch) return out(...(await once()));
-  const every = Math.max(10, Number(opts.watch) || 30) * 1000;
-  for (;;) {
-    const lines = await once().catch((e) => [red(e.message)]);
-    process.stdout.write('\x1b[2J\x1b[H');
-    out(...lines, '', dim(`Updated ${clockNow()}. Every ${every / 1000}s; Ctrl+C to stop.`));
-    await new Promise((resolve) => setTimeout(resolve, every));
-  }
+  return watch(once, opts.watch);
 }
 
 // `sgbus routes` / `sgbus navs`: the saved ones, one run by its number, or removed.
@@ -869,7 +892,7 @@ function parseHHMM(text) {
   if (!m || Number(m[1]) > 23 || Number(m[2]) > 59) throw new Fail('A routine wants a time like 07:45.');
   return `${m[1].padStart(2, '0')}${m[2]}`;
 }
-const busesOf = (text) => [...new Set(String(text || '').toUpperCase().split(/[\s,]+/).filter((b) => /^[0-9A-Z]{1,5}$/.test(b)))];
+const busesOf = (text) => [...new Set(String(text || '').toUpperCase().split(/[\s,]+/).filter((b) => /^[0-9A-Z]{1,5}$|^[0-9A-Z]{1,3}[*]$/.test(b)))];
 
 async function routineCommand(args, opts) {
   const c = config();
@@ -1070,9 +1093,16 @@ function settingsCommand(args) {
     `  pin.stop    ${c.settings.pinStop}      ${dim('favourite stops, top or bottom of lists')}`,
     `  pin.bus     ${c.settings.pinBus}      ${dim("favourite buses, top or bottom of a stop's timings")}`,
     `  restricted  ${c.settings.restricted ? 'on ' : 'off'}      ${dim("on if you have a pass: Changi Airport's cargo area and MINDEF's stops")}`,
+    `  customs     ${pad(c.settings.customs === 'auto' ? 'auto' : `${c.settings.customs} min`, 9)}${dim('immigration across the Causeway: auto by the time of day, or 15, 30, 45, 60')}`,
     dim(`Kept in ${CONFIG_FILE}`),
   );
   if (!field) return show();
+  if (field === 'customs') {
+    if (!['auto', '15', '30', '45', '60'].includes(value)) throw new Fail('sgbus settings customs auto|15|30|45|60');
+    c.settings.customs = value;
+    saveConfig();
+    return show();
+  }
   if (field === 'pin.stop' || field === 'pin.bus') {
     if (!['top', 'bottom'].includes(value)) throw new Fail(`sgbus settings ${field} top|bottom`);
     c.settings[field === 'pin.stop' ? 'pinStop' : 'pinBus'] = value;
@@ -1138,9 +1168,11 @@ function parseArgs(argv) {
   return { args, opts };
 }
 
-const HELP = `sgbus ${VERSION}: Singapore's live bus timings in the terminal, from ${SITE.replace(/^https:\/\//, '')}
-
-Timings and search
+const HELP_TITLE = `sgbus ${VERSION}: Singapore's live bus timings in the terminal, from ${SITE.replace(/^https:\/\//, '')}`;
+const HELP_PROMPT = `
+  sgbus                           on its own, a prompt of its own: type each command without
+                                  "sgbus" (84009, nav home work, favs), and exit to leave`;
+const HELP_BODY = `Timings and search
   sgbus <stop> [buses]            a stop's timings: sgbus 84009, sgbus 84009 174,175, sgbus 84009 '22*'
     -w, --watch [seconds]         keep them on screen, refreshed (every 30s)
     -d, --details                 operator, decks, first and last bus
@@ -1165,7 +1197,7 @@ Saved
   sgbus routes [N | rm N]         saved routes: list, plan one, or remove it; sgbus navs the same
   sgbus places                    Home, Work and your own
   sgbus place set <name> <where>  sgbus place set home 519599; sgbus place rm <name>
-  sgbus routine add <stop> <HH:MM> [--days weekdays|weekends|daily|mon,wed] [--buses 14,60]
+  sgbus routine add <stop> <HH:MM> [--days weekdays|weekends|daily|mon,wed] [--buses 14,60,22*]
   sgbus routines                  list them; sgbus routine edit N [--time --days --buses --stop],
                                   sgbus routine rm N
   sgbus routine run [--notify]    send the ones due now (the sgbus-routines.timer does this)
@@ -1177,14 +1209,26 @@ Around Singapore
   sgbus calendar set <iCal link>  link your calendar; calendar rm unlinks it
   sgbus calendar nav N [--from <place>]   the way to event N, arriving by its start
 
-  sgbus settings [pin.stop|pin.bus top|bottom | restricted on|off]
+  sgbus settings [pin.stop|pin.bus top|bottom | restricted on|off | customs auto|15|30|45|60]
   sgbus update                    get the newest version
   --json                          the data rather than the text, for scripts
 
 Saved in ${CONFIG_FILE}. Also on Telegram: ${BOT}. Guide: guide.sgbus.uwuapps.org`;
+const HELP = `${HELP_TITLE}\n${HELP_PROMPT}\n\n${HELP_BODY}`;
 
-async function main() {
-  const { args, opts } = parseArgs(process.argv.slice(2));
+// The same at the prompt, with "sgbus" left out of each command and the columns kept.
+function promptHelp() {
+  const drop = (s) => s.replace(/\bsgbus (?=[a-z<'\d[])/g, '');
+  const body = HELP_BODY.split('\n').map((l) => {
+    const m = l.match(/^  sgbus (\S.*?)( {2,})(.*)$/);
+    return m ? `  ${m[1]}${m[2]}      ${drop(m[3])}` : drop(l);
+  });
+  return `${HELP_TITLE}\n\n${body.join('\n')}`;
+}
+
+// One command, as its words: from the command line, or a line typed at the prompt (repl).
+async function run(argv) {
+  const { args, opts } = parseArgs(argv);
   const [cmd, ...rest] = args;
   if (opts.version || cmd === 'version') return out(`sgbus ${VERSION}`);
   if (!cmd || opts.help || cmd === 'help') return out(HELP);
@@ -1241,7 +1285,7 @@ async function main() {
     if (stop[2] && !filter) throw new Fail(`"${stop[2]}" isn't a list of buses: 174, or 174,175, or 22*.`);
     return showStop(stop[1], filter, opts);
   }
-  if (/^\d{6}$/.test(text)) return main2(['near', text], opts);
+  if (/^\d{6}$/.test(text)) return run(['near', text, ...Object.entries(opts).map(([k, v]) => (v === true ? `--${k}` : `--${k}=${v}`))]);
   if (/^[0-9A-Za-z]{1,4}$/.test(text)) {
     const net = await network().catch(() => null);
     if (net?.BusNet.hasService(text.toUpperCase())) return showBus(text, opts);
@@ -1253,14 +1297,87 @@ async function main() {
   out(...stopListLines(note || 'Did you mean', found));
 }
 
-// main again with other words, keeping the options.
-function main2(args, opts) {
-  process.argv = [process.argv[0], process.argv[1], ...args, ...Object.entries(opts).flatMap(([k, v]) => (v === true ? [`--${k}`] : [`--${k}=${v}`]))];
-  return main();
-}
-
-main().catch((e) => {
+function report(e) {
   if (e instanceof Fail) console.error(red(e.message));
   else console.error(red(`Something went wrong: ${e.stack || e}`));
-  process.exitCode = 1;
-});
+}
+
+// ---------- the prompt ----------
+
+// `sgbus` on its own, in a terminal: a prompt of its own, so each command is typed without
+// "sgbus" in front, like a chat with the bot. Up and down go through what you've typed before
+// (kept beside the stop list, the last HISTORY_MAX), Tab finishes a command or a place's name,
+// and Ctrl+C stops a -w, or clears what's typed. exit, quit or Ctrl+D leaves.
+const HISTORY_MAX = 500;
+const COMMANDS = ['stop', 'search', 'near', 'bus', 'route', 'nav', 'favs', 'fav', 'routes', 'navs', 'places', 'place',
+  'routines', 'routine', 'alerts', 'weather', 'calendar', 'settings', 'update', 'help', 'clear', 'exit'];
+
+// A line as words, as a shell splits them: "Bedok Mall" and 'Bedok Mall' are one. No globbing,
+// so 22* needs no quotes here.
+const wordsOf = (line) => [...line.matchAll(/"([^"]*)"|'([^']*)'|(\S+)/g)].map((m) => m[1] ?? m[2] ?? m[3]);
+
+async function repl() {
+  const readline = require('readline');
+  const historyFile = path.join(CACHE_DIR, 'history');
+  let history = [];
+  try { history = fs.readFileSync(historyFile, 'utf8').split('\n').filter(Boolean).slice(-HISTORY_MAX).reverse(); } catch { /* none yet */ }
+  const completer = (line) => {
+    const word = line.split(/\s+/).pop().toLowerCase();
+    const { places } = config();
+    const all = [...COMMANDS, 'home', 'work', ...places.others.map((p) => p.name.toLowerCase())];
+    const hits = all.filter((w) => w.startsWith(word));
+    return [hits, word];
+  };
+  const rl = readline.createInterface({
+    input: process.stdin, output: process.stdout, completer, history, historySize: HISTORY_MAX,
+    prompt: `${green('sgbus')}${dim('>')} `,
+  });
+  let busy = false;
+  rl.on('SIGINT', () => {
+    if (stopWatching) return stopWatching();
+    if (busy) return;
+    if (rl.line) {
+      rl.write(null, { ctrl: true, name: 'u' });
+      return;
+    }
+    out('', dim('exit, or Ctrl+D, to leave.'));
+    rl.prompt();
+  });
+  out(`${bold('sgbus')} ${VERSION}  Singapore's live bus timings.`,
+    dim(`Type a stop (84009), a stop's name, a bus, or a command, without "sgbus": favs, nav home work, alerts.`),
+    dim('help lists them all, Tab finishes a word, exit leaves.'), '');
+  rl.prompt();
+  for await (const line of rl) {
+    let words = wordsOf(line.trim());
+    if (words[0] === 'sgbus') words = words.slice(1);
+    const [first] = words;
+    if (first === 'exit' || first === 'quit' || first === 'q') break;
+    if (words.length) {
+      try { fs.mkdirSync(CACHE_DIR, { recursive: true }); fs.appendFileSync(historyFile, `${line.trim()}\n`); } catch { /* this session only */ }
+    }
+    if (first === 'clear') process.stdout.write('\x1b[2J\x1b[H');
+    else if (first === 'help' && words.length === 1) out(promptHelp(), '');
+    else if (words.length) {
+      busy = true;
+      try {
+        await run(words);
+      } catch (e) {
+        report(e);
+      } finally {
+        busy = false;
+      }
+      out('');
+    }
+    rl.prompt();
+  }
+  rl.close();
+}
+
+// In a terminal with nothing after it, or as `sgbus shell` (which also reads commands piped in,
+// a line each), the prompt; otherwise the one command, as cron and the routines' timer run it.
+const argv = process.argv.slice(2);
+if ((!argv.length && process.stdin.isTTY && process.stdout.isTTY) || (argv.length === 1 && argv[0] === 'shell')) {
+  repl().catch((e) => { report(e); process.exitCode = 1; });
+} else {
+  run(argv).catch((e) => { report(e); process.exitCode = 1; });
+}

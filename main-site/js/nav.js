@@ -453,9 +453,10 @@ async function runNav() {
   $('#navBody').innerHTML = plannerStatus('Finding journeys by bus and train…');
   try {
     const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
-    // Settings' Restricted areas (BusNet.setOpenAccess).
+    // Settings' Restricted areas (BusNet.setOpenAccess), and Immigration time when it's your own.
     const open = BusNet.openAccess() ? '&restricted=1' : '';
-    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}${at}${open}`, { cache: 'no-store' });
+    const customs = LS.getCustoms() === 'auto' ? '' : `&customs=${LS.getCustoms()}`;
+    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}${at}${open}${customs}`, { cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
     if (token !== nav.token) return;
     if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
@@ -490,7 +491,18 @@ function renderNav() {
   body.innerHTML =
     plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there${nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : ''}, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
-    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>`;
+    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>` +
+    customsNote(nav.options);
+}
+
+// Under ways across the Causeway: the time counted for immigration, the longest of them.
+function customsNote(options) {
+  const minutes = options.flatMap((o) => o.legs.flatMap((l) => (l.customs || []).map((c) => c.minutes)));
+  if (!minutes.length) return '';
+  const most = Math.max(...minutes);
+  const least = Math.min(...minutes);
+  return `<p class="estimateNote">Ways across the Causeway count ~${least === most ? most : `${least} to ${most}`} min to clear immigration at both checkpoints` +
+    `${LS.getCustoms() === 'auto' ? ', by the time of day you’d get there' : ''}. Your own time can be set in Settings.</p>`;
 }
 
 // "08:12 → 08:50" for a way, by the time picked.
@@ -595,7 +607,8 @@ async function renderNavOption(o) {
       `<div class="legRide">From ${escapeHtml(placeName(leg.from))} to ${escapeHtml(placeName(leg.to))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}</div>` +
       etas +
       (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(leg.route)} timings at ${escapeHtml(leg.from.name)}</button>` : '') +
-      `</li>`;
+      `</li>` +
+      navCrossingSteps(leg);
   }).join('');
 
   const draw = (timings) => {
@@ -617,6 +630,17 @@ async function renderNavOption(o) {
     timings[k] = svc ? [svc.next, svc.next2, svc.next3].filter((n) => n && n.eta_ms != null).map((n) => n.eta_ms) : null;
   });
   draw(timings);
+}
+
+// A bus leg's crossings of the Causeway (/api/nav's `customs`): get off, through both
+// checkpoints, on again, with the minutes the way counts for it.
+function navCrossingSteps(leg) {
+  return (leg.customs || []).map((c) => {
+    const [first, second] = c.way === 'out' ? ["Singapore's", "Malaysia's"] : ["Malaysia's", "Singapore's"];
+    return `<li class="step stepWalk">${ico('flag')}<span>Get off at ${escapeHtml(stopText(c.from))} and clear ${first} immigration, ` +
+      `ride any bus across to ${escapeHtml(stopText(c.to))} and clear ${second}, then get on again: ` +
+      `~${c.minutes} min for both${LS.getCustoms() === 'auto' ? ', by the time of day' : ''}.</span></li>`;
+  }).join('');
 }
 
 // Directions for a walk, from where it starts to where it ends: the start of the nav or the stop

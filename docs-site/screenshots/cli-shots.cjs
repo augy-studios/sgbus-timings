@@ -13,7 +13,7 @@ const SGBUS = path.join(root, 'cli/dist/sgbus');
 const OUT = path.resolve(__dirname, '../public/screenshots/web') + '/';
 const env = { ...process.env, FORCE_COLOR: '1', XDG_CONFIG_HOME: path.join(__dirname, '.cli-shots/config'), XDG_CACHE_HOME: path.join(__dirname, '.cli-shots/cache') };
 
-const run = (args) => execFileSync('node', [SGBUS, ...args], { env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+const run = (args, input = null) => execFileSync('node', [SGBUS, ...args], { env, encoding: 'utf8', input, stdio: [input == null ? 'ignore' : 'pipe', 'pipe', 'pipe'] });
 const quote = (a) => (/[\s*']/.test(a) ? `'${a}'` : a);
 
 // The ANSI colours sgbus uses, as a dark terminal shows them.
@@ -39,6 +39,9 @@ const SHOTS = [
   { name: 'cli-nav.png', setup: [['place', 'set', 'home', '519599']], cmds: [['nav', 'home', 'Bedok Mall']] },
   { name: 'cli-route.png', cmds: [['route', '98101', '95099', '--show', '1']] },
   { name: 'cli-saved.png', setup: [['routine', 'add', '84009', '07:45', '--buses', '14,60']], cmds: [['routines'], ['weather']] },
+  // The prompt: `sgbus` on its own, then commands typed without it. Its welcome comes from the
+  // real prompt; each command is run on its own and drawn after "sgbus>", as typing it shows.
+  { name: 'cli-prompt.png', prompt: [['84009', '14,60'], ['nav', 'home', '84031']] },
 ];
 
 (async () => {
@@ -46,7 +49,11 @@ const SHOTS = [
   const page = await browser.newPage({ viewport: { width: 900, height: 600 }, deviceScaleFactor: 3 });
   for (const s of SHOTS) {
     for (const a of s.setup || []) { try { run(a); } catch { /* set already */ } }
-    const body = s.cmds.map((a) => `<span style="color:#69db7c">$</span> sgbus ${a.map(quote).join(' ')}\n${ansiToHtml(run(a).replace(/\n+$/, ''))}`).join('\n\n');
+    const prompt = '<span style="color:#69db7c">sgbus</span><span style="opacity:.6">&gt;</span>';
+    const body = s.prompt
+      ? `<span style="color:#69db7c">$</span> sgbus\n${ansiToHtml(((w) => w.slice(0, w.lastIndexOf('\n')))(run(['shell'], 'exit\n')).replace(/\n+$/, ''))}\n\n` +
+        s.prompt.map((a) => `${prompt} ${a.map(quote).join(' ')}\n${ansiToHtml(run(a).replace(/\n+$/, ''))}`).join('\n\n') + `\n\n${prompt} exit`
+      : s.cmds.map((a) => `<span style="color:#69db7c">$</span> sgbus ${a.map(quote).join(' ')}\n${ansiToHtml(run(a).replace(/\n+$/, ''))}`).join('\n\n');
     await page.setContent(`<!doctype html><meta charset="utf-8"><style>
       body { margin: 0; background: transparent; }
       .term { display: inline-block; margin: 0; padding: 18px 22px 20px; border-radius: 12px; background: #1d2021; color: #e6e6e6;

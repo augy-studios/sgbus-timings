@@ -15,11 +15,11 @@ Ubuntu 22.04, install Node.js 20 from [NodeSource](https://github.com/nodesource
 first.
 
 **Debian, Ubuntu, Mint, Raspberry Pi OS**: download
-`sg-bus-timings-cli-2.2.2-all.deb` from the
+`sg-bus-timings-cli-2.2.3-all.deb` from the
 [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest), then:
 
 ```bash
-sudo apt install ./sg-bus-timings-cli-2.2.2-all.deb
+sudo apt install ./sg-bus-timings-cli-2.2.3-all.deb
 ```
 
 **Any other Linux**, or without `sudo`: it's one file.
@@ -32,10 +32,24 @@ chmod +x ~/.local/bin/sgbus
 
 `sgbus help` lists everything, and `sgbus update` gets a newer version.
 
+## Its own prompt
+
+<figure>
+<img src="/screenshots/web/cli-prompt.png" alt="A terminal: sgbus on its own opens a prompt, sgbus>, with a welcome; at it, 84009 14,60 shows Bedok Int's 14 and 60, and nav home 84031 lists nine ways from Home to Bedok Stn Exit B with the first step by step; then exit." width="881" height="731" loading="lazy">
+<figcaption>sgbus on its own: type each command without it, like a chat with the bot.</figcaption>
+</figure>
+
+Type `sgbus` on its own and it opens a prompt of its own, `sgbus>`, where each command
+goes without `sgbus` in front: `84009`, `nav home work`, `favs`. Up and down bring back
+what you typed before, even from last time, and Tab finishes a command or a place's
+name. Ctrl+C stops timings kept on screen with `-w` and goes back to the prompt.
+`help` lists the commands, and `exit` or Ctrl+D leaves. Everything below works there as
+it does on its own line.
+
 ## A stop's timings
 
 <figure>
-<img src="/screenshots/web/cli-timings.png" alt="A terminal: sgbus 84009 '22*' lists Bedok Int's buses starting 22, 222 starred as a favourite, each with its next three buses in green; then sgbus 66271 136 73 -d lists 73 out to Lor 6 Toa Payoh and back to Ang Mo Kio Int, and 136 to Ang Mo Kio Int and to Punggol Int, each way in its own colour, with the operator, decks, and first and last bus under each." width="619" height="407" loading="lazy">
+<img src="/screenshots/web/cli-timings.png" alt="A terminal: sgbus 84009 '22*' lists Bedok Int's buses starting 22, 222 starred as a favourite, each with its next three buses in green; then sgbus 66271 136 73 -d lists 73 out to Lor 6 Toa Payoh and back to Ang Mo Kio Int, and 136 to Ang Mo Kio Int and to Punggol Int, each way in its own colour, with the operator, decks, and first and last bus under each." width="619" height="427" loading="lazy">
 <figcaption>A stop narrowed to the 22s, and a stop where buses go both ways.</figcaption>
 </figure>
 
@@ -80,6 +94,10 @@ date. `--save` keeps a route or a nav: `sgbus routes` and `sgbus navs` list them
 restricted on`), both can use the stops inside Changi Airport's cargo area and at MINDEF, as
 in the web app's [Settings](settings.md).
 
+Across the Causeway, both count time to clear immigration at the checkpoints, and show it as
+a step, as [Navigate does](nav.md#across-the-causeway): by the time of day, or your own with
+`sgbus settings customs 30` (15, 30, 45 or 60; `auto` goes back).
+
 ## Favourites, places and routines
 
 <figure>
@@ -92,11 +110,11 @@ in the web app's [Settings](settings.md).
 | `sgbus fav add 84009` | Saves a stop. `sgbus fav rm` removes it, `sgbus fav bus add 14` saves a bus. |
 | `sgbus favs` | Every favourite stop's timings at once. `-w` keeps them on screen. |
 | `sgbus place set home 519599` | Sets Home, Work, or a place of your own (`sgbus place set Gym 'Our Tampines Hub'`). `sgbus places` lists them. |
-| `sgbus routine add 84009 07:45 --buses 14,60` | A [routine](../bot/routines.md): the stop's next buses at 7:45, on weekdays unless `--days` says otherwise (`weekends`, `daily`, `mon,wed,fri`). `sgbus routines` lists them; `sgbus routine edit 1 --time 08:00` changes one. |
+| `sgbus routine add 84009 07:45 --buses 14,60` | A [routine](../bot/routines.md): the stop's next buses at 7:45, on weekdays unless `--days` says otherwise (`weekends`, `daily`, `mon,wed,fri`). `--buses 22*` takes every bus starting 22. `sgbus routines` lists them; `sgbus routine edit 1 --time 08:00` changes one. |
 | `sgbus alerts` | Train disruptions and traffic incidents, as in [Service alerts](service-alerts.md). |
 | `sgbus weather` | Today's weather, PSI and PM2.5, as the web app's [weather button](weather.md). |
 | `sgbus calendar set <link>` | Links your [calendar](calendar.md) by its private iCal link. `sgbus calendar` lists your events with a place, and `sgbus calendar nav 1` plans the way to the first, to arrive by its start. |
-| `sgbus settings` | Where favourites pin, and Restricted areas. |
+| `sgbus settings` | Where favourites pin, Restricted areas, and Immigration time (`customs`). |
 
 Routines arrive as desktop notifications once their timer is on. From the `.deb`, once:
 

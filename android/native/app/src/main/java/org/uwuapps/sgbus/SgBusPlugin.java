@@ -148,6 +148,7 @@ public class SgBusPlugin extends Plugin {
         features.put("routines"); // RemindersPlugin.routines (Routines)
         // 2.2.1
         features.put("myica"); // OpenAppActivity opens MyICA Mobile, from a trip to a checkpoint
+        features.put("routinewild"); // 2.2.3: a routine's buses can be a wildcard, "22*" (NearStops.wanted)
         features.put("cardreading"); // CardPlugin's "reading" event
         // Firebase is set up for this build (google-services.json): the server can push.
         if (firebaseReady()) {

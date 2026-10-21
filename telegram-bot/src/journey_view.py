@@ -7,9 +7,9 @@ from telethon import Button
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .format import _format_eta, escape_md
-from .journeys import journey_clock, journey_minutes, leg_details, stops_to, walk_details
+from .journeys import journey_clock, journey_minutes, leg_crossings, leg_details, set_customs, stops_to, walk_details
 from .lta import fetch_arrivals
-from .when import at_to_dt, clock, clock_day, live_lead, now, span
+from .when import at_to_dt, clock, clock_day, customs_for, live_lead, now, span
 
 ESTIMATE_NOTE = "Times are rough estimates for riding and walking, not counting the wait for a bus."
 CLOCK_NOTE = "Times are rough estimates from distance. Clock times count an average wait for each bus."
@@ -88,6 +88,19 @@ def _clock(minutes_from_now) -> str:
     return (datetime.now(ZoneInfo("Asia/Singapore")) + timedelta(minutes=minutes_from_now)).strftime("%H:%M")
 
 
+def crossing_lines(leg: dict) -> list:
+    """A leg's crossings of the Causeway: get off, through both checkpoints, on again, with
+    the minutes counted for it. The same as crossingSteps in main-site/js/planner.js."""
+    out = []
+    for c in leg_crossings(leg):
+        first, second = ("Singapore's", "Malaysia's") if c["way"] == "out" else ("Malaysia's", "Singapore's")
+        out.append(
+            f"🛂 Get off at {_stop_text(c['from'])} and clear {first} immigration, ride any bus across to "
+            f"{_stop_text(c['to'])} and clear {second}, then get on again: ~{c['minutes']} min for both, by the time of day."
+        )
+    return out
+
+
 async def build_journey_view(start_code: str, end_code: str, legs: list, route: dict):
     """One journey from the route panel, leg by leg, with the live timings of each bus at
     the stop it's boarded at. Past the first bus, each leg says roughly when you'd reach
@@ -97,6 +110,8 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
     back button goes. Returns (rich, buttons)."""
     here = {**route, "journey": legs}
     back_row = [Button.inline("🔙 Back to route", make_button("route_view", route))]
+    # Immigration across the Causeway, for the time planned for, as the route was planned.
+    set_customs(customs_for(route.get("when")))
 
     details = [leg_details(leg) for leg in legs]
     if not all(details):
@@ -159,10 +174,11 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
         lines += ["", f"## {escape_md(heading)}", escape_md(ride)]
         fallback += ["", heading, ride]
 
+        crossing = crossing_lines(leg)
         if not live:
             board = f"Board around {clock(leave + timedelta(minutes=timed['boards'][number - 1]))}, after an average wait."
-            lines += ["", escape_md(board)]
-            fallback.append(board)
+            lines += ["", escape_md(board), *(escape_md(c) for c in crossing)]
+            fallback += [board, *crossing]
             here_code = leg["to"]
             continue
 
@@ -199,6 +215,9 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
             note = "No live timings for this bus right now."
             lines += ["", escape_md(note)]
             fallback.append(note)
+        for c in crossing:
+            lines += ["", escape_md(c)]
+            fallback.append(c)
 
         # With no bus to go on, the rest of the journey can't be timed from here.
         t = catch + detail["minutes"] if catch is not None else None

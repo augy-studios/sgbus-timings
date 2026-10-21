@@ -53,6 +53,15 @@ Causeway to: the Johor Bahru checkpoint, JB Sentral and Larkin Terminal. A
 journey across the border has a **MyICA** button on the trip bar once it's
 started: see [Get Off Alert](get-off-alert.md).
 
+Crossing, everyone gets off at Woodlands to clear Singapore's immigration, rides
+any bus across to the Johor Bahru checkpoint, clears Malaysia's, and gets on again
+(the other way round coming back). Each way across counts time for that, and
+shows it as a step of its own: about 15 minutes when it's quiet and up to an hour
+at the rush, by when you'd get there (weekday mornings into Singapore, weekday
+evenings and Friday nights out to Johor Bahru, Saturday mornings out and Sunday
+evenings back). If you know how long you usually take, set it in
+[Settings](settings.md), **Immigration time**.
+
 ### Restricted areas
 
 <figure>

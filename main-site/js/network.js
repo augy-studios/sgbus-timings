@@ -285,6 +285,19 @@
 
   const crossBorder = (code) => CROSS_BORDER[code] || null;
 
+  // The two hops across the Causeway, where everyone gets off to clear immigration and on
+  // again: Woodlands to the Johor Bahru checkpoint ('out'), and back ('in'). Each run marks
+  // them (getGraph, `cross`), and the planner counts `customs` minutes for each (js/journeys.js):
+  // set for the time planned for, by When.customsMin or Settings' Immigration time
+  // (js/planner.js). The same as CROSSINGS in api/_nav/network.js and the bot's journeys.py.
+  const CROSSINGS = { '46101>46211': 'out', '46219>46109': 'in' };
+  const crossing = (from, to) => CROSSINGS[`${from}>${to}`] || null;
+  const customs = { out: 30, in: 30 };
+  function setCustoms(minutes) {
+    customs.out = minutes.out;
+    customs.in = minutes.in;
+  }
+
   // Singapore's land checkpoints, where ICA clears you on the way out and back in: Tuas,
   // Woodlands, and Woodlands Train Checkpoint for the KTM Shuttle Tebrau. A trip that rides or
   // walks to one offers MyICA Mobile, for its QR code (js/trip.js). Each stop's [lat, lng], so
@@ -380,7 +393,13 @@
             if (a && b) total += haversine(a, b);
             cum.push(total);
           }
-          list.push({ bus: serviceNo, dir: Number(dir), stops, cum, times: part.map((i) => allTimes[i]) });
+          // [index, 'out' | 'in'] where the run crosses the Causeway on the way to its index-th stop.
+          const cross = [];
+          for (let i = 1; i < stops.length; i++) {
+            const way = crossing(stops[i - 1], stops[i]);
+            if (way) cross.push([i, way]);
+          }
+          list.push({ bus: serviceNo, dir: Number(dir), stops, cum, cross, times: part.map((i) => allTimes[i]) });
         }
       }
     }
@@ -446,6 +465,9 @@
     setOpenAccess,
     openAccess: () => openAccess,
     crossBorder,
+    crossing,
+    customs,
+    setCustoms,
     isCheckpoint,
     nearCheckpoint,
     graph: getGraph,

@@ -1786,6 +1786,10 @@ html[data-telegram] .telegramBtn { display: none; }
 select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .routineDays .mode-btn { padding: 8px 2px; font-size: 0.8rem; }
 .trayExtrasPick .mode-btn { text-align: center; }
+/* Settings' Immigration time: By the time across the top, the four times in a row under it. */
+.customsPick { grid-template-columns: repeat(4, 1fr); }
+.customsPick .mode-btn:first-child { grid-column: 1 / -1; }
+.customsPick .mode-btn { padding-left: 4px; padding-right: 4px; }
 /* Routines' form for another, under the ones set (js/reminders.js). */
 .routineFormHead { margin-top: 16px; font-size: 1rem; }
 /* Home and Work's place suggestions: opaque, as in the planner's cards. */

@@ -47,7 +47,19 @@ function access(graph, lat, lng) {
 //
 // `open(run, i, t)`, when given, says whether a run is running at its i-th node t minutes
 // after setting off (when.js); a run that isn't is never boarded there.
-export function plan(graph, from, to, { open = null } = {}) {
+//
+// `customs(way, t)` is the minutes to clear immigration on a bus crossing the Causeway ("out"
+// to Johor Bahru or "in"), reaching the checkpoint t minutes after setting off (api/nav.js):
+// added on top of the ride at each crossing (network.js, `cross`).
+export function plan(graph, from, to, { open = null, customs = null } = {}) {
+  // The crossings a ride from the run's `from`-th node to its i-th passes, each with its time.
+  const held = (run, fromIndex, i, base) => {
+    if (!customs || !run.cross?.length) return null;
+    const passed = run.cross.filter(([c]) => c > fromIndex && c <= i);
+    if (!passed.length) return null;
+    return passed.map(([c, way]) => ({ c, way, minutes: customs(way, base + run.cum[c - 1]) }));
+  };
+  const heldMin = (h) => (h ? h.reduce((sum, x) => sum + x.minutes, 0) : 0);
   const starts = access(graph, from.lat, from.lng);
   const ends = access(graph, to.lat, to.lng);
   const endAt = new Map(ends.map(([n, min, m]) => [n, { min, metres: m }]));
@@ -97,9 +109,10 @@ export function plan(graph, from, to, { open = null } = {}) {
         const node = run.nodes[i];
         // Getting off here.
         for (const [mix, on] of onboard) {
-          const t = on.base + run.cum[i];
+          const crossed = held(run, on.from, i, on.base);
+          const t = on.base + run.cum[i] + heldMin(crossed);
           if (!worthIt(t)) continue;
-          const label = { t, mix: mix + run.mode, node, prev: { kind: "ride", run: r, from: on.from, to: i, label: on.label } };
+          const label = { t, mix: mix + run.mode, node, prev: { kind: "ride", run: r, from: on.from, to: i, label: on.label, crossed } };
           let byMix = reached.get(node);
           if (!byMix) reached.set(node, (byMix = new Map()));
           const old = byMix.get(label.mix);
@@ -204,7 +217,8 @@ function toOption(graph, { total, label, end }) {
       legs.push({ mode: "walk", metres: Math.round(l.prev.metres), minutes: l.t - l.prev.label.t, from: nodeRef(graph.nodes[l.prev.from]), to: nodeRef(node) });
     } else {
       const run = graph.runs[l.prev.run];
-      const { from, to } = l.prev;
+      const { from, to, crossed } = l.prev;
+      const minutes = run.cum[to] - run.cum[from] + (crossed || []).reduce((sum, x) => sum + x.minutes, 0);
       const leg = {
         mode: run.mode === "B" ? "bus" : "train",
         route: run.route,
@@ -212,10 +226,15 @@ function toOption(graph, { total, label, end }) {
         from: nodeRef(graph.nodes[run.nodes[from]]),
         to: nodeRef(graph.nodes[run.nodes[to]]),
         stops: to - from,
-        minutes: run.cum[to] - run.cum[from],
+        minutes,
         wait: WAIT_MIN[run.mode],
         // Minutes after setting off that it's boarded, the wait to board counted in.
-        board: l.t - (run.cum[to] - run.cum[from]),
+        board: l.t - minutes,
+        // Each crossing of the Causeway on the way, where you get off for immigration and on
+        // again: the checkpoint you get off at, the one across, and the minutes counted.
+        ...(crossed && {
+          customs: crossed.map((x) => ({ way: x.way, from: graph.nodes[run.nodes[x.c - 1]].code, to: graph.nodes[run.nodes[x.c]].code, minutes: x.minutes })),
+        }),
         // Where the leg passes, for following it on the way (the Get Off Alert), and the
         // name of each stop or station on it, for the trip's timeline.
         path: run.nodes.slice(from, to + 1).map((n) => [graph.nodes[n].lat, graph.nodes[n].lng]),

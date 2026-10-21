@@ -2,7 +2,7 @@
 _sgbus() {
   local cur prev words cword
   _init_completion 2>/dev/null || { cur="${COMP_WORDS[COMP_CWORD]}"; prev="${COMP_WORDS[COMP_CWORD-1]}"; cword=$COMP_CWORD; }
-  local commands="stop search near bus route nav favs fav routes navs places place routines routine alerts weather calendar settings update help version"
+  local commands="shell stop search near bus route nav favs fav routes navs places place routines routine alerts weather calendar settings update help version"
   if [ "$cword" -eq 1 ]; then
     COMPREPLY=($(compgen -W "$commands" -- "$cur"))
     return

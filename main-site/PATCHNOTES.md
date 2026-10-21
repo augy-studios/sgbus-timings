@@ -9,6 +9,36 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 21 October 2026 (night): Apps 2.2.3, time for immigration across the Causeway, a prompt for sgbus, wildcards in routines
+
+### Web app
+
+- **Immigration across the Causeway** - Journeys to Johor Bahru, and back, now count time to get off at the checkpoint, clear immigration on both sides and get on again, and show it as a step: get off at W'lands Checkpt, ride any bus across to the Johor Bahru checkpoint, then on. About 15 minutes when it's quiet and up to an hour at the rush, by when you'd get there: weekday mornings into Singapore, weekday evenings and Friday nights out, Saturday mornings out and Sunday evenings back. In Navigate and the route planner alike.
+- **Immigration time** - In Settings, **By the time** (the default), or the time you usually take: 15, 30, 45 minutes or an hour. It syncs like the other settings.
+- **Off at each checkpoint** - A trip across the Causeway has the Get Off Alert tell you to get off at both checkpoints, with the time to clear as the wait before getting on again.
+- **Tidier immigration buttons** - Settings' Immigration time sits as By the time across the top, with the four times in a row under it.
+
+### Android app 2.2.3
+
+- **Wildcards in routines** - A routine's buses can be a wildcard, `22*` for every bus starting with 22. Before 2.2.3, the Routines window asks you to update for one.
+
+### Desktop app 2.2.3
+
+- The web app's changes above. Nothing new of its own: the same number as the Android app.
+
+### Command line for Linux 2.2.3
+
+- **Its own prompt** - `sgbus` on its own opens `sgbus>`, where each command goes without `sgbus` in front, with history from last time, Tab to finish a command or a place, and `exit` to leave. Ctrl+C stops a `-w` and goes back to it.
+- **Immigration time** - Routes and navs across the Causeway count it, and show the step; `sgbus settings customs` sets your own.
+- **Wildcards in routines** - `--buses 22*`.
+
+### Telegram bot
+
+- **Immigration across the Causeway** - `/route` and `/nav` count the time and show a 🛂 step for it, by the time of day.
+- **Wildcards from the app** - A routine synced from the Android app with `22*` keeps it, and sends every bus starting with 22.
+
+---
+
 ## 21 October 2026 (evening): Apps 2.2.2, a command line for Linux, Larkin by bus and train, several buses at a stop, editing routines
 
 ### Web app

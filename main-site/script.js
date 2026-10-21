@@ -18,6 +18,7 @@ const LS = {
     birthdayKey:   'sgbus_birthday',
     confettiKey:   'sgbus_confetti',
     restrictedKey: 'sgbus_restricted',
+    customsKey:    'sgbus_customs',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -78,6 +79,15 @@ const LS = {
     setRestricted(on) {
         if (on) localStorage.setItem(this.restrictedKey, 'on');
         else localStorage.removeItem(this.restrictedKey);
+    },
+    // Immigration time across the Causeway: 'auto', by when you cross (When.customsMin), or
+    // the minutes you usually take, '15' to '60'.
+    getCustoms() {
+        try { const v = localStorage.getItem(this.customsKey); return ['15', '30', '45', '60'].includes(v) ? v : 'auto'; } catch { return 'auto'; }
+    },
+    setCustoms(v) {
+        if (v === 'auto') localStorage.removeItem(this.customsKey);
+        else localStorage.setItem(this.customsKey, v);
     },
 
     // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
@@ -182,6 +192,16 @@ function syncRestrictedButtons() {
     });
 }
 syncRestrictedButtons();
+
+// Immigration time, in Settings: read by the planner (customsFor in js/planner.js) and sent
+// to /api/nav (js/nav.js) each time they plan.
+function syncCustomsButtons() {
+    $$('[data-customs]').forEach(btn => {
+        const on = btn.dataset.customs === LS.getCustoms();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
 
 // ----------- Helpers -----------
 function msToMins(ms) {
@@ -1398,6 +1418,7 @@ function openSettings() {
     syncTraySideButtons();
     syncConfettiButtons();
     syncRestrictedButtons();
+    syncCustomsButtons();
     prepareSync();
     openModal('settingsModal');
 }
@@ -1459,6 +1480,10 @@ $$('[data-confetti]').forEach(btn => btn.addEventListener('click', () => {
 $$('[data-restricted]').forEach(btn => btn.addEventListener('click', () => {
     LS.setRestricted(btn.dataset.restricted === 'on');
     syncRestrictedButtons();
+}));
+$$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setCustoms(btn.dataset.customs);
+    syncCustomsButtons();
 }));
 $('#clearBirthday').addEventListener('click', () => {
     LS.setBirthday('');

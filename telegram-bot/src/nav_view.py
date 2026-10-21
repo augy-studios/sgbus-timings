@@ -6,6 +6,7 @@ from telethon import Button
 
 from datetime import timedelta
 
+from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .format import _format_eta, escape_md
 from .navs import is_favourite_nav, list_favourite_navs
@@ -23,6 +24,12 @@ PROMPTS = {
 
 def _metres(m) -> str:
     return f"{m / 1000:.1f} km" if m >= 1000 else f"{round(m)} m"
+
+
+def _stop_name(code: str) -> str:
+    """A stop as "Name (code)", or just its code when it isn't in the stop list."""
+    row = get_bus_stop_by_code(code)
+    return f"{row['name']} ({code})" if row else code
 
 
 def _place_name(p: dict) -> str:
@@ -231,6 +238,13 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None):
             if eta_line:
                 md.append(escape_md(eta_line))
                 plain.append(eta_line)
+            # Each crossing of the Causeway (/api/nav's `customs`): off, through both, on again.
+            for c in leg.get("customs") or []:
+                first, second = ("Singapore's", "Malaysia's") if c["way"] == "out" else ("Malaysia's", "Singapore's")
+                line = (f"🛂 Get off at {_stop_name(c['from'])} and clear {first} immigration, ride any bus across to "
+                        f"{_stop_name(c['to'])} and clear {second}, then get on again: ~{c['minutes']} min for both, by the time of day.")
+                md.append(escape_md(line))
+                plain.append(line)
             if leg.get("from", {}).get("code"):
                 # The way rides along, so the timings can come back to it.
                 way = {**_ends_payload(start, end, when), "option": option}

@@ -17,7 +17,7 @@ release/2.0.0/
   latest.yml, *-setup.exe.blockmap         Windows     what the desktop app reads to update itself
   latest-linux.yml                         Linux       the same, for the AppImage
   sgbus                                    Linux CLI   node cli/build.mjs, from 2.2.2 (cli/README.md)
-  sg-bus-timings-cli-2.2.2-all.deb         Linux CLI   the same
+  sg-bus-timings-cli-2.2.3-all.deb         Linux CLI   the same
 ```
 
 The command-line edition's two files are a few hundred KB, so they're committed with the

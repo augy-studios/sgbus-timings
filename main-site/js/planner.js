@@ -12,6 +12,27 @@ const planner = { start: null, end: null, journey: null, journeys: [], sideFix: 
 // The time to plan for, as Journeys takes it: Leave now is leaving at this moment.
 const plannerTiming = () => ({ mode: planner.when?.mode || 'leave', ms: planner.when ? When.atToMs(planner.when.at) : Date.now() });
 
+// Minutes to clear immigration across the Causeway, each way (BusNet.customs): Settings' own
+// Immigration time, or by when you'd cross (When.customsMin), taken as about 45 minutes after
+// setting off, or before arriving by. Rough, as the rush hours it reads are an hour wide.
+const CROSS_AFTER_MIN = 45;
+function customsFor(timing) {
+  const own = LS.getCustoms();
+  const crossMs = timing.ms + (timing.mode === 'arrive' ? -1 : 1) * CROSS_AFTER_MIN * 60000;
+  const pick = (way) => (own === 'auto' ? When.customsMin(way, crossMs) : Number(own));
+  return { out: pick('out'), in: pick('in') };
+}
+
+// Under a journey that crosses the Causeway: get off, through both checkpoints, on again.
+function crossingSteps(leg) {
+  return Journeys.legCrossings(leg).map((c) => {
+    const [first, second] = c.way === 'out' ? ["Singapore's", "Malaysia's"] : ["Malaysia's", "Singapore's"];
+    return `<li class="step stepWalk">${ico('flag')}<span>Get off at ${escapeHtml(stopText(c.from))} and clear ${first} immigration, ` +
+      `ride any bus across to ${escapeHtml(stopText(c.to))} and clear ${second}, then get on again: ` +
+      `~${c.minutes} min for both${LS.getCustoms() === 'auto' ? ', by the time of day' : ''}.</span></li>`;
+  });
+}
+
 function initPlanner() {
   // A new time keeps an open journey open, timed again for it.
   planner.whenPicker = When.picker($('#routeWhen'), (when) => {
@@ -185,7 +206,8 @@ function searchJourneys(start, end, timing) {
   return new Promise((resolve) => {
     workerWaiting.set(id, { resolve, fallback: () => searchHere(start, end, timing).then(resolve) });
     const open = BusNet.openAccess();
-    plannerWorker.postMessage(first ? { id, start, end, timing, open, stops: stopsIndex } : { id, start, end, timing, open });
+    const customs = { ...BusNet.customs };
+    plannerWorker.postMessage(first ? { id, start, end, timing, open, customs, stops: stopsIndex } : { id, start, end, timing, open, customs });
   });
 }
 
@@ -387,6 +409,12 @@ async function renderPlanner() {
     }
     if (token !== planner.token) return;
   }
+  // Immigration across the Causeway, for the time planned for, before anything is timed.
+  BusNet.setCustoms(customsFor(plannerTiming()));
+  const abroad = (code) => !!BusNet.crossBorder(code)?.abroad;
+  const customsLine = abroad(start) === abroad(end) ? ''
+    : `<p class="estimateNote">Times count ~${BusNet.customs[abroad(end) ? 'out' : 'in']} min to clear immigration at both checkpoints` +
+      `${LS.getCustoms() === 'auto' ? ', by the time of day' : ''}. Your own time can be set in Settings.</p>`;
 
   if (planner.journey) {
     await renderJourney(token);
@@ -413,7 +441,7 @@ async function renderPlanner() {
       plannerStatus(`${count} bus${count === 1 ? '' : 'es'} run${count === 1 ? 's' : ''} between these stops${when ? ' at that time' : ''}. Pick one to see its timings at the start.`) +
       (when ? plannerStatus(directClockText(running, when)) : '') +
       `<div class="busGrid">${list.map((no) => busButton(no, favs.has(no), `data-route-bus="${escapeHtml(no)}"`)).join('')}</div>` +
-      idleNote;
+      idleNote + customsLine;
     return;
   }
 
@@ -450,7 +478,7 @@ async function renderPlanner() {
         );
       })
       .join('')}</div>` +
-    idleNote +
+    idleNote + customsLine +
     `<p class="estimateNote">${escapeHtml(when ? CLOCK_NOTE : Journeys.ESTIMATE_NOTE)}</p>`;
 }
 
@@ -561,6 +589,7 @@ async function renderJourney(token) {
         `<button type="button" class="iconBtn" data-leg="${k}">${ico('bus')} ${escapeHtml(leg.bus)} timings at ${escapeHtml(nameOf(leg.from) || leg.from)}</button>` +
         `</li>`
       );
+      steps.push(...crossingSteps(leg));
       here = leg.to;
       return;
     }
@@ -599,6 +628,7 @@ async function renderJourney(token) {
       `<button type="button" class="iconBtn" data-leg="${k}">${ico('bus')} ${escapeHtml(leg.bus)} timings at ${escapeHtml(nameOf(leg.from) || leg.from)}</button>` +
       `</li>`
     );
+    steps.push(...crossingSteps(leg));
 
     // With no bus to go on, the rest of the journey can't be timed from here.
     t = catchAt != null ? catchAt + detail.minutes : null;

@@ -298,10 +298,8 @@
       ? options.map((o) => `<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join('')
       : '<option value="">Open a stop or save a favourite first</option>';
     $('#routineSave').disabled = !options.length;
-    // A new one: the stop's buses as narrowed (script.js busFilter), less any wildcard, which
-    // routines don't take.
-    $('#routineBuses').value = r ? r.buses.join(', ')
-      : (current?.service || '').split(',').filter((b) => b && !b.endsWith('*')).join(', ');
+    // A new one: the stop's buses as narrowed (script.js busFilter), wildcards and all.
+    $('#routineBuses').value = r ? r.buses.join(', ') : (current?.service || '').split(',').filter(Boolean).join(', ');
     if (r) $('#routineTime').value = clockText(r.time);
     setDays(r ? r.days : [1, 2, 3, 4, 5]);
     $('#routineError').hidden = true;
@@ -322,8 +320,12 @@
     const code = $('#routineStop').value;
     const time = $('#routineTime').value.replace(':', '');
     const days = [...document.querySelectorAll('#routineDays [data-day].active')].map((b) => Number(b.dataset.day));
-    const buses = [...new Set($('#routineBuses').value.toUpperCase().split(/[\s,]+/).filter((b) => /^[0-9A-Z]{1,5}$/.test(b)))];
-    const why = !/^\d{5}$/.test(code) ? 'Pick a stop.' : !/^\d{4}$/.test(time) ? 'Set a time.' : !days.length ? 'Pick at least one day.' : '';
+    // Bus numbers, or a wildcard: "22*" for every bus starting 22 (NearStops.wanted, 2.2.3).
+    const buses = [...new Set($('#routineBuses').value.toUpperCase().split(/[\s,]+/).filter((b) => /^[0-9A-Z]{1,5}$|^[0-9A-Z]{1,3}\*$/.test(b)))];
+    // An app before 2.2.3 would match "22*" to no bus at all.
+    const wild = buses.some((b) => b.endsWith('*')) && !has('routinewild');
+    const why = !/^\d{5}$/.test(code) ? 'Pick a stop.' : !/^\d{4}$/.test(time) ? 'Set a time.' : !days.length ? 'Pick at least one day.'
+      : wild ? 'Update the app to 2.2.3 for a routine with 22* and the like, or list the buses.' : '';
     if (why) {
       $('#routineError').textContent = why;
       $('#routineError').hidden = false;

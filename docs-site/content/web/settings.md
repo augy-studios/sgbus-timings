@@ -22,6 +22,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
+| **Immigration time** | How long a journey across the Causeway counts for getting off, clearing both checkpoints and getting on again. **By the time** (the default): about 15 minutes when it's quiet, up to an hour at the rush. Or your own: **15 min**, **30 min**, **45 min** or **1 hr**. See [Navigate](nav.md#across-the-causeway). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
 | **Edge Tray buttons** | Turn off any of **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee** and **Guide** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
@@ -32,6 +33,11 @@ Changes save as you make them. There is no Save button.
 <figure>
 <img src="/screenshots/web/settings-restricted.png" alt="Settings' Restricted areas, with Keep out and I have a pass, I have a pass picked, and a note that with a pass Navigate can get on and off inside Changi Airport's cargo area and at MINDEF's stops." width="396" height="161" loading="lazy">
 <figcaption>Restricted areas, for people who work behind a checkpoint.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/settings-customs.png" alt="Settings' Immigration time: By the time picked, across the top, with 15 min, 30 min, 45 min and 1 hr under it, and a note on what it counts and when the rush is." width="396" height="234" loading="lazy">
+<figcaption>Immigration time, for journeys across the Causeway.</figcaption>
 </figure>
 
 > [!NOTE]

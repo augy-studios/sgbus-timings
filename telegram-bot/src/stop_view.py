@@ -9,6 +9,7 @@ from .format import format_arrival_message
 from .journey_view import stops_left_note
 from .lta import fetch_arrivals
 from .maps import navigate_buttons
+from .routines import service_wanted
 
 
 def _with_navigate(buttons: list, stop, origin: dict, navigate_open: bool) -> list:
@@ -86,7 +87,7 @@ async def build_stop_view(
     wanted = [only_service] if only_service else services
     arrivals = await fetch_arrivals(code)
     if wanted and not expanded:
-        arrivals = {**arrivals, "services": [s for s in arrivals["services"] if s["serviceNo"] in wanted]}
+        arrivals = {**arrivals, "services": [s for s in arrivals["services"] if service_wanted(wanted, s["serviceNo"])]}
 
     favourite = is_favourite(chat_id, code) if chat_id is not None else False
     fav_bus_nos = {row["service_no"] for row in list_favourite_buses(chat_id)} if chat_id is not None else set()

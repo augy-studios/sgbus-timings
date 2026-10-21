@@ -317,10 +317,58 @@
     };
   })();
 
+  // ---------- across the Causeway ----------
+
+  // A bus ride across the Causeway, as three legs: to the first checkpoint, across to the
+  // other, and on. Everyone gets off at each to clear immigration (BusNet.crossing), so the
+  // Get Off Alert says so at both, and the time to clear, by Settings' Immigration time or the
+  // time of day (When.customsMin), is the wait before getting on again, half at each. Each
+  // part's minutes are from its own distance, as tripLegForBus (script.js) times a ride.
+  const HOP_M_PER_MIN = 250;
+  function acrossTheCauseway(legs) {
+    return legs.flatMap((leg) => {
+      const codes = leg.kind === "bus" && leg.codes?.length === leg.points?.length ? leg.codes : null;
+      const crossings = codes ? codes.map((c, k) => k && window.BusNet?.crossing(codes[k - 1], c) && [k, BusNet.crossing(codes[k - 1], c)]).filter(Boolean) : [];
+      if (!crossings.length) return [leg];
+      // script.js's LS, a top-level const rather than on window.
+      const own = typeof LS !== "undefined" ? LS.getCustoms() : "auto";
+      const clearing = (way) => (own === "auto" ? When.customsMin(way, Date.now()) : Number(own));
+      const cuts = [0, ...crossings.flatMap(([k]) => [k - 1, k]), codes.length - 1];
+      const parts = [];
+      for (let p = 1; p < cuts.length; p++) {
+        const [a, b] = [cuts[p - 1], cuts[p]];
+        if (b <= a) continue;
+        const points = leg.points.slice(a, b + 1);
+        let along = 0;
+        for (let i = 1; i < points.length; i++) along += metres(points[i - 1], points[i]);
+        // Across, after Singapore's or Malaysia's side: the first half of the clearing; on
+        // from the other checkpoint: the second half.
+        const crossing = crossings.find(([k]) => k === b && a === k - 1);
+        const after = crossings.find(([k]) => k === a);
+        const wait = crossing ? Math.ceil(clearing(crossing[1]) / 2) : after ? Math.floor(clearing(after[1]) / 2) : leg.wait;
+        parts.push({
+          ...leg,
+          label: crossing ? `${leg.label} across the Causeway` : leg.label,
+          to: leg.names?.[b] || leg.to,
+          points,
+          names: leg.names?.slice(a, b + 1),
+          codes: codes.slice(a, b + 1),
+          minutes: along / HOP_M_PER_MIN,
+          wait,
+          walkAfter: b === codes.length - 1 ? leg.walkAfter : 0,
+          board: codes[a],
+          alight: codes[b],
+        });
+      }
+      return parts;
+    });
+  }
+
   // ---------- starting and ending ----------
 
   function start({ title, legs, to = null, from = null, walkBefore = 0 }) {
     if (!legs?.length) return;
+    legs = acrossTheCauseway(legs);
     // A trip still running is over as this one starts: Your trips keeps what it got to.
     if (trip) {
       endLegTime();

@@ -76,6 +76,11 @@ With a time picked, each bus and train says roughly when you'd board it. A way
 setting off more than half an hour from now shows those times instead of live
 timings, which don't reach that far ahead.
 
+A way across the Causeway to Johor Bahru, or back, has a 🛂 step after its bus:
+get off at the checkpoint, clear immigration on both sides, then get on again.
+Its time counts about 15 minutes when it's quiet and up to an hour at the rush,
+by when you'd get there, as on the [web](../web/nav.md#across-the-causeway).
+
 ## Save it
 
 Tap **Add favourite** on the panel. `/mynavs` lists your starred navs; tap one

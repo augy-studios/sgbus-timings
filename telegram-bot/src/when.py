@@ -56,6 +56,45 @@ def _day_type(day: datetime) -> str:
     return "sat" if day.weekday() == 5 else "wd"
 
 
+# Clearing immigration on a bus across the Causeway, Woodlands and the Johor Bahru checkpoint
+# together: getting off, through both, and on again. About 15 minutes when it's quiet, an hour
+# at the rush, and half an hour in the hour either side of one. Public holidays count as
+# Sundays. Keep in step with main-site/js/when.js and main-site/api/_nav/when.js.
+CUSTOMS_MIN = {"quiet": 15, "edge": 30, "rush": 60}
+_CUSTOMS_RUSH = {
+    # Out: going home to Johor Bahru on weekday evenings, Friday nights, Saturday mornings.
+    "out": {"wd": [(1020, 1260)], "fri": [(960, 1440)], "sat": [(360, 720)], "sun": []},
+    # In: coming to work on weekday mornings, and back from the weekend on Sunday evenings.
+    "in": {"wd": [(300, 540)], "fri": [(300, 540)], "sat": [], "sun": [(900, 1440)]},
+}
+
+
+def customs_min(way: str, moment: datetime) -> int:
+    """Minutes to clear immigration crossing the Causeway `way` ("out" to Johor Bahru, or
+    "in") at a moment, by the time of day."""
+    local = moment.astimezone(SG)
+    day = _day_type(local)
+    if day == "wd" and local.weekday() == 4:
+        day = "fri"
+    minute = local.hour * 60 + local.minute
+    edge = False
+    for start, end in _CUSTOMS_RUSH[way][day]:
+        if start <= minute < end:
+            return CUSTOMS_MIN["rush"]
+        if start - 60 <= minute < end + 60:
+            edge = True
+    return CUSTOMS_MIN["edge"] if edge else CUSTOMS_MIN["quiet"]
+
+
+def customs_for(when: "dict | None") -> dict:
+    """{"out", "in"}: the minutes to clear immigration each way for a journey planned for
+    `when`, crossing about 45 minutes after setting off, or before arriving by. Rough, as the
+    rush hours it reads are an hour wide. The same as customsFor in main-site/js/planner.js."""
+    t = timing(when)
+    moment = t["moment"] + (-1 if t["mode"] == "arrive" else 1) * timedelta(minutes=45)
+    return {way: customs_min(way, moment) for way in ("out", "in")}
+
+
 def _hhmm(s: str) -> "int | None":
     return int(s[:2]) * 60 + int(s[2:]) if _HHMM_RE.match(s) else None
 

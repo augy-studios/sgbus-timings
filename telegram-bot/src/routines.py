@@ -9,6 +9,13 @@ def split_services(services: "str | None") -> list:
     return [s for s in (services or "").split(",") if s]
 
 
+def service_wanted(wanted: list, service_no: str) -> bool:
+    """Whether a bus is one of a routine's: by its number, or by a wildcard, "22*" for
+    every bus starting 22. A routine synced from the web app or the Android app can have
+    one (main-site/js/reminders.js)."""
+    return any(service_no.startswith(w[:-1]) if w.endswith("*") else service_no == w for w in wanted)
+
+
 def join_services(services: list) -> "str | None":
     """The other way round: NULL rather than an empty string when no bus is picked."""
     return ",".join(services) or None

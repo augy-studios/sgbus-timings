@@ -14,8 +14,8 @@ Raspberry Pi, any distribution. No key, no account: the data is the site's own p
 **Debian, Ubuntu, Mint, Raspberry Pi OS** (any architecture):
 
 ```bash
-curl -LO https://github.com/augy-studios/sgbus-timings/releases/latest/download/sg-bus-timings-cli-2.2.2-all.deb
-sudo apt install ./sg-bus-timings-cli-2.2.2-all.deb
+curl -LO https://github.com/augy-studios/sgbus-timings/releases/latest/download/sg-bus-timings-cli-2.2.3-all.deb
+sudo apt install ./sg-bus-timings-cli-2.2.3-all.deb
 ```
 
 Debian 12 and later and Ubuntu 24.04 and later have a new enough Node.js. On Ubuntu 22.04,
@@ -33,6 +33,14 @@ chmod +x ~/.local/bin/sgbus
 which to download.
 
 ## Use
+
+`sgbus` on its own opens a prompt of its own, `sgbus>`, where each command goes without
+`sgbus` in front (`84009`, `nav home work`, `favs`), with history kept between sessions in
+`~/.cache/sgbus/history`, Tab to finish a command or a place, and `exit` or Ctrl+D to leave.
+Ctrl+C there stops a `-w` and goes back to the prompt. `sgbus shell` opens it too, and reads
+commands piped into it, a line each.
+
+Or one command at a time:
 
 ```text
 sgbus 84009                      Bedok Int's timings
@@ -68,6 +76,10 @@ minute. Notifications need `notify-send` (`libnotify-bin`); without it they're p
 events with a location, and `sgbus calendar nav 1` plans the way to the first, arriving by
 its start. The link goes to the site's `/api/calendar` to be read, as on the web, and isn't
 kept there.
+
+Journeys across the Causeway count time to clear immigration at both checkpoints, by the
+time of day (15 minutes quiet, up to an hour at the rush), or your own:
+`sgbus settings customs 30`. A routine's `--buses` can be a wildcard, `22*`.
 
 `--json` gives the data instead of the text, for scripts. `NO_COLOR=1` turns off colour.
 

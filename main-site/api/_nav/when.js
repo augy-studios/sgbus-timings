@@ -67,6 +67,30 @@ export function trainRunsAt(ms) {
   return min >= TRAIN_FIRST_MIN[dayType(ymd, dow)] && min < TRAIN_LAST_MIN;
 }
 
+// Clearing immigration on a bus across the Causeway, Woodlands and the Johor Bahru checkpoint
+// together: getting off, through both, and on again. About 15 minutes when it's quiet, an hour
+// at the rush, and half an hour in the hour either side of one. `dir` is "out" (Singapore to
+// Johor Bahru) or "in", at a moment by Singapore's clock. Public holidays count as Sundays.
+// Keep in step with js/when.js and the Telegram bot's when.py.
+export const CUSTOMS_MIN = { quiet: 15, edge: 30, rush: 60 };
+const CUSTOMS_RUSH = {
+  // Out: going home to Johor Bahru on weekday evenings, Friday nights, Saturday mornings.
+  out: { wd: [[1020, 1260]], fri: [[960, 1440]], sat: [[360, 720]], sun: [] },
+  // In: coming to work on weekday mornings, and back from the weekend on Sunday evenings.
+  in: { wd: [[300, 540]], fri: [[300, 540]], sat: [], sun: [[900, 1440]] },
+};
+
+export function customsMin(dir, ms) {
+  const { ymd, dow, min } = sgClock(ms);
+  const type = dayType(ymd, dow);
+  let edge = false;
+  for (const [from, to] of CUSTOMS_RUSH[dir][type === "wd" && dow === 5 ? "fri" : type]) {
+    if (min >= from && min < to) return CUSTOMS_MIN.rush;
+    if (min >= from - 60 && min < to + 60) edge = true;
+  }
+  return edge ? CUSTOMS_MIN.edge : CUSTOMS_MIN.quiet;
+}
+
 // The journey's time from a request: { mode: "now" | "leave" | "arrive", ms }, where ms is
 // the moment to leave at or arrive by (now, for Leave now). Null when it can't be read.
 export function readWhen(mode, at, now = Date.now()) {

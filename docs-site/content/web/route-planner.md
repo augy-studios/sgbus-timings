@@ -136,6 +136,19 @@ a stop early and walking further. To Opp SAF Ferry Ter, you get off at SAF Ferry
 Ter across the road, not Changi Beach CP 5 before it. Your first bus is boarded
 the same way, at the stop nearest your start.
 
+### Across the Causeway
+
+<figure>
+<img src="/screenshots/web/route-planner-customs.png" alt="A journey from Bedok Int to Larkin Ter: bus 168 to Woodlands Int, 178 to Marsiling CC, a short walk, then 170 to Larkin Ter, with a step under it: get off at W'lands Checkpt and clear Singapore's immigration, ride any bus across to Johor Bahru Checkpt and clear Malaysia's, then get on again, about 60 minutes for both, by the time of day." width="880" height="1011" loading="lazy">
+<figcaption>To Larkin Terminal at the evening rush: an hour counted for immigration, as a step of its own.</figcaption>
+</figure>
+
+A bus to Johor Bahru, or back, stops at both checkpoints for everyone to clear
+immigration. Journeys count that time, and say so as a step: about 15 minutes when
+it's quiet and up to an hour at the rush, by the time of day, or your own time from
+[Settings](settings.md), **Immigration time**. Started as a trip, the
+[Get Off Alert](get-off-alert.md) tells you to get off at each checkpoint.
+
 Stops only authorised people may use, inside Changi Airport's cargo area and at
 MINDEF on Gombak Drive, are left out, unless Settings' **Restricted areas** is
 set to **I have a pass**: see [Settings](settings.md).

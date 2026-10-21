@@ -158,6 +158,12 @@ const RESTRICTED = {
   43721: MINDEF, 43719: MINDEF,
 };
 
+// The two hops across the Causeway, where everyone gets off to clear immigration and on again:
+// Woodlands to the Johor Bahru checkpoint ("out"), and back ("in"). Each bus run lists them as
+// `cross`, [index, way] for the hop to its index-th node, for router.js to add the time. The
+// same as CROSSINGS in js/network.js and the Telegram bot's journeys.py.
+const CROSSINGS = { "46101>46211": "out", "46219>46109": "in" };
+
 // `open`: Settings' Restricted areas on (?restricted=1, api/nav.js), for people with a pass,
 // so every stop is used as any other.
 function busRuns(nodes, busNode, payload, open) {
@@ -195,7 +201,12 @@ function busRuns(nodes, busNode, payload, open) {
           const b = nodes[path[i]];
           cum.push(cum[i - 1] + haversine(a.lat, a.lng, b.lat, b.lng) / BUS_M_PER_MIN);
         }
-        runs.push({ mode: "B", key: `B:${serviceNo}`, route: serviceNo, dir: Number(dir), towards: nodes[end ?? path[path.length - 1]].name, nodes: path, cum, times });
+        const cross = [];
+        for (let i = 1; i < path.length; i++) {
+          const way = CROSSINGS[`${nodes[path[i - 1]].code}>${nodes[path[i]].code}`];
+          if (way) cross.push([i, way]);
+        }
+        runs.push({ mode: "B", key: `B:${serviceNo}`, route: serviceNo, dir: Number(dir), towards: nodes[end ?? path[path.length - 1]].name, nodes: path, cum, cross, times });
       }
     }
   }

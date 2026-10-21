@@ -10,11 +10,11 @@ from .favourite_prefs import get_pref, pin_favourites
 from .favourite_routes import is_favourite_route, toggle_favourite_route
 from .format import bus_button_label, escape_md
 from .journey_view import CLOCK_NOTE, ESTIMATE_NOTE, journey_button_label, journey_summary
-from .journeys import direct_rides, find_journeys, wrong_side_ends
+from .journeys import direct_rides, find_journeys, set_customs, wrong_side_ends
 from .nav_view import saved_place_rows
 from .pagination import nav_row, paginate
 from .stop_buses_view import GRID_COLUMNS, GRID_PAGE_SIZE
-from .when import BUS_WAIT_MIN, at_to_dt, clock, clock_day, describe, now, problem, timing
+from .when import BUS_WAIT_MIN, at_to_dt, clock, clock_day, customs_for, describe, now, problem, timing
 
 # Two setter buttons share a row, so each one has half a row's width to say which stop it
 # holds. The route buttons in /myroutes get a row to themselves and Telegram's full 64.
@@ -128,6 +128,8 @@ def plan_route(start_code, end_code, when=None):
     fixes). Only reads, so it can run off the event loop (build_route_view_async)."""
     if not (start_code and end_code) or problem(when):
         return [], [], {}
+    # Immigration across the Causeway, by the time planned for, before anything is timed.
+    set_customs(customs_for(when))
     at = timing(when)
     rides = direct_rides(start_code, end_code, at)
     journeys = [] if any(r["running"] for r in rides) else find_journeys(start_code, end_code, timing=at)
@@ -164,6 +166,8 @@ def build_route_view(chat_id: int, start_code, end_code, page: int = 0, awaiting
     start_text = stop_display(start_code)
     end_text = stop_display(end_code)
     rides, journeys, fixes = plan or plan_route(start_code, end_code, when)
+    # Here too: the journeys' times below are worked out on this thread, not plan_route's.
+    set_customs(customs_for(when))
     running = [r for r in rides if r["running"]]
     services = [r["bus"] for r in running]
     idle = [r["bus"] for r in rides if not r["running"]]

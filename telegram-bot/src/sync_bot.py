@@ -47,6 +47,8 @@ MAX_ITEMS = 500
 MAX_ROUTINES = 20
 
 _BUS_RE = re.compile(r"^[0-9A-Z]{1,5}$")
+# A routine's buses can also be a wildcard, "22*" (routines.service_wanted).
+_ROUTINE_BUS_RE = re.compile(r"^[0-9A-Z]{1,5}$|^[0-9A-Z]{1,3}\*$")
 _STOP_RE = re.compile(r"^\d{5}$")
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _TIME_RE = re.compile(r"^([01]\d|2[0-3])[0-5]\d$")
@@ -213,7 +215,7 @@ def merge(chat_id: int, favs: dict) -> dict:
             continue
         if not (isinstance(days, list) and days and all(isinstance(d, int) and 1 <= d <= 7 for d in days)):
             continue
-        if not (isinstance(buses, list) and len(buses) <= 20 and all(isinstance(x, str) and _BUS_RE.match(x) for x in buses)):
+        if not (isinstance(buses, list) and len(buses) <= 20 and all(isinstance(x, str) and _ROUTINE_BUS_RE.match(x) for x in buses)):
             continue
         hour, minute = int(at[:2]), int(at[2:])
         key = routine_key(code, hour, minute, set(days), set(buses))

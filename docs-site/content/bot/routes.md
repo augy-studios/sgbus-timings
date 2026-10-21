@@ -108,6 +108,11 @@ its live timings, which don't reach that far ahead.
 Each bus has a button to open that stop's timings for the bus, with
 **Back to journey** to return.
 
+A journey across the Causeway has a 🛂 step for immigration at both checkpoints,
+and counts its time: about 15 minutes when it's quiet, up to an hour at the rush.
+When a bus calls at a stop nearer your end a minute or two further on, the
+journey stays on to it, rather than getting off early and walking further.
+
 > [!NOTE]
 > LTA publishes no journey times, so rides are estimated at about 15 km/h along
 > the straight line between stops, and walks at 60 m a minute. Good for

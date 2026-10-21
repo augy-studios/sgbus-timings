@@ -1,6 +1,8 @@
 // Point-to-point journeys by bus and train: GET /api/nav?from=lat,lng&to=lat,lng, and
 // optionally &when=leave|arrive&at=2026-10-09T08:30 (Singapore time) to leave at or arrive by
-// a time rather than now.
+// a time rather than now, &restricted=1 for Settings' Restricted areas, and &customs=15|30|45|60
+// for Settings' Immigration time (otherwise by the time of day, _nav/when.js). A bus leg across
+// the Causeway lists where to get off for immigration and the minutes counted, as `customs`.
 //
 // Answers { options: [...], alerts: { lines }, when: { mode, ms } }, each option { minutes,
 // mix, routes, legs, onemapMinutes?, source? }, quickest first. The router is
@@ -14,7 +16,7 @@ import { rateLimited, storeConfigured } from "./_push/store.js";
 import { getGraph, originOf } from "./_nav/network.js";
 import { plan, runsThroughout } from "./_nav/router.js";
 import { checkWithOneMap } from "./_nav/onemap-check.js";
-import { busRunsAt, readWhen, trainRunsAt } from "./_nav/when.js";
+import { busRunsAt, customsMin, readWhen, trainRunsAt } from "./_nav/when.js";
 
 const RATE_LIMIT = 30; // navs per IP per minute
 // A time can be picked up to a week ahead (the pickers offer seven days), and a minute or
@@ -30,13 +32,18 @@ const openFrom = (startMs) => (run, i, t) => {
   return run.mode === "T" ? trainRunsAt(ms) : busRunsAt(run.times?.[i], ms);
 };
 
+// Minutes to clear immigration on a bus across the Causeway, reaching the checkpoint t
+// minutes after `startMs`: ?customs=15|30|45|60 (Settings' Immigration time), or by the time
+// of day (when.js).
+const customsFrom = (startMs, own) => (way, t) => own ?? customsMin(way, startMs + t * 60000);
+
 // Leave now or at a time: what's running from then. Arrive by: when to set off isn't known
 // until the way is, so the ways are found from roughly then (the quickest, ignoring hours,
 // before the time), and each one kept only if it runs from its own time to set off.
-function planFor(graph, from, to, when) {
-  if (when.mode !== "arrive") return { options: plan(graph, from, to, { open: openFrom(when.ms) }), setOff: when.ms };
-  const lead = plan(graph, from, to)[0]?.minutes ?? GUESS_MIN;
-  const options = plan(graph, from, to, { open: openFrom(when.ms - lead * 60000) })
+function planFor(graph, from, to, when, own) {
+  if (when.mode !== "arrive") return { options: plan(graph, from, to, { open: openFrom(when.ms), customs: customsFrom(when.ms, own) }), setOff: when.ms };
+  const lead = plan(graph, from, to, { customs: customsFrom(when.ms - GUESS_MIN * 60000, own) })[0]?.minutes ?? GUESS_MIN;
+  const options = plan(graph, from, to, { open: openFrom(when.ms - lead * 60000), customs: customsFrom(when.ms - lead * 60000, own) })
     .filter((o) => runsThroughout(o, openFrom(when.ms - o.minutes * 60000)));
   return { options, setOff: when.ms - (options[0]?.minutes ?? lead) * 60000 };
 }
@@ -84,7 +91,8 @@ export default async function handler(req, res) {
       getGraph(originOf(req), { open: req.query.restricted === "1" }),
       process.env.LTA_ACCOUNT_KEY ? fetchTrainAlerts(process.env.LTA_ACCOUNT_KEY).catch(() => null) : null,
     ]);
-    const { options: ours, setOff } = planFor(graph, from, to, when);
+    const own = ["15", "30", "45", "60"].includes(req.query.customs) ? Number(req.query.customs) : null;
+    const { options: ours, setOff } = planFor(graph, from, to, when, own);
     const { options, checked } = await checkWithOneMap(ours, from, to, new Date(setOff));
 
     // Lines LTA reports trouble on, as the router's line codes.

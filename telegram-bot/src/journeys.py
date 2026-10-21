@@ -10,6 +10,7 @@ LTA gives no journey times, so every time here is an estimate from straight-line
 between consecutive stops. They are good for ranking journeys against each other and for
 a rough "you'd get there around" - nothing tighter."""
 
+import contextvars
 import math
 import re
 from collections import defaultdict
@@ -48,6 +49,14 @@ WRONG_SIDE_MIN = 5
 # Ferry Ter, which faces Opp SAF Ferry Ter, but walking from it is only 20 m longer as the
 # crow flies. The same as RIDE_NEARER_MIN in main-site/js/journeys.js.
 RIDE_NEARER_MIN = 2
+
+# The two hops across the Causeway, where everyone gets off to clear immigration and on again:
+# Woodlands to the Johor Bahru checkpoint, and back. Each run lists them (_Network.cross), and
+# the planner counts the minutes in _CUSTOMS for each, set for the time planned for
+# (set_customs). A context variable, not a global: routes are planned in worker threads, a
+# chat's at a time. The same as CROSSINGS in main-site/js/network.js and api/_nav/network.js.
+CROSSINGS = {("46101", "46211"): "out", ("46219", "46109"): "in"}
+_CUSTOMS = contextvars.ContextVar("customs", default={"out": 30, "in": 30})
 
 # A change of bus at a hub - an interchange, a terminal or a station - can be between any
 # two of its stops this far apart, beyond the usual walk: Tampines Int is 300 m from
@@ -172,6 +181,7 @@ class _Network:
                 self.times[(service_no, direction, part)] = [whole_times[(service_no, direction)][i] for i in indexes]
 
         self.cum = {}
+        self.cross = {}
         self.at = defaultdict(list)
         for run, stops in self.runs.items():
             total, cum = 0.0, [0.0]
@@ -182,6 +192,10 @@ class _Network:
             self.cum[run] = cum
             for index, stop in enumerate(stops):
                 self.at[stop].append((run, index))
+            # Where the run crosses the Causeway, as [(index, way)]: the hop to its index-th stop.
+            crossed = [(i, CROSSINGS[(a, b)]) for i, (a, b) in enumerate(zip(stops, stops[1:]), 1) if (a, b) in CROSSINGS]
+            if crossed:
+                self.cross[run] = crossed
 
     @staticmethod
     def _cell(lat, lng):
@@ -231,8 +245,44 @@ def _get_network() -> _Network:
     return _network
 
 
+def set_customs(minutes: dict) -> None:
+    """The minutes to clear immigration crossing the Causeway, {"out", "in"}, for the
+    searches and timings that follow in this context (route_view.py sets them for the time
+    planned for)."""
+    _CUSTOMS.set(minutes)
+
+
+def _at(net, run, i) -> float:
+    """Minutes into a run by its i-th stop: the ride there, and clearing immigration at
+    each crossing of the Causeway on the way."""
+    t = net.cum[run][i] / BUS_M_PER_MIN
+    crossed = net.cross.get(run)
+    if crossed:
+        customs = _CUSTOMS.get()
+        t += sum(customs[way] for c, way in crossed if c <= i)
+    return t
+
+
 def _ride_min(net, run, i, j) -> float:
-    return (net.cum[run][j] - net.cum[run][i]) / BUS_M_PER_MIN
+    return _at(net, run, j) - _at(net, run, i)
+
+
+def leg_crossings(leg: dict) -> list:
+    """Where a leg crosses the Causeway, to get off for immigration and on again:
+    [{way, from, to, minutes}], `from` the checkpoint you get off at and `to` the one across."""
+    net = _get_network()
+    run = _run_of(net, leg)
+    if not run or run not in net.cross:
+        return []
+    stops = net.runs[run]
+    i = stops.index(leg["from"])
+    j = stops.index(leg["to"], i + 1)
+    customs = _CUSTOMS.get()
+    return [
+        {"way": way, "from": stops[c - 1], "to": stops[c], "minutes": customs[way]}
+        for c, way in net.cross[run]
+        if i < c <= j
+    ]
 
 
 def _walk_min(metres) -> float:
@@ -477,17 +527,16 @@ def _scan_on(net, reach, run):
     (index, minutes so far, board index, parts before this bus), boarding wherever is
     cheapest before it. A journey that has already ridden this bus doesn't board it again."""
     stops = net.runs[run]
-    cum = net.cum[run]
     # The cheapest way to be on this bus so far, as minutes before its own ride is counted,
     # so the ride on to any later stop is just a subtraction away.
     best_on = None
     for index, stop in enumerate(stops):
         if best_on:
             on_cost, board, parts = best_on
-            yield index, on_cost + cum[index] / BUS_M_PER_MIN, board, parts
+            yield index, on_cost + _at(net, run, index), board, parts
         label = reach.get(stop)
         if label and all(r[0] != run[0] for r, _, _ in label[1]):
-            on_cost = label[0] - cum[index] / BUS_M_PER_MIN
+            on_cost = label[0] - _at(net, run, index)
             if best_on is None or on_cost < best_on[0]:
                 best_on = (on_cost, index, label[1])
 
@@ -509,19 +558,18 @@ def _ride_back(net, finish) -> dict:
     before the journeys in `finish`, as {stop: (minutes still to go, parts)}."""
     on = {}
     for run, stops in net.runs.items():
-        cum = net.cum[run]
         # The cheapest way on from getting off this bus, as minutes plus its own ride so far.
         best_off = None
         for index in range(len(stops) - 1, -1, -1):
             stop = stops[index]
             if best_off:
                 off_cost, alight, parts = best_off
-                cost = off_cost - cum[index] / BUS_M_PER_MIN
+                cost = off_cost - _at(net, run, index)
                 if stop not in on or cost < on[stop][0]:
                     on[stop] = (cost, ((run, index, alight), *parts))
             label = finish.get(stop)
             if label and all(r[0] != run[0] for r, _, _ in label[1]):
-                off_cost = label[0] + cum[index] / BUS_M_PER_MIN
+                off_cost = label[0] + _at(net, run, index)
                 if best_off is None or off_cost < best_off[0]:
                     best_off = (off_cost, index, label[1])
     return on

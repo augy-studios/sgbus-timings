@@ -143,6 +143,11 @@ const SYNC_SETTINGS = {
     text: (v) => (v === 'on' ? 'I have a pass' : 'Keep out'),
     get: () => (LS.getRestricted() ? 'on' : 'off'), set: (v) => tap(`[data-restricted="${v}"]`),
   },
+  customs: {
+    label: 'Immigration time', values: ['auto', '15', '30', '45', '60'], start: 'auto',
+    text: (v) => (v === 'auto' ? 'By the time' : v === '60' ? '1 hr' : `${v} min`),
+    get: () => LS.getCustoms(), set: (v) => tap(`[data-customs="${v}"]`),
+  },
   'nav.mode': {
     label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',
     text: (v) => (v === 'bus' ? 'Bus only' : 'Bus and train'),
@@ -375,7 +380,7 @@ function cleanFavs(raw) {
     routines: list(raw.routines)
       .filter((r) => isStop(r?.code) && /^([01]\d|2[0-3])[0-5]\d$/.test(r.time)
         && Array.isArray(r.days) && r.days.length && r.days.every((d) => Number.isInteger(d) && d >= 1 && d <= 7)
-        && Array.isArray(r.buses) && r.buses.length <= 20 && r.buses.every((b) => typeof b === 'string' && /^[0-9A-Z]{1,5}$/.test(b)))
+        && Array.isArray(r.buses) && r.buses.length <= 20 && r.buses.every((b) => typeof b === 'string' && /^[0-9A-Z]{1,5}$|^[0-9A-Z]{1,3}\*$/.test(b)))
       .map((r) => ({ code: r.code, name: text(r.name), buses: [...new Set(r.buses)], time: r.time, days: [...new Set(r.days)].sort() }))
       .filter((r) => once(FAV_KINDS.find((k) => k.kind === 'routine').key(r)))
       .slice(0, Reminders.MAX_ROUTINES),

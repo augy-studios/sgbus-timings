@@ -96,7 +96,14 @@
     return mates ? [...withNear(g, code), ...mates] : withNear(g, code);
   };
 
-  const rideMin = (run, i, j) => (run.cum[j] - run.cum[i]) / BUS_M_PER_MIN;
+  // Minutes into a run by its i-th stop: the ride there, and clearing immigration at each
+  // crossing of the Causeway on the way (BusNet.customs, js/network.js).
+  function at(run, i) {
+    let t = run.cum[i] / BUS_M_PER_MIN;
+    for (const [c, way] of run.cross) if (c <= i) t += BusNet.customs[way];
+    return t;
+  }
+  const rideMin = (run, i, j) => at(run, j) - at(run, i);
   const walkMin = (metres) => metres / WALK_M_PER_MIN;
   // A change's walk: none at the same stop, or the walk and CHANGE_WALK_MIN to another.
   const changeWalk = (metres) => (metres > 0 ? walkMin(metres) + CHANGE_WALK_MIN : 0);
@@ -228,7 +235,7 @@
       rankedFor = g;
       rankedCache.clear();
     }
-    const key = `${startCode}|${endCode}|${walkStart}|${walkEnd}`;
+    const key = `${startCode}|${endCode}|${walkStart}|${walkEnd}|${BusNet.customs.out}|${BusNet.customs.in}`;
     if (!rankedCache.has(key)) {
       if (rankedCache.size >= RANKED_KEEP) rankedCache.delete(rankedCache.keys().next().value);
       rankedCache.set(key, searchJourneys(g, startCode, endCode, walkStart, walkEnd));
@@ -361,10 +368,10 @@
     // so the ride on to any later stop is just a subtraction away.
     let bestOn = null;
     run.stops.forEach((stop, index) => {
-      if (bestOn) visit(index, bestOn.cost + run.cum[index] / BUS_M_PER_MIN, bestOn.board, bestOn.parts);
+      if (bestOn) visit(index, bestOn.cost + at(run, index), bestOn.board, bestOn.parts);
       const label = reach.get(stop);
       if (label && label.parts.every(([r]) => r.bus !== run.bus)) {
-        const onCost = label.cost - run.cum[index] / BUS_M_PER_MIN;
+        const onCost = label.cost - at(run, index);
         if (!bestOn || onCost < bestOn.cost) bestOn = { cost: onCost, board: index, parts: label.parts };
       }
     });
@@ -392,12 +399,12 @@
       for (let index = run.stops.length - 1; index >= 0; index--) {
         const stop = run.stops[index];
         if (bestOff) {
-          const cost = bestOff.cost - run.cum[index] / BUS_M_PER_MIN;
+          const cost = bestOff.cost - at(run, index);
           if (!on.has(stop) || cost < on.get(stop).cost) on.set(stop, { cost, parts: [[run, index, bestOff.alight], ...bestOff.parts] });
         }
         const label = finish.get(stop);
         if (label && label.parts.every(([r]) => r.bus !== run.bus)) {
-          const offCost = label.cost + run.cum[index] / BUS_M_PER_MIN;
+          const offCost = label.cost + at(run, index);
           if (!bestOff || offCost < bestOff.cost) bestOff = { cost: offCost, alight: index, parts: label.parts };
         }
       }
@@ -465,6 +472,18 @@
     return { stops: j - i, minutes: rideMin(run, i, j) };
   }
 
+  // Where a leg crosses the Causeway, to get off for immigration and on again: [{ way: 'out' |
+  // 'in', from, to, minutes }], `from` the checkpoint you get off at and `to` the one across.
+  function legCrossings(leg) {
+    const run = runOf(leg);
+    if (!run) return [];
+    const i = run.stops.indexOf(leg.from);
+    const j = run.stops.indexOf(leg.to, i + 1);
+    return run.cross
+      .filter(([c]) => c > i && c <= j)
+      .map(([c, way]) => ({ way, from: run.stops[c - 1], to: run.stops[c], minutes: BusNet.customs[way] }));
+  }
+
   // The walk between two stops, or null when they're the same stop.
   function walkDetails(fromCode, toCode) {
     if (fromCode === toCode) return null;
@@ -486,5 +505,5 @@
     return total + (walkDetails(here, endCode)?.minutes || 0);
   }
 
-  window.Journeys = { directServices, directRides, findJourneys, wrongSideEnds, legDetails, walkDetails, journeyMinutes, journeyClock, ESTIMATE_NOTE };
+  window.Journeys = { directServices, directRides, findJourneys, wrongSideEnds, legDetails, legCrossings, walkDetails, journeyMinutes, journeyClock, ESTIMATE_NOTE };
 })();

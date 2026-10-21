@@ -407,6 +407,27 @@ async function el(page, sel, name) {
     await el(page, R, 'route-planner-ride-nearer.png');
     await ctx.close();
   }
+  // Immigration time in Settings, and a journey across the Causeway with its crossing step.
+  if (want('customs')) {
+    let { ctx, page } = await open(browser, { width: 420, height: 2600 });
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(500);
+    const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Immigration time' }).boundingBox();
+    const b = await page.locator('.customsPick').locator('xpath=following-sibling::p[1]').boundingBox();
+    const m = await page.locator('#settingsModal .modal').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-customs.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-customs.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { hash: '#route/84009/46239' }));
+    await idle(page, '#plannerBody');
+    await page.click('#plannerBody [data-journey="0"]');
+    await idle(page, '#plannerBody');
+    await page.waitForTimeout(2500);
+    await blur(page);
+    await el(page, R, 'route-planner-customs.png');
+    await ctx.close();
+  }
   // Close on the title's line, on a phone.
   if (want('phone-header')) {
     const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, hash: navHash(BEDOK_STN, AFC) });
