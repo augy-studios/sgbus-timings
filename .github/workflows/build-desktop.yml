@@ -14,8 +14,8 @@
 # "can't be opened" the first time, and Windows SmartScreen warns before the first run
 # (desktop/README.md).
 #
-# The command-line edition for Linux (cli/, from 2.2.2) goes on the release with them, by a
-# hand run or a release: its single file `sgbus` and its .deb, checked with dpkg-deb first.
+# The command-line edition for Linux (cli/, from 2.2.2) is built and checked with dpkg-deb on
+# every run, and goes on the release with them: its single file `sgbus` and its .deb.
 name: Build desktop apps
 
 on:
@@ -54,7 +54,8 @@ jobs:
         run: |
           if [ -z "$RELEASE_TAG" ]; then
             echo "build=true" >> "$GITHUB_OUTPUT"
-            echo "cli=$([ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+            # The command line too, a minute's build checked with dpkg-deb, so a push tests it.
+            echo "cli=true" >> "$GITHUB_OUTPUT"
           elif [ "$GITHUB_EVENT_NAME" = release ]; then
             # Published with every platform's update file on it already: nothing to build.
             assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
