@@ -261,6 +261,16 @@
 
   const restricted = (code) => RESTRICTED[code] || null;
 
+  // Settings' "Restricted areas" (script.js), for people with a pass who work there: journeys
+  // get on and off at these stops, and ride through, as at any other. The same as
+  // `restricted=1` to api/nav.js.
+  let openAccess = false;
+  function setOpenAccess(on) {
+    if (Boolean(on) === openAccess) return;
+    openAccess = Boolean(on);
+    graph = null;
+  }
+
   // Across the Causeway: Woodlands Checkpoint, the last stop before Malaysia, and the stops
   // in Johor Bahru. Anyone can ride to them with a passport, so unlike the restricted stops
   // they're planned through as usual, but their timings and route lists say so (script.js).
@@ -293,7 +303,9 @@
 
   // The parts of a run a journey can ride, as lists of indexes into it: the stops nobody
   // may get on or off at left out, and the run cut in two where nobody may ride through.
+  // With openAccess, the whole run.
   function publicParts(seq) {
+    if (openAccess) return seq.length >= 2 ? [seq.map((_, i) => i)] : [];
     const parts = [[]];
     seq.forEach((code, i) => {
       const r = RESTRICTED[code];
@@ -431,6 +443,8 @@
     lastBuses,
     stopsTo,
     restricted,
+    setOpenAccess,
+    openAccess: () => openAccess,
     crossBorder,
     isCheckpoint,
     nearCheckpoint,

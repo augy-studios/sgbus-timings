@@ -20,6 +20,7 @@ suggestion, and the stop's timings open underneath.
 | A stop's name and its road | `Blk 109 Bedok` | Lists the Blk 109s on a road with Bedok in its name |
 | A 5-digit stop code | `84009` | Opens that stop straight away |
 | A stop code and a bus | `84009 174` | Opens that stop narrowed to bus 174 |
+| A stop code and some buses | `84009 174, 175`, `84009 22*` | Opens that stop narrowed to those buses |
 | A bus number | `22`, `NR7`, `971E` | Opens [that bus's route](bus-routes.md) |
 | A 6-digit postal code | `519599` | Lists the 8 stops nearest that address |
 | An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists the stops at its exits |
@@ -112,3 +113,15 @@ are not; see [Navigate by bus only](route-planner.md).
 Add a bus number after the stop code, with a space: `84009 174`. The timings
 show only that bus. You can also do this after opening a stop, with
 **Pick a bus**; see [More from a stop](more-from-a-stop.md#pick-a-bus).
+
+### A few buses at once
+
+<figure>
+<img src="/screenshots/web/search-several.png" alt="Bedok Int's timings narrowed with 84009 22*: the incoming buses bar and cards for 222, 225G, 228 and 229 only, with Show all services, Pick a bus, Directions and Board above." width="880" height="1044" loading="lazy">
+<figcaption>Bedok Int with 84009 22*: every bus there starting with 22.</figcaption>
+</figure>
+
+For a few buses, list them with commas or spaces: `84009 174, 175`. A star after
+a number takes every bus starting with it, so at Bedok Int `84009 22*` shows 222,
+225G, 228, 229 and the rest of the 22s, and `84009 222*` just 222 and 222A.
+**Route from here** is there only when it's one bus.

@@ -184,7 +184,8 @@ function searchJourneys(start, end, timing) {
   const id = ++workerSeq;
   return new Promise((resolve) => {
     workerWaiting.set(id, { resolve, fallback: () => searchHere(start, end, timing).then(resolve) });
-    plannerWorker.postMessage(first ? { id, start, end, timing, stops: stopsIndex } : { id, start, end, timing });
+    const open = BusNet.openAccess();
+    plannerWorker.postMessage(first ? { id, start, end, timing, open, stops: stopsIndex } : { id, start, end, timing, open });
   });
 }
 

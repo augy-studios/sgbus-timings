@@ -221,7 +221,8 @@
 
   // ---------- Routines (2.2.0) ----------
   // A stop's next buses as a notification at a time, on the days picked (Routines.java):
-  // { id, code, name, buses: ['22'], time: 'HHMM', days: [1..7, Monday first] }.
+  // { id, code, name, buses: ['22'], time: 'HHMM', days: [1..7, Monday first] }. Each one's
+  // Edit fills the form in with it, to save over it.
 
   const ROUTINE_KEY = 'sgbus_routines';
   const MAX_ROUTINES = 20;
@@ -239,14 +240,18 @@
 
   const clockText = (hhmm) => `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`;
 
+  // The routine the form is changing, by its id, or null while it adds one.
+  let editing = null;
+
   function renderRoutines() {
     const list = routines();
     $('#routineList').innerHTML = list.length
-      ? list.map((r, i) => `<div class="lastBusRow"><span><strong>${esc(clockText(r.time))}</strong> ${esc(daysText(r.days))} · ` +
+      ? list.map((r, i) => `<div class="lastBusRow${r.id === editing ? ' editing' : ''}"><span><strong>${esc(clockText(r.time))}</strong> ${esc(daysText(r.days))} · ` +
         `${esc(r.name)} <span class="sub">${esc(r.code)}${r.buses.length ? ` · ${esc(r.buses.join(', '))}` : ''}</span></span>` +
-        `<button type="button" class="icon-btn small" data-routine-remove="${i}" aria-label="Remove">${ico('close')}</button></div>`).join('')
+        `<button type="button" class="icon-btn small" data-routine-edit="${i}" aria-label="Edit" title="Edit">${ico('edit')}</button>` +
+        `<button type="button" class="icon-btn small" data-routine-remove="${i}" aria-label="Remove" title="Remove">${ico('close')}</button></div>`).join('')
       : '<p class="mode-note">None yet.</p>';
-    $('#routineForm').hidden = list.length >= MAX_ROUTINES;
+    $('#routineForm').hidden = list.length >= MAX_ROUTINES && !editing;
   }
 
   async function saveRoutines(list) {
@@ -279,10 +284,13 @@
     refresh();
   }
 
-  function resetRoutineForm() {
-    // The stop on screen first, then the favourites.
+  // The form, empty for a new routine, or filled in with `r` to change it.
+  function resetRoutineForm(r = null) {
+    editing = r?.id || null;
+    // The routine's own stop, or the stop on screen, first, then the favourites.
     const options = [];
-    if (current?.code) options.push({ code: current.code, name: nameOf(current.code) || current.code });
+    if (r) options.push({ code: r.code, name: r.name || nameOf(r.code) || r.code });
+    else if (current?.code) options.push({ code: current.code, name: nameOf(current.code) || current.code });
     for (const f of LS.getFavs()) {
       if (!options.some((o) => o.code === f.code)) options.push({ code: f.code, name: f.name || nameOf(f.code) || f.code });
     }
@@ -290,9 +298,24 @@
       ? options.map((o) => `<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join('')
       : '<option value="">Open a stop or save a favourite first</option>';
     $('#routineSave').disabled = !options.length;
-    $('#routineBuses').value = current?.service || '';
-    setDays([1, 2, 3, 4, 5]);
+    // A new one: the stop's buses as narrowed (script.js busFilter), less any wildcard, which
+    // routines don't take.
+    $('#routineBuses').value = r ? r.buses.join(', ')
+      : (current?.service || '').split(',').filter((b) => b && !b.endsWith('*')).join(', ');
+    if (r) $('#routineTime').value = clockText(r.time);
+    setDays(r ? r.days : [1, 2, 3, 4, 5]);
     $('#routineError').hidden = true;
+    document.querySelector('.routineFormHead').textContent = r ? 'Edit routine' : 'Add a routine';
+    $('#routineSave').textContent = r ? 'Save' : 'Add';
+    $('#routineCancel').hidden = !r;
+  }
+
+  function editRoutine(i) {
+    const r = routines()[i];
+    if (!r) return;
+    resetRoutineForm(r);
+    renderRoutines();
+    $('#routineForm').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
   function addRoutine() {
@@ -306,10 +329,15 @@
       $('#routineError').hidden = false;
       return;
     }
-    const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-    // The modal stays open, the new one in its list and the form ready for another.
-    saveRoutines([...routines(), { id, code, name: nameOf(code) || code, buses, time, days }].slice(0, MAX_ROUTINES));
+    const fields = { code, name: nameOf(code) || code, buses, time, days };
+    // A changed one keeps its id, and its place in the list; one removed meanwhile is added.
+    const list = routines();
+    const at = editing ? list.findIndex((r) => r.id === editing) : -1;
+    if (at !== -1) list[at] = { ...list[at], ...fields };
+    else list.push({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, ...fields });
+    // The modal stays open, the routine in its list and the form ready for another.
     resetRoutineForm();
+    saveRoutines(list.slice(0, MAX_ROUTINES));
   }
 
   // ---------- setting up ----------
@@ -357,10 +385,20 @@
       if (rm) removeLast(Number(rm.dataset.lastbusRemove));
     });
     $('#routineList').addEventListener('click', (e) => {
+      const re = e.target.closest('[data-routine-edit]');
+      if (re) editRoutine(Number(re.dataset.routineEdit));
       const rr = e.target.closest('[data-routine-remove]');
-      if (rr) saveRoutines(routines().filter((_, i) => i !== Number(rr.dataset.routineRemove)));
+      if (!rr) return;
+      const gone = routines()[Number(rr.dataset.routineRemove)];
+      // Removing the one being changed leaves the form adding a new one.
+      if (gone && gone.id === editing) resetRoutineForm();
+      saveRoutines(routines().filter((_, i) => i !== Number(rr.dataset.routineRemove)));
     });
     $('#routineSave').addEventListener('click', addRoutine);
+    $('#routineCancel').addEventListener('click', () => {
+      resetRoutineForm();
+      renderRoutines();
+    });
     $('#routineDays').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-day]');
       if (!btn) return;

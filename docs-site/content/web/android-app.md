@@ -9,7 +9,14 @@ describes, and updates the moment the website does.
 
 ## Download and install it
 
-It's shared as a file rather than on Google Play, for now.
+It's shared as a file rather than on Google Play, for now. On an Android phone,
+the website offers it in a bar at the top: **Download** fetches the newest
+version, for step 2 below, and **Not now** puts it away for a month.
+
+<figure>
+<img src="/screenshots/web/android-app-offer.png" alt="A bar at the top of the website on an Android phone: Get the Android app: widgets, routines and stop reminders, even with it closed, with a How to install link, and Download and Not now buttons." width="412" height="95" loading="lazy">
+<figcaption>The website offering the app, in Chrome on Android.</figcaption>
+</figure>
 
 1. On your Android phone, open the
    [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest)
@@ -127,11 +134,19 @@ alarm clock, under the line; the rest are in **Settings**. Either button can be 
   Settings lists them, to remove. Public holidays run Sunday's times, which the
   reminder doesn't know about.
 - **Routines** (from version 2.2.0): tap its button in the Edge Tray. It lists
-  your routines, to remove, and under **Add a routine** you pick a stop (the one
-  you have open, or a favourite), the buses you want or none for all of them, a
-  time and the days, such as 7:45 on weekdays, then **Add**. At that time a
-  notification shows the stop's next buses; tap it for their timings. Like the
-  [Telegram bot's routines](../bot/routines.md), but on your phone.
+  your routines, to change with the pencil or remove, and under **Add a routine**
+  you pick a stop (the one you have open, or a favourite), the buses you want or
+  none for all of them, a time and the days, such as 7:45 on weekdays, then
+  **Add**. The pencil fills the form in with that routine instead: change what
+  you like and tap **Save**, or **Cancel**. At that time a notification shows the
+  stop's next buses; tap it for their timings, just the routine's buses (from
+  2.2.2). Like the [Telegram bot's routines](../bot/routines.md), but on your
+  phone.
+
+<figure>
+<img src="/screenshots/web/android-routines-edit.png" alt="The Routines window: 07:45 on weekdays at Bedok Int for 14 and 60, outlined as the one being edited, and 18:30 at weekends at Tampines Int, each with a pencil and a remove button; below, Edit routine with its stop, buses 14, 60, 07:45 and Monday to Friday picked, then Save and Cancel." width="396" height="614" loading="lazy">
+<figcaption>Changing a routine: the pencil fills the form in with it.</figcaption>
+</figure>
 
 ### Location turned off
 

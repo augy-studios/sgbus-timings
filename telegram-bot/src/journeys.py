@@ -43,6 +43,11 @@ ACROSS_ROAD_M = 100
 # How much quicker the stop across the road has to be before the one given is called the
 # wrong side, rather than a stop with slower buses.
 WRONG_SIDE_MIN = 5
+# At most this much more riding to board or get off at a stop nearer the start or end, rather
+# than walk further for a minute saved on the bus: Changi Beach CP 5 is a stop before SAF
+# Ferry Ter, which faces Opp SAF Ferry Ter, but walking from it is only 20 m longer as the
+# crow flies. The same as RIDE_NEARER_MIN in main-site/js/journeys.js.
+RIDE_NEARER_MIN = 2
 
 # A change of bus at a hub - an interchange, a terminal or a station - can be between any
 # two of its stops this far apart, beyond the usual walk: Tampines Int is 300 m from
@@ -428,7 +433,43 @@ def _ranked_journeys(start_code: str, end_code: str, walk_start: bool = True, wa
         return sort_keys[bus]
 
     ranked = sorted(best.values(), key=lambda item: (item[0], [bus_key(run[0]) for run, _, _ in item[1]]))
-    return [(cost, [_leg(net, *part) for part in parts]) for cost, parts in ranked]
+    return [
+        (cost, [_leg(net, *part) for part in _ride_nearer(net, parts, start_code, end_code)])
+        for cost, parts in ranked
+    ]
+
+
+def _ride_nearer(net, parts, start_code, end_code) -> list:
+    """A journey's first bus boarded, and its last left, at the stop nearest the start and
+    end that's no more than RIDE_NEARER_MIN further along the bus's run, so the walk is the
+    shortest the bus allows. The ranking's cost is left as it was."""
+    out = [list(part) for part in parts]
+
+    def walk_to(code, end):
+        if code == end:
+            return 0.0
+        if code not in net.coords or end not in net.coords:
+            return math.inf
+        return _haversine(net.coords[code], net.coords[end])
+
+    first = out[0]
+    run1, i1 = first[0], first[1]
+    stops1 = net.runs[run1]
+    k = i1 - 1
+    while k >= 0 and _ride_min(net, run1, k, i1) <= RIDE_NEARER_MIN:
+        if walk_to(stops1[k], start_code) < walk_to(stops1[first[1]], start_code):
+            first[1] = k
+        k -= 1
+
+    last = out[-1]
+    run2, j2 = last[0], last[2]
+    stops2 = net.runs[run2]
+    k = j2 + 1
+    while k < len(stops2) and _ride_min(net, run2, j2, k) <= RIDE_NEARER_MIN:
+        if walk_to(stops2[k], end_code) < walk_to(stops2[last[2]], end_code):
+            last[2] = k
+        k += 1
+    return [tuple(part) for part in out]
 
 
 def _scan_on(net, reach, run):

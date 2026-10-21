@@ -9,6 +9,32 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 21 October 2026 (evening): Apps 2.2.2, Larkin by bus and train, several buses at a stop, editing routines
+
+### Web app
+
+- **Navigate to Johor Bahru** - Bus and train now plans to and from the stops across the Causeway, Larkin Terminal included, rather than saying both ends have to be in Singapore. Past searches, places and trips there are kept too.
+- **Several buses at a stop** - After a stop's code, list the buses to see just those: **84009 174, 175**, or a link like `#84009,174,175`. A star picks every bus starting with what's before it: **84009 22\*** shows 22, 222, 225G and the rest.
+- **Restricted areas** - In Settings, **I have a pass** lets Navigate and the route planner get on and off inside Changi Airport's cargo area and at MINDEF's stops, for the people who work there. Off unless turned on, and it syncs like the other settings.
+- **Off where the stop faces your end** - The route planner now rides on a stop where that's nearer where you're going, rather than getting off a minute early and walking further: to Opp SAF Ferry Ter, off at SAF Ferry Ter across the road, not Changi Beach CP 5.
+- **Close stays in reach** - On a phone, Navigate's close button stays at the top right of its title, with Refresh, Share and Save nav on the line below, rather than pushed off the edge.
+- **Get the Android app** - On an Android phone's browser, a bar offers the Android app, with **Download** for the newest version and a link to how to install it. **Not now** puts it away for a month.
+
+### Android app 2.2.2
+
+- **Edit routines** - Each routine has an **Edit** button, which fills the form in with it to change and **Save**. No update needed: it reaches the app from the web.
+- **A routine's own buses** - Tapping a routine for several buses opens the stop with just those buses, not every bus there.
+
+### Desktop app 2.2.2
+
+- The web app's changes above. Nothing new of its own: the same number as the Android app.
+
+### Telegram bot
+
+- **Off where the stop faces your end** - `/route` gets off at the stop nearest your end when it's only a minute or two further, as the web app now does.
+
+---
+
 ## 21 October 2026 (later): Sync with the Telegram bot, and sync more
 
 ### Web app

@@ -46,13 +46,13 @@ const STATE = {
 // What the fake Android app (see the top) says to the page, by plugin and method; anything else
 // answers {}. "never" stays waiting, as the app does for a sticker or a card.
 const APP_FEATURES = ['calendar', 'update', 'checkupdate', 'trip', 'pace', 'notify', 'board', 'share', 'shareto', 'sharetap', 'sharenearby',
-  'widget', 'places', 'flag', 'torch', 'earphones', 'battery', 'lastbus', 'leavetime', 'nearstops', 'onabus', 'scan', 'sticker', 'listen', 'pip', 'card', 'cardtap'];
+  'widget', 'places', 'flag', 'torch', 'earphones', 'battery', 'lastbus', 'leavetime', 'nearstops', 'onabus', 'scan', 'sticker', 'listen', 'pip', 'card', 'cardtap', 'routines'];
 const APP_ANSWERS = {
   'SgBus.info': { version: '2.1.0', versionCode: 13, android: 35, features: APP_FEATURES },
   'OfflineShare.status': { nfc: 'on', tap: true, nearby: true, allowed: true },
   'OfflineShare.write': 'never',
   'Reminders.status': {
-    nearStops: ['84009'], lastBus: [{ code: '84009', service: '14' }], leaveTime: true, onABus: false,
+    nearStops: ['84009'], lastBus: [{ code: '84009', service: '14' }], leaveTime: true, onABus: false, routines: 2,
     background: true, notifications: true, calendar: true, activity: true,
   },
 };
@@ -75,9 +75,11 @@ function fakeApp(answers) {
   };
 }
 
-async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false } = {}) {
+// `ua`: a browser to be, such as Chrome on Android for the app's download bar.
+async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, ua = null } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: 3, isMobile: touch, hasTouch: touch, colorScheme: 'light', locale: 'en-SG', timezoneId: 'Asia/Singapore',
+    ...(ua && { userAgent: ua }),
     ...(geo && { geolocation: geo, permissions: ['geolocation'] }),
   });
   await ctx.route(/^(?!http:\/\/127\.0\.0\.1|https:\/\/fonts\.(googleapis|gstatic)\.com)/, (r) => r.abort());
@@ -346,6 +348,97 @@ async function el(page, sel, name) {
     await page.evaluate(() => OfflineShare.sticker({ url: `${location.origin}/#84009`, title: 'Bedok Int (84009)' }));
     await page.waitForTimeout(1000);
     await el(page, '#offlineModal .modal', 'android-sticker.png');
+    await ctx.close();
+  }
+  // ---- 2.2.2 ----
+  // Navigate's ways to Johor Bahru and with Restricted areas on need this checkout's /api/nav
+  // until it's deployed: serve it locally rather than passing it through to the live site.
+  const T1 = { label: 'Changi Airport Ter 1', lat: 1.361057, lng: 103.990812 };
+  const LARKIN = { label: 'Larkin Ter', lat: 1.495519, lng: 103.743071 };
+  const BEDOK_STN = { label: 'Bedok Stn', lat: 1.32398, lng: 103.92998 };
+  const AFC = { label: 'AirFreight Ter Bldg', lat: 1.37228, lng: 103.99465 };
+  // A stop narrowed to a wildcard. Live timings.
+  if (want('several-live')) {
+    const { ctx, page } = await open(browser, { width: 1000, height: 1400, hash: '#84009,22*' });
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    await cardDown(page, '#resultCard', '#services', 'search-several.png');
+    await ctx.close();
+  }
+  // A bus going both ways and a loop passing twice, at S'goon Gdn Circus. Live timings.
+  if (want('both-ways-live')) {
+    const { ctx, page } = await open(browser, { width: 1000, height: 1400, hash: '#66271,136,73' });
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => {});
+    await page.waitForTimeout(1500);
+    await cardDown(page, '#resultCard', '#services', 'reading-both-ways.png');
+    await ctx.close();
+  }
+  if (want('restricted')) {
+    let { ctx, page } = await open(browser, { width: 420, height: 2400 });
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(500);
+    await page.click('[data-restricted="on"]');
+    await page.waitForTimeout(300);
+    const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Restricted areas' }).boundingBox();
+    const b = await page.locator('[data-restricted]').first().locator('xpath=../following-sibling::p[1]').boundingBox();
+    const m = await page.locator('#settingsModal .modal').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-restricted.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-restricted.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { hash: navHash(BEDOK_STN, AFC), extra: { sgbus_restricted: 'on' } }));
+    await idle(page, '#navBody', 60000);
+    await blur(page);
+    await el(page, N, 'nav-restricted.png');
+    await ctx.close();
+  }
+  if (want('johor')) {
+    const { ctx, page } = await open(browser, { hash: navHash(T1, LARKIN) });
+    await idle(page, '#navBody', 60000);
+    await blur(page);
+    await el(page, N, 'nav-johor.png');
+    await ctx.close();
+  }
+  // Rides on to SAF Ferry Ter, across the road from the end, rather than off at Changi Beach CP 5.
+  if (want('ride-nearer')) {
+    const { ctx, page } = await open(browser, { hash: '#route/98101/95099' });
+    await idle(page, '#plannerBody');
+    await blur(page);
+    await el(page, R, 'route-planner-ride-nearer.png');
+    await ctx.close();
+  }
+  // Close on the title's line, on a phone.
+  if (want('phone-header')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, hash: navHash(BEDOK_STN, AFC) });
+    await page.waitForTimeout(1500);
+    await el(page, '#navSection .cardHeader', 'nav-phone-header.png');
+    await ctx.close();
+  }
+  if (want('app-routines')) {
+    const { ctx, page } = await open(browser, {
+      width: 420, height: 1600, app: true, extra: {
+        sgbus_routines: JSON.stringify([
+          { id: 'a1', code: '84009', name: 'Bedok Int', buses: ['14', '60'], time: '0745', days: [1, 2, 3, 4, 5] },
+          { id: 'b2', code: '75009', name: 'Tampines Int', buses: [], time: '1830', days: [6, 7] },
+        ]),
+      },
+    });
+    await page.click('#routinesTrayBtn');
+    await page.waitForTimeout(800);
+    await page.locator('#routineList [data-routine-edit="0"]').click();
+    await page.waitForTimeout(600);
+    await el(page, '#routineModal .modal', 'android-routines-edit.png');
+    await ctx.close();
+  }
+  // The Android app offered in Chrome on Android.
+  if (want('app-offer')) {
+    const { ctx, page } = await open(browser, {
+      width: 412, height: 900, touch: true,
+      ua: 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36',
+    });
+    await page.waitForSelector('.app-update-notice', { timeout: 15000 }).catch(() => console.log('no bar'));
+    await page.waitForTimeout(500);
+    await el(page, '.app-update-notice', 'android-app-offer.png');
     await ctx.close();
   }
   await browser.close();

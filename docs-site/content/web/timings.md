@@ -73,8 +73,9 @@ Under the stop's name, a few stops carry a note:
   such as **Also Woodlands Int (46009)**, opens the other one.
 - **Authorised personnel only.** The stops inside Changi Airport's cargo
   area, and MINDEF's on Gombak Drive, are only for people allowed in. The
-  [route planner](route-planner.md) never has you get on or off at one, and
-  never rides through the cargo area.
+  [route planner](route-planner.md) and [Navigate](nav.md) never have you get
+  on or off at one, and never ride through the cargo area, unless you work
+  there: Settings' **Restricted areas**, **I have a pass**, lets them.
 - **Across the border.** Woodlands Checkpoint (46101, 46109) says
   **Immigration checkpoint**, and the stops in Johor Bahru, at its checkpoint,
   JB Sentral and Larkin Terminal, say **In Malaysia**: you'll need your

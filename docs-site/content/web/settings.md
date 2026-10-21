@@ -21,12 +21,18 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
+| **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
 | **Edge Tray buttons** | Turn off any of **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee** and **Guide** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
 | **Sync with another device** | See [Sync between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.
+
+<figure>
+<img src="/screenshots/web/settings-restricted.png" alt="Settings' Restricted areas, with Keep out and I have a pass, I have a pass picked, and a note that with a pass Navigate can get on and off inside Changi Airport's cargo area and at MINDEF's stops." width="396" height="161" loading="lazy">
+<figcaption>Restricted areas, for people who work behind a checkpoint.</figcaption>
+</figure>
 
 > [!NOTE]
 > Looking for notifications? They're switched on in the

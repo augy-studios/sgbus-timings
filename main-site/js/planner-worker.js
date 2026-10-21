@@ -4,16 +4,18 @@
 // as the page.
 //
 // The first message carries the stops index from script.js, and every message is
-// { id, start, end, timing }, answered { id, journeys, fixes } or { id, error }.
+// { id, start, end, timing, open }, answered { id, journeys, fixes } or { id, error }. `open`
+// is Settings' Restricted areas (BusNet.setOpenAccess).
 self.window = self;
 importScripts("/js/when.js", "/js/network.js", "/js/journeys.js");
 
 let stopsIndex = null;
 
 self.onmessage = async ({ data }) => {
-  const { id, stops, start, end, timing } = data;
+  const { id, stops, start, end, timing, open } = data;
   try {
     if (stops) stopsIndex = stops;
+    BusNet.setOpenAccess(open);
     // Shared and kept once loaded; a failed load is tried again on the next search.
     await BusNet.load(stopsIndex);
     const journeys = Journeys.findJourneys(start, end, undefined, timing);

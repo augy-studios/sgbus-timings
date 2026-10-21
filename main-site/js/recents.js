@@ -73,7 +73,7 @@
   function clean(raw) {
     if (!raw || typeof raw !== 'object' || !KINDS.includes(raw.kind) || typeof raw.label !== 'string' || !raw.label.trim()) return null;
     if (!Number.isFinite(raw.at)) return null;
-    const point = Number.isFinite(raw.lat) && Number.isFinite(raw.lng) && raw.lat > 1.15 && raw.lat < 1.48 && raw.lng > 103.55 && raw.lng < 104.1;
+    const point = Number.isFinite(raw.lat) && Number.isFinite(raw.lng) && raw.lat > 1.15 && raw.lat < 1.5 && raw.lng > 103.55 && raw.lng < 104.1;
     return {
       kind: raw.kind,
       label: raw.label.slice(0, 120),

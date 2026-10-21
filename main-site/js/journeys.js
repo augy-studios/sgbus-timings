@@ -34,6 +34,11 @@
   // How much quicker the stop across the road has to be before the one given is called the
   // wrong side, rather than a stop with slower buses.
   const WRONG_SIDE_MIN = 5;
+  // At most this much more riding to board or get off at a stop nearer the start or end, rather
+  // than walk further for a minute saved on the bus: Changi Beach CP 5 is a stop before SAF
+  // Ferry Ter, which faces Opp SAF Ferry Ter, but walking from it is only 20 m longer as the
+  // crow flies. The same as RIDE_NEARER_MIN in the bot's journeys.py.
+  const RIDE_NEARER_MIN = 2;
   // Grid cells of about 220 m, so every stop within the walk limit is in the 3x3 block of
   // cells around a stop.
   const CELL_DEG = 0.002;
@@ -326,7 +331,26 @@
 
     return [...best.values()]
       .sort((a, b) => a.cost - b.cost || compareBuses(a.buses, b.buses))
-      .map((item) => ({ cost: item.cost, legs: item.parts.map(toLeg) }));
+      .map((item) => ({ cost: item.cost, legs: rideNearer(g, item.parts, startCode, endCode).map(toLeg) }));
+  }
+
+  // A journey's first bus boarded, and its last left, at the stop nearest the start and end
+  // that's no more than RIDE_NEARER_MIN further along the bus's run, so the walk is the
+  // shortest the bus allows. The ranking's cost is left as it was.
+  function rideNearer(g, parts, startCode, endCode) {
+    const out = parts.map((p) => [...p]);
+    const walkTo = (code, end) => (code === end ? 0 : g.coords[code] && g.coords[end] ? BusNet.haversine(g.coords[code], g.coords[end]) : Infinity);
+    const first = out[0];
+    const [run1, i1] = first;
+    for (let k = i1 - 1; k >= 0 && rideMin(run1, k, i1) <= RIDE_NEARER_MIN; k--) {
+      if (walkTo(run1.stops[k], startCode) < walkTo(run1.stops[first[1]], startCode)) first[1] = k;
+    }
+    const last = out[out.length - 1];
+    const [run2, , j2] = last;
+    for (let k = j2 + 1; k < run2.stops.length && rideMin(run2, j2, k) <= RIDE_NEARER_MIN; k++) {
+      if (walkTo(run2.stops[k], endCode) < walkTo(run2.stops[last[2]], endCode)) last[2] = k;
+    }
+    return out;
   }
 
   // Calls visit(index, minutes so far, board index, parts before this bus) for every stop

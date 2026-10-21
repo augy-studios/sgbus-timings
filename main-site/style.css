@@ -343,6 +343,13 @@ body.modal-open { overflow: hidden; }
 .app-update-notice .iconBtn { flex: none; }
 .update-notice .btn,
 .app-update-notice .btn { padding: 8px 14px; font-size: 13px; text-decoration: none; }
+/* On a phone, beside the Edge Tray, the words take the line and the buttons go under them,
+   rather than squeezing the words to a word or two a line. */
+@media (max-width: 520px) {
+    .update-notice-inner { flex-wrap: wrap; row-gap: 0.5rem; }
+    .update-notice p,
+    .app-update-notice p { flex-basis: 100%; }
+}
 
 @keyframes update-notice-in {
     from { opacity: 0; transform: translateY(-6px); }
@@ -2126,6 +2133,11 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     .swapBtn .ico,
     .swapBtn [data-icon] { transform: none; }
     .cardHeader { flex-wrap: wrap; }
+    /* A panel's Close keeps the title's line, top right, and its other buttons wrap onto the
+       lines below: Navigate's Refresh, Share and Save nav in one row pushed it off the card. */
+    .panelModal .cardHeader .actions { display: contents; }
+    .panelModal .cardHeader .cardTitle { flex: 1 0 calc(100% - 44px); }
+    .panelModal .cardHeader .actions > :not(.icon-btn) { order: 1; }
 }
 
 @media (max-width: 360px) {
@@ -2782,6 +2794,9 @@ body.on-trip { padding-bottom: 96px; }
 .lastBusList { display: flex; flex-direction: column; gap: 4px; }
 .lastBusRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
 .lastBusRow .sub, .nearStopsList .sub { color: var(--muted); font-size: 12px; }
+/* A routine's Edit sits by its Remove, at the end of the row; the one being edited is marked. */
+.lastBusRow > span:first-child { flex: 1; min-width: 0; }
+.lastBusRow.editing { border-radius: 10px; padding: 4px 6px; margin: 0 -6px; background: var(--surface-strong); outline: 2px solid var(--brand); }
 .nearStopsList { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; margin-bottom: 10px; }
 .remindersNote { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface-strong); font-size: 13px; }
 .remindersNote .iconBtn { margin-top: 6px; }

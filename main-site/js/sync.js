@@ -138,6 +138,11 @@ const SYNC_SETTINGS = {
     get: () => [...trayHidden()].sort().join(' '),
     set: (v) => { const off = v.split(' '); for (const n of TRAY_EXTRAS) setTrayExtra(n, !off.includes(n)); },
   },
+  restricted: {
+    label: 'Restricted areas', values: ['on', 'off'], start: 'off',
+    text: (v) => (v === 'on' ? 'I have a pass' : 'Keep out'),
+    get: () => (LS.getRestricted() ? 'on' : 'off'), set: (v) => tap(`[data-restricted="${v}"]`),
+  },
   'nav.mode': {
     label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',
     text: (v) => (v === 'bus' ? 'Bus only' : 'Bus and train'),
@@ -342,9 +347,9 @@ function cleanFavs(raw) {
   const text = (v) => (typeof v === 'string' ? v.slice(0, 80) : '');
   const seen = new Set();
   const once = (key) => !seen.has(key) && !!seen.add(key);
-  // A nav's end: a label and a point in Singapore.
+  // A nav's end: a label and a point in Singapore, or at a stop in Johor Bahru (api/nav.js).
   const isPlace = (p) => p && typeof p === 'object' && Number.isFinite(p.lat) && Number.isFinite(p.lng)
-    && p.lat > 1.15 && p.lat < 1.48 && p.lng > 103.55 && p.lng < 104.1;
+    && p.lat > 1.15 && p.lat < 1.5 && p.lng > 103.55 && p.lng < 104.1;
   const place = (p) => ({ label: text(p.label) || 'Place', lat: p.lat, lng: p.lng });
 
   return {

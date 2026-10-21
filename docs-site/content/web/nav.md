@@ -41,6 +41,29 @@ used last.
 
 The swap button between the two boxes turns the journey around.
 
+### Across the Causeway
+
+<figure>
+<img src="/screenshots/web/nav-johor.png" alt="Navigate from Changi Airport Ter 1 to Larkin Ter: seven ways, quickest first, from the Changi Airport branch, East-West and Downtown Lines then bus 170 in about 156 minutes, to 858, 911 and 170 in about 186." width="880" height="986" loading="lazy">
+<figcaption>Changi Airport to Larkin Terminal in Johor Bahru, every way ending on the 170.</figcaption>
+</figure>
+
+Both ends are in Singapore, or at the stops in Johor Bahru its buses cross the
+Causeway to: the Johor Bahru checkpoint, JB Sentral and Larkin Terminal. A
+journey across the border has a **MyICA** button on the trip bar once it's
+started: see [Get Off Alert](get-off-alert.md).
+
+### Restricted areas
+
+<figure>
+<img src="/screenshots/web/nav-restricted.png" alt="Navigate from Bedok Stn to AirFreight Ter Bldg with Restricted areas on: the East-West Line then bus 9 in about 64 minutes, bus 9 alone in about 65, and 28 then 9 in about 68." width="880" height="637" loading="lazy">
+<figcaption>With a pass, bus 9 goes straight into the cargo area: about 64 minutes, not 93 on the 35 and a walk.</figcaption>
+</figure>
+
+With Settings' **Restricted areas** set to **I have a pass**, journeys can also
+get on and off inside Changi Airport's cargo area and at MINDEF's stops: see
+[Settings](settings.md).
+
 ### Home and Work
 
 <figure>
@@ -56,6 +79,11 @@ it opens Places to set it.
 Tapping into either box, before you type, also lists your
 [past searches](past-searches.md), your saved places, and your
 [calendar](calendar.md)'s events, each on its own tab.
+
+<figure>
+<img src="/screenshots/web/nav-phone-header.png" alt="The top of Navigate on a phone: its title with the close button beside it at the right, and Refresh, Share and Save nav on the line below." width="364" height="105" loading="lazy">
+<figcaption>On a phone, close stays beside the title, with the other buttons underneath.</figcaption>
+</figure>
 
 Navigate opens in a window over the page. Close it with the button at its top
 right, or by tapping anywhere outside it. Opening a bus's timings from it, or

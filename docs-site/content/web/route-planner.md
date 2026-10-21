@@ -125,6 +125,21 @@ like any other, so a long one is only suggested when it's worth it. If your firs
 goes on into the interchange your next one leaves from, the journey stays on
 it, unless getting off at the station's stop and walking is clearly quicker.
 
+<figure>
+<img src="/screenshots/web/route-planner-ride-nearer.png" alt="The route planner from Loyang Pt to Opp SAF Ferry Ter: five journeys of about 26 minutes, such as 89 on its own and 109 then 89, each getting off at SAF Ferry Ter, across the road from the end." width="880" height="884" loading="lazy">
+<figcaption>To Opp SAF Ferry Ter, every journey rides on to SAF Ferry Ter, across the road from it.</figcaption>
+</figure>
+
+The same goes for your end stop: if the bus calls at a stop nearer it within a
+couple of minutes' more riding, you stay on to that one rather than getting off
+a stop early and walking further. To Opp SAF Ferry Ter, you get off at SAF Ferry
+Ter across the road, not Changi Beach CP 5 before it. Your first bus is boarded
+the same way, at the stop nearest your start.
+
+Stops only authorised people may use, inside Changi Airport's cargo area and at
+MINDEF on Gombak Drive, are left out, unless Settings' **Restricted areas** is
+set to **I have a pass**: see [Settings](settings.md).
+
 > [!NOTE]
 > LTA publishes no journey times, so these are estimates from the straight line
 > distance between stops: about 15 km/h on a bus and 60 m a minute on foot.

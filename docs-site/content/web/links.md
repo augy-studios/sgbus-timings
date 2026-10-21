@@ -10,6 +10,7 @@ screen can be bookmarked, added to your home screen, or sent to a friend.
 |---|---|
 | `sgbus.uwuapps.org/#84009` | Bus stop 84009's timings |
 | `sgbus.uwuapps.org/#84009,174` | Bus stop 84009, narrowed to bus 174 |
+| `sgbus.uwuapps.org/#84009,174,175` or `#84009,22*` | Bus stop 84009, narrowed to buses 174 and 175, or every bus starting 22 |
 | `sgbus.uwuapps.org/#bus/22` | Bus 22's route |
 | `sgbus.uwuapps.org/#route/84009/75009` | The route planner, from stop 84009 to stop 75009 |
 | `sgbus.uwuapps.org/#nav/here/1.31533,103.81554~Botanic%20Gardens` | [Navigate](nav.md), from where you are to the Botanic Gardens |

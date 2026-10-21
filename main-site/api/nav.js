@@ -48,8 +48,10 @@ const LTA_LINES = {
   BPL: ["BP"], STL: ["SK"], SKL: ["SK"], PTL: ["PG"], PGL: ["PG"],
 };
 
-// Singapore, roughly: a point outside it is a mistake, not a journey.
-const inSingapore = ({ lat, lng }) => lat > 1.15 && lat < 1.48 && lng > 103.55 && lng < 104.1;
+// Singapore, roughly, and the stops in Johor Bahru its buses cross the Causeway to (Larkin
+// Terminal, the furthest, is at 1.4955): a point outside it is a mistake, not a journey. The
+// same box as js/places.js, js/recents.js, js/history.js, js/sync.js and the bot's sync_bot.py.
+const inSingapore = ({ lat, lng }) => lat > 1.15 && lat < 1.5 && lng > 103.55 && lng < 104.1;
 
 function point(text) {
   const [lat, lng] = String(text || "").split(",").map(Number);
@@ -77,7 +79,9 @@ export default async function handler(req, res) {
 
   try {
     const [graph, alerts] = await Promise.all([
-      getGraph(originOf(req)),
+      // &restricted=1: Settings' Restricted areas, riding to and through the stops behind a
+      // checkpoint (_nav/network.js).
+      getGraph(originOf(req), { open: req.query.restricted === "1" }),
       process.env.LTA_ACCOUNT_KEY ? fetchTrainAlerts(process.env.LTA_ACCOUNT_KEY).catch(() => null) : null,
     ]);
     const { options: ours, setOff } = planFor(graph, from, to, when);

@@ -177,7 +177,7 @@
 
   // ---------- sync (js/sync.js) ----------
 
-  const isPoint = (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && p.lat > 1.15 && p.lat < 1.48 && p.lng > 103.55 && p.lng < 104.1;
+  const isPoint = (p) => p && Number.isFinite(p.lat) && Number.isFinite(p.lng) && p.lat > 1.15 && p.lat < 1.5 && p.lng > 103.55 && p.lng < 104.1;
   const text = (v, max = 120) => (typeof v === 'string' ? v.slice(0, max) : '');
   const num = (v, max) => (Number.isFinite(v) && v >= 0 ? Math.min(v, max) : 0);
 

@@ -453,7 +453,9 @@ async function runNav() {
   $('#navBody').innerHTML = plannerStatus('Finding journeys by bus and train…');
   try {
     const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
-    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}${at}`, { cache: 'no-store' });
+    // Settings' Restricted areas (BusNet.setOpenAccess).
+    const open = BusNet.openAccess() ? '&restricted=1' : '';
+    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}${at}${open}`, { cache: 'no-store' });
     const data = await r.json().catch(() => ({}));
     if (token !== nav.token) return;
     if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");

@@ -109,7 +109,7 @@
   // ---------- sync (js/sync.js) ----------
 
   const pointKey = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}`;
-  const inSingapore = (p) => isPoint(p) && p.lat > 1.15 && p.lat < 1.48 && p.lng > 103.55 && p.lng < 104.1;
+  const inSingapore = (p) => isPoint(p) && p.lat > 1.15 && p.lat < 1.5 && p.lng > 103.55 && p.lng < 104.1;
   const text = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
   // For sync: Home and Work as themselves, the rest by where they are.

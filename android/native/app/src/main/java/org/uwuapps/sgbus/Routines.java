@@ -18,6 +18,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -37,6 +38,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.TreeSet;
 
 final class Routines {
     private static final String PREFS = "routines";
@@ -186,7 +188,9 @@ final class Routines {
             } catch (Exception e) {
                 body = "Couldn't get the timings just now. Tap for them.";
             }
-            String url = MainActivity.SITE + "/#" + code + (buses.size() == 1 ? "," + buses.iterator().next() : "");
+            // Opens on just the routine's buses: "#84009,174,175" (2.2.2; the site took only one
+            // before, so 2.2.1 and older linked a routine of several to the whole stop).
+            String url = MainActivity.SITE + "/#" + code + (buses.isEmpty() ? "" : "," + TextUtils.join(",", new TreeSet<>(buses)));
             NotificationCompat.Builder n = Notifications.builder(c, Notifications.ROUTINE, tag(id),
                             r.optString("name", code) + " (" + code + ")", body, url)
                     .setShowWhen(true)

@@ -64,6 +64,11 @@ At a few stops one bus calls going both ways: on a road it runs up and back,
 such as 136 at S'goon Gdn Circus (66271), or a loop service passing on its way
 out and again on its way back, such as 73 at the same stop.
 
+<figure>
+<img src="/screenshots/web/reading-both-ways.png" alt="S'goon Gdn Circus (66271) narrowed to 136 and 73: 73 listed twice, to Lor 6 Toa Payoh in blue and back to Ang Mo Kio Int in red, and 136 twice, to Ang Mo Kio Int in blue and to Punggol Int in red, each card's colour matching its bus in the incoming buses bar." width="880" height="1054" loading="lazy">
+<figcaption>136 both ways and 73 round its loop at S'goon Gdn Circus, each way in a colour of its own.</figcaption>
+</figure>
+
 - **Both ways:** the bus is listed twice, once per way. Each says where it's
   heading under its number, such as **→ Punggol Int**, in a colour of its own
   that the incoming buses bar matches. Its first and last bus, and its

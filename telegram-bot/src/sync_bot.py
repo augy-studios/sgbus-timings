@@ -122,7 +122,7 @@ def _text(v, n=80) -> str:
 def _point(p) -> bool:
     return (
         isinstance(p, dict) and isinstance(p.get("lat"), (int, float)) and isinstance(p.get("lng"), (int, float))
-        and 1.15 < p["lat"] < 1.48 and 103.55 < p["lng"] < 104.1
+        and 1.15 < p["lat"] < 1.5 and 103.55 < p["lng"] < 104.1
     )
 
 

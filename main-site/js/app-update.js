@@ -171,12 +171,63 @@
     });
   }
 
+  // ---------- the Android app, offered in Android's browsers ----------
+  // The same bar, in Chrome and the rest on Android: the app has what a browser can't do with
+  // the page closed. Download is the newest APK itself, from GitHub; "Not now" leaves it for
+  // OFFER_AGAIN_MS. The app can't be seen from a browser, so one already installed (whose
+  // links open in it anyway) is offered too, until it's waved away.
+
+  const OFFER_KEY = 'sgbus_app_offer_at';
+  const OFFER_AGAIN_MS = 30 * 86400000;
+  const GUIDE = 'https://guide.sgbus.uwuapps.org/web/android-app#download-and-install-it';
+
+  async function offerApp() {
+    if (!/Android/i.test(navigator.userAgent)) return;
+    try {
+      if (Date.now() - Number(localStorage.getItem(OFFER_KEY) || 0) < OFFER_AGAIN_MS) return;
+    } catch { /* offered every visit */ }
+    let latest;
+    try {
+      const res = await fetch('/api/app-release');
+      if (!res.ok) return;
+      latest = await res.json();
+    } catch {
+      return;
+    }
+    if (!latest?.apk || document.querySelector('.app-update-notice')) return;
+
+    const bar = document.createElement('div');
+    bar.className = 'app-update-notice';
+    bar.setAttribute('role', 'status');
+    bar.setAttribute('aria-label', 'Get the Android app');
+    bar.innerHTML = `
+      <div class="update-notice-inner">
+        <p>Get the Android app: widgets, routines and stop reminders, even with it closed. <a target="_blank" rel="noopener noreferrer">How to install</a></p>
+        <a class="btn">Download</a>
+        <button type="button" class="iconBtn">Not now</button>
+      </div>
+    `;
+    bar.querySelector('p a').href = GUIDE;
+    bar.querySelector('a.btn').href = latest.apk;
+    const done = () => {
+      try { localStorage.setItem(OFFER_KEY, String(Date.now())); } catch { /* this visit only */ }
+      bar.remove();
+    };
+    // Downloading is an answer too: not asked again while it installs.
+    bar.querySelector('a.btn').addEventListener('click', done);
+    bar.querySelector('button').addEventListener('click', done);
+    document.body.prepend(bar);
+  }
+
   // The desktop app from 2.1.1 (desktop/preload.js).
   if (window.sgbusDesktop?.releases) initReleases(desktop);
 
   if (!window.AppBridge) return;
   AppBridge.ready(5000).then((inApp) => {
-    if (!inApp) return;
+    if (!inApp) {
+      offerApp();
+      return;
+    }
     if (AppBridge.has('checkupdate')) {
       const btn = document.getElementById('appUpdateBtn');
       btn.href = CHECK_LINK;

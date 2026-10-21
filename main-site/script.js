@@ -17,6 +17,7 @@ const LS = {
     pinKey:        'sgbus_pin_prefs',
     birthdayKey:   'sgbus_birthday',
     confettiKey:   'sgbus_confetti',
+    restrictedKey: 'sgbus_restricted',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -70,6 +71,13 @@ const LS = {
     setConfetti(on) {
         if (on) localStorage.removeItem(this.confettiKey);
         else localStorage.setItem(this.confettiKey, 'off');
+    },
+    // Restricted areas: journeys through the stops behind a checkpoint, for those with a pass.
+    // Off unless turned on in Settings.
+    getRestricted() { try { return localStorage.getItem(this.restrictedKey) === 'on'; } catch { return false; } },
+    setRestricted(on) {
+        if (on) localStorage.setItem(this.restrictedKey, 'on');
+        else localStorage.removeItem(this.restrictedKey);
     },
 
     // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
@@ -162,6 +170,18 @@ function syncConfettiButtons() {
         btn.setAttribute('aria-pressed', String(on));
     });
 }
+
+// Restricted areas, in Settings: the route planner's network (js/network.js) follows it at once,
+// and Navigate asks /api/nav with it.
+function syncRestrictedButtons() {
+    BusNet.setOpenAccess(LS.getRestricted());
+    $$('[data-restricted]').forEach(btn => {
+        const on = (btn.dataset.restricted === 'on') === LS.getRestricted();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
+syncRestrictedButtons();
 
 // ----------- Helpers -----------
 function msToMins(ms) {
@@ -705,6 +725,30 @@ function stopHash() {
     return current ? `#${current.code}${current.service ? ',' + current.service : ''}` : '';
 }
 
+// The buses a stop is narrowed to, as typed after its code or in a link: one ("174"), several
+// ("174, 175" or "174 175"), or any starting with something ("22*": 22, 222, 225G...).
+// Normalised to "174,175" and "22*", or null if it isn't a list of buses.
+function busFilter(text) {
+    const parts = String(text || '').toUpperCase().split(/[\s,]+/).filter(Boolean);
+    if (!parts.length || !parts.every(p => /^[0-9A-Z]{1,4}$|^[0-9A-Z]{1,3}\*$/.test(p))) return null;
+    return [...new Set(parts)].join(',');
+}
+
+// Whether a bus is one of a filter's.
+function busFilterHas(filter, serviceNo) {
+    const no = String(serviceNo || '').toUpperCase();
+    return filter.split(',').some(p => (p.endsWith('*') ? no.startsWith(p.slice(0, -1)) : no === p));
+}
+
+// The bus a filter names, when it's just the one: what Route from here and the rest need.
+const oneBus = (filter) => (filter && /^[0-9A-Z]{1,4}$/.test(filter) ? filter : null);
+
+// "bus 174", "buses 174 and 175", "buses 22*".
+function busFilterText(filter) {
+    const parts = filter.split(',');
+    return parts.length === 1 && !parts[0].endsWith('*') ? `bus ${parts[0]}` : `buses ${listText(parts)}`;
+}
+
 async function fetchArrivals(code, service) {
     const qs = new URLSearchParams({ stop: code });
     if (service) qs.set('service', service);
@@ -726,9 +770,9 @@ function renderStopTools() {
     const parts = [];
     if (service) {
         parts.push(expanded
-            ? `<button type="button" class="iconBtn" data-tool="collapse" title="Show just this bus's timings here">${ico('bus')} Only bus ${escapeHtml(service)}</button>`
+            ? `<button type="button" class="iconBtn" data-tool="collapse" title="Show just these timings here">${ico('bus')} Only ${escapeHtml(busFilterText(service))}</button>`
             : `<button type="button" class="iconBtn" data-tool="expand" title="Show every bus at this stop">Show all services</button>`);
-        if (!expanded) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="The stops this bus goes on to from here">${ico('route')} Route from here</button>`);
+        if (!expanded && oneBus(service)) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="The stops this bus goes on to from here">${ico('route')} Route from here</button>`);
     }
     parts.push(`<button type="button" class="iconBtn" data-tool="pick" title="Pick one bus to see just its timings here">${ico('bus')} Pick a bus</button>`);
 
@@ -744,7 +788,7 @@ function renderStopTools() {
     parts.push(`<button type="button" class="iconBtn" data-tool="board" title="This stop's buses full screen, like an interchange's departure screens">${ico('clock')} Board</button>`);
     // The desktop app: this stop's (or bus's) next buses in the tray (desktop/glance.js).
     if (window.sgbusDesktop?.tray) {
-        parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="Show ${service && !expanded ? `bus ${escapeHtml(service)}'s` : "this stop's"} next buses in the tray, and stop it from the tray's menu">${ico('bell')} Tray countdown</button>`);
+        parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="Show ${oneBus(service) && !expanded ? `bus ${escapeHtml(service)}'s` : "this stop's"} next buses in the tray, and stop it from the tray's menu">${ico('bell')} Tray countdown</button>`);
     }
     // The Android app with NFC: this stop on a sticker (js/offline-share.js).
     if (window.OfflineShare?.canSticker()) {
@@ -769,7 +813,7 @@ function renderStopContext() {
     if (needsNetwork && !BusNet.isReady()) {
         BusNet.load(stopsIndex).then(() => { if (current?.ctx === ctx) renderStopContext(); }).catch(() => {});
     }
-    const note = ctx ? stopsLeftNote(ctx, code, service) : null;
+    const note = ctx ? stopsLeftNote(ctx, code, oneBus(service)) : null;
     $('#stopNote').textContent = note || '';
     $('#stopNote').hidden = !note;
     $('#stopBackLabel').textContent = backLabel(ctx);
@@ -860,7 +904,7 @@ function renderArrivals() {
     // Over every bus at the stop, so narrowing to one still tells its two ways apart.
     const { services: apart, ways } = busWays(data?.services || []);
     let svcs = [...apart].sort((a, b) => BusNet.byNumber(a.serviceNo || '', b.serviceNo || ''));
-    if (service && !expanded) svcs = svcs.filter(s => (s.serviceNo || '').toUpperCase() === service);
+    if (service && !expanded) svcs = svcs.filter(s => busFilterHas(service, s.serviceNo));
     svcs = pinFavourites(svcs, favBuses, LS.getPin('bus'), s => s.serviceNo);
 
     renderIncomingBar({ services: svcs, ways });
@@ -869,9 +913,9 @@ function renderArrivals() {
     if (!svcs.length) {
         svcWrap.innerHTML = '';
         const narrowed = service && !expanded;
-        const fl = narrowed ? firstLastText(service, code) : '';
+        const fl = narrowed && oneBus(service) ? firstLastText(service, code) : '';
         $('#emptySvc').textContent = narrowed
-            ? `No live arrivals for bus ${service} right now.${fl ? ` ${fl}.` : ''}`
+            ? `No live arrivals for ${busFilterText(service)} right now.${fl ? ` ${fl}.` : ''}`
             : 'No live buses right now.';
         $('#emptySvc').hidden = false;
         window.MakeIt?.render(code, []);
@@ -928,7 +972,7 @@ function renderArrivals() {
 async function loadStop(code, { service = null, expanded = false, ctx = null, dir = null, pushHistory = true, scroll = false } = {}) {
     if (!/^\d{5}$/.test(code)) { alert('Please enter a valid 5-digit bus stop code.'); return; }
     const seq = ++loadSeq;
-    current = { code, service: service ? String(service).toUpperCase() : null, expanded, ctx, dir };
+    current = { code, service: service ? busFilter(service) : null, expanded, ctx, dir };
     navOpen = false;
 
     $('#q').value = current.service ? `${code} ${current.service}` : code;
@@ -1353,6 +1397,7 @@ function openSettings() {
     syncPinButtons();
     syncTraySideButtons();
     syncConfettiButtons();
+    syncRestrictedButtons();
     prepareSync();
     openModal('settingsModal');
 }
@@ -1365,12 +1410,13 @@ async function runSearch() {
 
     if (isPostalCode(v)) { searchPostal(v); return; }
 
-    // A stop code, optionally followed by a bus to narrow it to: "84009 174".
+    // A stop code, optionally followed by the buses to narrow it to: "84009 174", "84009 174,
+    // 175" or "84009 22*" (busFilter).
     const stopMatch = v.match(/\b\d{5}\b/);
     if (stopMatch) {
-        const rest = v.replace(stopMatch[0], '').trim().toUpperCase();
+        const rest = v.replace(stopMatch[0], '');
         if (stopsIndex?.[stopMatch[0]]) Recents.add(Recents.stopItem(stopMatch[0]));
-        loadStop(stopMatch[0], { service: /^[0-9A-Z]{1,4}$/.test(rest) ? rest : null });
+        loadStop(stopMatch[0], { service: busFilter(rest) });
         return;
     }
 
@@ -1409,6 +1455,10 @@ $$('[data-confetti]').forEach(btn => btn.addEventListener('click', () => {
     LS.setConfetti(btn.dataset.confetti === 'on');
     syncConfettiButtons();
     birthdayConfetti();
+}));
+$$('[data-restricted]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setRestricted(btn.dataset.restricted === 'on');
+    syncRestrictedButtons();
 }));
 $('#clearBirthday').addEventListener('click', () => {
     LS.setBirthday('');
@@ -1481,7 +1531,7 @@ $('#stopTools').addEventListener('click', e => {
     } else if (tool === 'tray') {
         const btn = e.target.closest('[data-tool]');
         window.sgbusDesktop.tray.set({
-            code: current.code, name: nameOf(current.code) || '', service: current.service && !current.expanded ? current.service : null,
+            code: current.code, name: nameOf(current.code) || '', service: !current.expanded ? oneBus(current.service) : null,
         }).then(() => {
             btn.lastChild.textContent = ' In the tray';
             setTimeout(() => { if (btn.isConnected) btn.lastChild.textContent = ' Tray countdown'; }, 2500);
@@ -1632,7 +1682,8 @@ $('#favsModal').addEventListener('click', e => {
 });
 
 // ----------- URL -----------
-// "#84009" or "#84009,174" for a stop, "#bus/22" for a bus's route, "#route/84009/75009"
+// "#84009" for a stop, "#84009,174" narrowed to a bus, or to several or a wildcard
+// ("#84009,174,175", "#84009,22*": busFilter), "#bus/22" for a bus's route, "#route/84009/75009"
 // for the route planner, "#sync/BCDFGH" for another device's code to sync with,
 // "#share/<id>" for a short share link (js/share.js), "#board/84009" for a stop's departures
 // board (js/board.js),
@@ -1690,9 +1741,9 @@ function routeFromHash() {
     // Matched before decoding, so a "/" in a place's name stays inside it.
     if ((m = raw.match(NAV_HASH_RE) || hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[3], m[4])); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
-    const [hashCode, hashSvc] = hash.split(',');
+    const [hashCode, ...hashSvc] = hash.split(',');
     if (/^\d{5}$/.test(hashCode)) {
-        loadStop(hashCode, { service: hashSvc || null, pushHistory: false });
+        loadStop(hashCode, { service: busFilter(hashSvc.join(',')), pushHistory: false });
         return true;
     }
     return false;

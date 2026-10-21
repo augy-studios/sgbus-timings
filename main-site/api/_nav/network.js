@@ -148,6 +148,7 @@ function railRuns(nodes, stationNode) {
 
 // Stops behind a checkpoint, for authorised people only: no way gets on or off at these, and
 // where `through` is false, none rides through them either; a run through one is cut in two.
+// Unless Restricted areas is on (`open`, getGraph).
 // The same as RESTRICTED in js/network.js and the Telegram bot's restricted.py.
 const CARGO_AREA = { through: false }; // Changi Airport's cargo area
 const MINDEF = { through: true };
@@ -157,7 +158,9 @@ const RESTRICTED = {
   43721: MINDEF, 43719: MINDEF,
 };
 
-function busRuns(nodes, busNode, payload) {
+// `open`: Settings' Restricted areas on (?restricted=1, api/nav.js), for people with a pass,
+// so every stop is used as any other.
+function busRuns(nodes, busNode, payload, open) {
   const runs = [];
   for (const [serviceNo, dirs] of Object.entries(payload.runs || {})) {
     const info = payload.services?.[serviceNo];
@@ -172,7 +175,7 @@ function busRuns(nodes, busNode, payload) {
       // boarded at, borrows its start's. Split into the parts the public can ride.
       const parts = [[]];
       codes.forEach((c, k) => {
-        const r = RESTRICTED[c];
+        const r = open ? null : RESTRICTED[c];
         if (r) {
           if (!r.through && parts[parts.length - 1].length) parts.push([]);
           return;
@@ -203,7 +206,7 @@ function busRuns(nodes, busNode, payload) {
 const CELL_DEG = 0.003;
 const cellOf = (lat, lng) => `${Math.floor(lat / CELL_DEG)},${Math.floor(lng / CELL_DEG)}`;
 
-function buildGraph(stopsPayload, routesPayload) {
+function buildGraph(stopsPayload, routesPayload, { open = false } = {}) {
   const nodes = [];
   const busNode = new Map();
   for (const s of stopsPayload) {
@@ -216,7 +219,7 @@ function buildGraph(stopsPayload, routesPayload) {
     return nodes.length - 1;
   });
 
-  const runs = [...railRuns(nodes, stationNode), ...busRuns(nodes, busNode, routesPayload)];
+  const runs = [...railRuns(nodes, stationNode), ...busRuns(nodes, busNode, routesPayload, open)];
   const at = nodes.map(() => []);
   runs.forEach((run, r) => run.nodes.forEach((n, i) => at[n].push([r, i])));
 
@@ -299,8 +302,18 @@ const TTL_MS = 6 * 3600 * 1000;
 const RETRY_MS = 1500;
 let cached = null;
 let loading = null;
+// The graph with the restricted stops open (`open`), built from the same payloads the first
+// time someone with Restricted areas on asks, and dropped with them.
+let openGraph = null;
 
-export async function getGraph(origin) {
+export async function getGraph(origin, { open = false } = {}) {
+  const graph = await publicGraph(origin);
+  if (!open) return graph;
+  if (openGraph?.from !== graph) openGraph = { from: graph, graph: buildGraph(...graph.payloads, { open: true }) };
+  return openGraph.graph;
+}
+
+async function publicGraph(origin) {
   if (cached && Date.now() - cached.at < TTL_MS) return cached.graph;
   if (!loading) {
     loading = (async () => {
@@ -314,6 +327,7 @@ export async function getGraph(origin) {
       };
       const [stops, routes] = await Promise.all([get("/api/bus-stops"), get("/api/bus-routes")]);
       const graph = buildGraph(stops, routes);
+      graph.payloads = [stops, routes];
       cached = { graph, at: Date.now() };
       return graph;
     })()
