@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .vercel
+
+# The command line screenshots keep their own Home and routine here (cli-shots.cjs).
+screenshots/.cli-shots/

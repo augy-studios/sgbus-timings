@@ -29,6 +29,9 @@ terminal, `sudo apt install ./sg-bus-timings-2.0.2-amd64.deb`.
 **AppImage**: make it runnable (right-click > **Properties** > **Allow executing
 file as program**, or `chmod +x` it), then open it.
 
+Rather have it in a terminal, or on a server without a desktop? See
+[the command line on Linux](linux-cli.md).
+
 ## The tray
 
 Closing the window doesn't quit the app: it keeps running in the tray (the bus

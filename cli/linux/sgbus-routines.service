@@ -1,0 +1,10 @@
+# Sends the routines that are due (sgbus routine run), as desktop notifications where
+# notify-send is installed and printed to the journal otherwise. Started every minute by
+# sgbus-routines.timer: systemctl --user enable --now sgbus-routines.timer
+[Unit]
+Description=SG Bus Timings routines
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/sgbus routine run --notify

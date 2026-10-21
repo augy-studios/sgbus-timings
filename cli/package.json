@@ -1,0 +1,18 @@
+{
+  "name": "sgbus-timings-cli",
+  "version": "2.2.2",
+  "description": "SG Bus Timings in the terminal: live Singapore bus timings, routes, Navigate, favourites, routines, service alerts and the weather.",
+  "author": "UwU Apps <augybiz@gmail.com>",
+  "homepage": "https://sgbus.uwuapps.org",
+  "license": "MIT",
+  "private": true,
+  "bin": {
+    "sgbus": "sgbus.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "node build.mjs"
+  }
+}

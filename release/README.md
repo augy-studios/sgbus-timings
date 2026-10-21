@@ -16,7 +16,12 @@ release/2.0.0/
   *-mac-*.zip, latest-mac.yml              macOS       what the Mac app reads to update itself
   latest.yml, *-setup.exe.blockmap         Windows     what the desktop app reads to update itself
   latest-linux.yml                         Linux       the same, for the AppImage
+  sgbus                                    Linux CLI   node cli/build.mjs, from 2.2.2 (cli/README.md)
+  sg-bus-timings-cli-2.2.2-all.deb         Linux CLI   the same
 ```
+
+The command-line edition's two files are a few hundred KB, so they're committed with the
+APKs, and GitHub Actions also builds and attaches them.
 
 Upload the `.yml` and `.blockmap` files with the installers on every release: without them
 the desktop app can't tell there's a new version (`desktop/updater.js`).
@@ -44,8 +49,12 @@ added to it by themselves a few minutes later. They aren't kept in
 `release\<version>\`. To build the Windows ones yourself, `cd desktop; npm ci; npm run
 build:win`; the Linux ones, `desktop/LINUX-BUILD.md`.
 
+The command-line edition, on any computer with Node: `node cli/build.mjs`. It writes both its
+files into `release\<version>\`.
+
 For a new version, raise it first in both places (`android/README.md`, "Build the APK"), or
-phones with the old one won't take it as an update.
+phones with the old one won't take it as an update, and in `cli/package.json`, which has to
+match `desktop/package.json` or the CLI's build stops.
 
 ## Put it on GitHub
 
@@ -77,7 +86,8 @@ phones with the old one won't take it as an update.
    ```
 
 6. Drag in both APKs from `release\<version>\`, the phone's and the `-watch` one (the
-   desktop installers follow by themselves), into the box that says
+   desktop installers and the command line's `sgbus` and `.deb` follow by themselves), into
+   the box that says
    **Attach binaries by dropping them here or selecting them**. Wait for them all to finish
    uploading.
 7. Tick **Set as the latest release**, then **Publish release**.

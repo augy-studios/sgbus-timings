@@ -1,6 +1,6 @@
 # SG Bus Timings
 
-Real-time Singapore bus arrival timings, powered by [LTA DataMall](https://datamall.lta.gov.sg/), available as a web app, Android, Windows and Linux apps, and a Telegram bot. The web app's weather and air quality come from [Open-Meteo](https://open-meteo.com/) and NEA via [data.gov.sg](https://data.gov.sg/).
+Real-time Singapore bus arrival timings, powered by [LTA DataMall](https://datamall.lta.gov.sg/), available as a web app, Android, Windows and Linux apps, a command line for Linux, and a Telegram bot. The web app's weather and air quality come from [Open-Meteo](https://open-meteo.com/) and NEA via [data.gov.sg](https://data.gov.sg/).
 
 ## Projects
 
@@ -12,6 +12,9 @@ The web app as an Android app (`org.uwuapps.sgbus`), made with Capacitor: the li
 
 ### [Windows and Linux Apps](desktop/) — [releases](https://github.com/augy-studios/sgbus-timings/releases)
 The web app in its own window, made with Electron, with a tray icon and Service Alerts as desktop notifications. `.exe` and `.msi` for Windows, `.deb` and `.AppImage` for Linux (built on the VPS: [desktop/LINUX-BUILD.md](desktop/LINUX-BUILD.md)). See [desktop/README.md](desktop/README.md).
+
+### [Command Line for Linux](cli/) — [releases](https://github.com/augy-studios/sgbus-timings/releases)
+`sgbus`: timings, search, routes, the route planner, Navigate, favourites, routines, service alerts and the weather in the terminal, running the site's own planner and search code. One file needing only Node.js 18, or an any-architecture `.deb`, built with plain Node. See [cli/README.md](cli/README.md).
 
 ### [Telegram Bot](telegram-bot/) — [@UwUsgbus_bot](https://t.me/UwUsgbus_bot)
 "Singapore Bus Timings" — a Telegram bot for looking up live arrivals, finding nearby stops, working out which buses run between two stops, and saving favourites, right from a chat. See [telegram-bot/README.md](telegram-bot/README.md) for full details.

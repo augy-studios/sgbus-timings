@@ -1,0 +1,11 @@
+# Every minute, for SG Bus Timings' routines (sgbus-routines.service). Off until turned on:
+#   systemctl --user enable --now sgbus-routines.timer
+[Unit]
+Description=SG Bus Timings routines, every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:05
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

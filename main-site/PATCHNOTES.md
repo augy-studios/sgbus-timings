@@ -9,7 +9,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 21 October 2026 (evening): Apps 2.2.2, Larkin by bus and train, several buses at a stop, editing routines
+## 21 October 2026 (evening): Apps 2.2.2, a command line for Linux, Larkin by bus and train, several buses at a stop, editing routines
 
 ### Web app
 
@@ -28,6 +28,10 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Desktop app 2.2.2
 
 - The web app's changes above. Nothing new of its own: the same number as the Android app.
+
+### Command line for Linux 2.2.2 (new)
+
+- **sgbus** - SG Bus Timings in a terminal: a stop's timings (`sgbus 84009`, `sgbus 84009 22*`, `-w` to keep them on screen), search by name, road, station or postal code, a bus's route, the route planner, Navigate, favourites, places, routines as desktop notifications, service alerts, the weather and your calendar. It runs the web app's own route planner and search, so it finds the same journeys. A `.deb` for any architecture, or one file, needing only Node.js 18.
 
 ### Telegram bot
 

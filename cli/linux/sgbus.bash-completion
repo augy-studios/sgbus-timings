@@ -1,0 +1,21 @@
+# Bash completion for sgbus: its commands, and each one's words and options.
+_sgbus() {
+  local cur prev words cword
+  _init_completion 2>/dev/null || { cur="${COMP_WORDS[COMP_CWORD]}"; prev="${COMP_WORDS[COMP_CWORD-1]}"; cword=$COMP_CWORD; }
+  local commands="stop search near bus route nav favs fav routes navs places place routines routine alerts weather calendar settings update help version"
+  if [ "$cword" -eq 1 ]; then
+    COMPREPLY=($(compgen -W "$commands" -- "$cur"))
+    return
+  fi
+  case "${COMP_WORDS[1]}" in
+    fav) COMPREPLY=($(compgen -W "add rm bus list" -- "$cur")) ;;
+    place) COMPREPLY=($(compgen -W "set rm list home work" -- "$cur")) ;;
+    routine) COMPREPLY=($(compgen -W "add edit rm run list --days --buses --time --stop --notify" -- "$cur")) ;;
+    routes|navs) COMPREPLY=($(compgen -W "rm" -- "$cur")) ;;
+    calendar) COMPREPLY=($(compgen -W "set rm nav --from" -- "$cur")) ;;
+    settings) COMPREPLY=($(compgen -W "pin.stop pin.bus restricted top bottom on off" -- "$cur")) ;;
+    route|nav) COMPREPLY=($(compgen -W "--leave --arrive --day --save --show --way --json" -- "$cur")) ;;
+    *) COMPREPLY=($(compgen -W "--watch --details --json" -- "$cur")) ;;
+  esac
+}
+complete -F _sgbus sgbus

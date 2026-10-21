@@ -19,6 +19,7 @@ than about three taps to reach goes under Advanced.
 * [The Android app](web/android-app.md)
 * [Wear OS watches](web/wear-os.md)
 * [Windows and Linux apps](web/desktop-app.md)
+* [The command line on Linux](web/linux-cli.md)
 * [Find a bus stop](web/search.md)
 * [Live timings](web/timings.md)
 * [Bus routes](web/bus-routes.md)

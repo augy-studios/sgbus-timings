@@ -13,6 +13,9 @@
 # None of them is signed with a paid certificate: the Mac app is signed ad-hoc, so macOS says it
 # "can't be opened" the first time, and Windows SmartScreen warns before the first run
 # (desktop/README.md).
+#
+# The command-line edition for Linux (cli/, from 2.2.2) goes on the release with them, by a
+# hand run or a release: its single file `sgbus` and its .deb, checked with dpkg-deb first.
 name: Build desktop apps
 
 on:
@@ -42,6 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       build: ${{ steps.check.outputs.build }}
+      cli: ${{ steps.check.outputs.cli }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
@@ -50,6 +54,7 @@ jobs:
         run: |
           if [ -z "$RELEASE_TAG" ]; then
             echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "cli=$([ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           elif [ "$GITHUB_EVENT_NAME" = release ]; then
             # Published with every platform's update file on it already: nothing to build.
             assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
@@ -58,8 +63,10 @@ jobs:
               grep -qx "$f" <<< "$assets" || missing=true
             done
             echo "build=$missing" >> "$GITHUB_OUTPUT"
+            echo "cli=$(grep -qx sgbus <<< "$assets" && echo false || echo true)" >> "$GITHUB_OUTPUT"
           else
             echo "build=true" >> "$GITHUB_OUTPUT"
+            echo "cli=true" >> "$GITHUB_OUTPUT"
             if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
               version="${RELEASE_TAG#android-v}"
               gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --draft --target "$GITHUB_SHA" \
@@ -159,3 +166,50 @@ jobs:
           FILES: ${{ matrix.files }}
         run: |
           gh release upload "$RELEASE_TAG" $FILES --repo "$GITHUB_REPOSITORY" --clobber
+
+  # The command-line edition (cli/README.md): built with plain Node, then checked by Debian's own
+  # tools and run once before it goes anywhere.
+  cli:
+    needs: release
+    if: needs.release.outputs.cli == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build
+        run: node cli/build.mjs
+
+      - name: Check it
+        run: |
+          deb="$(ls cli/dist/sg-bus-timings-cli-*-all.deb)"
+          dpkg-deb --info "$deb"
+          dpkg-deb --contents "$deb"
+          sudo apt-get install -y "./$deb"
+          sgbus --version
+          sgbus 84009 > timings.txt
+          head -5 timings.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sg-bus-timings-cli
+          path: |
+            cli/dist/sgbus
+            cli/dist/*.deb
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add them to the release
+        if: env.RELEASE_TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" cli/dist/sgbus cli/dist/*.deb --repo "$GITHUB_REPOSITORY" --clobber
