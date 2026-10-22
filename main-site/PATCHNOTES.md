@@ -1,11 +1,42 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 21 October 2026**
+**Latest update: 23 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 23 October 2026: Apps 2.2.4, choose what the app opens on, bus distance along its route, Navigate finds more, Arm and .rpm
+
+### Web app
+
+- **Choose what the app opens on** - In Settings, **Opens on**: your first favourite stop (as before), Favourites, or Navigate. A link to a stop, a bus or a journey still opens that. It syncs like the other settings.
+- **Bus distance along its route** - A bus's distance in its timings is now how far it has to ride along its route to your stop, not a straight line, including a loop service passing your stop for the second time. Where the route isn't known, it's the straight line as before.
+- **Stops by any name in Navigate** - Bus and train finds a stop however the stop search would: Block for Blk, Jalan for Jln, and the words in any order across the stop's name and road, so `block 29 bahagia` finds Blk 29 on Jln Bahagia. Stops no longer drop off the list when stations and places fill it.
+- **Coordinates and plus codes in Navigate** - Type GPS coordinates (`1.35, 103.85`, or `1.35N 103.85E`) or a plus code, whole (`6PH57RQ8+X2`) or short (`7RQ8+X2`), at either end.
+
+### Android app 2.2.4
+
+- **Updating on Samsung phones and tablets** - When Auto Blocker stops an update, the app now says so, shows where to turn it off, and lets you try again, instead of closing.
+- The web app's changes above.
+
+### Desktop app 2.2.4
+
+- **On Arm PCs** - The Windows installer now also installs on Windows on Arm, and Linux has .deb, .rpm and AppImage for 64-bit Arm, such as a Raspberry Pi on 64-bit Raspberry Pi OS. The .msi stays for Intel and AMD PCs.
+- **An .rpm for Fedora and openSUSE** - For x64 and Arm.
+- **When an update can't download** - A notification says so, once, with a link to download it from GitHub, rather than nothing happening.
+- The web app's changes above.
+
+### Command line for Linux 2.2.4
+
+- **Plus codes and stops by any name in `sgbus nav`** - The same as Navigate's, at either end.
+
+### Telegram bot
+
+- **Coordinates and plus codes in /nav** - The same as the web app's.
 
 ---
 

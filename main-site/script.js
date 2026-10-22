@@ -19,6 +19,7 @@ const LS = {
     confettiKey:   'sgbus_confetti',
     restrictedKey: 'sgbus_restricted',
     customsKey:    'sgbus_customs',
+    startKey:      'sgbus_start',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -88,6 +89,15 @@ const LS = {
     setCustoms(v) {
         if (v === 'auto') localStorage.removeItem(this.customsKey);
         else localStorage.setItem(this.customsKey, v);
+    },
+    // What the app opens on (init, below): 'stop', the first favourite stop, unless set in
+    // Settings to 'favs' (the Favourites window) or 'nav' (Navigate).
+    getStart() {
+        try { const v = localStorage.getItem(this.startKey); return ['favs', 'nav'].includes(v) ? v : 'stop'; } catch { return 'stop'; }
+    },
+    setStart(v) {
+        if (v === 'stop') localStorage.removeItem(this.startKey);
+        else localStorage.setItem(this.startKey, v);
     },
 
     // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
@@ -198,6 +208,15 @@ syncRestrictedButtons();
 function syncCustomsButtons() {
     $$('[data-customs]').forEach(btn => {
         const on = btn.dataset.customs === LS.getCustoms();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
+
+// What the app opens on, in Settings: read once, as the page loads (init, below).
+function syncStartButtons() {
+    $$('[data-start]').forEach(btn => {
+        const on = btn.dataset.start === LS.getStart();
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
     });
@@ -951,13 +970,16 @@ function renderArrivals() {
         const mins  = msToMins(bus.eta_ms);
         const cls   = loadTextClass(bus.load);
         const haveCoords = bus.lat != null && bus.lng != null && stopLat != null && stopLng != null;
-        const dist  = haveCoords ? ` ~ ${haversine(bus.lat, bus.lng, stopLat, stopLng)}m` : '';
+        // Along its route where the route list has the distances (js/network.js), otherwise
+        // the straight line.
+        const along = haveCoords && BusNet.isReady() ? BusNet.busDistance(svcNo, code, bus) : null;
+        const dist  = haveCoords ? ` ~ ${along ?? haversine(bus.lat, bus.lng, stopLat, stopLng)}m` : '';
         const maybei  = bus.rough ? '<i>' : '';
         const maybei2 = bus.rough ? '</i>' : '';
         const wheelchair = bus.wheelchair ? wheelchairBadge : '';
         const deck  = `<span class="badge">${escapeHtml(bus.deck || '')}</span>`;
         const distBadge = haveCoords
-            ? `<span class="badge badge-dist">${dist}</span>`
+            ? `<span class="badge badge-dist" title="${along != null ? 'Along its route' : 'In a straight line'}">${dist}</span>`
             : `<span class="badge badge-dist badge-dist-na">~ &#8734;m</span>`;
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         // Gone before you could walk here (js/make-it.js): greyed.
@@ -1419,6 +1441,7 @@ function openSettings() {
     syncConfettiButtons();
     syncRestrictedButtons();
     syncCustomsButtons();
+    syncStartButtons();
     prepareSync();
     openModal('settingsModal');
 }
@@ -1484,6 +1507,10 @@ $$('[data-restricted]').forEach(btn => btn.addEventListener('click', () => {
 $$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
     LS.setCustoms(btn.dataset.customs);
     syncCustomsButtons();
+}));
+$$('[data-start]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setStart(btn.dataset.start);
+    syncStartButtons();
 }));
 $('#clearBirthday').addEventListener('click', () => {
     LS.setBirthday('');
@@ -1814,7 +1841,24 @@ function routeFromShare() {
         })
         .catch(() => {});
 
-    if (!routeFromShare() && !routeFromHash() && LS.getFavs()[0]) {
+    // A link that opens over the page (#sync, #alerts) still has the first favourite stop
+    // behind it, whatever Settings says to open on.
+    const linked = location.hash.length > 1;
+    if (!routeFromShare() && !routeFromHash()) openStartPage(linked ? 'stop' : LS.getStart());
+})();
+
+// What the app opens on when its link has nothing else to show, from Settings' Opens on: the
+// first favourite stop, the Favourites window or Navigate (on the tab used last, as the Edge
+// Tray's button opens it, js/nav.js). With no favourites to show, nothing: the search box.
+function openStartPage(start) {
+    const anyFavs = LS.getFavs().length || LS.getFavBuses().length || LS.getFavRoutes().length || LS.getFavNavs().length;
+    if (start === 'nav') {
+        if (lastNavMode() === 'bus') openPlanner();
+        else openNav();
+    } else if (start === 'favs' && anyFavs) {
+        renderFavs();
+        openModal('favsModal');
+    } else if (start === 'stop' && LS.getFavs()[0]) {
         loadStop(LS.getFavs()[0].code, { pushHistory: false });
     }
-})();
+}

@@ -11,9 +11,12 @@
 //
 // The notifications it shows unasked ("2.1.1 is out", "2.1.1 is ready") can be turned off with
 // "New versions of the app" in the site's Service alerts (main.js, settings.json's
-// updateNotices, 2.1.1). The tray's menu and the title bar's button still offer the update.
+// updateNotices, 2.1.1). The tray's menu and the title bar's button still offer the update. So
+// can the one said when a new version was found but didn't download: "Couldn't download SG Bus
+// Timings 2.2.4", once per version; a check that fails (offline, say) stays quiet unless asked.
 //
-// It reads latest.yml (Windows), latest-mac.yml (macOS) or latest-linux.yml (Linux), which the
+// It reads latest.yml (Windows, one installer for x64 and Arm), latest-mac.yml (macOS),
+// latest-linux.yml or latest-linux-arm64.yml (Linux, by the processor), which the
 // build writes beside the installers, from the newest GitHub release: releases/latest/download/
 // always points at it, whatever its tag (they're android-v<version>, shared with the Android
 // app). Each lists the version, the installer's file name and its SHA-512, which is checked
@@ -55,6 +58,8 @@ let notices = () => true; // whether to say so unasked (main.js)
 let notifiedFor = null;
 let asked = false; // this check was asked for from the tray, so its answer is shown whatever it is
 let install = false;
+let downloading = null; // the version downloading in the background, until it's ready or fails
+let failedFor = null; // the version "couldn't download" was said for: once each, as "is out" is
 
 const mac = process.platform === 'darwin';
 // The running SG Bus Timings.app: the executable is in its Contents/MacOS.
@@ -141,6 +146,16 @@ function restartToUpdate() {
   autoUpdater.quitAndInstall(true, true);
 }
 
+// A new version was found but didn't download (or, on a Mac, wouldn't unzip): the next check
+// tries again. Said once per version, unless "New versions of the app" is off, as the other
+// unasked notifications are; clicking it gets the installer from GitHub instead.
+function downloadFailed(version) {
+  downloading = null;
+  if (failedFor === version || !notices()) return;
+  failedFor = version;
+  notify(`Couldn't download SG Bus Timings ${version}`, 'It tries again within the hour, or click to download it from GitHub.', () => shell.openExternal(RELEASES));
+}
+
 // changed: called whenever there's something new for the tray's menu and the title bar.
 // wanted: whether "New versions of the app" is on, for the notifications it shows unasked.
 function start(changed, { wanted } = {}) {
@@ -165,6 +180,8 @@ function start(changed, { wanted } = {}) {
 
   autoUpdater.on('update-available', (info) => {
     state.available = info.version;
+    // autoDownload: it's downloading now (again, at each check, if it failed before).
+    if (install) downloading = info.version;
     onChange();
     // Asked from the tray: what's happening with it, even if it was said before.
     if (asked && install) {
@@ -183,17 +200,26 @@ function start(changed, { wanted } = {}) {
         macStaged = await stageMac(info.downloadedFile);
       } catch (err) {
         console.warn('update unzip failed:', err?.message || err);
+        // Downloaded but can't be used: as good as not downloaded. The next check unzips it again.
+        downloadFailed(info.version);
         return;
       }
     }
+    downloading = null;
     state.ready = info.version;
     onChange();
     if (notifiedFor === info.version || !notices()) return;
     notifiedFor = info.version;
     notify(`SG Bus Timings ${info.version} is ready`, 'Click to restart and update. Otherwise it updates the next time you quit.', restartToUpdate);
   });
-  // Offline, GitHub down, or no latest.yml on the release: the next check tries again.
-  autoUpdater.on('error', (err) => console.warn('update check failed:', err?.message || err));
+  // A check that failed (offline, GitHub down, no latest.yml on the release): the next check
+  // tries again, and only a check asked for from the tray says so (check). A download that
+  // failed, once a new version was found: said once, as it otherwise just never arrives. A check
+  // running meanwhile has errors of its own, so only one outside a check is the download's.
+  autoUpdater.on('error', (err) => {
+    console.warn('update failed:', err?.message || err);
+    if (downloading && !state.checking) downloadFailed(downloading);
+  });
   autoUpdater.on('update-not-available', () => {
     if (asked) notify("You're up to date", `SG Bus Timings ${app.getVersion()} is the newest version.`, () => {});
   });
@@ -209,7 +235,10 @@ async function check() {
   state.checking = true;
   onChange();
   try {
-    await autoUpdater.checkForUpdates();
+    const result = await autoUpdater.checkForUpdates();
+    // The background download's failure reaches the 'error' handler above; caught here too, so
+    // it isn't also an unhandled rejection in the main process.
+    result?.downloadPromise?.catch(() => {});
   } catch (err) {
     if (asked) notify("Couldn't check for updates", 'Check your connection and try again.', () => {});
   } finally {

@@ -7,10 +7,12 @@ only needs building again for its own parts. It shares the Android app's version
 
 | Installer | For | Built on |
 |---|---|---|
-| `sg-bus-timings-<version>-setup.exe` | Windows 10 and 11: a normal installer that asks where to install | GitHub Actions, or Windows (`npm run build:win`) |
-| `sg-bus-timings-<version>.msi` | Windows, for installing with Group Policy or `msiexec` | GitHub Actions, or Windows (`npm run build:win`) |
-| `sg-bus-timings-<version>-amd64.deb` | Debian, Ubuntu, Mint and the like | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
-| `sg-bus-timings-<version>-x86_64.AppImage` | Any 64-bit Linux, without installing | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-setup.exe` | Windows 10 and 11: a normal installer that asks where to install, on an Intel or AMD PC or an Arm one (one installer carries both, and installs the right one) | GitHub Actions, or Windows (`npm run build:win`) |
+| `sg-bus-timings-<version>.msi` | Windows on Intel or AMD (x64), for installing with Group Policy or `msiexec`. Not for Arm: electron-builder can't make an Arm `.msi` | GitHub Actions, or Windows (`npm run build:win`) |
+| `sg-bus-timings-<version>-amd64.deb` | Debian, Ubuntu, Mint and the like; also from an apt repository (`LINUX-BUILD.md`) | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-arm64.deb` | The same on 64-bit Arm: Raspberry Pi OS (64-bit), Arm laptops | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-x86_64.rpm`, `-aarch64.rpm` | Fedora, openSUSE, RHEL and the like, x64 and Arm | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
+| `sg-bus-timings-<version>-x86_64.AppImage`, `-arm64.AppImage` | Any 64-bit Linux, without installing, x64 and Arm | GitHub Actions, or Linux (`LINUX-BUILD.md`) |
 | `sg-bus-timings-<version>-mac-arm64.dmg` | Macs with Apple silicon (M1 and later) | GitHub Actions |
 | `sg-bus-timings-<version>-mac-x64.dmg` | Macs with an Intel processor | GitHub Actions |
 
@@ -50,14 +52,19 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   code). The departures board (`#board/<code>`) goes full screen through the page's own
   fullscreen, which `main.js` already handles.
 - **Updates itself** (`updater.js`): reads `latest.yml` / `latest-mac.yml` / `latest-linux.yml`
-  from the newest GitHub release, 30 seconds after it starts, then every hour (from 2.1.1;
-  every six hours before) and 20 seconds after the computer wakes. The `.exe`, the AppImage
-  and the Mac app download and install with a restart; the `.msi` and `.deb` only say there's
-  a new version. Upload the `.yml` files, the Mac `.zip`s and the `.blockmap`s with the
-  installers on every release (the workflow does).
+  (`latest-linux-arm64.yml` on Arm Linux) from the newest GitHub release, 30 seconds after it
+  starts, then every hour (from 2.1.1; every six hours before) and 20 seconds after the
+  computer wakes. The `.exe`, the AppImage and the Mac app download and install with a
+  restart; the `.msi`, `.deb` and `.rpm` only say there's a new version (a `.deb` from the apt
+  repository updates with `apt upgrade`, `LINUX-BUILD.md`). If a new version is found but
+  doesn't download (or a Mac's won't unzip), a notification says "Couldn't download SG Bus
+  Timings 2.2.4", once per version, and clicking it opens the release page; the next check
+  tries again. A check that fails, offline say, stays quiet unless it was asked for from the
+  tray. Upload the `.yml` files, the Mac `.zip`s and the `.blockmap`s with the installers on
+  every release (the workflow does).
 - **New versions as notifications** (2.1.1): "SG Bus Timings 2.1.1 is out" (or "is ready",
-  once downloaded), unless **New versions of the app** is turned off in the site's Service
-  alerts (`main-site/js/app-update.js`, through `preload.js`'s `sgbusDesktop.releases`, kept
+  once downloaded, or "Couldn't download"), unless **New versions of the app** is turned off
+  in the site's Service alerts (`main-site/js/app-update.js`, through `preload.js`'s `sgbusDesktop.releases`, kept
   as `updateNotices` in `settings.json`). It looks for itself rather than being told, as
   Electron has no Web Push or FCM for the GitHub webhook the Android app hears from
   (`main-site/api/push/release.js`). The tray's menu and the title bar's button offer the
@@ -112,7 +119,9 @@ npm run build:win
 ```
 
 The `.exe` and `.msi` land in `desktop\dist\`; copy them to `release\<version>\` beside the
-APK. For Linux, see `LINUX-BUILD.md`. For macOS, see below.
+APK. The `.exe` holds the app for both x64 and Arm (`nsis:x64 nsis:arm64` in `build:win`),
+so it's about twice the size of an x64-only one, under the same name, and `latest.yml` still
+lists the one file. For Linux, see `LINUX-BUILD.md`. For macOS, see below.
 
 The installers aren't code-signed, so Windows SmartScreen says "Windows protected your PC"
 the first time: **More info** > **Run anyway**. A code-signing certificate would remove that.

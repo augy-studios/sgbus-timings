@@ -39,7 +39,7 @@ from there.
 | **Wear OS** (2.1.0): favourite stops handed to the watch app over the Wearable Data Layer | `WearSync`, and the watch app in `native/wear/` (its README) | `script.js` (`shareFavsWithWidgets`) |
 | **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
 | **Opening MyICA Mobile** (2.2.1), from a trip to a checkpoint, for its immigration QR code | `OpenAppActivity` (`myica`), the `myica` feature | `js/trip.js` ("MyICA"), `js/network.js` (`ICA_CHECKPOINTS`) |
-| **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates" | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
+| **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates". On a Samsung device (Android 14 and later), an update that doesn't install is put down to Auto Blocker, with how to turn it off and a button to Security settings, as nothing public says whether it's on | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
 | **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |
 
 `SgBusPlugin` also tells the page what this build can do (`info`, with `features`), posts
@@ -147,6 +147,12 @@ current steps; they were still settling in October 2026.
 Copy the APK to the phone and open it. Android asks to allow installing apps from wherever it
 was opened (Files, Chrome, Telegram); allow it once. A copy of `org.uwuapps.sgbus` signed with
 another key, say from PWABuilder, has to be uninstalled first.
+
+On a Samsung phone or tablet with Auto Blocker on (One UI 6 and later; on by default on newer
+ones), only apps from the Play Store or Galaxy Store install, whatever "Install unknown apps"
+says, and that goes for the app's own updates too. Turn it off in **Settings** > **Security and
+privacy** > **Auto Blocker** to install or update, then back on, or let "Turn on automatically"
+do it after 30 minutes where One UI has it.
 
 ## Changing it
 

@@ -10,7 +10,9 @@
 // piece with its words swapped for their other forms, `words` whether they match it word by
 // word, and `note` the line saying which forms were searched, from the ones the stops it's
 // given actually have. The same as GROUPS and Matcher in the Telegram bot's contractions.py.
-// Plain script: this project does not use ES modules, so it goes on window.
+// Plain script: this project does not use ES modules, so it goes on the global object, which
+// is window in the browser and in the CLI's sandbox. /api/places imports it as it is, for
+// Navigate's stops (api/_lib/stop-search.js), where there's no window.
 (function () {
   const GROUPS = [
     ["Woodlands", "W'lands"], ["Serangoon", "S'goon"], ["Singapore", "S'pore"],
@@ -121,5 +123,5 @@
     };
   }
 
-  window.Contractions = { matcher };
+  globalThis.Contractions = { matcher };
 })();

@@ -179,6 +179,8 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
         const data = await r.json().catch(() => null);
         if (mine !== token) return;
         if (link && !r.ok) return note(data?.error || "Couldn't read that Google Maps link. Please try again.");
+        // Coordinates or a plus code outside Singapore: say so rather than show an empty list.
+        if (r.status === 422 && data?.error) return note(data.error);
         const places = r.ok && Array.isArray(data) ? data : [];
         if (link && places.length === 1) {
           box.hidden = true;

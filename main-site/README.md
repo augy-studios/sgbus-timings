@@ -9,7 +9,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Up to 3 upcoming buses shown per service, with the operator
 - Load status indicators: **SEA** (Seats Available), **SDA** (Standing Available), **LSD** (Limited Standing)
 - Wheelchair accessibility (WAB) and bus type (single, double or bendy) badges
-- Estimated distance from the stop to each incoming bus
+- Estimated distance of each incoming bus along its route to the stop (the straight line where that isn't known)
 - Today's first and last bus for each service at the stop
 - **Pick a bus** to narrow the timings to one service (even one not running right now), and **Show all services** to widen them back out
 - **Directions** to the stop in Google Maps or Citymapper
@@ -66,7 +66,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - A disruptions bar along the top, under the update bar, only while a train line is disrupted or delayed; checked every two minutes while the site is on screen, with **Details** for the card and **Hide** until the disruption changes
 
 ### Navigate
-- **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops, Google Maps links or your location, at either end
+- **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops (by LTA's short forms too, as the stop search), Google Maps links, GPS coordinates (`1.35, 103.85`), plus codes (`6PH57RQ8+X2`, or `7RQ8+X2` in Singapore) or your location, at either end
 - A Google Maps link, full or short (`maps.app.goo.gl`), is read by `/api/places` (`api/_lib/gmaps.js`) for the place it points at: its pin where the link has one, otherwise its address looked up on OneMap. Things shared into the installed app (the manifest's `share_target`, `/?text=...&url=...`) go into **To**
 - Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
 - Open one part by part, with live timings for every bus ride; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. The Bus only tab has the same **Share**

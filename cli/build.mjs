@@ -8,7 +8,9 @@
 //
 // Both are copied to release/<version>/ beside the apps of the same version. The .deb is
 // written here, an ar archive of two gzipped tarballs as dpkg-deb makes them, so it builds on
-// any computer with Node, Windows included, and in GitHub Actions.
+// any computer with Node, Windows included, and in GitHub Actions. With what Debian's policy
+// asks of a package beside the files: md5sums, the changelog and the copyright.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -96,14 +98,29 @@ Copyright: UwU Apps
 License: MIT
  ${fs.readFileSync(path.join(root, 'LICENSE'), 'utf8').replace(/\r\n/g, '\n').trim().split('\n').map((l) => l.trim() || '.').join('\n ')}
 `;
+// Debian policy's changelog (12.7): one entry, for this version, pointing at its release notes.
+// gzipped as gzip -9n would (zlib keeps no file name or time), dated as the build.
+const changelog = `sgbus-timings-cli (${version}) stable; urgency=medium
+
+  * SG Bus Timings ${version}. What's new is in its release notes:
+    https://github.com/augy-studios/sgbus-timings/releases/tag/android-v${version}
+
+ -- UwU Apps <augybiz@gmail.com>  ${new Date(now * 1000).toUTCString().replace('GMT', '+0000')}
+`;
 const data = {
   './usr/bin/sgbus': { body: Buffer.from(bundled), mode: 0o755 },
   './usr/lib/systemd/user/sgbus-routines.service': { body: read('linux/sgbus-routines.service'), mode: 0o644 },
   './usr/lib/systemd/user/sgbus-routines.timer': { body: read('linux/sgbus-routines.timer'), mode: 0o644 },
   './usr/share/bash-completion/completions/sgbus': { body: read('linux/sgbus.bash-completion'), mode: 0o644 },
   './usr/share/doc/sgbus-timings-cli/README.md': { body: read('README.md'), mode: 0o644 },
+  './usr/share/doc/sgbus-timings-cli/changelog.Debian.gz': { body: zlib.gzipSync(changelog, { level: 9 }), mode: 0o644 },
   './usr/share/doc/sgbus-timings-cli/copyright': { body: Buffer.from(copyright), mode: 0o644 },
 };
+// Each installed file's MD5, as dpkg-deb's builders write it, for debsums and dpkg --verify.
+const md5sums = Object.entries(data)
+  .sort(([a], [b]) => (a < b ? -1 : 1))
+  .map(([p, { body }]) => `${crypto.createHash('md5').update(body).digest('hex')}  ${p.slice(2)}\n`)
+  .join('');
 const installedKb = Math.ceil(Object.values(data).reduce((sum, f) => sum + f.body.length, 0) / 1024);
 const control = `Package: sgbus-timings-cli
 Version: ${version}
@@ -122,7 +139,10 @@ Description: Live Singapore bus timings in the terminal
 `;
 const deb = ar([
   ['debian-binary', Buffer.from('2.0\n')],
-  ['control.tar.gz', tarball({ './control': { body: Buffer.from(control), mode: 0o644 } })],
+  ['control.tar.gz', tarball({
+    './control': { body: Buffer.from(control), mode: 0o644 },
+    './md5sums': { body: Buffer.from(md5sums), mode: 0o644 },
+  })],
   ['data.tar.gz', tarball(data)],
 ]);
 const debName = `sg-bus-timings-cli-${version}-all.deb`;

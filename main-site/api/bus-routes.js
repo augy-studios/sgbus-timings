@@ -66,14 +66,24 @@ export default async function handler(req, res) {
         }
 
         // One row per stop per run, the earliest in the sequence where LTA lists a stop
-        // twice, the same as the Telegram bot keeps them.
+        // twice, the same as the Telegram bot keeps them. The next listing is kept aside
+        // (`second`) for its distance alone: a loop passing a stop again on its way back.
         const best = new Map();
+        const second = new Map();
         for (const r of routeRows) {
             if (!r.ServiceNo || !r.BusStopCode || r.Direction == null || r.StopSequence == null) continue;
             const key = `${r.ServiceNo}|${r.Direction}|${r.BusStopCode}`;
             const prev = best.get(key);
-            if (!prev || r.StopSequence < prev.StopSequence) best.set(key, r);
+            const next = second.get(key);
+            if (!prev || r.StopSequence < prev.StopSequence) {
+                best.set(key, r);
+                if (prev) second.set(key, prev);
+            } else if (r.StopSequence > prev.StopSequence && (!next || r.StopSequence < next.StopSequence)) {
+                second.set(key, r);
+            }
         }
+        // LTA's Distance: km along the route from its first stop.
+        const km = r => (r.Distance != null && r.Distance !== "" && Number.isFinite(Number(r.Distance)) ? Number(r.Distance) : null);
 
         const grouped = {};
         for (const r of best.values()) {
@@ -85,6 +95,12 @@ export default async function handler(req, res) {
             runs[serviceNo] = {};
             for (const [dir, rows] of Object.entries(dirs)) {
                 rows.sort((a, b) => a.StopSequence - b.StopSequence);
+                // Stops listed again later in the run: code -> its km that time round.
+                const again = {};
+                for (const r of rows) {
+                    const later = second.get(`${serviceNo}|${dir}|${r.BusStopCode}`);
+                    if (later && km(later) != null) again[r.BusStopCode] = km(later);
+                }
                 runs[serviceNo][dir] = {
                     stops: rows.map(r => r.BusStopCode),
                     // Weekday, Saturday and Sunday first and last bus, 24 characters.
@@ -93,6 +109,10 @@ export default async function handler(req, res) {
                             .map(hhmm)
                             .join("")
                     ),
+                    // Km from the run's first stop to each stop, or null where LTA has none: how
+                    // far a live bus has to come along the route (js/network.js, busDistance).
+                    dist: rows.map(km),
+                    ...(Object.keys(again).length && { again }),
                 };
             }
         }

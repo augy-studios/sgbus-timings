@@ -13,8 +13,9 @@ const LINK_RE = /(?:https?:\/\/)?(?:maps\.app\.goo\.gl\/|goo\.gl\/maps\/|(?:www\
 const GOOGLE_HOST_RE = /^(?:maps\.app\.goo\.gl|goo\.gl|(?:www\.|maps\.|consent\.)?google\.[a-z]{2,3}(?:\.[a-z]{2})?)$/i;
 const MAX_HOPS = 5;
 const LATLNG_RE = /^\s*(?:loc:\s*)?(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/;
-// Singapore with a margin: the nav plans nowhere else.
-const inSingapore = (lat, lng) => lat > 1.1 && lat < 1.5 && lng > 103.55 && lng < 104.15;
+// Singapore with a margin: the nav plans nowhere else. Typed coordinates and plus codes are
+// held to it too (points.js).
+export const inSingapore = (lat, lng) => lat > 1.1 && lat < 1.5 && lng > 103.55 && lng < 104.15;
 
 export class MapsLinkError extends Error {}
 
