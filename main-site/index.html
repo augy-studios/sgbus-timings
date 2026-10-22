@@ -558,6 +558,14 @@
             <p class="modal-section-label">Calendar</p>
             <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> Calendar settings</button>
             <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
+            <!-- What the app opens on, when its link has nothing else to show (init in script.js) -->
+            <p class="modal-section-label">Opens on</p>
+            <div class="mode-toggle">
+                <button class="mode-btn mode-btn-wide" type="button" data-start="stop" aria-pressed="false">Your first favourite stop</button>
+                <button class="mode-btn" type="button" data-start="favs" aria-pressed="false">Favourites</button>
+                <button class="mode-btn" type="button" data-start="nav" aria-pressed="false">Navigate</button>
+            </div>
+            <p class="mode-note">What you see each time you open the app. A link to a stop, a bus or a journey still opens that. With no favourites saved, it opens on the search box, unless it&rsquo;s Navigate.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>
             <div class="mode-toggle" data-pin-kind="bus">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>

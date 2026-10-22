@@ -7,7 +7,9 @@
   const ENDPOINT = "/api/bus-routes";
 
   let services = {}; // "22" -> { op, cat, loop, dirs: { 1: [originCode, destCode] } }
-  let runs = {}; // "22" -> { 1: { stops: [codes], times: [24-char strings] } }
+  // "22" -> { 1: { stops: [codes], times: [24-char strings], dist: [km], again: { code: km } } },
+  // `dist` and `again` only from a copy of /api/bus-routes made since they were added.
+  let runs = {};
   let atStop = {}; // stop code -> Set of service numbers
   let stops = {}; // the stops index from script.js: code -> { n, road, lat, lng }
   let loading = null;
@@ -443,6 +445,88 @@
     return null;
   }
 
+  // ---- How far a live bus has to come, along its route ----
+
+  // As in js/trip.js: near enough the straight line between two stops to be on that stretch,
+  // with room on a long one for the road to bend away from it.
+  const ON_ROUTE_M = 250;
+  const BEND_SHARE = 0.3;
+  // Where the road comes back along itself (a loop out and back on either side of one road), a
+  // later stretch has to be this much nearer to win, as in js/trip.js.
+  const LATER_BY_M = 15;
+
+  // A run as the bus rides it, [code, km] per stop, with a stop it passes twice in it twice
+  // (`again`), where its km puts it. Null from a copy of the routes without the distances.
+  function rideOf(run) {
+    const dist = run?.dist;
+    if (!Array.isArray(dist) || dist.length !== run.stops.length) return null;
+    const ride = run.stops.map((code, i) => [code, dist[i]]);
+    for (const [code, km] of Object.entries(run.again || {})) {
+      const at = ride.findIndex(([, k]) => k != null && k > km);
+      ride.splice(at === -1 ? ride.length : at, 0, [code, km]);
+    }
+    return ride;
+  }
+
+  // How far a bus at `here` ([lat, lng]) has still to ride to the `target`-th stop of `ride`
+  // ([code, km] per stop, in order), in metres: the stretch between two stops it's on, how far
+  // along that it's got, then LTA's distances on to the stop, and never less than the straight
+  // line. `coordOf(code)` is a stop's [lat, lng]. Null where it can't say: a stop without a place
+  // or a distance, a bus off the route, or one already past the stop. Pure, for the checks.
+  function metresAlong(ride, coordOf, target, here) {
+    if (!ride || !(target >= 0 && target < ride.length) || !here) return null;
+    const goal = coordOf(ride[target][0]);
+    if (!goal) return null;
+    const kx = 111320 * Math.cos((here[0] * Math.PI) / 180);
+    const ky = 110540;
+    let best = null;
+    // Up to the stretch after the stop, so a bus that's passed it is seen to have.
+    for (let i = 0; i < Math.min(target + 1, ride.length - 1); i++) {
+      const a = coordOf(ride[i][0]);
+      const b = coordOf(ride[i + 1][0]);
+      if (!a || !b) continue;
+      const ax = a[1] * kx, ay = a[0] * ky;
+      const dx = b[1] * kx - ax, dy = b[0] * ky - ay;
+      const px = here[1] * kx - ax, py = here[0] * ky - ay;
+      const len2 = dx * dx + dy * dy;
+      const raw = len2 ? (px * dx + py * dy) / len2 : 0;
+      const t = Math.max(0, Math.min(1, raw));
+      const off = Math.hypot(px - t * dx, py - t * dy);
+      if (off > Math.max(ON_ROUTE_M, BEND_SHARE * Math.sqrt(len2))) continue;
+      if (!best || off < best.off - (best.off <= ON_ROUTE_M ? LATER_BY_M : 0)) best = { i, t, off, before: raw < 0 };
+    }
+    if (!best || best.i >= target) return null;
+    const km = (j) => ride[j][1];
+    if (km(best.i) == null || km(best.i + 1) == null || km(target) == null) return null;
+    const done = (km(best.i) + best.t * (km(best.i + 1) - km(best.i))) * 1000;
+    // Short of the stretch's first stop, as a bus still in its interchange is: the way to it too.
+    const left = km(target) * 1000 - done + (best.before ? best.off : 0);
+    if (!(left >= 0)) return null;
+    return Math.round(Math.max(left, haversine(here, goal)));
+  }
+
+  const coordOf = (code) => (stops[code]?.lat != null && stops[code]?.lng != null ? [stops[code].lat, stops[code].lng] : null);
+
+  // How far a live bus (from /api/bus-arrivals: lat, lng, dest, visit) has still to ride to a
+  // stop along its route, in metres, or null for the straight line instead (script.js). The run
+  // is the one that calls at the stop, the `visit`-th time on a run passing it twice, and that
+  // goes on to where the bus is heading; on a stop with both ways, the bus's dest decides.
+  function busDistance(serviceNo, code, bus) {
+    if (!ready || bus?.lat == null || bus?.lng == null || !coordOf(code)) return null;
+    const visit = bus.visit === 2 ? 2 : 1;
+    const picks = [];
+    for (const dir of directions(serviceNo)) {
+      const ride = rideOf(runs[serviceNo][dir]);
+      if (!ride) continue;
+      const target = ride.map(([c], i) => (c === code ? i : -1)).filter((i) => i !== -1)[visit - 1];
+      if (target == null) continue;
+      picks.push({ ride, target, heading: bus.dest != null && ride.some(([c], i) => i > target && c === bus.dest) });
+    }
+    const heading = picks.filter((p) => p.heading);
+    const pick = heading.length === 1 ? heading[0] : picks.length === 1 ? picks[0] : null;
+    return pick ? metresAlong(pick.ride, coordOf, pick.target, [bus.lat, bus.lng]) : null;
+  }
+
   window.BusNet = {
     load,
     isReady: () => ready,
@@ -461,6 +545,9 @@
     firstLast,
     lastBuses,
     stopsTo,
+    busDistance,
+    metresAlong,
+    rideOf,
     restricted,
     setOpenAccess,
     openAccess: () => openAccess,

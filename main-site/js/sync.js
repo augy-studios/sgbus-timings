@@ -148,6 +148,11 @@ const SYNC_SETTINGS = {
     text: (v) => (v === 'auto' ? 'By the time' : v === '60' ? '1 hr' : `${v} min`),
     get: () => LS.getCustoms(), set: (v) => tap(`[data-customs="${v}"]`),
   },
+  start: {
+    label: 'Opens on', values: ['stop', 'favs', 'nav'], start: 'stop',
+    text: (v) => ({ stop: 'Your first favourite stop', favs: 'Favourites', nav: 'Navigate' })[v] || v,
+    get: () => LS.getStart(), set: (v) => tap(`[data-start="${v}"]`),
+  },
   'nav.mode': {
     label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',
     text: (v) => (v === 'bus' ? 'Bus only' : 'Bus and train'),
