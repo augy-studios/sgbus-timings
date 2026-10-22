@@ -16,6 +16,14 @@
 #
 # The command-line edition for Linux (cli/, from 2.2.2) is built and checked with dpkg-deb on
 # every run, and goes on the release with them: its single file `sgbus` and its .deb.
+#
+# Windows' .exe is one installer for both x64 and Arm (it installs whichever the PC is); the
+# .msi is x64 only, as electron-builder's WiX can't make an Arm one. Linux's .deb, .rpm and
+# .AppImage are each built for x64 and arm64, the Arm ones cross-built on the same x64 machine.
+#
+# With the APT_SIGNING_KEY secret set (desktop/LINUX-BUILD.md, "An apt repository"), the newest
+# published release's .deb files also go into a signed apt repository on GitHub Pages, so
+# `apt upgrade` brings each new version. Without the secret that job is skipped.
 name: Build desktop apps
 
 on:
@@ -46,12 +54,22 @@ jobs:
     outputs:
       build: ${{ steps.check.outputs.build }}
       cli: ${{ steps.check.outputs.cli }}
+      apt: ${{ steps.check.outputs.apt }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - id: check
+        env:
+          # Only whether it's set: a job's `if` can't read secrets.
+          APT_KEY_SET: ${{ secrets.APT_SIGNING_KEY != '' }}
         run: |
+          # The apt repository, for a release, once its signing key is a secret.
+          if [ -n "$RELEASE_TAG" ] && [ "$APT_KEY_SET" = true ]; then
+            echo "apt=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "apt=false" >> "$GITHUB_OUTPUT"
+          fi
           if [ -z "$RELEASE_TAG" ]; then
             echo "build=true" >> "$GITHUB_OUTPUT"
             # The command line too, a minute's build checked with dpkg-deb, so a push tests it.
@@ -60,7 +78,7 @@ jobs:
             # Published with every platform's update file on it already: nothing to build.
             assets="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
             missing=false
-            for f in latest.yml latest-mac.yml latest-linux.yml; do
+            for f in latest.yml latest-mac.yml latest-linux.yml latest-linux-arm64.yml; do
               grep -qx "$f" <<< "$assets" || missing=true
             done
             echo "build=$missing" >> "$GITHUB_OUTPUT"
@@ -95,7 +113,8 @@ jobs:
           - os: windows-latest
             name: windows
             build: npm run build:win
-            # latest.yml and the .exe's blockmap: the .exe's own updates.
+            # latest.yml and the .exe's blockmap: the .exe's own updates. The .exe carries the
+            # app for x64 and for Arm, so one file, under its old name, updates both.
             files: |
               dist/*-setup.exe
               dist/*.msi
@@ -104,11 +123,15 @@ jobs:
           - os: ubuntu-latest
             name: linux
             build: npm run build:linux
-            # latest-linux.yml: the AppImage's updates.
+            # latest-linux.yml and latest-linux-arm64.yml: the AppImages' updates, x64 and Arm.
+            # Cross-built here rather than on an Arm runner: the app has no native modules, so
+            # packaging it for Arm runs nothing on Arm, and one job writes both .yml files.
             files: |
               dist/*.deb
+              dist/*.rpm
               dist/*.AppImage
               dist/latest-linux.yml
+              dist/latest-linux-arm64.yml
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
@@ -133,6 +156,13 @@ jobs:
           cache-dependency-path: desktop/package-lock.json
 
       - run: npm ci
+
+      # The .rpm needs rpmbuild, which electron-builder's fpm calls.
+      - name: Install rpm
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
 
       - name: Build
         run: ${{ matrix.build }}
@@ -214,3 +244,116 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "$RELEASE_TAG" cli/dist/sgbus cli/dist/*.deb --repo "$GITHUB_REPOSITORY" --clobber
+
+  # The apt repository (desktop/LINUX-BUILD.md, "An apt repository"): the newest published
+  # release's .deb files, the app's for amd64 and arm64 and the command line's for all, signed
+  # with APT_SIGNING_KEY and put on GitHub Pages, at https://augy-studios.github.io/sgbus-timings/.
+  # It holds only the newest version, as releases/latest does. It runs once the other jobs have
+  # finished or were skipped (a release that had its files already), and reads the .deb files
+  # from the release itself; a draft, or a release that isn't the newest, is left out.
+  apt:
+    needs: [release, build, cli]
+    if: >-
+      !cancelled() && needs.release.outputs.apt == 'true'
+      && needs.build.result != 'failure' && needs.cli.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+    steps:
+      - name: Is it the newest published release?
+        id: newest
+        run: |
+          # gh release view with no tag: the latest release, never a draft or a pre-release.
+          latest="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName || true)"
+          if [ "$latest" = "$RELEASE_TAG" ]; then
+            echo "go=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::$RELEASE_TAG isn't the newest published release ($latest), so the apt repository is left as it is."
+            echo "go=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get the .deb files
+        if: steps.newest.outputs.go == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev apt-utils gnupg
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.deb' --dir debs
+          ls -lh debs
+
+      - name: Build the repository
+        if: steps.newest.outputs.go == 'true'
+        run: |
+          mkdir -p repo/pool/main
+          # Named as Debian names them, package_version_architecture.deb, which is how
+          # dpkg-scanpackages --arch picks each architecture's (and the _all ones) for its list.
+          for deb in debs/*.deb; do
+            name="$(dpkg-deb -f "$deb" Package)_$(dpkg-deb -f "$deb" Version)_$(dpkg-deb -f "$deb" Architecture).deb"
+            cp "$deb" "repo/pool/main/$name"
+          done
+          cd repo
+          for arch in amd64 arm64; do
+            mkdir -p "dists/stable/main/binary-$arch"
+            dpkg-scanpackages --arch "$arch" pool/ > "dists/stable/main/binary-$arch/Packages"
+            gzip -9nk "dists/stable/main/binary-$arch/Packages"
+            echo "$arch:"; grep -E '^(Package|Version|Architecture):' "dists/stable/main/binary-$arch/Packages"
+          done
+          cd dists/stable
+          apt-ftparchive \
+            -o APT::FTPArchive::Release::Origin="SG Bus Timings" \
+            -o APT::FTPArchive::Release::Label="SG Bus Timings" \
+            -o APT::FTPArchive::Release::Suite=stable \
+            -o APT::FTPArchive::Release::Codename=stable \
+            -o APT::FTPArchive::Release::Architectures="amd64 arm64" \
+            -o APT::FTPArchive::Release::Components=main \
+            -o APT::FTPArchive::Release::Description="SG Bus Timings for Linux, and sgbus, its command line" \
+            release . > ../Release.new
+          mv ../Release.new Release
+
+      - name: Sign it
+        if: steps.newest.outputs.go == 'true'
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: |
+          export GNUPGHOME="$RUNNER_TEMP/gnupg"
+          mkdir -m 700 -p "$GNUPGHOME"
+          printf '%s\n' "$APT_SIGNING_KEY" | gpg --batch --import
+          key="$(gpg --batch --list-secret-keys --with-colons | awk -F: '$1 == "fpr" { print $10; exit }')"
+          cd repo/dists/stable
+          gpg --batch --yes --local-user "$key" --clearsign --output InRelease Release
+          gpg --batch --yes --local-user "$key" --armor --detach-sign --output Release.gpg Release
+          cd ../..
+          # The public key, for the install lines: binary for signed-by, and as text to read.
+          gpg --batch --export "$key" > sgbus-timings.gpg
+          gpg --batch --armor --export "$key" > sgbus-timings.asc
+          rm -rf "$GNUPGHOME"
+
+      # apt itself reads it as a user's computer would, before it goes anywhere.
+      - name: Check it with apt
+        if: steps.newest.outputs.go == 'true'
+        run: |
+          sudo install -D -m 644 repo/sgbus-timings.gpg /etc/apt/keyrings/sgbus-timings-check.gpg
+          echo "deb [signed-by=/etc/apt/keyrings/sgbus-timings-check.gpg] file:$PWD/repo stable main" \
+            | sudo tee /etc/apt/sources.list.d/sgbus-timings-check.list
+          sudo apt-get update -o Dir::Etc::sourcelist=sources.list.d/sgbus-timings-check.list \
+            -o Dir::Etc::sourceparts=- -o APT::Get::List-Cleanup=0
+          apt-cache policy sgbus-timings-desktop sgbus-timings-cli
+          apt-cache show sgbus-timings-desktop sgbus-timings-cli > /dev/null
+          sudo rm /etc/apt/sources.list.d/sgbus-timings-check.list /etc/apt/keyrings/sgbus-timings-check.gpg
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.newest.outputs.go == 'true'
+        with:
+          path: repo
+
+      - uses: actions/deploy-pages@v4
+        id: deploy
+        if: steps.newest.outputs.go == 'true'
