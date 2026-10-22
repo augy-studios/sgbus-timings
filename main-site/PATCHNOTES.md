@@ -18,6 +18,10 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Stops by any name in Navigate** - Bus and train finds a stop however the stop search would: Block for Blk, Jalan for Jln, and the words in any order across the stop's name and road, so `block 29 bahagia` finds Blk 29 on Jln Bahagia. Stops no longer drop off the list when stations and places fill it.
 - **Coordinates and plus codes in Navigate** - Type GPS coordinates (`1.35, 103.85`, or `1.35N 103.85E`) or a plus code, whole (`6PH57RQ8+X2`) or short (`7RQ8+X2`), at either end.
 
+### Android app
+
+- **Updating on Samsung phones and tablets** - When Auto Blocker stops an update, the app now says so, shows where to turn it off, and lets you try again, instead of closing.
+
 ### Desktop app
 
 - **On Arm PCs** - The Windows installer now also installs on Windows on Arm, and Linux has .deb, .rpm and AppImage for 64-bit Arm, such as a Raspberry Pi on 64-bit Raspberry Pi OS. The .msi stays for Intel and AMD PCs.

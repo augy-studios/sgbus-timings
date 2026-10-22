@@ -24,12 +24,21 @@
  * 10 restart the app when it's allowed, which brings this window back with the setting on, and
  * it carries on from there.
  *
+ * Samsung's Auto Blocker (One UI 6 and later) is a second gate, apart from that setting: while
+ * it's on, only apps from the Play Store or Galaxy Store install. Nothing public says whether
+ * it's on, and Android's installer doesn't name it when it stops an update: in AOSP a
+ * confirmation that ends without Install comes back as STATUS_FAILURE_ABORTED, the same as
+ * Cancel. So on a Samsung device on Android 14 or later, an update that fails or is cancelled,
+ * or that the installer never answers for, gets an explanation of Auto Blocker and a button to
+ * Security settings, and Try again carries on with the same version.
+ *
  * One of this app's own screens (see android/README.md).
  */
 package org.uwuapps.sgbus;
 
 import android.app.Activity;
 import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -39,6 +48,8 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.Gravity;
@@ -78,6 +89,12 @@ public class UpdateActivity extends Activity {
     private static final String CHECK = "/check";
     // The version a notification said is out, to look it up past the site's cache.
     private static final String EXTRA_VERSION = "org.uwuapps.sgbus.update.VERSION";
+    // A Samsung device on One UI 6 (Android 14) or later, where Auto Blocker may be on.
+    private static final boolean AUTO_BLOCKER = "samsung".equalsIgnoreCase(Build.MANUFACTURER)
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE;
+    // How long, on such a device, to wait for the installer to answer before taking its silence
+    // as Auto Blocker. An update you've confirmed answers well within it, by restarting the app.
+    private static final long NO_ANSWER_MS = 30_000;
 
     // The window on screen, for InstallStatus to report back to.
     private static WeakReference<UpdateActivity> sShowing = new WeakReference<>(null);
@@ -90,6 +107,12 @@ public class UpdateActivity extends Activity {
     private Thread mWork;
     private volatile boolean mCancelled;
     private boolean mAskedToAllow;
+    // Sent to Security settings to turn Auto Blocker off.
+    private boolean mAskedToUnblock;
+    // Handed to the installer, with no final answer from it yet.
+    private boolean mInstalling;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mNoAnswer = this::autoBlocked;
     // Only checking, so ask before downloading what it finds.
     private boolean mCheckOnly;
     private String mExpected;
@@ -127,12 +150,21 @@ public class UpdateActivity extends Activity {
             if (allowedToInstall()) start();
             else show("SG Bus Timings wasn't allowed to install apps, so it can't update itself.",
                     "Try again", this::askToAllow, "Close", this::finish);
+        } else if (mAskedToUnblock && mWork == null) {
+            // Back from Security settings, with no telling whether Auto Blocker is off now.
+            mAskedToUnblock = false;
+            show("If Auto Blocker is off now, tap Try again to install " + which() + ".",
+                    "Try again", this::start, "Not now", this::finish);
+        } else if (mInstalling) {
+            // Back from the installer's screen: waiting for its answer again.
+            waitForAnswer();
         }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        mHandler.removeCallbacks(mNoAnswer);
         mCancelled = true;
         if (sShowing.get() == this) sShowing.clear();
     }
@@ -155,9 +187,58 @@ public class UpdateActivity extends Activity {
                 }, "Not now", this::finish);
     }
 
+    // Samsung's Auto Blocker, the likeliest reason an update didn't install on a Samsung device
+    // that allows this app to install apps. Nothing public says whether it's on, so this says
+    // "probably", and Try again carries on with the same version.
+    private void autoBlocked() {
+        mInstalling = false;
+        mHandler.removeCallbacks(mNoAnswer);
+        show(capitalised(which()) + " didn't install. Samsung's Auto Blocker probably stopped it: it "
+                + "only lets apps from the Play Store or Galaxy Store install, even with SG Bus "
+                + "Timings allowed to install apps.\n\nTurn it off in Settings > Security and "
+                + "privacy > Auto Blocker, then come back and tap Try again. It switches itself "
+                + "back on after 30 minutes if \"Turn on automatically\" is on; if not, turn it "
+                + "back on there once you've updated.",
+                "Open settings", this::openSecuritySettings, "Not now", this::finish);
+    }
+
+    // Security and privacy, where Auto Blocker is. Samsung publishes no way to open Auto
+    // Blocker's own page, so this opens the one above it, or Settings if even that's missing.
+    private void openSecuritySettings() {
+        mAskedToUnblock = true;
+        try {
+            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+        } catch (ActivityNotFoundException e) {
+            startActivity(new Intent(Settings.ACTION_SETTINGS));
+        }
+    }
+
+    // Handed to the installer: on a Samsung device, its silence for NO_ANSWER_MS is taken as
+    // Auto Blocker. Elsewhere the window waits as long as it takes, as before.
+    private void waitForAnswer() {
+        mHandler.removeCallbacks(mNoAnswer);
+        if (AUTO_BLOCKER) mHandler.postDelayed(mNoAnswer, NO_ANSWER_MS);
+    }
+
+    // The installer answered: done, or only asking you first (PENDING_USER_ACTION).
+    private void heard(boolean done) {
+        mHandler.removeCallbacks(mNoAnswer);
+        if (done) mInstalling = false;
+    }
+
+    private String which() {
+        return mRelease != null ? "version " + mRelease.version : "the update";
+    }
+
+    private static String capitalised(String text) {
+        return Character.toUpperCase(text.charAt(0)) + text.substring(1);
+    }
+
     // Looks for the update, or carries on with the one already found.
     private void start() {
         mCancelled = false;
+        mInstalling = false;
+        mHandler.removeCallbacks(mNoAnswer);
         Release found = mRelease;
         progress(found != null ? "Downloading version " + found.version + "…"
                 : mCheckOnly ? "Checking for updates…" : "Looking for the update…", -1);
@@ -185,7 +266,12 @@ public class UpdateActivity extends Activity {
                 File apk = download(release);
                 if (apk == null) return; // Cancelled.
                 check(apk);
-                ui(() -> progress("Opening Android's installer…", -1));
+                ui(() -> {
+                    // Kept on a Samsung device for Try again after Auto Blocker, which then
+                    // carries on with this version rather than looking again.
+                    if (AUTO_BLOCKER) mRelease = release;
+                    progress("Opening Android's installer…", -1);
+                });
                 install(apk);
             } catch (Problem p) {
                 failed(p.getMessage());
@@ -311,6 +397,11 @@ public class UpdateActivity extends Activity {
                     | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? PendingIntent.FLAG_MUTABLE : 0);
             PendingIntent status = PendingIntent.getBroadcast(this, id,
                     new Intent(this, InstallStatus.class), flags);
+            // Waiting from before the commit, so even the quickest answer comes after it.
+            ui(() -> {
+                mInstalling = true;
+                waitForAnswer();
+            });
             session.commit(status.getIntentSender());
         } catch (IOException | RuntimeException e) {
             installer.abandonSession(id);
@@ -328,6 +419,9 @@ public class UpdateActivity extends Activity {
         public void onReceive(Context context, Intent intent) {
             int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
             UpdateActivity showing = sShowing.get();
+            // An answer, so not silence. Waiting starts again when you're back from the screen
+            // that asks.
+            if (showing != null) showing.heard(status != PackageInstaller.STATUS_PENDING_USER_ACTION);
             if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
                 Intent confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT);
                 if (confirm == null) return;
@@ -338,15 +432,28 @@ public class UpdateActivity extends Activity {
                 // Android stops the app to replace it, so this rarely runs.
                 if (showing != null) showing.finish();
             } else if (status == PackageInstaller.STATUS_FAILURE_ABORTED) {
-                // "Cancel" on Android's own screen.
-                if (showing != null) showing.finish();
+                // "Cancel" on Android's own screen. Also what a screen that ends without
+                // Install answers, as Samsung's does when Auto Blocker stops it, so there the
+                // window stays to say so.
+                Log.i(TAG, "Install aborted: " + intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
+                if (showing != null && AUTO_BLOCKER) showing.autoBlocked();
+                else if (showing != null) showing.finish();
             } else {
                 String why = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
                 Log.w(TAG, "Install failed: " + status + " " + why);
-                String message = status == PackageInstaller.STATUS_FAILURE_CONFLICT
-                        || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE
+                boolean conflict = status == PackageInstaller.STATUS_FAILURE_CONFLICT
+                        || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE;
+                boolean storage = status == PackageInstaller.STATUS_FAILURE_STORAGE;
+                if (AUTO_BLOCKER && !conflict && !storage) {
+                    if (showing != null) showing.autoBlocked();
+                    else Toast.makeText(context, "Samsung's Auto Blocker probably stopped the update. Turn it "
+                            + "off in Settings > Security and privacy > Auto Blocker, then update again.",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                String message = conflict
                         ? "Android wouldn't install the update over this app. Uninstall SG Bus Timings, then install it from GitHub."
-                        : status == PackageInstaller.STATUS_FAILURE_STORAGE
+                        : storage
                         ? "There isn't room on this phone for the update."
                         : "Android couldn't install the update. Try again.";
                 if (showing != null) showing.failed(message);
@@ -414,7 +521,11 @@ public class UpdateActivity extends Activity {
     }
 
     private void failed(String message) {
-        ui(() -> show(message, "Try again", this::start, "Close", this::finish));
+        ui(() -> {
+            mInstalling = false;
+            mHandler.removeCallbacks(mNoAnswer);
+            show(message, "Try again", this::start, "Close", this::finish);
+        });
     }
 
     private static void button(Button button, String label, Runnable onClick) {
