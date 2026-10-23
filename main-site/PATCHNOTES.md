@@ -15,6 +15,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 - **Only your buses at a glance** - Once you've starred a bus, the stops under the search box show only your favourite buses, and leave out a stop none of them is due at. A busy interchange is a line or two instead of a dozen. With no favourite buses, every bus shows as before.
 - **Bus distance on loop services** - A loop that comes back up the other side of the same road (183 on Clementi Rd) could show a bus still on its way out as about 1 km away, in a straight line, when it had about 7 km to go round. It's along the route now.
+- **Start trip fits on phones** - On a way in Navigate or the route planner, **Start trip** ran off the side of the card, under the Edge Tray. It now has a line of its own under All ways and Refresh.
 - **Train alerts more often there** - Service alerts asks LTA again when its train alerts don't answer the first time, instead of saying it couldn't reach them.
 
 ### Android and desktop apps

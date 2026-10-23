@@ -1675,9 +1675,16 @@ html[data-telegram] .telegramBtn { display: none; }
 
 .plannerNav {
     display: flex;
+    flex-wrap: wrap;
     justify-content: space-between;
     gap: 8px;
     margin-bottom: 12px;
+}
+/* Start trip, which never wraps its words: on the right, and on a phone, where the Edge Tray
+   leaves the row too narrow for all three, a line of its own the width of the card. */
+.plannerNav > .btn { margin-left: auto; }
+@media (max-width: 520px) {
+    .plannerNav > .btn { flex: 1 0 100%; }
 }
 
 .journeyList {
