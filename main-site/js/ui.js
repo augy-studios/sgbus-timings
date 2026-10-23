@@ -35,6 +35,11 @@
   var backPending = false;
   var deferred = null;
   var restoring = false;
+  // A window closed and something opened from it at once, such as a stop picked from a list:
+  // the new address (a stop's #84009) is written while the window's step is still going back,
+  // so `backTo` keeps it, and the step before, with the old address, mustn't load the old stop.
+  var backTo = null;
+  var swallowHash = false;
 
   function stepState(extra) {
     var s = history.state && history.state.sg ? history.state : {};
@@ -59,12 +64,28 @@
   var replace = history.replaceState;
   history.replaceState = function (state, title, url) {
     if (state == null && history.state && history.state.sg) state = history.state;
-    return replace.call(this, state, title, url);
+    var out = replace.call(this, state, title, url);
+    if (backPending) backTo = location.href;
+    return out;
   };
+
+  // Ahead of script.js's own (routeFromHash): the old address coming back with the closed
+  // window's step isn't somewhere to go.
+  window.addEventListener("hashchange", function (e) {
+    if (!swallowHash) return;
+    swallowHash = false;
+    e.stopImmediatePropagation();
+  });
 
   window.addEventListener("popstate", function (e) {
     if (backPending) {
       backPending = false;
+      if (backTo && backTo !== location.href) {
+        swallowHash = backTo.split("#")[1] !== location.href.split("#")[1];
+        replace.call(history, history.state, "", backTo);
+        setTimeout(function () { swallowHash = false; }, 50);
+      }
+      backTo = null;
       if (deferred) history.pushState(deferred, "", location.href);
       deferred = null;
       return;
@@ -104,6 +125,7 @@
     hideModal(id);
     if (history.state && history.state.sg && history.state.modal === id && !restoring) {
       backPending = true;
+      backTo = null;
       history.back();
     }
   }
