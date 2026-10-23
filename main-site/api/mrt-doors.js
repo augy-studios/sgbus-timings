@@ -7,7 +7,7 @@
 //   mrtinfo_platforms   station, line, direction ("EW-1"), order (how many stops into that
 //                       direction it is), code ("EW24"), crossPlatform (the directions across
 //                       the platform), isOpen
-//   mrtinfo_facilities  platform, type (escalator | lift | stairs), towards ("exit"), doors
+//   mrtinfo_facilities  platform, type (escalator | lift | stairs), towards ("exit/DT-11/Jewel"), doors
 //                       (counted from the front of the train)
 // Not every station has its facilities in yet; a platform without any still says which way
 // it goes and what's across it.

@@ -1,11 +1,22 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 23 October 2026**
+**Latest update: 24 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 24 October 2026: train doors at almost every station
+
+### Web app
+
+- **Which door, nearly everywhere** - Navigate's door tips now cover almost every MRT station, not a handful.
+- **The doors for your next line** - Changing trains, it gives the doors nearest the way to the line you're changing to, not just the way out.
+- **Malls and terminals** - Getting off, it names where an escalator or lift leads when it's somewhere in particular: Jewel, a terminal at Changi Airport, Nex, City Square and so on.
+- **Changi Airport branch** - Rides to Expo and Changi Airport now get door tips too.
 
 ---
 

@@ -208,11 +208,13 @@ Tap a way to see it part by part:
 - **Walks**, with the distance and roughly how long. **Directions** opens the
   walk on the [live map](live-map.md), or in Citymapper.
 - **Trains**, with the line, the direction to take (**towards** its last
-  station), how many stops, and where to get off. For a growing number of
-  stations, it also says which door to stand at: the car and door that stop
-  nearest the escalators, lift and stairs where you get off, counting from the
-  front of the train ("car 2, door 3 or car 5, door 1 for the escalators to the
-  exit"), or that your next train is just across the platform.
+  station), how many stops, and where to get off. For almost every MRT
+  station, it also says which door to stand at, counting from the front of the
+  train: the car and door that stop nearest the escalators, lift and stairs out
+  of the station, with the mall or terminal they lead to where there is one
+  ("car 5, door 4 for the escalators to T1, T3, T4 and Jewel"). Changing lines,
+  it gives the doors nearest the way to your next train instead, or says that
+  it's just across the platform.
 - **Buses**, with how many stops, where to get off, and the **live timings** of
   that bus at the stop you board it. A button opens that stop's timings for the
   bus, with **Back to Navigate** on them to come back.
