@@ -80,23 +80,58 @@ HTML, CSS and JavaScript with no dependencies.
   draws itself in over 0.6 s on each step.
 - **Card:** the text (large, about 1.3 rem, light on the dim), the step dots
   (the current one a wider pill) and the **Next** button. It has no box of its
-  own: it sits on the dim. It's full width less 16 px each side, at most
-  460 px, centred.
+  own: it sits on the dim, except when there's no room for an arrow (§3), when
+  it gets a solid backing. It's at most 460 px wide, less on a narrow screen,
+  and lined up with the element it points at (§3), rather than centred.
 - **Skip:** top left, clear of the safe area.
 
 ## 3. Placement
 
-On each step, and again on resize or scroll:
+On each step, and again on resize or scroll. The aim: the card sits close to
+the element, and the whole arrow, head included, stays on screen whatever the
+size of the screen, the element or where the element is.
 
-1. **Hole:** the element's bounding rectangle, padded by 8 px.
-2. **Card:** below the element if there's more room below than above,
-   otherwise above it, with a 70 px gap for the arrow. Clamped to stay at least
-   12 px inside the viewport.
-3. **Arrow:** a quadratic curve from the card's near edge, a third of the way
-   across it, to the middle of the element's near side, kept 12 px in from the
-   element's ends. The control point is offset sideways from the midpoint so
-   the line bows like a hand drew it. The head is two 14 px strokes back from
-   the tip, at ±0.8π from the curve's last direction.
+1. **Scroll:** the element is scrolled to the centre of the viewport, or to its
+   top if it's taller than 60 % of the viewport, so its top edge isn't lost.
+2. **Hole:** the element's bounding rectangle, padded by 8 px. It may run off
+   screen; the rest of the placement uses only the element's **visible part**
+   (its rectangle clipped to the viewport).
+3. **Card side**, by the room around the visible part:
+   - **Below or above**, whichever has more room, if that room fits the card
+     plus the minimum arrow gap (36 px). This is the usual case on a phone.
+   - Otherwise **right or left**, whichever has more room, if that fits the
+     card plus the minimum gap. Where the room is narrower than the card, the
+     card narrows to fit, but not below 220 px, and only while its taller
+     text still fits the screen's height. This covers a wide, short screen, or
+     an element as tall as the screen, such as a navigation column, even on a
+     phone.
+   - Otherwise there's **no room**: the element fills the screen. The card goes
+     at the bottom, or the top if the element's top half is lower, on a
+     solid dark backing so its text reads over the lit element, and **no arrow**
+     is drawn: there's nowhere for it to go, and the light already shows the
+     element. The card is measured with its backing on, so the backing's
+     padding can't push it off screen.
+4. **Gap:** the arrow gets up to 70 px, shrinking to fit what room there is, but
+   never below 36 px.
+5. **Card position:** on the chosen side, at most 460 px wide (less on a narrow
+   screen), and **lined up with the element**, not centred on the page. Below
+   or above, it's centred on the element horizontally. Right or left, it's
+   centred on the element vertically. Either way it's clamped to stay 12 px
+   inside the viewport. On a phone that's the same as centred. On a big screen
+   it keeps the card next to an element at the far edge, rather than across
+   the screen from it.
+6. **Arrow:** a quadratic curve from the card to the middle of the element's
+   near side (kept 12 px in from the element's ends):
+   - It starts on the card's edge facing the element, as near opposite the
+     tip as the card allows, so the arrow is about as long as the gap.
+   - The control point is offset at right angles from the midpoint, by a
+     fifth of the arrow's length, so the line bows like a hand drew it.
+   - The head is two 14 px strokes back from the tip, at ±0.8π from the
+     curve's last direction.
+   - **Kept on screen:** the tip, the start and the control point are each
+     clamped to at least 20 px inside the viewport (more than the head's
+     length). A quadratic curve never leaves the triangle of those three
+     points, so the line and its head can't be cut off.
 
 ## 4. Accessibility
 
@@ -184,7 +219,10 @@ when it ends. Settings needs one container:
   color: #f6f1e6;
   font-size: 1.05rem;
 }
-.tourCard { position: fixed; left: 16px; right: 16px; max-width: 460px; margin: 0 auto; color: #f6f1e6; }
+/* Placed by the script (§3): left and top set on each step. */
+.tourCard { position: fixed; box-sizing: border-box; width: min(460px, calc(100vw - 24px)); color: #f6f1e6; }
+/* No room for an arrow: the card sits on its own backing, over the lit element. */
+.tourCard.solid { padding: 14px 16px; border-radius: 16px; background: rgba(8, 14, 10, 0.92); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5); }
 .tourText { font-size: 1.3rem; line-height: 1.35; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }
 .tourFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
 .tourNext { background: #f6f1e6; color: #1a221d; border: 0; border-radius: 999px; padding: 10px 22px; }
@@ -288,7 +326,9 @@ over a light or a dark page.
   function show(i) {
     at = i;
     const el = steps[i].target;
-    el.scrollIntoView({ block: 'center', behavior: 'instant' });
+    // §3.1: a tall element from its top.
+    const tall = el.getBoundingClientRect().height > innerHeight * 0.6;
+    el.scrollIntoView({ block: tall ? 'start' : 'center', behavior: 'instant' });
     root.querySelector('.tourText').textContent = steps[i].text;
     root.querySelector('.tourDots').innerHTML = steps.map((_, n) => `<span${n === i ? ' class="on"' : ''}></span>`).join('');
     root.querySelector('.tourNext').textContent = i === steps.length - 1 ? 'Done' : 'Next';
@@ -296,7 +336,15 @@ over a light or a dark page.
     root.querySelector('.tourNext').focus({ preventScroll: true });
   }
 
-  // §3: the hole, the card above or below, and the arrow between them.
+  // §3: the hole, the card on the side with room, lined up with the element, and
+  // the arrow between them, all of it on screen.
+  const M = 12;        // the card's margin from the viewport's edges
+  const EDGE = 20;     // the arrow's: more than the head's length
+  const GAP_MIN = 36;
+  const GAP_MAX = 70;
+  const CARD_MIN = 220; // the narrowest the card goes to fit beside an element
+  const clamp = (lo, v, hi) => Math.max(lo, Math.min(v, Math.max(lo, hi)));
+
   function place() {
     if (!root || root === true) return;
     const el = steps[at]?.target;
@@ -309,28 +357,90 @@ over a light or a dark page.
       width: `${r.width + PAD * 2}px`, height: `${r.height + PAD * 2}px`,
     });
 
+    // The element's visible part: all placement works from it.
+    const v = {
+      left: Math.max(r.left, 0), right: Math.min(r.right, vw),
+      top: Math.max(r.top, 0), bottom: Math.min(r.bottom, vh),
+    };
     const card = root.querySelector('.tourCard');
-    const ch = card.offsetHeight;
-    const below = vh - r.bottom > r.top;
-    const gap = 70;
-    let top = below ? r.bottom + PAD + gap : r.top - PAD - gap - ch;
-    top = Math.max(12, Math.min(vh - ch - 12, top));
-    card.style.top = `${top}px`;
+    card.classList.remove('solid');
+    card.style.width = '';
+    let cw = card.offsetWidth, ch = card.offsetHeight;
+    const room = {
+      below: vh - v.bottom - PAD - M, above: v.top - PAD - M,
+      right: vw - v.right - PAD - M, left: v.left - PAD - M,
+    };
+    let side = null;
+    if (Math.max(room.below, room.above) >= ch + GAP_MIN) side = room.below >= room.above ? 'below' : 'above';
+    else {
+      // Beside it, narrowing the card to fit if need be, while its text still fits the height.
+      const s = room.right >= room.left ? 'right' : 'left';
+      const fit = room[s] - GAP_MIN;
+      if (fit >= Math.min(cw, CARD_MIN)) {
+        if (fit < cw) {
+          card.style.width = `${fit}px`;
+          cw = card.offsetWidth;
+          ch = card.offsetHeight;
+        }
+        if (ch <= vh - M * 2) side = s;
+        else card.style.width = '';
+      }
+    }
 
-    const sx = card.getBoundingClientRect().left + card.offsetWidth * 0.3;
-    const sy = below ? top - 6 : top + ch + 6;
-    const tx = Math.max(r.left + 12, Math.min(r.right - 12, r.left + r.width / 2));
-    const ty = below ? r.bottom + PAD + 4 : r.top - PAD - 4;
-    root.querySelector('.tourArrow').setAttribute('viewBox', `0 0 ${vw} ${vh}`);
-    const bow = (tx - sx) * 0.35 + (below ? 30 : -30);
-    const mx = (sx + tx) / 2 + (sy - ty) * 0.25;
-    const my = (sy + ty) / 2 - bow * 0.2;
     const line = root.querySelector('.tourLine');
+    const head = root.querySelector('.tourHead');
+    let left, top;
+    if (!side) {
+      // No room: the card on a backing at the end away from most of the element, no arrow,
+      // measured with the backing on.
+      card.classList.add('solid');
+      cw = card.offsetWidth;
+      ch = card.offsetHeight;
+      left = (vw - cw) / 2;
+      top = (v.top + v.bottom) / 2 > vh / 2 ? M : vh - ch - M;
+      Object.assign(card.style, { left: `${left}px`, top: `${top}px` });
+      line.setAttribute('d', '');
+      head.setAttribute('d', '');
+      return;
+    }
+
+    const midX = (v.left + v.right) / 2, midY = (v.top + v.bottom) / 2;
+    let sx, sy, tx, ty;
+    if (side === 'below' || side === 'above') {
+      const gap = clamp(GAP_MIN, room[side] - ch, GAP_MAX);
+      left = clamp(M, midX - cw / 2, vw - cw - M);
+      top = side === 'below' ? v.bottom + PAD + gap : v.top - PAD - gap - ch;
+      top = clamp(M, top, vh - ch - M);
+      tx = clamp(v.left + 12, midX, v.right - 12);
+      ty = side === 'below' ? v.bottom + PAD + 4 : v.top - PAD - 4;
+      sx = clamp(left + 24, tx, left + cw - 24);
+      sy = side === 'below' ? top - 6 : top + ch + 6;
+    } else {
+      const gap = clamp(GAP_MIN, room[side] - cw, GAP_MAX);
+      left = side === 'right' ? v.right + PAD + gap : v.left - PAD - gap - cw;
+      left = clamp(M, left, vw - cw - M);
+      top = clamp(M, midY - ch / 2, vh - ch - M);
+      tx = side === 'right' ? v.right + PAD + 4 : v.left - PAD - 4;
+      ty = clamp(v.top + 12, midY, v.bottom - 12);
+      sx = side === 'right' ? left - 6 : left + cw + 6;
+      sy = clamp(top + 16, ty, top + ch - 16);
+    }
+    Object.assign(card.style, { left: `${left}px`, top: `${top}px` });
+
+    // Every point of the arrow EDGE in from the viewport, so none of it is cut off.
+    const inX = (x) => clamp(EDGE, x, vw - EDGE);
+    const inY = (y) => clamp(EDGE, y, vh - EDGE);
+    tx = inX(tx); ty = inY(ty); sx = inX(sx); sy = inY(sy);
+    const dx = tx - sx, dy = ty - sy;
+    const mx = inX((sx + tx) / 2 - dy * 0.2);
+    const my = inY((sy + ty) / 2 + dx * 0.2);
+
+    root.querySelector('.tourArrow').setAttribute('viewBox', `0 0 ${vw} ${vh}`);
     line.setAttribute('d', `M${sx},${sy} Q${mx},${my} ${tx},${ty}`);
     line.style.setProperty('--len', Math.ceil(line.getTotalLength()) + 10);
     const ang = Math.atan2(ty - my, tx - mx);
     const a1 = ang + Math.PI * 0.8, a2 = ang - Math.PI * 0.8, len = 14;
-    root.querySelector('.tourHead').setAttribute('d',
+    head.setAttribute('d',
       `M${tx + Math.cos(a1) * len},${ty + Math.sin(a1) * len} L${tx},${ty} L${tx + Math.cos(a2) * len},${ty + Math.sin(a2) * len}`);
   }
 
