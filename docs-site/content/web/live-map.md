@@ -41,6 +41,22 @@ The map opens as close in as it goes, on you, and follows you as you walk. To
 see the whole way at once, tap the overview button (the route, on the right). The
 target button under it brings the map back in close, following you.
 
+## Turn the map with you
+
+The compass button, above the overview button, turns the map so the way your
+phone points is up, the way a map app's compass mode does. The map stays on
+you, and its needle keeps pointing north. Tap it again to put north back at the
+top; the overview button does too.
+
+- It uses the phone's compass. On an iPhone, the first tap asks to use motion
+  and orientation; allow it.
+- Without a compass, such as on a computer, it turns the way you're moving
+  once you start walking.
+- While it's on, the map can't be dragged, as it's kept on you. Pinch or
+  double-tap to zoom.
+
+It's there on your own walk or trip, not on someone else's shared trip.
+
 ## Your trip on a map
 
 <figure>

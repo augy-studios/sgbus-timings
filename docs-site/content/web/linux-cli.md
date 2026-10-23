@@ -132,3 +132,28 @@ What you save is kept on this computer, in `~/.config/sgbus/config.json`. It doe
 > [!TIP]
 > Add `--json` to a command for its data instead of the text, for your own scripts:
 > `sgbus 84009 14 --json`. `NO_COLOR=1` turns the colours off.
+
+## In a browser's console
+
+Most of the same commands work in the web app itself, with nothing to install:
+open your browser's developer tools (**F12**, or **Ctrl+Shift+J**; **⌥⌘J** on a
+Mac) on [sgbus.uwuapps.org](https://sgbus.uwuapps.org), and type each one as
+`sgbus('...')`:
+
+```js
+sgbus('84009 22*')        // a stop's timings, narrowed to buses starting 22
+sgbus('favs -w')          // your favourite stops, kept up to date
+sgbus('nav home work')    // by bus and train, between two of your places
+sgbus('help')             // the rest
+```
+
+It takes a stop's timings (with `-w` and `-d`), finding stops, `near`, `bus`,
+`nav` (with `--way N`), `favs`, `fav add` and `fav rm`, `places`, `alerts` and
+`weather`, and `--json` hands back the data to look through. It uses what's saved
+in that browser, so `sgbus('fav add 84009')` saves the stop in the web app too.
+Routines, the route planner, the calendar and settings stay in the app and here.
+
+> [!WARNING]
+> Never paste code into the console that someone else sent you. Anything typed
+> there runs as you, with your saved stops and places. `sgbus('...')` only ever
+> reads your words as a command, never as code.

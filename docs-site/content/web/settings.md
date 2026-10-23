@@ -6,7 +6,7 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti, Open Places, Calendar settings, Show me around, Next bus at a glance, Custom home, pinning for favourite buses, the Get Off Alert switch, Restricted areas, Immigration time, pinning for favourite stops, the Edge Tray side and buttons, and syncing with another device." width="396" height="2438" loading="lazy">
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti, Open Places, Calendar settings, Show me around, Next bus at a glance, Custom home, pinning for favourite buses, the Get Off Alert switch, Restricted areas, Immigration time, pinning for favourite stops, the Edge Tray side and buttons, and syncing with another device." width="396" height="2464" loading="lazy">
 <figcaption>Settings. Changes save as you make them.</figcaption>
 </figure>
 
@@ -20,13 +20,14 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Home, Work and your places** | **Open Places** opens [Places](places.md), where Home, Work and your other places are set. |
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **Show me around** | The [tour](main-screen.md#the-tour) of the basics, as it shows the first time. |
-| **Next bus at a glance** | **On** (the default) or **Off**: the next bus in big letters at the top of Bus timings, and your stops under the search box. See [Your main screen](main-screen.md#the-next-bus-at-a-glance). |
-| **Custom home** | The page the app opens on, first in the Edge Tray: **Bus timings** (the default), **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
+| **Next bus at a glance** | **On** (the default) or **Off**: the Glance page, with the next bus in big letters and your stops' buses. Off takes it out of the Edge Tray, and the app opens on Bus timings. See [Your main screen](main-screen.md#glance). |
+| **Custom home** | The page the app opens on, first in the Edge Tray: **Glance** (the default), **Bus timings**, **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
 | **Immigration time** | How long a journey across the Causeway counts for getting off, clearing both checkpoints and getting on again. **By the time** (the default): about 15 minutes when it's quiet, up to an hour at the rush. Or your own: **15 min**, **30 min**, **45 min** or **1 hr**. See [Navigate](nav.md#across-the-causeway). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
+| **Picture-in-picture** | The [Android app](android-app.md#picture-in-picture) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
 | **Edge Tray buttons** | Turn off any of **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee** and **Guide** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
 | **Sync with another device** | See [Sync between devices](sync.md). |

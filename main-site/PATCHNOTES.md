@@ -9,6 +9,23 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 23 October 2026 (night): Glance gets its own page, a compass map, sgbus in the console
+
+### Web app
+
+- **Glance, a page of its own** - The next bus, the chip and your stops' buses are now **Glance**, with the eye button at the top of the Edge Tray, and the weather with them. **Bus timings** comes next, just the search box and a stop's timings. The app opens on Glance unless Custom home says otherwise; tap a bus there for its timings, and Back comes back.
+- **Next bus at a glance switches off** - Its On and Off in Settings did nothing before. Off now takes Glance out of the Edge Tray, and the app opens on Bus timings.
+- **Back to Navigate** - A bus's timings opened from a way in Navigate have **Back to Navigate**, which goes back to that same way, instead of starting over from the Edge Tray.
+- **Settings reachable on a trip** - The trip bar covered the bottom of the Edge Tray, Settings and the theme among it. The tray now scrolls up clear of the bar.
+- **The map turns with you** - The live map has a compass button: the map stays on you and turns so the way your phone points is up, like a map app's compass mode. Without a compass, it turns the way you're moving.
+- **sgbus in the console** - In a browser's developer console, `sgbus('84009 22*')`, `sgbus('nav home work')`, `sgbus('favs -w')` and the Linux app's other commands work against the site. `sgbus('help')` lists them.
+
+### Android app
+
+- **Picture-in-picture can be turned off** - Settings, **Picture-in-picture**: Off, and leaving the app on a trip or the map sends it to the background like any other app, without the small window.
+
+---
+
 ## 23 October 2026 (evening): your buses at a glance, distances on loops, train alerts
 
 ### Web app

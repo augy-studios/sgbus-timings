@@ -2,27 +2,37 @@
 // basics, each a spotlight on the real thing with a chalk arrow to it and a line saying what it
 // does: the next bus, the stops it's from, the search box, the Edge Tray and Settings. Next
 // moves on, Skip in the corner ends it, and Settings has "Show me around" to see it again.
-// A step whose thing isn't on screen (the glance turned off, Bus timings not on the main
-// screen) is left out. Not over a link that opened something, which came for that.
+// A step on a page (`page`: Glance, Bus timings) switches to it, and the tour ends back on the
+// page it began on. A step whose thing isn't there (the glance turned off, or no stops in it)
+// is left out. Not over a link that opened something, which came for that.
 // Plain script: exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
   const KEY = 'sgbus_tour';
   const PAD = 8;
 
-  // `el` is what's lit; `text` what's said about it.
+  // `el` is what's lit; `text` what's said about it; `page` the page it's on.
   const STEPS = [
-    { el: '#glanceHero', text: 'Your next bus, big enough to read on the move. Tap it for all its times.' },
-    { el: '#glanceSource', text: 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.' },
-    { el: '.searchWrap', text: 'Look up any stop by its name or code, or a bus by its number for its route.' },
-    { el: '#glanceStops .glanceStop', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.' },
-    { el: '#trayViews', text: 'Each page has its button at the top of the Edge Tray: Bus timings, Favourites, Navigate, alerts, your trips and places. Press and hold a button to see what it does.' },
-    { el: '#settingsBtn', text: 'In Settings, Custom home picks the page the app opens on. Make it Navigate, Favourites, or whatever you use most.' },
+    { el: '#glanceHero', page: 'glance', text: 'Your next bus, big enough to read on the move. Tap it for all its times.' },
+    { el: '#glanceSource', page: 'glance', text: 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.' },
+    { el: '#glanceStops .glanceStop', page: 'glance', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.' },
+    { el: '.searchWrap', page: 'timings', text: 'Bus timings: look up any stop by its name or code, or a bus by its number for its route.' },
+    { el: '#trayViews', text: 'Each page has its button at the top of the Edge Tray: Glance, Bus timings, Favourites, Navigate, alerts, your trips and places. Press and hold a button to see what it does.' },
+    { el: '#settingsBtn', text: 'In Settings, Custom home picks the page the app opens on. Make it Bus timings, Navigate, or whatever you use most.' },
   ];
 
   let steps = [];
   let at = 0;
   let root = null;
+  let began = null;
+
+  // There to be shown: on its page, if it has one, even while another page is on show.
+  const there = (s) => {
+    const el = document.querySelector(s.el);
+    if (!s.page) return visible(el);
+    if (!el || (s.page === 'glance' && !window.Glance?.enabled())) return false;
+    return !el.closest('[hidden]');
+  };
 
   const done = () => { try { return localStorage.getItem(KEY) === 'done'; } catch { return true; } };
   const markDone = () => { try { localStorage.setItem(KEY, 'done'); } catch { /* shown again next time */ } };
@@ -61,6 +71,7 @@
   function show(i) {
     at = i;
     const step = steps[i];
+    if (step.page && window.MainScreen && MainScreen.active() !== step.page) MainScreen.open(step.page);
     const el = document.querySelector(step.el);
     if (el.closest('#trayButtons') && document.documentElement.hasAttribute('data-tray-closed')) window.setTrayOpen?.(true);
     el.scrollIntoView({ block: 'center', behavior: 'instant' });
@@ -130,13 +141,16 @@
     root?.remove();
     root = null;
     document.body.classList.remove('touring');
+    if (began && window.MainScreen && MainScreen.active() !== began) MainScreen.open(began);
+    began = null;
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
 
   function start() {
     if (root) return;
-    steps = STEPS.filter((s) => visible(document.querySelector(s.el)));
+    steps = STEPS.filter(there);
     if (!steps.length) return;
+    began = window.MainScreen?.active() || null;
     // The press-and-hold tip (js/ui.js) is the Edge Tray's step.
     try { localStorage.setItem('sgbus_hold_hint', '1'); } catch { /* shown as well */ }
     document.body.classList.add('touring');

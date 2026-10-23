@@ -97,10 +97,11 @@ function initNav() {
       return;
     }
     const stop = e.target.closest('[data-nav-stop]');
-    // The stop's timings and the trip bar are on the page, so Navigate gets out of their way.
+    // The stop's timings and the trip bar are on the page, so Navigate gets out of their way,
+    // with Back to Navigate on the timings to come back to this way (backToNav).
     if (stop) {
       closeNav();
-      loadStop(stop.dataset.navStop, { service: stop.dataset.navBus, scroll: true });
+      loadStop(stop.dataset.navStop, { service: stop.dataset.navBus, scroll: true, ctx: { kind: 'nav' } });
       return;
     }
     const action = e.target.closest('[data-nav-action]')?.dataset.navAction;
@@ -376,6 +377,14 @@ function closeNav() {
   showPanel('navSection', false);
   nav.token++;
   if (location.hash.startsWith('#nav/')) history.replaceState(null, '', stopHash() || location.pathname);
+}
+
+// Back from a stop's timings opened off a way (Back to Navigate, script.js goBack): Navigate as
+// it was left, the same ends and the same way open, not planned afresh as openNav would.
+function backToNav() {
+  showPanel('navSection', true);
+  if (nav.from && nav.to) history.replaceState(null, '', navHash());
+  renderNav();
 }
 
 const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;

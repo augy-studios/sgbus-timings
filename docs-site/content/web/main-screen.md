@@ -1,28 +1,30 @@
 ---
 title: Your main screen
-description: The next bus at a glance, the pages in the Edge Tray, picking your custom home, and the tour.
+description: Glance and your next bus, the pages in the Edge Tray, picking your custom home, and the tour.
 ---
 
-The app opens on **Bus timings**: the next bus in big letters, your stops
-under the search box, and the search box itself. Everything else is in the
-Edge Tray, each part of the app a page of its own. Make any of them your home,
-and the app opens on it.
+The app opens on **Glance**: the next bus in big letters, and your stops'
+buses under it. **Bus timings**, the search box and a stop's timings, is the
+page after it. Everything else is in the Edge Tray, each part of the app a page
+of its own. Make any of them your home, and the app opens on it.
 
-## The next bus at a glance
+## Glance
 
 <figure>
-<img src="/screenshots/web/glance.png" alt="The top of Bus timings: a Saved stops chip, the next bus in big letters with when it comes and where, then the search box, and under it one saved stop as a card with only the two favourite buses due there, each with where it is going and its next three times in minutes." width="280" height="657" loading="lazy">
+<img src="/screenshots/web/glance.png" alt="Glance: a Saved stops chip, the next bus in big letters with when it comes and where, the weather, and under it one saved stop as a card with only the two favourite buses due there, each with where it is going and its next three times in minutes." width="280" height="447" loading="lazy">
 <figcaption>The next bus, then your stops, with only your favourite buses.</figcaption>
 </figure>
 
-At the top of Bus timings:
+**Glance**, the eye at the top of the Edge Tray, is the page to read on the
+way out:
 
 - **The next bus**, in big letters: its number, how soon it comes
   (**Arriving** under a minute), where it's going, and the stop. A favourite
   bus comes first whenever one is coming.
-- **Your stops**, under the search box: each a card, with one line per bus:
-  its number, where it's going, and its next three times in minutes. **Arr**
-  is under a minute away. The soonest bus is at the top.
+- **Today's weather and air**, a tap away.
+- **Your stops**: each a card, with one line per bus: its number, where it's
+  going, and its next three times in minutes. **Arr** is under a minute away.
+  The soonest bus is at the top.
 
 Once you have [favourite buses](favourites.md#favourite-buses-are-pinned), the
 cards show only those, and a stop none of them is due at is left out, so a
@@ -30,10 +32,10 @@ busy interchange is a line or two, not a dozen. With no favourite buses, every
 bus shows. Star a bus by searching its number and tapping the star.
 
 Tap the big bus, a line or a stop's name for its full [timings](timings.md),
-as a search would. The **X** at the top of those timings puts them away again.
+on Bus timings, as a search would. **Back** comes back to Glance.
 
 The times count down by themselves, and fetch again every 30 seconds while
-the app is open on Bus timings.
+the app is open on Glance.
 
 ### Pick whose buses
 
@@ -55,20 +57,29 @@ and it says when to leave: **Leave in 3 min for**, or **Leave now for**. The
 walk is a guess, the straight line with a quarter more for corners, as
 [Will I make it?](timings.md#will-i-make-it) works it out.
 
-The chip remembers what you picked. Turn the whole glance off in
-[Settings](settings.md), **Next bus at a glance**.
+The chip remembers what you picked. Turn Glance off in
+[Settings](settings.md), **Next bus at a glance**: its button leaves the Edge
+Tray, and the app opens on Bus timings instead.
+
+## Bus timings
+
+**Bus timings**, the bus under Glance in the Edge Tray, is the
+[search](search.md) box and, once you pick a stop, its
+[timings](timings.md). The **X** at the top of a stop's timings puts them away,
+back to the search box.
 
 ## Pages in the Edge Tray
 
 <figure>
-<img src="/screenshots/web/main-screen-tabs.png" alt="The app on a phone on Navigate: the Edge Tray's first six buttons are the pages, Bus timings, Favourites, Navigate, which is filled in, Service alerts, Your trips and Places, over a line, with Stops near me and the rest below." width="390" height="844" loading="lazy">
+<img src="/screenshots/web/main-screen-tabs.png" alt="The app on a phone on Navigate: the Edge Tray first has its pages, the eye for Glance, Bus timings, Favourites, Navigate, which is filled in, Service alerts, Your trips and Places, over a line, with Stops near me and the rest below." width="390" height="844" loading="lazy">
 <figcaption>Navigate on show, its button filled in at the top of the Edge Tray.</figcaption>
 </figure>
 
 Each part of the app is a page of its own, with its button at the top of the
 Edge Tray, over a line:
 
-- **Bus timings**: the next bus, your stops, the search box, and a stop's timings
+- **Glance**: the next bus, the weather and your stops' buses
+- **Bus timings**: the search box, and a stop's timings
 - **Favourites**
 - **Navigate**, with its two tabs, **Bus and train** and **Bus only**, inside
   it. It opens on the one you used last.
@@ -79,7 +90,8 @@ Edge Tray, over a line:
 Tap a button to switch to its page; the one on show is filled in. Taps that
 lead somewhere still take you there: a saved stop in Favourites opens its
 timings on Bus timings, a place in Places opens the way there on Bus and train,
-and a stop in a journey opens its timings.
+and a stop in a journey opens its timings. A bus's timings opened from a way in
+Navigate have **Back to Navigate**, back to that same way.
 
 The small things still open as windows over the page: Settings, the theme,
 the weather, a bus's route, and the list of stops near you.
@@ -95,12 +107,12 @@ too.
 ## Custom home
 
 <figure>
-<img src="/screenshots/web/settings-main-screen.png" alt="Settings' Custom home, with Bus timings picked from Bus timings, Favourites, Navigate, Service alerts, Your trips and Places, and a note that it's the page the app opens on, first in the Edge Tray." width="396" height="295" loading="lazy">
+<img src="/screenshots/web/settings-main-screen.png" alt="Settings, Custom home, with Glance picked from Glance, Bus timings, Favourites, Navigate, Service alerts, Your trips and Places, and a note that it is the page the app opens on, first in the Edge Tray." width="396" height="295" loading="lazy">
 <figcaption>Custom home, in Settings.</figcaption>
 </figure>
 
 In [Settings](settings.md), **Custom home** picks the page the app opens on,
-every time: **Bus timings** to begin with, or any of the others. Its button
+every time: **Glance** to begin with, or any of the others. Its button
 moves to the top of the Edge Tray. Someone who mostly plans journeys can make
 **Navigate** their home, and open straight on it, on the tab they used last.
 
@@ -114,8 +126,9 @@ A link to a stop, a bus or a journey still opens that.
 </figure>
 
 The first time the app opens, a short tour shows the basics, one thing at a
-time: the next bus, the chip, the search box, your stops, the pages in the
-Edge Tray and Settings. **Next** moves on, and **Skip** at the top ends it.
+time: the next bus, the chip and your stops on Glance, the search box on Bus
+timings, the pages in the Edge Tray and Settings. It moves between the two
+pages as it goes, and ends back where it started. **Next** moves on, and **Skip** at the top ends it.
 
 To see it again, open [Settings](settings.md) and tap **Show me around**.
 

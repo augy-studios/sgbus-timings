@@ -116,6 +116,11 @@ const SYNC_SETTINGS = {
     here: () => Reminders.has('earphones'),
     get: () => (Reminders.earphonesOnly() ? 'on' : 'off'), set: (v) => tap(`[data-earphones="${v}"]`),
   },
+  pip: {
+    label: 'Picture-in-picture', values: ['on', 'off'], start: 'on', text: onOff,
+    here: () => !!window.Pip?.available(),
+    get: () => (Pip.enabled() ? 'on' : 'off'), set: (v) => tap(`[data-pip-pref="${v}"]`),
+  },
   shake: {
     label: 'Shake to refresh', values: ['on', 'off'], start: 'on', text: onOff,
     get: () => { try { return localStorage.getItem('sgbus_shake') === 'off' ? 'off' : 'on'; } catch { return 'on'; } },
@@ -152,12 +157,14 @@ const SYNC_SETTINGS = {
     label: 'Next bus at a glance', values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (Glance.enabled() ? 'on' : 'off'), set: (v) => Glance.setEnabled(v === 'on'),
   },
-  // Custom home (js/main-screen.js), kept as "stop" for Bus timings, as Opens on was.
+  // Custom home (js/main-screen.js). The default, Glance, is kept as "stop", as Opens on's
+  // default was: what a version from before Glance was a page sends for its Bus timings, with
+  // the glance at its top. Bus timings on its own is "timings", which such a version leaves be.
   start: {
-    label: 'Custom home', values: () => ['stop', ...MainScreen.IDS.filter((n) => n !== 'timings')], start: 'stop',
-    text: (v) => MainScreen.label(v === 'stop' ? 'timings' : v),
-    get: () => (MainScreen.home() === 'timings' ? 'stop' : MainScreen.home()),
-    set: (v) => MainScreen.setHome(v === 'stop' ? 'timings' : v),
+    label: 'Custom home', values: () => ['stop', ...MainScreen.IDS.filter((n) => n !== 'glance')], start: 'stop',
+    text: (v) => MainScreen.label(v === 'stop' ? 'glance' : v),
+    get: () => (MainScreen.home() === 'glance' ? 'stop' : MainScreen.home()),
+    set: (v) => MainScreen.setHome(v === 'stop' ? 'glance' : v),
   },
   'nav.mode': {
     label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',

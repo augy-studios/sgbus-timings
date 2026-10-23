@@ -1,5 +1,5 @@
-// The next bus at a glance, on Bus timings' page (help desk #2): one big answer at the top, the
-// next bus from a few stops, and under the search box those stops as short cards, each bus on
+// The next bus at a glance, Glance's page (help desk #2, a page of its own since): one big answer
+// at the top, the next bus from a few stops, and under it those stops as short cards, each bus on
 // one line with where it's going and its next three times: only your favourite buses, once you
 // have any, so a busy interchange isn't a dozen lines. A chip over it picks the stops:
 // your saved stops, the ones nearby, or the ones near Home, Work or another place. Tapping a
@@ -44,7 +44,7 @@
   };
 
   const enabled = () => store.get(OFF_KEY) !== '1';
-  const showing = () => enabled() && (window.MainScreen?.active() || 'timings') === 'timings' && document.visibilityState === 'visible';
+  const showing = () => enabled() && (window.MainScreen?.active() || 'glance') === 'glance' && document.visibilityState === 'visible';
 
   // The stops a chip can show: saved stops while there are any, nearby, and each place.
   function sources() {

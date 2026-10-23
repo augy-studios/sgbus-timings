@@ -214,15 +214,18 @@ function syncGlanceButtons() {
     syncStopClose();
 }
 
-// The X on a stop's timings: back to the glance.
+// The X on a stop's timings, which puts them away (closeStop): there with the glance on or off,
+// now Bus timings is a page of its own with the search box to come back to.
 function syncStopClose() {
-    $('#stopCloseBtn').hidden = !Glance.enabled();
+    $('#stopCloseBtn').hidden = false;
 }
 
 // Custom home, in Settings (js/main-screen.js).
 function syncMainButtons() {
     const home = MainScreen.home();
     $$('[data-home]').forEach(btn => {
+        // Glance only while it's on (js/glance.js).
+        btn.hidden = btn.dataset.home === 'glance' && !Glance.enabled();
         const on = btn.dataset.home === home;
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
@@ -746,6 +749,7 @@ function renderIncomingBar(data) {
 //   ctx       where it was opened from, for the way back and the stops-left note:
 //             { kind: 'route', start, end } | { kind: 'journey', start, end, legs }
 //             | { kind: 'service', service, dir, fromStop, onward } | { kind: 'nearby', stops }
+//             | { kind: 'nav' }, a way in Navigate, which keeps it (js/nav.js, backToNav)
 //   dir       the direction of `service`'s route the user was looking at
 let current = null;
 let lastArrivals = null;
@@ -850,6 +854,7 @@ function backLabel(ctx) {
         case 'journey': return 'Back to journey';
         case 'service': return `Back to bus ${ctx.service}`;
         case 'nearby':  return 'Back to nearby stops';
+        case 'nav':     return 'Back to Navigate';
         default:        return 'Back';
     }
 }
@@ -913,6 +918,7 @@ function goBack(ctx) {
     else if (ctx.kind === 'journey') openPlanner(ctx.start, ctx.end, { journey: ctx.legs, when: ctx.when });
     else if (ctx.kind === 'service') openService(ctx.service, { fromStop: ctx.fromStop, onward: ctx.onward, dir: ctx.dir });
     else if (ctx.kind === 'nearby')  openNearbyList(ctx.stops, ctx.title);
+    else if (ctx.kind === 'nav')     backToNav();
 }
 
 // The icon is drawn once, in a hidden <symbol> on the page, and each badge points at it:
@@ -1019,7 +1025,8 @@ function renderArrivals() {
     window.MakeIt?.render(code, svcs);
 }
 
-// Puts a stop's timings away, back to the glance at the top of the page (js/glance.js).
+// Puts a stop's timings away, back to Bus timings' search box. Back goes back to the page the
+// stop was opened from, such as Glance.
 function closeStop() {
     loadSeq++;
     current = null;
@@ -1531,6 +1538,11 @@ $$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
     LS.setCustoms(btn.dataset.customs);
     syncCustomsButtons();
 }));
+$$('[data-glance]').forEach(btn => btn.addEventListener('click', () => {
+    Glance.setEnabled(btn.dataset.glance === 'on');
+    syncGlanceButtons();
+    syncMainButtons();
+}));
 $('#homePick').addEventListener('click', e => {
     const btn = e.target.closest('[data-home]');
     if (btn) MainScreen.setHome(btn.dataset.home);
@@ -1584,7 +1596,7 @@ $('#stopBackBtn').addEventListener('click', () => { if (current?.ctx) goBack(cur
 $('#stopCloseBtn').addEventListener('click', closeStop);
 $('#settingsTour').addEventListener('click', () => {
     closeModal('settingsModal');
-    MainScreen.open('timings');
+    MainScreen.open(Glance.enabled() ? 'glance' : 'timings');
     setTimeout(Tour.start, 300);
 });
 $('#stopAside').addEventListener('click', e => {
@@ -1879,9 +1891,28 @@ function routeFromShare() {
     Tour.maybeStart();
 })();
 
+// sgbus in the browser's console, the Linux app's commands (js/console.js): this stand-in fetches
+// it the first time it's called, from this site only. Only ever run by typing it in the console.
+(function () {
+    let loading = null;
+    window.sgbus = (...args) => {
+        loading ??= new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = '/js/console.js';
+            s.onload = resolve;
+            s.onerror = reject;
+            document.head.appendChild(s);
+        });
+        loading.then(() => window.sgbus(...args), () => console.error("Couldn't load sgbus for the console."));
+    };
+    console.log('%cSG Bus Timings%c in this console: sgbus(\'84009 22*\'), sgbus(\'nav home work\'), sgbus(\'help\').\n' +
+        '%cDon\'t paste code here that someone sent you: it would run as you, with your saved stops and places.',
+        'font-weight:bold;color:#1f9d55', '', 'color:#d1242f');
+})();
+
 // What the app opens on when its link has nothing else to show: the home, from Settings' Custom
 // home, already on show (js/main-screen.js). Bus timings with the glance off opens the first
-// favourite stop's timings, as it did before the glance.
+// favourite stop's timings, as it did before the glance (with the glance on, Glance shows them).
 function openStartPage() {
     if (MainScreen.home() === 'timings' && LS.getFavs()[0] && !Glance.enabled()) {
         loadStop(LS.getFavs()[0].code, { pushHistory: false });

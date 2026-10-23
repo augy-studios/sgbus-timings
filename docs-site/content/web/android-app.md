@@ -207,8 +207,14 @@ just the map or how far along your trip you are. Drag it where you like, tap it
 for its controls, or drag it off the screen to close it. Anywhere else in the
 app, going home closes it as usual.
 
-If it doesn't shrink, picture-in-picture may be off for the app: Android
-**Settings** > **Apps** > **SG Bus Timings** > **Picture-in-picture**.
+To keep it from shrinking at all, turn it off in the app's own
+[Settings](settings.md): **Picture-in-picture**, **Off**. The app then goes to
+the background like any other, and the [Get Off Alert](get-off-alert.md) still
+comes as a notification.
+
+If it doesn't shrink with the setting on, picture-in-picture may be off for the
+app in Android: **Settings** > **Apps** > **SG Bus Timings** >
+**Picture-in-picture**.
 
 ## Notifications
 

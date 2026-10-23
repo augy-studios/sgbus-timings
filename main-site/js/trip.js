@@ -1787,6 +1787,19 @@
     });
   }
 
+  // How much of the bottom of the screen the trip bar takes, as --trip-h on the page, so the
+  // Edge Tray's column ends above it (style.css) and its last buttons, Settings among them, can
+  // be scrolled to rather than sitting under the bar. Kept in step as the bar grows or goes.
+  function fitTray() {
+    const bar = $("#tripBar");
+    const shown = !bar.classList.contains("hidden") && bar.offsetHeight > 0;
+    const h = shown ? Math.max(0, window.innerHeight - bar.getBoundingClientRect().top) : 0;
+    document.documentElement.style.setProperty("--trip-h", `${Math.round(h)}px`);
+  }
+  if ("ResizeObserver" in window) new ResizeObserver(fitTray).observe($("#tripBar"));
+  new MutationObserver(fitTray).observe($("#tripBar"), { attributes: true, attributeFilter: ["class"] });
+  window.addEventListener("resize", fitTray);
+
   function setExpanded(on) {
     expanded = on && !!trip;
     $("#tripBar").classList.toggle("expanded", expanded);

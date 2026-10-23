@@ -10,7 +10,7 @@ walking, waiting and riding, and which buses and trains you take most.
 Open it with the bar chart in the Edge Tray.
 
 <figure>
-<img src="/screenshots/web/trips-tray.png" alt="The Edge Tray's buttons, with the bar chart for Your trips and the bookmark for Places after the bell for Service alerts." width="44" height="577" loading="lazy">
+<img src="/screenshots/web/trips-tray.png" alt="The Edge Tray buttons, with the eye for Glance at the top, the bar chart for Your trips and the bookmark for Places after the bell for Service alerts." width="64" height="712" loading="lazy">
 <figcaption>Your trips is the bar chart; Places, the bookmark under it.</figcaption>
 </figure>
 

@@ -231,6 +231,9 @@
       minZoom: 10,
     }).setView(SG_CENTRE, 12);
     map.attributionControl.setPrefix(false);
+    // Its controls (the OpenStreetMap credit) out of the map's own box and into the panel, so
+    // they stay put and upright while the map turns (setTurning).
+    $('#mapPanel').insertBefore(map.attributionControl.getContainer().closest('.leaflet-control-container'), $('#liveMap').nextSibling);
     addTiles();
     groups = {
       lines: L.layerGroup().addTo(map),
@@ -238,10 +241,104 @@
       marks: L.layerGroup().addTo(map),
       me: L.layerGroup().addTo(map),
     };
-    // Moving the map yourself stops it following you, until Recentre.
+    // Moving the map yourself stops it following you, until Recentre. Turned with the way you
+    // face, it can't be dragged, and zooms about you.
     map.on('dragstart', () => setFollowing(false));
-    map.on('zoomstart', (e) => { if (e.originalEvent) setFollowing(false); });
+    map.on('zoomstart', (e) => { if (e.originalEvent && !turning) setFollowing(false); });
     return map;
+  }
+
+  // ---------- turned with the way you face ----------
+  // The compass button: the map centred on you, turned so the way the phone points is up, as
+  // a map app's compass mode. The phone's compass where it has one (iOS asks first, from the
+  // tap), the way you're moving where it hasn't. Its needle keeps pointing north. Off with the
+  // button again, Overview, or closing the map.
+
+  const COMPASS_FRESH_MS = 3000;
+  // How far each reading moves the smoothed heading towards it, so the map doesn't shake.
+  const SMOOTH = 0.25;
+  let turning = false;
+  let facing = null; // the compass's smoothed heading, degrees from north
+  let compassAt = 0;
+  let turned = 0; // the turn on show, unwrapped, so 359 to 1 goes 2 degrees, not 358
+  let turnFrame = null;
+  let compassNote = null;
+
+  function onOrient(e) {
+    let deg = null;
+    if (Number.isFinite(e.webkitCompassHeading)) deg = e.webkitCompassHeading;
+    else if ((e.absolute || e.type === 'deviceorientationabsolute') && Number.isFinite(e.alpha)) deg = 360 - e.alpha;
+    if (deg == null) return;
+    // The way the top of the screen points, held sideways too.
+    deg = (deg + (screen.orientation?.angle ?? window.orientation ?? 0) + 360) % 360;
+    facing = facing == null ? deg : (facing + (((deg - facing + 540) % 360) - 180) * SMOOTH + 360) % 360;
+    compassAt = Date.now();
+    turnSoon();
+  }
+
+  const heading = () => (Date.now() - compassAt < COMPASS_FRESH_MS ? facing : here?.heading ?? null);
+
+  function turnSoon() {
+    if (!turnFrame) turnFrame = requestAnimationFrame(applyTurn);
+  }
+
+  function applyTurn() {
+    turnFrame = null;
+    if (!turning) return;
+    const h = heading();
+    if (h == null) return;
+    turned += (((h - turned) % 360) + 540) % 360 - 180;
+    $('#liveMap').style.rotate = `${-turned}deg`;
+    $('#mapHeading svg').style.rotate = `${-turned}deg`;
+  }
+
+  // The map's box as a square the screen's diagonal across, round the panel's middle.
+  function fitTurn() {
+    const panel = $('#mapPanel');
+    const w = panel.clientWidth;
+    const h = panel.clientHeight;
+    const d = Math.ceil(Math.hypot(w, h));
+    Object.assign($('#liveMap').style, { width: `${d}px`, height: `${d}px`, left: `${(w - d) / 2}px`, top: `${(h - d) / 2}px` });
+    map.invalidateSize();
+  }
+
+  async function setTurning(on) {
+    if (!map || on === turning) return;
+    const el = $('#liveMap');
+    if (on) {
+      // iOS lets a page read the compass only once asked, and asks only from a tap.
+      if (typeof window.DeviceOrientationEvent?.requestPermission === 'function') {
+        try { await DeviceOrientationEvent.requestPermission(); } catch { /* the way you move instead */ }
+      }
+      turning = true;
+      window.addEventListener('deviceorientationabsolute', onOrient);
+      window.addEventListener('deviceorientation', onOrient);
+      el.classList.add('turning');
+      fitTurn();
+      map.dragging.disable();
+      map.options.touchZoom = map.options.scrollWheelZoom = map.options.doubleClickZoom = 'center';
+      setFollowing(true);
+      clearTimeout(compassNote);
+      compassNote = setTimeout(() => {
+        if (turning && !compassAt) note(here?.heading != null ? 'No compass here, so the map turns the way you move.' : 'No compass here: the map turns once you start moving.');
+      }, COMPASS_FRESH_MS);
+      turnSoon();
+    } else {
+      turning = false;
+      window.removeEventListener('deviceorientationabsolute', onOrient);
+      window.removeEventListener('deviceorientation', onOrient);
+      clearTimeout(compassNote);
+      el.classList.remove('turning');
+      Object.assign(el.style, { width: '', height: '', left: '', top: '', rotate: '' });
+      $('#mapHeading svg').style.rotate = '';
+      turned = 0;
+      facing = null;
+      compassAt = 0;
+      map.invalidateSize();
+      map.dragging.enable();
+      map.options.touchZoom = map.options.scrollWheelZoom = map.options.doubleClickZoom = true;
+    }
+    $('#mapHeading').setAttribute('aria-pressed', String(turning));
   }
 
   // Who the map follows: them on a shared trip, otherwise you. Null until there's a fix.
@@ -277,6 +374,7 @@
     const at = focus();
     if (at) pts.push(at);
     if (!pts.length) return;
+    setTurning(false);
     setFollowing(false);
     map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 90], paddingBottomRight: [70, 120], maxZoom: STREET_ZOOM - 1 });
   }
@@ -317,6 +415,7 @@
   function close({ fromHistory = false } = {}) {
     const panel = $('#mapPanel');
     if (panel.hidden) return;
+    setTurning(false);
     panel.hidden = true;
     document.body.classList.remove('map-open');
     stopWatching();
@@ -388,10 +487,12 @@
       meDot.setLatLng(at);
       meRing.setLatLng(at).setRadius(Math.min(here.accuracy, 500));
     }
-    if (here.heading != null) {
+    // The way you face: the compass while the map turns with it, otherwise the way you move.
+    const faces = turning ? heading() : here.heading;
+    if (faces != null) {
       const zoomM = 40 * Math.pow(2, 17 - map.getZoom());
       const tip = (deg) => {
-        const r = ((here.heading + deg) * Math.PI) / 180;
+        const r = ((faces + deg) * Math.PI) / 180;
         return [here.lat + (Math.cos(r) * zoomM) / 110540, here.lng + (Math.sin(r) * zoomM) / (111320 * Math.cos((here.lat * Math.PI) / 180))];
       };
       meCone.setLatLngs([at, tip(-25), tip(25)]);
@@ -406,6 +507,12 @@
     if (!following) return;
     const size = map.getSize();
     const p = map.latLngToContainerPoint(at);
+    // Turned with the way you face, you stay in the middle, which it turns about.
+    if (turning) {
+      if (Math.hypot(p.x - size.x / 2, p.y - size.y / 2) > 4) map.panTo(at, { animate: true, duration: 0.5 });
+      turnSoon();
+      return;
+    }
     const dx = Math.abs(p.x - size.x / 2) / (size.x / 2);
     const dy = Math.abs(p.y - size.y / 2) / (size.y / 2);
     if (dx > PAN_SHARE || dy > PAN_SHARE) map.panTo(at, { animate: true, duration: 0.6 });
@@ -432,6 +539,7 @@
 
   async function walkTo(to, { from = null, title = null } = {}) {
     if (to?.lat == null || to?.lng == null) return;
+    $('#mapHeading').hidden = false;
     await show(title || `Walk to ${to.label || 'here'}`, '');
     mode = 'walk';
     place = { lat: Number(to.lat), lng: Number(to.lng), label: to.label || 'Your destination' };
@@ -519,6 +627,7 @@
   async function trip() {
     const p = window.Trip?.progress();
     if (!p) return;
+    $('#mapHeading').hidden = false;
     await show(window.Trip.title?.() || 'Your trip', '');
     mode = 'trip';
     startWatching();
@@ -647,6 +756,9 @@
   }
 
   async function follow(data, { title = null } = {}) {
+    // Their trip, centred on them: turning it with the way you face would make no sense.
+    setTurning(false);
+    $('#mapHeading').hidden = true;
     await show(title || (data.name ? `${data.name}'s trip` : 'Shared trip'), '');
     mode = 'follow';
     themDot = themRing = themPath = null;
@@ -716,6 +828,8 @@
     $('#mapClose').addEventListener('click', () => close());
     $('#mapRecentre').addEventListener('click', () => setFollowing(true));
     $('#mapOverview').addEventListener('click', showOverview);
+    $('#mapHeading').addEventListener('click', () => setTurning(!turning));
+    window.addEventListener('resize', () => { if (turning) fitTurn(); });
     window.addEventListener('popstate', () => {
       if (!$('#mapPanel').hidden) close({ fromHistory: true });
     });

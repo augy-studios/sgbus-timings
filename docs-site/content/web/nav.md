@@ -124,8 +124,9 @@ Tapping into either box, before you type, also lists your
 </figure>
 
 Navigate opens in a window over the page. Close it with the button at its top
-right, or by tapping anywhere outside it. Opening a bus's timings from it, or
-starting a trip, closes it too, and the Edge Tray's arrowhead brings it back
+right, or by tapping anywhere outside it. Opening a bus's timings from a way
+takes you to Bus timings, where **Back to Navigate** comes back to that same
+way. Starting a trip closes it too, and the Edge Tray's arrowhead brings it back
 with the same two places.
 
 ### From a Google Maps link
@@ -210,7 +211,7 @@ Tap a way to see it part by part:
   station), how many stops, and where to get off.
 - **Buses**, with how many stops, where to get off, and the **live timings** of
   that bus at the stop you board it. A button opens that stop's timings for the
-  bus.
+  bus, with **Back to Navigate** on them to come back.
 
 With a time picked, each bus and train also says roughly when you'd board it. Live
 timings only reach about half an hour ahead, so for a way setting off later than

@@ -670,6 +670,9 @@ html[data-telegram] .telegramBtn { display: none; }
     margin-top: -6px;
 }
 .tray-buttons::-webkit-scrollbar { display: none; }
+/* On a trip, the column ends above the trip bar (js/trip.js, fitTray), so the buttons under
+   it, Settings and the theme, scroll up into reach instead of sitting behind the bar. */
+body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - var(--trip-h, 0px)); }
 :root:not([data-tray-side="left"]) .tray-buttons { margin-right: calc(var(--hud-edge) - 10px); }
 :root[data-tray-side="left"] .tray-buttons { margin-right: 0; margin-left: calc(var(--hud-edge) - 10px); }
 
@@ -2617,6 +2620,11 @@ body.on-trip { padding-bottom: 96px; }
    blurring a map that's panning means redoing the blur every frame, which is what lags. */
 .mapPanel { position: fixed; inset: 0; z-index: 60; background: var(--bg); }
 .liveMap { position: absolute; inset: 0; background: var(--bg); }
+/* Turned with the way you face (js/map.js, setTurning): a square as wide as the screen's
+   diagonal round its middle, so no corner comes up empty as it turns. Its credit sits outside it. */
+.liveMap.turning { inset: auto; transition: rotate 0.15s linear; }
+.mapFab[aria-pressed="true"] { background: var(--brand-fill); color: var(--on-brand); }
+#mapHeading svg { transition: rotate 0.15s linear; }
 .mapPanel .glass {
     backdrop-filter: none; -webkit-backdrop-filter: none;
     background: color-mix(in srgb, var(--bg) 94%, transparent);
@@ -2921,8 +2929,10 @@ body.on-trip { padding-bottom: 96px; }
     color: var(--on-brand);
 }
 
-/* Bus timings' search and results step aside while another part is on show. */
-:root[data-view]:not([data-view="timings"]) :is(.glance, .glanceStops, .searchWrap, .hint, .quickActions, .resultsSection) { display: none; }
+/* Glance's page (the next bus, your stops and the weather) and Bus timings' (the search and a
+   stop's timings) share the page's column, each stepping aside while another part is on show. */
+:root[data-view]:not([data-view="glance"]) :is(.glance, .glanceStops, .quickActions) { display: none; }
+:root[data-view]:not([data-view="timings"]) :is(.searchWrap, .hint, .resultsSection) { display: none; }
 
 /* A page: its card in the page under the greeting, as Navigate and the alerts were before they
    opened over it (the in-page rules above, .navSection and the rest), and nothing to close. */

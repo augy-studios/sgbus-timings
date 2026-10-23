@@ -6,9 +6,13 @@
 //
 // Checked every CHECK_MS rather than hooked into each way a trip or the map can start and
 // stop: it's one cheap call, and only made when the answer changes.
+//
+// Settings' Picture-in-picture turns it off (OFF_KEY): then it's never wanted, and the app goes
+// to the background as any other app does. Shown only in an app that has it.
 // Plain script: this project does not use ES modules.
 (function () {
   const CHECK_MS = 1500;
+  const OFF_KEY = 'sgbus_pip';
   // The shapes, as [width, height]: tall for the map, wide for the trip's line of text.
   const MAP_SHAPE = [3, 4];
   const TRIP_SHAPE = [16, 9];
@@ -76,7 +80,32 @@
     window.dispatchEvent(new Event('resize'));
   }
 
+  const enabled = () => { try { return localStorage.getItem(OFF_KEY) !== 'off'; } catch { return true; } };
+  let available = false;
+
+  function syncButtons() {
+    document.querySelectorAll('[data-pip-pref]').forEach((btn) => {
+      const on = (btn.dataset.pipPref === 'on') === enabled();
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  function setEnabled(on) {
+    try {
+      if (on) localStorage.removeItem(OFF_KEY);
+      else localStorage.setItem(OFF_KEY, 'off');
+    } catch { /* this visit only */ }
+    syncButtons();
+    if (available) check();
+  }
+
+  window.Pip = { enabled, setEnabled, available: () => available };
+  document.querySelectorAll('[data-pip-pref]').forEach((btn) => btn.addEventListener('click', () => setEnabled(btn.dataset.pipPref === 'on')));
+  syncButtons();
+
   function wanted() {
+    if (!enabled()) return { auto: false };
     if (window.LiveMap?.isOpen()) return { auto: true, ratio: MAP_SHAPE };
     if (window.Trip?.active()) return { auto: true, ratio: TRIP_SHAPE };
     return { auto: false };
@@ -93,6 +122,8 @@
   if (!window.AppBridge?.native) return;
   AppBridge.ready(5000).then((inApp) => {
     if (!inApp || !AppBridge.has('pip')) return;
+    available = true;
+    document.getElementById('pipSetting').hidden = false;
     check();
     setInterval(check, CHECK_MS);
     AppBridge.on('SgBus', 'pip', ({ active }) => setPip(!!active));

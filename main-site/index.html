@@ -134,6 +134,7 @@
                      the buttons below in) -->
                 <nav id="trayViews" class="tray-views" role="tablist" aria-label="Pages" aria-orientation="vertical"></nav>
                 <span class="tray-rule" aria-hidden="true"></span>
+                <button id="glanceBtn" class="glass-btn" type="button" aria-label="Glance" title="Glance: your next bus, and your stops' buses"><span data-icon="eye"></span></button>
                 <button id="timingsBtn" class="glass-btn" type="button" aria-label="Bus timings" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
                 <button id="nearMeBtn" class="glass-btn" type="button" aria-label="Stops near me" title="Stops near me"><span data-icon="pin"></span></button>
@@ -187,6 +188,9 @@
             </div>
         </div>
 
+        <!-- Glance's page (js/main-screen.js, style.css data-view): the next bus at a glance, from
+             your saved stops, the ones nearby or a place's (js/glance.js), the weather, and the
+             stops' buses. The search and a stop's timings between are Bus timings' page. -->
         <!-- The next bus at a glance, from your saved stops, the ones nearby or a place's: js/glance.js -->
         <section id="glance" class="glance" aria-label="Next bus" hidden>
             <div class="glanceBar">
@@ -582,22 +586,23 @@
             <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
             <!-- The tour of the basics, as it shows the first time (js/tour.js) -->
             <button id="settingsTour" class="iconBtn settingsWide" type="button"><span data-icon="help"></span> Show me around</button>
-            <!-- The next bus at a glance, on Bus timings (js/glance.js) -->
+            <!-- The next bus at a glance, Glance's page (js/glance.js) -->
             <p class="modal-section-label">Next bus at a glance</p>
             <div class="mode-toggle">
                 <button class="mode-btn" type="button" data-glance="on" aria-pressed="true">On</button>
                 <button class="mode-btn" type="button" data-glance="off" aria-pressed="false">Off</button>
             </div>
-            <p class="mode-note">The next bus in big letters at the top of Bus timings, and your stops under the search box, each bus on one line. The chip over it picks the stops: saved, nearby, or near one of your places.</p>
+            <p class="mode-note">Glance, a page of its own: the next bus in big letters, and your stops under it, each bus on one line. The chip over it picks the stops: saved, nearby, or near one of your places. Off, Glance leaves the Edge Tray and the app opens on Bus timings.</p>
             <!-- The page the app opens on, first in the Edge Tray (js/main-screen.js) -->
             <p class="modal-section-label">Custom home</p>
             <div id="homePick" class="mode-toggle trayExtrasPick">
-                <button class="mode-btn mode-btn-wide" type="button" data-home="timings" aria-pressed="true">Bus timings</button>
+                <button class="mode-btn mode-btn-wide" type="button" data-home="glance" aria-pressed="true">Glance</button>
+                <button class="mode-btn" type="button" data-home="timings" aria-pressed="false">Bus timings</button>
                 <button class="mode-btn" type="button" data-home="favs" aria-pressed="false">Favourites</button>
                 <button class="mode-btn" type="button" data-home="nav" aria-pressed="false">Navigate</button>
                 <button class="mode-btn" type="button" data-home="alerts" aria-pressed="false">Service alerts</button>
                 <button class="mode-btn" type="button" data-home="trips" aria-pressed="false">Your trips</button>
-                <button class="mode-btn mode-btn-wide" type="button" data-home="places" aria-pressed="false">Places</button>
+                <button class="mode-btn" type="button" data-home="places" aria-pressed="false">Places</button>
             </div>
             <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>
@@ -628,6 +633,15 @@
                     <button class="mode-btn" type="button" data-shake="off" aria-pressed="false">Off</button>
                 </div>
                 <p class="mode-note">Give the phone a firm shake to refresh the timings on screen.</p>
+            </div>
+            <!-- Picture-in-picture: the Android app from 2.0.1 only (js/pip.js) -->
+            <div id="pipSetting" hidden>
+                <p class="modal-section-label">Picture-in-picture</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-pip-pref="on" aria-pressed="true">On</button>
+                    <button class="mode-btn" type="button" data-pip-pref="off" aria-pressed="false">Off</button>
+                </div>
+                <p class="mode-note">On a trip or with the live map open, leaving the app shrinks it into a small window over your other apps. Off, it goes to the background like any other app, and the Get Off Alert still comes as a notification.</p>
             </div>
             <!-- The Android app's reminders: js/reminders.js -->
             <!-- Timings near a stop and Routines have their own buttons in the Edge Tray, and their
@@ -879,6 +893,7 @@
             <div class="mapTitle"><strong id="mapTitle"></strong><span id="mapSub"></span></div>
         </div>
         <div class="mapFabs">
+            <button id="mapHeading" class="glass-btn mapFab" type="button" aria-pressed="false" aria-label="Turn the map with the way you face" title="Turn the map with the way you face"><span data-icon="compass"></span></button>
             <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
             <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
         </div>
