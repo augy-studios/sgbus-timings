@@ -1473,6 +1473,7 @@ function openSettings() {
     syncGlanceButtons();
     syncMainButtons();
     prepareSync();
+    $('#settingsTour').innerHTML = Tour.pickers();
     openModal('settingsModal');
 }
 
@@ -1594,10 +1595,11 @@ $('#stopFavBtn').addEventListener('click', () => {
 });
 $('#stopBackBtn').addEventListener('click', () => { if (current?.ctx) goBack(current.ctx); });
 $('#stopCloseBtn').addEventListener('click', closeStop);
-$('#settingsTour').addEventListener('click', () => {
+$('#settingsTour').addEventListener('click', e => {
+    const btn = e.target.closest('[data-tour]');
+    if (!btn) return;
     closeModal('settingsModal');
-    MainScreen.open(Glance.enabled() ? 'glance' : 'timings');
-    setTimeout(Tour.start, 300);
+    setTimeout(() => Tour.start(btn.dataset.tour), 300);
 });
 $('#stopAside').addEventListener('click', e => {
     const btn = e.target.closest('[data-same-place]');

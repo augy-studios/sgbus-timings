@@ -1786,6 +1786,44 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     font-weight: 700;
 }
 .legNote { color: var(--muted-strong); }
+/* Where to stand on the train: a row per way off the platform (js/nav.js doorsPanel). */
+.legDoors {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 2px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--surface-strong);
+    border: 1px solid var(--surface-border);
+}
+.doorHead { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.doorHead .ico { color: var(--muted-strong); }
+.doorFor { font-weight: 400; color: var(--muted-strong); }
+.doorRows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+/* The icon beside both lines: what it is and where to, then its doors. */
+.doorRow {
+    display: grid;
+    grid-template-columns: 24px 1fr;
+    grid-template-areas: "ico where" "ico chips";
+    align-items: center;
+    gap: 2px 10px;
+}
+.doorRow > .ico { grid-area: ico; align-self: start; margin-top: 2px; width: 24px; height: 24px; color: var(--brand-ink); }
+.doorRow > .ico svg { width: 24px; height: 24px; }
+.doorRow > .doorWhere { grid-area: where; }
+.doorChips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 6px; }
+.doorChip {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--brand-fill);
+    color: var(--on-brand);
+    font-size: 13px;
+    white-space: nowrap;
+}
+.doorChip b { font-size: 15px; }
+.doorWhere { font-size: 13px; color: var(--muted-strong); }
+.doorFoot { font-size: 12px; color: var(--muted); }
 .legEtas s { color: var(--muted-strong); }
 .legEtas strong { color: var(--ok); }
 
@@ -3147,6 +3185,8 @@ section.panelModal.docked {
 .tourDots > span { width: 7px; height: 7px; border-radius: 999px; background: rgba(246, 241, 230, 0.4); transition: width 0.2s ease; }
 .tourDots > .on { width: 20px; background: #f6f1e6; }
 body.touring { overflow: hidden; }
+/* Settings, Show me around: a button for each page's tour (js/tour.js). */
+.tourPicks { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (prefers-reduced-motion: reduce) {
     .tourHole { transition: none; }
     .tourLine { animation: none; stroke-dashoffset: 0; }

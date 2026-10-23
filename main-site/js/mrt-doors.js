@@ -68,17 +68,16 @@
     return null;
   }
 
-  function doorName(n, line) {
+  // Door 8 of a 4-door car: { car: 2, door: 4 }.
+  function carDoor(n, line) {
     const per = DOORS_PER_CAR[line] || 4;
-    return `car ${Math.ceil(n / per)}, door ${((n - 1) % per) + 1}`;
+    return { car: Math.ceil(n / per), door: ((n - 1) % per) + 1 };
   }
 
-  const doorList = (doors, line) => [...new Set(doors)].sort((a, b) => a - b).map((n) => doorName(n, line)).join(' or ');
-
-  // "car 2, door 4 for the escalators to Jewel; car 1, door 1 for the lift": the facilities
-  // by type, escalators first, those of a type at the same doors as one, with the places
-  // they lead to. Stairs only where they're at other doors from the escalators.
-  function describe(fs, line) {
+  // The facilities as rows to show, by type, escalators first: those of a type at the same
+  // doors as one, with the places they lead to. Stairs only where they're at other doors
+  // from the escalators. [{ t, places, doors: [{ car, door }] }]
+  function rowsOf(fs, line) {
     const max = (CARS[line] || 6) * (DOORS_PER_CAR[line] || 4);
     const groups = new Map();
     for (const f of fs) {
@@ -92,16 +91,21 @@
     const rank = (t) => (ORDER.includes(t) ? ORDER.indexOf(t) : ORDER.length);
     const all = [...groups.values()].sort((a, b) => rank(a.t) - rank(b.t));
     const esc = new Set(all.filter((g) => g.t === 'escalator').flatMap((g) => g.doors));
+    // A door already said for one of a type to a place isn't said again for one to nowhere
+    // in particular.
+    const named = (t) => new Set(all.filter((g) => g.t === t && g.places.length).flatMap((g) => g.doors));
     return all
+      .map((g) => (g.places.length ? g : { ...g, doors: g.doors.filter((n) => !named(g.t).has(n)) }))
       .map((g) => (g.t === 'stairs' ? { ...g, doors: g.doors.filter((n) => !esc.has(n)) } : g))
       .filter((g) => g.doors.length)
-      .map((g) => `${doorList(g.doors, line)} for the ${PLURAL[g.t] || g.t}${g.places.length ? ` to ${andList(g.places)}` : ''}`);
+      .map((g) => ({ t: g.t, places: g.places, doors: g.doors.map((n) => carDoor(n, line)) }));
   }
 
-  // What to say under a train ride, or null: changing across the platform for `next` (the
-  // ride after, if a train), the doors for the way to it if it's from the same station,
-  // otherwise the doors for each way out.
-  function tip(leg, next = null) {
+  // Where to stand for a train ride, or null: { station, cross } where `next` (the ride
+  // after, if a train) is across the platform; otherwise { station, change, rows }, the doors
+  // for the way to `next` if it's from the same station (`change` its line's name), or for
+  // each way out.
+  function plan(leg, next = null) {
     if (!platforms || leg?.mode !== 'train') return null;
     const a = arrival(leg);
     if (!a) return null;
@@ -109,7 +113,7 @@
     if (next?.mode === 'train') {
       const nextLine = String(next.route || '').toUpperCase();
       const onward = arrival(next);
-      if (onward && a.x.includes(onward.d)) return `At ${a.n}, change across the platform to the ${next.name || next.route}.`;
+      if (onward && a.x.includes(onward.d)) return { station: a.n, cross: next.name || next.route };
       const here = at(next.from, nextLine).some((p) => p.n === a.n) || norm(next.from?.name) === norm(a.n);
       if (here) {
         // The way to the platform it leaves from, or failing that to its line.
@@ -121,11 +125,21 @@
         };
       }
     }
-    const parts = change?.fs.length ? describe(change.fs, a.l) : describe(a.f.filter(leadsOut), a.l);
-    if (!parts.length) return null;
-    const head = change ? `Changing at ${a.n}${change.fs.length ? ` for the ${change.name}` : ''}` : `Getting off at ${a.n}`;
+    const rows = change?.fs.length ? rowsOf(change.fs, a.l) : rowsOf(a.f.filter(leadsOut), a.l);
+    if (!rows.length) return null;
+    return { station: a.n, change: change && (change.fs.length ? change.name : ''), rows };
+  }
+
+  // The same in words: "Getting off at Changi Airport: car 5, door 4 for the escalators to
+  // Jewel; car 2, door 1 for the lift, counting from the front of the train."
+  function tip(leg, next = null) {
+    const p = plan(leg, next);
+    if (!p) return null;
+    if (p.cross) return `At ${p.station}, change across the platform to the ${p.cross}.`;
+    const parts = p.rows.map((r) => `${r.doors.map((d) => `car ${d.car}, door ${d.door}`).join(' or ')} for the ${PLURAL[r.t] || r.t}${r.places.length ? ` to ${andList(r.places)}` : ''}`);
+    const head = p.change != null ? `Changing at ${p.station}${p.change ? ` for the ${p.change}` : ''}` : `Getting off at ${p.station}`;
     return `${head}: ${parts.join('; ')}, counting from the front of the train.`;
   }
 
-  window.MrtDoors = { load, tip, ready: () => platforms != null };
+  window.MrtDoors = { load, plan, tip, ready: () => platforms != null };
 })();

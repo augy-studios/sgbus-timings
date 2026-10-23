@@ -209,15 +209,41 @@ Tap a way to see it part by part:
   walk on the [live map](live-map.md), or in Citymapper.
 - **Trains**, with the line, the direction to take (**towards** its last
   station), how many stops, and where to get off. For almost every MRT
-  station, it also says which door to stand at, counting from the front of the
-  train: the car and door that stop nearest the escalators, lift and stairs out
-  of the station, with the mall or terminal they lead to where there is one
-  ("car 5, door 4 for the escalators to T1, T3, T4 and Jewel"). Changing lines,
-  it gives the doors nearest the way to your next train instead, or says that
-  it's just across the platform.
+  station, it also says [which door to stand at](#which-door-to-stand-at).
 - **Buses**, with how many stops, where to get off, and the **live timings** of
   that bus at the stop you board it. A button opens that stop's timings for the
   bus, with **Back to Navigate** on them to come back.
+
+### Which door to stand at
+
+<figure>
+<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then an escalator to T1, T3, T4 and Jewel at car 5, door 4, an escalator to T2 at car 2, door 1, a lift to T2 at car 2, door 1, and a lift to T1, T3, T4 and Jewel at car 5, door 4. Under them, Car 1 is the front of the train." width="310" height="423" loading="lazy">
+<figcaption>Getting off: the doors nearest each way out, and where it leads.</figcaption>
+</figure>
+
+Under a train ride, a panel says where on the train to stand. Each way off the
+platform has a row: its icon (escalator, lift or stairs), where it leads, and the
+doors that stop nearest it, as **Car 3 · Door 1**. Cars are counted from the front
+of the train, so car 1 is the one at the front, and doors from the front of each
+car, as they're numbered on the platform.
+
+- **Getting off**, it's the ways out of the station, with the mall or terminal
+  one leads to where it's somewhere in particular: Jewel, Nex, City Square.
+- **Changing lines**, it's the way to your next train instead.
+- **Your next train across the platform**, it just says so.
+
+<figure>
+<img src="/screenshots/web/nav-doors-change.png" alt="Two rides. Under the Downtown Line to MacPherson: Changing at MacPherson for the Circle Line, escalator at car 3, door 1, lift at car 1, door 4. Under the Circle Line to Serangoon: Getting off at Serangoon, escalator to Nex at car 3, door 4, escalator at car 2, door 2, lift at car 2, door 4." width="310" height="685" loading="lazy">
+<figcaption>Changing at MacPherson, then off at Serangoon.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, escalator at car 2, door 2 or car 5, door 1, lift at car 3, door 4." width="310" height="552" loading="lazy">
+<figcaption>At Jurong East the next train is just across the platform.</figcaption>
+</figure>
+
+A few stations don't have their doors in yet, and a ride ending at one shows no
+panel.
 
 With a time picked, each bus and train also says roughly when you'd board it. Live
 timings only reach about half an hour ahead, so for a way setting off later than

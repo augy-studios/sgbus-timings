@@ -13,6 +13,8 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Web app
 
+- **A tour for every page** - Like Glance's, each page now shows you around the first time you open it: Bus timings, Favourites, Navigate, Service alerts, Your trips and Places. Settings, Show me around, has a button for each to see it again.
+- **Which door, at a glance** - The door tip is a panel now, not a sentence: a row for each escalator, lift and stairs with its icon, where it goes, and its doors as "Car 3 · Door 1".
 - **Which door, nearly everywhere** - Navigate's door tips now cover almost every MRT station, not a handful.
 - **The doors for your next line** - Changing trains, it gives the doors nearest the way to the line you're changing to, not just the way out.
 - **Malls and terminals** - Getting off, it names where an escalator or lift leads when it's somewhere in particular: Jewel, a terminal at Changi Airport, Nex, City Square and so on.

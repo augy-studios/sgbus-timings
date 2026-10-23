@@ -1,6 +1,6 @@
 ---
 title: Your main screen
-description: Glance and your next bus, the pages in the Edge Tray, picking your custom home, and the tour.
+description: Glance and your next bus, the pages in the Edge Tray, picking your custom home, and the tours.
 ---
 
 The app opens on **Glance**: the next bus in big letters, and your stops'
@@ -118,7 +118,7 @@ moves to the top of the Edge Tray. Someone who mostly plans journeys can make
 
 A link to a stop, a bus or a journey still opens that.
 
-## The tour
+## The tours
 
 <figure>
 <img src="/screenshots/web/tour.png" alt="The tour's first step: the page dimmed, a light round the next bus, a chalk arrow to it, and the words Your next bus, big enough to read on the move. Tap it for all its times, with Next, Skip and the step dots." width="390" height="844" loading="lazy">
@@ -126,11 +126,22 @@ A link to a stop, a bus or a journey still opens that.
 </figure>
 
 The first time the app opens, a short tour shows the basics, one thing at a
-time: the next bus, the chip and your stops on Glance, the search box on Bus
-timings, the pages in the Edge Tray and Settings. It moves between the two
-pages as it goes, and ends back where it started. **Next** moves on, and **Skip** at the top ends it.
+time: the next bus, the chip and your stops on Glance, then the pages in the Edge
+Tray and Settings. **Next** moves on, and **Skip** at the top ends it.
 
-To see it again, open [Settings](settings.md) and tap **Show me around**.
+Every other page has a tour of its own too, shown the first time you open it:
+Bus timings, Favourites, Navigate, Service alerts, Your trips and Places. Each
+lights up what's on that page, such as Navigate's two tabs, From and To, and the
+time to leave or arrive by. A tour leaves out what isn't there yet, so Your trips
+with no trips just says how to start one.
+
+<figure>
+<img src="/screenshots/web/tour-nav.png" alt="Navigate's tour, the first time it opens: the page dimmed, a light round its two tabs, Bus and train and Bus only, a chalk arrow to them, and the words Bus and train plans with the MRT too; Bus only keeps to buses, stop to stop. With Next, Skip and the step dots." width="390" height="844" loading="lazy">
+<figcaption>Navigate's tour, the first time it opens.</figcaption>
+</figure>
+
+To see any of them again, open [Settings](settings.md): **Show me around** has
+a button for each page.
 
 All of this is in the web app, so the Android and desktop apps have it too,
 with no update needed.

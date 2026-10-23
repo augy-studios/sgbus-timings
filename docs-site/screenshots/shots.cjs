@@ -31,6 +31,8 @@ const STATE = {
   sgbus_hold_hint: '1',
   // Not the tour of the basics over every shot (main-site/js/tour.js), only where it's the subject.
   sgbus_tour: 'done',
+  // Nor each page's own the first time it opens.
+  sgbus_tours: JSON.stringify(['timings', 'favs', 'nav', 'alerts', 'trips', 'places']),
   sgbus_favs_v2: JSON.stringify([{ code: '84009', name: 'Bedok Int' }, { code: '75009', name: 'Tampines Int' }]),
   sgbus_fav_buses: JSON.stringify(['60', '14']),
   sgbus_fav_routes: JSON.stringify([{ start: '84009', startName: 'Bedok Int', end: '66009', endName: 'Serangoon Int' }]),
@@ -207,6 +209,40 @@ async function el(page, sel, name) {
     await page.waitForTimeout(4000);
     await el(page, N, 'nav-open.png');
     await ctx.close();
+  }
+  // Which train door to stand at: a change of line, then the way out to a terminal or Jewel.
+  if (want('nav-doors')) {
+    // In the morning tomorrow, so there are trains whenever it's taken.
+    const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
+    const shoot = async (from, to, name, min) => {
+      const { ctx, page } = await open(browser, { width: 420, height: 2600, hash: navHash(from, to, `/arrive/${tomorrow}T10:00`) });
+      await idle(page, '#navBody', 40000);
+      await blur(page);
+      // The first way with door tips on its rides.
+      const ways = page.locator('#navBody [data-nav-option]');
+      for (let i = 0, n = await ways.count(); i < n; i++) {
+        await ways.nth(i).click();
+        await page.waitForSelector('#navBody .legDoors', { timeout: 8000 }).catch(() => {});
+        if (await page.locator('#navBody .legDoors').count() >= min) break;
+        await page.goBack().catch(() => {});
+        await idle(page, '#navBody', 20000);
+      }
+      await page.waitForTimeout(1500);
+      // The train rides, from the first to the last with doors.
+      const rides = page.locator('#navBody .stepLeg:has(.legDoors)');
+      const a = await rides.first().boundingBox();
+      const b = await rides.last().boundingBox();
+      const c = await page.locator(N).boundingBox();
+      await page.screenshot({ path: OUT + name, clip: { x: c.x, y: a.y - 10, width: c.width, height: b.y + b.height + 10 - (a.y - 10) } });
+      console.log('wrote', name, Math.round(c.width), Math.round(b.y + b.height + 20 - a.y));
+      await ctx.close();
+    };
+    // Off at Changi Airport, its escalators and lifts to the terminals and Jewel.
+    await shoot({ label: 'Tanah Merah Stn', lat: 1.327262, lng: 103.946513 }, { label: 'Jewel Changi Airport', lat: 1.360365, lng: 103.989567 }, 'nav-doors.png', 1);
+    // A change of line at MacPherson, then off at Serangoon.
+    await shoot({ label: 'Bedok Reservoir Stn', lat: 1.336284, lng: 103.931887 }, { label: 'Serangoon Stn', lat: 1.349807, lng: 103.873771 }, 'nav-doors-change.png', 2);
+    // Across the platform at Jurong East.
+    await shoot({ label: 'Clementi Stn', lat: 1.3151, lng: 103.765231 }, { label: 'Bukit Batok Stn', lat: 1.349057, lng: 103.749591 }, 'nav-doors-across.png', 1);
   }
   if (want('calendar-nav')) {
     const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
@@ -533,6 +569,16 @@ async function el(page, sel, name) {
     await page.waitForTimeout(900);
     await page.screenshot({ path: OUT + 'tour.png' });
     console.log('wrote tour.png 390 844');
+    await ctx.close();
+  }
+  // A page's own tour, the first time it opens: Navigate's.
+  if (want('tour-pages')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, extra: { sgbus_tours: '[]' } });
+    await page.click('#navBtn');
+    await page.waitForSelector('.tour', { timeout: 20000 }).catch(() => console.log('no tour'));
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: OUT + 'tour-nav.png' });
+    console.log('wrote tour-nav.png 390 844');
     await ctx.close();
   }
   // Navigate's From and To: a plus code, and a stop by any of its names.
