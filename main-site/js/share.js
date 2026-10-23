@@ -243,10 +243,17 @@
   let etaTimer = null;
   let etaLast = null; // the last progress sent, for the ended one
 
-  function saveEta() {
+  // Kept past the page too, as the trip is (js/trip.js, KEPT_KEY), so a trip brought back
+  // after the app was closed goes on updating its link. `ended` is the trip whose share has
+  // ended, so another tab's kept share is left alone.
+  function saveEta(ended = null) {
     try {
       if (eta) sessionStorage.setItem(ETA_KEY, JSON.stringify(eta));
       else sessionStorage.removeItem(ETA_KEY);
+    } catch { /* this page view only */ }
+    try {
+      if (eta) localStorage.setItem(ETA_KEY, JSON.stringify(eta));
+      else if (ended && JSON.parse(localStorage.getItem(ETA_KEY) || 'null')?.tripId === ended) localStorage.removeItem(ETA_KEY);
     } catch { /* this page view only */ }
   }
 
@@ -312,9 +319,10 @@
   function clearEta() {
     clearInterval(etaTimer);
     etaTimer = null;
+    const ended = eta?.tripId;
     eta = null;
     etaLast = null;
-    saveEta();
+    saveEta(ended);
   }
 
   function stopEta() {
@@ -479,19 +487,32 @@
       if (eta && document.visibilityState === 'hidden') sendEta({ keepalive: true });
     });
 
-    // A reload mid-trip carries on sharing, if it's still the same trip.
+    // A reload mid-trip carries on sharing, if it's still the same trip, and so does opening
+    // again after the app was closed, once the trip's back (js/trip.js, trip:resume).
+    let saved = null;
     try {
-      eta = JSON.parse(sessionStorage.getItem(ETA_KEY) || 'null');
-    } catch {
-      eta = null;
-    }
-    if (eta) {
+      saved = JSON.parse(sessionStorage.getItem(ETA_KEY) || 'null') || JSON.parse(localStorage.getItem(ETA_KEY) || 'null');
+    } catch { /* nothing to carry on */ }
+    const carryOn = () => {
       const p = Trip.progress();
-      if (p?.tripId === eta.tripId) {
-        etaLast = etaData(p);
-        runEta();
-      } else {
+      if (p?.tripId !== saved.tripId) return false;
+      eta = saved;
+      saveEta();
+      etaLast = etaData(p);
+      runEta();
+      return true;
+    };
+    if (saved && !carryOn()) {
+      if (Trip.active()) {
+        // Another trip on now: this one's share is over.
+        eta = saved;
         clearEta();
+      } else {
+        window.addEventListener('trip:resume', function back(e) {
+          if (e.detail?.tripId !== saved.tripId) return;
+          window.removeEventListener('trip:resume', back);
+          carryOn();
+        });
       }
     }
   }

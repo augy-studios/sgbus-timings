@@ -120,14 +120,18 @@
     syncModalOpen();
   }
 
+  // The step's going back is marked before the window hides, so an address its "modalclose"
+  // writes (the ETA window putting away #share/<id>) is the one kept: after, the step before
+  // still had #share/<id>, and going back to it opened the window again.
   function closeModal(id) {
     if (docked(id)) return;
-    hideModal(id);
-    if (history.state && history.state.sg && history.state.modal === id && !restoring) {
+    var stepBack = !!(history.state && history.state.sg && history.state.modal === id && !restoring);
+    if (stepBack) {
       backPending = true;
       backTo = null;
-      history.back();
     }
+    hideModal(id);
+    if (stepBack) history.back();
   }
 
   // Navigate (both its tabs) and Service alerts: a card over the page, in a .panelModal its own

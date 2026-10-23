@@ -83,6 +83,13 @@
   const $ = (sel) => document.querySelector(sel);
   const SETTING_KEY = "sgbus.getOffAlert";
   const SAVED_KEY = "sgbus.trip";
+  // The trip kept past the page too, { at, trip }: sessionStorage goes with the app's process,
+  // so a force close, or Android closing the app in the background, lost the trip and left
+  // its shared ETA never arriving. Brought back on opening if it was saved within
+  // KEPT_FOR_MS, and no other tab is running it (LOCK, held while one is).
+  const KEPT_KEY = "sgbus.tripKept";
+  const KEPT_FOR_MS = 3 * 60 * 60 * 1000;
+  const LOCK = "sgbus-trip";
 
   const ALERT_STOPS = 2;
   // A fix this accurate counts; a rough one (indoors, underground) is ignored.
@@ -197,6 +204,39 @@
       if (trip) sessionStorage.setItem(SAVED_KEY, JSON.stringify(trip));
       else sessionStorage.removeItem(SAVED_KEY);
     } catch {}
+    try {
+      if (trip) localStorage.setItem(KEPT_KEY, JSON.stringify({ at: Date.now(), trip }));
+    } catch {}
+  }
+
+  // The kept trip gone with the trip it is, not another tab's since.
+  function forget(tripId) {
+    try {
+      if (JSON.parse(localStorage.getItem(KEPT_KEY) || "null")?.trip?.tripId === tripId) localStorage.removeItem(KEPT_KEY);
+    } catch {}
+  }
+
+  // Held while this page runs a trip, so another tab opened meanwhile leaves the kept one be.
+  // Waited for, not tried once: a new trip straight after another asks before the last
+  // release has gone through. Granted with no trip by then, it's let go at once.
+  let unlock = null;
+  let locking = false;
+  function lock() {
+    if (locking || !navigator.locks) return;
+    locking = true;
+    navigator.locks.request(LOCK, () => {
+      if (!trip) {
+        locking = false;
+        return null;
+      }
+      return new Promise((done) => { unlock = done; });
+    }).catch(() => { locking = false; });
+  }
+  function release() {
+    if (!unlock) return;
+    unlock();
+    unlock = null;
+    locking = false;
   }
 
   // ---------- walking or not, by the accelerometer ----------
@@ -413,6 +453,7 @@
 
   function run() {
     if (!trip) return;
+    lock();
     render();
     if (inApp()) followNatively();
     else watchHere();
@@ -512,9 +553,11 @@
     clearTimeout(arrivedTimer);
     arrivedTimer = null;
     releaseAwake();
+    release();
     if (clear) {
       // A trip being shared as a live ETA link says it's over (js/share.js).
       if (trip) window.dispatchEvent(new CustomEvent("trip:end", { detail: { tripId: trip.tripId } }));
+      if (trip) forget(trip.tripId);
       trip = null;
       save();
       unsync();
@@ -1810,23 +1853,36 @@
     // Android leaves the push for the app to show.
     window.addEventListener("push:get-off", (e) => alertedElsewhere(e.detail, true));
     window.addEventListener("push:board", (e) => readiedElsewhere(e.detail, true));
-    // A reload mid-trip carries on.
+    // A reload mid-trip carries on, and so does opening again after the app was closed.
     try {
       const saved = JSON.parse(sessionStorage.getItem(SAVED_KEY) || "null");
-      if (saved?.legs?.length) {
-        trip = saved;
-        trip.tripId ??= crypto.randomUUID();
-        // A trip saved by a version from before Your trips.
-        trip.times ??= trip.legs.map((_, i) => (i === trip.leg ? { start: trip.legStartedAt } : {}));
-        trip.startedAt ??= trip.legStartedAt;
-        // And from before Get ready to board.
-        trip.readied ??= trip.legs.map(() => false);
-        // And from before the roads.
-        trip.roads ??= trip.legs.map(() => null);
-        if (window.AppBridge?.native) AppBridge.ready(5000).then(() => trip && run());
-        else run();
-      }
+      if (saved?.legs?.length) return resume(saved);
+      const kept = JSON.parse(localStorage.getItem(KEPT_KEY) || "null");
+      if (!kept?.trip?.legs?.length) return;
+      if (!(Date.now() - kept.at < KEPT_FOR_MS)) return forget(kept.trip.tripId);
+      // Another tab still running it keeps it to itself.
+      if (!navigator.locks) return resume(kept.trip);
+      navigator.locks.query()
+        .then((state) => { if (!trip && !state.held?.some((l) => l.name === LOCK)) resume(kept.trip); })
+        .catch(() => {});
     } catch {}
+  }
+
+  function resume(saved) {
+    trip = saved;
+    trip.tripId ??= crypto.randomUUID();
+    // A trip saved by a version from before Your trips.
+    trip.times ??= trip.legs.map((_, i) => (i === trip.leg ? { start: trip.legStartedAt } : {}));
+    trip.startedAt ??= trip.legStartedAt;
+    // And from before Get ready to board.
+    trip.readied ??= trip.legs.map(() => false);
+    // And from before the roads.
+    trip.roads ??= trip.legs.map(() => null);
+    save();
+    // For its shared ETA, which may have looked for it before it was back (js/share.js).
+    window.dispatchEvent(new CustomEvent("trip:resume", { detail: { tripId: trip.tripId } }));
+    if (window.AppBridge?.native) AppBridge.ready(5000).then(() => trip && run());
+    else run();
   }
 
   window.Trip = {

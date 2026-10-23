@@ -18,6 +18,8 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Truer times on OneMap's ways** - A way in Navigate found by OneMap left out the waits for its buses and trains, so its time, and the arrival time on a trip's shared ETA, came out too soon: about 50 minutes for a trip that would take over an hour. They count the waits now, from OneMap's timetable.
 - **Start trip fits on phones** - On a way in Navigate or the route planner, **Start trip** ran off the side of the card, under the Edge Tray. It now has a line of its own under All ways and Refresh.
 - **Train alerts more often there** - Service alerts asks LTA again when its train alerts don't answer the first time, instead of saying it couldn't reach them.
+- **A trip survives the app closing** - Closing the app from recent apps, or Android closing it in the background, ended a trip with no trace, and its shared ETA link never arrived. Opening the app again now picks the trip back up where it was, and carries on its shared ETA, if it was still going within the last 3 hours.
+- **Someone's ETA closes** - The window for a shared ETA link came straight back when you closed it with its X or Back, and only went away when the app was closed. It closes now.
 
 ### Telegram bot
 
