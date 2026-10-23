@@ -1403,8 +1403,9 @@
   // along it is, the wait for the bus if it hasn't come, the walk after it, and every ride
   // after that with its wait and walk. Null with no trip. Keep in step with etaFromTrip in
   // api/_lib/share-links.js, which works it out for the server's copy of the trip.
-  function progress() {
-    if (!trip) return null;
+  // The minutes still to go, as progress counts them: the trip bar and the app's notification
+  // say it too (statusText).
+  function minutesLeft() {
     const leg = trip.legs[trip.leg];
     const last = leg.points.length - 1;
     const pos = target();
@@ -1414,6 +1415,15 @@
       minutes += Math.max(0, due - Date.now()) / 60000;
     }
     for (const l of trip.legs.slice(trip.leg + 1)) minutes += (l.wait || 0) + (l.minutes || 0) + (l.walkAfter || 0);
+    return minutes;
+  }
+
+  function progress() {
+    if (!trip) return null;
+    const leg = trip.legs[trip.leg];
+    const last = leg.points.length - 1;
+    const pos = target();
+    const minutes = minutesLeft();
     const i = Math.min(last, Math.floor(pos));
     const j = Math.min(last, i + 1);
     const f = pos - i;
@@ -1523,17 +1533,22 @@
       .catch(() => {});
   }
 
+  // What the trip bar and the app's notification say: where you are on this part, and the
+  // minutes to the end of the whole trip, which an alert or Get ready to board keeps too.
   function statusText(message) {
     const leg = trip.legs[trip.leg];
     const left = stopsLeft();
+    const arrived = left === 0 && trip.leg === trip.legs.length - 1;
+    // Not on a walk that's the whole trip, which says its minutes already.
+    const togo = arrived || (trip.legs.length === 1 && isWalk(leg)) ? "" : ` · ~${Math.max(1, Math.round(minutesLeft()))} min left`;
     if (!message && trip.alertText && trip.alertLeft === left) message = trip.alertText;
     // Get ready to board stands while you're still waiting for the bus.
     if (!message && trip.boardText && trip.readied?.[trip.leg] && leg.kind === "bus" && !trip.boarded && target() < 0.5) message = trip.boardText;
-    if (message) return message;
+    if (message) return message + togo;
     const where = isWalk(leg)
       ? `Walk to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
       : `${leg.label}: ${left === 0 ? `at ${leg.to}` : `${left} stop${left === 1 ? "" : "s"} to ${leg.to}`}`;
-    return where + (trip.legs.length > 1 ? ` · part ${trip.leg + 1} of ${trip.legs.length}` : "");
+    return where + (trip.legs.length > 1 ? ` · part ${trip.leg + 1} of ${trip.legs.length}` : "") + togo;
   }
 
   // ---------- MyICA, on a trip to a checkpoint ----------

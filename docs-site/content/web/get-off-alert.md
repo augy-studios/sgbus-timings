@@ -141,7 +141,13 @@ In the [Android app](android-app.md), the trip carries on with the screen off or
 the app in the background: the app keeps your location coming, shows "On a
 trip" in a notification with **End trip** on it, and the alert sounds over the
 lock screen. The screen doesn't need to stay on. Swiping the app away ends that,
-and the server takes over as below.
+and the server takes over as below. Opening the app again picks the trip back up
+where it is, as long as it was still going in the last 3 hours.
+
+The trip bar and the notification both end with the minutes left to the end of
+the whole trip, such as **· ~42 min left**, counted the same way as a
+[shared ETA](nav.md#share-my-eta): what's left of this part, and each part after it with
+its wait.
 
 ## Keep the site open
 
