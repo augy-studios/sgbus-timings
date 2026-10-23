@@ -18,7 +18,9 @@ Send `/addroutine` and answer four questions, one at a time:
    part of its name.
 4. **Which buses?** A grid of every bus at that stop appears. Tap buses to tick
    them, then tap **Done**. Leave them all unticked to get every bus. You can
-   also type the numbers, `15, 25`, or `all`.
+   also type the numbers, `15, 25`, or `all`, or a wildcard, `96*` for 96, 96A
+   and every other bus there starting with 96. The buses a wildcard covers are
+   ticked; untick one and the rest stay ticked.
 
 The bot confirms the routine, with its time, days, stop and buses. Send
 `/cancel` at any point to stop without saving.
@@ -26,9 +28,9 @@ The bot confirms the routine, with its time, days, stop and buses. Send
 ## What arrives
 
 At the time you set, on the days you set, the bot sends the stop's live timings
-narrowed to the buses you picked. A routine [synced](sync.md) from the Android app
-can name buses with a wildcard, such as `22*` for every bus starting with 22, and
-the bot keeps to it. An **All services** button widens it to
+narrowed to the buses you picked. A wildcard takes in a bus starting with it
+that joins the stop later, too. A routine [synced](sync.md) from the web or
+Android app keeps its wildcards as well. An **All services** button widens it to
 every bus at the stop. The message starts with a greeting for the time of day,
 good morning, afternoon or evening, and your name: your Telegram first name, or
 the one you set with `/setname`.

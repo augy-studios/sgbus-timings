@@ -22,11 +22,12 @@ def join_services(services: list) -> "str | None":
 
 
 def format_services(services: "str | None") -> str:
-    """The buses a routine sends, as a phrase: "every bus", "bus 15", "buses 15, 25"."""
+    """The buses a routine sends, as a phrase: "every bus", "bus 15", "buses 15, 25",
+    "buses 96*"."""
     picked = split_services(services)
     if not picked:
         return "every bus"
-    return f"{'bus' if len(picked) == 1 else 'buses'} {', '.join(picked)}"
+    return f"{'bus' if len(picked) == 1 and not picked[0].endswith('*') else 'buses'} {', '.join(picked)}"
 
 
 def add_routine(

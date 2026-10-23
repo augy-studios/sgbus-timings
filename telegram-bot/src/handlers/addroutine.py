@@ -19,6 +19,7 @@ from ..routines import (
     add_routine,
     format_services,
     join_services,
+    service_wanted,
     split_services,
     update_routine_days,
     update_routine_stop,
@@ -34,7 +35,15 @@ FLOW = register_flow(
 )
 _CODE_RE = re.compile(r"^\d{3,5}$")
 _BUS_SPLIT_RE = re.compile(r"[\s,/]+")
+# A bus number, or a wildcard, "96*" for 96, 96A and every other bus starting 96, as the web
+# app takes them (sync_bot._ROUTINE_BUS_RE).
+_BUS_RE = re.compile(r"^[0-9A-Z]{1,5}$|^[0-9A-Z]{1,3}\*$")
 _ALL_BUSES = {"all", "every", "any"}
+
+
+def _ordered(at_stop: list, picked) -> list:
+    """Picked buses in the stop's order, then any wildcards."""
+    return [s for s in at_stop if s in picked] + sorted(w for w in picked if w.endswith("*"))
 
 TIME_PROMPT = (
     "What time should this routine run? (GMT+8)\ne.g. `9 AM`, `10 PM`, `0830`, `20:00`\n\nUse /cancel to stop."
@@ -66,8 +75,8 @@ async def _prompt_for_stop(client, chat_id):
 def build_bus_picker(chat_id: int, page: int = 0):
     """The grid of buses at the draft's stop, each one a toggle, for picking which of them
     the routine sends. Favourite buses are starred and pinned as they are everywhere else,
-    and the ones picked so far are ticked. Returns (rich, buttons), or None once the
-    draft has moved on or gone."""
+    and the ones picked so far are ticked, by number or by a wildcard. Returns (rich,
+    buttons), or None once the draft has moved on or gone."""
     draft = get_draft(chat_id)
     if not draft or draft["step"] != "buses":
         return None
@@ -81,7 +90,7 @@ def build_bus_picker(chat_id: int, page: int = 0):
     heading = f"Buses at {draft['stop_name']} ({draft['stop_code']})"
     detail = (
         "Tap the buses this routine should send, then Done. Leave them all unticked for every bus, "
-        "or type the numbers instead, e.g. 15, 25."
+        "or type the numbers instead, e.g. 15, 25, or 96* for 96, 96A and the rest."
     )
     summary = f"Sending: {format_services(draft['services'])}"
     rich = {
@@ -92,7 +101,7 @@ def build_bus_picker(chat_id: int, page: int = 0):
     buttons = [
         [
             Button.inline(
-                f"✅ {service_no}" if service_no in picked else bus_button_label(service_no, service_no in fav_bus_nos),
+                f"✅ {service_no}" if service_wanted(picked, service_no) else bus_button_label(service_no, service_no in fav_bus_nos),
                 make_button("routine_bus_toggle", {"service_no": service_no, "page": page}),
             )
             for service_no in page_items[row : row + GRID_COLUMNS]
@@ -109,12 +118,20 @@ def build_bus_picker(chat_id: int, page: int = 0):
 
 def toggle_bus(chat_id: int, service_no: str) -> bool:
     """Ticks or unticks a bus in the draft, keeping the picks in bus-number order.
-    Returns False if the draft isn't picking buses any more."""
+    Unticking one a wildcard covers swaps the wildcard for the rest of its buses here, so
+    96* less 96A is 96. Returns False if the draft isn't picking buses any more."""
     draft = get_draft(chat_id)
     if not draft or draft["step"] != "buses":
         return False
-    picked = set(split_services(draft["services"])) ^ {service_no}
-    update_draft(chat_id, services=join_services([s for s in services_for_stop(draft["stop_code"]) if s in picked]))
+    at_stop = services_for_stop(draft["stop_code"])
+    picked = set(split_services(draft["services"]))
+    covering = {w for w in picked if w.endswith("*") and service_wanted([w], service_no)}
+    if covering:
+        picked = (picked - covering) | {s for s in at_stop if service_wanted(list(covering), s)}
+        picked.discard(service_no)
+    else:
+        picked ^= {service_no}
+    update_draft(chat_id, services=join_services(_ordered(at_stop, picked)))
     return True
 
 
@@ -141,14 +158,15 @@ async def prompt_for_buses(client, chat_id) -> bool:
 async def finalize_stop(client, chat_id, code, name):
     """Moves the routine wizard (or a stop edit) on to picking buses once a bus stop has
     been chosen, either by typed search or by tapping a favourite. Buses picked for the
-    stop being replaced stay picked where they also call at the new one."""
+    stop being replaced stay picked where they also call at the new one, and a wildcard
+    where it covers a bus there."""
     draft = get_draft(chat_id)
     if not draft:
         return
 
     at_stop = services_for_stop(code)
-    kept = [s for s in at_stop if s in split_services(draft["services"])]
-    update_draft(chat_id, stop_code=code, stop_name=name, services=join_services(kept))
+    kept = {s for s in split_services(draft["services"]) if any(service_wanted([s], a) for a in at_stop)}
+    update_draft(chat_id, stop_code=code, stop_name=name, services=join_services(_ordered(at_stop, kept)))
     if not await prompt_for_buses(client, chat_id):
         await save_draft(client, chat_id)
 
@@ -258,7 +276,10 @@ def register_addroutine(client):
             else:
                 at_stop = services_for_stop(draft["stop_code"])
                 wanted = {t.upper() for t in _BUS_SPLIT_RE.split(text) if t}
-                unknown = sorted(wanted - {s.upper() for s in at_stop})
+                # A wildcard has to cover at least one bus here, as a number has to be one.
+                unknown = sorted(
+                    t for t in wanted if not _BUS_RE.match(t) or not any(service_wanted([t], s.upper()) for s in at_stop)
+                )
                 if unknown:
                     await event.respond(
                         f"{', '.join(unknown)} {'doesn' if len(unknown) == 1 else 'don'}'t stop at "
@@ -267,7 +288,7 @@ def register_addroutine(client):
                         parse_mode=None,
                     )
                     raise events.StopPropagation
-                picked = [s for s in at_stop if s.upper() in wanted]
+                picked = _ordered(at_stop, {s for s in at_stop if s.upper() in wanted} | {w for w in wanted if w.endswith("*")})
             update_draft(chat_id, services=join_services(picked))
             await save_draft(client, chat_id)
             raise events.StopPropagation

@@ -19,6 +19,10 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Start trip fits on phones** - On a way in Navigate or the route planner, **Start trip** ran off the side of the card, under the Edge Tray. It now has a line of its own under All ways and Refresh.
 - **Train alerts more often there** - Service alerts asks LTA again when its train alerts don't answer the first time, instead of saying it couldn't reach them.
 
+### Telegram bot
+
+- **Wildcards in routines** - In `/addroutine`, type `96*` for 96, 96A and every other bus at the stop starting with 96, as the web app takes it. The buses it covers are ticked in the grid, and unticking one keeps the rest. Changing a routine's stop keeps a wildcard that still covers a bus there.
+
 ### Android and desktop apps
 
 - The web app's changes above, with no update needed.

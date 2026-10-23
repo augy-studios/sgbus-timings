@@ -411,7 +411,9 @@ favourites from the buttons shown, or type a bus stop code or part of its
 name - and which buses at that stop. The buses come as a grid of buttons that
 tick on and off, favourites starred and pinned as usual; tap **Done** when
 you're happy. Leaving them all unticked sends every bus. You can type the
-numbers instead (`15, 25`), or `all`. Send `/cancel` at any point to abort.
+numbers instead (`15, 25`), a wildcard (`96*` for every bus there starting 96,
+kept as typed so a new one is taken in too), or `all`. Send `/cancel` at any
+point to abort.
 
 `/routines` lists your saved routines as a numbered list of buttons; tapping
 one shows its details with **Edit** and **Delete** buttons. Edit opens a
