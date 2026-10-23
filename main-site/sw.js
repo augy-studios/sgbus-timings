@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v86";
+const VERSION = "v89";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -34,6 +34,12 @@ const ASSETS = [
   "/js/trip.js",
   "/js/history.js",
   "/js/places.js",
+  // The parts picked for the main screen, as tabs in the Edge Tray (js/main-screen.js).
+  "/js/main-screen.js",
+  // The next bus at a glance, on Bus timings (js/glance.js).
+  "/js/glance.js",
+  // The tour of the basics, the first time the app opens (js/tour.js).
+  "/js/tour.js",
   "/js/recents.js",
   "/js/app-bridge.js",
   "/js/telegram.js",

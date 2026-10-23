@@ -2898,3 +2898,225 @@ body.on-trip { padding-bottom: 96px; }
     text-shadow: 0 1px 4px #000;
 }
 .scanClose { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); }
+
+/* ===== Main screen (js/main-screen.js) ===== */
+/* The app's pages, as tabs at the top of the Edge Tray: the one on show in the brand fill
+   (docs/edge-tray-spec.md, 6.2). */
+.tray-views {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+.glass-btn[role="tab"][aria-selected="true"],
+.glass-btn[role="tab"][aria-selected="true"]:hover {
+    background: var(--brand-fill);
+    color: var(--on-brand);
+}
+
+/* Bus timings' search and results step aside while another part is on show. */
+:root[data-view]:not([data-view="timings"]) :is(.glance, .glanceStops, .searchWrap, .hint, .quickActions, .resultsSection) { display: none; }
+
+/* A page: its card in the page under the greeting, as Navigate and the alerts were before they
+   opened over it (the in-page rules above, .navSection and the rest), and nothing to close. */
+section.panelModal.docked {
+    position: relative;
+    inset: auto;
+    z-index: 5;
+    margin-top: 18px;
+    overflow: visible;
+    padding: 0;
+    background: none;
+    animation: none;
+}
+.panelModal.docked > .card { max-width: none; animation: none; }
+.modal-backdrop.docked {
+    position: relative;
+    inset: auto;
+    z-index: 5;
+    display: block;
+    margin-top: 18px;
+    padding: 0;
+    background: none;
+    transition: none;
+}
+.modal-backdrop.docked.hidden { display: none; }
+.modal-backdrop.docked > .modal {
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    transform: none;
+}
+.docked :is(#navClose, #plannerClose, #alertsClose, #tripsClose, #placesClose, [data-close-modal]) { display: none; }
+
+/* ===== The next bus at a glance (js/glance.js) ===== */
+.glance { margin-top: 14px; }
+.glanceBar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.glanceChip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--surface-strong);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow);
+    color: var(--ink);
+    font-size: 0.95rem;
+    cursor: pointer;
+}
+.glanceChip svg { width: 16px; height: 16px; }
+.glanceChev svg { width: 12px; height: 12px; transform: rotate(180deg); }
+.glanceUpdated { font-size: 0.8rem; color: var(--muted); }
+.glanceMenu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--surface-strong);
+    border: 1px solid var(--surface-border);
+    box-shadow: var(--shadow);
+}
+.glanceMenuItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    color: var(--ink);
+    text-align: left;
+}
+.glanceMenuItem svg { width: 16px; height: 16px; }
+.glanceMenuItem:hover { background: var(--surface); }
+.glanceMenuItem.active { background: var(--brand-fill); color: var(--on-brand); }
+
+/* The one big answer. */
+.glanceHero { padding: 18px 20px; }
+.glanceHeroBtn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    color: var(--ink);
+    cursor: pointer;
+}
+.glanceKicker { font-size: 1rem; color: var(--muted-strong); }
+.glanceSvc {
+    font-size: clamp(3.4rem, 16vw, 5rem);
+    line-height: 1;
+    margin: 6px 0 4px;
+    color: var(--brand-ink);
+}
+.glanceWhen { font-size: 1.5rem; color: var(--ok); }
+.glanceWhen.now { color: var(--error); }
+.glanceWhere { margin-top: 6px; font-size: 0.95rem; color: var(--muted-strong); }
+.glanceSay { margin-top: 6px; font-size: 1.05rem; }
+.glanceBtn { margin-top: 12px; display: inline-flex; align-items: center; gap: 8px; }
+.glanceBtn svg { width: 16px; height: 16px; }
+
+/* Each stop, each bus on one line: its number, where it's going, and its next three times. */
+.glanceStops {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+.glanceStops:empty { display: none; }
+.glanceStop { padding: 6px 0 8px; }
+.glanceStopHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 18px 6px;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+.glanceStopName { font-size: 1.1rem; color: var(--brand-ink); }
+.glanceWalk { font-size: 0.85rem; color: var(--muted-strong); white-space: nowrap; }
+.glanceRow {
+    display: grid;
+    grid-template-columns: 3.6em 1fr auto;
+    align-items: baseline;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 18px;
+    border-top: 1px solid var(--surface-border);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+}
+.glanceRow:hover, .glanceStopHead:hover { background: var(--surface); }
+.glanceNo { font-size: 1.35rem; }
+.glanceTo { font-size: 0.85rem; color: var(--muted-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.glanceTimes { display: grid; grid-template-columns: repeat(3, 2em); gap: 6px; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.glanceTimes > span { text-align: right; color: var(--muted-strong); }
+.glanceTimes > .first { color: var(--ok); }
+.glanceTimes > .now { color: var(--error); }
+.glanceNone { padding: 8px 18px; color: var(--muted-strong); font-size: 0.9rem; }
+.glanceMore { padding: 6px 18px 2px; font-size: 0.85rem; color: var(--brand-ink); cursor: pointer; }
+
+/* ===== The tour of the basics (js/tour.js) ===== */
+/* The page dims round a light on the step's thing, with a chalk arrow to it from the card. */
+.tour { position: fixed; inset: 0; z-index: 2000; }
+.tourHole {
+    position: fixed;
+    border-radius: 18px;
+    box-shadow: 0 0 0 200vmax rgba(8, 14, 10, 0.86), 0 0 24px 8px rgba(255, 255, 255, 0.35);
+    transition: left 0.3s ease, top 0.3s ease, width 0.3s ease, height 0.3s ease;
+    pointer-events: none;
+}
+.tourArrow { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.tourLine, .tourHead {
+    fill: none;
+    stroke: #f6f1e6;
+    stroke-width: 3.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+/* Drawn in over its own length (js/tour.js sets --len), however long the screen makes it. */
+.tourLine { stroke-dasharray: var(--len, 600); stroke-dashoffset: var(--len, 600); animation: tour-draw 0.6s ease forwards; }
+@keyframes tour-draw { to { stroke-dashoffset: 0; } }
+.tourSkip {
+    position: fixed;
+    top: max(16px, calc(env(safe-area-inset-top) + 12px));
+    left: 16px;
+    padding: 8px 14px;
+    color: #f6f1e6;
+    font-size: 1.05rem;
+}
+.tourCard {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 4px 4px;
+    color: #f6f1e6;
+}
+.tourText { font-size: 1.3rem; line-height: 1.35; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6); }
+.tourFoot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; }
+.tourNext { background: #f6f1e6; color: #1a221d; border-radius: 999px; padding: 10px 22px; }
+.tourDots { display: flex; gap: 6px; }
+.tourDots > span { width: 7px; height: 7px; border-radius: 999px; background: rgba(246, 241, 230, 0.4); transition: width 0.2s ease; }
+.tourDots > .on { width: 20px; background: #f6f1e6; }
+body.touring { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) {
+    .tourHole { transition: none; }
+    .tourLine { animation: none; stroke-dashoffset: 0; }
+}

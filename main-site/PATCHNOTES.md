@@ -9,6 +9,22 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 23 October 2026 (later): Custom home, the next bus at a glance, and a tour
+
+### Web app
+
+- **The next bus at a glance** - Bus timings opens on the next bus in big letters, then your stops under the search box, each bus on one line with where it's going and its next three times. A chip over it picks the stops: your saved stops, the ones nearby (with when to leave, for the walk), or the ones near Home, Work or another place. Tap any of it for the full timings, and the X on those puts them away. Settings, **Next bus at a glance**, turns it off.
+- **Pages, not windows** - Bus timings, Favourites, Navigate (with its Bus and train and Bus only tabs), Service alerts, Your trips and Places are each a page of their own now, with their buttons at the top of the Edge Tray, the one on show filled in. Taps that lead somewhere still go there: a saved stop opens its timings on Bus timings, a place opens the way there. Settings, the theme, the weather and other small things still open as windows.
+- **Back goes back** - The Android app's back button (and a browser's, and Telegram's) closes the window that's open, then goes back to the page you were on, and only leaves the app once there's nothing to go back to. Before, it left the app with a window still open.
+- **Custom home** - In Settings, **Custom home** (it was Opens on) picks the page the app opens on, first in the Edge Tray. A link to a stop, a bus or a journey still opens that. It syncs like the other settings.
+- **A tour** - The first time the app opens, a short tour shows the basics, a light and an arrow on each. **Show me around** in Settings shows it again.
+
+### Android and desktop apps
+
+- The web app's changes above, with no update needed.
+
+---
+
 ## 23 October 2026: Apps 2.2.4, choose what the app opens on, bus distance along its route, Navigate finds more, Arm and .rpm
 
 ### Web app

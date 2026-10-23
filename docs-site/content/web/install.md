@@ -93,12 +93,13 @@ In Chrome or Edge, click the install icon at the right of the address bar, or
 open the browser menu and choose **Install SG Bus Timings**. Safari on a Mac
 offers **File**, then **Add to Dock**.
 
-#### Or the Windows and Linux app
+#### Or the Windows, Mac and Linux app
 
-There's also a desktop app for Windows (`.exe` or `.msi`) and Linux (`.deb` or
-`.AppImage`): the same app in its own window, which stays in the tray and shows
-Service alerts as desktop notifications. See
-[Windows and Linux apps](desktop-app.md) to download and install it.
+There's also a desktop app for Windows (`.exe` or `.msi`), Mac (`.dmg`) and
+Linux (`.deb`, `.rpm` or `.AppImage`), on Intel and AMD or on Arm: the same app
+in its own window, which stays in the tray and shows Service alerts as desktop
+notifications. See
+[Windows, Mac and Linux apps](desktop-app.md) to download and install it.
 
 > [!NOTE]
 > An installed app keeps its own favourites and settings, separate from the

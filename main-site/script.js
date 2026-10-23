@@ -19,7 +19,6 @@ const LS = {
     confettiKey:   'sgbus_confetti',
     restrictedKey: 'sgbus_restricted',
     customsKey:    'sgbus_customs',
-    startKey:      'sgbus_start',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -89,15 +88,6 @@ const LS = {
     setCustoms(v) {
         if (v === 'auto') localStorage.removeItem(this.customsKey);
         else localStorage.setItem(this.customsKey, v);
-    },
-    // What the app opens on (init, below): 'stop', the first favourite stop, unless set in
-    // Settings to 'favs' (the Favourites window) or 'nav' (Navigate).
-    getStart() {
-        try { const v = localStorage.getItem(this.startKey); return ['favs', 'nav'].includes(v) ? v : 'stop'; } catch { return 'stop'; }
-    },
-    setStart(v) {
-        if (v === 'stop') localStorage.removeItem(this.startKey);
-        else localStorage.setItem(this.startKey, v);
     },
 
     // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
@@ -213,10 +203,27 @@ function syncCustomsButtons() {
     });
 }
 
-// What the app opens on, in Settings: read once, as the page loads (init, below).
-function syncStartButtons() {
-    $$('[data-start]').forEach(btn => {
-        const on = btn.dataset.start === LS.getStart();
+// The next bus at a glance, in Settings (js/glance.js).
+function syncGlanceButtons() {
+    const on = Glance.enabled();
+    $$('[data-glance]').forEach(btn => {
+        const active = (btn.dataset.glance === 'on') === on;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', String(active));
+    });
+    syncStopClose();
+}
+
+// The X on a stop's timings: back to the glance.
+function syncStopClose() {
+    $('#stopCloseBtn').hidden = !Glance.enabled();
+}
+
+// Custom home, in Settings (js/main-screen.js).
+function syncMainButtons() {
+    const home = MainScreen.home();
+    $$('[data-home]').forEach(btn => {
+        const on = btn.dataset.home === home;
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
     });
@@ -515,6 +522,7 @@ function chip(openAttr, removeAttr, code, name, title) {
 }
 
 function renderFavs() {
+    window.Glance?.favsChanged();
     const favs   = LS.getFavs();
     const buses  = LS.getFavBuses();
     const routes = LS.getFavRoutes();
@@ -1011,11 +1019,24 @@ function renderArrivals() {
     window.MakeIt?.render(code, svcs);
 }
 
+// Puts a stop's timings away, back to the glance at the top of the page (js/glance.js).
+function closeStop() {
+    loadSeq++;
+    current = null;
+    lastArrivals = null;
+    $('#resultCard').hidden = true;
+    $('#q').value = '';
+    history.replaceState(null, '', location.pathname);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 async function loadStop(code, { service = null, expanded = false, ctx = null, dir = null, pushHistory = true, scroll = false } = {}) {
     if (!/^\d{5}$/.test(code)) { alert('Please enter a valid 5-digit bus stop code.'); return; }
     const seq = ++loadSeq;
     current = { code, service: service ? busFilter(service) : null, expanded, ctx, dir };
     navOpen = false;
+    // A stop's timings are Bus timings' page, from wherever on the main screen it was opened.
+    MainScreen.open('timings');
 
     $('#q').value = current.service ? `${code} ${current.service}` : code;
     $('#acList').hidden = true;
@@ -1044,8 +1065,9 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     }
 }
 
+// Refresh, and Shake to refresh: the stop open, or with none, the glance (js/glance.js).
 function refreshStop() {
-    if (!current) return;
+    if (!current) return Glance.refresh();
     loadStop(current.code, { ...current, pushHistory: false });
 }
 
@@ -1441,7 +1463,8 @@ function openSettings() {
     syncConfettiButtons();
     syncRestrictedButtons();
     syncCustomsButtons();
-    syncStartButtons();
+    syncGlanceButtons();
+    syncMainButtons();
     prepareSync();
     openModal('settingsModal');
 }
@@ -1508,10 +1531,12 @@ $$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
     LS.setCustoms(btn.dataset.customs);
     syncCustomsButtons();
 }));
-$$('[data-start]').forEach(btn => btn.addEventListener('click', () => {
-    LS.setStart(btn.dataset.start);
-    syncStartButtons();
-}));
+$('#homePick').addEventListener('click', e => {
+    const btn = e.target.closest('[data-home]');
+    if (btn) MainScreen.setHome(btn.dataset.home);
+});
+// From Settings or a synced device.
+window.addEventListener('mainscreenchange', syncMainButtons);
 $('#clearBirthday').addEventListener('click', () => {
     LS.setBirthday('');
     $('#setBirthday').value = '';
@@ -1556,6 +1581,12 @@ $('#stopFavBtn').addEventListener('click', () => {
     renderStopHeader();
 });
 $('#stopBackBtn').addEventListener('click', () => { if (current?.ctx) goBack(current.ctx); });
+$('#stopCloseBtn').addEventListener('click', closeStop);
+$('#settingsTour').addEventListener('click', () => {
+    closeModal('settingsModal');
+    MainScreen.open('timings');
+    setTimeout(Tour.start, 300);
+});
 $('#stopAside').addEventListener('click', e => {
     const btn = e.target.closest('[data-same-place]');
     if (btn) loadStop(btn.dataset.samePlace);
@@ -1827,12 +1858,15 @@ function routeFromShare() {
     TripHistory.init();
     Places.init();
     Calendar.init();
+    MainScreen.init();
 
     // Started alongside the stops so it's usually in by the time anything wants it.
     BusNet.load().catch(e => console.warn('Bus routes failed:', e));
 
     await buildAc();
     renderFavs();
+    Glance.init();
+    syncGlanceButtons();
 
     BusNet.load(stopsIndex)
         .then(() => {
@@ -1841,24 +1875,15 @@ function routeFromShare() {
         })
         .catch(() => {});
 
-    // A link that opens over the page (#sync, #alerts) still has the first favourite stop
-    // behind it, whatever Settings says to open on.
-    const linked = location.hash.length > 1;
-    if (!routeFromShare() && !routeFromHash()) openStartPage(linked ? 'stop' : LS.getStart());
+    if (!routeFromShare() && !routeFromHash()) openStartPage();
+    Tour.maybeStart();
 })();
 
-// What the app opens on when its link has nothing else to show, from Settings' Opens on: the
-// first favourite stop, the Favourites window or Navigate (on the tab used last, as the Edge
-// Tray's button opens it, js/nav.js). With no favourites to show, nothing: the search box.
-function openStartPage(start) {
-    const anyFavs = LS.getFavs().length || LS.getFavBuses().length || LS.getFavRoutes().length || LS.getFavNavs().length;
-    if (start === 'nav') {
-        if (lastNavMode() === 'bus') openPlanner();
-        else openNav();
-    } else if (start === 'favs' && anyFavs) {
-        renderFavs();
-        openModal('favsModal');
-    } else if (start === 'stop' && LS.getFavs()[0]) {
+// What the app opens on when its link has nothing else to show: the home, from Settings' Custom
+// home, already on show (js/main-screen.js). Bus timings with the glance off opens the first
+// favourite stop's timings, as it did before the glance.
+function openStartPage() {
+    if (MainScreen.home() === 'timings' && LS.getFavs()[0] && !Glance.enabled()) {
         loadStop(LS.getFavs()[0].code, { pushHistory: false });
     }
 }

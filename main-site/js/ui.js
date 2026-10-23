@@ -12,28 +12,131 @@
     });
   }
 
-  // The page stays put behind anything open over it: a modal or a panel.
+  // The page stays put behind anything open over it: a modal or a panel. One docked on the
+  // main screen (js/main-screen.js) is the page itself.
   function syncModalOpen() {
-    var open = document.querySelector(".modal-backdrop:not(.hidden), .panelModal:not([hidden])");
+    var open = document.querySelector(".modal-backdrop:not(.hidden):not(.docked), .panelModal:not([hidden]):not(.docked)");
     document.body.classList.toggle("modal-open", !!open);
   }
 
+  // A modal or panel on the main screen (js/main-screen.js) is shown by switching to its tab,
+  // and stays when it's closed: it's the page.
+  function docked(id) {
+    return !!(window.MainScreen && window.MainScreen.docked(id));
+  }
+
+  // ---------- Back ----------
+  // Back (the Android app's button, a browser's, Telegram's) closes the window that's open, then
+  // goes back to the page that was on show before, and only then leaves: each window opened and
+  // each page switched to (js/main-screen.js) adds a step to the page's history, its state
+  // { sg: true, page, modal }. The Android app goes back through that history, and leaves for
+  // the background once there's none (MainActivity.java). Closing a window with its X or a tap
+  // around it takes its step back off. The live map keeps steps of its own (js/map.js).
+  var backPending = false;
+  var deferred = null;
+  var restoring = false;
+  // A window closed and something opened from it at once, such as a stop picked from a list:
+  // the new address (a stop's #84009) is written while the window's step is still going back,
+  // so `backTo` keeps it, and the step before, with the old address, mustn't load the old stop.
+  var backTo = null;
+  var swallowHash = false;
+
+  function stepState(extra) {
+    var s = history.state && history.state.sg ? history.state : {};
+    var page = window.MainScreen ? window.MainScreen.active() : s.page;
+    return Object.assign({ sg: true, page: page }, extra);
+  }
+
+  // A new step, held until a step being taken back has gone.
+  function step(extra) {
+    if (restoring) return;
+    var state = stepState(extra);
+    if (backPending) deferred = state;
+    else history.pushState(state, "", location.href);
+  }
+
+  // The step for what's on show now, without adding one: as the page loads.
+  function markStep() {
+    history.replaceState(stepState({}), "", location.href);
+  }
+
+  // The site replaces its address as things open (a stop's #84009); that keeps the step's state.
+  var replace = history.replaceState;
+  history.replaceState = function (state, title, url) {
+    if (state == null && history.state && history.state.sg) state = history.state;
+    var out = replace.call(this, state, title, url);
+    if (backPending) backTo = location.href;
+    return out;
+  };
+
+  // Ahead of script.js's own (routeFromHash): the old address coming back with the closed
+  // window's step isn't somewhere to go.
+  window.addEventListener("hashchange", function (e) {
+    if (!swallowHash) return;
+    swallowHash = false;
+    e.stopImmediatePropagation();
+  });
+
+  window.addEventListener("popstate", function (e) {
+    if (backPending) {
+      backPending = false;
+      if (backTo && backTo !== location.href) {
+        swallowHash = backTo.split("#")[1] !== location.href.split("#")[1];
+        replace.call(history, history.state, "", backTo);
+        setTimeout(function () { swallowHash = false; }, 50);
+      }
+      backTo = null;
+      if (deferred) history.pushState(deferred, "", location.href);
+      deferred = null;
+      return;
+    }
+    var state = e.state;
+    if (!state || !state.sg) return;
+    restoring = true;
+    // Whatever opened after this step closes: the windows over it, and the page goes back.
+    document.querySelectorAll(".modal-backdrop:not(.hidden):not(.docked)").forEach(function (m) {
+      if (m.id !== state.modal) hideModal(m.id);
+    });
+    if (state.page && window.MainScreen && window.MainScreen.active() !== state.page) window.MainScreen.select(state.page);
+    // A hashchange from the same step back comes just after.
+    setTimeout(function () { restoring = false; }, 50);
+  });
+
   function openModal(id) {
-    document.getElementById(id).classList.remove("hidden");
+    if (docked(id)) return window.MainScreen.select(window.MainScreen.byEl(id), id);
+    var backdrop = document.getElementById(id);
+    var was = !backdrop.classList.contains("hidden");
+    backdrop.classList.remove("hidden");
     syncModalOpen();
+    if (!was) step({ modal: id });
   }
 
   // Fires "modalclose" on the backdrop, for a modal with something to tidy up as it goes.
-  function closeModal(id) {
+  function hideModal(id) {
     var backdrop = document.getElementById(id);
+    if (backdrop.classList.contains("hidden")) return;
     backdrop.classList.add("hidden");
     backdrop.dispatchEvent(new Event("modalclose"));
     syncModalOpen();
   }
 
+  function closeModal(id) {
+    if (docked(id)) return;
+    hideModal(id);
+    if (history.state && history.state.sg && history.state.modal === id && !restoring) {
+      backPending = true;
+      backTo = null;
+      history.back();
+    }
+  }
+
   // Navigate (both its tabs) and Service alerts: a card over the page, in a .panelModal its own
   // code shows and hides. `onClose` runs on a tap on the backdrop around the card.
   function showPanel(id, show) {
+    if (docked(id)) {
+      if (show) window.MainScreen.select(window.MainScreen.byEl(id), id);
+      return;
+    }
     var panel = document.getElementById(id);
     if (show && panel.hidden) panel.scrollTop = 0;
     panel.hidden = !show;
@@ -170,5 +273,7 @@
   window.openModal = openModal;
   window.closeModal = closeModal;
   window.showPanel = showPanel;
+  window.syncModalOpen = syncModalOpen;
+  window.Steps = { step: step, mark: markStep };
   window.wirePanel = wirePanel;
 })();

@@ -6,7 +6,7 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti On or Off, Open Places, Calendar settings, pinning for favourite buses, the Get Off Alert switch, pinning for favourite stops, the Edge Tray's side, and syncing with another device." width="396" height="1271" loading="lazy">
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti, Open Places, Calendar settings, Show me around, Next bus at a glance, Custom home, pinning for favourite buses, the Get Off Alert switch, Restricted areas, Immigration time, pinning for favourite stops, the Edge Tray side and buttons, and syncing with another device." width="396" height="2438" loading="lazy">
 <figcaption>Settings. Changes save as you make them.</figcaption>
 </figure>
 
@@ -19,6 +19,9 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |
 | **Home, Work and your places** | **Open Places** opens [Places](places.md), where Home, Work and your other places are set. |
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
+| **Show me around** | The [tour](main-screen.md#the-tour) of the basics, as it shows the first time. |
+| **Next bus at a glance** | **On** (the default) or **Off**: the next bus in big letters at the top of Bus timings, and your stops under the search box. See [Your main screen](main-screen.md#the-next-bus-at-a-glance). |
+| **Custom home** | The page the app opens on, first in the Edge Tray: **Bus timings** (the default), **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
