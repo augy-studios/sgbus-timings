@@ -5,16 +5,16 @@
 //
 // - The way a train's going is found from the platforms' `order`, how many stops into its
 //   direction each is: the direction in which where you get off comes after where you board.
-// - Doors are counted from the front of the train, and said as a car and a door in it, as
-//   they're marked on the platform: door 8 of a 4-door car is car 2, door 4.
+// - Doors are counted from the front of the train, all along it, and said as just that number:
+//   it's the one on each platform screen door, which hides where one car ends and the next
+//   begins.
 // - A facility's `towards` is where it leads, split by "/": "exit", the directions of the
 //   lines it's the way to ("DT-11"), and places ("Jewel", "T2").
 // Plain script: exports go on window.
 (function () {
-  // Doors along each side of a car: 4 on all but the Thomson-East Coast Line's.
-  const DOORS_PER_CAR = { TE: 5 };
-  // Cars in a train: 6 on all but the Circle, Downtown and Thomson-East Coast lines'.
-  const CARS = { CC: 3, DT: 3, TE: 4 };
+  // Doors along each side of a train, for leaving out a number no train has: 6 cars of 4 on
+  // all but the Circle and Downtown lines' (3 of 4) and the Thomson-East Coast Line's (4 of 5).
+  const DOORS = { CC: 12, DT: 12, TE: 20 };
   // The Changi Airport branch's rides come as "CG", its platforms are the East-West Line's.
   const LINE_OF = { CG: 'EW' };
   const ORDER = ['escalator', 'lift', 'stairs'];
@@ -68,17 +68,11 @@
     return null;
   }
 
-  // Door 8 of a 4-door car: { car: 2, door: 4 }.
-  function carDoor(n, line) {
-    const per = DOORS_PER_CAR[line] || 4;
-    return { car: Math.ceil(n / per), door: ((n - 1) % per) + 1 };
-  }
-
   // The facilities as rows to show, by type, escalators first: those of a type at the same
   // doors as one, with the places they lead to. Stairs only where they're at other doors
-  // from the escalators. [{ t, places, doors: [{ car, door }] }]
+  // from the escalators. [{ t, places, doors: [8, 18] }]
   function rowsOf(fs, line) {
-    const max = (CARS[line] || 6) * (DOORS_PER_CAR[line] || 4);
+    const max = DOORS[line] || 24;
     const groups = new Map();
     for (const f of fs) {
       const doors = [...new Set(f.doors)].filter((n) => Number.isInteger(n) && n >= 1 && n <= max).sort((a, b) => a - b);
@@ -98,7 +92,7 @@
       .map((g) => (g.places.length ? g : { ...g, doors: g.doors.filter((n) => !named(g.t).has(n)) }))
       .map((g) => (g.t === 'stairs' ? { ...g, doors: g.doors.filter((n) => !esc.has(n)) } : g))
       .filter((g) => g.doors.length)
-      .map((g) => ({ t: g.t, places: g.places, doors: g.doors.map((n) => carDoor(n, line)) }));
+      .map((g) => ({ t: g.t, places: g.places, doors: g.doors }));
   }
 
   // Where to stand for a train ride, or null: { station, cross } where `next` (the ride
@@ -130,15 +124,15 @@
     return { station: a.n, change: change && (change.fs.length ? change.name : ''), rows };
   }
 
-  // The same in words: "Getting off at Changi Airport: car 5, door 4 for the escalators to
-  // Jewel; car 2, door 1 for the lift, counting from the front of the train."
+  // The same in words: "Getting off at Changi Airport: door 20 for the escalators to Jewel;
+  // door 5 for the lift."
   function tip(leg, next = null) {
     const p = plan(leg, next);
     if (!p) return null;
     if (p.cross) return `At ${p.station}, change across the platform to the ${p.cross}.`;
-    const parts = p.rows.map((r) => `${r.doors.map((d) => `car ${d.car}, door ${d.door}`).join(' or ')} for the ${PLURAL[r.t] || r.t}${r.places.length ? ` to ${andList(r.places)}` : ''}`);
+    const parts = p.rows.map((r) => `door ${r.doors.join(' or ')} for the ${PLURAL[r.t] || r.t}${r.places.length ? ` to ${andList(r.places)}` : ''}`);
     const head = p.change != null ? `Changing at ${p.station}${p.change ? ` for the ${p.change}` : ''}` : `Getting off at ${p.station}`;
-    return `${head}: ${parts.join('; ')}, counting from the front of the train.`;
+    return `${head}: ${parts.join('; ')}.`;
   }
 
   window.MrtDoors = { load, plan, tip, ready: () => platforms != null };

@@ -1801,27 +1801,52 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .doorHead .ico { color: var(--muted-strong); }
 .doorFor { font-weight: 400; color: var(--muted-strong); }
 .doorRows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-/* The icon beside both lines: what it is and where to, then its doors. */
+/* On one line: the icon, its doors, then what it is and where to. */
 .doorRow {
     display: grid;
-    grid-template-columns: 24px 1fr;
-    grid-template-areas: "ico where" "ico chips";
+    grid-template-columns: 24px auto 1fr;
+    grid-template-areas: "ico chips where";
     align-items: center;
-    gap: 2px 10px;
+    gap: 10px;
 }
-.doorRow > .ico { grid-area: ico; align-self: start; margin-top: 2px; width: 24px; height: 24px; color: var(--brand-ink); }
+.doorRow > .ico { grid-area: ico; width: 24px; height: 24px; color: var(--brand-ink); }
 .doorRow > .ico svg { width: 24px; height: 24px; }
 .doorRow > .doorWhere { grid-area: where; }
-.doorChips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 6px; }
+.doorChips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 8px; }
+/* A little platform door: a band in the line's colour saying Door, over glass split down the
+   middle, with the door's number on it, as on the real one. */
 .doorChip {
-    padding: 3px 9px;
-    border-radius: 999px;
-    background: var(--brand-fill);
-    color: var(--on-brand);
-    font-size: 13px;
-    white-space: nowrap;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 54px;
+    border-radius: 7px 7px 3px 3px;
+    border: 2px solid color-mix(in srgb, var(--ink) 70%, transparent);
+    overflow: hidden;
+    background:
+        linear-gradient(90deg, transparent calc(50% - 1px), color-mix(in srgb, var(--ink) 22%, transparent) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)),
+        color-mix(in srgb, var(--brand) 25%, var(--surface-strong));
 }
-.doorChip b { font-size: 15px; }
+.doorTop {
+    align-self: stretch;
+    padding: 1px 6px 2px;
+    background: var(--line, var(--brand-ink));
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-align: center;
+}
+.doorChip b {
+    margin: 5px 5px 7px;
+    padding: 1px 8px 3px;
+    border-radius: 5px;
+    background: var(--surface-strong);
+    color: var(--ink);
+    font-size: 20px;
+    line-height: 1.15;
+}
 .doorWhere { font-size: 13px; color: var(--muted-strong); }
 .doorFoot { font-size: 12px; color: var(--muted); }
 .legEtas s { color: var(--muted-strong); }

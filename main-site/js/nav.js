@@ -526,21 +526,23 @@ const navClocks = (o) => {
 const navTooLate = (o) => nav.when?.mode === 'arrive' && When.span(nav.when, o.minutes).leave < Date.now() - 60000;
 
 // Where to stand on a train (js/mrt-doors.js), at a glance: the station, then a row for each
-// way off the platform with its icon and the doors as "Car 3 · Door 1" chips. `text` says it
-// all in words for a screen reader.
+// way off the platform with its icon and its doors, each drawn as a little platform door in
+// the line's colour with its number, as the number is shown on the real one. `text` says it all
+// in words for a screen reader.
 const DOOR_TYPE = { escalator: 'Escalator', lift: 'Lift', stairs: 'Stairs' };
-function doorsPanel(p, text) {
+function doorsPanel(p, text, color) {
   if (!p) return '';
   const head = p.cross ? `At ${p.station}` : p.change != null ? `Changing at ${p.station}` : `Getting off at ${p.station}`;
   const rows = p.cross
     ? `<li class="doorRow">${ico('swap')}<span class="doorWhere">Change across the platform to the <b>${escapeHtml(p.cross)}</b></span></li>`
     : p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
-        `<span class="doorChips">${r.doors.map((d) => `<span class="doorChip">Car <b>${d.car}</b> · Door <b>${d.door}</b></span>`).join('')}</span>` +
+        `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">Door</span><b>${n}</b></span>`).join('')}</span>` +
         `<span class="doorWhere">${escapeHtml(DOOR_TYPE[r.t] || r.t)}${r.places.length ? ` to ${escapeHtml(r.places.join(', '))}` : ''}</span></li>`).join('');
-  return `<div class="legDoors" role="note" aria-label="${escapeHtml(text || '')}">` +
+  const line = color ? ` style="--line:${escapeHtml(color)}"` : '';
+  return `<div class="legDoors" role="note" aria-label="${escapeHtml(text || '')}"${line}>` +
     `<div class="doorHead" aria-hidden="true">${ico('train')}<span>${escapeHtml(head)}${p.change ? ` <span class="doorFor">for the ${escapeHtml(p.change)}</span>` : ''}</span></div>` +
     `<ul class="doorRows" aria-hidden="true">${rows}</ul>` +
-    (p.cross ? '' : '<div class="doorFoot" aria-hidden="true">Car 1 is the front of the train</div>') +
+    (p.cross ? '' : '<div class="doorFoot" aria-hidden="true">The number is at the top of each platform door</div>') +
     `</div>`;
 }
 
@@ -619,7 +621,7 @@ async function renderNavOption(o) {
     if (leg.mode === 'train') {
       // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js).
       const next = o.legs.slice(k + 1).find((l) => l.mode !== 'walk') || null;
-      const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next));
+      const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next), leg.color);
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
         `<div class="legRide">From ${escapeHtml(placeName(leg.from))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}: ${leg.stops} stop${leg.stops === 1 ? '' : 's'} to ${escapeHtml(placeName(leg.to))}, ~${Math.round(leg.minutes)} min</div>` +

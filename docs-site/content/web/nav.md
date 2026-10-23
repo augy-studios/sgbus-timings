@@ -217,15 +217,15 @@ Tap a way to see it part by part:
 ### Which door to stand at
 
 <figure>
-<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then an escalator to T1, T3, T4 and Jewel at car 5, door 4, an escalator to T2 at car 2, door 1, a lift to T2 at car 2, door 1, and a lift to T1, T3, T4 and Jewel at car 5, door 4. Under them, Car 1 is the front of the train." width="310" height="423" loading="lazy">
+<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then door 20 for the escalator to T1, T3, T4 and Jewel, door 5 for the escalator to T2, door 5 for the lift to T2, and door 20 for the lift to T1, T3, T4 and Jewel, each door drawn as a little green platform door with its number. Under them, The number is at the top of each platform door." width="310" height="502" loading="lazy">
 <figcaption>Getting off: the doors nearest each way out, and where it leads.</figcaption>
 </figure>
 
 Under a train ride, a panel says where on the train to stand. Each way off the
-platform has a row: its icon (escalator, lift or stairs), where it leads, and the
-doors that stop nearest it, as **Car 3 · Door 1**. Cars are counted from the front
-of the train, so car 1 is the one at the front, and doors from the front of each
-car, as they're numbered on the platform.
+platform has a row: its icon (escalator, lift or stairs), the doors that stop
+nearest it, and where it leads. Each door is drawn as a little platform door in
+the line's colour with its number on it, as the number shows at the top of each
+real platform screen door, so you can walk along the platform to it.
 
 - **Getting off**, it's the ways out of the station, with the mall or terminal
   one leads to where it's somewhere in particular: Jewel, Nex, City Square.
@@ -233,12 +233,12 @@ car, as they're numbered on the platform.
 - **Your next train across the platform**, it just says so.
 
 <figure>
-<img src="/screenshots/web/nav-doors-change.png" alt="Two rides. Under the Downtown Line to MacPherson: Changing at MacPherson for the Circle Line, escalator at car 3, door 1, lift at car 1, door 4. Under the Circle Line to Serangoon: Getting off at Serangoon, escalator to Nex at car 3, door 4, escalator at car 2, door 2, lift at car 2, door 4." width="310" height="685" loading="lazy">
+<img src="/screenshots/web/nav-doors-change.png" alt="Two rides. Under the Downtown Line to MacPherson: Changing at MacPherson for the Circle Line, door 9 for the escalator and door 4 for the lift, on blue doors. Under the Circle Line to Serangoon: Getting off at Serangoon, door 12 for the escalator to Nex, door 6 for the escalator and door 8 for the lift, on orange doors." width="310" height="795" loading="lazy">
 <figcaption>Changing at MacPherson, then off at Serangoon.</figcaption>
 </figure>
 
 <figure>
-<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, escalator at car 2, door 2 or car 5, door 1, lift at car 3, door 4." width="310" height="552" loading="lazy">
+<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, doors 6 and 17 for the escalators and door 12 for the lift, on red doors." width="310" height="566" loading="lazy">
 <figcaption>At Jurong East the next train is just across the platform.</figcaption>
 </figure>
 

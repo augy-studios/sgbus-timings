@@ -13,6 +13,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Web app
 
+- **Just the door number** - The door tips now give the number on the platform door itself ("Door 8"), not a car and a door in it: the platform screen doors hide where one car ends. Each is drawn as a little door in the line's colour.
 - **A tour for every page** - Like Glance's, each page now shows you around the first time you open it: Bus timings, Favourites, Navigate, Service alerts, Your trips and Places. Settings, Show me around, has a button for each to see it again.
 - **Which door, at a glance** - The door tip is a panel now, not a sentence: a row for each escalator, lift and stairs with its icon, where it goes, and its doors as "Car 3 · Door 1".
 - **Which door, nearly everywhere** - Navigate's door tips now cover almost every MRT station, not a handful.
