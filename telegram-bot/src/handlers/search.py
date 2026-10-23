@@ -9,6 +9,7 @@ from ..bus_stops import get_bus_stop_by_code, nearest_bus_stops, search_bus_stop
 from ..list_view import build_stop_list_view
 from ..postal import POSTAL_CODE_RE, lookup_postal_code
 from ..reply import send_rich_message
+from ..routines import bus_filter
 from ..stations import find_station, station_label
 from ..stop_view import build_stop_view
 
@@ -16,6 +17,26 @@ from ..stop_view import build_stop_view
 # shorter and may carry letters (e.g. 22, 971E, NR7), so none of them collide.
 _STOP_CODE_RE = re.compile(r"^\d{5}$")
 _SERVICE_RE = re.compile(r"^[0-9A-Z]{1,4}$")
+# A stop's code and the buses to narrow it to, "84009 174, 175" or "84009 22*", as the web
+# app and the Linux CLI take them.
+_STOP_BUSES_RE = re.compile(r"^(\d{5})[\s,]+(.+)$")
+BUSES_HINT = "174, or 174, 175, or 22* for every bus starting 22"
+
+
+def stop_and_buses(text: str):
+    """A stop's code with buses after it, as (stop, buses, error): the stop and the buses
+    when both are good, an error to say when either isn't, or (None, None, None) when the
+    text isn't a code with something after it at all."""
+    m = _STOP_BUSES_RE.match(text)
+    if not m:
+        return None, None, None
+    stop = get_bus_stop_by_code(m[1])
+    if not stop:
+        return None, None, f"There's no bus stop {m[1]}."
+    buses = bus_filter(m[2])
+    if not buses:
+        return None, None, f'"{m[2]}" isn\'t a list of buses: {BUSES_HINT}.'
+    return stop, buses, None
 
 # As many stops as /nearme lists, so an address means the same thing as a location.
 NEARBY_LIMIT = 8
@@ -52,6 +73,15 @@ def register_search(client):
                 nearby, address = found
                 rich, buttons = build_stop_list_view(event.chat_id, f"Bus stops near {address}", nearby)
                 await send_rich_message(client, event.chat_id, rich, buttons)
+            return
+
+        stop, buses, error = stop_and_buses(text)
+        if error:
+            await event.respond(error, parse_mode=None)
+            return
+        if stop:
+            view = await build_stop_view(stop["code"], event.chat_id, services=buses)
+            await send_rich_message(client, event.chat_id, view["rich"], view["buttons"])
             return
 
         exact = get_bus_stop_by_code(text) if _STOP_CODE_RE.match(text) else None

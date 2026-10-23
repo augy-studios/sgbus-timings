@@ -7,6 +7,7 @@ from ..bus_stops import get_bus_stop_by_code, search_bus_stops
 from ..favourites import list_favourites
 from ..planning_areas import area_at
 from ..stop_view import build_stop_view
+from .search import stop_and_buses
 
 MAX_RESULTS = 8
 
@@ -25,7 +26,12 @@ def register_inline(client):
         query = event.text.strip()
         user_id = event.query.user_id
 
-        if not query:
+        # "84009 22*": the one stop, narrowed to those buses. Half typed or wrong, the
+        # search below has a go at it as a name instead.
+        stop, buses, _ = stop_and_buses(query)
+        if stop:
+            candidates = [stop]
+        elif not query:
             candidates = [get_bus_stop_by_code(f["code"]) for f in list_favourites(user_id)]
             candidates = [c for c in candidates if c][:MAX_RESULTS]
         else:
@@ -50,7 +56,7 @@ def register_inline(client):
         results = []
         for stop in candidates:
             try:
-                view = await build_stop_view(stop["code"], user_id, inline_only=True)
+                view = await build_stop_view(stop["code"], user_id, inline_only=True, services=buses)
                 markdown = view["rich"]["markdown"]
                 markup = client.build_reply_markup(view["buttons"])
             except Exception:

@@ -118,6 +118,9 @@ clear it rather than leaving the chat stuck mid-flow.
 You don't need a command to search. Just type into the chat:
 
 - A bus stop number, e.g. `84009`, to jump straight to it.
+- A bus stop number and some buses, e.g. `84009 174, 175` or `84009 22*` (every bus
+  starting 22), for that stop narrowed to them, the same as the web app and the Linux
+  CLI (`routines.bus_filter`). Inline mode takes it too.
 - A bus number, e.g. `22`, `971E` or `NR7`, to browse the stops that service
   visits (see [Bus routes](#bus-routes) below).
 - Part of a bus stop's name or road, e.g. `bedok` or `changi`, to see a list

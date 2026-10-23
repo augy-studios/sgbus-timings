@@ -21,6 +21,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Telegram bot
 
+- **A stop narrowed to some buses** - Send `84009 174, 175`, or `84009 22*` for every bus there starting with 22, as in the web app and the Linux app, and the stop opens narrowed to them. Works in inline mode too (`@UwUsgbus_bot 84009 22*`), and a narrowed stop with none of them due now says so.
 - **Wildcards in routines** - In `/addroutine`, type `96*` for 96, 96A and every other bus at the stop starting with 96, as the web app takes it. The buses it covers are ticked in the grid, and unticking one keeps the rest. Changing a routine's stop keeps a wildcard that still covers a bus there.
 
 ### Android and desktop apps

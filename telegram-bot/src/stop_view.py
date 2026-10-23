@@ -70,9 +70,10 @@ async def build_stop_view(
     another of the buses running that route is one tap away. It holds the journey too
     when the bus is one leg of a journey with changes, and either way the view says how
     many stops the bus has left to go.
-    `services` narrows the view to several buses at once, the ones a routine was set up
-    to send. It has no way back of its own, being where the user lands rather than
-    somewhere they navigated to, but widens out and collapses back like the others.
+    `services` narrows the view to several buses at once: the ones a routine was set up
+    to send, or typed after the stop's code ("84009 174, 175", "84009 22*"), wildcards and
+    all (routines.bus_filter). It has no way back of its own, being where the user lands
+    rather than somewhere they navigated to, but widens out and collapses back like the others.
     `navigate_open=True` unfolds the Directions button into a link per map app. It isn't
     part of where the user is, so a refresh folds it back to the single button.
     `nav` is the /nav way this bus is a leg of - its two ends and the way itself - so the
@@ -93,11 +94,15 @@ async def build_stop_view(
     fav_bus_nos = {row["service_no"] for row in list_favourite_buses(chat_id)} if chat_id is not None else set()
     bus_pin_position = get_pref(chat_id, "bus") if chat_id is not None else "top"
     note = stops_left_note(route, code, only_service) if route and only_service else None
-    rich = format_arrival_message(stop, arrivals, favourite, fav_bus_nos, bus_pin_position, note)
+    rich = format_arrival_message(
+        stop, arrivals, favourite, fav_bus_nos, bus_pin_position, note, wanted=wanted if not expanded else None
+    )
 
     if inline_only:
-        buttons = [[Button.inline("🔄 Refresh", make_button("refresh", {"code": code}))]]
-        return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, {"code": code}, navigate_open)}
+        # The buses typed after the code ("@bot 84009 22*") stay with it on a refresh.
+        inline_here = {"code": code, **({"services": services} if services else {})}
+        buttons = [[Button.inline("🔄 Refresh", make_button("refresh", inline_here))]]
+        return {"stop": stop, "rich": rich, "buttons": _with_navigate(buttons, stop, inline_here, navigate_open)}
 
     # Where the user came from, carried along so a refresh doesn't lose the way back.
     from_stops = (

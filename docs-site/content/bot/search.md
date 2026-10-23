@@ -10,6 +10,11 @@ question it has just asked, is treated as a search.
 
 - **A bus stop code**, always exactly 5 digits, such as `84009`, opens that
   stop's timings.
+- **A stop code and some buses**, such as `84009 174`, `84009 174, 175` or
+  `84009 22*`, opens that stop narrowed to those buses. `22*` is every bus there
+  starting with 22: 22, 222, 225G and so on. **All services** widens it to every
+  bus, as the [web app](../web/search.md) and the
+  [Linux app](../web/linux-cli.md) take it.
 - **A bus number**, such as `22`, `971E` or `NR7`, opens the
   [stops along its route](bus-routes.md). The bot checks it against LTA's live
   list of services, so anything that is not a real bus is searched as a name

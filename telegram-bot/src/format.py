@@ -8,6 +8,7 @@ from .bus_services import service_terminals
 from .bus_stops import get_bus_stop_by_code, same_place_stops
 from .favourite_prefs import pin_favourites
 from .restricted import CROSS_BORDER, cross_border_note, restricted_note
+from .routines import format_services, join_services
 
 _MD_SPECIAL = re.compile(r"([\\*_~`|\[\]#>=])")
 
@@ -231,12 +232,21 @@ def _stop_notes(stop) -> list:
     return notes
 
 
+def _none_due(wanted) -> str:
+    """What a stop with nothing to show says: none of the buses it's narrowed to, as the
+    Linux CLI says it, or none at all."""
+    if wanted:
+        return f"No live arrivals for {format_services(join_services(wanted))} right now."
+    return "No bus services currently reported for this stop."
+
+
 def format_arrival_message(
-    stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top", note=None
+    stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top", note=None, wanted=None
 ) -> dict:
     """Builds the rich-message Markdown body showing live arrivals for a bus stop.
     `note` is a line of plain text shown under the stop's name, such as how many stops
-    the bus picked off a route has left to go."""
+    the bus picked off a route has left to go. `wanted` is the buses the view is narrowed
+    to, if it is, for saying so when none of them are due."""
     favourite_service_nos = favourite_service_nos or set()
     star = "⭐ " if is_favourite else ""
     lines = [f"# {star}{escape_md(stop['name'])} ({escape_md(stop['code'])})"]
@@ -250,7 +260,7 @@ def format_arrival_message(
 
     services = _pin_favourite_ways(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:
-        lines.append("No bus services currently reported for this stop.")
+        lines.append(escape_md(_none_due(wanted)))
     else:
         for svc, way in services:
             svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
@@ -268,13 +278,13 @@ def format_arrival_message(
 
     markdown = "\n".join(lines)
     fallback = _build_fallback_text(
-        stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note
+        stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note, wanted
     )
     return {"markdown": markdown, "fallback": fallback}
 
 
 def _build_fallback_text(
-    stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note=None
+    stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note=None, wanted=None
 ) -> str:
     """Plain-text summary for the required SendMessageRequest.message field / older clients."""
     star = "⭐ " if is_favourite else ""
@@ -287,7 +297,7 @@ def _build_fallback_text(
 
     services = _pin_favourite_ways(arrivals["services"], favourite_service_nos, bus_pin_position)
     if not services:
-        lines.append("No bus services currently reported for this stop.")
+        lines.append(_none_due(wanted))
     else:
         for svc, way in services:
             svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""

@@ -1,7 +1,22 @@
+import re
 import time
 from datetime import datetime
 
 from .db import db
+
+_BUS_SPLIT_RE = re.compile(r"[\s,]+")
+_BUS_PART_RE = re.compile(r"^[0-9A-Z]{1,4}$|^[0-9A-Z]{1,3}\*$")
+
+
+def bus_filter(text: str) -> "list | None":
+    """The buses a stop is narrowed to, as typed after its code: one ("174"), several
+    ("174, 175" or "174 175"), or every bus starting with something ("22*"). Upper-cased,
+    each once, or None if it isn't a list of buses. The same as busFilter in the web app
+    (main-site/script.js) and the Linux CLI (cli/sgbus.js)."""
+    parts = [p for p in _BUS_SPLIT_RE.split(str(text or "").upper()) if p]
+    if not parts or not all(_BUS_PART_RE.match(p) for p in parts):
+        return None
+    return list(dict.fromkeys(parts))
 
 
 def split_services(services: "str | None") -> list:

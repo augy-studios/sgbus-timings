@@ -13,8 +13,13 @@ It is handy for telling a friend when the bus is coming.
 
    ```text
    @UwUsgbus_bot 84009
+   @UwUsgbus_bot 84009 22*
    @UwUsgbus_bot bedok
    ```
+
+   A stop code with buses after it, `84009 174, 175` or `84009 22*` for every bus
+   there starting with 22, posts the stop narrowed to those buses, and
+   **Refresh** keeps it that way.
 
 3. Results appear above the message box. Tap one to post that stop's live
    timings into the chat.
