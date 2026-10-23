@@ -84,7 +84,8 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
     ...(ua && { userAgent: ua }),
     ...(geo && { geolocation: geo, permissions: ['geolocation'] }),
   });
-  await ctx.route(/^(?!http:\/\/127\.0\.0\.1|https:\/\/fonts\.(googleapis|gstatic)\.com)/, (r) => r.abort());
+  // Nothing from outside but the fonts and the live map's tiles.
+  await ctx.route(/^(?!http:\/\/127\.0\.0\.1|https:\/\/fonts\.(googleapis|gstatic)\.com|https:\/\/tiles?\.(openfreemap|openstreetmap)\.org)/, (r) => r.abort());
   // A share card makes a short link: a made-up one here, not a real one on the live site.
   await ctx.route(/\/api\/share$/, (r) => (r.request().method() === 'POST'
     ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'k3v9q2x7ma', path: '/go/k3v9q2x7ma' }) })
@@ -126,7 +127,9 @@ async function el(page, sel, name) {
 }
 
 (async () => {
-  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
+  // WebGL in software, for the live map's MapLibre without a GPU.
+  const args = ['--enable-unsafe-swiftshader', '--use-angle=swiftshader'];
+  const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME, args } : { args });
   const R = '#plannerSection .card';
   const N = '#navSection .card';
 
@@ -494,6 +497,33 @@ async function el(page, sel, name) {
     await page.click('#glanceSource');
     await page.waitForTimeout(300);
     await cardDown(page, '#glance', '#glanceMenu', 'glance-pick.png', 12);
+    await ctx.close();
+  }
+  // The live map (js/map.js, MapLibre over OpenFreeMap): walking to Bedok Int from Bedok North
+  // Street 1, its overview, and tilted by two fingers for the buildings in 3D. Live tiles.
+  if (want('live-map')) {
+    const geo = { latitude: 1.32706, longitude: 103.93069, accuracy: 10 };
+    const { ctx, page } = await open(browser, { width: 400, height: 820, touch: true, geo });
+    await page.evaluate(() => LiveMap.walkTo({ lat: 1.324539, lng: 103.929038, label: 'Bedok Int' }));
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: OUT + 'live-map-walk.png' });
+    console.log('wrote live-map-walk.png 400 820');
+    // Two fingers dragged up the screen, as a person tilts it.
+    const cdp = await ctx.newCDPSession(page);
+    const fingers = (y) => [{ x: 160, y, id: 1 }, { x: 240, y, id: 2 }];
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: fingers(560) });
+    for (let y = 550; y >= 340; y -= 15) {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: fingers(y) });
+      await page.waitForTimeout(30);
+    }
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.waitForTimeout(4000);
+    await page.screenshot({ path: OUT + 'live-map-3d.png' });
+    console.log('wrote live-map-3d.png 400 820');
+    await page.click('#mapOverview');
+    await page.waitForTimeout(5000);
+    await page.screenshot({ path: OUT + 'live-map-overview.png' });
+    console.log('wrote live-map-overview.png 400 820');
     await ctx.close();
   }
   // The tour's first step, the first time the app opens. Live timings.

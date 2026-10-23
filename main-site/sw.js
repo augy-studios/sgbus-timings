@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v95";
+const VERSION = "v96";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -62,10 +62,13 @@ const ASSETS = [
   // The desktop app's widgets (desktop/widgets.js).
   "/widget.html",
   "/js/widget.js",
-  // The live map's Leaflet (js/map.js), so the map opens offline too.
+  // The live map's engine (js/map-engine.js), and Leaflet, its fallback without WebGL, so the
+  // map opens offline too. MapLibre's kept apart, in MAP_CACHE, once it's first used.
+  "/js/map-engine.js",
   "/vendor/leaflet/leaflet.js",
   "/vendor/leaflet/leaflet.css",
   "/js/calendar.js",
+  "/js/mrt-doors.js",
   "/js/nav.js",
   "/js/share.js",
   "/js/sw-update.js",
@@ -101,6 +104,22 @@ const TILE_MAX = 2000;
 const TILE_REFRESH_MS = 14 * 24 * 3600 * 1000;
 const isTile = (url) => url.hostname === "tile.openstreetmap.org";
 
+// The live map on MapLibre (js/map-engine.js), all kept as it's first used, and none of it
+// versioned with the site, so a deploy doesn't throw it away:
+// - MAP_CACHE: MapLibre itself (its folder is named for its version, so it never changes),
+//   and OpenFreeMap's fonts, sprites and world overview, kept as they are; its styles and
+//   TileJSON (which names this week's tiles) shown from the cache and fetched again behind,
+//   so the map opens offline on what it last had.
+// - VECTOR_CACHE: OpenFreeMap's vector tiles. Each week's are at their own address, so a tile
+//   never changes; capped at VECTOR_MAX, the oldest going first. Singapore at the closest
+//   zoom they go is about 240 of them.
+const MAP_CACHE = "sgbus-map";
+const VECTOR_CACHE = "sgbus-vector";
+const VECTOR_MAX = 1500;
+const OFM_HOST = "tiles.openfreemap.org";
+const isVectorTile = (url) => url.hostname === OFM_HOST && /\.pbf$/.test(url.pathname) && !url.pathname.startsWith("/fonts/");
+const isOfmFresh = (url) => url.hostname === OFM_HOST && (url.pathname.startsWith("/styles/") || /^\/planet\/?$/.test(url.pathname));
+
 // No skipWaiting() here: a new worker installs and then waits until somebody
 // presses Reload on the update bar (js/sw-update.js).
 self.addEventListener("install", (event) => {
@@ -118,7 +137,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => key !== CACHE && key !== WIDGET_CACHE && key !== TILE_CACHE).map((key) => caches.delete(key))
+        keys.filter((key) => ![CACHE, WIDGET_CACHE, TILE_CACHE, MAP_CACHE, VECTOR_CACHE].includes(key)).map((key) => caches.delete(key))
       )
     )
   );
@@ -444,9 +463,18 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) {
     if (FONT_HOSTS.includes(url.hostname)) event.respondWith(cacheFirst(request));
     else if (isTile(url)) event.respondWith(tile(event, request));
+    else if (isVectorTile(url)) event.respondWith(vectorTile(request));
+    else if (isOfmFresh(url)) event.respondWith(mapFresh(event, request));
+    else if (url.hostname === OFM_HOST) event.respondWith(mapKept(request));
     // Analytics and PeerJS for syncing (js/p2p.js) go straight to the network,
     // untouched: an old signalling client talking to the live broker is worse than
     // a clear "could not load".
+    return;
+  }
+
+  // MapLibre, in its versioned folder: kept apart from the site's cache, which a deploy clears.
+  if (url.pathname.startsWith("/vendor/maplibre-")) {
+    event.respondWith(mapKept(request));
     return;
   }
 
@@ -470,7 +498,8 @@ self.addEventListener("fetch", (event) => {
     if (url.pathname === "/api/app-release") return;
     // Syncing with the Telegram bot: what it's said is only ever news.
     if (url.pathname === "/api/sync") return;
-    if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops") {
+    // The MRT doors (js/mrt-doors.js) change as rarely, and are as useful underground.
+    if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops" || url.pathname === "/api/mrt-doors") {
       event.respondWith(staleWhileRevalidate(event, request));
       return;
     }
@@ -518,7 +547,47 @@ async function tile(event, request) {
 }
 
 // The oldest first: Cache Storage lists its keys in the order they went in.
-async function trimTiles(cache) {
+async function trimTiles(cache, max = TILE_MAX) {
   const keys = await cache.keys();
-  if (keys.length > TILE_MAX) await Promise.all(keys.slice(0, keys.length - TILE_MAX).map((k) => cache.delete(k)));
+  if (keys.length > max) await Promise.all(keys.slice(0, keys.length - max).map((k) => cache.delete(k)));
+}
+
+/* -- The live map on MapLibre (js/map-engine.js) -- */
+
+// Kept as it is once it's in: MapLibre, OpenFreeMap's fonts, sprites and world overview.
+async function mapKept(request) {
+  const cache = await caches.open(MAP_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const res = await fetch(request);
+  if (res.ok) await cache.put(request, res.clone());
+  return res;
+}
+
+// A style or TileJSON: what's kept at once, and the newest fetched behind it for next time.
+async function mapFresh(event, request) {
+  const cache = await caches.open(MAP_CACHE);
+  const hit = await cache.match(request);
+  const fresh = fetch(request).then(async (res) => {
+    if (res.ok) await cache.put(request, res.clone());
+    return res;
+  });
+  if (hit) {
+    event.waitUntil(fresh.catch(() => {}));
+    return hit;
+  }
+  return fresh;
+}
+
+let vectorPuts = 0;
+async function vectorTile(request) {
+  const cache = await caches.open(VECTOR_CACHE);
+  const hit = await cache.match(request);
+  if (hit) return hit;
+  const res = await fetch(request);
+  if (res.ok) {
+    await cache.put(request, res.clone());
+    if (++vectorPuts % 50 === 0) trimTiles(cache, VECTOR_MAX);
+  }
+  return res;
 }

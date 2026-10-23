@@ -9,6 +9,17 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 23 October 2026 (late): the live map in 3D, which train door to stand at
+
+### Web app
+
+- **Which door to stand at** - On a train ride in Navigate, where the station's in: the car and door that stop nearest the escalators, lift and stairs where you get off ("car 2, door 3 or car 5, door 1 for the escalators to the exit"), or that your next train is just across the platform. More stations are on the way.
+- **A new live map, buildings in 3D** - The live map is now OpenFreeMap's, drawn on the phone: sharper at every zoom, with shops, stops and street names. Drag two fingers up the screen to tilt it and the buildings stand up in 3D; twist two fingers to turn it. The compass mode turns it smoothly now, the whole map rather than a picture of it. Dark mode has its own dark map.
+- **OpenStreetMap as the fallback** - If OpenFreeMap can't be reached, the map changes to OpenStreetMap's own tiles. A phone or browser that can't draw the new map gets the flat OpenStreetMap map it had before.
+- **Kept on the phone** - The map, and every part of Singapore you've looked at on it, is saved as you go, so it comes back at once and works offline, underground included.
+
+---
+
 ## 23 October 2026 (night): Glance gets its own page, a compass map, sgbus in the console
 
 ### Web app

@@ -2620,11 +2620,23 @@ body.on-trip { padding-bottom: 96px; }
    blurring a map that's panning means redoing the blur every frame, which is what lags. */
 .mapPanel { position: fixed; inset: 0; z-index: 60; background: var(--bg); }
 .liveMap { position: absolute; inset: 0; background: var(--bg); }
-/* Turned with the way you face (js/map.js, setTurning): a square as wide as the screen's
-   diagonal round its middle, so no corner comes up empty as it turns. Its credit sits outside it. */
-.liveMap.turning { inset: auto; transition: rotate 0.15s linear; }
+/* Over MapLibre's own .maplibregl-map { position: relative }, which would leave it no height. */
+.mapPanel .liveMap.maplibregl-map { position: absolute; }
+/* The compass button (js/map.js, setTurning): filled in while the map turns with you, its
+   needle turned to keep pointing north. Not on the flat Leaflet fallback, which can't turn. */
 .mapFab[aria-pressed="true"] { background: var(--brand-fill); color: var(--on-brand); }
 #mapHeading svg { transition: rotate 0.15s linear; }
+#mapHeading.noTurn { display: none; }
+/* MapLibre's (js/map-engine.js): its credit clear of the sheet along the bottom, as Leaflet's,
+   and a stop's or place's name on a tap, in the page's own colours. */
+.mapPanel .maplibregl-ctrl-bottom-right { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 84px); }
+.mapPanel .maplibregl-ctrl.maplibregl-ctrl-attrib,
+.mapPanel .maplibregl-ctrl-attrib.maplibregl-compact { font-size: 10px; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--muted); }
+.mapPanel .maplibregl-ctrl-attrib a { color: var(--brand-ink); }
+.mapPanel .maplibregl-ctrl-attrib-button { background-color: transparent; }
+:root[data-mode="dark"] .mapPanel .maplibregl-ctrl-attrib-button { filter: invert(1); }
+.mapTip .maplibregl-popup-content { background: var(--surface-strong); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 10px; box-shadow: var(--shadow); }
+.mapTip .maplibregl-popup-tip { border-top-color: var(--surface-strong); border-bottom-color: var(--surface-strong); }
 .mapPanel .glass {
     backdrop-filter: none; -webkit-backdrop-filter: none;
     background: color-mix(in srgb, var(--bg) 94%, transparent);

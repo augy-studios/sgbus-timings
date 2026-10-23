@@ -3,13 +3,13 @@ title: Live map
 description: Walking directions to a stop or place on a live map that follows you, your trip on a map, and following a trip someone shared with you.
 ---
 
-The live map shows where you are on OpenStreetMap, and follows you as you go. It
-opens three ways.
+The live map shows where you are, with the buildings in 3D, and follows you as
+you go. It opens three ways.
 
 ## Walk to a stop or place
 
 <figure>
-<img src="/screenshots/web/live-map-walk.png" alt="The live map close in on Bedok North Street 1: a blue dot where you are on the street, the walk ahead in blue, Walk to Bedok Int with 860 m, 11 min and the arrival time at the top, In 80 m: Turn left along the bottom, and the overview button on the right." width="400" height="820" loading="lazy">
+<img src="/screenshots/web/live-map-walk.png" alt="The live map close in on Bedok North Street 1, drawn by OpenFreeMap with its shops and bus stops: a blue dot where you are, the walk ahead in blue, Walk to Bedok Int with 480 m, 6 min and the arrival time at the top, the next turn along the bottom, and the compass and overview buttons on the right." width="400" height="820" loading="lazy">
 <figcaption>The map opens close in on you, with the next turn along the bottom.</figcaption>
 </figure>
 
@@ -33,7 +33,7 @@ still shows the stop, but can't follow you.
 ## See the whole way
 
 <figure>
-<img src="/screenshots/web/live-map-overview.png" alt="The overview of the walk: the whole route in blue from Bedok North Street 1 down past the library to Bedok Int, ending at a pink pin by Bedok Mall, with the overview button and, under it, the button to go back to following you." width="400" height="820" loading="lazy">
+<img src="/screenshots/web/live-map-overview.png" alt="The overview of the walk: the whole route in blue from Bedok North Street 1 down Bedok North Drive to Bedok Int, ending at a pink pin by Bedok Mall, with the compass, overview and follow-me buttons on the right." width="400" height="820" loading="lazy">
 <figcaption>Overview fits the whole walk on the screen.</figcaption>
 </figure>
 
@@ -56,6 +56,30 @@ top; the overview button does too.
   double-tap to zoom.
 
 It's there on your own walk or trip, not on someone else's shared trip.
+
+## Buildings in 3D
+
+<figure>
+<img src="/screenshots/web/live-map-3d.png" alt="The live map tilted on Bedok North Street 1: the blocks along the street standing up in grey 3D, the walk ahead in blue along the road, and Walk to Bedok Int, 480 m at the top." width="400" height="820" loading="lazy">
+<figcaption>Two fingers dragged up the screen tilt the map, and the buildings stand up.</figcaption>
+</figure>
+
+Drag two fingers up the screen to tilt the map, and down again to flatten it.
+Close in, the buildings stand up in 3D, which helps tell which block is which.
+Twist two fingers to turn the map yourself; the compass button's needle follows
+north. The overview button puts it flat and north up again.
+
+### The map itself
+
+The map is [OpenFreeMap](https://openfreemap.org)'s, made from OpenStreetMap,
+drawn on the phone. If OpenFreeMap can't be reached, the map changes to
+OpenStreetMap's own tiles, flat, for the rest of that visit. On a phone or
+browser that can't draw it (no WebGL), it's OpenStreetMap's flat map, without
+3D or the compass button.
+
+Everything the map loads is kept on the phone: the map itself, and every part
+of Singapore you've looked at. A place you've seen before comes up at once,
+even with no signal underground.
 
 ## Your trip on a map
 

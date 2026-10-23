@@ -1,5 +1,7 @@
-// The live map: OpenStreetMap with Leaflet, full screen over the page, following where you
-// are. It takes the place of sending you off to Google Maps, in three ways:
+// The live map: full screen over the page, following where you are, drawn by js/map-engine.js
+// (MapLibre over OpenFreeMap's vector tiles, buildings in 3D when you tilt it with two fingers;
+// OpenStreetMap's tiles as the fallback). It takes the place of sending you off to Google
+// Maps, in three ways:
 //
 //   LiveMap.walkTo(place)   walking directions to a stop or place, turn by turn, from where
 //                           you are: a stop's Directions (script.js), a walk in a nav
@@ -16,35 +18,17 @@
 // street level and following.
 //
 // Made to stay light on a phone, as a map can easily make a page lag:
-// - Leaflet (vendor/leaflet, 40 KB gzipped) is only fetched the first time the map opens.
-// - Everything's drawn on one canvas (preferCanvas), and lines and markers are made once and
-//   moved, never redrawn from scratch.
+// - The map's code is only fetched the first time it opens, and sw.js keeps it.
+// - What's drawn is made once and moved, never redrawn from scratch.
 // - Fixes are drawn at most once every DRAW_MS, and the map only pans when you've moved a
 //   fair way across it, so a fix a second doesn't mean a pan a second.
-// - Tiles load once the map stops moving (updateWhenIdle), at the screen's own density, and
-//   sw.js keeps them (cache-first, capped), so a place seen once comes back instantly, and
-//   offline.
+// - sw.js keeps every tile, style, font and sprite it's shown, so a place seen once comes back
+//   instantly, and offline.
 // - Nothing runs while the map's closed: no location, no timers.
-//
-// Tiles are OpenStreetMap's own, under its tile usage policy (attribution, light use), and
-// only theirs: OneMap's lag. Tiles that don't load (underground, on a weak signal) are asked
-// for again a little later, and as soon as the phone's back online.
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
-  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-  const LEAFLET_JS = '/vendor/leaflet/leaflet.js';
-  const LEAFLET_CSS = '/vendor/leaflet/leaflet.css';
-  const TILES = {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
-    maxZoom: 19,
-  };
-  // Tiles that didn't load are asked for again this long after the last one failed.
-  const TILE_RETRY_MS = 10 * 1000;
-
-  const SG_CENTRE = [1.3521, 103.8198];
   const DRAW_MS = 1000;
   // Panned to keep you on screen once you've moved this share of the way to its edge.
   const PAN_SHARE = 0.25;
@@ -66,11 +50,8 @@
   // LINE_COLORS in js/recents.js.
   const LINE_COLOURS = { EW: '#009645', CG: '#009645', NS: '#d42e12', NE: '#9900aa', CC: '#fa9e0d', CE: '#fa9e0d', DT: '#005ec4', TE: '#9d5b25', BP: '#748477', SE: '#748477', SW: '#748477', PE: '#748477', PW: '#748477' };
 
-  let leaflet = null; // the promise of Leaflet loaded
-  let map = null;
-  let tileLayer = null;
-  let tileRetry = null; // tiles failed: the timer to ask for them again, or true while closed
-  let groups = null; // { lines, stops, marks, me }
+  // The map (js/map-engine.js): what's drawn goes in its groups, lines, stops, marks and me.
+  let ink = null;
   let meDot = null;
   let meRing = null;
   let meCone = null;
@@ -163,96 +144,35 @@
 
   // ---------- loading ----------
 
-  function loadLeaflet() {
-    if (window.L) return Promise.resolve(window.L);
-    leaflet ??= new Promise((resolve, reject) => {
-      const css = document.createElement('link');
-      css.rel = 'stylesheet';
-      css.href = LEAFLET_CSS;
-      document.head.appendChild(css);
-      const js = document.createElement('script');
-      js.src = LEAFLET_JS;
-      js.onload = () => resolve(window.L);
-      js.onerror = () => {
-        leaflet = null;
-        reject(new Error("Couldn't load the map. Check your connection and try again."));
-      };
-      document.head.appendChild(js);
-    });
-    return leaflet;
-  }
-
-  // OpenStreetMap's tiles. A tile that fails stays blank until asked for again, so once tiles
-  // stop failing for TILE_RETRY_MS, or the phone's back online, or the map's opened again, the
-  // ones on screen are: those that loaded come straight from sw.js's cache.
-  function addTiles() {
-    tileLayer = L.tileLayer(TILES.url, {
-      attribution: TILES.attribution,
-      maxZoom: TILES.maxZoom,
-      // CORS (OpenStreetMap sends it), so sw.js can keep them without the size an opaque
-      // response costs.
-      crossOrigin: true,
-      updateWhenIdle: true,
-      updateWhenZooming: false,
-      keepBuffer: 3,
-      detectRetina: false,
-    });
-    tileLayer.on('tileerror', () => {
-      clearTimeout(tileRetry);
-      tileRetry = setTimeout(retryTiles, TILE_RETRY_MS);
-    });
-    window.addEventListener('online', retryTiles);
-    tileLayer.addTo(map);
-  }
-
-  function retryTiles() {
-    if (!tileRetry) return;
-    clearTimeout(tileRetry);
-    // Closed, or still offline: kept for when the map's opened or the phone's online again.
-    if ($('#mapPanel').hidden || navigator.onLine === false) {
-      tileRetry = true;
-      return;
-    }
-    tileRetry = null;
-    tileLayer.redraw();
-  }
-
+  let opening = null;
   async function ensureMap() {
-    await loadLeaflet();
-    if (map) return map;
-    map = L.map($('#liveMap'), {
-      preferCanvas: true,
-      zoomControl: false,
-      attributionControl: true,
-      markerZoomAnimation: false,
-      // Pinch zooms about the fingers, and a double tap doesn't fight a tap on a stop.
-      tap: false,
-      maxBounds: [[0.9, 103.2], [1.8, 104.5]],
-      minZoom: 10,
-    }).setView(SG_CENTRE, 12);
-    map.attributionControl.setPrefix(false);
-    // Its controls (the OpenStreetMap credit) out of the map's own box and into the panel, so
-    // they stay put and upright while the map turns (setTurning).
-    $('#mapPanel').insertBefore(map.attributionControl.getContainer().closest('.leaflet-control-container'), $('#liveMap').nextSibling);
-    addTiles();
-    groups = {
-      lines: L.layerGroup().addTo(map),
-      stops: L.layerGroup().addTo(map),
-      marks: L.layerGroup().addTo(map),
-      me: L.layerGroup().addTo(map),
-    };
     // Moving the map yourself stops it following you, until Recentre. Turned with the way you
     // face, it can't be dragged, and zooms about you.
-    map.on('dragstart', () => setFollowing(false));
-    map.on('zoomstart', (e) => { if (e.originalEvent && !turning) setFollowing(false); });
-    return map;
+    opening ??= MapEngine.open($('#liveMap'), {
+      onUserMove: () => setFollowing(false),
+      onUserZoom: () => { if (!turning) setFollowing(false); },
+      onTurn: needle,
+    }).catch((err) => {
+      opening = null;
+      throw err;
+    });
+    ink = await opening;
+    // Leaflet, where there's no WebGL, can't turn.
+    $('#mapHeading').classList.toggle('noTurn', !ink.canTurn);
+    return ink;
+  }
+
+  // The compass button's needle keeps pointing north, however the map's turned: by the
+  // compass, or by two fingers twisting it.
+  function needle(bearing) {
+    $('#mapHeading svg')?.style.setProperty('rotate', `${-bearing}deg`);
   }
 
   // ---------- turned with the way you face ----------
   // The compass button: the map centred on you, turned so the way the phone points is up, as
   // a map app's compass mode. The phone's compass where it has one (iOS asks first, from the
-  // tap), the way you're moving where it hasn't. Its needle keeps pointing north. Off with the
-  // button again, Overview, or closing the map.
+  // tap), the way you're moving where it hasn't. Off with the button again, Overview, or
+  // closing the map.
 
   const COMPASS_FRESH_MS = 3000;
   // How far each reading moves the smoothed heading towards it, so the map doesn't shake.
@@ -282,29 +202,18 @@
     if (!turnFrame) turnFrame = requestAnimationFrame(applyTurn);
   }
 
+  // The map on you, the way you face up. `turned` is kept unwrapped, so 359 to 1 goes 2 degrees.
   function applyTurn() {
     turnFrame = null;
     if (!turning) return;
     const h = heading();
     if (h == null) return;
     turned += (((h - turned) % 360) + 540) % 360 - 180;
-    $('#liveMap').style.rotate = `${-turned}deg`;
-    $('#mapHeading svg').style.rotate = `${-turned}deg`;
-  }
-
-  // The map's box as a square the screen's diagonal across, round the panel's middle.
-  function fitTurn() {
-    const panel = $('#mapPanel');
-    const w = panel.clientWidth;
-    const h = panel.clientHeight;
-    const d = Math.ceil(Math.hypot(w, h));
-    Object.assign($('#liveMap').style, { width: `${d}px`, height: `${d}px`, left: `${(w - d) / 2}px`, top: `${(h - d) / 2}px` });
-    map.invalidateSize();
+    ink.turn(following ? focus() : null, turned);
   }
 
   async function setTurning(on) {
-    if (!map || on === turning) return;
-    const el = $('#liveMap');
+    if (!ink?.canTurn || on === turning) return;
     if (on) {
       // iOS lets a page read the compass only once asked, and asks only from a tap.
       if (typeof window.DeviceOrientationEvent?.requestPermission === 'function') {
@@ -313,10 +222,7 @@
       turning = true;
       window.addEventListener('deviceorientationabsolute', onOrient);
       window.addEventListener('deviceorientation', onOrient);
-      el.classList.add('turning');
-      fitTurn();
-      map.dragging.disable();
-      map.options.touchZoom = map.options.scrollWheelZoom = map.options.doubleClickZoom = 'center';
+      ink.setTurning(true);
       setFollowing(true);
       clearTimeout(compassNote);
       compassNote = setTimeout(() => {
@@ -328,15 +234,10 @@
       window.removeEventListener('deviceorientationabsolute', onOrient);
       window.removeEventListener('deviceorientation', onOrient);
       clearTimeout(compassNote);
-      el.classList.remove('turning');
-      Object.assign(el.style, { width: '', height: '', left: '', top: '', rotate: '' });
-      $('#mapHeading svg').style.rotate = '';
       turned = 0;
       facing = null;
       compassAt = 0;
-      map.invalidateSize();
-      map.dragging.enable();
-      map.options.touchZoom = map.options.scrollWheelZoom = map.options.doubleClickZoom = true;
+      ink.setTurning(false);
     }
     $('#mapHeading').setAttribute('aria-pressed', String(turning));
   }
@@ -352,13 +253,13 @@
     following = on;
     $('#mapRecentre').hidden = on;
     const at = on && focus();
-    if (at) map.setView(at, STREET_ZOOM, { animate: true });
+    if (at) ink.setView(at, STREET_ZOOM, true);
   }
 
   // The whole way at once: what's left of the walk or trip, or their trip, with you or them
   // and where it ends. Clear of the bars at the top and bottom.
   function showOverview() {
-    if (!map || !mode) return;
+    if (!ink || !mode) return;
     const pts = [];
     if (mode === 'walk') {
       if (walk) pts.push(...walk.path);
@@ -376,7 +277,7 @@
     if (!pts.length) return;
     setTurning(false);
     setFollowing(false);
-    map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [30, 90], paddingBottomRight: [70, 120], maxZoom: STREET_ZOOM - 1 });
+    ink.fit(pts, { top: 90, left: 30, right: 70, bottom: 120 }, STREET_ZOOM - 1);
   }
 
   // ---------- opening and closing ----------
@@ -402,11 +303,11 @@
       note(err.message);
       throw err;
     }
-    map.invalidateSize();
-    retryTiles();
-    groups.lines.clearLayers();
-    groups.stops.clearLayers();
-    groups.marks.clearLayers();
+    ink.resize();
+    ink.refetch();
+    ink.clear('lines');
+    ink.clear('stops');
+    ink.clear('marks');
     destMark = null;
     builtTripLeg = null;
     setFollowing(true);
@@ -469,57 +370,53 @@
     if (!lastHere || metres([lastHere.lat, lastHere.lng], [next.lat, next.lng]) > 8) lastHere = next;
     const first = !here;
     here = next;
-    if (first && following && mode !== 'follow') map.setView([here.lat, here.lng], STREET_ZOOM);
+    if (first && following && mode !== 'follow') ink.setView([here.lat, here.lng], STREET_ZOOM);
     if (mode === 'walk') onWalkFix();
   }
 
   // You, as a dot with a ring for how sure the fix is and a cone for the way you face. Drawn
   // on the timer, not on each fix, and only moved, never made again.
   function drawMe() {
-    if (!here || !map) return;
+    if (!here || !ink) return;
     const at = [here.lat, here.lng];
-    if (!meDot) {
-      meRing = L.circle(at, { radius: here.accuracy, stroke: false, fillColor: COLOURS.me, fillOpacity: 0.12, interactive: false });
-      meCone = L.polygon([at, at, at], { stroke: false, fillColor: COLOURS.me, fillOpacity: 0.25, interactive: false });
-      meDot = L.circleMarker(at, { radius: 7, color: '#fff', weight: 3, fillColor: COLOURS.me, fillOpacity: 1, interactive: false });
-      groups.me.addLayer(meRing).addLayer(meCone).addLayer(meDot);
+    const ring = Math.min(here.accuracy, 500);
+    if (!meDot?.alive) {
+      ink.clear('me');
+      meRing = ink.disc('me', at, ring, { fill: COLOURS.me, opacity: 0.12 });
+      meCone = ink.poly('me', [at, at, at], { fill: COLOURS.me, opacity: 0.25 });
+      meDot = ink.dot('me', at, { radius: 7, stroke: '#fff', weight: 3, fill: COLOURS.me });
     } else {
-      meDot.setLatLng(at);
-      meRing.setLatLng(at).setRadius(Math.min(here.accuracy, 500));
+      meDot.set(at);
+      meRing.set(at, ring);
     }
     // The way you face: the compass while the map turns with it, otherwise the way you move.
     const faces = turning ? heading() : here.heading;
     if (faces != null) {
-      const zoomM = 40 * Math.pow(2, 17 - map.getZoom());
+      const zoomM = 40 * Math.pow(2, 17 - ink.zoom());
       const tip = (deg) => {
         const r = ((faces + deg) * Math.PI) / 180;
         return [here.lat + (Math.cos(r) * zoomM) / 110540, here.lng + (Math.sin(r) * zoomM) / (111320 * Math.cos((here.lat * Math.PI) / 180))];
       };
-      meCone.setLatLngs([at, tip(-25), tip(25)]);
+      meCone.set([at, tip(-25), tip(25)]);
     } else {
-      meCone.setLatLngs([at, at, at]);
+      meCone.set([at, at, at]);
     }
-    if (!groups.me.hasLayer(meDot)) groups.me.addLayer(meRing).addLayer(meCone).addLayer(meDot);
     keepInView(at);
   }
 
   function keepInView(at) {
     if (!following) return;
-    const size = map.getSize();
-    const p = map.latLngToContainerPoint(at);
-    // Turned with the way you face, you stay in the middle, which it turns about.
-    if (turning) {
-      if (Math.hypot(p.x - size.x / 2, p.y - size.y / 2) > 4) map.panTo(at, { animate: true, duration: 0.5 });
-      turnSoon();
-      return;
-    }
+    // Turned with the way you face, you stay in the middle, which it turns about (applyTurn).
+    if (turning) return turnSoon();
+    const size = ink.size();
+    const p = ink.toScreen(at);
     const dx = Math.abs(p.x - size.x / 2) / (size.x / 2);
     const dy = Math.abs(p.y - size.y / 2) / (size.y / 2);
-    if (dx > PAN_SHARE || dy > PAN_SHARE) map.panTo(at, { animate: true, duration: 0.6 });
+    if (dx > PAN_SHARE || dy > PAN_SHARE) ink.panTo(at, 600);
   }
 
   function hideMe() {
-    groups?.me.clearLayers();
+    ink?.clear('me');
     meDot = meRing = meCone = null;
   }
 
@@ -546,9 +443,9 @@
     walk = null;
     walkFrom = from;
     offRoute = 0;
-    destMark = flag([place.lat, place.lng], place.label).addTo(groups.marks);
+    destMark = flag([place.lat, place.lng], place.label);
     // On you already (show() went in on your last fix); until there's one, on where it ends.
-    if (!here) map.setView([place.lat, place.lng], STREET_ZOOM - 2);
+    if (!here) ink.setView([place.lat, place.lng], STREET_ZOOM - 2);
     $('#mapStep').textContent = 'Finding where you are…';
     startWatching();
     // From the given start, or where you are once that's known; the end alone until then.
@@ -571,10 +468,10 @@
   }
 
   function drawWalk() {
-    groups.lines.clearLayers();
+    ink.clear('lines');
     if (!walk) return;
-    L.polyline(walk.path, { color: '#fff', weight: 9, opacity: 0.9, interactive: false }).addTo(groups.lines);
-    L.polyline(walk.path, { color: COLOURS.walk, weight: 5, opacity: 1, dashArray: walk.source === 'line' ? '2 10' : null, lineCap: 'round', interactive: false }).addTo(groups.lines);
+    ink.line('lines', walk.path, { color: '#fff', weight: 9, opacity: 0.9 });
+    ink.line('lines', walk.path, { color: COLOURS.walk, weight: 5, dash: walk.source === 'line' });
     note(walk.source === 'line' ? "Couldn't find streets for this walk, so this is the straight line there." : '');
   }
 
@@ -620,8 +517,9 @@
 
   // ---------- a trip ----------
 
+  // A place on the map, its name on a tap.
   function flag(at, label, colour = '#d6336c') {
-    return L.circleMarker(at, { radius: 9, color: '#fff', weight: 3, fillColor: colour, fillOpacity: 1 }).bindTooltip(esc(label), { direction: 'top', offset: [0, -8] });
+    return ink.dot('marks', at, { radius: 9, stroke: '#fff', weight: 3, fill: colour, label });
   }
 
   async function trip() {
@@ -649,37 +547,33 @@
     if (builtTripLeg !== p.legIndex) {
       builtTripLeg = p.legIndex;
       tripTrack = null;
-      groups.lines.clearLayers();
-      groups.stops.clearLayers();
-      groups.marks.clearLayers();
+      ink.clear('lines');
+      ink.clear('stops');
+      ink.clear('marks');
       legs.forEach((leg, i) => {
         const done = i < p.legIndex;
         const colour = done ? COLOURS.done : leg.kind === 'walk' ? COLOURS.walk
           : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
-        const line = L.polyline(leg.points, {
-          color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95,
-          dashArray: leg.kind === 'walk' ? '2 9' : null, lineCap: 'round', interactive: false,
-        }).addTo(groups.lines);
+        const line = ink.line('lines', leg.points, { color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95, dash: leg.kind === 'walk' });
         // A train ride along its line's track (js/rail-tracks.js), once that's in; straight from
         // station to station till then.
         if (leg.kind === 'train' && window.RailTracks) {
           RailTracks.path(leg.route || String(leg.label || '').split(' ')[0], leg.points).then((track) => {
-            if (!track || mode !== 'trip' || builtTripLeg !== p.legIndex || !groups.lines.hasLayer(line)) return;
-            line.setLatLngs(track.path);
+            if (!track || mode !== 'trip' || builtTripLeg !== p.legIndex || !line.alive) return;
+            line.set(track.path);
             if (i === p.legIndex) tripTrack = track;
           });
         }
         if (leg.kind !== 'walk' && !done) {
           leg.points.forEach((pt, k) => {
             if (k === 0 || k === leg.points.length - 1) return;
-            L.circleMarker(pt, { radius: 3.5, color: colour, weight: 2, fillColor: '#fff', fillOpacity: 1 })
-              .bindTooltip(esc(leg.names?.[k] || `Stop ${k + 1}`), { direction: 'top' }).addTo(groups.stops);
+            ink.dot('stops', pt, { radius: 3.5, stroke: colour, weight: 2, fill: '#fff', label: leg.names?.[k] || `Stop ${k + 1}` });
           });
         }
         if (!done) {
           const end = leg.points[leg.points.length - 1];
           const last = i === legs.length - 1;
-          flag(end, last ? leg.to : `${leg.kind === 'walk' ? 'Walk to' : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour).addTo(groups.marks);
+          flag(end, last ? leg.to : `${leg.kind === 'walk' ? 'Walk to' : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour);
         }
       });
       // On a walk, its streets: from where you are, or where it starts.
@@ -689,11 +583,11 @@
         fetchWalk(here || { lat: leg.points[0][0], lng: leg.points[0][1] }, { lat: end[0], lng: end[1] })
           .then((r) => {
             if (mode !== 'trip' || builtTripLeg !== p.legIndex) return;
-            L.polyline(r.path, { color: COLOURS.walk, weight: 5, opacity: 1, lineCap: 'round', interactive: false }).addTo(groups.lines);
+            ink.line('lines', r.path, { color: COLOURS.walk, weight: 5 });
           })
           .catch(() => {});
       }
-      if (fit && !here) map.setView(p.at, STREET_ZOOM);
+      if (fit && !here) ink.setView(p.at, STREET_ZOOM);
     }
     const status = window.Trip.status?.() || '';
     $('#mapStep').textContent = status;
@@ -703,7 +597,7 @@
     if (!here) {
       hideMe();
       const at = (tripTrack && onTrack(tripTrack, p.timeline?.pos)) || p.at;
-      groups.me.addLayer(L.circleMarker(at, { radius: 7, color: '#fff', weight: 3, fillColor: COLOURS.me, fillOpacity: 0.7, interactive: false }));
+      ink.dot('me', at, { radius: 7, stroke: '#fff', weight: 3, fill: COLOURS.me, fillOpacity: 0.7 });
     }
   }
 
@@ -771,34 +665,35 @@
     if (mode !== 'follow' || !data) return;
     followData = data;
     const at = themAt(data, null);
+    const ring = Math.min(data.me?.accuracy || 30, 500);
     if (data.path?.length >= 2) {
-      if (!themPath) themPath = L.polyline(data.path, { color: COLOURS.them, weight: 5, opacity: 0.85, lineCap: 'round', interactive: false }).addTo(groups.lines);
-      else themPath.setLatLngs(data.path);
+      if (!themPath) themPath = ink.line('lines', data.path, { color: COLOURS.them, weight: 5, opacity: 0.85 });
+      else themPath.set(data.path);
       // Their train rides on the track, once it's in; straight till then.
       if (data.trains?.length && window.RailTracks) {
         const asked = ++themAsked;
         followTracks(data).then(({ path, current }) => {
           if (mode !== 'follow' || asked !== themAsked || !themPath) return;
-          themPath.setLatLngs(path);
+          themPath.set(path);
           if (themDot && current && !data.me) {
             const on = themAt(data, current);
-            themDot.setLatLng(on);
-            themRing.setLatLng(on);
+            themDot.set(on);
+            themRing.set(on, ring);
           }
         }).catch(() => {});
       }
     }
-    if (!destMark && data.to) destMark = flag([data.to.lat, data.to.lng], data.to.label).addTo(groups.marks);
+    if (!destMark && data.to) destMark = flag([data.to.lat, data.to.lng], data.to.label);
     if (at) {
       if (!themDot) {
-        themRing = L.circle(at, { radius: data.me?.accuracy || 30, stroke: false, fillColor: COLOURS.them, fillOpacity: 0.15, interactive: false }).addTo(groups.me);
-        themDot = L.circleMarker(at, { radius: 8, color: '#fff', weight: 3, fillColor: COLOURS.them, fillOpacity: 1 }).bindTooltip(esc(data.name || 'Them'), { permanent: false }).addTo(groups.me);
+        themRing = ink.disc('me', at, ring, { fill: COLOURS.them, opacity: 0.15 });
+        themDot = ink.dot('me', at, { radius: 8, stroke: '#fff', weight: 3, fill: COLOURS.them, label: data.name || 'Them' });
       } else {
-        themDot.setLatLng(at);
-        themRing.setLatLng(at).setRadius(Math.min(data.me?.accuracy || 30, 500));
+        themDot.set(at);
+        themRing.set(at, ring);
       }
       if (fit) {
-        map.setView(at, STREET_ZOOM);
+        ink.setView(at, STREET_ZOOM);
       } else if (following) {
         keepInView(at);
       }
@@ -829,7 +724,6 @@
     $('#mapRecentre').addEventListener('click', () => setFollowing(true));
     $('#mapOverview').addEventListener('click', showOverview);
     $('#mapHeading').addEventListener('click', () => setTurning(!turning));
-    window.addEventListener('resize', () => { if (turning) fitTurn(); });
     window.addEventListener('popstate', () => {
       if (!$('#mapPanel').hidden) close({ fromHistory: true });
     });

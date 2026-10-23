@@ -598,10 +598,14 @@ async function renderNavOption(o) {
         `</div></li>`;
     }
     if (leg.mode === 'train') {
+      // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js).
+      const next = o.legs.slice(k + 1).find((l) => l.mode !== 'walk') || null;
+      const doors = window.MrtDoors?.tip(leg, next);
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
         `<div class="legRide">From ${escapeHtml(placeName(leg.from))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}: ${leg.stops} stop${leg.stops === 1 ? '' : 's'} to ${escapeHtml(placeName(leg.to))}, ~${Math.round(leg.minutes)} min</div>` +
         (nav.when && leg.board != null ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}.</div>` : '') +
+        (doors ? `<div class="legNote legDoors">${ico('train')} ${escapeHtml(doors)}</div>` : '') +
         (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} LTA reports a disruption on this line. Check Service alerts.</div>` : '') +
         `</li>`;
     }
@@ -622,13 +626,19 @@ async function renderNavOption(o) {
       navCrossingSteps(leg);
   }).join('');
 
+  let shown = undefined;
   const draw = (timings) => {
+    shown = timings;
     body.innerHTML = head + `<ol class="journeySteps">${steps(timings)}</ol>` +
       `<p class="estimateNote">${live
         ? 'Train times are estimates from distance. Bus timings are live from LTA.'
         : 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.'}</p>`;
   };
   draw();
+  // The doors for its train rides, drawn in once they're in, if it's still this way on show.
+  if (window.MrtDoors && !MrtDoors.ready() && o.legs.some((l) => l.mode === 'train')) {
+    MrtDoors.load().then(() => { if (token === nav.token && nav.option === o && MrtDoors.ready()) draw(shown); });
+  }
   if (!live) return;
 
   const busLegs = o.legs.map((l, k) => [l, k]).filter(([l]) => l.mode === 'bus' && l.from?.code);
