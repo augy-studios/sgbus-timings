@@ -56,8 +56,8 @@ The chip remembers what you picked. Turn the whole glance off in
 ## Pages in the Edge Tray
 
 <figure>
-<img src="/screenshots/web/main-screen-tabs.png" alt="The app on a phone on Bus only: the Edge Tray's first seven buttons are the pages, Bus timings, Bus only, which is filled in, Favourites, Bus and train, Service alerts, Your trips and Places, over a line, with Stops near me and the rest below." width="390" height="844" loading="lazy">
-<figcaption>Bus only on show, its button filled in at the top of the Edge Tray.</figcaption>
+<img src="/screenshots/web/main-screen-tabs.png" alt="The app on a phone on Navigate: the Edge Tray's first six buttons are the pages, Bus timings, Favourites, Navigate, which is filled in, Service alerts, Your trips and Places, over a line, with Stops near me and the rest below." width="390" height="844" loading="lazy">
+<figcaption>Navigate on show, its button filled in at the top of the Edge Tray.</figcaption>
 </figure>
 
 Each part of the app is a page of its own, with its button at the top of the
@@ -65,7 +65,8 @@ Edge Tray, over a line:
 
 - **Bus timings**: the next bus, your stops, the search box, and a stop's timings
 - **Favourites**
-- **Bus and train** and **Bus only**, Navigate's two tabs
+- **Navigate**, with its two tabs, **Bus and train** and **Bus only**, inside
+  it. It opens on the one you used last.
 - **Service alerts**
 - **Your trips**
 - **Places**
@@ -89,14 +90,14 @@ too.
 ## Custom home
 
 <figure>
-<img src="/screenshots/web/settings-main-screen.png" alt="Settings' Custom home, with Bus timings picked from Bus timings, Favourites, Bus and train, Bus only, Service alerts, Your trips and Places, and a note that it's the page the app opens on, first in the Edge Tray." width="396" height="295" loading="lazy">
+<img src="/screenshots/web/settings-main-screen.png" alt="Settings' Custom home, with Bus timings picked from Bus timings, Favourites, Navigate, Service alerts, Your trips and Places, and a note that it's the page the app opens on, first in the Edge Tray." width="396" height="295" loading="lazy">
 <figcaption>Custom home, in Settings.</figcaption>
 </figure>
 
 In [Settings](settings.md), **Custom home** picks the page the app opens on,
 every time: **Bus timings** to begin with, or any of the others. Its button
-moves to the top of the Edge Tray. Someone who only plans bus routes can make
-**Bus only** their home, and open straight on it.
+moves to the top of the Edge Tray. Someone who mostly plans journeys can make
+**Navigate** their home, and open straight on it, on the tab they used last.
 
 A link to a stop, a bus or a journey still opens that.
 

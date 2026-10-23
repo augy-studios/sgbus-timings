@@ -1,6 +1,6 @@
-// The app's pages: Bus timings (the search and a stop's timings), Favourites, Navigate's two
-// tabs (Bus and train, Bus only), Service alerts, Your trips and Places are each a page of its
-// own, switched by tabs at the top of the Edge Tray (docs/edge-tray-spec.md, 6.2: the one on
+// The app's pages: Bus timings (the search and a stop's timings), Favourites, Navigate (its two
+// tabs, Bus and train and Bus only, inside it), Service alerts, Your trips and Places are each a
+// page of its own, switched by tabs at the top of the Edge Tray (docs/edge-tray-spec.md, 6.2: the one on
 // show in the brand fill). Settings' Custom home is the page the app opens on, and its tab
 // comes first. The small things (Settings, the theme, the weather, a bus's route, a list of
 // stops) still open as windows over the page.
@@ -13,22 +13,23 @@
   // The home, as Opens on kept it before it was Custom home: no value or "stop" for Bus timings.
   const HOME_KEY = 'sgbus_start';
 
-  // In the tray's order, after the home. `el` is the panel or modal the page draws in (Bus
-  // timings is the page's own search and results); `btn` its Edge Tray button. On its tab,
-  // `show` runs every time and `first` only the first time, so Navigate keeps what was being
-  // planned.
+  // In the tray's order, after the home. `els` are the panels or modal the page draws in, one
+  // at a time (Bus timings is the page's own search and results; Navigate has a panel per tab);
+  // `btn` its Edge Tray button. On its tab, `show` runs every time and `first` only the first
+  // time, so Navigate keeps what was being planned, on the tab used last.
   const PARTS = [
     { id: 'timings', label: 'Bus timings', btn: 'timingsBtn' },
-    { id: 'favs', label: 'Favourites', btn: 'favsBtn', el: 'favsModal', modal: true, show: () => renderFavs() },
-    { id: 'nav', label: 'Bus and train', btn: 'navBtn', el: 'navSection', first: () => openNav() },
-    { id: 'routes', label: 'Bus only', btn: 'routesBtn', el: 'plannerSection', first: () => openPlanner() },
-    { id: 'alerts', label: 'Service alerts', btn: 'alertsBtn', el: 'alertsSection', show: () => Alerts.open() },
-    { id: 'trips', label: 'Your trips', btn: 'tripsBtn', el: 'tripsSection', show: () => TripHistory.open() },
-    { id: 'places', label: 'Places', btn: 'placesBtn', el: 'placesSection', show: () => Places.open() },
+    { id: 'favs', label: 'Favourites', btn: 'favsBtn', els: ['favsModal'], modal: true, show: () => renderFavs() },
+    { id: 'nav', label: 'Navigate', btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' ? openPlanner() : openNav()) },
+    { id: 'alerts', label: 'Service alerts', btn: 'alertsBtn', els: ['alertsSection'], show: () => Alerts.open() },
+    { id: 'trips', label: 'Your trips', btn: 'tripsBtn', els: ['tripsSection'], show: () => TripHistory.open() },
+    { id: 'places', label: 'Places', btn: 'placesBtn', els: ['placesSection'], show: () => Places.open() },
   ];
   const IDS = PARTS.map((p) => p.id);
   const byId = Object.fromEntries(PARTS.map((p) => [p.id, p]));
-  const byEl = Object.fromEntries(PARTS.filter((p) => p.el).map((p) => [p.el, p]));
+  const byEl = Object.fromEntries(PARTS.flatMap((p) => (p.els || []).map((el) => [el, p])));
+  // Each page's panel on show: its first, until another of its own is shown.
+  const shown = Object.fromEntries(PARTS.filter((p) => p.els).map((p) => [p.id, p.els[0]]));
 
   const root = document.documentElement;
   const $ = (id) => document.getElementById(id);
@@ -55,12 +56,14 @@
 
   const docked = (elId) => !!byEl[elId];
 
-  // Shows `id`, from code that has already opened it (js/ui.js): only the page changes. A
-  // switch is a step Back goes back from (js/ui.js, Steps).
+  // Shows `id`, from code that has already opened it (js/ui.js): only the page changes, to its
+  // panel `el` if it has more than one. A switch of page is a step Back goes back from (js/ui.js,
+  // Steps); a switch of Navigate's tab isn't.
   let ready = false;
-  function select(id) {
+  function select(id, el) {
     const changed = active !== id;
     active = id;
+    if (el && byEl[el]?.id === id) shown[id] = el;
     opened.add(id);
     apply();
     if (!changed) return;
@@ -84,9 +87,9 @@
   function apply() {
     root.setAttribute('data-view', active);
     for (const part of PARTS) {
-      if (part.el) {
-        const el = $(part.el);
-        const hide = part.id !== active;
+      for (const id of part.els || []) {
+        const el = $(id);
+        const hide = part.id !== active || shown[part.id] !== id;
         if (part.modal) el.classList.toggle('hidden', hide);
         else el.hidden = hide;
       }
@@ -114,7 +117,7 @@
       btn.setAttribute('role', 'tab');
       btn.removeAttribute('aria-haspopup');
       btn.hidden = false;
-      if (part.el) $(part.el).classList.add('docked');
+      for (const id of part.els || []) $(id).classList.add('docked');
     }
     // The tabs switch the page, before the buttons' own handlers would open or close a window.
     $('trayButtons').addEventListener('click', (e) => {

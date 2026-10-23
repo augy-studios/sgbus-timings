@@ -135,10 +135,9 @@
                 <nav id="trayViews" class="tray-views" role="tablist" aria-label="Pages" aria-orientation="vertical"></nav>
                 <span class="tray-rule" aria-hidden="true"></span>
                 <button id="timingsBtn" class="glass-btn" type="button" aria-label="Bus timings" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
-                <button id="routesBtn" class="glass-btn" type="button" aria-label="Navigate by bus only" title="Navigate by bus only: the buses between two stops"><span data-icon="route"></span></button>
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
                 <button id="nearMeBtn" class="glass-btn" type="button" aria-label="Stops near me" title="Stops near me"><span data-icon="pin"></span></button>
-                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate by bus and train" title="Navigate by bus and train: from any place to any other"><span data-icon="navigate"></span></button>
+                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" aria-label="Service alerts" title="Service alerts"><span data-icon="bell"></span></button>
                 <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
                 <button id="placesBtn" class="glass-btn" type="button" aria-label="Places" title="Places"><span data-icon="bookmark"></span></button>
@@ -595,11 +594,10 @@
             <div id="homePick" class="mode-toggle trayExtrasPick">
                 <button class="mode-btn mode-btn-wide" type="button" data-home="timings" aria-pressed="true">Bus timings</button>
                 <button class="mode-btn" type="button" data-home="favs" aria-pressed="false">Favourites</button>
-                <button class="mode-btn" type="button" data-home="nav" aria-pressed="false">Bus and train</button>
-                <button class="mode-btn" type="button" data-home="routes" aria-pressed="false">Bus only</button>
+                <button class="mode-btn" type="button" data-home="nav" aria-pressed="false">Navigate</button>
                 <button class="mode-btn" type="button" data-home="alerts" aria-pressed="false">Service alerts</button>
                 <button class="mode-btn" type="button" data-home="trips" aria-pressed="false">Your trips</button>
-                <button class="mode-btn" type="button" data-home="places" aria-pressed="false">Places</button>
+                <button class="mode-btn mode-btn-wide" type="button" data-home="places" aria-pressed="false">Places</button>
             </div>
             <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>

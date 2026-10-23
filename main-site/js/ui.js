@@ -82,7 +82,7 @@
   });
 
   function openModal(id) {
-    if (docked(id)) return window.MainScreen.select(window.MainScreen.byEl(id));
+    if (docked(id)) return window.MainScreen.select(window.MainScreen.byEl(id), id);
     var backdrop = document.getElementById(id);
     var was = !backdrop.classList.contains("hidden");
     backdrop.classList.remove("hidden");
@@ -112,7 +112,7 @@
   // code shows and hides. `onClose` runs on a tap on the backdrop around the card.
   function showPanel(id, show) {
     if (docked(id)) {
-      if (show) window.MainScreen.select(window.MainScreen.byEl(id));
+      if (show) window.MainScreen.select(window.MainScreen.byEl(id), id);
       return;
     }
     var panel = document.getElementById(id);

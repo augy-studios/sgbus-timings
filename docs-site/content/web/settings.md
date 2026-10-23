@@ -21,7 +21,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **Show me around** | The [tour](main-screen.md#the-tour) of the basics, as it shows the first time. |
 | **Next bus at a glance** | **On** (the default) or **Off**: the next bus in big letters at the top of Bus timings, and your stops under the search box. See [Your main screen](main-screen.md#the-next-bus-at-a-glance). |
-| **Custom home** | The page the app opens on, first in the Edge Tray: **Bus timings** (the default), **Favourites**, **Bus and train**, **Bus only**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
+| **Custom home** | The page the app opens on, first in the Edge Tray: **Bus timings** (the default), **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |

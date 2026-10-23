@@ -106,7 +106,9 @@
     const bow = (tx - sx) * 0.35 + (below ? 30 : -30);
     const mx = (sx + tx) / 2 + (sy - ty) * 0.25;
     const my = (sy + ty) / 2 - bow * 0.2;
-    root.querySelector('.tourLine').setAttribute('d', `M${sx},${sy} Q${mx},${my} ${tx},${ty}`);
+    const line = root.querySelector('.tourLine');
+    line.setAttribute('d', `M${sx},${sy} Q${mx},${my} ${tx},${ty}`);
+    line.style.setProperty('--len', Math.ceil(line.getTotalLength()) + 10);
     // The head: two strokes back from the tip along the curve's last direction.
     const ang = Math.atan2(ty - my, tx - mx);
     const len = 14;

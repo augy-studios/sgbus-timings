@@ -464,7 +464,7 @@ async function el(page, sel, name) {
     await el(page, '.app-update-notice', 'android-app-offer.png');
     await ctx.close();
   }
-  // Settings' Custom home, and Bus only on show with the pages at the top of the Edge Tray
+  // Settings' Custom home, and Navigate on show with the pages at the top of the Edge Tray
   // (main-site/js/main-screen.js).
   if (want('main-screen')) {
     let { ctx, page } = await open(browser, { width: 420, height: 3000, extra: {} });
@@ -478,7 +478,7 @@ async function el(page, sel, name) {
     await ctx.close();
 
     ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, extra: {} }));
-    await page.click('[data-part="routes"]');
+    await page.click('[data-part="nav"]');
     await page.waitForTimeout(800);
     await blur(page);
     await page.screenshot({ path: OUT + 'main-screen-tabs.png' });
