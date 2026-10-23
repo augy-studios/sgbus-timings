@@ -7,6 +7,12 @@ import { route } from "../_lib/onemap.js";
 import { LRT_LINES, rail } from "./network.js";
 
 const TIMEOUT_MS = 8000;
+// The wait to board where OneMap gives no times to work it out from, as router.js has it.
+const WAIT_MIN = { bus: 5, train: 3 };
+// A gap longer than this is taken for a mix-up of times, not a real wait. A wait is at most
+// MAX_WAIT_MIN, as a trip's legs have to be (api/_push/validate.js).
+const MAX_WAIT_MS = 60 * 60000;
+const MAX_WAIT_MIN = 60;
 
 // OneMap names a train leg's line in more than one way; this finds the line code.
 function lineCode(text) {
@@ -17,8 +23,20 @@ function lineCode(text) {
   return byName?.code ?? (t || "?");
 }
 
-function toOption(it) {
+// Each ride's `wait` is the gap OneMap's timetable leaves before it: since the previous leg
+// ended, and for the first ride also how much later than `when` OneMap has you setting off,
+// as it has you walk out just in time for the bus. Its own duration counts neither of those,
+// and a trip's live ETA (js/trip.js, progress) counted no wait at all on a OneMap way, so it
+// said you'd be in sooner than you would. `minutes` is the whole of it, waits included, as the
+// router's own options are.
+function toOption(it, when) {
+  const gap = (a, b) => (Number.isFinite(a) && Number.isFinite(b) && b - a >= 0 && b - a <= MAX_WAIT_MS ? b - a : null);
+  const late = gap(when.getTime(), it.startTime) ?? 0;
+  let prevEnd = null;
+  let first = true;
   const legs = (it.legs || []).map((l) => {
+    const before = prevEnd;
+    prevEnd = l.endTime;
     const place = (p) => ({ kind: p?.stopCode && /^\d{5}$/.test(p.stopCode) ? "stop" : "place", code: p?.stopCode || null, name: p?.name || "", lat: p?.lat, lng: p?.lon });
     const minutes = (l.duration || 0) / 60;
     if (l.mode === "WALK") return { mode: "walk", metres: Math.round(l.distance || 0), minutes, to: place(l.to) };
@@ -31,8 +49,12 @@ function toOption(it) {
     // dot and name in Navigate too.
     // The Changi Airport branch (CG) is the East-West Line's, as network.js has it.
     const line = bus ? null : rail.lines.find((x) => x.code === (route === "CG" ? "EW" : route));
+    const between = !Number.isFinite(l.startTime) ? null : before == null ? 0 : gap(before, l.startTime);
+    const waitMs = between == null ? null : between + (first ? late : 0);
+    first = false;
     return {
       mode: bus ? "bus" : "train",
+      wait: waitMs == null ? WAIT_MIN[bus ? "bus" : "train"] : Math.min(MAX_WAIT_MIN, waitMs / 60000),
       route,
       ...(line && {
         name: route === "CG" ? "East-West Line (Changi Airport branch)" : line.name,
@@ -52,7 +74,7 @@ function toOption(it) {
   });
   const rides = legs.filter((l) => l.mode !== "walk");
   return {
-    minutes: Math.round((it.duration || 0) / 60),
+    minutes: Math.round(legs.reduce((sum, l) => sum + l.minutes + (l.wait || 0), 0)),
     mix: rides.map((l) => (l.mode === "bus" ? "B" : "T")).join(""),
     routes: rides.map((l) => l.route),
     legs: legs.filter((l) => l.mode !== "walk" || l.metres >= 20),
@@ -71,7 +93,7 @@ export async function checkWithOneMap(options, from, to, when = new Date()) {
   for (const r of results) {
     if (r.status !== "fulfilled") continue;
     for (const it of r.value) {
-      const o = toOption(it);
+      const o = toOption(it, when);
       if (!o.routes.length) continue;
       const old = theirs.get(keyOf(o));
       if (!old || o.minutes < old.minutes) theirs.set(keyOf(o), o);
