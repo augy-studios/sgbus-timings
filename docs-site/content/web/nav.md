@@ -35,11 +35,40 @@ used last.
 
 1. Tap **Navigate**, the arrowhead in the Edge Tray.
 2. In **From**, type an address, a building, a postal code, an MRT or LRT
-   station, or a bus stop, and pick it from the suggestions. Or tap the pin next
-   to the box to start from where you are.
+   station, a bus stop, GPS coordinates or a plus code, and pick it from the
+   suggestions. Or tap the pin next to the box to start from where you are.
 3. Do the same in **To**.
 
 The swap button between the two boxes turns the journey around.
+
+### Stops by any name
+
+<figure>
+<img src="/screenshots/web/nav-any-name.png" alt="Navigate with block 29 bahagia typed into From, and Blk 29, bus stop 52129 on Jln Bahagia, suggested under it." width="396" height="294" loading="lazy">
+<figcaption>Block 29 Bahagia finds Blk 29 on Jln Bahagia.</figcaption>
+</figure>
+
+A bus stop is found however you'd [search](search.md) for it: the words in any
+order, across the stop's name and its road, and the long forms of LTA's short
+ones, **Block** for Blk, **Jalan** for Jln, **Opposite** for Opp. So
+`block 29 bahagia` finds Blk 29 on Jln Bahagia.
+
+### Coordinates and plus codes
+
+<figure>
+<img src="/screenshots/web/nav-plus-code.png" alt="Navigate with the plus code 6PH57RQ8+X2 typed into To, and the same plus code suggested under it." width="396" height="448" loading="lazy">
+<figcaption>A plus code in To.</figcaption>
+</figure>
+
+Either end can be a point on the map:
+
+- **GPS coordinates**, latitude then longitude: `1.35, 103.85`, or
+  `1.35N 103.85E`.
+- **A plus code**, the code Google Maps shows for a place without an address,
+  whole (`6PH57RQ8+X2`) or short (`7RQ8+X2`).
+
+Outside Singapore and the stops across the Causeway, it says so rather than
+suggesting nothing.
 
 ### Across the Causeway
 

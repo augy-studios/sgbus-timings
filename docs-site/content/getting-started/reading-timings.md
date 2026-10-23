@@ -56,7 +56,7 @@ LTA reports one of three loads for each bus.
 |---|---|
 | Wheelchair | The bus is wheelchair accessible. LTA calls this `WAB`, and the bot shows it in a row of its own as Yes or No. |
 | <span class="badge">Single</span> <span class="badge">Double</span> <span class="badge">Bendy</span> | Single deck, double deck, or a bendy bus. |
-| <span class="badge">~ 850m</span> | How far the bus is from the stop, in a straight line, right now. |
+| <span class="badge">~ 850m</span> | How far the bus is from the stop right now: how far it still has to ride along its route, or in a straight line where its route isn't known. Hold or hover over it to see which. |
 
 ## A bus going both ways
 

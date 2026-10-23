@@ -29,6 +29,8 @@ const navHash = (a, b, when = '') => `#nav/${a === 'here' ? 'here' : enc(a)}/${e
 const STATE = {
   sgbus_name: 'Sam',
   sgbus_hold_hint: '1',
+  // Not the tour of the basics over every shot (main-site/js/tour.js), only where it's the subject.
+  sgbus_tour: 'done',
   sgbus_favs_v2: JSON.stringify([{ code: '84009', name: 'Bedok Int' }, { code: '75009', name: 'Tampines Int' }]),
   sgbus_fav_buses: JSON.stringify(['60', '14']),
   sgbus_fav_routes: JSON.stringify([{ start: '84009', startName: 'Bedok Int', end: '66009', endName: 'Serangoon Int' }]),
@@ -230,7 +232,7 @@ async function el(page, sel, name) {
     await ctx.close();
   }
   if (want('settings')) {
-    const { ctx, page } = await open(browser, { width: 420, height: 2000, extra: { sgbus_birthday: '1998-04-23' } });
+    const { ctx, page } = await open(browser, { width: 420, height: 3400, extra: { sgbus_birthday: '1998-04-23' } });
     await page.click('#settingsBtn');
     await page.waitForTimeout(500);
     await el(page, '#settingsModal .modal', 'settings-settings.png');
@@ -460,6 +462,61 @@ async function el(page, sel, name) {
     await page.waitForSelector('.app-update-notice', { timeout: 15000 }).catch(() => console.log('no bar'));
     await page.waitForTimeout(500);
     await el(page, '.app-update-notice', 'android-app-offer.png');
+    await ctx.close();
+  }
+  // Settings' Custom home, and Bus only on show with the pages at the top of the Edge Tray
+  // (main-site/js/main-screen.js).
+  if (want('main-screen')) {
+    let { ctx, page } = await open(browser, { width: 420, height: 3000, extra: {} });
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(500);
+    const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Custom home' }).boundingBox();
+    const b = await page.locator('#homePick').locator('xpath=following-sibling::p[1]').boundingBox();
+    const m = await page.locator('#settingsModal .modal').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-main-screen.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-main-screen.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, extra: {} }));
+    await page.click('[data-part="routes"]');
+    await page.waitForTimeout(800);
+    await blur(page);
+    await page.screenshot({ path: OUT + 'main-screen-tabs.png' });
+    console.log('wrote main-screen-tabs.png 390 844');
+    await ctx.close();
+  }
+  // The next bus at a glance, from the saved stops, and its chip's list. Live timings.
+  if (want('glance-live')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 1400, touch: true });
+    await page.waitForSelector('#glanceStops .glanceRow', { timeout: 20000 }).catch(() => console.log('no buses'));
+    await page.waitForTimeout(800);
+    await cardDown(page, '#glance', '#glanceStops', 'glance.png', 12);
+    await page.click('#glanceSource');
+    await page.waitForTimeout(300);
+    await cardDown(page, '#glance', '#glanceMenu', 'glance-pick.png', 12);
+    await ctx.close();
+  }
+  // The tour's first step, the first time the app opens. Live timings.
+  if (want('tour-live')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, extra: { sgbus_tour: '' } });
+    await page.waitForSelector('.tour', { timeout: 20000 }).catch(() => console.log('no tour'));
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: OUT + 'tour.png' });
+    console.log('wrote tour.png 390 844');
+    await ctx.close();
+  }
+  // Navigate's From and To: a plus code, and a stop by any of its names.
+  if (want('nav-finds')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 900, hash: '#nav' });
+    await page.fill('#navTo', '6PH57RQ8+X2');
+    await page.waitForSelector('#navToAc:not([hidden]) .acItem', { timeout: 15000 }).catch(() => console.log('no plus code'));
+    await page.waitForTimeout(500);
+    await cardDown(page, N, '#navToAc', 'nav-plus-code.png');
+    await page.fill('#navTo', '');
+    await page.fill('#navFrom', 'block 29 bahagia');
+    await page.waitForSelector('#navFromAc:not([hidden]) .acItem', { timeout: 15000 }).catch(() => console.log('no stops'));
+    await page.waitForTimeout(500);
+    await cardDown(page, N, '#navFromAc', 'nav-any-name.png');
     await ctx.close();
   }
   await browser.close();

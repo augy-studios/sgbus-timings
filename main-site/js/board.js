@@ -99,7 +99,7 @@
     board = null;
     $('#boardScreen').hidden = true;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop:not(.hidden), .panelModal:not([hidden])'));
+    document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop:not(.hidden):not(.docked), .panelModal:not([hidden]):not(.docked)'));
     if (location.hash.startsWith('#board/')) history.replaceState(null, '', stopHash() || location.pathname);
   }
 

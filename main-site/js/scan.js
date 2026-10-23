@@ -43,7 +43,7 @@
     stream = null;
     $('#scanVideo').srcObject = null;
     $('#scanScreen').hidden = true;
-    document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop:not(.hidden), .panelModal:not([hidden])'));
+    document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop:not(.hidden):not(.docked), .panelModal:not([hidden]):not(.docked)'));
   }
 
   let looking = false;

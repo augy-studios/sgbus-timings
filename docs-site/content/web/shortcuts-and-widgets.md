@@ -64,7 +64,7 @@ medium the next four, and large all of them, up to twelve.
 
 > [!NOTE]
 > **Android:** the [Android app](android-app.md#the-bus-timings-widget) has the
-> same widget for your home screen. **Windows and Linux:** the
+> same widget for your home screen. **Windows, Mac and Linux:** the
 > [desktop app](desktop-app.md#bus-timings-widgets) has it as a small window on
 > your desktop. **iPhone:** a web app can't add widgets to your home screen. See
 > [What the web app can't do](../help/web-app-limits.md). For a stop's timings at a glance,

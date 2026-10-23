@@ -44,7 +44,7 @@
     wakeLock = null;
     if (inApp()) AppBridge.call('SgBus', 'flag', { on: false }).catch(() => {});
     else if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop:not(.hidden), .panelModal:not([hidden])'));
+    document.body.classList.toggle('modal-open', !!document.querySelector('.modal-backdrop:not(.hidden):not(.docked), .panelModal:not([hidden]):not(.docked)'));
   }
 
   async function toggleTorch() {

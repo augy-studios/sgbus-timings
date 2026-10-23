@@ -130,9 +130,15 @@
                 <span data-icon="chevron"></span>
             </button>
             <div id="trayButtons" class="tray-buttons">
+                <!-- The app's pages, as tabs, Settings' Custom home first (js/main-screen.js moves
+                     the buttons below in) -->
+                <nav id="trayViews" class="tray-views" role="tablist" aria-label="Pages" aria-orientation="vertical"></nav>
+                <span class="tray-rule" aria-hidden="true"></span>
+                <button id="timingsBtn" class="glass-btn" type="button" aria-label="Bus timings" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
+                <button id="routesBtn" class="glass-btn" type="button" aria-label="Navigate by bus only" title="Navigate by bus only: the buses between two stops"><span data-icon="route"></span></button>
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
                 <button id="nearMeBtn" class="glass-btn" type="button" aria-label="Stops near me" title="Stops near me"><span data-icon="pin"></span></button>
-                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
+                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate by bus and train" title="Navigate by bus and train: from any place to any other"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" aria-label="Service alerts" title="Service alerts"><span data-icon="bell"></span></button>
                 <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
                 <button id="placesBtn" class="glass-btn" type="button" aria-label="Places" title="Places"><span data-icon="bookmark"></span></button>
@@ -182,6 +188,18 @@
             </div>
         </div>
 
+        <!-- The next bus at a glance, from your saved stops, the ones nearby or a place's: js/glance.js -->
+        <section id="glance" class="glance" aria-label="Next bus" hidden>
+            <div class="glanceBar">
+                <button id="glanceSource" class="glanceChip" type="button" aria-haspopup="menu" aria-expanded="false" title="Which stops to show">
+                    <span id="glanceSourceIcon" data-icon="locate"></span> <span id="glanceSourceLabel">Nearby</span> <span class="glanceChev" data-icon="chevron"></span>
+                </button>
+                <span id="glanceUpdated" class="glanceUpdated"></span>
+                <div id="glanceMenu" class="glanceMenu glass" role="menu" hidden></div>
+            </div>
+            <div id="glanceHero" class="glanceHero card glass" aria-live="polite"></div>
+        </section>
+
         <!-- Search / Input -->
         <div class="searchWrap">
             <div class="ac">
@@ -204,6 +222,9 @@
         <div class="quickActions">
             <button id="weatherBtn" class="iconBtn weatherBtn" type="button" aria-label="Today's weather" title="Today's weather and air"><span data-icon="cloud-sun"></span> <span id="weatherBtnText">Weather</span></button>
         </div>
+
+        <!-- The glance's stops, each bus on one line: js/glance.js -->
+        <section id="glanceStops" class="glanceStops" aria-label="Your stops" hidden></section>
 
         <!-- Navigate by bus and train between any two places: js/nav.js. Its Bus only tab is the
              route planner below (js/planner.js), two stops and the buses between them. -->
@@ -412,6 +433,8 @@
                         <button id="refreshBtn" class="iconBtn" title="Refresh">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/></svg> Refresh
                         </button>
+                        <!-- Back to the glance (js/glance.js): shown while that's on -->
+                        <button id="stopCloseBtn" class="icon-btn small" type="button" aria-label="Close this stop" title="Close this stop" hidden><span data-icon="close"></span></button>
                     </div>
                 </div>
 
@@ -558,14 +581,27 @@
             <p class="modal-section-label">Calendar</p>
             <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> Calendar settings</button>
             <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
-            <!-- What the app opens on, when its link has nothing else to show (init in script.js) -->
-            <p class="modal-section-label">Opens on</p>
+            <!-- The tour of the basics, as it shows the first time (js/tour.js) -->
+            <button id="settingsTour" class="iconBtn settingsWide" type="button"><span data-icon="help"></span> Show me around</button>
+            <!-- The next bus at a glance, on Bus timings (js/glance.js) -->
+            <p class="modal-section-label">Next bus at a glance</p>
             <div class="mode-toggle">
-                <button class="mode-btn mode-btn-wide" type="button" data-start="stop" aria-pressed="false">Your first favourite stop</button>
-                <button class="mode-btn" type="button" data-start="favs" aria-pressed="false">Favourites</button>
-                <button class="mode-btn" type="button" data-start="nav" aria-pressed="false">Navigate</button>
+                <button class="mode-btn" type="button" data-glance="on" aria-pressed="true">On</button>
+                <button class="mode-btn" type="button" data-glance="off" aria-pressed="false">Off</button>
             </div>
-            <p class="mode-note">What you see each time you open the app. A link to a stop, a bus or a journey still opens that. With no favourites saved, it opens on the search box, unless it&rsquo;s Navigate.</p>
+            <p class="mode-note">The next bus in big letters at the top of Bus timings, and your stops under the search box, each bus on one line. The chip over it picks the stops: saved, nearby, or near one of your places.</p>
+            <!-- The page the app opens on, first in the Edge Tray (js/main-screen.js) -->
+            <p class="modal-section-label">Custom home</p>
+            <div id="homePick" class="mode-toggle trayExtrasPick">
+                <button class="mode-btn mode-btn-wide" type="button" data-home="timings" aria-pressed="true">Bus timings</button>
+                <button class="mode-btn" type="button" data-home="favs" aria-pressed="false">Favourites</button>
+                <button class="mode-btn" type="button" data-home="nav" aria-pressed="false">Bus and train</button>
+                <button class="mode-btn" type="button" data-home="routes" aria-pressed="false">Bus only</button>
+                <button class="mode-btn" type="button" data-home="alerts" aria-pressed="false">Service alerts</button>
+                <button class="mode-btn" type="button" data-home="trips" aria-pressed="false">Your trips</button>
+                <button class="mode-btn" type="button" data-home="places" aria-pressed="false">Places</button>
+            </div>
+            <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>
             <div class="mode-toggle" data-pin-kind="bus">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -1041,6 +1077,9 @@
     <script src="/js/pip.js"></script>
     <script src="/js/history.js"></script>
     <script src="/js/places.js"></script>
+    <script src="/js/main-screen.js"></script>
+    <script src="/js/glance.js"></script>
+    <script src="/js/tour.js"></script>
     <script src="/js/recents.js"></script>
     <script src="/js/calendar.js"></script>
     <script src="/js/nav.js"></script>

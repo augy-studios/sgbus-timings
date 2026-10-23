@@ -48,7 +48,7 @@ showing it. See [Sync between devices](sync.md).
 ## App links
 
 On a phone with the [Android app](android-app.md), every link above opens in
-the app. The Android app and the [Windows and Linux apps](desktop-app.md) also open
+the app. The Android app and the [Windows, Mac and Linux apps](desktop-app.md) also open
 `uwu://sgbus/` links, which only work with an app installed:
 
 | Link | Opens |

@@ -1,9 +1,9 @@
 ---
-title: Windows and Linux apps
-description: What only SG Bus Timings' Windows and Linux app does: the tray, Service alerts as desktop notifications, starting when you sign in, uwu:// links, and updating itself.
+title: Windows, Mac and Linux apps
+description: Download the desktop app for Windows, Mac or Linux, on Intel, AMD or Arm, and what only it does: the tray, Service alerts as desktop notifications, starting when you sign in, uwu:// links, and updating itself.
 ---
 
-SG Bus Timings for Windows and Linux is the web app in a window of its own, with
+SG Bus Timings for Windows, Mac and Linux is the web app in a window of its own, with
 a few extras only a desktop app can do. This page covers those extras;
 everything else works as the rest of this guide describes, and updates the
 moment the website does.
@@ -15,19 +15,44 @@ and download the one for your computer from under **Assets**:
 
 | Computer | File |
 |---|---|
-| Windows 10 or 11 | `sg-bus-timings-2.0.2-setup.exe`. (The `.msi` is the same app, for installing it on many computers at once.) |
-| Debian, Ubuntu, Mint | `sg-bus-timings-2.0.2-amd64.deb` |
-| Any other Linux | `sg-bus-timings-2.0.2-x86_64.AppImage` |
+| Windows 10 or 11, Intel, AMD or Arm | `sg-bus-timings-2.2.4-setup.exe`, which installs the right one for your PC. (The `.msi` is the same app on Intel and AMD, for installing it on many computers at once.) |
+| Mac with Apple silicon (M1 and later) | `sg-bus-timings-2.2.4-mac-arm64.dmg` |
+| Mac with an Intel processor | `sg-bus-timings-2.2.4-mac-x64.dmg` |
+| Debian, Ubuntu, Mint | `sg-bus-timings-2.2.4-amd64.deb` |
+| Debian or Raspberry Pi OS on 64-bit Arm | `sg-bus-timings-2.2.4-arm64.deb` |
+| Fedora, openSUSE, RHEL | `sg-bus-timings-2.2.4-x86_64.rpm` |
+| Fedora, openSUSE, RHEL on 64-bit Arm | `sg-bus-timings-2.2.4-aarch64.rpm` |
+| Any other Linux | `sg-bus-timings-2.2.4-x86_64.AppImage` |
+| Any other Linux on 64-bit Arm | `sg-bus-timings-2.2.4-arm64.AppImage` |
+
+The version in the names goes up with each release; download the newest.
+
+> [!TIP]
+> Not sure which Linux file? In a terminal, `uname -m` says `x86_64` for Intel and
+> AMD, and `aarch64` for 64-bit Arm, such as a Raspberry Pi 4 or 5 on 64-bit
+> Raspberry Pi OS. 32-bit Arm isn't supported.
 
 **Windows**: open the `.exe`. If Windows says "Windows protected your PC", click
 **More info**, then **Run anyway**: the app isn't signed with a certificate yet.
 Pick where to install it, then open **SG Bus Timings** from the Start menu.
 
-**Debian, Ubuntu, Mint**: open the `.deb` with your software installer, or in a
-terminal, `sudo apt install ./sg-bus-timings-2.0.2-amd64.deb`.
+**Mac**: open the `.dmg` and drag **SG Bus Timings** into **Applications**. It
+isn't signed with an Apple Developer ID yet, so the first time, right-click it in
+Finder and pick **Open**, then **Open** again; on macOS 15 and later, go to
+**System Settings** > **Privacy & Security** and click **Open Anyway**.
+
+**Debian, Ubuntu, Mint, Raspberry Pi OS**: open the `.deb` with your software
+installer, or in a terminal, `sudo apt install ./sg-bus-timings-2.2.4-amd64.deb`
+(`-arm64.deb` on Arm).
+
+**Fedora, openSUSE, RHEL**: open the `.rpm` with your software installer, or in a
+terminal, `sudo dnf install ./sg-bus-timings-2.2.4-x86_64.rpm` on Fedora and RHEL,
+or `sudo zypper install ./sg-bus-timings-2.2.4-x86_64.rpm` on openSUSE
+(`-aarch64.rpm` on Arm).
 
 **AppImage**: make it runnable (right-click > **Properties** > **Allow executing
-file as program**, or `chmod +x` it), then open it.
+file as program**, or `chmod +x` it), then open it. Some systems need FUSE 2
+first: `libfuse2t64` on Debian 13 and Ubuntu 24.04 and later.
 
 Rather have it in a terminal, or on a server without a desktop? See
 [the command line on Linux](linux-cli.md).
@@ -111,7 +136,7 @@ The tray's menu and the title bar still offer the update.
   update itself, then a notification, the tray's menu and a green **update**
   button in the title bar, right of the screenshot buttons, offer **Restart to
   update**. If you don't, it updates the next time you quit.
-- Installed with the `.msi` or `.deb`: a notification says there's a new version;
+- Installed with the `.msi`, `.deb` or `.rpm`: a notification says there's a new version;
   click it to download the new installer, and install it over the old one.
 
 Your favourites and settings stay.

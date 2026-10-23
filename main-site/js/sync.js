@@ -148,10 +148,16 @@ const SYNC_SETTINGS = {
     text: (v) => (v === 'auto' ? 'By the time' : v === '60' ? '1 hr' : `${v} min`),
     get: () => LS.getCustoms(), set: (v) => tap(`[data-customs="${v}"]`),
   },
+  glance: {
+    label: 'Next bus at a glance', values: ['on', 'off'], start: 'on', text: onOff,
+    get: () => (Glance.enabled() ? 'on' : 'off'), set: (v) => Glance.setEnabled(v === 'on'),
+  },
+  // Custom home (js/main-screen.js), kept as "stop" for Bus timings, as Opens on was.
   start: {
-    label: 'Opens on', values: ['stop', 'favs', 'nav'], start: 'stop',
-    text: (v) => ({ stop: 'Your first favourite stop', favs: 'Favourites', nav: 'Navigate' })[v] || v,
-    get: () => LS.getStart(), set: (v) => tap(`[data-start="${v}"]`),
+    label: 'Custom home', values: () => ['stop', ...MainScreen.IDS.filter((n) => n !== 'timings')], start: 'stop',
+    text: (v) => MainScreen.label(v === 'stop' ? 'timings' : v),
+    get: () => (MainScreen.home() === 'timings' ? 'stop' : MainScreen.home()),
+    set: (v) => MainScreen.setHome(v === 'stop' ? 'timings' : v),
   },
   'nav.mode': {
     label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',

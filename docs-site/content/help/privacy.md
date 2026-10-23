@@ -31,7 +31,7 @@ In the Linux app, where the computer can't tell where it is by itself, the app
 asks [BeaconDB](https://beacondb.net) where the Wi-Fi networks around it are:
 their hardware addresses and signal strengths go to BeaconDB, never their names,
 your location or anything else of yours. See
-[Windows and Linux apps](../web/desktop-app.md#location).
+[Windows, Mac and Linux apps](../web/desktop-app.md#location).
 
 ### What goes to the server
 
@@ -174,7 +174,7 @@ notification to the phone.
 
 ### The desktop app
 
-The Windows and Linux app shows the website in its own window, so everything on
+The Windows, Mac and Linux app shows the website in its own window, so everything on
 this page applies to it the same way. For Service alerts it asks the server for
 the current alerts every minute while it runs, the same request the alerts card
 makes, and shows what's new itself: nothing is sent about you, and no push
