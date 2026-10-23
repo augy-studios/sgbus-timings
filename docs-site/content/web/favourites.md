@@ -36,6 +36,9 @@ the [**Pick a bus**](more-from-a-stop.md#pick-a-bus) grid, and in the route plan
 timings it is also pinned, to the top of the list by default, so the buses you
 actually catch are the first thing you read.
 
+On [Bus timings](main-screen.md#the-next-bus-at-a-glance), the stops under the
+search box show only your favourite buses once you have any.
+
 Favourite stops are pinned in the same way in lists of stops, such as on a
 bus's route.
 

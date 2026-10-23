@@ -3069,6 +3069,8 @@ section.panelModal.docked {
 .glanceTimes > .first { color: var(--ok); }
 .glanceTimes > .now { color: var(--error); }
 .glanceNone { padding: 8px 18px; color: var(--muted-strong); font-size: 0.9rem; }
+/* None of your favourite buses at any of the stops: the line on its own, across the cards. */
+.glanceOnly { grid-column: 1 / -1; margin: 0; }
 .glanceMore { padding: 6px 18px 2px; font-size: 0.85rem; color: var(--brand-ink); cursor: pointer; }
 
 /* ===== The tour of the basics (js/tour.js) ===== */

@@ -11,8 +11,8 @@ and the app opens on it.
 ## The next bus at a glance
 
 <figure>
-<img src="/screenshots/web/glance.png" alt="The top of Bus timings: a Saved stops chip, the next bus in big letters with when it comes and where, then the search box, and under it each saved stop as a card, one line per bus with where it's going and its next three times in minutes." width="280" height="1185" loading="lazy">
-<figcaption>The next bus, then your stops, one line per bus.</figcaption>
+<img src="/screenshots/web/glance.png" alt="The top of Bus timings: a Saved stops chip, the next bus in big letters with when it comes and where, then the search box, and under it one saved stop as a card with only the two favourite buses due there, each with where it is going and its next three times in minutes." width="280" height="657" loading="lazy">
+<figcaption>The next bus, then your stops, with only your favourite buses.</figcaption>
 </figure>
 
 At the top of Bus timings:
@@ -23,6 +23,11 @@ At the top of Bus timings:
 - **Your stops**, under the search box: each a card, with one line per bus:
   its number, where it's going, and its next three times in minutes. **Arr**
   is under a minute away. The soonest bus is at the top.
+
+Once you have [favourite buses](favourites.md#favourite-buses-are-pinned), the
+cards show only those, and a stop none of them is due at is left out, so a
+busy interchange is a line or two, not a dozen. With no favourite buses, every
+bus shows. Star a bus by searching its number and tapping the star.
 
 Tap the big bus, a line or a stop's name for its full [timings](timings.md),
 as a search would. The **X** at the top of those timings puts them away again.

@@ -2,16 +2,30 @@
 // for the card in js/alerts.js. Either is null when LTA couldn't be reached for
 // it, so one feed being down doesn't blank the other.
 
+// LTA turns away the odd request, TrainServiceAlerts more than most, so each feed gets this
+// many more tries, the waits growing between them (as in api/bus-routes.js).
+const RETRIES = 2;
+const RETRY_MS = 400;
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 async function dm(path) {
-    const r = await fetch(`https://datamall2.mytransport.sg/ltaodataservice/${path}`, {
-        headers: {
-            AccountKey: process.env.LTA_ACCOUNT_KEY,
-            accept: "application/json"
-        },
-        cache: "no-store",
-    });
-    if (!r.ok) throw new Error(`${path} failed: ${r.status}`);
-    return r.json();
+    for (let attempt = 0; ; attempt++) {
+        try {
+            const r = await fetch(`https://datamall2.mytransport.sg/ltaodataservice/${path}`, {
+                headers: {
+                    AccountKey: process.env.LTA_ACCOUNT_KEY,
+                    accept: "application/json"
+                },
+                cache: "no-store",
+            });
+            if (!r.ok) throw new Error(`${path} failed: ${r.status}`);
+            return await r.json();
+        } catch (err) {
+            if (attempt >= RETRIES) throw err;
+            await wait(RETRY_MS * 2 ** attempt);
+        }
+    }
 }
 
 export default async function handler(req, res) {
@@ -34,6 +48,7 @@ export default async function handler(req, res) {
     // Both down: an error, so the card says so rather than showing nothing.
     if (!trainValue && !incidents) return res.status(502).json({ error: "Could not reach LTA" });
 
-    res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=60");
+    // One feed down: not kept at the edge, so the next look asks LTA again.
+    res.setHeader("Cache-Control", trainValue && incidents ? "s-maxage=30, stale-while-revalidate=60" : "no-store");
     return res.status(200).json({ train: trainValue, traffic: incidents, fetchedAt: Date.now() });
 }

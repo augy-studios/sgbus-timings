@@ -454,6 +454,11 @@
   // Where the road comes back along itself (a loop out and back on either side of one road), a
   // later stretch has to be this much nearer to win, as in js/trip.js.
   const LATER_BY_M = 15;
+  // With the bus's ETA, stretches within this much of the nearest are a tie (the two sides of
+  // one road, the stops' straight lines off the road between them), and the one whose distance
+  // fits the ETA best wins, at the planner's 250 m a minute (js/journeys.js).
+  const TIE_M = 60;
+  const BUS_M_PER_MIN = 250;
 
   // A run as the bus rides it, [code, km] per stop, with a stop it passes twice in it twice
   // (`again`), where its km puts it. Null from a copy of the routes without the distances.
@@ -471,20 +476,26 @@
   // How far a bus at `here` ([lat, lng]) has still to ride to the `target`-th stop of `ride`
   // ([code, km] per stop, in order), in metres: the stretch between two stops it's on, how far
   // along that it's got, then LTA's distances on to the stop, and never less than the straight
-  // line. `coordOf(code)` is a stop's [lat, lng]. Null where it can't say: a stop without a place
-  // or a distance, a bus off the route, or one already past the stop. Pure, for the checks.
-  function metresAlong(ride, coordOf, target, here) {
+  // line. `coordOf(code)` is a stop's [lat, lng]. `etaMs`, LTA's estimate for the bus, picks
+  // between stretches it's equally near. Null where it can't say: a stop without a place or a
+  // distance, or a bus off the route. Pure, for the checks.
+  //
+  // Only the stretches before the stop count: the bus is one still to come to it. A loop that
+  // goes back up the far side of the same road (183 down Clementi Rd and back) would otherwise
+  // put a bus on its way out on the stretch after the stop, as if it had passed it.
+  function metresAlong(ride, coordOf, target, here, etaMs = null) {
     if (!ride || !(target >= 0 && target < ride.length) || !here) return null;
     const goal = coordOf(ride[target][0]);
     if (!goal) return null;
+    const km = (j) => ride[j][1];
+    if (km(target) == null) return null;
     const kx = 111320 * Math.cos((here[0] * Math.PI) / 180);
     const ky = 110540;
-    let best = null;
-    // Up to the stretch after the stop, so a bus that's passed it is seen to have.
-    for (let i = 0; i < Math.min(target + 1, ride.length - 1); i++) {
+    const fits = [];
+    for (let i = 0; i < target; i++) {
       const a = coordOf(ride[i][0]);
       const b = coordOf(ride[i + 1][0]);
-      if (!a || !b) continue;
+      if (!a || !b || km(i) == null || km(i + 1) == null) continue;
       const ax = a[1] * kx, ay = a[0] * ky;
       const dx = b[1] * kx - ax, dy = b[0] * ky - ay;
       const px = here[1] * kx - ax, py = here[0] * ky - ay;
@@ -493,16 +504,23 @@
       const t = Math.max(0, Math.min(1, raw));
       const off = Math.hypot(px - t * dx, py - t * dy);
       if (off > Math.max(ON_ROUTE_M, BEND_SHARE * Math.sqrt(len2))) continue;
-      if (!best || off < best.off - (best.off <= ON_ROUTE_M ? LATER_BY_M : 0)) best = { i, t, off, before: raw < 0 };
+      const done = (km(i) + t * (km(i + 1) - km(i))) * 1000;
+      // Short of the stretch's first stop, as a bus still in its interchange is: the way to it too.
+      const left = km(target) * 1000 - done + (raw < 0 ? off : 0);
+      if (left >= 0) fits.push({ off, left });
     }
-    if (!best || best.i >= target) return null;
-    const km = (j) => ride[j][1];
-    if (km(best.i) == null || km(best.i + 1) == null || km(target) == null) return null;
-    const done = (km(best.i) + best.t * (km(best.i + 1) - km(best.i))) * 1000;
-    // Short of the stretch's first stop, as a bus still in its interchange is: the way to it too.
-    const left = km(target) * 1000 - done + (best.before ? best.off : 0);
-    if (!(left >= 0)) return null;
-    return Math.round(Math.max(left, haversine(here, goal)));
+    if (!fits.length) return null;
+    let best = null;
+    if (etaMs != null) {
+      const nearest = Math.min(...fits.map((f) => f.off));
+      const expect = (Math.max(0, etaMs) / 60000) * BUS_M_PER_MIN;
+      for (const f of fits) {
+        if (f.off <= nearest + TIE_M && (!best || Math.abs(f.left - expect) < Math.abs(best.left - expect))) best = f;
+      }
+    } else {
+      for (const f of fits) if (!best || f.off < best.off - (best.off <= ON_ROUTE_M ? LATER_BY_M : 0)) best = f;
+    }
+    return Math.round(Math.max(best.left, haversine(here, goal)));
   }
 
   const coordOf = (code) => (stops[code]?.lat != null && stops[code]?.lng != null ? [stops[code].lat, stops[code].lng] : null);
@@ -524,7 +542,7 @@
     }
     const heading = picks.filter((p) => p.heading);
     const pick = heading.length === 1 ? heading[0] : picks.length === 1 ? picks[0] : null;
-    return pick ? metresAlong(pick.ride, coordOf, pick.target, [bus.lat, bus.lng]) : null;
+    return pick ? metresAlong(pick.ride, coordOf, pick.target, [bus.lat, bus.lng], bus.eta_ms ?? null) : null;
   }
 
   window.BusNet = {

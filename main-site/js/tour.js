@@ -15,7 +15,7 @@
     { el: '#glanceHero', text: 'Your next bus, big enough to read on the move. Tap it for all its times.' },
     { el: '#glanceSource', text: 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.' },
     { el: '.searchWrap', text: 'Look up any stop by its name or code, or a bus by its number for its route.' },
-    { el: '#glanceStops .glanceStop', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop.' },
+    { el: '#glanceStops .glanceStop', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.' },
     { el: '#trayViews', text: 'Each page has its button at the top of the Edge Tray: Bus timings, Favourites, Navigate, alerts, your trips and places. Press and hold a button to see what it does.' },
     { el: '#settingsBtn', text: 'In Settings, Custom home picks the page the app opens on. Make it Navigate, Favourites, or whatever you use most.' },
   ];

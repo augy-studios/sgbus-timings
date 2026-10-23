@@ -1,6 +1,7 @@
 // The next bus at a glance, on Bus timings' page (help desk #2): one big answer at the top, the
 // next bus from a few stops, and under the search box those stops as short cards, each bus on
-// one line with where it's going and its next three times. A chip over it picks the stops:
+// one line with where it's going and its next three times: only your favourite buses, once you
+// have any, so a busy interchange isn't a dozen lines. A chip over it picks the stops:
 // your saved stops, the ones nearby, or the ones near Home, Work or another place. Tapping a
 // bus or a stop opens its full timings, as a search does. On unless Settings turns it off.
 //
@@ -189,11 +190,17 @@
       '</button>';
   }
 
+  // With favourite buses, each card has only those, and a stop none of them is due at is left
+  // out: the few buses you take rather than every one at the stop. Without any, every bus.
   function renderStops() {
     const wrap = $('#glanceStops');
     if (!fetchedAt || !stops.length) { wrap.innerHTML = ''; return; }
-    wrap.innerHTML = stops.map((s) => {
-      const rows = rowsOf(s.code);
+    const favs = new Set(LS.getFavBuses());
+    const only = favs.size > 0;
+    const cards = stops.map((s) => {
+      const all = rowsOf(s.code);
+      const rows = only ? all.filter((r) => favs.has(r.no)) : all;
+      if (only && !rows.length) return '';
       const walk = s.metres != null ? `<span class="glanceWalk">${walkMins(s.metres)} min walk</span>` : '';
       const lines = rows.slice(0, ROWS).map((r) =>
         `<button class="glanceRow" type="button" data-stop="${esc(s.code)}" data-svc="${esc(r.no)}">` +
@@ -206,6 +213,7 @@
         `<button class="glanceStopHead" type="button" data-stop="${esc(s.code)}"><span class="glanceStopName">${esc(nameOf(s.code) || s.code)}</span>${walk}</button>` +
         (lines || '<p class="glanceNone">No buses due right now.</p>') + more + '</div>';
     }).join('');
+    wrap.innerHTML = cards || (only ? '<p class="glanceNone glanceOnly">None of your favourite buses are due at these stops right now.</p>' : '');
   }
 
   function renderBar(src) {
@@ -292,10 +300,12 @@
     refresh();
   }
 
-  // A stop saved or removed: the saved stops' glance follows.
+  // A stop saved or removed: the saved stops' glance follows. A bus starred or not: the cards.
   let started = false;
   function favsChanged() {
-    if (started && (chosen()?.key === 'saved' || !stops.length)) refresh();
+    if (!started) return;
+    if (chosen()?.key === 'saved' || !stops.length) refresh();
+    else render();
   }
 
   window.Glance = { init, refresh, enabled, setEnabled, favsChanged };

@@ -30,7 +30,10 @@ obstacles, fires and plant failures, are listed in full. The rest, such as heavy
 traffic and roadworks, are counted by type; **Show the other** lists them too.
 
 Tap **Refresh** to fetch the latest. The window never shows a saved copy, so
-without a connection it says it couldn't reach LTA instead.
+without a connection it says it couldn't reach LTA instead. LTA's train feed
+now and then doesn't answer; the app asks again a couple of times, and if
+**Trains** still says it couldn't reach LTA while **Roads** is there, Refresh
+in a moment. It's LTA, not your connection or an ad blocker.
 
 While a train line is disrupted or delayed, a red bar along the top of the site
 also says so, without opening the window: see [Disruptions bar](disruptions-bar.md).
