@@ -18,6 +18,21 @@
   // The Changi Airport branch's rides come as "CG", its platforms are the East-West Line's.
   const LINE_OF = { CG: 'EW' };
   const ORDER = ['escalator', 'lift', 'stairs'];
+  // Where the number is on the platform door: on the panel above the doors at the North-South
+  // and East-West lines' underground stations, at the top right of each door on the other
+  // lines (all underground), and near the top of the post beside each door at an elevated
+  // station's half-height doors. Null where it isn't known which.
+  const NUMBER_AT = {
+    above: 'on the panel above the doors',
+    corner: 'at the top right of each door',
+    post: 'near the top of the post beside each door',
+  };
+  function numberAt(p) {
+    if (p.e === 1) return 'post';
+    if (['NE', 'CC', 'DT', 'TE'].includes(p.l)) return 'corner';
+    if (p.e === 0) return 'above';
+    return null;
+  }
   const PLURAL = { escalator: 'escalators' };
 
   let platforms = null; // [{ c, l, d, o, x, n, f }] once in
@@ -98,7 +113,7 @@
   // Where to stand for a train ride, or null: { station, cross } where `next` (the ride
   // after, if a train) is across the platform; otherwise { station, change, rows }, the doors
   // for the way to `next` if it's from the same station (`change` its line's name), or for
-  // each way out.
+  // each way out; `numberAt` is where the number shows on the platform door (numberAt above).
   function plan(leg, next = null) {
     if (!platforms || leg?.mode !== 'train') return null;
     const a = arrival(leg);
@@ -121,7 +136,7 @@
     }
     const rows = change?.fs.length ? rowsOf(change.fs, a.l) : rowsOf(a.f.filter(leadsOut), a.l);
     if (!rows.length) return null;
-    return { station: a.n, change: change && (change.fs.length ? change.name : ''), rows };
+    return { station: a.n, change: change && (change.fs.length ? change.name : ''), rows, numberAt: numberAt(a) };
   }
 
   // The same in words: "Getting off at Changi Airport: door 20 for the escalators to Jewel;
@@ -132,8 +147,8 @@
     if (p.cross) return `At ${p.station}, change across the platform to the ${p.cross}.`;
     const parts = p.rows.map((r) => `door ${r.doors.join(' or ')} for the ${PLURAL[r.t] || r.t}${r.places.length ? ` to ${andList(r.places)}` : ''}`);
     const head = p.change != null ? `Changing at ${p.station}${p.change ? ` for the ${p.change}` : ''}` : `Getting off at ${p.station}`;
-    return `${head}: ${parts.join('; ')}.`;
+    return `${head}: ${parts.join('; ')}.${p.numberAt ? ` The door number is ${NUMBER_AT[p.numberAt]}.` : ''}`;
   }
 
-  window.MrtDoors = { load, plan, tip, ready: () => platforms != null };
+  window.MrtDoors = { load, plan, tip, NUMBER_AT, ready: () => platforms != null };
 })();

@@ -530,6 +530,20 @@ const navTooLate = (o) => nav.when?.mode === 'arrive' && When.span(nav.when, o.m
 // the line's colour with its number, as the number is shown on the real one. `text` says it all
 // in words for a screen reader.
 const DOOR_TYPE = { escalator: 'Escalator', lift: 'Lift', stairs: 'Stairs' };
+// Where to look for the door's number on the platform (js/mrt-doors.js, numberAt): a little
+// drawing of that kind of platform door, the spot ringed, and the words. Full-height doors have
+// a panel over them, in the line's colour; half-height ones stand between posts.
+function doorNumberAt(at) {
+  const full = '<rect x="3" y="2" width="34" height="27" rx="1.5" class="dnFrame"/>' +
+    '<rect x="3" y="2" width="34" height="6" class="dnBand"/>' +
+    '<rect x="7" y="10" width="12.5" height="19" class="dnGlass"/><rect x="20.5" y="10" width="12.5" height="19" class="dnGlass"/>';
+  const half = '<rect x="2" y="5" width="6" height="24" rx="1" class="dnFrame"/><rect x="32" y="5" width="6" height="24" rx="1" class="dnFrame"/>' +
+    '<rect x="2" y="5" width="6" height="3" class="dnBand"/><rect x="32" y="5" width="6" height="3" class="dnBand"/>' +
+    '<rect x="9" y="14" width="10.5" height="15" class="dnGlass"/><rect x="20.5" y="14" width="10.5" height="15" class="dnGlass"/>';
+  const spot = { above: [20, 5], corner: [31, 11.5], post: [35, 11] }[at];
+  return `<svg class="dnSvg" viewBox="0 0 40 32" aria-hidden="true">${at === 'post' ? half : full}` +
+    `<circle cx="${spot[0]}" cy="${spot[1]}" r="4.2" class="dnRing"/><circle cx="${spot[0]}" cy="${spot[1]}" r="1.6" class="dnDot"/></svg>`;
+}
 function doorsPanel(p, text, color) {
   if (!p) return '';
   const head = p.cross ? `At ${p.station}` : p.change != null ? `Changing at ${p.station}` : `Getting off at ${p.station}`;
@@ -542,7 +556,9 @@ function doorsPanel(p, text, color) {
   return `<div class="legDoors" role="note" aria-label="${escapeHtml(text || '')}"${line}>` +
     `<div class="doorHead" aria-hidden="true">${ico('train')}<span>${escapeHtml(head)}${p.change ? ` <span class="doorFor">for the ${escapeHtml(p.change)}</span>` : ''}</span></div>` +
     `<ul class="doorRows" aria-hidden="true">${rows}</ul>` +
-    (p.cross ? '' : '<div class="doorFoot" aria-hidden="true">The number is at the top of each platform door</div>') +
+    (p.cross ? '' : `<div class="doorFoot" aria-hidden="true">${p.numberAt
+      ? `${doorNumberAt(p.numberAt)}<span><b>Door number:</b> ${MrtDoors.NUMBER_AT[p.numberAt]}</span>`
+      : '<span>Look for the number on each platform door</span>'}</div>`) +
     `</div>`;
 }
 

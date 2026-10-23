@@ -12,7 +12,9 @@
 // Not every station has its facilities in yet; a platform without any still says which way
 // it goes and what's across it.
 //
-// Answers { platforms: [{ c, l, d, o, x, n, f: [{ t, to, doors }] }] }, short keys as it goes to
+// Answers { platforms: [{ c, l, d, o, x, n, e, f: [{ t, to, doors }] }] }, `e` 1 where the station
+// is elevated and 0 underground, from its facts (null where they don't say), as that's where
+// the platform doors differ: half-height up top, full-height below. Short keys as it goes to
 // every phone that opens Navigate. The data changes rarely, so a day at the edge keeps
 // Supabase asked about once a day.
 //
@@ -22,7 +24,15 @@
 const BASE = (process.env.MRTINFO_SUPABASE_URL || process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const KEY = process.env.MRTINFO_SUPABASE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
-const SELECT = 'code,line,direction,order,crossPlatform,isOpen,station:mrtinfo_stations(name_en),mrtinfo_facilities(type,towards,doors)';
+const SELECT = 'code,line,direction,order,crossPlatform,isOpen,station:mrtinfo_stations(name_en,facts),mrtinfo_facilities(type,towards,doors)';
+
+// 1 elevated, 0 underground, null where the station's facts don't say.
+function elevated(facts) {
+  const f = Array.isArray(facts) ? facts : [];
+  if (f.includes('Elevated station')) return 1;
+  if (f.includes('Underground station')) return 0;
+  return null;
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -50,6 +60,7 @@ export default async function handler(req, res) {
         o: p.order,
         x: p.crossPlatform || [],
         n: p.station?.name_en || '',
+        e: elevated(p.station?.facts),
         f: (p.mrtinfo_facilities || [])
           .filter((f) => f.type && Array.isArray(f.doors) && f.doors.length)
           .map((f) => ({ t: f.type, to: f.towards || '', doors: f.doors })),

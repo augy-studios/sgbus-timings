@@ -1848,7 +1848,15 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     line-height: 1.15;
 }
 .doorWhere { font-size: 13px; color: var(--muted-strong); }
-.doorFoot { font-size: 12px; color: var(--muted); }
+.doorFoot { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.doorFoot b { font-weight: 700; color: var(--muted-strong); }
+/* Where on the platform door its number is (js/nav.js doorNumberAt). */
+.dnSvg { flex: none; width: 50px; height: 40px; }
+.dnFrame { fill: var(--surface-strong); stroke: color-mix(in srgb, var(--ink) 70%, transparent); stroke-width: 1.5; }
+.dnBand { fill: var(--line, var(--brand-ink)); }
+.dnGlass { fill: color-mix(in srgb, var(--brand) 25%, var(--surface-strong)); stroke: color-mix(in srgb, var(--ink) 55%, transparent); stroke-width: 1; }
+.dnRing { fill: none; stroke: #f2b31b; stroke-width: 2; }
+.dnDot { fill: #f2b31b; }
 .legEtas s { color: var(--muted-strong); }
 .legEtas strong { color: var(--ok); }
 

@@ -217,15 +217,27 @@ Tap a way to see it part by part:
 ### Which door to stand at
 
 <figure>
-<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then door 20 for the escalator to T1, T3, T4 and Jewel, door 5 for the escalator to T2, door 5 for the lift to T2, and door 20 for the lift to T1, T3, T4 and Jewel, each door drawn as a little green platform door with its number. Under them, The number is at the top of each platform door." width="310" height="502" loading="lazy">
+<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then door 20 for the escalator to T1, T3, T4 and Jewel, door 5 for the escalator to T2, door 5 for the lift to T2, and door 20 for the lift to T1, T3, T4 and Jewel, each door drawn as a little green platform door with its number. Under them, Look for the number on each platform door." width="310" height="487" loading="lazy">
 <figcaption>Getting off: the doors nearest each way out, and where it leads.</figcaption>
 </figure>
 
 Under a train ride, a panel says where on the train to stand. Each way off the
 platform has a row: its icon (escalator, lift or stairs), the doors that stop
 nearest it, and where it leads. Each door is drawn as a little platform door in
-the line's colour with its number on it, as the number shows at the top of each
-real platform screen door, so you can walk along the platform to it.
+the line's colour with its number on it, the same number the real platform door
+has, so you can walk along the platform to it.
+
+Where that number is depends on the door, so the last line of the panel shows it,
+with a little drawing of the door:
+
+- **On the panel above the doors**, at the North-South and East-West lines'
+  underground stations.
+- **At the top right of each door**, on the North East, Circle, Downtown and
+  Thomson-East Coast lines.
+- **Near the top of the post beside each door**, at elevated stations, whose
+  platform doors are half-height.
+
+Where it isn't known which, it says to look for the number on each platform door.
 
 - **Getting off**, it's the ways out of the station, with the mall or terminal
   one leads to where it's somewhere in particular: Jewel, Nex, City Square.
@@ -233,12 +245,12 @@ real platform screen door, so you can walk along the platform to it.
 - **Your next train across the platform**, it just says so.
 
 <figure>
-<img src="/screenshots/web/nav-doors-change.png" alt="Two rides. Under the Downtown Line to MacPherson: Changing at MacPherson for the Circle Line, door 9 for the escalator and door 4 for the lift, on blue doors. Under the Circle Line to Serangoon: Getting off at Serangoon, door 12 for the escalator to Nex, door 6 for the escalator and door 8 for the lift, on orange doors." width="310" height="795" loading="lazy">
+<img src="/screenshots/web/nav-doors-change.png" alt="Two rides. Under the Downtown Line to MacPherson: Changing at MacPherson for the Circle Line, door 9 for the escalator and door 4 for the lift, on blue doors. Under the Circle Line to Serangoon: Getting off at Serangoon, door 12 for the escalator to Nex, door 6 for the escalator and door 8 for the lift, on orange doors. Under each, a little drawing of a platform door with its top right corner ringed, and Door number: at the top right of each door." width="310" height="815" loading="lazy">
 <figcaption>Changing at MacPherson, then off at Serangoon.</figcaption>
 </figure>
 
 <figure>
-<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, doors 6 and 17 for the escalators and door 12 for the lift, on red doors." width="310" height="566" loading="lazy">
+<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, doors 6 and 17 for the escalators and door 12 for the lift, on red doors." width="310" height="551" loading="lazy">
 <figcaption>At Jurong East the next train is just across the platform.</figcaption>
 </figure>
 
