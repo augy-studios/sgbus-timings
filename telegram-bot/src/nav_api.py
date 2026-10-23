@@ -24,8 +24,8 @@ def _headers() -> dict:
 
 async def places(query: str) -> list[dict]:
     """Up to 10 of {kind: station | stop | place, label, sub, lat, lng} for typed text, or the
-    one place a Google Maps link in it points at. A link that can't be placed raises NavError
-    with the site's reason (422)."""
+    one place a Google Maps link, GPS coordinates or a plus code in it points at. One that
+    can't be placed, or is outside Singapore, raises NavError with the site's reason (422)."""
     try:
         res = await shared_client().get(_url("/api/places"), params={"q": query}, headers=_headers(), timeout=20)
     except httpx.HTTPError as err:
@@ -35,7 +35,7 @@ async def places(query: str) -> list[dict]:
             message = res.json().get("error")
         except ValueError:
             message = None
-        raise NavError(message or "Couldn't read that Google Maps link. Please try again shortly.")
+        raise NavError(message or "Couldn't place that. Please check it and try again.")
     if res.status_code != 200:
         raise NavError("Couldn't search for that place right now. Please try again shortly.")
     return res.json()

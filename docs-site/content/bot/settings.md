@@ -43,7 +43,8 @@ message, every year. **Clear birthday** removes it.
 
 Tap **Set home** or **Set work**, or send `/sethome` or `/setwork`, then reply
 with the place: an address, a building, a postal code, an MRT station, a bus
-stop or a Google Maps link, picked from the suggestions if there are several. Or
+stop, a Google Maps link, GPS coordinates or a plus code, picked from the
+suggestions if there are several. Or
 tap **Send my location** to save where you are now, named Home or Work.
 
 The `/nav` and `/route` panels ([Navigate](nav.md#home-and-work),

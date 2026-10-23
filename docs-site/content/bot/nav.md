@@ -9,21 +9,49 @@ bus, train or both, including the walk at each end.
 ## Plan a nav
 
 1. Send `/nav`. The bot asks where you're starting.
-2. Reply with an address, a building, a postal code, an MRT or LRT station, or a
-   bus stop. If several places match, tap the one you meant under **Did you
-   mean**. Or **send your location** instead, or a **Google Maps link**: paste
-   one, or share a place from Google Maps to the bot. Short links
-   (`maps.app.goo.gl`) work too.
+2. Reply with an address, a building, a postal code, an MRT or LRT station, a
+   bus stop, GPS coordinates or a plus code. If several places match, tap the
+   one you meant under **Did you mean**. Or **send your location** instead, or a
+   **Google Maps link**: paste one, or share a place from Google Maps to the
+   bot. Short links (`maps.app.goo.gl`) work too.
 3. It asks where you're going. Answer the same way.
 
 **Set start** and **Set end** stay on the panel, so either end can be
 changed later. Send `/cancel` to stop at any point.
 
-### Home and Work
+### Did you mean
+
+Each place under **Did you mean** carries what tells it apart: a bus stop's
+number and road (**🚌 Blk 109 · 84221 · Bedok Nth Rd**), a station's line codes, a
+building's address.
+
+A bus stop is found however you'd [search](search.md) for it: the words in any
+order, across the stop's name and its road, and the long forms of LTA's short
+ones, **Block** for Blk, **Jalan** for Jln. So `block 29 bahagia` finds Blk 29 on
+Jln Bahagia.
+
+### Coordinates and plus codes
+
+Either end can be a point on the map, set as soon as it's sent:
+
+- **GPS coordinates**, latitude then longitude: `1.35, 103.85`, or
+  `1.35N 103.85E`.
+- **A plus code**, the code Google Maps shows for a place without an address,
+  whole (`6PH57RQ8+X2`) or short (`7RQ8+X2`, or `7RQ8+X2 Singapore` as Google
+  Maps copies it).
+
+A point outside Singapore and the stops across the Causeway gets a message
+saying so.
+
+### Home, Work and your places
 
 Under them, **🏠 From home**, **💼 From work**, **🏠 To home** and **💼 To work**
-set that end to the place saved in `/settings` (see [Settings](settings.md#home-and-work)). One
-that isn't saved yet asks for it; once it's saved, tap the button again.
+set that end to your home or work, saved with `/sethome` and `/setwork`, in
+`/settings` (see [Settings](settings.md#home-and-work)) or in `/places`. One that
+isn't saved yet asks for it; once it's saved, tap the button again.
+
+Every other place saved in [/places](places.md) follows as a button too, such as
+**📍 From Gym** and **📍 To Gym**.
 
 ## Pick a time
 

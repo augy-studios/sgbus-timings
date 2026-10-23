@@ -10,6 +10,7 @@ from ..favourites import list_favourites
 from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
 from ..format import escape_md
 from ..nav_api import NavError, places
+from ..nav_view import NO_MATCH, place_button_text
 from ..reply import send_rich_message
 from ..saved_places import KINDS as PLACE_KINDS
 from ..saved_places import get_place, set_place
@@ -38,7 +39,7 @@ BIRTHDAY_PROMPT = (
 
 PLACE_PROMPT = (
     "Send your {name}: an address, a building, a postal code, an MRT station, a bus stop, "
-    "a Google Maps link, or your location. Or /cancel to stop."
+    "a Google Maps link, GPS coordinates, a plus code, or your location. Or /cancel to stop."
 )
 
 _ORDINAL_SUFFIX_RE = re.compile(r"(\d+)(st|nd|rd|th)\b", re.IGNORECASE)
@@ -256,7 +257,7 @@ def register_settings(client):
                 await event.respond(str(err))
                 raise events.StopPropagation
             if not found:
-                await event.respond("Nothing matched that. Try an address, a building, a postal code, a station or a bus stop.")
+                await event.respond(NO_MATCH)
                 raise events.StopPropagation
             if len(found) == 1:
                 await save_place(client, chat_id, field, found[0])
@@ -267,11 +268,10 @@ def register_settings(client):
 
 def place_pick_buttons(found: list, kind: str) -> list:
     """The places a search found, a button each, to save as Home or Work."""
-    icons = {"station": "🚆", "stop": "🚌", "place": "📍"}
     return [
         [
             Button.inline(
-                f"{icons.get(p['kind'], '📍')} {p['label']}"[:64],
+                place_button_text(p),
                 make_button(
                     "settings_place_pick",
                     {"kind": kind, "place": {k: p[k] for k in ("kind", "label", "lat", "lng", "code") if p.get(k) is not None}},

@@ -17,9 +17,24 @@ from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
 MAX_OPTIONS = 8
 
 PROMPTS = {
-    "from": "Send where you're starting: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps link, or your location.",
-    "to": "Now send where you're going: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps link, or your location.",
+    "from": "Send where you're starting: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps link, GPS coordinates, a plus code, or your location.",
+    "to": "Now send where you're going: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps link, GPS coordinates, a plus code, or your location.",
 }
+
+# What to say when /api/places finds nothing, for /nav, /places and Home and Work alike.
+NO_MATCH = ("Nothing matched that. Try an address, a building, a postal code, a station, a bus stop, "
+            "GPS coordinates or a plus code.")
+
+PLACE_ICONS = {"station": "🚆", "stop": "🚌", "place": "📍"}
+
+
+def place_button_text(p: dict) -> str:
+    """A found place as its Did you mean button reads, with what tells it apart from the
+    others: a stop's code and road ("🚌 Blk 109 · 84221 · Bedok Nth Rd"), a station's codes,
+    a place's address. The icon already says it's a bus stop."""
+    sub = (p.get("sub") or "").removeprefix("Bus stop ")
+    text = f"{PLACE_ICONS.get(p['kind'], '📍')} {p['label']}" + (f" · {sub}" if sub else "")
+    return text if len(text) <= 64 else text[:63] + "…"
 
 
 def _metres(m) -> str:
@@ -263,9 +278,8 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None):
 
 
 def nav_place_buttons(places: list, field: str) -> list:
-    icons = {"station": "🚆", "stop": "🚌", "place": "📍"}
     return [
-        [Button.inline(f"{icons.get(p['kind'], '📍')} {p['label']}"[:64],
+        [Button.inline(place_button_text(p),
                        make_button("nav_pick", {"field": field, "place": {"label": p["label"], "lat": p["lat"], "lng": p["lng"]}}))]
         for p in places[:8]
     ]

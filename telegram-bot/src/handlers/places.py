@@ -11,6 +11,7 @@ from ..buttons import make_button
 from ..flows import Flow, clear_flow, get_flow, register_flow, set_flow
 from ..format import escape_md
 from ..nav_api import NavError, places, share_place
+from ..nav_view import NO_MATCH, place_button_text
 from ..reply import edit_rich_message, send_rich_message
 from ..saved_places import (
     KINDS,
@@ -30,7 +31,7 @@ from .settings import start_edit_place
 SHARE_NOTE = "Anyone with this link can see where this place is. Place links don't expire."
 WHERE_PROMPT = (
     "Send the place: an address, a building, a postal code, an MRT station, a bus stop, a Google Maps "
-    "link, or your location. Or /cancel to stop."
+    "link, GPS coordinates, a plus code, or your location. Or /cancel to stop."
 )
 
 
@@ -133,11 +134,10 @@ async def save_where(client, chat_id: int, kind: str, place: dict):
 
 
 def pick_buttons(found: list, kind: str) -> list:
-    icons = {"station": "🚆", "stop": "🚌", "place": "📍"}
     return [
         [
             Button.inline(
-                f"{icons.get(p['kind'], '📍')} {p['label']}"[:64],
+                place_button_text(p),
                 make_button("places_pick", {"kind": kind, "place": {k: p[k] for k in ("kind", "label", "lat", "lng", "code") if p.get(k) is not None}}),
             )
         ]
@@ -273,7 +273,7 @@ def register_places(client):
             await event.respond(str(err))
             raise events.StopPropagation
         if not found:
-            await event.respond("Nothing matched that. Try an address, a building, a postal code, a station or a bus stop.")
+            await event.respond(NO_MATCH)
             raise events.StopPropagation
         if len(found) == 1:
             await save_where(client, chat_id, kind, found[0])

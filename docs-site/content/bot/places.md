@@ -11,8 +11,9 @@ name of your own if you like: "Gym", "Mum's". Each one is also a button on the
 
 1. Send `/addplace`, or tap **➕ Save a new place** under `/places`.
 2. Send the place: an address, a building, a postal code, an MRT station, a bus
-   stop or a Google Maps link, or tap **📍 Send my location**. If more than one
-   place matches, tap the one you meant.
+   stop, a Google Maps link, GPS coordinates or a plus code, as in
+   [/nav](nav.md#coordinates-and-plus-codes), or tap **📍 Send my location**. If
+   more than one place matches, tap the one you meant.
 3. Send a name for it, or `/done` to keep calling it what it is.
 
 You can save up to 30 places, besides Home and Work.
@@ -38,5 +39,5 @@ Home and Work are always listed first. Until one is set, tapping it asks for it,
 the same as `/sethome`, `/setwork` or **Set home** and **Set work** in
 [/settings](settings.md#home-and-work).
 
-The bot's places are its own: the [web app's Places](../web/places.md) are kept
-in your browser, and the two don't share them.
+The [web app's Places](../web/places.md) are kept in your browser. To copy places
+between the two, use [/sync](sync.md).

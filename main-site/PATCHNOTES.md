@@ -22,6 +22,11 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Malls and terminals** - Getting off, it names where an escalator or lift leads when it's somewhere in particular: Jewel, a terminal at Changi Airport, Nex, City Square and so on.
 - **Changi Airport branch** - Rides to Expo and Changi Airport now get door tips too.
 
+### Telegram bot
+
+- **Which Blk 109?** - Did you mean in `/nav`, `/places` and Home and Work now gives each stop's number and road, each station's line codes and each building's address, so two stops of the same name can be told apart.
+- **Coordinates and plus codes, said out loud** - `/nav`, `/places` and Home and Work now tell you they take GPS coordinates (`1.35, 103.85`) and plus codes (`7RQ8+X2`), as Navigate does on the web.
+
 ---
 
 ## 23 October 2026 (late): the live map in 3D, which train door to stand at

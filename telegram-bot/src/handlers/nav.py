@@ -3,7 +3,7 @@ from telethon import events
 from ..flows import Flow, end_flow, get_flow, register_flow, set_flow
 from ..lta import fetch_arrivals
 from ..nav_api import NavError, places, plan
-from ..nav_view import build_mynavs_view, build_nav_option, build_nav_panel, nav_place_buttons, option_is_live
+from ..nav_view import NO_MATCH, build_mynavs_view, build_nav_option, build_nav_panel, nav_place_buttons, option_is_live
 from ..navs import clear_nav_draft, draft_place, draft_when, get_favourite_nav, get_nav_draft, start_nav_draft
 from ..reply import edit_rich_message, send_rich_message
 from ..when import parse_typed, problem
@@ -186,7 +186,7 @@ def register_nav(client):
             await event.respond(str(err))
             raise events.StopPropagation
         if not found:
-            await event.respond("Nothing matched that. Try an address, a building, a postal code, a station or a bus stop.")
+            await event.respond(NO_MATCH)
             raise events.StopPropagation
         if len(found) == 1:
             p = found[0]
