@@ -155,7 +155,7 @@ website's map.
 ### The Android app
 
 The [Android app](../web/android-app.md) shows the website, so everything on this
-page applies to it the same way. From version 2 it keeps its own storage, not
+page applies to it the same way. It keeps its own storage, not
 Chrome's. On its own it reads nothing about you. It opens SimplyGo when you tap
 that button, and reads your calendar only as above.
 

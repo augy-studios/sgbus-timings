@@ -62,7 +62,6 @@ the app. The Android app and the [Windows, Mac and Linux apps](desktop-app.md) a
 | `uwu://sgbus/go/t2d6bdtkdj` | A share link, as its `sgbus.uwuapps.org/go/...` would |
 
 Anything after `uwu://sgbus/` is the same as after the `#` in the app's own
-links. These need version 1.2.0 of the app or later; 1.1.0 opened
-`uwusgbus://` links instead. Plenty of apps, Telegram among them, don't let custom links like these be
+links. Plenty of apps, Telegram among them, don't let custom links like these be
 tapped, so share the `sgbus.uwuapps.org` links instead: they work everywhere,
 and open the app where it's installed.

@@ -66,7 +66,7 @@ Click the bus to bring the window back. Right-click it for **Service alerts**,
 
 ### A stop's buses in the tray
 
-From version 2.1.0, open a stop and click **Tray countdown**: its next buses
+Open a stop and click **Tray countdown**: its next buses
 then show when you hover over the tray's bus on Windows and Linux, and beside it
 in the menu bar on a Mac, with the next bus's minutes on the Dock icon too.
 Narrowed to one bus first, it follows just that bus. It refreshes every 30
@@ -74,7 +74,7 @@ seconds. Right-click the tray's bus for **Stop the tray countdown**.
 
 ### Your favourites on the taskbar and Dock
 
-From version 2.1.0, your favourite stops are a right-click away on the app's
+Your favourite stops are a right-click away on the app's
 taskbar icon on Windows (its Jump List), and on its Dock icon on a Mac. On
 Windows, hovering over the taskbar icon also gives **Refresh**, and the previous
 and next favourite stop, under its preview.
@@ -114,13 +114,13 @@ the Android app: see [App links](links.md#app-links). On Windows they work once
 you've opened the app once. An AppImage needs adding to your desktop's app menu
 first, as AppImageLauncher or Gear Lever do.
 
-From version 2.1.2, with another UwU app installed on the computer too, such as
+With another UwU app installed on the computer too, such as
 uwuPromptr, its `uwu://` links open that app, not this one, whichever of the
 two you opened last.
 
 ## Updates
 
-The app checks for a new version when it starts, then every hour (from 2.1.1),
+The app checks for a new version when it starts, then every hour,
 and again when your computer wakes from sleep. To check now, right-click the
 tray's bus and pick **Check for updates...**: a notification says what it found,
 even if you're up to date.
@@ -145,7 +145,7 @@ Your favourites and settings stay.
 
 **Stops near me** and the [live map](live-map.md) need to know where the computer
 is. On Windows, turn on **Settings** > **Privacy & security** > **Location**.
-On Linux, from 2.0.7, the app works out where the computer is from the Wi-Fi
+On Linux, the app works out where the computer is from the Wi-Fi
 networks around it, so Wi-Fi needs to be on (connected or not). It scans them
 with NetworkManager and asks [BeaconDB](https://beacondb.net), an open database
 of where Wi-Fi networks are, as GeoClue does. Only the networks' hardware

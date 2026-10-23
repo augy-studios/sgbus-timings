@@ -142,6 +142,3 @@ with no trips just says how to start one.
 
 To see any of them again, open [Settings](settings.md): **Show me around** has
 a button for each page.
-
-All of this is in the web app, so the Android and desktop apps have it too,
-with no update needed.

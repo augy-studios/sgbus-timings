@@ -3,7 +3,7 @@ title: Wear OS watches
 description: A tile on your watch with the next buses at your nearest favourite stop, counting down by itself.
 ---
 
-From version 2.1.0, SG Bus Timings has a watch app for Wear OS 3 and later
+SG Bus Timings has a watch app for Wear OS 3 and later
 (Pixel Watch, Galaxy Watch 4 and newer, and others). Its **Bus timings** tile
 shows the next buses at whichever of your
 [favourite stops](favourites.md) is nearest, and the minutes count down on the

@@ -40,7 +40,7 @@ On a phone, a trip to Tuas or Woodlands Checkpoint, or across the Causeway, has
 a **MyICA** button on the bar, for ICA's MyICA Mobile app and its immigration QR
 code. It opens the app's Play Store or App Store page, which says **Open** once
 it's installed; in the [Android app](android-app.md#simplygo-sharing-and-links)
-from 2.2.1 it opens MyICA itself.
+it opens MyICA itself.
 
 A ride across the Causeway is followed in three parts: to Woodlands Checkpoint,
 across to the Johor Bahru checkpoint, and on (or the other way round), so the alert
@@ -66,7 +66,7 @@ get off. Without your location, it goes by how long each walk should take.
 
 ### Walking or riding
 
-From 2.0.7, the trip also uses your phone's motion sensor (its accelerometer) to
+The trip also uses your phone's motion sensor (its accelerometer) to
 tell walking from riding, by the rhythm of your steps. It knows you're walking
 within a few steps, so:
 

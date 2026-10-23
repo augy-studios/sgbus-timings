@@ -79,7 +79,7 @@ replaces the one before it in your notification tray rather than piling up.
 ### New versions of the app
 
 In the [Android app](android-app.md#hear-about-new-versions) and the
-[desktop app](desktop-app.md#updates), from version 2.1.1, a third choice sits
+[desktop app](desktop-app.md#updates), a third choice sits
 under these two: **New versions of the app**, **Off** or **On**. On Android it
 sends a notification the moment a new version is out, and is off until you
 turn it on. On a computer it's on to start with, and says when the app has

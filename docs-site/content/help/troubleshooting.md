@@ -53,7 +53,7 @@ in [the app](../web/route-planner.md#picked-the-wrong-side-of-the-road) and
 - Location needs a secure page, so open the app at `https://sgbus.uwuapps.org`.
 - Indoors or underground, your position can be rough or slow to arrive. Search
   by name or postal code instead.
-- In the Linux app, location needs version 2.0.7 or later and Wi-Fi turned on:
+- In the Linux app, location needs Wi-Fi turned on:
   see [Windows, Mac and Linux apps](../web/desktop-app.md#location).
 
 ### In the bot

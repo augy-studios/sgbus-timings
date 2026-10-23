@@ -41,7 +41,7 @@ in the background. While it runs, an **On a trip** notification shows where you
 are on it, with **End trip** to stop it, and the Get Off Alert sounds and buzzes
 over the lock screen. The screen doesn't have to stay on.
 
-From version 2.0.8, the app also goes by how fast you're moving to tell walking
+The app also goes by how fast you're moving to tell walking
 from riding, as your steps can't be counted with the screen off. Up to about
 10 km/h is walking; a bus or train's speed, about 40 km/h on average, is riding.
 So walking to your stop never counts as boarding, and once you're riding, 150 m
@@ -50,7 +50,7 @@ down your bus's route is enough.
 Swiping the app away from your recent apps ends that; the server's alert takes
 over, as it does for the website.
 
-From version 2.1.0, your first trip also asks to leave the app out of battery
+Your first trip also asks to leave the app out of battery
 optimisation, once. Some phones (Xiaomi, Samsung, Oppo and others) otherwise stop
 a trip in the background to save battery. The trip starts whichever you choose.
 
@@ -63,12 +63,12 @@ Never out loud on a quiet bus.
 On a phone with NFC, the app reads an **EZ-Link** or **NETS FlashPay** card.
 
 1. Tap the card button in the Edge Tray, or long-press the app's icon and pick
-   **Card value**. From version 2.0.8 you can also just hold the card to the
+   **Card value**. You can also just hold the card to the
    phone: Android offers SG Bus Timings for it, even with the app closed, and
    the value opens straight away. While the app is open, it takes the card
    without asking.
 2. Hold the card flat against the back of the phone, near the camera on most
-   phones. From version 2.2.0, the moment the phone finds it the app says
+   phones. The moment the phone finds it the app says
    **Reading your card…**: keep holding. It takes about a second, and when it's
    done the phone buzzes twice and the app says **Done: you can take your card
    away**.
@@ -106,7 +106,7 @@ like, each for its own stop.
 
 ## Reminders
 
-From version 2.1.0, the app can tell you things with itself closed. Each is off
+The app can tell you things with itself closed. Each is off
 until you turn it on, and asks for what it needs then. **Timings near a stop**
 and **Routines** have buttons of their own in the Edge Tray, a clock and an
 alarm clock, under the line; the rest are in **Settings**. Either button can be turned off in **Settings** >
@@ -133,15 +133,15 @@ alarm clock, under the line; the rest are in **Settings**. Either button can be 
   time. You're reminded 20 minutes before its last bus there, every day it runs.
   Settings lists them, to remove. Public holidays run Sunday's times, which the
   reminder doesn't know about.
-- **Routines** (from version 2.2.0): tap its button in the Edge Tray. It lists
+- **Routines**: tap its button in the Edge Tray. It lists
   your routines, to change with the pencil or remove, and under **Add a routine**
   you pick a stop (the one you have open, or a favourite), the buses you want or
   none for all of them, a time and the days, such as 7:45 on weekdays, then
-  **Add**. From 2.2.3 a bus can be a wildcard, `22*` for every bus starting with
+  **Add**. A bus can be a wildcard, `22*` for every bus starting with
   22. The pencil fills the form in with that routine instead: change what
   you like and tap **Save**, or **Cancel**. At that time a notification shows the
-  stop's next buses; tap it for their timings, just the routine's buses (from
-  2.2.2). Like the [Telegram bot's routines](../bot/routines.md), but on your
+  stop's next buses; tap it for their timings, just the routine's buses.
+  Like the [Telegram bot's routines](../bot/routines.md), but on your
   phone.
 
 <figure>
@@ -151,7 +151,7 @@ alarm clock, under the line; the rest are in **Settings**. Either button can be 
 
 ### Location turned off
 
-From version 2.2.0, when you tap **Near me**, start from where you are in
+When you tap **Near me**, start from where you are in
 Navigate, or save where you are in Places with your phone's Location turned
 off, the app asks to turn it on with one tap, then carries on. Without Google
 Play services it opens Android's Location settings instead.
@@ -163,7 +163,7 @@ Play services it opens Android's Location settings instead.
 
 ## Home and Work, a tap away
 
-From version 2.1.0, once Home or Work is set in [Places](places.md):
+Once Home or Work is set in [Places](places.md):
 
 - Long-press the app's icon for **Bus home** and **Bus to work**: each opens
   Navigate from where you are. With them there, the shortcuts are Near me,
@@ -173,7 +173,7 @@ From version 2.1.0, once Home or Work is set in [Places](places.md):
 
 ## Search by voice, and scan a stop
 
-From version 2.1.0, the search box has two more buttons:
+The search box has two more buttons:
 
 <figure>
 <img src="/screenshots/web/search-voice-scan.png" alt="The search box with 84009 typed in, and a microphone and a camera button at its right end, beside Get Timings." width="310" height="48" loading="lazy">
@@ -188,7 +188,7 @@ From version 2.1.0, the search box has two more buttons:
 
 ## NFC stickers
 
-From version 2.1.0, write a stop, a place or a way home onto a blank NFC sticker
+Write a stop, a place or a way home onto a blank NFC sticker
 (an NTAG213 or bigger): stick it by the door, and a tap of any phone opens it. A
 stop's timings have **NFC sticker**; for a place or directions, use
 [Offline Sharing](#offline-sharing)'s **Write it to an NFC sticker**. Hold the
@@ -220,11 +220,11 @@ app in Android: **Settings** > **Apps** > **SG Bus Timings** >
 
 [Service alerts](service-alerts.md) come as the app's own notifications, even
 with the app closed. Android's settings for the app list them by kind: **Service
-alerts**, **Get Off Alert**, **Get ready to board** (from 2.0.4: your bus is a
-minute away, on a trip; see [Get Off Alert](get-off-alert.md#get-ready-to-board))
-and **Trip in progress**, and from 2.1.0 the [reminders](#reminders): **Near a
-stop**, **Last bus**, **Time to leave**, **On a bus?**, and **Get Off Alert,
-earphones only**, and from 2.1.1 **New versions** (see [Update it](#update-it)).
+alerts**, **Get Off Alert**, **Get ready to board** (your bus is a minute away,
+on a trip; see [Get Off Alert](get-off-alert.md#get-ready-to-board)), **Trip in
+progress**, the [reminders](#reminders) (**Near a stop**, **Last bus**, **Time to
+leave**, **On a bus?** and **Get Off Alert, earphones only**) and **New
+versions** (see [Update it](#update-it)).
 Each can be turned off on its own.
 
 ## Your phone's calendar
@@ -237,13 +237,13 @@ access only when you pick **Use this phone's calendar**.
 
 - The [SimplyGo](install.md#simplygo) button opens the SimplyGo app itself,
   rather than its store page.
-- From version 2.2.1, a trip's **MyICA** button, on a trip to Tuas or Woodlands
+- A trip's **MyICA** button, on a trip to Tuas or Woodlands
   Checkpoint (see [Get Off Alert](get-off-alert.md)), opens MyICA Mobile itself
   too, or its Play Store page if it isn't installed.
 - **More** on a share card, and anywhere else the app shares, opens Android's own
-  share sheet. From version 2.1.0, **Telegram** and **WhatsApp** open those apps
+  share sheet. **Telegram** and **WhatsApp** open those apps
   straight away, ready to pick a chat.
-- From version 2.1.0, a share card also has **Offline Sharing**: see
+- A share card also has **Offline Sharing**: see
   [Offline Sharing](#offline-sharing) below.
 - The website's own links, `uwu://sgbus/` links (see
   [Links you can share](links.md#app-links)) and places shared from Google Maps
@@ -256,7 +256,7 @@ access only when you pick **Use this phone's calendar**.
 
 ## Offline Sharing
 
-From version 2.1.0, **Offline Sharing** on a share card hands a place,
+**Offline Sharing** on a share card hands a place,
 directions or your live ETA to a phone next to you, with no internet on either
 phone.
 
@@ -306,13 +306,13 @@ When there's a new version, a bar at the top of the app says so:
 Everything you've saved stays. **Not now** hides the bar until you next open
 the app.
 
-From version 2.0.8 you can also check whenever you like: tap the download
+You can also check whenever you like: tap the download
 arrow in the Edge Tray (**Check for app updates**). It says if you already have
 the newest version, or which one is out, with **Update** to install it as above.
 
 ### Hear about new versions
 
-From version 2.1.1, the app can tell you the moment a new version is out, even
+The app can tell you the moment a new version is out, even
 when it's closed: open [Service alerts](service-alerts.md) (the bell in the Edge
 Tray) and pick **On** under **New versions of the app**. The first time, Android
 asks to allow notifications. Tap the notification ("SG Bus Timings 2.1.2 is
