@@ -32,11 +32,11 @@ from .http_client import shared_client
 from .navs import is_favourite_nav, list_favourite_navs, toggle_favourite_nav
 from .routines import add_routine, join_services, list_routines, split_services
 from .saved_places import add_place, custom_count, get_place, list_places, set_place, MAX_CUSTOM
-from .user_settings import get_birthday, get_display_name, set_birthday, set_display_name
+from .user_settings import get_birthday, get_display_name, get_has_bike, set_birthday, set_display_name, set_has_bike
 
 # What the bot keeps, as js/sync.js names them. No trips, past searches or last bus
-# reminders, and of the settings only where favourites pin.
-KINDS = ["profile", "stop", "bus", "route", "nav", "place", "routine", "calendar", "setting:pin.stop", "setting:pin.bus"]
+# reminders, and of the settings only where favourites pin and whether you have a bike.
+KINDS = ["profile", "stop", "bus", "route", "nav", "place", "routine", "calendar", "setting:pin.stop", "setting:pin.bus", "setting:bike"]
 
 # The sync code, as js/p2p.js makes them.
 CODE_RE = re.compile(r"^[BCDFGHJKLMNPQRSTVWXYZ23456789]{6}$")
@@ -110,7 +110,8 @@ def own_favs(chat_id: int) -> dict:
         ],
         "calendar": [{"url": link["url"]}] if link else [],
         # As on the web: only a setting changed from how it starts.
-        "settings": [{"field": f"pin.{kind}", "value": "bottom"} for kind in ("stop", "bus") if get_pref(chat_id, kind) == "bottom"],
+        "settings": [{"field": f"pin.{kind}", "value": "bottom"} for kind in ("stop", "bus") if get_pref(chat_id, kind) == "bottom"]
+        + ([{"field": "bike", "value": "on"}] if get_has_bike(chat_id) else []),
     }
 
 
@@ -240,6 +241,11 @@ def merge(chat_id: int, favs: dict) -> dict:
 
     for s in _list(favs, "settings"):
         if not isinstance(s, dict):
+            continue
+        if s.get("field") == "bike" and s.get("value") in ("on", "off"):
+            if get_has_bike(chat_id) != (s["value"] == "on"):
+                set_has_bike(chat_id, s["value"] == "on")
+                count("setting")
             continue
         kind = {"pin.stop": "stop", "pin.bus": "bus"}.get(s.get("field"))
         if kind and s.get("value") in ("top", "bottom") and get_pref(chat_id, kind) != s["value"]:

@@ -6,6 +6,7 @@ from ..nav_api import NavError, places, plan
 from ..nav_view import NO_MATCH, build_mynavs_view, build_nav_option, build_nav_panel, nav_place_buttons, option_is_live
 from ..navs import clear_nav_draft, draft_place, draft_when, get_favourite_nav, get_nav_draft, start_nav_draft
 from ..reply import edit_rich_message, send_rich_message
+from ..user_settings import get_has_bike
 from ..when import parse_typed, problem
 from ..when_view import TYPED_HINT, build_when_prompt
 
@@ -25,14 +26,14 @@ def _armed_draft(chat_id, fields=("from", "to")):
     return draft if draft and draft["field"] in fields else None
 
 
-async def _ways(start, end, when) -> dict:
+async def _ways(start, end, when, chat_id=None) -> dict:
     """The ways between two ends at a time, as build_nav_panel takes them: {"result": ...}
     from the API, or {"error": ...} saying why there are none."""
     late = problem(when)
     if late:
         return {"error": late}
     try:
-        return {"result": await plan(start, end, when)}
+        return {"result": await plan(start, end, when, bike=bool(chat_id) and get_has_bike(chat_id))}
     except NavError as err:
         return {"error": str(err)}
 
@@ -49,7 +50,7 @@ async def send_nav_panel(client, chat_id, start, end, awaiting=None, when=None):
         await send_rich_message(client, chat_id, rich, buttons)
         return
     end_flow(chat_id)
-    rich, buttons = build_nav_panel(chat_id, start, end, when=when, **await _ways(start, end, when))
+    rich, buttons = build_nav_panel(chat_id, start, end, when=when, **await _ways(start, end, when, chat_id))
     await send_rich_message(client, chat_id, rich, buttons)
 
 
@@ -67,7 +68,7 @@ async def set_end(client, chat_id, field, place):
 
 async def show_nav(client, event, start, end, when=None):
     """Redraws a panel in place with the ways between two ends."""
-    rich, buttons = build_nav_panel(event.chat_id, start, end, when=when, **await _ways(start, end, when))
+    rich, buttons = build_nav_panel(event.chat_id, start, end, when=when, **await _ways(start, end, when, event.chat_id))
     await edit_rich_message(client, event, rich, buttons)
 
 

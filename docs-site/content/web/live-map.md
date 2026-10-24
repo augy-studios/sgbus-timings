@@ -19,12 +19,21 @@ station to tap, from its own button in the Edge Tray.
   then **Live map**.
 - From the [Telegram bot](../bot/more-from-a-stop.md#directions-to-the-stop): a
   stop's **Directions** > **Live map** opens it here.
+- In [Navigate](nav.md#traffic-walking-and-cycling), **Walk it** under the ways,
+  or **Cycle it**, which shows the way by bike.
 
 The map draws the walk there from where you are, along the streets, and the bar
 along the bottom says the next turn ("In 80 m: Turn left onto Bedok North Road").
 At the top: how far is left, how long it takes, and when you'll get there. Go
 another way and it finds the way from where you are after a few steps. When you
 arrive, it says so.
+
+A walk takes footpaths, through estates, void decks and linkways, as well as
+pavements. Where they stop short of the place, out on a road with no footpath
+such as an industrial road or a lamp post along one, the last stretch goes along
+the road, and a note says how much of it: keep to the side and watch for traffic.
+Never along an expressway, where no one may walk: the walk then stops at the
+nearest footpath, and says so.
 
 The first time, the browser asks for your location: allow it. Without it, the map
 still shows the stop, but can't follow you.
@@ -90,15 +99,37 @@ even with no signal underground.
 </figure>
 
 While a trip runs, tap the map button on the trip bar. The map shows the whole
-trip: each ride in its own colour with its stops, each walk as a dotted line,
-where you change, and where it ends, with you on it. On a walk, the streets to
-take are drawn too. A train ride follows its line's track, the way
+trip: each ride in its own colour with its stops, each walk as a dotted line
+along the streets to take, where you change, and where it ends, with you on it.
+A bus ride follows the roads the bus takes from stop to stop, and your dot
+moves along them; where those can't be found, it's a straight line from stop
+to stop. A train ride follows its line's track, the way
 [sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station
 you board at to the one you get off at, and underground, where there's no GPS,
 your dot moves along the track too.
 
 Tap a stop or station on the trip for its card: a stop's buses, or a station's
 doors for each platform, as in [Explorer](explorer.md).
+
+## Traffic on a bus's way
+
+<figure>
+<img src="/screenshots/web/live-map-traffic.png" alt="The live map titled Traffic: Bus 38 to Tampines Int, LTA's live traffic, 2 min ago. The bus's road from Bedok to Tampines is green where it's clear, orange where it's slow and red where it's jammed, with its stops as dots and a red dot for a breakdown. Along the bottom: Jammed in places on Tampines Avenue 7 and Bedok North Road. Red is jammed, orange slow, green clear, and the breakdown in words." width="390" height="844" loading="lazy">
+<figcaption>A bus's road by its traffic: green clear, orange slow, red jammed.</figcaption>
+</figure>
+
+Wherever the site says a bus is slowed by traffic, in [Navigate](nav.md) or on
+the [trip bar](get-off-alert.md#traffic-on-the-way), tap it to see why: the
+bus's road on the map, along the roads it takes, coloured by LTA's live speeds.
+
+- **Green**: moving freely.
+- **Orange**: slow.
+- **Red**: jammed.
+
+Accidents, breakdowns and roadworks on its way are red dots: tap one for what
+LTA says about it. Along the bottom, the map says which roads are slowest, and
+how long ago LTA's traffic was updated. The [Telegram bot](../bot/nav.md#open-a-way)'s
+traffic button opens the same map.
 
 ## Follow someone's trip
 

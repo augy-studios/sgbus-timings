@@ -32,9 +32,10 @@ Whenever something's sent to it, the bot says what it saved, such as
   want one.
 - Your [calendar](calendar.md)'s link, which replaces the one on the other side
 - Where favourites pin, [top or bottom](favourites.md#top-or-bottom)
+- Whether you have a bike, for [cycling in /nav](settings.md#cycling)
 
-Copying only adds: nothing is removed. Your name, birthday, calendar link and pin
-settings replace the other side's when you copy them.
+Copying only adds: nothing is removed. Your name, birthday, calendar link, pin
+and cycling settings replace the other side's when you copy them.
 
 ## Finish
 

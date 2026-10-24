@@ -54,7 +54,8 @@ timeline closes and the page scrolls down to them, with the trip still running.
 While you wait at the stop for a bus, the bar also lists the other buses that go
 straight to the same stop, with how long each is: **Also direct: 51 in 3 min**.
 Any of them gets you there without a change. The timeline lists them under each
-bus ride too. The trip still shows the stops of the bus you planned.
+bus ride too, and a stop tapped on it shows their timings there with your bus's,
+for those that call at it. The trip still shows the stops of the bus you planned.
 
 ## Walks
 
@@ -135,6 +136,135 @@ you're still at the interchange, it notices from your location and moves back
 to where you are. An alert that went off too early goes off again at the right
 stop.
 
+### Last bus soon
+
+<figure>
+<img src="/screenshots/web/trip-last-bus.png" alt="The trip bar with a red warning across its top: Last bus soon: Bus 38's last from Bedok Int is at 01:48. Under it, To Our Tampines Hub, Bus 38: 28 stops to Tampines Int, part 2 of 3, about 45 min left." width="366" height="182" loading="lazy">
+<figcaption>A red warning when a bus on the trip is down to its last few.</figcaption>
+</figure>
+
+The trip keeps an eye on the last bus of the day for every bus on it you've
+still to get on, at the stop you get on at, by its timetable and its live
+timings: late at night, or on a bus that only runs at peak hours. The trip bar
+shows a red warning when:
+
+| Warning | When |
+|---|---|
+| **Last bus soon: Bus 21's last from Bedok Int is at 00:18.** | It's down to its last three buses, as a red pill on [Explorer](explorer.md)'s stop cards. |
+| **Bus 59's last bus from Blk 390 is at 23:54, before you'll get there.** | A bus you change to later leaves for the last time before the trip gets you to its stop. |
+| **Bus 21's last bus from Bedok Int has gone (00:18).** | Its last bus has passed and none is coming. |
+
+The first warning for each bus also buzzes twice and comes as a notification.
+Once you're on that bus, its warning goes.
+
+### Another way, found for you
+
+<figure>
+<img src="/screenshots/web/trip-switched.png" alt="The trip bar with a green note at the top: Switched to another way. Bus 38's last bus from Bedok Int has gone. Now: walk 4 min to Bedok station, take the EW Line there. EW Line, about 23 min, there by 01:45. Undo and OK buttons under it, and the trip now on the EW Line, 3 stops to Tampines station." width="366" height="265" loading="lazy">
+<figcaption>Switched to another way by itself, with why, what to do now, and Undo.</figcaption>
+</figure>
+
+When a last bus is lost, there's nothing to look up or decide: the trip finds
+another way by bus and train to where you're going, leaving out that bus, and
+switches to it straight away. The phone buzzes twice, a notification says why
+and what to do first, and the trip bar says it too:
+
+> Switched to another way. Bus 59's last bus from Blk 390 is at 23:54, before
+> you'll get there. Now: after Bus 21 to Blk 390, walk 3 min to Opp Blk 5, take
+> Bus 12 there.
+
+It keeps your trip as far as it still works: up to where the ride before the
+lost bus ends, planned for when you'll get there. So waiting for bus 21 with bus
+59's last bus lost at Blk 390, you still take bus 21, and the way goes on from
+Blk 390. With no ride before it, or nothing running from there by then, the way
+starts where you are instead.
+
+**OK** puts the note away. **Undo** puts the trip back as it was, and it isn't
+switched again for that bus. The red warning stays, with the way it found under
+it:
+
+| Button | What it does |
+|---|---|
+| **Reroute** | Makes it your trip after that point after all, alerts and all. What comes before it stays as it was, and **Undo** is there again. |
+| **Navigate from here** | With your location on: [Navigate](nav.md), from where you are to where you're going, with every way to pick from. |
+| **See all ways** | With your location off, in its place: Navigate from where the way starts. |
+
+When nothing else is running either, the warning says so, with the same
+buttons. It looks again every few minutes while the warning stands, as what's
+running thins out.
+
+### Change here
+
+<figure>
+<img src="/screenshots/web/trip-change-timeline.png" alt="The trip bar opened into its timeline after Change my way: Tap Change here by the stop to get off at, with Cancel, then bus 38 to Tampines Int, Bedok Int with the blue dot, and Panasonic, Fujitec S'pore Ltd, Blk 18 and more stops, each with a Change here button on the right." width="366" height="546" loading="lazy">
+<figcaption>After Change my way: Change here by every stop still ahead.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/trip-change-ways.png" alt="The trip bar after Change here at Tanah Merah Stn Exit 2: the EW Line, about 19 min, there by 01:44, walk 2 min to Tanah Merah station, take the EW Line there, then See all ways and Cancel." width="366" height="264" loading="lazy">
+<figcaption>The ways on from that stop, each with what to do first.</figcaption>
+</figure>
+
+To get off somewhere else and change to another bus or train, open the timeline
+and tap **Change my way** at its top. Only then does **Change here** show by
+every stop still ahead, so a stray tap on the timeline changes nothing;
+**Cancel** puts them away. Tap **Change here** by the stop you want, and the bar
+lists the ways on from there to where you're going, quickest first, each with
+what to do first. **Cancel** keeps the trip as it was.
+
+Tap one and the trip changes from there: the ride you're on ends at that stop,
+the Get Off Alert goes off before it, and the new rides follow. The bar says
+what changed, with **Undo** to put the trip back as it was, if it was a slip,
+and **OK** to put the note away.
+
+<figure>
+<img src="/screenshots/web/trip-changed.png" alt="The trip bar after a way was picked: a green note, Changed at Tanah Merah Stn Exit 2. Now: walk 2 min to Tanah Merah station, take the EW Line there, with Undo and OK, and the trip now bus 38 for 8 stops to Tanah Merah Stn Exit 2, part 2 of 5." width="366" height="262" loading="lazy">
+<figcaption>The trip changed, with Undo in case it was a slip.</figcaption>
+</figure>
+
+## Traffic and faster ways
+
+### Traffic on the way
+
+<figure>
+<img src="/screenshots/web/trip-traffic.png" alt="The trip bar with an orange box at the top: Bus 38 about 6 min slower than usual: heavy traffic on Tampines Avenue 7 and Bedok North Road. Vehicle breakdown on Tampines Avenue 7 (towards Tampines Avenue 5). See it on the map. The trip below has about 61 min left." width="366" height="225" loading="lazy">
+<figcaption>A bus slowed by traffic: by how much, and why.</figcaption>
+</figure>
+
+Every five minutes, each bus on the trip still ahead is checked against LTA's
+live traffic: how fast every road on its way is moving, and any accident,
+breakdown or roadworks on it. Its minutes, and so the minutes left for the whole
+trip, go by it, stop by stop.
+
+When the traffic makes a bus 2 minutes or more slower than usual, or an
+incident is on its way, an orange box on the trip bar says by how much and why,
+naming the roads. Tap it for that bus's road on the [live
+map](live-map.md#traffic-on-a-buss-way): orange where it's slow, red where it's
+jammed, and the incident marked.
+
+### A faster way
+
+<figure>
+<img src="/screenshots/web/trip-faster.png" alt="The trip bar with the orange traffic box, then: Faster: EW Line, about 23 min, there by 01:47. Saves 38 min, as Bus 38 is slowed by traffic on Tampines Avenue 7 and Bedok North Road. Walk 4 min to Bedok station, take the EW Line there. With Reroute and Keep my way buttons." width="366" height="365" loading="lazy">
+<figcaption>A faster way, with how much it saves and why.</figcaption>
+</figure>
+
+Every few minutes, the trip plans again from where you are: from where you're
+standing while you wait or walk, or from the next stop while you're on a bus or
+train. If another way would get you there at least 5 minutes sooner, and a
+real share of the time left, the bar suggests it, with why: your bus slowed by
+traffic, or a long wait for it. Its first bus counts by its live timing, so it's
+one you can catch.
+
+Walking the rest of the way counts too, and with **Cycling** set to **I have a
+bike** in [Settings](settings.md), cycling it, with a couple of minutes for the
+bike.
+
+**Reroute** makes it your trip from there, alerts and all: on a ride, you get off
+at that next stop. The bar then says what changed, with **Undo**. **Keep my way** puts the suggestion away for 15 minutes,
+unless something comes along that saves more again. A notification says it once
+too.
+
 ## In the Android app
 
 In the [Android app](android-app.md), the trip carries on with the screen off or
@@ -144,10 +274,14 @@ lock screen. The screen doesn't need to stay on. Swiping the app away ends that,
 and the server takes over as below. Opening the app again picks the trip back up
 where it is, as long as it was still going in the last 3 hours.
 
+While the trip bar is up, every page scrolls a little further, so the end of it,
+such as a bus's first and last bus, comes up clear of the bar.
+
 The trip bar and the notification both end with the minutes left to the end of
 the whole trip, such as **· ~42 min left**, counted the same way as a
 [shared ETA](nav.md#share-my-eta): what's left of this part, and each part after it with
-its wait.
+its wait. While you wait at the stop for a bus, the wait is its live timing
+there, so a bus 16 minutes away adds its 16 minutes to the ride.
 
 ## Keep the site open
 

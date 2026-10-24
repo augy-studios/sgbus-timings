@@ -24,7 +24,7 @@ button turns the map with you, as on the [live map](live-map.md#turn-the-map-wit
 ## A bus stop
 
 <figure>
-<img src="/screenshots/web/explorer-stop.png" alt="Explorer with Bedok Int's card open under its dot: 84009, Bedok Int, Bedok Nth Dr, then a pill for every bus there, most in green and a few, like 9A, 16M and 196A, in grey, a key saying Running, Last 3 buses and Not running now, and a Directions button." width="390" height="844" loading="lazy">
+<img src="/screenshots/web/explorer-stop.png" alt="Explorer with Bedok Int's card open under its dot: 84009, Bedok Int, Bedok Nth Dr, then a pill for every bus there, most in green and a few, like 9A, 16M and 196A, in grey, a key saying Running, Last 3 buses and Not running now, then Show bus timings and Directions buttons." width="390" height="844" loading="lazy">
 <figcaption>Bedok Int: every bus that stops there, by whether it's running now.</figcaption>
 </figure>
 
@@ -38,7 +38,11 @@ pill for every bus that stops there:
 | Grey | Not running now: before its first bus or after its last today, or not on today at all. |
 
 Running is by each bus's first and last bus at that stop today, with its live
-timings to tell when only the last few are left.
+timings to tell when only the last few are left. Tap a bus's pill for that
+bus's [timings](timings.md) at the stop, on Bus timings.
+
+**Show bus timings**, under the key, closes the map and opens the stop's
+[timings](timings.md) on Bus timings, as a search would.
 
 ## A station
 

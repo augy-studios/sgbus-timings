@@ -27,6 +27,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
 | **Immigration time** | How long a journey across the Causeway counts for getting off, clearing both checkpoints and getting on again. **By the time** (the default): about 15 minutes when it's quiet, up to an hour at the rush. Or your own: **15 min**, **30 min**, **45 min** or **1 hr**. See [Navigate](nav.md#across-the-causeway). |
+| **Cycling** | **No bike** (the default) or **I have a bike**. With a bike, [Navigate](nav.md#traffic-walking-and-cycling) also says how long cycling there takes, and a [trip](get-off-alert.md#a-faster-way) tells you when cycling the rest of the way is quicker. |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Picture-in-picture** | The [Android app](android-app.md#picture-in-picture) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
@@ -43,6 +44,11 @@ Changes save as you make them. There is no Save button.
 <figure>
 <img src="/screenshots/web/settings-customs.png" alt="Settings' Immigration time: By the time picked, across the top, with 15 min, 30 min, 45 min and 1 hr under it, and a note on what it counts and when the rush is." width="396" height="234" loading="lazy">
 <figcaption>Immigration time, for journeys across the Causeway.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/settings-cycling.png" alt="Settings' Cycling, with No bike and I have a bike, I have a bike picked, and a note that with a bike Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker." width="396" height="161" loading="lazy">
+<figcaption>Cycling, for Navigate and trips to weigh a bike too.</figcaption>
 </figure>
 
 > [!NOTE]

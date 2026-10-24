@@ -84,7 +84,8 @@ db.executescript(
         display_name TEXT,
         birthday TEXT,
         notifications_enabled INTEGER NOT NULL DEFAULT 1,
-        last_birthday_wish TEXT
+        last_birthday_wish TEXT,
+        has_bike INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS routines (
@@ -240,6 +241,10 @@ if "notifications_enabled" not in _user_settings_columns:
 if "last_birthday_wish" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN last_birthday_wish TEXT")
+# Whether the chat has a bike with them: /nav then says how long cycling there takes too.
+if "has_bike" not in _user_settings_columns:
+    with db:
+        db.execute("ALTER TABLE user_settings ADD COLUMN has_bike INTEGER NOT NULL DEFAULT 0")
 
 # A routine's `services` is a comma-separated list of the bus numbers it sends; NULL, as
 # every routine saved before buses could be picked has, means every bus at the stop.

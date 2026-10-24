@@ -694,5 +694,218 @@ async function el(page, sel, name) {
     await el(page, '#trayExtrasPick', 'explorer-settings.png');
     await ctx.close();
   }
+  // ---------- traffic, last buses and other ways (main-site/js/trip.js, js/nav.js, js/map.js) ----------
+  // LTA's traffic, the bus timings and Navigate's answers are stood in for here (liveMocks), so
+  // each shot has what it's about whenever it's taken: a jam, a last bus, a faster way. The rides
+  // are real ones, from the route list; only the live feeds are made up.
+  const LIVE_TO = { label: 'Our Tampines Hub', lat: 1.353134, lng: 103.940408 };
+  const EWL = [['Bedok', 1.323935, 103.929995], ['Tanah Merah', 1.327262, 103.946513], ['Simei', 1.343179, 103.953376], ['Tampines', 1.353374, 103.945084]];
+  // A bus from Bedok Int to Tampines Int, with its stops, from the page's route list.
+  const liveRide = (page) => page.evaluate(async () => {
+    await BusNet.load(typeof stopsIndex === 'undefined' ? undefined : stopsIndex); // eslint-disable-line no-undef
+    for (const no of BusNet.servicesAtStop('84009')) {
+      for (const dir of BusNet.directions(no)) {
+        const stops = BusNet.runStops(no, dir);
+        const i = stops.indexOf('84009');
+        const j = i === -1 ? -1 : stops.indexOf('75009', i + 1);
+        if (j !== -1 && j - i <= 30) {
+          const codes = stops.slice(i, j + 1);
+          const at = (c) => stopsIndex[c]; // eslint-disable-line no-undef
+          return { route: no, dir, codes, path: codes.map((c) => [at(c).lat, at(c).lng]), names: codes.map((c) => at(c).n) };
+        }
+      }
+    }
+    return null;
+  });
+  // Navigate's answer for Bedok Mall to Our Tampines Hub: the train, and the bus slowed by traffic.
+  const liveNav = (ride, { lastBus = null } = {}) => {
+    const stop = (i) => ({ kind: 'stop', code: ride.codes[i], name: ride.names[i], lat: ride.path[i][0], lng: ride.path[i][1] });
+    const station = ([name, lat, lng]) => ({ kind: 'station', name, lat, lng });
+    const busMin = Math.round(ride.codes.length * 1.1);
+    const bus = {
+      minutes: 4 + 5 + busMin + 6 + 7, mix: 'B', routes: [ride.route],
+      legs: [
+        { mode: 'walk', metres: 260, minutes: 4, to: stop(0) },
+        {
+          mode: 'bus', route: ride.route, dir: ride.dir, towards: 'Tampines Int', from: stop(0), to: stop(ride.codes.length - 1), stops: ride.codes.length - 1,
+          minutes: busMin + 6, usual: busMin, wait: 5, board: 9, path: ride.path, names: ride.names, codes: ride.codes,
+          ...(lastBus && { lastBus }),
+          traffic: { extra: 6, roads: ['Tampines Avenue 7', 'Bedok North Road'], incidents: [{ type: 'Vehicle breakdown', message: '(25/10)18:02 Vehicle breakdown on Tampines Avenue 7 (towards Tampines Avenue 5).', lat: ride.path[Math.floor(ride.path.length * 0.6)][0], lng: ride.path[Math.floor(ride.path.length * 0.6)][1] }] },
+        },
+        { mode: 'walk', metres: 520, minutes: 7, to: { kind: 'place' } },
+      ],
+    };
+    const train = {
+      minutes: 23, mix: 'T', routes: ['EW'],
+      legs: [
+        { mode: 'walk', metres: 150, minutes: 4, to: station(EWL[0]) },
+        { mode: 'train', route: 'EW', name: 'East-West Line', color: '#009645', towards: 'Pasir Ris', from: station(EWL[0]), to: station(EWL[3]), stops: 3, minutes: 8, wait: 3, board: 7, path: EWL.map(([, a, b]) => [a, b]), names: EWL.map(([n]) => n) },
+        { mode: 'walk', metres: 650, minutes: 8, to: { kind: 'place' } },
+      ],
+    };
+    return { options: [train, bus], onemap: false, alerts: { lines: [] }, when: { mode: 'leave', ms: Date.now() }, traffic: { at: Date.now() - 2 * 60000 }, others: { cycle: { minutes: 17, distance: 4300 } } };
+  };
+  // The live feeds, made up: Navigate (above), the traffic on a road (orange then red partway,
+  // or clear where Navigate's bus has none), and each bus's next arrivals (`etas`, minutes by
+  // service).
+  async function liveMocks(ctx, ride, { nav = liveNav(ride), etas = {} } = {}) {
+    await ctx.route(/\/api\/nav\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(nav) }));
+    await ctx.route(/\/api\/traffic\?/, (r) => {
+      const n = decodeURIComponent(new URL(r.request().url()).searchParams.get('points')).split(';').length - 1;
+      const jam = nav.options[1]?.legs[1]?.traffic;
+      const flows = Array.from({ length: n }, (_, i) => (!jam ? 1 : i < n * 0.35 ? 0.9 : i < n * 0.5 ? 0.6 : i < n * 0.7 ? 0.3 : i < n * 0.8 ? 0.55 : 0.85));
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({
+        at: Date.now() - 2 * 60000, flows, factors: flows.map((f) => Math.min(1.6, 1 + 0.6 * (1 - f))), roads: jam ? ['Tampines Avenue 7', 'Bedok North Road'] : [],
+        incidents: jam?.incidents || [],
+      }) });
+    });
+    await ctx.route(/\/api\/bus-arrivals\?/, (r) => {
+      const q = new URL(r.request().url()).searchParams;
+      const services = Object.entries(etas).filter(([no]) => !q.get('service') || q.get('service') === no)
+        .map(([no, m]) => ({ serviceNo: no, operator: 'SBST', next: { eta_ms: m[0] * 60000, deck: 'Double', load: 'SEA' }, next2: m[1] != null ? { eta_ms: m[1] * 60000, deck: 'Single', load: 'SEA' } : null, next3: null }));
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ services }) });
+    });
+  }
+  const bedokGeo = { latitude: 1.324736, longitude: 103.929256 };
+  // A trip from Navigate's bus way (so its usual minutes come too), started on the page. Late at
+  // night the bus's real last bus would be said too, so it's said only where it's the subject
+  // (`last`, with BusNet.lastBuses stood in for first).
+  const startLiveTrip = (page, nav, { k = 1, last = false } = {}) => page.evaluate(({ nav, k, to, last }) => {
+    if (!last) BusNet.lastBuses = () => null;
+    const trip = tripFromNav(nav.options[k], to, { label: 'Bedok Mall', lat: 1.324736, lng: 103.929256 }); // eslint-disable-line no-undef
+    Trip.start(trip);
+  }, { nav, k, to: LIVE_TO, last });
+  const bar = (page, name) => el(page, '#tripBar', name);
+
+  // Navigate with the traffic: the ways, cycling, one way's bus slowed, and its road on the map.
+  if (want('nav-traffic')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 1400, touch: true, geo: bedokGeo, extra: { sgbus_bike: 'on' } });
+    const ride = await liveRide(page);
+    await liveMocks(ctx, ride, { nav: liveNav(ride, { lastBus: '23:48' }), etas: { [ride.route]: [5, 17] } });
+    await page.evaluate(([a, b]) => { location.hash = `#nav/${a}/${b}`; }, [enc(P.bedokMall), enc(LIVE_TO)]);
+    await idle(page, '#navBody');
+    await blur(page);
+    // The ways, from the line saying how many down to the note under them.
+    const top = await page.locator('#navBody > :first-child').boundingBox();
+    const body = await page.locator('#navBody').boundingBox();
+    await page.screenshot({ path: OUT + 'nav-traffic.png', clip: { x: body.x - 8, y: top.y - 10, width: body.width + 16, height: body.y + body.height + 10 - (top.y - 10) } });
+    console.log('wrote nav-traffic.png', Math.round(body.width + 16));
+    await page.click('[data-nav-option="1"]');
+    await page.waitForTimeout(1500);
+    await el(page, '#navBody .stepLeg:has(.legTraffic)', 'nav-leg-traffic.png');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.click('.legTraffic');
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: OUT + 'live-map-traffic.png' });
+    console.log('wrote live-map-traffic.png 390 844');
+    await ctx.close();
+  }
+  // Settings' Cycling.
+  if (want('cycling')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 2800, extra: { sgbus_bike: 'on' } });
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(500);
+    const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Cycling' }).boundingBox();
+    const b = await page.locator('[data-bike="on"]').locator('xpath=../following-sibling::p[1]').boundingBox();
+    const m = await page.locator('#settingsModal .modal').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-cycling.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-cycling.png');
+    await ctx.close();
+  }
+  // On a trip: the traffic on the bus ahead, a faster way, the last bus, a switch made by
+  // itself, and Change here.
+  if (want('trip-live')) {
+    // The bus slowed by traffic, and a faster way while you wait 16 min for it.
+    let { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: bedokGeo });
+    let ride = await liveRide(page);
+    let nav = liveNav(ride);
+    await liveMocks(ctx, ride, { nav, etas: { [ride.route]: [16, 30] } });
+    await startLiveTrip(page, nav);
+    await page.waitForTimeout(4000);
+    await bar(page, 'trip-traffic.png');
+    // The faster way's checked on the trip's tick, every 15 s.
+    await page.waitForSelector('#tripFaster:not([hidden])', { timeout: 40000 }).catch(() => console.log('no faster way'));
+    await page.waitForTimeout(800);
+    await bar(page, 'trip-faster.png');
+    await ctx.close();
+
+    // The last bus soon: its last from here 25 min away, with its next three in 6, 17 and 28.
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: bedokGeo }));
+    ride = await liveRide(page);
+    nav = liveNav(ride);
+    nav.options[1].legs[1].traffic = undefined;
+    await liveMocks(ctx, ride, { nav, etas: { [ride.route]: [6, 17, 28] } });
+    await page.evaluate((route) => {
+      const t = new Date(Date.now() + 8 * 3600e3 + 25 * 60e3);
+      const hhmm = String(t.getUTCHours()).padStart(2, '0') + String(t.getUTCMinutes()).padStart(2, '0');
+      BusNet.lastBuses = (no) => (no === route ? { wd: hhmm, sat: hhmm, sun: hhmm } : null);
+    }, ride.route);
+    await startLiveTrip(page, nav, { last: true });
+    await page.waitForSelector('#tripWarn:not([hidden])', { timeout: 40000 }).catch(() => console.log('no last bus warning'));
+    await page.waitForTimeout(800);
+    await bar(page, 'trip-last-bus.png');
+    await ctx.close();
+
+    // Its last bus gone, and the trip switched to the train by itself.
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: bedokGeo }));
+    ride = await liveRide(page);
+    nav = liveNav(ride);
+    await liveMocks(ctx, ride, { nav, etas: {} });
+    await page.evaluate((route) => {
+      const t = new Date(Date.now() + 8 * 3600e3 - 10 * 60e3);
+      const hhmm = String(t.getUTCHours()).padStart(2, '0') + String(t.getUTCMinutes()).padStart(2, '0');
+      BusNet.lastBuses = (no) => (no === route ? { wd: hhmm, sat: hhmm, sun: hhmm } : null);
+    }, ride.route);
+    await startLiveTrip(page, nav, { last: true });
+    await page.waitForFunction(() => /Switched/.test(document.querySelector('#tripWarn')?.textContent || ''), null, { timeout: 40000 }).catch(() => console.log('no switch'));
+    await page.waitForTimeout(800);
+    await bar(page, 'trip-switched.png');
+    await ctx.close();
+
+    // Change here: the timeline's stops, and the ways on from one.
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: bedokGeo }));
+    ride = await liveRide(page);
+    nav = liveNav(ride);
+    nav.options[1].legs[1].traffic = undefined;
+    // Off at Tanah Merah Stn Exit 2, for the train from there.
+    const station = ([name, lat, lng]) => ({ kind: 'station', name, lat, lng });
+    const fromTanahMerah = {
+      minutes: 19, mix: 'T', routes: ['EW'],
+      legs: [
+        { mode: 'walk', metres: 140, minutes: 2, to: station(EWL[1]) },
+        { mode: 'train', route: 'EW', name: 'East-West Line', color: '#009645', towards: 'Pasir Ris', from: station(EWL[1]), to: station(EWL[3]), stops: 2, minutes: 6, wait: 3, board: 5, path: EWL.slice(1).map(([, a, b]) => [a, b]), names: EWL.slice(1).map(([n]) => n) },
+        { mode: 'walk', metres: 650, minutes: 8, to: { kind: 'place' } },
+      ],
+    };
+    await liveMocks(ctx, ride, { nav: { ...nav, options: [fromTanahMerah] }, etas: { [ride.route]: [3, 14] } });
+    await startLiveTrip(page, nav);
+    await page.waitForTimeout(3000);
+    await page.click('#tripBar .tripBarInner');
+    await page.waitForTimeout(1200);
+    await page.click('[data-tl-change-mode="on"]');
+    await page.waitForTimeout(600);
+    await bar(page, 'trip-change-timeline.png');
+    const atTanahMerah = page.locator('.tlStop', { hasText: 'Tanah Merah' }).locator('[data-tl-change]');
+    await ((await atTanahMerah.count()) ? atTanahMerah.first() : page.locator('[data-tl-change]').nth(3)).click();
+    await page.waitForSelector('.tripChangeWay', { timeout: 20000 }).catch(() => console.log('no ways on'));
+    await page.waitForTimeout(800);
+    await bar(page, 'trip-change-ways.png');
+    // The way picked: the trip changed, with Undo.
+    await page.click('[data-trip-change="0"]');
+    await page.waitForTimeout(1500);
+    await bar(page, 'trip-changed.png');
+    await ctx.close();
+  }
+  // A bus's own refresh, under Flag, on its card in a stop's timings.
+  if (want('svc-refresh')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 1400, touch: true });
+    const ride = await liveRide(page);
+    await liveMocks(ctx, ride, { etas: { [ride.route]: [4, 15], 60: [7, 19] } });
+    await page.evaluate(() => { location.hash = '#84009'; });
+    await page.waitForSelector('#services .svc', { timeout: 20000 });
+    await page.waitForTimeout(1500);
+    await el(page, '#services .svc', 'timings-svc-refresh.png');
+    await ctx.close();
+  }
   await browser.close();
 })();

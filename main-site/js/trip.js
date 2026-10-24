@@ -47,6 +47,45 @@
 // and the bar. The server does the same while the app's in the background (api/_push/trip.js),
 // and each side hears of the other's (`readied`), so it's said only once.
 //
+// Last bus soon: each bus leg still to board has its last bus of the day at the stop you get on
+// at (the route list's, js/network.js) checked against its live timings there, about once a
+// minute. Down to its last three buses, as Explorer's stop cards tell it (js/map-card.js), its
+// last bus due before you'd get to the stop, or gone already, and the bar says so in red, with
+// a notification and a buzz the first time for each leg. A last bus you'll miss or have missed
+// has the trip find another way by itself, by bus and train to where it ends (fetchWays,
+// js/nav.js), leaving out that bus from that stop. It keeps the trip up to the waypoint, where
+// the last ride before the lost bus ends, and plans from there for when you'd get there; with
+// no ride before it, or nothing running from there, from where you are. The bar says what to
+// do first, in words ("After Bus 21 to Blk 390: take Bus 12 there"), so there's nothing to work
+// out: Reroute makes it the trip after the waypoint (replan). With your location on, Navigate
+// from here opens Navigate from where you are to the end; without it, See all ways, from the
+// waypoint.
+//
+// When it's switched by itself: a last bus lost and another way found, the trip doesn't wait
+// to be asked. It becomes the trip after the waypoint straight away (autoSwitch), with a
+// notification saying why, and the bar says so too, with Undo to go back to the way it was.
+//
+// Traffic: every 5 minutes, each bus leg still ahead asks how the traffic is on its way
+// (/api/traffic, LTA's live speeds), and its minutes left go by it: its usual minutes, from
+// Navigate, stretched stop by stop. A bus slowed by it, or with an incident on its way, has an
+// orange line on the bar saying by how much and why, the road by name; tapped, the live map
+// shows its road, orange where slow and red where jammed (LiveMap.traffic).
+//
+// A faster way: every 3 minutes the trip plans again from where you are (or from the next stop,
+// on a ride), and if some other way gets you in at least FASTER_MIN minutes and FASTER_SHARE
+// sooner, with its first bus's live timing in place of an average wait, the bar suggests it,
+// and why: traffic, or a long wait for your bus. Walking the rest, or cycling with Settings'
+// Cycling on, counts too. Reroute takes it; Keep my way puts it away for a while.
+//
+// Change here: Change my way, at the top of the timeline, puts a Change here by every stop still
+// ahead on a ride (hidden otherwise, so a stray tap on the timeline changes nothing). One plans
+// the way on from there to where the trip ends, for getting off somewhere else and changing to
+// another bus or train. The bar lists the ways, quickest first; the one picked becomes the trip
+// from that stop (replan), the ride cut short there.
+//
+// Every change to the trip, by itself or by you (a way picked after Change here, Reroute), says
+// so on the bar with Undo, to put the trip back as it was if it was a slip (trip.switched).
+//
 // A bus leg's stops alone are a poor guide to where the bus goes: the straight line from one
 // to the next can be kilometres off an expressway. So at the start each bus leg's road is
 // fetched (/api/road, kept in `trip.roads`), and you're followed along it, within ON_ROAD_M.
@@ -419,6 +458,15 @@
     Motion.allow();
     boardCheckedAt = 0;
     boardEta = null;
+    lastCheckedAt = 0;
+    lastHeard = {};
+    another = null;
+    changing = null;
+    trafficHeard = {};
+    trafficCheckedAt = 0;
+    faster = null;
+    fasterCheckedAt = 0;
+    fasterKept = null;
     roadsAsked = null;
     const now = Date.now();
     trip = {
@@ -436,6 +484,8 @@
       alerted: legs.map(() => false),
       // Whether each leg's Get ready to board was given.
       readied: legs.map(() => false),
+      // Whether each leg's last bus warning was sent as a notification (watchLastBus).
+      lastWarned: legs.map(() => false),
       // Each bus leg's road (fetchRoads), as { path, stops, cum }; false if there's none to
       // be had, null if it's not been got yet.
       roads: legs.map(() => null),
@@ -462,6 +512,8 @@
     keepAwake();
     sync();
     watchBoard();
+    watchLastBus();
+    watchTraffic();
     fetchRoads();
   }
 
@@ -818,7 +870,7 @@
     const from = trip.anchor || { pos: 0, t: trip.legStartedAt + (leg.wait || 0) * 60000 };
     // On a walk, with the accelerometer: by the steps taken since, so waiting at a crossing
     // doesn't walk you on. The way's taken as WALK_DETOUR times the straight line.
-    if (isWalk(leg) && Motion.reading() && Motion.since() <= from.t) {
+    if (isWalk(leg) && !leg.cycle && Motion.reading() && Motion.since() <= from.t) {
       const way = Math.max(1, metres(leg.points[0], leg.points[last]) * WALK_DETOUR);
       return Math.min(last, from.pos + (Motion.stepsSince(from.t) * STRIDE_M) / way);
     }
@@ -845,6 +897,9 @@
       }
     }
     watchBoard();
+    watchLastBus();
+    watchTraffic();
+    watchFaster();
     render();
   }
 
@@ -959,6 +1014,8 @@
   // The other direct buses' next arrivals at the stop, from the same check:
   // { leg, at, etas: { "51": ms } }.
   let alsoHeard = null;
+  // This leg's bus's, for the minutes left (minutesLeft): { tripId, leg, at, eta }.
+  let busHeard = null;
   async function watchBoard() {
     if (!trip || !waitingForBus() || boardAsking) return;
     const every = boardEta != null && boardEta <= BOARD_NEAR_MS ? BOARD_CHECK_NEAR_MS : BOARD_CHECK_MS;
@@ -979,8 +1036,9 @@
       const etaOf = (no) => services.find((s) => String(s.serviceNo).toUpperCase() === String(no).toUpperCase())?.next?.eta_ms;
       const eta = etaOf(leg.service);
       boardEta = eta ?? null;
-      if (trip === asked && trip.leg === legAt && also.length) {
-        alsoHeard = { leg: legAt, at: Date.now(), etas: Object.fromEntries(also.map((no) => [no, etaOf(no)])) };
+      if (trip === asked && trip.leg === legAt) {
+        if (eta != null) busHeard = { tripId: trip.tripId, leg: legAt, at: Date.now(), eta };
+        if (also.length) alsoHeard = { leg: legAt, at: Date.now(), etas: Object.fromEntries(also.map((no) => [no, etaOf(no)])) };
         render();
       }
       // Checked again after the wait: still the same leg, and still not on board.
@@ -1009,6 +1067,562 @@
     save();
     render();
     sync();
+  }
+
+  // ---------- last bus soon ----------
+
+  // Each bus leg still to board is checked this often.
+  const LAST_CHECK_MS = 60 * 1000;
+  // With fewer than three buses coming, a last bus within this many minutes is among its last
+  // three, as on Explorer's stop cards.
+  const LAST_MIN = 30;
+  // A last bus before this hour belongs to the day before: Saturday's runs past midnight.
+  const NIGHT_HOURS = 3;
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const SG_MS = 8 * 60 * 60 * 1000;
+
+  // A bus's last bus at a stop on today's service day, { left: minutes from now, text: "00:18" },
+  // or null where the route list has none.
+  function lastBusAt(service, code) {
+    const times = BusNet.lastBuses(service, code);
+    if (!times) return null;
+    const sgNow = Date.now() + SG_MS;
+    const day = Math.floor((sgNow - NIGHT_HOURS * 3600 * 1000) / DAY_MS) * DAY_MS;
+    const weekday = new Date(day).getUTCDay();
+    const t = weekday === 6 ? times.sat : weekday === 0 ? times.sun : times.wd;
+    if (!/^\d{4}$/.test(t || "")) return null;
+    let m = Number(t.slice(0, 2)) * 60 + Number(t.slice(2));
+    if (m < NIGHT_HOURS * 60) m += 24 * 60;
+    // Its midnight, "2400", as 00:00.
+    return { left: (day + m * 60000 - sgNow) / 60000, text: `${String(Number(t.slice(0, 2)) % 24).padStart(2, "0")}:${t.slice(2)}` };
+  }
+
+  // What the bar says of a leg's last bus, if anything: gone, due before you'd get to the stop
+  // `reach` minutes from now, or among the last three. `etas` are the minutes to its next buses.
+  function lastBusWord(leg, last, etas, reach) {
+    const bus = leg.label || `Bus ${leg.service}`;
+    const where = leg.names?.[0] || window.nameOf?.(leg.board) || leg.board;
+    if (!etas.length && last.left < 0) return { kind: "gone", text: `${bus}'s last bus from ${where} has gone (${last.text}).` };
+    if (last.left < reach && !etas.some((e) => e >= reach)) return { kind: "miss", text: `${bus}'s last bus from ${where} is at ${last.text}, before you'll get there.` };
+    if (etas.length >= 3 ? last.left <= etas[2] + 1 : last.left <= LAST_MIN) return { kind: "soon", text: `Last bus soon: ${bus}'s last from ${where} is at ${last.text}.` };
+    return null;
+  }
+
+  // Whether leg i is a bus ride still to board.
+  const toBoard = (i) => {
+    const leg = trip.legs[i];
+    return i >= trip.leg && leg?.kind === "bus" && !!leg.service && !!leg.board && !(i === trip.leg && (trip.boarded || target() >= 0.5));
+  };
+
+  let lastCheckedAt = 0;
+  // What was found for each leg, by its index: { kind, text }.
+  let lastHeard = {};
+  async function watchLastBus() {
+    if (!trip || !window.BusNet?.isReady()) return;
+    if (Date.now() - lastCheckedAt < LAST_CHECK_MS - TICK_MS / 2) return;
+    lastCheckedAt = Date.now();
+    const asked = trip;
+    const heard = {};
+    await Promise.all(trip.legs.map(async (leg, i) => {
+      if (!toBoard(i)) return;
+      const last = lastBusAt(leg.service, leg.board);
+      const reach = minutesTo(i);
+      // Hours off yet: nothing to say, so nothing to ask.
+      if (!last || last.left > reach + 2 * 60) return;
+      try {
+        const res = await fetch(`/api/bus-arrivals?stop=${encodeURIComponent(leg.board)}&service=${encodeURIComponent(leg.service)}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const svc = (await res.json()).services?.find((s) => String(s.serviceNo).toUpperCase() === String(leg.service).toUpperCase());
+        const etas = [svc?.next, svc?.next2, svc?.next3].map((b) => b?.eta_ms).filter((ms) => ms != null && ms > BOARD_GONE_MS).map((ms) => ms / 60000);
+        const word = lastBusWord(leg, last, etas, reach);
+        if (word) heard[i] = word;
+      } catch {}
+    }));
+    if (trip !== asked) return;
+    lastHeard = heard;
+    // A last bus lost: another way, before the notification, so it can say what it is.
+    const lost = Object.entries(heard).filter(([, w]) => w.kind !== "soon");
+    if (lost.length) await findAnother(lost.map(([i]) => Number(i)));
+    else another = null;
+    if (trip !== asked) return;
+    // Lost, with another way found: switched to it straight away, unless it was undone.
+    if (lost.length && another?.way && trip.keptWay !== another.key) {
+      autoSwitch(lost.map(([, w]) => w));
+      return;
+    }
+    trip.lastWarned ??= trip.legs.map(() => false);
+    for (const [i, word] of Object.entries(heard)) {
+      if (trip.lastWarned[i]) continue;
+      trip.lastWarned[i] = true;
+      if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
+      const instead = word.kind !== "soon" && another ? ` ${anotherText()}` : "";
+      notify({ title: word.kind === "soon" ? "Last bus soon" : "Last bus", body: word.text + instead, tag: `lastbus-${i}`, vibrate: BOARD_VIBRATION, channel: "board" });
+      save();
+    }
+    render();
+  }
+
+  // ---------- another way, when a last bus is lost ----------
+
+  // Asked again this often while the last bus stays lost, as what's running thins out.
+  const ANOTHER_EVERY_MS = 5 * 60 * 1000;
+  // { from, to, way, at, key }: the quickest way found from where you were to the trip's end,
+  // without the lost buses (`way` null if there's none), and what it was asked for.
+  let another = null;
+
+  // Where you are: your last good fix if it's recent, or where the trip has you.
+  function whereNow() {
+    if (trip.me && Date.now() - trip.me.t < 2 * 60 * 1000) return { label: "Where you are", lat: trip.me.lat, lng: trip.me.lng };
+    const [lat, lng] = progress().at;
+    return { label: "Where you are", lat, lng };
+  }
+
+  // Where the trip ends.
+  function tripEnd() {
+    if (trip.to) return trip.to;
+    const final = trip.legs[trip.legs.length - 1];
+    const [lat, lng] = final.points[final.points.length - 1];
+    return { label: final.to, lat, lng };
+  }
+
+  // The ride a way takes, as "bus:59@84031", to tell it from the lost ones.
+  const rideKey = (mode, route, code) => `${mode}:${String(route).toUpperCase()}@${code || ""}`;
+
+  // Another way for the lost buses, legs `lostAt`: { from, to, j, k, reach, via, way, at, key }.
+  // From the waypoint, `via` the ride that ends there, and `reach` the minutes till you're there;
+  // or from where you are (k null). `way` is null if there's none.
+  async function findAnother(lostAt) {
+    if (typeof fetchWays !== "function") return;
+    const key = lostAt.map((i) => rideKey("bus", trip.legs[i].service, trip.legs[i].board)).join(">");
+    if (another?.key === key && Date.now() - another.at < ANOTHER_EVERY_MS) return;
+    const asked = trip;
+    const to = tripEnd();
+    const skip = new Set(key.split(">"));
+    const pick = (data) => (data.options || []).find((o) => !o.walkOnly && !o.legs.some((l) => l.mode === "bus" && skip.has(rideKey("bus", l.route, l.from?.code)))) ||
+      (data.options || []).find((o) => o.walkOnly) || null;
+    // The waypoint: where the last ride before the first lost bus ends, if there's one from here on.
+    const tries = [];
+    for (let r = Math.min(...lostAt) - 1; r >= trip.leg; r--) {
+      const leg = trip.legs[r];
+      if (isWalk(leg)) continue;
+      const last = leg.points.length - 1;
+      const from = { label: stopName(leg, last), lat: leg.points[last][0], lng: leg.points[last][1] };
+      tries.push({ from, j: r, k: last, via: leg.label, reach: Math.max(0, minutesTo(r + 1) - (leg.walkAfter || 0)) });
+      break;
+    }
+    tries.push({ from: whereNow(), j: trip.leg, k: null, via: null, reach: 0 });
+    let failed = 0;
+    for (const t of tries) {
+      // For when you'd be there, as the buses running then aren't the ones running now.
+      const when = t.reach >= 1 && window.When?.msToAt ? { mode: "leave", at: When.msToAt(Date.now() + t.reach * 60000) } : null;
+      try {
+        const data = await fetchWays(t.from, to, when);
+        if (trip !== asked) return;
+        const way = pick(data);
+        if (way || t === tries[tries.length - 1]) {
+          another = { ...t, to, way, at: Date.now(), key };
+          return;
+        }
+      } catch {
+        failed += 1;
+      }
+    }
+    if (trip !== asked) return;
+    // Not asked again for a minute, rather than on every check.
+    if (failed) another = { ...tries[0], to, way: null, at: Date.now() - ANOTHER_EVERY_MS + 60 * 1000, key, failed: true };
+  }
+
+  // A way's rides, "Bus 12 → NE Line".
+  const ridesText = (o) => o.legs.filter((l) => l.mode !== "walk").map((l) => (l.mode === "bus" ? `Bus ${l.route}` : `${l.route} ${l.lrt ? "LRT" : "Line"}`)).join(" → ");
+  // When you'd get in, setting off `after` minutes from now.
+  const byClock = (o, after = 0) => (window.When?.clock ? `, there by ${When.clock(Date.now() + (after + o.minutes) * 60000)}` : "");
+
+  // What to do first on a way, in words: "Walk 3 min to Opp Blk 5, take Bus 12 there", or "Take
+  // Bus 12 from Blk 390".
+  function firstStep(o) {
+    const name = (p) => (typeof placeName === "function" ? placeName(p) : p?.name || "");
+    const ride = o.legs.find((l) => l.mode !== "walk");
+    if (!ride) return "Walk the rest of the way";
+    const what = ride.mode === "bus" ? `Bus ${ride.route}` : `the ${ride.route} ${ride.lrt ? "LRT" : "Line"}`;
+    const walk = o.legs[0].mode === "walk" && (o.legs[0].metres ?? 100) >= 60 ? o.legs[0] : null;
+    return walk
+      ? `Walk ${Math.max(1, Math.round(walk.minutes || 1))} min to ${name(ride.from)}, take ${what} there`
+      : `Take ${what} from ${name(ride.from)}`;
+  }
+
+  // The way found, in a line: "Instead: walk 3 min to Opp Blk 5, take Bus 12 there. Bus 12 →
+  // NE Line, ~35 min, there by 01:20."
+  function anotherText() {
+    const o = another?.way;
+    if (!o) return another?.failed ? "Couldn't look for another way just now. It'll try again in a minute." : "No other way by bus or train is running now.";
+    const lead = another.via ? `After ${another.via} to ${another.from.label}: ` : "Instead: ";
+    const by = byClock(o, another.reach || 0);
+    if (o.walkOnly) return `${lead}walk the rest of the way, ~${o.minutes} min${by}.`;
+    const step = firstStep(o);
+    return `${lead}${step[0].toLowerCase()}${step.slice(1)}. ${ridesText(o)}, ~${o.minutes} min${by}.`;
+  }
+
+  // Whether your location's on and recent: Navigate from here can find you.
+  const located = () => !trip.noLocation && Boolean(trip.me) && Date.now() - trip.me.t < 2 * 60 * 1000;
+
+  // The way found, as the trip from here on.
+  // `note` is what the bar says of it (replan): by default, that you rerouted.
+  function switchToAnother(note = { title: "Rerouted.", reason: "", now: anotherText().replace(/^Instead: /, "") }) {
+    if (!another?.way || typeof tripFromNav !== "function") return;
+    const next = tripFromNav(another.way, another.to, another.from);
+    if (!next.legs.length) return;
+    replan(another.j, another.k, next.legs, note);
+  }
+
+  // ---------- switched by itself ----------
+
+  // What a trip is, for putting it back as it was (Undo).
+  const SNAPSHOT = ["legs", "alerted", "readied", "lastWarned", "roads", "times", "left", "leg", "at", "pos", "anchor", "boarded", "moves", "legStartedAt"];
+
+  function autoSwitch(words) {
+    const reason = words.map((w) => w.text).join(" ");
+    const now = anotherText().replace(/^Instead: /, "");
+    switchToAnother({ title: "Switched to another way.", reason, now, key: another.key });
+    if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
+    notify({ title: "Switched to another way", body: `${reason} Now: ${now}`, tag: "switched", vibrate: BOARD_VIBRATION, channel: "board" });
+  }
+
+  function undoSwitch() {
+    const s = trip?.switched;
+    if (!s) return;
+    Object.assign(trip, JSON.parse(s.undo));
+    trip.switched = null;
+    // Undoing a switch made by itself: not switched again for the same lost bus, as you chose
+    // the way as it was.
+    if (s.key) trip.keptWay = s.key;
+    afterChange();
+    watchLastBus();
+  }
+
+  // ---------- changing the trip from a stop on ----------
+
+  // The trip from leg j's stop k on, as `legs`: that leg cut short there, then them. With k null,
+  // `legs` from leg j on instead, j being the leg you're on: you're at the start of the first.
+  // The server's told it was by hand, so its copy gives way (api/push/trips/[id].js). With `note`
+  // ({ title, reason, now, key? }), the bar says so, with Undo back to the trip as it was.
+  function replan(j, k, legs, note = null) {
+    const undo = note ? JSON.stringify(Object.fromEntries(SNAPSHOT.map((x) => [x, trip[x] ?? null]))) : null;
+    const cutLeg = k == null ? null : trip.legs[j];
+    let cut = [];
+    if (cutLeg) {
+      const codes = stopCodes(cutLeg);
+      const last = cutLeg.points.length - 1;
+      cut = [{
+        ...cutLeg,
+        points: cutLeg.points.slice(0, k + 1),
+        names: cutLeg.names?.slice(0, k + 1),
+        codes: codes?.slice(0, k + 1),
+        to: stopName(cutLeg, k),
+        alight: codes ? codes[k] : undefined,
+        minutes: ((cutLeg.minutes || 0) * k) / Math.max(1, last),
+        walkAfter: 0,
+        also: undefined,
+      }];
+    }
+    const n = j + cut.length;
+    const pad = (xs, keepCut, blank) => [...(xs || []).slice(0, j), ...(cut.length ? [keepCut ? xs?.[j] ?? blank() : blank()] : []), ...legs.map(blank)];
+    trip.alerted = pad(trip.alerted, false, () => false);
+    trip.readied = pad(trip.readied, true, () => false);
+    trip.lastWarned = pad(trip.lastWarned, true, () => false);
+    trip.roads = pad(trip.roads, false, () => null);
+    trip.times = pad(trip.times, true, () => ({}));
+    if (trip.left) trip.left.length = Math.min(trip.left.length, j);
+    trip.legs = [...trip.legs.slice(0, j), ...cut, ...legs];
+    if (!cut.length) {
+      // On the first of the new legs, from its start.
+      trip.times[j] = { start: Date.now() };
+      Object.assign(trip, { at: 0, pos: 0, anchor: null, boarded: false, moves: [], legStartedAt: Date.now() });
+      shown = null;
+    }
+    trip.switched = note ? { ...note, at: Date.now(), undo } : null;
+    afterChange();
+    // Cut short at or past where you are: off at the next stop, alerts and all.
+    if (trip.leg < n) check();
+    render();
+    watchLastBus();
+  }
+
+  // The trip's legs changed (replan, Undo): what was found for the old ones goes, and the
+  // server's told it was by hand.
+  function afterChange() {
+    delete trip.nearEnd;
+    trip.alertText = null;
+    trip.boardText = null;
+    handMoved();
+    builtLeg = null;
+    lastHeard = {};
+    another = null;
+    changing = null;
+    faster = null;
+    trafficHeard = {};
+    lastCheckedAt = 0;
+    boardCheckedAt = 0;
+    trafficCheckedAt = 0;
+    fasterCheckedAt = Date.now();
+    roadsAsked = null;
+    save();
+    sync();
+    record();
+    fetchRoads();
+    watchTraffic();
+    render();
+  }
+
+  // ---------- traffic on the buses still ahead ----------
+
+  const TRAFFIC_EVERY_MS = 5 * 60 * 1000;
+  // Said on the bar from this many minutes slower.
+  const TRAFFIC_SAY_MIN = 2;
+  // /api/traffic for each bus leg still ahead, by its index: { at, flows, factors, roads, incidents }.
+  let trafficHeard = {};
+  let trafficCheckedAt = 0;
+
+  async function watchTraffic() {
+    if (!trip || Date.now() - trafficCheckedAt < TRAFFIC_EVERY_MS - TICK_MS / 2) return;
+    trafficCheckedAt = Date.now();
+    const asked = trip;
+    const legs = trip.legs;
+    const heard = {};
+    await Promise.all(legs.map(async (leg, i) => {
+      if (i < trip.leg || leg.kind !== "bus" || leg.points.length < 2 || leg.points.length > 120) return;
+      try {
+        const points = leg.points.map(([a, b]) => `${a.toFixed(5)},${b.toFixed(5)}`).join(";");
+        const res = await fetch(`/api/traffic?points=${encodeURIComponent(points)}`);
+        const t = res.ok ? await res.json() : null;
+        if (t?.at) heard[i] = t;
+      } catch {}
+    }));
+    if (trip !== asked || trip.legs !== legs) return;
+    trafficHeard = heard;
+    render();
+  }
+
+  // The first bus still ahead that the traffic slows, or has an incident on its way: { i, leg,
+  // extra, text }, the text saying why.
+  function trafficNote() {
+    for (let i = trip.leg; i < trip.legs.length; i++) {
+      const t = trafficHeard[i];
+      const leg = trip.legs[i];
+      if (!t || leg.kind !== "bus") continue;
+      const pos = i === trip.leg ? target() : 0;
+      if (i === trip.leg && pos >= leg.points.length - 1) continue;
+      const extra = Math.round(trafficExtra(i, pos));
+      const incidents = (t.incidents || []).map((inc) => (typeof incidentText === "function" ? incidentText(inc) : inc.message));
+      if (extra < TRAFFIC_SAY_MIN && !incidents.length) continue;
+      const slow = extra >= TRAFFIC_SAY_MIN ? `${leg.label} ~${extra} min slower than usual${t.roads?.length ? `: heavy traffic on ${t.roads.join(" and ")}` : ""}.` : `${leg.label}:`;
+      return { i, leg, extra, text: [slow, ...incidents].join(" ") };
+    }
+    return null;
+  }
+
+  // ---------- a faster way ----------
+
+  const FASTER_EVERY_MS = 3 * 60 * 1000;
+  // Suggested only if it gets you in this many minutes sooner, and this share of what's left.
+  const FASTER_MIN = 5;
+  const FASTER_SHARE = 0.15;
+  // Not worth looking with less than this left.
+  const FASTER_FROM_MIN = 10;
+  // Keep my way puts suggestions away for this long, unless one comes that saves more again.
+  const KEEP_FOR_MS = 15 * 60 * 1000;
+  // Getting a bike out and parking it again.
+  const BIKE_EXTRA_MIN = 2;
+  // { from, to, j, k, reach, kind: "way" | "walk" | "cycle", way, minutes, saves, why }.
+  let faster = null;
+  let fasterCheckedAt = 0;
+  let fasterKept = null; // { at, saves }
+  let fasterSaid = null; // the last suggestion notified, so it's said once
+
+  const rideKeyOf = (l) => `${l.kind || l.mode}:${String(l.kind === "bus" || l.mode === "bus" ? l.service || l.route : l.route || String(l.label || "").split(" ")[0]).toUpperCase()}`;
+
+  // A way's minutes with its first bus by its live timing at the stop, catchable after the walk
+  // there; null if none comes in time.
+  async function liveMinutes(o) {
+    const k = o.legs.findIndex((l) => l.mode !== "walk");
+    if (k === -1) return o.minutes;
+    const ride = o.legs[k];
+    if (ride.mode !== "bus" || !ride.from?.code) return o.minutes;
+    const walk = o.legs.slice(0, k).reduce((sum, l) => sum + (l.minutes || 0), 0);
+    try {
+      const res = await fetch(`/api/bus-arrivals?stop=${encodeURIComponent(ride.from.code)}&service=${encodeURIComponent(ride.route)}`, { cache: "no-store" });
+      if (!res.ok) return o.minutes;
+      const svc = (await res.json()).services?.find((s) => String(s.serviceNo).toUpperCase() === String(ride.route).toUpperCase());
+      const due = [svc?.next, svc?.next2, svc?.next3].map((b) => b?.eta_ms).filter((ms) => ms != null).map((ms) => ms / 60000).find((m) => m >= walk);
+      return due == null ? null : o.minutes - (ride.wait || 0) + (due - walk);
+    } catch {
+      return o.minutes;
+    }
+  }
+
+  // Why another way's quicker, as far as the trip can tell: traffic, or a long wait.
+  function whyFaster() {
+    const note = trafficNote();
+    if (note?.extra >= TRAFFIC_SAY_MIN) return `${note.leg.label} is slowed by traffic${note.leg && trafficHeard[note.i]?.roads?.length ? ` on ${trafficHeard[note.i].roads.join(" and ")}` : ""}`;
+    const leg = trip.legs[trip.leg];
+    if (toBoard(trip.leg) && busHeard?.tripId === trip.tripId && busHeard.leg === trip.leg) {
+      const wait = Math.round((busHeard.at + busHeard.eta - Date.now()) / 60000);
+      if (wait >= 8) return `${leg.label} isn't due for ${wait} min`;
+    }
+    return "";
+  }
+
+  async function watchFaster() {
+    if (!trip || typeof fetchWays !== "function") return;
+    if (Date.now() - fasterCheckedAt < FASTER_EVERY_MS - TICK_MS / 2) return;
+    // A lost last bus comes first, and a switch just made stands.
+    if (Object.values(lastHeard).some((w) => w.kind !== "soon") || trip.switched) return;
+    const left = minutesLeft();
+    if (left < FASTER_FROM_MIN) return;
+    fasterCheckedAt = Date.now();
+    const asked = trip;
+    const legs = trip.legs;
+    const leg = legs[trip.leg];
+    const last = leg.points.length - 1;
+    // On a ride: from its next stop, getting off there. Otherwise from where you are.
+    let start;
+    if (!isWalk(leg) && !toBoard(trip.leg)) {
+      const k = Math.min(last, Math.floor(target()) + 1);
+      if (k >= last) return;
+      start = { from: { label: stopName(leg, k), lat: leg.points[k][0], lng: leg.points[k][1] }, j: trip.leg, k, reach: Math.max(0, rideMinutes(trip.leg, target()) - rideMinutes(trip.leg, k)) };
+    } else {
+      start = { from: whereNow(), j: trip.leg, k: null, reach: 0 };
+    }
+    const to = tripEnd();
+    let data;
+    try {
+      const when = start.reach >= 1 && window.When?.msToAt ? { mode: "leave", at: When.msToAt(Date.now() + start.reach * 60000) } : null;
+      data = await fetchWays(start.from, to, when);
+    } catch {
+      return;
+    }
+    if (trip !== asked || trip.legs !== legs) return;
+    // Your own way from there, which isn't another.
+    const mine = legs.slice(start.k == null ? start.j : start.j + 1).filter((l) => !isWalk(l)).map(rideKeyOf).join(">");
+    const picks = [];
+    for (const o of (data.options || []).filter((x) => !x.walkOnly && x.legs.filter((l) => l.mode !== "walk").map(rideKeyOf).join(">") !== mine).slice(0, 2)) {
+      const minutes = await liveMinutes(o);
+      if (minutes != null) picks.push({ kind: "way", way: o, minutes: start.reach + minutes });
+    }
+    if (data.others?.walk) picks.push({ kind: "walk", minutes: start.reach + data.others.walk.minutes });
+    if (data.others?.cycle && LS.getBike()) picks.push({ kind: "cycle", minutes: start.reach + data.others.cycle.minutes + BIKE_EXTRA_MIN });
+    if (trip !== asked || trip.legs !== legs) return;
+    const best = picks.sort((a, b) => a.minutes - b.minutes)[0];
+    const saves = best ? Math.round(left - best.minutes) : 0;
+    const kept = fasterKept && Date.now() - fasterKept.at < KEEP_FOR_MS && saves < fasterKept.saves + FASTER_MIN;
+    faster = best && saves >= Math.max(FASTER_MIN, left * FASTER_SHARE) && !kept
+      ? { ...start, to, ...best, minutes: Math.round(best.minutes), saves, why: whyFaster() }
+      : null;
+    if (faster) {
+      const said = `${faster.kind}:${faster.way ? faster.way.legs.map((l) => l.route || l.mode).join(">") : ""}`;
+      if (said !== fasterSaid) {
+        fasterSaid = said;
+        notify({ title: `A faster way: saves ${faster.saves} min`, body: fasterText(), tag: "faster", channel: "board" });
+      }
+    }
+    render();
+  }
+
+  function fasterText() {
+    const f = faster;
+    const by = byClock({ minutes: f.minutes });
+    const why = f.why ? `, as ${f.why}` : "";
+    const off = f.k != null ? `Get off at ${f.from.label}, then ` : "";
+    if (f.kind === "walk") return `Faster to walk${f.k != null ? ` from ${f.from.label}` : ""}: ~${f.minutes} min${by}. Saves ${f.saves} min${why}.`;
+    if (f.kind === "cycle") return `Faster by bike${f.k != null ? ` from ${f.from.label}` : ""}: ~${f.minutes} min${by}. Saves ${f.saves} min${why}.`;
+    const step = firstStep(f.way);
+    return `Faster: ${ridesText(f.way)}, ~${f.minutes} min${by}. Saves ${f.saves} min${why}. ${off}${off ? step[0].toLowerCase() + step.slice(1) : step}.`;
+  }
+
+  // On foot or by bike from one place to another, as a trip's leg.
+  const footLeg = (from, to, minutes, cycle) => ({
+    kind: "walk", label: cycle ? "Cycle" : "Walk", to: to.label, points: [[from.lat, from.lng], [to.lat, to.lng]],
+    names: [from.label, to.label], minutes: Math.max(1, Math.round(minutes)), wait: 0, walkAfter: 0, ...(cycle && { cycle: true }),
+  });
+
+  function takeFaster() {
+    const f = faster;
+    if (!f) return;
+    let legs;
+    if (f.kind === "way") {
+      if (typeof tripFromNav !== "function") return;
+      legs = tripFromNav(f.way, f.to, f.from).legs;
+    } else {
+      legs = [footLeg(f.from, f.to, f.minutes - f.reach, f.kind === "cycle")];
+    }
+    if (!legs.length) return;
+    const now = f.kind === "way" ? `${firstStep(f.way)}.` : `${f.kind === "cycle" ? "Cycle" : "Walk"} the rest of the way, ~${f.minutes - Math.round(f.reach)} min.`;
+    replan(f.j, f.k, legs, { title: f.k != null ? `Changed at ${f.from.label} for a faster way.` : "Rerouted to a faster way.", reason: "", now });
+  }
+
+  // ---------- changing the trip from a stop on ----------
+
+  // Change here, from the timeline: { j, k, from, to, ways, failed }, ways null while looked for.
+  let changing = null;
+  const MAX_CHANGE_WAYS = 4;
+
+  async function changeAt(j, k) {
+    const leg = trip.legs[j];
+    if (!leg || typeof fetchWays !== "function") return;
+    const from = { label: stopName(leg, k), lat: leg.points[k][0], lng: leg.points[k][1] };
+    const to = tripEnd();
+    const asked = (changing = { j, k, from, to, ways: null });
+    setExpanded(false);
+    render();
+    try {
+      const data = await fetchWays(from, to);
+      if (changing !== asked) return;
+      // Not staying on the ride you're getting off.
+      const same = rideKey(leg.kind, leg.kind === "bus" ? leg.service : String(leg.route || leg.label || "").split(" ")[0], leg.kind === "bus" ? stopCodes(leg)?.[k] : "");
+      changing.ways = (data.options || []).filter((o) => {
+        const first = o.legs.find((l) => l.mode !== "walk");
+        return !first || rideKey(first.mode, first.route, first.mode === "bus" ? first.from?.code : "") !== same;
+      }).slice(0, MAX_CHANGE_WAYS);
+    } catch {
+      if (changing !== asked) return;
+      changing.ways = [];
+      changing.failed = true;
+    }
+    render();
+  }
+
+  function takeChange(i) {
+    const o = changing?.ways?.[i];
+    if (!o || typeof tripFromNav !== "function") return;
+    const next = tripFromNav(o, changing.to, changing.from);
+    if (!next.legs.length) return;
+    replan(changing.j, changing.k, next.legs, { title: `Changed at ${changing.from.label}.`, reason: "", now: `${firstStep(o)}.` });
+  }
+
+  function renderChange() {
+    const box = $("#tripChange");
+    // A leg moved on past, or the trip changed, since it was asked.
+    if (changing && (changing.j < trip.leg || !trip.legs[changing.j])) changing = null;
+    box.hidden = !changing;
+    if (!changing) return;
+    const head = `<p class="tripChangeHead">Change at ${esc(changing.from.label)}</p>`;
+    const body = changing.ways == null
+      ? `<p>Finding the ways on from there…</p>`
+      : changing.ways.length
+        ? changing.ways.map((o, i) => `<button type="button" class="tripChangeWay" data-trip-change="${i}">` +
+          `<b>${esc(o.walkOnly ? "Walk the rest of the way" : ridesText(o))}</b><span>~${o.minutes} min${esc(byClock(o))}. ${esc(firstStep(o))}.</span></button>`).join("")
+        : `<p>${changing.failed ? "Couldn't find the ways on just now." : "No other way on by bus or train is running from there now."}</p>`;
+    box.innerHTML = head + body +
+      `<div class="tripChangeActions"><button type="button" class="iconBtn" data-trip-change="all">See all ways</button>` +
+      `<button type="button" class="iconBtn" data-trip-change="cancel">Cancel</button></div>`;
+  }
+
+  // Navigate's Bus and train, from `from` to the trip's end, for every way.
+  function seeAllWays(from, to) {
+    if (!from || typeof openNav !== "function") return;
+    try {
+      localStorage.setItem("sgbus_nav_mode", "all");
+    } catch {}
+    openNav(from, to, { focus: false });
   }
 
   // The server said it while the app was in the background (sw.js, or the app's push through
@@ -1406,16 +2020,50 @@
   // The minutes still to go, as progress counts them: the trip bar and the app's notification
   // say it too (statusText).
   function minutesLeft() {
+    return minutesTo(trip.legs.length);
+  }
+
+  // The same up to where leg n begins: its stop, before its wait. 0 for the leg you're on.
+  function minutesTo(n) {
+    if (n <= trip.leg) return 0;
     const leg = trip.legs[trip.leg];
     const last = leg.points.length - 1;
     const pos = target();
-    let minutes = (leg.minutes || 0) * (1 - pos / Math.max(1, last)) + (leg.walkAfter || 0);
+    let minutes = rideMinutes(trip.leg, pos) + (leg.walkAfter || 0);
     if (pos < 0.5 && !underWay(leg)) {
-      const due = trip.anchor?.t ?? trip.legStartedAt + (leg.wait || 0) * 60000;
+      // The bus's live timing at your stop (watchBoard) over the wait planned for it.
+      const heard = busHeard?.tripId === trip.tripId && busHeard.leg === trip.leg ? busHeard.at + busHeard.eta : null;
+      const due = heard ?? trip.anchor?.t ?? trip.legStartedAt + (leg.wait || 0) * 60000;
       minutes += Math.max(0, due - Date.now()) / 60000;
     }
-    for (const l of trip.legs.slice(trip.leg + 1)) minutes += (l.wait || 0) + (l.minutes || 0) + (l.walkAfter || 0);
+    for (let i = trip.leg + 1; i < n; i++) {
+      const l = trip.legs[i];
+      minutes += (l.wait || 0) + rideMinutes(i, 0) + (l.walkAfter || 0);
+    }
     return minutes;
+  }
+
+  // A ride's minutes from `pos` (a stop index with a fraction) to its end: for a bus whose
+  // usual minutes are known, stretch by stretch by the traffic on each (watchTraffic);
+  // otherwise its planned minutes, by how far along it you are.
+  function rideMinutes(i, pos = 0) {
+    const leg = trip.legs[i];
+    const last = Math.max(1, leg.points.length - 1);
+    const t = trafficHeard[i];
+    if (leg.kind !== "bus" || !leg.usual || t?.factors?.length !== last) return (leg.minutes || 0) * (1 - Math.min(pos, last) / last);
+    const per = leg.usual / last;
+    const from = Math.min(Math.floor(pos), last);
+    let m = 0;
+    for (let s = from; s < last; s++) m += per * t.factors[s] * (s === from ? 1 - (pos - s) : 1);
+    return m;
+  }
+
+  // How many minutes the traffic adds to a bus ride from `pos` on, over its usual.
+  function trafficExtra(i, pos = 0) {
+    const leg = trip.legs[i];
+    if (!leg.usual || !trafficHeard[i]) return 0;
+    const last = Math.max(1, leg.points.length - 1);
+    return rideMinutes(i, pos) - leg.usual * (1 - Math.min(pos, last) / last);
   }
 
   function progress() {
@@ -1498,6 +2146,18 @@
     return leg.also;
   }
 
+  // Which of them call at a stop along the leg on their way from its first stop to its last,
+  // for that stop's timings from the timeline: with the leg's own bus, as "21,59".
+  function busesAt(leg, code) {
+    const also = directBuses(leg).filter((no) => BusNet.directions(no).some((dir) => {
+      const stops = BusNet.runStops(no, dir);
+      const from = stops.indexOf(leg.board);
+      const at = stops.indexOf(code, from);
+      return from !== -1 && at !== -1 && stops.indexOf(leg.alight, at) !== -1;
+    }));
+    return [leg.service, ...also].filter(Boolean).join(",");
+  }
+
   // The direct buses for the bar while you wait at the stop, soonest first, each with its
   // time while the last check is fresh: "Also direct: 51 in 3 min, 63".
   function alsoText(leg) {
@@ -1546,7 +2206,7 @@
     if (!message && trip.boardText && trip.readied?.[trip.leg] && leg.kind === "bus" && !trip.boarded && target() < 0.5) message = trip.boardText;
     if (message) return message + togo;
     const where = isWalk(leg)
-      ? `Walk to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
+      ? `${leg.cycle ? "Cycle" : "Walk"} to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
       : `${leg.label}: ${left === 0 ? `at ${leg.to}` : `${left} stop${left === 1 ? "" : "s"} to ${leg.to}`}`;
     return where + (trip.legs.length > 1 ? ` · part ${trip.leg + 1} of ${trip.legs.length}` : "") + togo;
   }
@@ -1622,6 +2282,40 @@
     else if (Date.now() - trip.lastFixAt > FIX_STALE_MS && trip.lastFixAt) notes.push("Location weak: going by the clock.");
     $("#tripNote").textContent = notes.join(" ");
     $("#tripNote").hidden = !notes.length;
+    // Last bus soon, for the rides still to board (watchLastBus), with another way for a lost one.
+    const warns = Object.entries(lastHeard).filter(([i]) => toBoard(Number(i))).map(([, w]) => w);
+    const lost = warns.some((w) => w.kind !== "soon");
+    $("#tripWarn").innerHTML = warns.map((w) => `<p class="tripWarnLine">${window.icon("alert")}<span>${esc(w.text)}</span></p>`).join("") +
+      (lost && another
+        ? `<div class="tripAnother"><p>${esc(anotherText())}</p>` +
+          (another.way ? `<button type="button" class="btn tripGo" data-trip-another="switch" title="${another.via ? `Keep the trip to ${esc(another.from.label)}, then go this way` : "Go this way from where you are"}">Reroute</button>` : "") +
+          (located()
+            ? `<button type="button" class="iconBtn" data-trip-another="here">Navigate from here</button>`
+            : `<button type="button" class="iconBtn" data-trip-another="all">See all ways</button>`) + `</div>`
+        : lost ? `<div class="tripAnother"><p>Finding another way…</p></div>` : "");
+    // The trip changed, by itself (autoSwitch) or by you: what, why, what's next, and Undo.
+    const sw = trip.switched;
+    if (sw) {
+      $("#tripWarn").innerHTML = `<p class="tripSwitched">${window.icon("alert")}<span><b>${esc(sw.title || "Switched to another way.")}</b>${sw.reason ? ` ${esc(sw.reason)}` : ""} Now: ${esc(sw.now)}</span></p>` +
+        `<div class="tripAnother"><button type="button" class="iconBtn" data-trip-switched="undo">Undo</button>` +
+        `<button type="button" class="iconBtn" data-trip-switched="ok">OK</button></div>` + $("#tripWarn").innerHTML;
+    }
+    $("#tripWarn").hidden = !warns.length && !sw;
+    // Traffic on a bus still ahead, and why; tapped, its road on the live map.
+    const jam = trafficNote();
+    $("#tripTraffic").hidden = !jam;
+    if (jam) {
+      $("#tripTraffic").dataset.leg = jam.i;
+      $("#tripTraffic").innerHTML = `${window.icon("alert")}<span>${esc(jam.text)} <u>See it on the map</u></span>`;
+    }
+    // A faster way, and why.
+    $("#tripFaster").hidden = !faster;
+    if (faster) {
+      $("#tripFaster").innerHTML = `<p>${window.icon("route")}<span>${esc(fasterText())}</span></p>` +
+        `<div class="tripAnother"><button type="button" class="btn tripGo" data-trip-faster="take">Reroute</button>` +
+        `<button type="button" class="iconBtn" data-trip-faster="keep">Keep my way</button></div>`;
+    }
+    renderChange();
     $("#tripPrev").hidden = trip.leg === 0;
     $("#tripNext").hidden = trip.leg >= trip.legs.length - 1;
     renderIca();
@@ -1662,7 +2356,13 @@
   // Every leg from this one on, each a column of its stops. Only this leg has the dot.
   function buildTimeline() {
     const box = $("#tripTimeline");
-    box.innerHTML = trip.legs
+    // Change my way, where there's a ride still ahead to change from.
+    const canChange = trip.legs.some((l, i) => i >= trip.leg && !isWalk(l));
+    const mode = !canChange ? ""
+      : choosingChange
+        ? `<p class="tlChangeMode"><span>Tap Change here by the stop to get off at.</span><button type="button" class="iconBtn" data-tl-change-mode="off">Cancel</button></p>`
+        : `<p class="tlChangeMode"><button type="button" class="iconBtn" data-tl-change-mode="on">${window.icon("swap")} Change my way</button></p>`;
+    box.innerHTML = mode + trip.legs
       .slice(trip.leg)
       .map((leg, k) => {
         const last = leg.points.length - 1;
@@ -1677,12 +2377,19 @@
               : i === alertAt && alertAt > 0 && enabled()
                 ? `<span class="tlTag">${window.icon("bell")} Alert</span>`
                 : "";
-            // A bus stop with its code: a button to its timings for this bus (init).
+            // A bus stop with its code: a button to its timings for this bus, and the other direct
+            // buses that call there (init).
             const code = codes?.[i] || null;
+            const buses = code ? busesAt(leg, code) : "";
+            const which = buses.includes(",") ? `buses ${buses.split(",").join(", ")}` : leg.label;
             const name = code
-              ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(leg.service || "")}" title="Timings for ${esc(leg.label)} here">${esc(stopName(leg, i))}</button>`
+              ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(buses)}" title="Timings for ${esc(which)} here">${esc(stopName(leg, i))}</button>`
               : `<span class="tlName">${esc(stopName(leg, i))}</span>`;
-            return `<li class="tlStop${i === last ? " end" : ""}"><span class="tlNode"></span>${name}${tag}</li>`;
+            // Change here: a stop still ahead on a ride, to get off at and go on another way, once
+            // Change my way's been tapped.
+            const ahead = choosingChange && !isWalk(leg) && i > 0 && (k > 0 || i > Math.floor(target()));
+            const change = ahead ? `<button type="button" class="tlChange" data-tl-change="${trip.leg + k},${i}" title="Get off here and go on another way">Change here</button>` : "";
+            return `<li class="tlStop${i === last ? " end" : ""}"><span class="tlNode"></span>${name}${tag}${change}</li>`;
           })
           .join("");
         return (
@@ -1789,7 +2496,7 @@
 
   // How much of the bottom of the screen the trip bar takes, as --trip-h on the page, so the
   // Edge Tray's column ends above it (style.css) and its last buttons, Settings among them, can
-  // be scrolled to rather than sitting under the bar. Kept in step as the bar grows or goes.
+  // be scrolled to rather than sitting under the bar; the page's end likewise. Kept in step as the bar grows or goes.
   function fitTray() {
     const bar = $("#tripBar");
     const shown = !bar.classList.contains("hidden") && bar.offsetHeight > 0;
@@ -1800,8 +2507,12 @@
   new MutationObserver(fitTray).observe($("#tripBar"), { attributes: true, attributeFilter: ["class"] });
   window.addEventListener("resize", fitTray);
 
+  // Whether Change my way's been tapped, for the timeline's Change here buttons.
+  let choosingChange = false;
+
   function setExpanded(on) {
     expanded = on && !!trip;
+    if (!expanded) choosingChange = false;
     $("#tripBar").classList.toggle("expanded", expanded);
     $("#tripToggle").setAttribute("aria-expanded", String(expanded));
     cancelAnimationFrame(frame);
@@ -1833,12 +2544,60 @@
     // A stop on the timeline: the timeline closes, and the page goes down to its timings for
     // that bus.
     $("#tripTimeline").addEventListener("click", (e) => {
+      const mode = e.target.closest("[data-tl-change-mode]");
+      if (mode) {
+        choosingChange = mode.dataset.tlChangeMode === "on";
+        buildTimeline();
+        return;
+      }
+      const change = e.target.closest("[data-tl-change]");
+      if (change) {
+        choosingChange = false;
+        const [j, k] = change.dataset.tlChange.split(",").map(Number);
+        return changeAt(j, k);
+      }
       const go = e.target.closest("[data-tl-stop]");
       if (!go || typeof window.loadStop !== "function") return;
       setExpanded(false);
       window.loadStop(go.dataset.tlStop, { service: go.dataset.tlBus || null, scroll: true });
     });
     $("#tripMap").addEventListener("click", () => window.LiveMap?.trip());
+    $("#tripWarn").addEventListener("click", (e) => {
+      const what = e.target.closest("[data-trip-another]")?.dataset.tripAnother;
+      if (what === "switch") switchToAnother();
+      else if (what === "all") seeAllWays(another?.from, another?.to);
+      else if (what === "here" && another && typeof openNavFromHere === "function") openNavFromHere(another.to);
+    });
+    $("#tripWarn").addEventListener("click", (e) => {
+      const what = e.target.closest("[data-trip-switched]")?.dataset.tripSwitched;
+      if (what === "undo") undoSwitch();
+      else if (what === "ok" && trip) {
+        trip.switched = null;
+        save();
+        render();
+      }
+    });
+    $("#tripTraffic").addEventListener("click", () => {
+      const leg = trip?.legs[Number($("#tripTraffic").dataset.leg)];
+      if (leg) window.LiveMap?.traffic({ points: leg.points, names: leg.names, title: `${leg.label} to ${leg.to}` });
+    });
+    $("#tripFaster").addEventListener("click", (e) => {
+      const what = e.target.closest("[data-trip-faster]")?.dataset.tripFaster;
+      if (what === "take") takeFaster();
+      else if (what === "keep" && faster) {
+        fasterKept = { at: Date.now(), saves: faster.saves };
+        faster = null;
+        render();
+      }
+    });
+    $("#tripChange").addEventListener("click", (e) => {
+      const what = e.target.closest("[data-trip-change]")?.dataset.tripChange;
+      if (what == null) return;
+      if (what === "all") seeAllWays(changing?.from, changing?.to);
+      else if (what === "cancel") changing = null;
+      else return takeChange(Number(what));
+      if (what === "cancel") render();
+    });
     $("#tripNext").addEventListener("click", () => {
       if (!trip || trip.leg >= trip.legs.length - 1) return;
       nextLeg(true);
@@ -1919,6 +2678,8 @@
     legs: () => trip?.legs || null,
     title: () => trip?.title || null,
     status: () => (trip ? statusText() : null),
+    // Leg i's road (fetchRoads), { path, stops, cum }: null till it's in, false if there's none.
+    road: (i) => trip?.roads?.[i] ?? null,
   };
   init();
 })();

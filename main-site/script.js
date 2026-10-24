@@ -19,6 +19,7 @@ const LS = {
     confettiKey:   'sgbus_confetti',
     restrictedKey: 'sgbus_restricted',
     customsKey:    'sgbus_customs',
+    bikeKey:       'sgbus_bike',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -88,6 +89,16 @@ const LS = {
     setCustoms(v) {
         if (v === 'auto') localStorage.removeItem(this.customsKey);
         else localStorage.setItem(this.customsKey, v);
+    },
+    // Whether you have a bike with you: Navigate and a trip then weigh cycling there too.
+    getBike() {
+        try { return localStorage.getItem(this.bikeKey) === 'on'; } catch { return false; }
+    },
+    setBike(on) {
+        try {
+            if (on) localStorage.setItem(this.bikeKey, 'on');
+            else localStorage.removeItem(this.bikeKey);
+        } catch { /* this visit only */ }
     },
 
     // Home or Work ("home" or "work"), set in Places (js/places.js): { label, lat, lng }, with `stop` the
@@ -198,6 +209,15 @@ syncRestrictedButtons();
 function syncCustomsButtons() {
     $$('[data-customs]').forEach(btn => {
         const on = btn.dataset.customs === LS.getCustoms();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
+
+// Cycling, in Settings: sent to /api/nav (js/nav.js), so ways by bike are weighed too.
+function syncBikeButtons() {
+    $$('[data-bike]').forEach(btn => {
+        const on = (btn.dataset.bike === 'on') === LS.getBike();
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
     });
@@ -1015,6 +1035,8 @@ function renderArrivals() {
             `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
             // The flag-down screen (js/flag.js).
             `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="Show ${escapeHtml(svcNo)} full screen, to flag the bus down">Flag</button>` +
+            // Just this bus's times again, from wherever down the list it is (refreshService).
+            `<button class="viewRouteBtn svcRefresh" data-refresh-svc="${escapeHtml(svcNo)}" aria-label="Refresh bus ${escapeHtml(svcNo)}" title="Refresh bus ${escapeHtml(svcNo)}'s times">${ico('sync')}</button>` +
             `</div>` +
             `<div class="etaWrap">${piece(s.next, svcNo)}${piece(s.next2, svcNo)}${piece(s.next3, svcNo)}` +
             // With the Android app's last bus reminder bell (js/reminders.js).
@@ -1076,6 +1098,29 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
 function refreshStop() {
     if (!current) return Glance.refresh();
     loadStop(current.code, { ...current, pushHistory: false });
+}
+
+// One bus's times at the stop on screen fetched again, put in place of the ones it had, so the
+// list stays where it's scrolled to.
+async function refreshService(btn, svc) {
+    const code = current?.code;
+    if (!code || btn.classList.contains('busy')) return;
+    btn.classList.add('busy');
+    const same = (s) => String(s.serviceNo).toUpperCase() === svc.toUpperCase();
+    try {
+        const fresh = (await fetchArrivals(code, svc)).services?.filter(same) || [];
+        if (current?.code !== code || !lastArrivals) return;
+        const services = lastArrivals.services || [];
+        const at = services.findIndex(same);
+        const rest = services.filter((s) => !same(s));
+        rest.splice(at === -1 ? rest.length : at, 0, ...fresh);
+        lastArrivals = { ...lastArrivals, services: rest };
+        renderArrivals();
+    } catch (e) {
+        console.warn(`Refreshing bus ${svc} failed:`, e);
+    } finally {
+        btn.classList.remove('busy');
+    }
 }
 
 // Narrows the stop already on screen down to one bus, or back out, without a new request:
@@ -1470,6 +1515,7 @@ function openSettings() {
     syncConfettiButtons();
     syncRestrictedButtons();
     syncCustomsButtons();
+    syncBikeButtons();
     syncGlanceButtons();
     syncMainButtons();
     prepareSync();
@@ -1539,6 +1585,10 @@ $$('[data-restricted]').forEach(btn => btn.addEventListener('click', () => {
 $$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
     LS.setCustoms(btn.dataset.customs);
     syncCustomsButtons();
+}));
+$$('[data-bike]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setBike(btn.dataset.bike === 'on');
+    syncBikeButtons();
 }));
 $$('[data-glance]').forEach(btn => btn.addEventListener('click', () => {
     Glance.setEnabled(btn.dataset.glance === 'on');
@@ -1642,6 +1692,8 @@ $('#stopTools').addEventListener('click', e => {
 });
 
 $('#services').addEventListener('click', e => {
+    const again = e.target.closest('[data-refresh-svc]');
+    if (again) return refreshService(again, again.dataset.refreshSvc);
     const btn = e.target.closest('[data-view-route]');
     if (!btn) return;
     const svc = btn.getAttribute('data-view-route');
@@ -1821,6 +1873,8 @@ function routeFromHash() {
         return true;
     }
     if ((m = hash.match(/^map\/(-?[\d.]+,-?[\d.]+(?:~.*)?)$/))) { LiveMap.openFromHash(m[1]); return false; }
+    // The traffic on a bus's way, from the Telegram bot's traffic button (js/map.js).
+    if ((m = hash.match(/^traffic\/(.+)$/))) { LiveMap.trafficFromHash(m[1]); return false; }
     // The Android app's Card value shortcut (js/card.js).
     if (hash === 'card') { window.Card?.open(); return false; }
     // A stop's departures board (js/board.js), over its timings.

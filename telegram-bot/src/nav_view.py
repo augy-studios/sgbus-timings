@@ -4,10 +4,13 @@ site's /api/nav (nav_api.py), the same as the web app's Navigate."""
 
 from telethon import Button
 
+import re
 from datetime import timedelta
+from urllib.parse import quote
 
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
+from .config import config
 from .format import _format_eta, escape_md
 from .navs import is_favourite_nav, list_favourite_navs
 from .pagination import nav_row, paginate
@@ -63,6 +66,31 @@ def _rides(option: dict) -> list:
 
 def _chip(leg: dict) -> str:
     return f"🚌 {leg['route']}" if leg["mode"] == "bus" else f"🚆 {leg['route']}"
+
+
+_REPORTED_RE = re.compile(r"^[(]\d+/\d+[)]\d+:\d+\s*")
+
+
+def traffic_text(t: dict) -> str:
+    """What a bus leg's traffic is, and why: "~6 min slower than usual: heavy traffic on Bedok
+    North Road. Accident: on PIE (towards Tuas) after Adam Rd Exit." As the web app says it
+    (js/nav.js, trafficText)."""
+    parts = []
+    if t.get("extra", 0) >= 1:
+        roads = t.get("roads") or []
+        parts.append(f"~{t['extra']} min slower than usual" + (f": heavy traffic on {' and '.join(roads)}" if roads else "") + ".")
+    for i in t.get("incidents") or []:
+        # LTA's message starts with when it was reported, "(25/10)00:41", said already.
+        message = _REPORTED_RE.sub("", i["message"])
+        parts.append(message if message.lower().startswith(i["type"].lower()) else f"{i['type']}: {message}")
+    return " ".join(parts)
+
+
+def traffic_url(leg: dict) -> str:
+    """The web app's live map of a bus leg's road, coloured by its traffic (#traffic/)."""
+    points = ";".join(f"{lat:.4f},{lng:.4f}" for lat, lng in leg.get("path") or [])
+    title = f"Bus {leg['route']} to {leg.get('to', {}).get('name') or 'its stop'}"
+    return config.webapp_url.rstrip("/") + "/#traffic/" + quote(f"{points}~{title}", safe=";,~")
 
 
 def option_summary(option: dict) -> str:
@@ -135,6 +163,11 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                     extra.append(f"OneMap ~{o['onemapMinutes']} min")
                 if o.get("source") == "onemap":
                     extra.append("found by OneMap")
+                for leg in _rides(o):
+                    if leg.get("lastBus"):
+                        extra.append(f"⏰ last {leg['route']} {leg['lastBus']}")
+                    if (leg.get("traffic") or {}).get("extra", 0) >= 1:
+                        extra.append(f"🚦 {leg['route']} +{leg['traffic']['extra']} min in traffic")
                 warn = " ⚠️" if o.get("disrupted") else ""
                 late = " (too late)" if _too_late(when, o["minutes"]) else ""
                 # With a time picked, the clock times lead.
@@ -147,8 +180,21 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                     [Button.inline(f"{i} · {short} · {' → '.join(leg['route'] for leg in _rides(o)) or 'walk'}"[:64],
                                    make_button("nav_option", {**_ends_payload(start, end, when), "option": o}))]
                 )
+            # Walking or cycling the whole way, where it might compete (the API only sends it then).
+            best = min((o["minutes"] for o in options if not o.get("walkOnly")), default=None)
+            others = result.get("others") or {}
+            lines = []
+            for kind, icon, what in (("walk", "🚶", "Walk there"), ("cycle", "🚲", "Cycle there")):
+                o = others.get(kind)
+                if o:
+                    quicker = ", quicker than any bus or train" if best is not None and o["minutes"] < best else ""
+                    lines.append(f"{icon} {what}: ~{o['minutes']} min, {_metres(o['distance'])}{quicker}")
+            if lines:
+                md += ["", *(escape_md(line) for line in lines)]
+                plain += ["", *lines]
+            traffic = " Bus times allow for the traffic right now, from LTA; 🚦 marks a bus it slows." if result.get("traffic") else ""
             note = ("Times include walking and an average wait to board. Only buses and trains running at the time "
-                    "are used. ⚠️ marks a line LTA reports a disruption on.")
+                    f"are used. ⚠️ marks a line LTA reports a disruption on, ⏰ a last bus of the day.{traffic}")
             md += ["", f"_{escape_md(note)}_"]
             plain += ["", note]
 
@@ -253,6 +299,16 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None):
             if eta_line:
                 md.append(escape_md(eta_line))
                 plain.append(eta_line)
+            if leg.get("lastBus"):
+                line = f"   ⏰ Last {leg['route']} from here today is at {leg['lastBus']}. Don't miss it."
+                md.append(escape_md(line))
+                plain.append(line)
+            if leg.get("traffic"):
+                line = f"   🚦 {traffic_text(leg['traffic'])}"
+                md.append(escape_md(line))
+                plain.append(line)
+                if leg.get("path"):
+                    buttons.append([Button.url(f"🗺 Traffic on {leg['route']}'s way"[:64], traffic_url(leg))])
             # Each crossing of the Causeway (/api/nav's `customs`): off, through both, on again.
             for c in leg.get("customs") or []:
                 first, second = ("Singapore's", "Malaysia's") if c["way"] == "out" else ("Malaysia's", "Singapore's")

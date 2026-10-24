@@ -189,7 +189,31 @@ Each way shows:
 - how many changes, and how far you walk;
 - **OneMap ~42 min**, where OneMap's timetable-based planner rides the same way,
   as a second opinion on the time;
-- a warning when LTA reports a disruption on one of its lines.
+- a warning when LTA reports a disruption on one of its lines;
+- **Last 38 from Bedok Int at 23:48**, when you'd catch a bus within half an
+  hour of its last of the day there;
+- in orange, a bus slowed by the traffic right now: by how much, and why, the
+  roads by name and any accident or breakdown on its way.
+
+<figure>
+<img src="/screenshots/web/nav-traffic.png" alt="Navigate's 2 ways to get there: the EW Line, about 23 min, and bus 38, about 54 min, with Last 38 from Bedok Int at 23:48 and, in orange, Bus 38: about 6 min slower than usual: heavy traffic on Tampines Avenue 7 and Bedok North Road, and a vehicle breakdown. Under them, Cycle there: about 17 min, 4.3 km, quicker than any bus or train, with a Cycle it button." width="270" height="544" loading="lazy">
+<figcaption>A bus slowed by traffic, its last bus, and cycling there.</figcaption>
+</figure>
+
+### Traffic, walking and cycling
+
+Setting off now, bus times allow for the traffic right now: LTA's live speeds on
+every road, updated every five minutes, and its accidents, breakdowns and
+roadworks. A bus through a jam takes longer, so a train or another bus can come
+out quicker, and the list says why.
+
+Under the ways, **Walk there** says how long walking the whole way takes, where
+it might compete, and **Cycle there** how long cycling takes, with **Cycling**
+set to **I have a bike** in [Settings](settings.md). Either says when it's
+quicker than any bus or train. **Walk it** and **Cycle it** show the way on the
+[live map](live-map.md). Walks go along footpaths too, through estates, void
+decks and linkways, not only along roads, and along a road where there's no
+footpath to the place at all.
 
 > [!NOTE]
 > No timetables are published for trains, so train times are estimates from the
@@ -212,7 +236,18 @@ Tap a way to see it part by part:
   station, it also says [which door to stand at](#which-door-to-stand-at).
 - **Buses**, with how many stops, where to get off, and the **live timings** of
   that bus at the stop you board it. A button opens that stop's timings for the
-  bus, with **Back to Navigate** on them to come back.
+  bus, with **Back to Navigate** on them to come back. If you'd be catching one
+  of its last buses of the day, it says when the last one is. If traffic slows
+  it, an orange box says by how much and why; tap it for the bus's road on the
+  [live map](live-map.md#traffic-on-a-buss-way), orange where it's slow and red
+  where it's jammed.
+
+<figure>
+<img src="/screenshots/web/nav-leg-traffic.png" alt="One way's bus 38: 28 stops, about 38 min, from Bedok Int to Tampines Int, its last from here today at 23:48, and an orange box: about 6 min slower than usual: heavy traffic on Tampines Avenue 7 and Bedok North Road, a vehicle breakdown on Tampines Avenue 7, See it on the map. Then the 38 timings at Bedok Int button." width="254" height="325" loading="lazy">
+<figcaption>A bus's traffic, tapped for its road on the map.</figcaption>
+</figure>
+
+
 
 ### Which door to stand at
 

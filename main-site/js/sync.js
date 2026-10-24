@@ -153,6 +153,11 @@ const SYNC_SETTINGS = {
     text: (v) => (v === 'auto' ? 'By the time' : v === '60' ? '1 hr' : `${v} min`),
     get: () => LS.getCustoms(), set: (v) => tap(`[data-customs="${v}"]`),
   },
+  bike: {
+    label: 'Cycling', values: ['off', 'on'], start: 'off',
+    text: (v) => (v === 'on' ? 'I have a bike' : 'No bike'),
+    get: () => (LS.getBike() ? 'on' : 'off'), set: (v) => tap(`[data-bike="${v}"]`),
+  },
   glance: {
     label: 'Next bus at a glance', values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (Glance.enabled() ? 'on' : 'off'), set: (v) => Glance.setEnabled(v === 'on'),

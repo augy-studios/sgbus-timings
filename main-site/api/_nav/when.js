@@ -62,6 +62,24 @@ export function busRunsAt(times, ms) {
   return inWindow(times, dayType(today.ymd, today.dow), today.min) || inWindow(times, dayType(before.ymd, before.dow), today.min + 1440);
 }
 
+// When the last bus of the service running at `ms` leaves the stop, as a moment: that day's,
+// or the night before's when its last runs past midnight. Null when it isn't running then, or
+// the stop has no times listed.
+export function lastBusAfter(times, ms) {
+  if (!times || times.length < 24) return null;
+  for (const back of [0, 1]) {
+    const day = sgClock(ms - back * 86400000);
+    const type = dayType(day.ymd, day.dow);
+    const min = sgClock(ms).min + back * 1440;
+    if (!inWindow(times, type, min)) continue;
+    const first = hhmm(times.slice(DAY_OFFSET[type], DAY_OFFSET[type] + 4));
+    let last = hhmm(times.slice(DAY_OFFSET[type] + 4, DAY_OFFSET[type] + 8));
+    if (last < first) last += 1440;
+    return ms + (last - min) * 60000;
+  }
+  return null;
+}
+
 export function trainRunsAt(ms) {
   const { ymd, dow, min } = sgClock(ms);
   return min >= TRAIN_FIRST_MIN[dayType(ymd, dow)] && min < TRAIN_LAST_MIN;

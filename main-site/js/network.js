@@ -190,6 +190,9 @@
     return WEEKDAY.format(now);
   }
 
+  // LTA's "HHMM" as a clock, "00:30": its midnight, "2400", as 00:00 rather than 24:00.
+  const clockOf = (s) => `${String(Number(s.slice(0, 2)) % 24).padStart(2, "0")}:${s.slice(2)}`;
+
   // Today's first and last bus for a service at a stop, by Singapore's day of the week.
   // On a stop it calls at both ways, `want` says which direction; otherwise the lowest.
   function firstLast(serviceNo, code, want = null) {
@@ -201,7 +204,7 @@
       const day = singaporeWeekday();
       const type = day === "Sat" ? DAY_TYPES[1] : day === "Sun" ? DAY_TYPES[2] : DAY_TYPES[0];
       const t = run.times[i] || "";
-      const fmt = (s) => (/^\d{4}$/.test(s) ? `${s.slice(0, 2)}:${s.slice(2)}` : "-");
+      const fmt = (s) => (/^\d{4}$/.test(s) ? clockOf(s) : "-");
       return {
         label: type.label,
         first: fmt(t.slice(type.offset, type.offset + 4)),

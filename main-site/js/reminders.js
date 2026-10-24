@@ -238,7 +238,8 @@
     return days.map((d) => DAY_NAMES[d]).join(', ');
   }
 
-  const clockText = (hhmm) => `${hhmm.slice(0, 2)}:${hhmm.slice(2)}`;
+  // LTA's midnight, "2400", as 00:00.
+  const clockText = (hhmm) => `${String(Number(hhmm.slice(0, 2)) % 24).padStart(2, '0')}:${hhmm.slice(2)}`;
 
   // The routine the form is changing, by its id, or null while it adds one.
   let editing = null;

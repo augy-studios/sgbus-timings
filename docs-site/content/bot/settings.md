@@ -54,6 +54,12 @@ buttons. **Clear home** and **Clear work** remove them.
 Other places you go often, named as you like, are saved with `/addplace` and
 listed with Home and Work in `/places`. See [Places with /places](places.md).
 
+## Cycling
+
+**🚲 I have a bike** says you have one with you: [/nav](nav.md) then also says
+how long cycling there takes. **🚲 I don't have a bike** turns it off again. It
+syncs with the web app's **Cycling** setting.
+
 ## Routine notifications
 
 On by default. **Disable notifications** pauses every routine without deleting

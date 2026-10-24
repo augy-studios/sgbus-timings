@@ -19,15 +19,40 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Explorer** - The live map from its own Edge Tray button, with every bus stop and MRT and LRT station round you as a dot to tap. A stop's card shows every bus there, green while it's running, red once it's down to its last three buses of the day, grey when it isn't running. A station's card has its codes in their lines' colours and, a platform at a time with arrows at the sides, the doors nearest its escalators, lifts and stairs and where each leads. Both have Directions, to Navigate's Bus and train from where you are. Explorer can be turned off in Settings, Edge Tray buttons.
 - **Tap the stops on your trip** - On the live map, a trip's stops and stations, and the stop a walk goes to, open the same cards.
 - **Tours for Explorer and the terminal** - Each shows you round the first time it opens, as the pages do, and Settings, Show me around, has a button for each.
+- **Another way, found for you** - When a last bus on your trip is lost, the trip finds another way and switches to it by itself, keeping the trip up to where the ride before that bus ends. A buzz and a notification say why and what to do now ("after Bus 21 to Blk 390, walk 3 min to Opp Blk 5, take Bus 12 there"), with Undo on the bar. Undone, Reroute takes it after all, and with your location on, Navigate from here opens Navigate from where you are.
+- **Buses timed by the traffic** - Setting off now, Navigate times buses by LTA's live traffic, so a bus through a jam is slower and a train can win; a trip's minutes left go by it too. A bus slowed by traffic says by how much and why, the roads by name and any accident or breakdown on its way.
+- **Traffic on the map** - Tap where it says a bus is slowed for its road on the live map: green clear, orange slow, red jammed, with its incidents marked.
+- **A faster way, on a trip** - Every few minutes, while you wait or ride, the trip looks for a quicker way, its first bus by live timing. If one saves enough, the bar suggests it, and why: Reroute takes it, Keep my way doesn't.
+- **Walking and cycling** - Navigate says how long walking the whole way takes where it might compete, and with Settings' new Cycling, how long cycling takes, each with Walk it or Cycle it on the live map. A trip counts them for a faster way too.
+- **Last buses in Navigate** - A way says when you'd be catching a bus within half an hour of its last of the day.
+- **Walks to places off the footpaths** - Where the footpaths stop short of a place, out on a road with none, such as an industrial road or a lamp post along one, the live map's walk goes the last stretch along the road and says so, so you can watch for traffic. Never along an expressway: the walk stops at the nearest footpath and says why.
+- **Change here** - On a trip's timeline, Change my way puts a Change here by every stop ahead, so any can be where you get off instead: pick from the ways on from there, and the trip changes to it, the Get Off Alert and all. Hidden until asked for, and every change to a trip, yours or its own, has Undo.
+- **Midnight as 00:00** - A last bus at midnight says 00:00, not 24:00, in a stop's timings, Explorer and on a trip.
+- **Last bus soon, on a trip** - A red warning on the trip bar, with a buzz and a notification, when a bus you've still to get on is down to its last three of the day, its last bus leaves before you'll reach its stop, or it's gone.
+- **Also direct buses in a stop's timings** - On a trip, a bus stop tapped on the trip bar's timeline shows the other direct buses' timings there too, not only your bus's.
+- **Refresh one bus** - Round arrows under each bus's Flag button fetch that bus's timings alone, without scrolling back up to Refresh.
+- **Nothing hidden under the trip bar** - While a trip runs, the page scrolls far enough that its end, such as the bottom bus's first and last bus times, clears the trip bar, however tall it gets.
+- **Trips on the live map follow the roads** - A bus ride's line runs along the roads the bus takes, stop to stop, with your dot on them, and every walk's dotted line along its streets, not straight across.
+- **Tap a bus on a stop card** - On Explorer and the live map, each bus on a stop's card opens that bus's timings at the stop.
+- **Minutes left by the bus's live timing** - While you wait at the stop on a trip, the trip bar, the live map and a shared ETA count the wait by your bus's live timing there, not the wait planned when the trip began.
+- **Show bus timings from a stop card** - On Explorer and the live map, a bus stop's card has Show bus timings above Directions: the stop's full timings on Bus timings.
 - **The map starts afresh** - Opening Explorer or the live map goes straight to where it starts, flat and north up, with nothing left over from the last time, rather than gliding over from where it was left.
 - **Refresh on Glance** - A round button beside the chip fetches the times at once, rather than waiting for the next 30-second refresh.
 - **Interchanges as pills** - On Explorer, a station on more than one line is a pill in all their colours, split on a slant as on the MRT's signs, always in the same order: green, red, purple, orange, blue, brown, then the LRT's grey.
 - **A clearer escalator** - The escalator beside a station's doors is drawn as one: its handrail from landing to landing, with someone on it.
 - **The terminal's full width** - With the Edge Tray tucked away, the terminal uses the whole width of the window. Only its top bar keeps clear of the tray's arrow.
 
+### Telegram bot
+
+- **Buses timed by the traffic in /nav** - As on the web: setting off now, buses go by LTA's live traffic. 🚦 marks a bus it slows, and the way itself says by how much and why, with a button to its road on the web app's live map, coloured by how jammed it is.
+- **Last buses in /nav** - ⏰ marks a bus you'd catch near its last of the day, and the way says when the last one is.
+- **Walking and cycling in /nav** - How long walking the whole way takes, where it might compete, and cycling with Settings' new 🚲 I have a bike, which syncs with the web app.
+- **Midnight as 00:00** - A stop's first and last bus line says 00:00 for a last bus at midnight, not 24:00.
+
 ### Linux command line 2.2.5
 
 - **Its commands shared with the web app** - The same file runs both, so they say the same thing. `nav` and `place set` list plus codes among the ends they take.
+- **Midnight as 00:00** - A last bus at midnight says 00:00, not 24:00.
 - **Safer to print** - Text from the data, such as a calendar event's title or a place synced from another device, can't send your terminal escape codes: only sgbus's own colours get through.
 - **Your calendar's link stays out of the history** - `calendar set <link>` isn't kept in `~/.cache/sgbus/history`, or for Up.
 - **Settings line up** - `sgbus settings` keeps its columns straight when a pin is at the bottom.

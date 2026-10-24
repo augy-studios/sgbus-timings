@@ -89,6 +89,19 @@ function initNav() {
       } catch { /* a button of this page's own making: always JSON */ }
       return;
     }
+    // Walk it and Cycle it: the way on the live map, from the start.
+    const other = e.target.closest('[data-nav-other]');
+    if (other && nav.to) {
+      LiveMap.walkTo(nav.to, { from: nav.from, cycle: other.dataset.navOther === 'cycle' });
+      return;
+    }
+    // A bus leg's traffic: its road on the live map, coloured by how jammed it is.
+    const jam = e.target.closest('[data-nav-traffic]');
+    if (jam && nav.option) {
+      const leg = nav.option.legs[Number(jam.dataset.navTraffic)];
+      if (leg?.path) LiveMap.traffic({ points: leg.path, names: leg.names, title: `Bus ${leg.route} to ${leg.to?.name || 'its stop'}` });
+      return;
+    }
     const walk = e.target.closest('[data-nav-walk]');
     if (walk && nav.option) {
       // Swapped in place, so the live timings already shown aren't fetched again.
@@ -459,6 +472,21 @@ const wayKey = (o) => (o.walkOnly ? 'walk' : o.legs.filter((l) => l.mode !== 'wa
 
 // ---- Planning ----
 
+// The ways by bus and train from one place to another, now or at `when`: /api/nav's answer.
+// Also the trip's Find another way, when a last bus is lost (js/trip.js).
+async function fetchWays(from, to, when = null) {
+  const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
+  // Settings' Restricted areas (BusNet.setOpenAccess), and Immigration time when it's your own.
+  const open = BusNet.openAccess() ? '&restricted=1' : '';
+  const customs = LS.getCustoms() === 'auto' ? '' : `&customs=${LS.getCustoms()}`;
+  // Settings' Cycling: ways by bike weighed too (`others.cycle`).
+  const bike = LS.getBike() ? '&bike=1' : '';
+  const r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${at}${open}${customs}${bike}`, { cache: 'no-store' });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
+  return data;
+}
+
 async function runNav() {
   renderNavFav();
   if (!nav.from || !nav.to) {
@@ -475,16 +503,13 @@ async function runNav() {
   const when = nav.when;
   $('#navBody').innerHTML = plannerStatus('Finding journeys by bus and train…');
   try {
-    const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
-    // Settings' Restricted areas (BusNet.setOpenAccess), and Immigration time when it's your own.
-    const open = BusNet.openAccess() ? '&restricted=1' : '';
-    const customs = LS.getCustoms() === 'auto' ? '' : `&customs=${LS.getCustoms()}`;
-    const r = await fetch(`/api/nav?from=${coord(nav.from)}&to=${coord(nav.to)}${at}${open}${customs}`, { cache: 'no-store' });
-    const data = await r.json().catch(() => ({}));
+    const data = await fetchWays(nav.from, nav.to, when);
     if (token !== nav.token) return;
-    if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
     nav.options = data.options || [];
     nav.onemap = !!data.onemap;
+    // Bus times by the traffic right now, and walking or cycling the whole way (api/_nav/live.js).
+    nav.traffic = data.traffic || null;
+    nav.others = data.others || {};
     // A shared way (openNavAt) opens once, if it's still one of the ways.
     nav.option = nav.pickWay ? nav.options.find((o) => wayKey(o) === nav.pickWay) || null : null;
     nav.pickWay = null;
@@ -514,8 +539,39 @@ function renderNav() {
   body.innerHTML =
     plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there${nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : ''}, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
-    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>` +
+    navOthers() +
+    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>` +
     customsNote(nav.options);
+}
+
+// Walking or cycling the whole way (/api/nav's `others`), under the ways, each with a button to
+// follow it on the live map. Said to be quicker when it beats every way by bus and train.
+function navOthers() {
+  const best = nav.options.find((o) => !o.walkOnly)?.minutes ?? Infinity;
+  const row = (kind, o) => {
+    const quicker = o.minutes < best ? ', quicker than any bus or train' : '';
+    const what = kind === 'cycle' ? 'Cycle there' : 'Walk there';
+    return `<div class="navOther">${ico(kind === 'cycle' ? 'route' : 'walk')}<span><b>${what}</b>: ~${o.minutes} min, ${escapeHtml(formatDistance(o.distance))}${quicker}</span>` +
+      `<button type="button" class="iconBtn" data-nav-other="${kind}">${kind === 'cycle' ? 'Cycle it' : 'Walk it'}</button></div>`;
+  };
+  const rows = ['walk', 'cycle'].filter((k) => nav.others?.[k]).map((k) => row(k, nav.others[k]));
+  return rows.length ? `<div class="navOthers">${rows.join('')}</div>` : '';
+}
+
+// What a bus leg's traffic is (/api/nav's `traffic`), and why, in words: "~6 min slower than
+// usual: heavy traffic on Bedok North Road. Accident on PIE (towards Tuas)."
+function trafficText(t) {
+  const parts = [];
+  if (t.extra >= 1) parts.push(`~${t.extra} min slower than usual${t.roads?.length ? `: heavy traffic on ${t.roads.join(' and ')}` : ''}.`);
+  for (const i of t.incidents || []) parts.push(incidentText(i));
+  return parts.join(' ');
+}
+
+// An incident in words: LTA's message without when it was reported ("(25/10)00:41"), led by
+// its type unless the message already is ("Accident on PIE ...").
+function incidentText({ type, message }) {
+  const m = String(message || '').replace(/^\(\d+\/\d+\)\d+:\d+\s*/, '');
+  return m.toLowerCase().startsWith(String(type).toLowerCase()) ? m : `${type}: ${m}`;
 }
 
 // Under ways across the Causeway: the time counted for immigration, the longest of them.
@@ -606,6 +662,9 @@ function navOptionItem(o, i) {
     `<span class="journeyDetail">${escapeHtml(detail)}</span>` +
     (o.disrupted ? `<span class="journeyWarn">${ico('alert')} A line on this journey has a disruption</span>` : '') +
     (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} Too late: you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}</span>` : '') +
+    o.legs.filter((l) => l.lastBus).map((l) => `<span class="journeyWarn">${ico('alert')} Last ${escapeHtml(l.route)} from ${escapeHtml(l.from?.name || 'its stop')} at ${escapeHtml(l.lastBus)}</span>`).join('') +
+    // Why it's slower, in a line; tapped, the way's own page has it on the map.
+    o.legs.filter((l) => l.traffic).map((l) => `<span class="journeyTraffic">${ico('alert')} Bus ${escapeHtml(l.route)}: ${escapeHtml(trafficText(l.traffic))}</span>`).join('') +
     `</button>`;
 }
 
@@ -670,6 +729,8 @@ async function renderNavOption(o) {
       `<div class="legHead">${legChip(leg)}<span>${leg.stops} stop${leg.stops === 1 ? '' : 's'} · ~${Math.round(leg.minutes)} min</span></div>` +
       `<div class="legRide">From ${escapeHtml(placeName(leg.from))} to ${escapeHtml(placeName(leg.to))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}</div>` +
       etas +
+      (leg.lastBus ? `<div class="legNote legWarn">${ico('alert')} Last ${escapeHtml(leg.route)} from here today is at ${escapeHtml(leg.lastBus)}. Don't miss it.</div>` : '') +
+      (leg.traffic ? `<button type="button" class="legTraffic" data-nav-traffic="${k}">${ico('alert')}<span>${escapeHtml(trafficText(leg.traffic))} <u>See it on the map</u></span></button>` : '') +
       (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(leg.route)} timings at ${escapeHtml(leg.from.name)}</button>` : '') +
       `</li>` +
       navCrossingSteps(leg);
@@ -837,7 +898,8 @@ function tripFromNav(o, to, from = nav.from) {
       walkAfter: 0,
       // For the server to find the bus while the app is in the background.
       // `codes`, each stop's, so the timeline's stops open their timings.
-      ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l) }),
+      // `usual`, its minutes without traffic (api/_nav/live.js), for timing it by the traffic.
+      ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l), usual: l.usual }),
       // The line, for Your trips' chips and Trip Modes.
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
     });

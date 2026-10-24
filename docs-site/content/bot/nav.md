@@ -86,7 +86,14 @@ no better in changes or walking, is left out as a detour.
 
 Where OneMap's timetable-based planner rides the same way, its time is shown too,
 as **OneMap ~42 min**. A warning sign marks a way on a line LTA reports a
-disruption on.
+disruption on, ⏰ a bus you'd catch near its last of the day (**⏰ last 38
+23:48**), and 🚦 a bus slowed by the traffic right now (**🚦 38 +6 min in
+traffic**).
+
+Setting off now, bus times allow for the traffic right now, from LTA's live
+speeds on every road. Under the ways, **🚶 Walk there** says how long walking the
+whole way takes, where it might compete, and **🚲 Cycle there** how long cycling
+takes, once you've said you have a bike in [Settings](settings.md#cycling).
 
 > [!NOTE]
 > No timetables are published for trains, so train times are estimates from the
@@ -99,6 +106,17 @@ to take and where to get off, and each bus with the **live timings** of that bus
 at the stop you board it. A button with the bus and stop opens that stop's
 timings for the bus, with **Back to the way** and **All ways** to come back.
 **Back to all ways** returns to the list.
+
+A bus near its last of the day says when the last one is. A bus slowed by
+traffic says by how much and why, the roads by name and any accident or
+breakdown on its way:
+
+> 🚦 ~6 min slower than usual: heavy traffic on Tampines Avenue 7. Vehicle
+> breakdown on Tampines Avenue 7 (towards Tampines Avenue 5).
+
+Its **🗺 Traffic on 38's way** button opens the bus's road on the web app's [live
+map](../web/live-map.md#traffic-on-a-buss-way), orange where it's slow and red
+where it's jammed.
 
 With a time picked, each bus and train says roughly when you'd board it. A way
 setting off more than half an hour from now shows those times instead of live

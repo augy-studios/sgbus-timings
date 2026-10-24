@@ -21,7 +21,13 @@ first.
 | **Refresh** | Fetches the latest timings. They do not refresh by themselves. |
 | **Route** | On each service's row: opens [that bus's route](bus-routes.md). |
 | **Flag** | On each service's row: its number as big as your screen allows, white on black, to hold up at a dark stop so the bus captain sees which bus you want. The screen stays on; in the Android app it also goes to full brightness, and **Torch** turns the torch on, steady. **Done** closes it. |
+| **Round arrows** | On each service's row, under Flag: fetches that bus's timings alone, so you needn't scroll back up to **Refresh** from the bottom of a long list. |
 | **Board** | The stop's departures board, full screen, like an interchange's screens: each bus, where it's going, its next three and how full they are, a page at a time. Good on a TV or a spare monitor; `#board/` and the stop's code is its [link to bookmark](links.md). |
+
+<figure>
+<img src="/screenshots/web/timings-svc-refresh.png" alt="Bus 60's card at a stop: its number with a star, SBST, then Route, Flag and a round arrows button under them, and its next buses in 7 and 19 min with the first and last bus for Sunday." width="254" height="247" loading="lazy">
+<figcaption>The round arrows under Flag refresh just that bus.</figcaption>
+</figure>
 
 **Pick a bus**, **Route from here** and **Directions** are covered in
 [More from a stop](more-from-a-stop.md).

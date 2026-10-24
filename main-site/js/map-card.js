@@ -2,7 +2,8 @@
 // stops and stations drawn on a trip or a walk. It opens out of the dot like a chat bubble, its
 // tail on the dot, and stays there as the map moves (js/map-engine.js, hooks.onMove).
 //
-//   A bus stop   its number and name, and every bus that calls there as a pill: green while
+//   A bus stop   its number and name, and every bus that calls there as a pill to tap, for that
+//                bus's timings at the stop (host.onTimings with the bus): green while
 //                it's running, grey while it isn't (outside today's first and last bus, from
 //                the route list, js/network.js), red once its last three buses of the day are
 //                all that's left: its last bus is no later than the third coming (live
@@ -12,7 +13,9 @@
 //                escalators, lifts and stairs, and where each leads (js/mrt-doors.js), drawn as
 //                Navigate draws them (js/nav.js).
 //
-// Both end with Directions: Navigate's Bus and train, from where you are (openNavFromHere).
+// Both end with Directions: Navigate's Bus and train, from where you are (openNavFromHere). A
+// stop's has Show bus timings above it: the stop's timings on Bus timings, as a search opens
+// them (host.onTimings).
 // Plain script: exports go on window.
 (function () {
   const LAST_MIN = 30;
@@ -24,7 +27,7 @@
   const lineOf = (code) => String(code).toUpperCase().match(/^[A-Z]+/)?.[0] || '';
   const colourOf = (code) => LINE_COLOURS[lineOf(code).slice(0, 2)] || LRT;
 
-  let host = null; // { panel, ink, onDirections }
+  let host = null; // { panel, ink, onDirections, onTimings }
   let card = null;
   let at = null; // [lat, lng] of the dot
   let token = 0;
@@ -73,7 +76,9 @@
     card.setAttribute('aria-label', label);
     card.innerHTML = '<div class="mcBubble"><div class="mcBody"></div></div>';
     card.addEventListener('click', (e) => {
+      const timings = e.target.closest('[data-mc-timings]');
       if (e.target.closest('[data-mc-close]')) close();
+      else if (timings) host.onTimings?.(timings.dataset.mcTimings, timings.dataset.mcBus || null);
       else if (e.target.closest('[data-mc-go]')) go();
     });
     host.panel.appendChild(card);
@@ -87,6 +92,7 @@
 
   const head = (inner) => `<div class="mcHead">${inner}<button class="icon-btn small mcClose" type="button" data-mc-close aria-label="Close">${ico('close')}</button></div>`;
   const foot = () => `<button class="btn mcGo" type="button" data-mc-go>${ico('navigate')} Directions</button>`;
+  const timingsBtn = (code) => `<button class="btn mcGo" type="button" data-mc-timings="${esc(code)}">${ico('clock')} Show bus timings</button>`;
 
   // ---------- a bus stop ----------
 
@@ -135,14 +141,14 @@
         ? buses.map((no) => {
           const st = state(no, code, etas ? etas.get(no) || [] : null);
           const what = { on: 'running', last: 'last 3 buses of the day', off: 'not running now' }[st];
-          return `<span class="svcPill ${st}" title="Bus ${esc(no)}: ${what}">${esc(no)}</span>`;
+          return `<button class="svcPill ${st}" type="button" data-mc-timings="${esc(code)}" data-mc-bus="${esc(no)}" title="Bus ${esc(no)}: ${what}. Its timings here">${esc(no)}</button>`;
         }).join('')
         : '<p class="mcNote">No buses call here.</p>';
       body.innerHTML =
         head(`<span class="mcCode">${esc(code)}</span><div class="mcTitle"><strong>${esc(s.n || 'Bus stop')}</strong><span>${esc(s.road || '')}</span></div>`) +
         `<div class="mcPills">${pills}</div>` +
         (buses.length ? '<p class="mcKey"><span class="mcKeyDot on"></span>Running<span class="mcKeyDot last"></span>Last 3 buses<span class="mcKeyDot off"></span>Not running now</p>' : '') +
-        foot();
+        timingsBtn(code) + foot();
       place();
     };
     draw(null);

@@ -692,6 +692,13 @@
                 <button class="mode-btn" type="button" data-customs="60" aria-pressed="false">1 hr</button>
             </div>
             <p class="mode-note">Journeys across the Causeway count this for getting off, clearing both checkpoints and getting on again. By the time: about 15 min when it's quiet, up to an hour at the rush (weekday mornings into Singapore, evenings and Friday nights out to JB, Sunday nights back).</p>
+            <!-- Cycling as well as buses and trains, in Navigate and on a trip (script.js, js/nav.js) -->
+            <p class="modal-section-label">Cycling</p>
+            <div class="mode-toggle">
+                <button class="mode-btn" type="button" data-bike="off" aria-pressed="false">No bike</button>
+                <button class="mode-btn" type="button" data-bike="on" aria-pressed="false">I have a bike</button>
+            </div>
+            <p class="mode-note">With a bike, Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker.</p>
             <p class="modal-section-label">Pin favourite stops in lists</p>
             <div class="mode-toggle" data-pin-kind="stop">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -1027,6 +1034,14 @@
     <div id="tripBar" class="tripBar hidden" role="region" aria-label="Trip in progress">
         <!-- Tapping the bar opens the stops ahead, with a dot where you are. -->
         <div class="tripDrawer"><div><div id="tripTimeline" class="tripTimeline"></div></div></div>
+        <!-- Last bus soon, for a ride still to board, and another way for one lost (js/trip.js) -->
+        <div id="tripWarn" class="tripWarn" role="alert" hidden></div>
+        <!-- Traffic on a bus still ahead, and why: tapped, its road on the live map (js/trip.js) -->
+        <button id="tripTraffic" class="tripTraffic" type="button" hidden></button>
+        <!-- A faster way, and why (js/trip.js) -->
+        <div id="tripFaster" class="tripFaster" role="status" hidden></div>
+        <!-- Change here, from the timeline: the ways on from that stop (js/trip.js) -->
+        <div id="tripChange" class="tripChange" hidden></div>
         <div class="tripBarInner">
             <span class="tripIcon" data-icon="bus"></span>
             <button id="tripToggle" class="tripText" type="button" aria-expanded="false" aria-controls="tripTimeline" title="Show the stops ahead">

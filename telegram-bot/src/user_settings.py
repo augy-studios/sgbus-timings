@@ -67,6 +67,24 @@ def set_notifications_enabled(chat_id: int, enabled: bool) -> None:
         )
 
 
+def get_has_bike(chat_id: int) -> bool:
+    """Whether the chat has a bike with them, for /nav's cycling (the web app's Settings,
+    Cycling)."""
+    row = db.execute("SELECT has_bike FROM user_settings WHERE chat_id = ?", (chat_id,)).fetchone()
+    return bool(row and row["has_bike"])
+
+
+def set_has_bike(chat_id: int, on: bool) -> None:
+    with db:
+        db.execute(
+            """
+            INSERT INTO user_settings (chat_id, has_bike) VALUES (?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET has_bike = excluded.has_bike
+            """,
+            (chat_id, int(on)),
+        )
+
+
 def chats_with_birthday_today(month_day: str, today: str) -> list:
     """Rows for chats whose birthday's MM-DD matches `month_day` (today, GMT+8)
     and who haven't already been wished on `today` (YYYY-MM-DD)."""

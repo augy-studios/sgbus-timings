@@ -9,12 +9,19 @@
 //                           Telegram bot's Live map button). The route is /api/walk's, asked
 //                           for again if you stray from it.
 //   LiveMap.trip()          the trip being followed (js/trip.js): every ride and walk on it,
-//                           the stops, where you get off, and you. On a walk, its route.
+//                           the stops, where you get off, and you. A bus ride along its road
+//                           (Trip.road), a train along its track, a walk along its streets.
 //   LiveMap.follow(data)    someone's shared trip (js/share.js): where they are, the way
 //                           they're going and where to, updated as their link is.
 //   LiveMap.explore()       Explorer, from its Edge Tray button: no way to follow, just every bus
 //                           stop and MRT and LRT station as a dot, and you. A tap on one opens
 //                           its card (js/map-card.js): a stop's buses, a station's doors.
+//   LiveMap.traffic(way)    the traffic on a bus's way, from wherever the site says there's
+//                           traffic (Navigate, a trip, #traffic/ links from the Telegram bot):
+//                           its road, orange where it's slow and red where it's jammed, by LTA's
+//                           live speeds (/api/traffic), its incidents, and why, in words.
+//
+// LiveMap.walkTo(place, { cycle: true }) is the way by bike instead, for Navigate's Cycle it.
 //
 // The stops and stations on a trip or a walk open the same card when tapped.
 //
@@ -54,7 +61,12 @@
   // A train ride's dot is the station within this of it.
   const STATION_M = 300;
 
-  const COLOURS = { walk: '#2f7dff', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
+  const COLOURS = { walk: '#2f7dff', cycle: '#0b8f8a', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
+  // The traffic on a road, by how freely it flows (/api/traffic's flows): below SLOW_FLOW is slow,
+  // below JAM_FLOW jammed. Keep in step with the trip's and Navigate's words for it.
+  const JAM_FLOW = 0.4;
+  const SLOW_FLOW = 0.7;
+  const TRAFFIC_COLOURS = { jammed: '#d1242f', slow: '#f08c00', clear: '#1f9d55' };
   // Each MRT and LRT line's own colour, for a train leg without one. Keep in step with
   // LINE_COLORS in js/recents.js.
   const LINE_COLOURS = { EW: '#009645', CG: '#009645', NS: '#d42e12', NE: '#9900aa', CC: '#fa9e0d', CE: '#fa9e0d', DT: '#005ec4', TE: '#9d5b25', BP: '#748477', SE: '#748477', SW: '#748477', PE: '#748477', PW: '#748477' };
@@ -81,9 +93,12 @@
   let following = true; // the map keeps you in view, until you move it yourself
   let pushed = false; // whether opening added a step to the page's history
   let builtTripLeg = null;
-  let tripTrack = null; // the train you're on's track, from js/rail-tracks.js
+  let builtTripLegs = null; // the trip's legs as drawn, to redraw when it's changed (js/trip.js replan)
+  let tripTrack = null; // the ride you're on's track or road, as { path, stops }
+  let roadsDue = []; // the trip's bus rides still drawn straight, as { i, line }, till their road's in
 
   const routes = new Map(); // walks already asked for, this page view
+  let walkCycle = false; // the walk being followed is by bike
 
   // ---------- geometry ----------
 
@@ -286,6 +301,8 @@
     } else if (mode === 'follow' && followData) {
       if (followData.path) pts.push(...followData.path);
       if (followData.to) pts.push([followData.to.lat, followData.to.lng]);
+    } else if (mode === 'traffic' && trafficWay) {
+      pts.push(...trafficWay);
     }
     const at = focus();
     if (at) pts.push(at);
@@ -330,6 +347,7 @@
     if (mode !== 'explore') ink.pois([]);
     destMark = null;
     builtTripLeg = null;
+    builtTripLegs = null;
     // Opened afresh, it starts where this way of opening it does, not where the last left it
     // (turned, tilted, or across town) and glides over.
     setFollowing(true, { jump: !wasOpen });
@@ -358,7 +376,7 @@
     mode = null;
     walk = null;
     followData = null;
-    if (location.hash.startsWith('#map/')) history.replaceState(history.state, '', location.pathname);
+    if (location.hash.startsWith('#map/') || location.hash.startsWith('#traffic/')) history.replaceState(history.state, '', location.pathname);
     if (pushed && !fromHistory) {
       pushed = false;
       history.back();
@@ -459,21 +477,22 @@
 
   const key = (p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
 
-  async function fetchWalk(from, to) {
-    const k = `${key(from)}>${key(to)}`;
+  async function fetchWalk(from, to, { cycle = false } = {}) {
+    const k = `${key(from)}>${key(to)}${cycle ? '>cycle' : ''}`;
     if (routes.has(k)) return routes.get(k);
-    const r = await fetch(`/api/walk?from=${key(from)}&to=${key(to)}`);
+    const r = await fetch(`/api/walk?from=${key(from)}&to=${key(to)}${cycle ? '&mode=cycle' : ''}`);
     if (!r.ok) throw new Error((await r.json().catch(() => null))?.error || "Couldn't find a way to walk there.");
     const route = await r.json();
     routes.set(k, route);
     return route;
   }
 
-  async function walkTo(to, { from = null, title = null } = {}) {
+  async function walkTo(to, { from = null, title = null, cycle = false } = {}) {
     if (to?.lat == null || to?.lng == null) return;
     $('#mapHeading').hidden = false;
     mode = 'walk';
-    await show(title || `Walk to ${to.label || 'here'}`, '');
+    walkCycle = cycle;
+    await show(title || `${cycle ? 'Cycle' : 'Walk'} to ${to.label || 'here'}`, '');
     mode = 'walk';
     place = { lat: Number(to.lat), lng: Number(to.lng), label: to.label || 'Your destination' };
     walk = null;
@@ -494,7 +513,7 @@
     walkAsked = Date.now();
     const asked = place;
     try {
-      const got = await fetchWalk(from, place);
+      const got = await fetchWalk(from, place, { cycle: walkCycle });
       if (mode !== 'walk' || place !== asked) return;
       walk = { ...got, total: lengthOf(got.path) };
       drawWalk();
@@ -508,8 +527,11 @@
     ink.clear('lines');
     if (!walk) return;
     ink.line('lines', walk.path, { color: '#fff', weight: 9, opacity: 0.9 });
-    ink.line('lines', walk.path, { color: COLOURS.walk, weight: 5, dash: walk.source === 'line' });
-    note(walk.source === 'line' ? "Couldn't find streets for this walk, so this is the straight line there." : '');
+    ink.line('lines', walk.path, { color: walkCycle ? COLOURS.cycle : COLOURS.walk, weight: 5, dash: walk.source === 'line' });
+    note(walk.source === 'line' ? `Couldn't find the streets for this ${walkCycle ? 'ride' : 'walk'}, so this is the straight line there.`
+      : walk.expressway ? 'It ends on an expressway, where no one may walk, so the walk stops at the nearest footpath.'
+      : walk.roadside >= 20 ? `About ${Math.round(walk.roadside / 10) * 10} m of this walk is along the road, with no footpath. Keep to the side and watch for traffic.`
+      : '');
   }
 
   function onWalkFix() {
@@ -573,6 +595,32 @@
     tripTimer = setInterval(() => drawTrip(false), TRIP_EVERY_MS);
   }
 
+  // A bus ride's road from js/trip.js, its stops as places along it in metres, as a track:
+  // each stop as the index of the point on the path nearest it.
+  function roadTrack({ path, stops, cum }) {
+    let k = 0;
+    return {
+      path,
+      stops: stops.map((m) => {
+        while (k < cum.length - 1 && Math.abs(cum[k + 1] - m) <= Math.abs(cum[k] - m)) k++;
+        return k;
+      }),
+    };
+  }
+
+  // The bus rides whose road has come in since they were drawn: along it from now on.
+  function drawRoads(legIndex) {
+    roadsDue = roadsDue.filter(({ i, line }) => {
+      const road = window.Trip.road?.(i);
+      if (road == null) return line.alive;
+      if (road && line.alive) {
+        line.set(road.path);
+        if (i === legIndex) tripTrack = roadTrack(road);
+      }
+      return false;
+    });
+  }
+
   // Every leg from the one you're on, its stops, and where each ends. Redrawn only when you
   // move on to another leg; the status line every few seconds.
   function drawTrip(fit) {
@@ -584,9 +632,11 @@
       tripTimer = null;
       return;
     }
-    if (builtTripLeg !== p.legIndex) {
+    if (builtTripLeg !== p.legIndex || builtTripLegs !== legs) {
       builtTripLeg = p.legIndex;
+      builtTripLegs = legs;
       tripTrack = null;
+      roadsDue = [];
       ink.clear('lines');
       ink.clear('stops');
       ink.clear('marks');
@@ -604,6 +654,18 @@
             if (i === p.legIndex) tripTrack = track;
           });
         }
+        if (leg.kind === 'bus') roadsDue.push({ i, line });
+        // A walk along its streets, from where you are on the one you're on.
+        if (leg.kind === 'walk') {
+          const end = leg.points[leg.points.length - 1];
+          const from = i === p.legIndex && here ? here : { lat: leg.points[0][0], lng: leg.points[0][1] };
+          fetchWalk(from, { lat: end[0], lng: end[1] }, { cycle: !!leg.cycle })
+            .then((r) => {
+              if (mode !== 'trip' || builtTripLeg !== p.legIndex || !line.alive || !(r.path?.length >= 2)) return;
+              line.set(r.path);
+            })
+            .catch(() => {});
+        }
         if (leg.kind !== 'walk' && !done) {
           leg.points.forEach((pt, k) => {
             if (k === 0 || k === leg.points.length - 1) return;
@@ -617,19 +679,9 @@
           flag(end, last ? leg.to : `${leg.kind === 'walk' ? 'Walk to' : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
         }
       });
-      // On a walk, its streets: from where you are, or where it starts.
-      const leg = legs[p.legIndex];
-      if (leg.kind === 'walk') {
-        const end = leg.points[leg.points.length - 1];
-        fetchWalk(here || { lat: leg.points[0][0], lng: leg.points[0][1] }, { lat: end[0], lng: end[1] })
-          .then((r) => {
-            if (mode !== 'trip' || builtTripLeg !== p.legIndex) return;
-            ink.line('lines', r.path, { color: COLOURS.walk, weight: 5 });
-          })
-          .catch(() => {});
-      }
       if (fit && !here) ink.setView(p.at, STREET_ZOOM);
     }
+    if (roadsDue.length) drawRoads(p.legIndex);
     const status = window.Trip.status?.() || '';
     $('#mapStep').textContent = status;
     const mins = Math.max(0, Math.round(p.minutesLeft));
@@ -785,13 +837,12 @@
 
   function openCard(pick) {
     if (!pick) return;
-    MapCard.open(pick, { panel: $('#mapPanel'), ink, onDirections: directionsTo });
+    MapCard.open(pick, { panel: $('#mapPanel'), ink, onDirections: directionsTo, onTimings: timingsAt });
   }
 
-  // A card's Directions: Navigate's Bus and train, from where you are, once the map's gone
-  // (its step back in the page's history first, so Navigate's comes after it).
-  function directionsTo(to) {
-    const then = () => openNavFromHere(to);
+  // `then` once the map's gone: its step back in the page's history first, so whatever `then`
+  // opens comes after it.
+  function afterClose(then) {
     if (!pushed) {
       close();
       return then();
@@ -799,6 +850,11 @@
     window.addEventListener('popstate', () => setTimeout(then, 0), { once: true });
     close();
   }
+
+  // A card's Directions: Navigate's Bus and train, from where you are.
+  const directionsTo = (to) => afterClose(() => openNavFromHere(to));
+  // A stop card's Show bus timings: the stop's timings on Bus timings, as a search opens them.
+  const timingsAt = (code, service) => afterClose(() => loadStop(code, { service, scroll: true }));
 
   // Explorer: no way to follow, just you, every stop and every station.
   async function explore() {
@@ -821,7 +877,85 @@
     window.Tour?.first('explorer');
   }
 
+  // ---------- traffic on a bus's way ----------
+
+  const trafficClass = (flow) => (flow < JAM_FLOW ? 'jammed' : flow < SLOW_FLOW ? 'slow' : 'clear');
+
+  // At most n of a path's points, evenly through it, the ends kept: /api/traffic takes 120.
+  function thin(path, n) {
+    if (path.length <= n) return path;
+    return Array.from({ length: n }, (_, i) => path[Math.round((i * (path.length - 1)) / (n - 1))]);
+  }
+
+  const pointsParam = (pts) => encodeURIComponent(pts.map(([a, b]) => `${a.toFixed(5)},${b.toFixed(5)}`).join(';'));
+
+  // `points` are the bus's stops in order, [[lat, lng], ...]; `title` names it, "Bus 21 to
+  // Blk 390"; `names` (optional) its stops' names, for their dots.
+  async function traffic({ points, title = 'Traffic', names = null }) {
+    if (!(points?.length >= 2)) return;
+    $('#mapHeading').hidden = false;
+    mode = 'traffic';
+    await show(`Traffic: ${title}`, '');
+    mode = 'traffic';
+    setFollowing(false);
+    trafficWay = points;
+    points.forEach((pt, i) => ink.dot('stops', pt, { radius: 3.5, stroke: TRAFFIC_COLOURS.clear, weight: 2, fill: '#fff', label: names?.[i] || `Stop ${i + 1}` }));
+    ink.fit(points, { top: 90, left: 30, right: 70, bottom: 150 }, STREET_ZOOM - 1);
+    $('#mapStep').textContent = 'Finding the road and how its traffic is…';
+    startWatching();
+    // Along the road the bus takes (/api/road), or straight from stop to stop without it.
+    let road = points;
+    try {
+      const r = await fetch(`/api/road?points=${pointsParam(points)}`);
+      const got = r.ok ? await r.json() : null;
+      if (got?.path?.length >= 2) road = got.path;
+    } catch {}
+    if (mode !== 'traffic' || trafficWay !== points) return;
+    const way = thin(road, 120);
+    let t = null;
+    try {
+      const r = await fetch(`/api/traffic?points=${pointsParam(way)}`);
+      t = r.ok ? await r.json() : null;
+    } catch {}
+    if (mode !== 'traffic' || trafficWay !== points) return;
+    ink.clear('lines');
+    ink.line('lines', way, { color: '#fff', weight: 10, opacity: 0.9 });
+    if (!t?.at) {
+      ink.line('lines', way, { color: COLOURS.done, weight: 6 });
+      $('#mapStep').textContent = "There's no live traffic from LTA just now, so this is the road without it.";
+      return;
+    }
+    // Each run of stretches flowing alike, in its colour.
+    let from = 0;
+    for (let i = 1; i <= t.flows.length; i++) {
+      if (i < t.flows.length && trafficClass(t.flows[i]) === trafficClass(t.flows[from])) continue;
+      ink.line('lines', way.slice(from, i + 1), { color: TRAFFIC_COLOURS[trafficClass(t.flows[from])], weight: 6 });
+      from = i;
+    }
+    const said = (inc) => (typeof incidentText === 'function' ? incidentText(inc) : inc.message);
+    for (const inc of t.incidents || []) flag([inc.lat, inc.lng], said(inc), TRAFFIC_COLOURS.jammed);
+    const ago = Math.max(0, Math.round((Date.now() - t.at) / 60000));
+    $('#mapSub').textContent = `LTA's live traffic, ${ago < 1 ? 'just now' : `${ago} min ago`}`;
+    const jammed = t.flows.filter((f) => f < JAM_FLOW).length;
+    const slow = t.flows.filter((f) => f < SLOW_FLOW).length;
+    const where = t.roads?.length ? ` on ${t.roads.join(' and ')}` : '';
+    const what = jammed ? `Jammed in places${where}` : slow ? `Slow in places${where}` : 'The roads are clear';
+    const incidents = (t.incidents || []).map(said).join(' ');
+    $('#mapStep').textContent = `${what}. Red is jammed, orange slow, green clear.${incidents ? ` ${incidents}` : ''}`;
+  }
+  let trafficWay = null;
+
   // ---------- links ----------
+
+  // #traffic/1.3245,103.9295;1.3262,103.9301;...~Bus 21 to Blk 390: a bus's stops, from the
+  // Telegram bot's traffic button, as LiveMap.traffic.
+  function trafficFromHash(target) {
+    const [pts, ...title] = target.split('~');
+    const points = pts.split(';').map((p) => p.split(',').map(Number)).filter((p) => p.length === 2 && p.every(Number.isFinite));
+    if (points.length < 2) return false;
+    traffic({ points, title: title.join('~') || 'A bus’s way' });
+    return true;
+  }
 
   // #map/84009 (a stop) and #map/1.3184,103.8932~Name (a place): from script.js's router.
   function openFromHash(target) {
@@ -851,6 +985,6 @@
     });
   }
 
-  window.LiveMap = { walkTo, trip, follow, explore, updateFollow, close, openFromHash, isOpen: () => mode != null, mode: () => mode };
+  window.LiveMap = { walkTo, trip, follow, explore, traffic, updateFollow, close, openFromHash, trafficFromHash, isOpen: () => mode != null, mode: () => mode };
   init();
 })();

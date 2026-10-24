@@ -36,10 +36,11 @@ def _format_eta(ms) -> str:
 
 
 def _format_hhmm(hhmm) -> str:
-    """Formats an LTA-style HHmm string (e.g. "2210") as "HH:MM"."""
+    """Formats an LTA-style HHmm string (e.g. "2210") as "HH:MM", its midnight ("2400") as
+    00:00 rather than 24:00."""
     if not hhmm or len(hhmm) != 4 or not hhmm.isdigit():
         return "-"
-    return f"{hhmm[:2]}:{hhmm[2:]}"
+    return f"{int(hhmm[:2]) % 24:02d}:{hhmm[2:]}"
 
 
 def _first_last_bus_line(service_no, stop_code, direction=None) -> "str | None":

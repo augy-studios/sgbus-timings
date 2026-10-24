@@ -19,6 +19,7 @@ from ..service_alerts_view import MODE_LABELS
 from ..user_settings import (
     get_birthday,
     get_display_name,
+    get_has_bike,
     get_notifications_enabled,
     set_birthday,
     set_display_name,
@@ -79,6 +80,7 @@ def build_settings_view(chat_id: int, sender):
     name_is_set = name != fallback
     birthday = get_birthday(chat_id)
     notifications_on = get_notifications_enabled(chat_id)
+    has_bike = get_has_bike(chat_id)
     alert_modes = get_alert_modes(chat_id)
     fav_buses = list_favourite_buses(chat_id)
     fav_stops = list_favourites(chat_id)
@@ -96,6 +98,7 @@ def build_settings_view(chat_id: int, sender):
             for kind, (_, label) in PLACE_KINDS.items()
         ),
         f"- **Routine notifications**: {'Enabled' if notifications_on else 'Disabled'}",
+        f"- **Cycling**: {'I have a bike: /nav says how long cycling takes too' if has_bike else 'No bike'}",
         f"- **Service Alerts**: "
         + (
             f"trains {MODE_LABELS[alert_modes['train']].lower()}, traffic {MODE_LABELS[alert_modes['traffic']].lower()}"
@@ -146,6 +149,7 @@ def build_settings_view(chat_id: int, sender):
                 make_button("settings_toggle_notifications", {}),
             )
         ],
+        [Button.inline("🚲 I don't have a bike" if has_bike else "🚲 I have a bike", make_button("settings_toggle_bike", {}))],
     ]
     return rich, buttons
 
