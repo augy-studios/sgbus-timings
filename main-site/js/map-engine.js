@@ -81,11 +81,22 @@
     g.fill();
     shape(edge, edge, w - 2 * edge, h - 2 * edge);
     g.clip();
-    // Each colour a little wider than its share, so no seam shows between them.
+    // Split on a slant, as the colours are on the MRT's signs: each boundary leans right, `lean`
+    // either side of its middle. The ends run past the pill, and each colour a little past its
+    // share, so no seam shows between them.
     const seg = (w - 2 * edge) / colours.length;
+    const lean = h * 0.2;
     colours.forEach((colour, i) => {
+      const x0 = i === 0 ? -h : edge + i * seg;
+      const x1 = i === colours.length - 1 ? w + h : edge + (i + 1) * seg + 0.5;
       g.fillStyle = colour;
-      g.fillRect(edge + i * seg, 0, seg + 1, h);
+      g.beginPath();
+      g.moveTo(x0 + lean, 0);
+      g.lineTo(x1 + lean, 0);
+      g.lineTo(x1 - lean, h);
+      g.lineTo(x0 - lean, h);
+      g.closePath();
+      g.fill();
     });
     return c;
   }
