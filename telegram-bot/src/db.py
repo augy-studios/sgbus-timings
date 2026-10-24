@@ -141,6 +141,7 @@ db.executescript(
         chat_id INTEGER PRIMARY KEY,
         train_mode TEXT NOT NULL DEFAULT 'all',
         traffic_mode TEXT NOT NULL DEFAULT 'all',
+        newsfeed_mode TEXT NOT NULL DEFAULT 'off',
         created_at INTEGER NOT NULL
     );
 
@@ -299,5 +300,9 @@ if "train_mode" not in _alert_columns:
         db.execute("ALTER TABLE service_alert_subs ADD COLUMN traffic_mode TEXT NOT NULL DEFAULT 'all'")
         if "mode" in _alert_columns:
             db.execute("UPDATE service_alert_subs SET train_mode = mode, traffic_mode = mode")
+# The Newsfeed (notices.py), off for those who subscribed before it.
+if "newsfeed_mode" not in _alert_columns:
+    with db:
+        db.execute("ALTER TABLE service_alert_subs ADD COLUMN newsfeed_mode TEXT NOT NULL DEFAULT 'off'")
 
 db.commit()

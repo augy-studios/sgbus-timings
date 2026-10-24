@@ -4,6 +4,7 @@
   "description": "SG Bus Timings at sgbus.uwuapps.org: a static site plus Vercel Functions in api/.",
   "type": "module",
   "dependencies": {
+    "unpdf": "^0.12.1",
     "web-push": "^3.6.7"
   }
 }

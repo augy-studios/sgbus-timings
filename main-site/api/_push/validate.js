@@ -29,15 +29,18 @@ export function isId(value) {
   return typeof value === 'string' && ID_RE.test(value);
 }
 
-// { subscription, train, traffic }: each mode one of MODES, and at least one on, or the
+// { subscription, train, traffic, newsfeed }: each mode one of MODES, and at least one on, or the
 // device should have been deleted rather than stored.
 export function parseDevice(body) {
   if (!body || typeof body !== 'object') fail('body must be an object');
   for (const kind of ['train', 'traffic']) {
     if (!MODES.includes(body[kind])) fail(`${kind} must be one of ${MODES.join(', ')}`);
   }
-  if (body.train === 'off' && body.traffic === 'off') fail('turn at least one kind of alert on, or delete the device');
-  return { subscription: parseSubscription(body.subscription), train: body.train, traffic: body.traffic };
+  // The newsfeed came later: a page from before it sends none.
+  const newsfeed = body.newsfeed ?? 'off';
+  if (!MODES.includes(newsfeed)) fail(`newsfeed must be one of ${MODES.join(', ')}`);
+  if (body.train === 'off' && body.traffic === 'off' && newsfeed === 'off') fail('turn at least one kind of alert on, or delete the device');
+  return { subscription: parseSubscription(body.subscription), train: body.train, traffic: body.traffic, newsfeed };
 }
 
 // A trip for the Get Off Alert (js/trip.js): the subscription to push to, the legs, and how

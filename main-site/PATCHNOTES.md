@@ -28,6 +28,9 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Walks to places off the footpaths** - Where the footpaths stop short of a place, out on a road with none, such as an industrial road or a lamp post along one, the live map's walk goes the last stretch along the road and says so, so you can watch for traffic. Never along an expressway: the walk stops at the nearest footpath and says why.
 - **Change here** - On a trip's timeline, Change my way puts a Change here by every stop ahead, so any can be where you get off instead: pick from the ways on from there, and the trip changes to it, the Get Off Alert and all. Hidden until asked for, and every change to a trip, yours or its own, has Undo.
 - **Midnight as 00:00** - A last bus at midnight says 00:00, not 24:00, in a stop's timings, Explorer and on a trip.
+- **The Newsfeed in Service alerts** - What LTA and the operators announce ahead of time, read every hour from LTA's announcements and SBS Transit's, SMRT's, Tower Transit's and Go-Ahead Singapore's news: a run's closed roads and the stops buses skip, night closures, new services, train service adjustments. What's on in the next two weeks, with its buses, marked where it names your favourite stops or buses, then the operators' latest news.
+- **Skipped stops on a stop's timings** - When buses skip a stop today or tomorrow, its timings say which and for how long: "Today: 97, 106, 133 skip this stop, first bus to 8.30am."
+- **Newsfeed notifications** - A third kind beside trains and traffic: All news, or Service changes only.
 - **Last bus soon, on a trip** - A red warning on the trip bar, with a buzz and a notification, when a bus you've still to get on is down to its last three of the day, its last bus leaves before you'll reach its stop, or it's gone.
 - **Also direct buses in a stop's timings** - On a trip, a bus stop tapped on the trip bar's timeline shows the other direct buses' timings there too, not only your bus's.
 - **Refresh one bus** - Round arrows under each bus's Flag button fetch that bus's timings alone, without scrolling back up to Refresh.
@@ -48,6 +51,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Last buses in /nav** - ⏰ marks a bus you'd catch near its last of the day, and the way says when the last one is.
 - **Walking and cycling in /nav** - How long walking the whole way takes, where it might compete, and cycling with Settings' new 🚲 I have a bike, which syncs with the web app.
 - **Midnight as 00:00** - A stop's first and last bus line says 00:00 for a last bus at midnight, not 24:00.
+- **The Newsfeed in /alerts and /sub** - LTA's notices for the next two weeks, with their buses, and the operators' latest news; a third row in /sub to be sent new ones, all or service changes only; and a stop's timings say when its buses skip it today or tomorrow.
 
 ### Linux command line 2.2.5
 

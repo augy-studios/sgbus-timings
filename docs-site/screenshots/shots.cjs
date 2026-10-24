@@ -907,5 +907,34 @@ async function el(page, sel, name) {
     await el(page, '#services .svc', 'timings-svc-refresh.png');
     await ctx.close();
   }
+  // The Newsfeed (main-site/js/alerts.js, api/notices.js): Service alerts' part for it, its
+  // notification choice, and a stop's note when its buses skip it. NOTICES=<file> stands a saved
+  // /api/notices in for the live one, as before the site has it; otherwise it's the live one.
+  if (want('newsfeed')) {
+    const saved = process.env.NOTICES ? require('fs').readFileSync(process.env.NOTICES, 'utf8') : null;
+    const { ctx, page } = await open(browser, { width: 420, height: 2400, extra: { sgbus_favs_v2: JSON.stringify([{ code: '03501', name: 'Marina Bay Sands Theatre' }, { code: '84009', name: 'Bedok Int' }]) } });
+    if (saved) await ctx.route(/\/api\/notices/, (r) => r.fulfill({ contentType: 'application/json', body: saved }));
+    await page.click('#alertsBtn');
+    await page.waitForFunction(() => /Newsfeed/.test(document.querySelector('#alertsBody')?.textContent || ''), null, { timeout: 30000 }).catch(() => console.log('no newsfeed'));
+    await page.waitForTimeout(1200);
+    const head = page.locator('#alertsBody .alertsHead', { hasText: 'Newsfeed' });
+    const a = await head.boundingBox();
+    const b = await page.locator('#alertsBody').boundingBox();
+    const m = await page.locator('#alertsSection .card').boundingBox();
+    await page.screenshot({ path: OUT + 'alerts-newsfeed.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote alerts-newsfeed.png');
+    const l = await page.locator('#alertNewsfeedLabel').boundingBox();
+    const t = await page.locator('[data-alert-kind="newsfeed"]').boundingBox();
+    await page.screenshot({ path: OUT + 'alerts-newsfeed-modes.png', clip: { x: m.x, y: l.y - 10, width: m.width, height: t.y + t.height + 12 - (l.y - 10) } });
+    console.log('wrote alerts-newsfeed-modes.png');
+    await page.evaluate(() => Alerts.close());
+    // A stop its buses skip today.
+    await page.setViewportSize({ width: 390, height: 1100 });
+    await page.evaluate(() => { location.hash = '#03501'; });
+    await page.waitForSelector('#stopAside .noticeNote', { timeout: 20000 }).catch(() => console.log('no stop note'));
+    await page.waitForTimeout(800);
+    await cardDown(page, '#resultCard', '#stopAside', 'timings-newsfeed-note.png');
+    await ctx.close();
+  }
   await browser.close();
 })();

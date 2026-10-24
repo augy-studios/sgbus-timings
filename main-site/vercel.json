@@ -6,7 +6,8 @@
         "api/nav.js": { "maxDuration": 60 },
         "api/places.js": { "maxDuration": 30 },
         "api/calendar.js": { "maxDuration": 60 },
-        "api/traffic.js": { "maxDuration": 120 }
+        "api/traffic.js": { "maxDuration": 120 },
+        "api/notices.js": { "maxDuration": 300 }
     },
     "rewrites": [
         { "source": "/go/:id", "destination": "/api/share-page?id=:id" },
@@ -16,6 +17,7 @@
     "crons": [
         { "path": "/api/push/poll", "schedule": "* * * * *" },
         { "path": "/api/push/trip-poll", "schedule": "* * * * *" },
-        { "path": "/api/traffic", "schedule": "*/5 * * * *" }
+        { "path": "/api/traffic", "schedule": "*/5 * * * *" },
+        { "path": "/api/notices", "schedule": "7 * * * *" }
     ]
 }

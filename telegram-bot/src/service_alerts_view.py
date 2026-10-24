@@ -11,6 +11,7 @@ from telethon import Button
 from .buttons import make_button
 from .format import escape_md
 from .mrt_stations import line_label, station_name
+from .notices import changes_service, coming, day_text, news, source_name, when_text
 from .service_alerts import is_blocking, is_disrupted, train_parts
 
 # Telegram caps a message at 4096 characters; LTA's incident messages run to about 100.
@@ -129,9 +130,46 @@ def _updated(doc: _Doc) -> None:
     doc.blank().line(f"_Updated {stamp}_", f"Updated {stamp}")
 
 
-def format_alerts_now(train_value, incidents) -> dict:
-    """/alerts: everything happening right now. Either argument is None when LTA could
-    not be reached for it."""
+def _add_newsfeed(doc: _Doc, notices: "dict | None") -> None:
+    """The newsfeed's coming notices and the operators' latest news."""
+    doc.blank().heading(2, "📰 Newsfeed")
+    if notices is None:
+        doc.text("Couldn't get the newsfeed just now. Try Refresh in a minute.")
+        return
+    items, sources = notices.get("items") or [], notices.get("sources") or {}
+    soon = coming(items)
+    if soon:
+        doc.text("Today and the next two weeks:")
+        for n in soon[:10]:
+            buses = n.get("services") or []
+            bus_text = f" Buses {', '.join(buses[:12])}{' and more' if len(buses) > 12 else ''}." if buses else ""
+            doc.line(f"- [{escape_md(n['title'])}]({n['url']}): {escape_md(when_text(n))}.{escape_md(bus_text)}",
+                     f"• {n['title']}: {when_text(n)}.{bus_text} {n['url']}")
+    else:
+        doc.text("No bus or train changes announced for the next two weeks.")
+    latest = news(items)
+    if latest:
+        doc.blank().text("From the operators:")
+        for n in latest:
+            when = day_text(n["published"]) if n.get("published") else ""
+            doc.line(f"- {escape_md(when)} · {escape_md(source_name(n, sources))}: [{escape_md(n['title'])}]({n['url']})",
+                     f"• {when} · {source_name(n, sources)}: {n['title']} {n['url']}")
+
+
+def format_newsfeed_update(items: list, sources: dict) -> dict:
+    """What a chat with the newsfeed on is sent: the new notices."""
+    doc = _Doc().heading(1, f"📰 Newsfeed: {len(items)} new notice{'s' if len(items) > 1 else ''}" if len(items) > 1 else "📰 Newsfeed").blank()
+    for n in items[:10]:
+        dates = f" ({n['dates']})" if n.get("dates") else ""
+        doc.line(f"- {escape_md(source_name(n, sources))}: [{escape_md(n['title'])}]({n['url']}){escape_md(dates)}",
+                 f"• {source_name(n, sources)}: {n['title']}{dates} {n['url']}")
+    doc.blank().text("Send /alerts for what's coming up, or /sub to change what you get.")
+    return doc.build()
+
+
+def format_alerts_now(train_value, incidents, notices=None) -> dict:
+    """/alerts: everything happening right now, and the newsfeed. Any argument is None when
+    it couldn't be reached."""
     doc = _Doc().heading(1, "🔔 Service Alerts").blank()
 
     doc.heading(2, "🚆 Trains")
@@ -159,6 +197,7 @@ def format_alerts_now(train_value, incidents) -> dict:
             summary = ", ".join(f"{n} {kind.lower()}" for kind, n in others.most_common())
             doc.blank().text(f"Also reported: {summary}.")
 
+    _add_newsfeed(doc, notices)
     _updated(doc)
     return doc.build()
 
@@ -185,7 +224,13 @@ _TRAFFIC_TEXT = {
     "disruptions": "accidents, breakdowns, road blocks, diversions and other incidents that can block a bus",
 }
 
+_NEWSFEED_TEXT = {
+    "all": "every new notice and piece of news from LTA and the bus and train operators",
+    "disruptions": "new notices that change a bus or train service",
+}
+
 MODE_LABELS = {"all": "All updates", "disruptions": "Disruptions only", "off": "Off"}
+NEWSFEED_LABELS = {"all": "All news", "disruptions": "Service changes only", "off": "Off"}
 
 
 def format_subscription(modes: "dict | None") -> str:
@@ -193,33 +238,36 @@ def format_subscription(modes: "dict | None") -> str:
     are off, which unsubscribes."""
     if not modes:
         return (
-            "🔕 Both kinds are off, so you're unsubscribed from Service Alerts.\n\n"
-            "Tap a button below to turn either back on."
+            "🔕 Every kind is off, so you're unsubscribed from Service Alerts.\n\n"
+            "Tap a button below to turn one back on."
         )
-    parts = [t for t in (_TRAIN_TEXT.get(modes["train"]), _TRAFFIC_TEXT.get(modes["traffic"])) if t]
+    newsfeed = modes.get("newsfeed", "off")
+    parts = [t for t in (_TRAIN_TEXT.get(modes["train"]), _TRAFFIC_TEXT.get(modes["traffic"]), _NEWSFEED_TEXT.get(newsfeed)) if t]
     return (
         f"🔔 Subscribed to Service Alerts. You'll get an update here for {', and for '.join(parts)}.\n\n"
         f"🚆 Trains: {MODE_LABELS[modes['train']]}\n"
-        f"🚧 Traffic: {MODE_LABELS[modes['traffic']]}\n\n"
-        "Pick for each below. Send /unsub to stop both."
+        f"🚧 Traffic: {MODE_LABELS[modes['traffic']]}\n"
+        f"📰 Newsfeed: {NEWSFEED_LABELS[newsfeed]}\n\n"
+        "Pick for each below. Send /unsub to stop them all."
     )
 
 
 def sub_mode_buttons(modes: "dict | None") -> list:
-    """Two rows under the /sub reply, trains and traffic, the choice in force ticked."""
-    modes = modes or {"train": "off", "traffic": "off"}
+    """Three rows under the /sub reply, trains, traffic and the newsfeed, the choice in force
+    ticked."""
+    modes = {"train": "off", "traffic": "off", "newsfeed": "off", **(modes or {})}
 
-    def row(kind, icon):
+    def row(kind, icon, middle="Disruptions"):
         def label(value, text):
             return f"{'✅' if modes[kind] == value else ''}{icon} {text}"
 
         return [
             Button.inline(label("all", "All"), make_button("alerts_mode", {"kind": kind, "mode": "all"})),
-            Button.inline(label("disruptions", "Disruptions"), make_button("alerts_mode", {"kind": kind, "mode": "disruptions"})),
+            Button.inline(label("disruptions", middle), make_button("alerts_mode", {"kind": kind, "mode": "disruptions"})),
             Button.inline(label("off", "Off"), make_button("alerts_mode", {"kind": kind, "mode": "off"})),
         ]
 
-    return [row("train", "🚆"), row("traffic", "🚧")]
+    return [row("train", "🚆"), row("traffic", "🚧"), row("newsfeed", "📰", "Changes")]
 
 
 def alerts_buttons() -> list:

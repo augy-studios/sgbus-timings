@@ -4,6 +4,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from .bus_routes import direction_ending_at, first_last_bus_times
+from .notices import stop_notes as newsfeed_stop_notes
 from .bus_services import service_terminals
 from .bus_stops import get_bus_stop_by_code, same_place_stops
 from .favourite_prefs import pin_favourites
@@ -220,8 +221,9 @@ def _bus_ways(services) -> list:
 
 
 def _stop_notes(stop) -> list:
-    """Lines under a stop's name: who can use it, and its other half if it's split in two."""
-    notes = []
+    """Lines under a stop's name: buses skipping it today or tomorrow (the newsfeed, notices.py),
+    who can use it, and its other half if it's split in two."""
+    notes = list(newsfeed_stop_notes(stop["code"]))
     restricted = restricted_note(stop["code"])
     if restricted:
         notes.append(restricted)

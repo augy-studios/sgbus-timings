@@ -12,12 +12,15 @@ import { lineLabel, stationName } from './mrt-stations.js';
 // 'off': none of that kind.
 export const MODES = ['all', 'disruptions', 'off'];
 
-// A device or chat's choice: { train, traffic }. Older ones stored one mode for both.
+// A device or chat's choice: { train, traffic, newsfeed }. Older ones stored one mode for
+// train and traffic both, and none for the newsfeed (api/_lib/notices.js): 'all' is every new
+// notice and piece of news, 'disruptions' only those that change a bus or train service.
 export function modesOf(record) {
   const fallback = MODES.includes(record?.mode) ? record.mode : 'off';
   return {
     train: MODES.includes(record?.train) ? record.train : fallback,
     traffic: MODES.includes(record?.traffic) ? record.traffic : fallback,
+    newsfeed: MODES.includes(record?.newsfeed) ? record.newsfeed : 'off',
   };
 }
 

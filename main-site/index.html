@@ -308,6 +308,13 @@
                             <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false">All updates</button>
                             <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false">Disruptions only</button>
                         </div>
+                        <!-- LTA's and the operators' notices and news (js/alerts.js, api/notices.js) -->
+                        <p class="modal-section-label" id="alertNewsfeedLabel"><span data-icon="chart"></span> Newsfeed (LTA and the operators)</p>
+                        <div class="mode-toggle alertModes" data-alert-kind="newsfeed" role="group" aria-labelledby="alertNewsfeedLabel">
+                            <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false">Off</button>
+                            <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false">All news</button>
+                            <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false">Service changes only</button>
+                        </div>
                     </div>
                     <p id="alertsNote" class="mode-note" role="status"></p>
                     <!-- New versions of the app: the Android app (with Firebase) and the desktop

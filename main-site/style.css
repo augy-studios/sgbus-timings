@@ -1640,6 +1640,18 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     color: var(--muted-strong);
     margin-top: 4px;
 }
+/* The newsfeed (js/alerts.js): each notice its title, when and from whom, its buses, and
+   whether it names your stops or buses. */
+.alertsSub { margin: 10px 0 4px; font-size: 13px; font-weight: 700; color: var(--muted-strong); }
+.noticeList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.noticeItem { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); font-size: 14px; }
+.noticeItem.mine { border-color: color-mix(in srgb, var(--brand) 60%, transparent); }
+.noticeItem a { color: inherit; }
+.noticeMeta { font-size: 12px; color: var(--muted-strong); }
+.noticeBuses { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; }
+.noticeBuses .busChip { font-size: 12px; padding: 1px 7px; }
+.noticeMine { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--brand-ink); }
+.noticeList.news .noticeItem { font-size: 13px; }
 .alertItem {
     padding: 10px 12px;
     border-radius: 14px;

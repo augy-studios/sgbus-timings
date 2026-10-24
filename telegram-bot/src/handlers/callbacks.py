@@ -511,8 +511,9 @@ def register_callbacks(client):
             # Also re-subscribes, so tapping a mode under an old /sub reply after /unsub
             # does what the button says.
             if action == "alerts_mode":
-                # Buttons from before trains and traffic were split carry one mode for both.
-                kinds = [payload["kind"]] if payload.get("kind") in ALERT_KINDS else list(ALERT_KINDS)
+                # Buttons from before trains and traffic were split carry one mode for both
+                # (and nothing for the newsfeed, which came later).
+                kinds = [payload["kind"]] if payload.get("kind") in ALERT_KINDS else ["train", "traffic"]
                 mode = payload.get("mode")
                 if mode not in ALERT_MODES:
                     await event.answer()
@@ -592,8 +593,8 @@ def register_callbacks(client):
                 return
 
             if action == "alerts_refresh":
-                train, traffic = await fetch_alerts_now()
-                await edit_rich_message(client, event, format_alerts_now(train, traffic), alerts_buttons())
+                train, traffic, notices = await fetch_alerts_now()
+                await edit_rich_message(client, event, format_alerts_now(train, traffic, notices), alerts_buttons())
                 await event.answer("Refreshed")
                 return
 

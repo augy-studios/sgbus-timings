@@ -929,8 +929,17 @@ function renderStopAside() {
         parts.push(`<button type="button" class="iconBtn" data-same-place="${escapeHtml(other)}" title="Some buses here only stop at the other code">` +
             `${ico('bus')} Also ${escapeHtml(nameOf(other) || other)} (${escapeHtml(other)})</button>`);
     }
+    // Buses skipping it today or tomorrow, from the newsfeed (js/alerts.js): drawn again once
+    // it's in.
+    const notes = window.Alerts?.stopNotes(code) || [];
+    parts.unshift(...notes.map((n) => n.html));
     $('#stopAside').innerHTML = parts.join('');
     $('#stopAside').hidden = !parts.length;
+    if (!notes.length && window.Alerts?.notices) {
+        Alerts.notices().then(() => {
+            if (current?.code === code && Alerts.stopNotes(code).length) renderStopAside();
+        }).catch(() => {});
+    }
 }
 
 function goBack(ctx) {

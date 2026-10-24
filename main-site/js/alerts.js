@@ -13,6 +13,12 @@
 // In the desktop app (desktop/), which has no Web Push either but stays open in the tray, the
 // page checks /api/service-alerts itself every DESKTOP_POLL_MS, by the same rules as
 // api/_push/alerts.js, and the app shows what's new as a notification (window.sgbusDesktop).
+// The Newsfeed (/api/notices): what LTA and the bus and train operators announce ahead of time,
+// a run's closed roads and the stops skipped, a new service, a line closing early. Its own
+// part of the card, today's and coming notices first, those naming your favourite stops and
+// buses marked; the operators' news under them; and a note on a stop's timings when buses
+// skip it today or tomorrow (stopNotes). Notifications for it are a third kind, `newsfeed`.
+//
 // Plain script: this project does not use ES modules, so exports go on window.
 (function () {
   const API_BASE = "/api/push";
@@ -58,11 +64,11 @@
     if (!body.innerHTML) body.innerHTML = `<p class="plannerStatus">Loading service alerts&hellip;</p>`;
     $("#alertsRefresh").classList.add("busy");
     try {
-      const res = await fetch("/api/service-alerts", { cache: "no-store" });
+      const [res, news] = await Promise.all([fetch("/api/service-alerts", { cache: "no-store" }), notices(true).catch(() => null)]);
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       if (data.train) showBar(disruptionText(data.train));
-      if (token === loadToken) body.innerHTML = render(data);
+      if (token === loadToken) body.innerHTML = render(data) + renderNewsfeed(news);
     } catch {
       if (token === loadToken) {
         body.innerHTML = `<p class="plannerStatus">Couldn&rsquo;t reach LTA for service alerts. Check your connection, then tap Refresh.</p>`;
@@ -139,6 +145,104 @@
 
   const list = (items) => `<ul class="alertsList">${items.map((i) => `<li>${esc(i.message)}</li>`).join("")}</ul>`;
 
+  // ---------- the newsfeed ----------
+
+  const NOTICES_FOR_MS = 15 * 60 * 1000;
+  // Coming notices shown this far ahead, and the operators' news this many.
+  const AHEAD_DAYS = 14;
+  const NEWS_SHOWN = 8;
+  let noticesHad = null; // { at, data }
+
+  // /api/notices, kept a while; `fresh` asks again.
+  async function notices(fresh = false) {
+    if (!fresh && noticesHad && Date.now() - noticesHad.at < NOTICES_FOR_MS) return noticesHad.data;
+    const res = await fetch("/api/notices");
+    if (!res.ok) throw new Error(String(res.status));
+    noticesHad = { at: Date.now(), data: await res.json() };
+    return noticesHad.data;
+  }
+
+  const sgDate = (offset = 0) => new Date(Date.now() + 8 * 3600e3 + offset * 86400e3).toISOString().slice(0, 10);
+  const onDate = (n, date) => (n.days ? n.days.includes(date) : !!n.from && n.from <= date && (n.to == null || date <= n.to));
+  // When a notice is, by today: "Today", "Tomorrow", "From Sun 1 Nov", or its own words.
+  function whenText(n) {
+    const today = sgDate();
+    if (onDate(n, today)) return n.to && n.to !== today ? `Today, till ${dayText(n.to)}` : "Today";
+    if (onDate(n, sgDate(1))) return "Tomorrow";
+    return n.dates || (n.from ? dayText(n.from) : "");
+  }
+  const dayText = (date) => new Date(`${date}T12:00:00+08:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Singapore" });
+
+  // Your favourite stops and buses a notice names.
+  function yours(n) {
+    // script.js's LS, a top-level const rather than a property of window.
+    const ls = typeof LS === "undefined" ? null : LS; // eslint-disable-line no-undef
+    const stops = new Set((ls?.getFavs() || []).map((s) => s.code));
+    const buses = new Set((ls?.getFavBuses() || []).map((b) => String(b).toUpperCase()));
+    const myStops = [...new Set([...(n.codes || []), ...Object.keys(n.stops || {})])].filter((c) => stops.has(c));
+    const myBuses = (n.services || []).filter((s) => buses.has(s));
+    return { myStops, myBuses };
+  }
+
+  function noticeItem(n, sources) {
+    const { myStops, myBuses } = yours(n);
+    const services = (n.services || []).slice(0, 14);
+    const mine = [
+      myStops.length && `your stop${myStops.length > 1 ? "s" : ""} ${myStops.map((c) => (window.nameOf?.(c) || c)).join(", ")}`,
+      myBuses.length && `your bus${myBuses.length > 1 ? "es" : ""} ${myBuses.join(", ")}`,
+    ].filter(Boolean);
+    return `<li class="noticeItem${mine.length ? " mine" : ""}">` +
+      `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer"><strong>${esc(n.title)}</strong></a>` +
+      `<span class="noticeMeta">${esc(whenText(n))} · ${esc(n.source === "lta" ? "LTA" : sources[n.source] || n.source)}</span>` +
+      (services.length ? `<span class="noticeBuses">${services.map((s) => `<span class="busChip">${esc(s)}</span>`).join("")}${n.services.length > services.length ? ` +${n.services.length - services.length}` : ""}</span>` : "") +
+      (mine.length ? `<span class="noticeMine">${ico("star")} Affects ${esc(mine.join(" and "))}</span>` : "") +
+      `</li>`;
+  }
+
+  function renderNewsfeed(data) {
+    let html = `<h3 class="alertsHead">${ico("chart")} Newsfeed</h3>`;
+    if (!data) return html + `<p class="alertsLine">Couldn&rsquo;t get the newsfeed just now.</p>`;
+    const today = sgDate();
+    const ahead = sgDate(AHEAD_DAYS);
+    const items = data.items || [];
+    // LTA's notices on now or soon, soonest first; yours first of all.
+    const coming = items
+      .filter((n) => n.source === "lta" && (n.days ? n.days.some((d) => d >= today && d <= ahead) : n.from && n.from <= ahead && (n.to == null ? n.from >= sgDate(-7) : n.to >= today)))
+      .sort((a, b) => (yours(b).myStops.length + yours(b).myBuses.length > 0) - (yours(a).myStops.length + yours(a).myBuses.length > 0) || (a.from || "").localeCompare(b.from || ""));
+    const news = items.filter((n) => n.kind === "news").sort((a, b) => (b.published || "").localeCompare(a.published || "")).slice(0, NEWS_SHOWN);
+    html += coming.length
+      ? `<p class="alertsSub">Today and the next two weeks</p><ul class="noticeList">${coming.map((n) => noticeItem(n, data.sources || {})).join("")}</ul>`
+      : `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>No bus or train changes announced for the next two weeks.</p>`;
+    if (news.length) {
+      html += `<p class="alertsSub">From the operators</p><ul class="noticeList news">` +
+        news.map((n) => `<li class="noticeItem"><a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a>` +
+          `<span class="noticeMeta">${esc(n.published ? dayText(n.published) : "")} · ${esc((data.sources || {})[n.source] || n.source)}</span></li>`).join("") + `</ul>`;
+    }
+    return html;
+  }
+
+  // A stop's notes from the newsfeed: its buses skipping it, or a notice naming it, today or
+  // tomorrow. [{ html }], for its timings (script.js renderStopAside); empty till the newsfeed's in.
+  function stopNotes(code) {
+    const data = noticesHad?.data;
+    if (!data) return [];
+    const notes = [];
+    for (const [offset, word] of [[0, "Today"], [1, "Tomorrow"]]) {
+      const date = sgDate(offset);
+      for (const n of data.items || []) {
+        if (n.source !== "lta" || !onDate(n, date) || !(n.stops?.[code] || n.codes?.includes(code))) continue;
+        const here = n.stops?.[code];
+        const what = here
+          ? `${here.services.join(", ")} skip${here.services.length === 1 ? "s" : ""} this stop${here.when ? `, ${here.when.replace(/^first bus/i, "first bus")}` : ""}`
+          : "this stop is affected";
+        notes.push({ html: `<p class="stopAsideNote noticeNote">${ico("alert")} <span><strong>${word}:</strong> ${esc(what)}. ${esc(n.title)}. ` +
+          `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">Details</a></span></p>` });
+      }
+      if (notes.length) break;
+    }
+    return notes;
+  }
+
   // ---------- the disruptions bar ----------
   // Along the top, under the update bar, only while a train line is disrupted or delayed: what's
   // affected, and Details for the card. Hide puts it away for this page view, until the
@@ -214,22 +318,24 @@
   function storedModes() {
     try {
       const saved = JSON.parse(localStorage.getItem(MODES_KEY) || "null");
-      if (saved && MODES.includes(saved.train) && MODES.includes(saved.traffic)) return saved;
+      if (saved && MODES.includes(saved.train) && MODES.includes(saved.traffic)) {
+        return { ...saved, newsfeed: MODES.includes(saved.newsfeed) ? saved.newsfeed : "off" };
+      }
       const old = localStorage.getItem(MODE_KEY);
-      if (old === "all" || old === "disruptions") return { train: old, traffic: old };
+      if (old === "all" || old === "disruptions") return { train: old, traffic: old, newsfeed: "off" };
     } catch {}
-    return { train: "off", traffic: "off" };
+    return { train: "off", traffic: "off", newsfeed: "off" };
   }
 
   function storeModes(modes) {
     try {
       localStorage.removeItem(MODE_KEY);
-      if (modes.train === "off" && modes.traffic === "off") localStorage.removeItem(MODES_KEY);
+      if (!anyOn(modes)) localStorage.removeItem(MODES_KEY);
       else localStorage.setItem(MODES_KEY, JSON.stringify(modes));
     } catch {}
   }
 
-  const anyOn = (modes) => modes.train !== "off" || modes.traffic !== "off";
+  const anyOn = (modes) => modes.train !== "off" || modes.traffic !== "off" || (modes.newsfeed || "off") !== "off";
 
   function deviceId() {
     let id = null;
@@ -251,6 +357,10 @@
     all: "every new traffic incident in Singapore",
     disruptions: "accidents, breakdowns, road blocks and diversions",
   };
+  const NEWSFEED_NOTES = {
+    all: "every new notice and piece of news from LTA and the bus and train operators",
+    disruptions: "new notices that change a bus or train service",
+  };
   const PROBLEMS = {
     unsupported: "This browser can't receive notifications. On iPhone or iPad, add the app to your Home Screen, open it from there, and try again.",
     denied: "Notifications are blocked for this site. Allow them in your browser's site settings, then pick again.",
@@ -260,13 +370,13 @@
   };
 
   function noteFor(modes) {
-    const parts = [TRAIN_NOTES[modes.train], TRAFFIC_NOTES[modes.traffic]].filter(Boolean);
+    const parts = [TRAIN_NOTES[modes.train], TRAFFIC_NOTES[modes.traffic], NEWSFEED_NOTES[modes.newsfeed]].filter(Boolean);
     if (!parts.length) return "Notifications are off. This window still shows what's happening now.";
     return `You'll be notified of ${parts.join(", and of ")}.`;
   }
 
   function showModes(modes, problem) {
-    for (const kind of ["train", "traffic"]) {
+    for (const kind of ["train", "traffic", "newsfeed"]) {
       document.querySelectorAll(`[data-alert-kind="${kind}"] [data-alert-mode]`).forEach((btn) => {
         const on = btn.dataset.alertMode === modes[kind];
         btn.classList.toggle("active", on);
@@ -341,7 +451,7 @@
     const res = await fetch(`${API_BASE}/devices/${deviceId()}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription: sub.toJSON(), train: modes.train, traffic: modes.traffic }),
+      body: JSON.stringify({ subscription: sub.toJSON(), train: modes.train, traffic: modes.traffic, newsfeed: modes.newsfeed || "off" }),
     });
     if (!res.ok) throw new Error(`alerts server replied ${res.status}`);
   }
@@ -487,6 +597,32 @@
 
     if (parts.length) window.sgbusDesktop.notify({ title, body: parts.join("\n"), url: "/#alerts" });
     if (data.train) showBar(disruptionText(data.train));
+    desktopNews(d);
+  }
+
+  // The newsfeed in the desktop app: what's new since the last look, as api/notices.js pushes it.
+  const CHANGES_RE = /divers|clos|skip|servic|stop|route|berth|shuttle|disrupt|extend|extension|operating hours|last (bus|train)|relocat|amend|adjust|new (bus|short|peak|service)|interchange|terminal/i;
+  const NOT_CHANGES_RE = /fare|award|recruit|career|contract|campaign|trial|winner|appoint/i;
+  async function desktopNews(d) {
+    if ((d.modes.newsfeed || "off") === "off") return;
+    let data;
+    try {
+      data = await notices(true);
+    } catch {
+      return;
+    }
+    if (desktop !== d) return;
+    const ids = new Set((data.items || []).map((n) => n.id));
+    const fresh = d.news ? (data.items || []).filter((n) => !d.news.has(n.id)) : [];
+    d.news = ids;
+    const heard = d.modes.newsfeed === "all" ? fresh : fresh.filter((n) => n.source === "lta" || (CHANGES_RE.test(n.title) && !NOT_CHANGES_RE.test(n.title)));
+    if (!heard.length) return;
+    const from = (n) => (n.source === "lta" ? "LTA" : (data.sources || {})[n.source] || n.source);
+    window.sgbusDesktop.notify({
+      title: heard.length === 1 ? `Newsfeed: ${from(heard[0])}` : `Newsfeed: ${heard.length} new notices`,
+      body: heard.slice(0, 3).map((n) => (heard.length === 1 ? n.title : `${from(n)}: ${n.title}`)).join("\n"),
+      url: "/#alerts",
+    });
   }
 
   // ---------- wiring ----------
@@ -557,6 +693,6 @@
     resync();
   }
 
-  window.Alerts = { open, close, pushTarget };
+  window.Alerts = { open, close, pushTarget, notices, stopNotes };
   init();
 })();

@@ -10,8 +10,10 @@ from telethon.errors import (
 )
 
 from ..lta import fetch_traffic_incidents, fetch_train_alerts
+from ..notices import changes_service, fetch_notices
 from ..reply import send_rich_message
 from ..service_alerts import (
+    diff_newsfeed,
     diff_traffic,
     diff_train,
     get_modes,
@@ -24,6 +26,7 @@ from ..service_alerts_view import (
     alerts_buttons,
     format_alert_update,
     format_alerts_now,
+    format_newsfeed_update,
     format_subscription,
     sub_mode_buttons,
 )
@@ -41,9 +44,10 @@ UNSUBSCRIBED = "🔕 Unsubscribed from Service Alerts. You won't receive them an
 
 
 async def fetch_alerts_now() -> tuple:
-    """(train alerts, traffic incidents), either one None if LTA couldn't be reached."""
-    train, traffic = await asyncio.gather(fetch_train_alerts(), fetch_traffic_incidents(), return_exceptions=True)
-    return (None if isinstance(train, Exception) else train, None if isinstance(traffic, Exception) else traffic)
+    """(train alerts, traffic incidents, newsfeed), any one None if it couldn't be reached."""
+    train, traffic, notices = await asyncio.gather(fetch_train_alerts(), fetch_traffic_incidents(), fetch_notices(), return_exceptions=True)
+    gone = lambda v: None if isinstance(v, Exception) else v  # noqa: E731
+    return gone(train), gone(traffic), gone(notices)
 
 
 def register_servicealerts(client):
@@ -61,8 +65,8 @@ def register_servicealerts(client):
 
     @client.on(events.NewMessage(pattern=r"^/alerts(@\w+)?$"))
     async def alerts(event):
-        train, traffic = await fetch_alerts_now()
-        await send_rich_message(client, event.chat_id, format_alerts_now(train, traffic), alerts_buttons())
+        train, traffic, notices = await fetch_alerts_now()
+        await send_rich_message(client, event.chat_id, format_alerts_now(train, traffic, notices), alerts_buttons())
 
 
 # ---------- polling ----------
@@ -97,6 +101,35 @@ async def poll_service_alerts(client) -> None:
 
     # Sent in the background, so a long subscriber list doesn't hold up routines.
     asyncio.get_event_loop().create_task(_broadcast(client, train_update, new_incidents))
+
+
+async def poll_newsfeed(client) -> None:
+    """The site's newsfeed, kept for stop notes (notices.py), and what's new in it sent to the
+    chats with it on."""
+    notices = await fetch_notices()
+    if not notices:
+        return
+    fresh = diff_newsfeed(notices.get("items") or [])
+    if fresh:
+        asyncio.get_event_loop().create_task(_broadcast_newsfeed(client, fresh, notices.get("sources") or {}))
+
+
+async def _broadcast_newsfeed(client, fresh: list, sources: dict) -> None:
+    messages = {
+        "all": format_newsfeed_update(fresh, sources),
+        "disruptions": format_newsfeed_update([n for n in fresh if changes_service(n)], sources) if any(changes_service(n) for n in fresh) else None,
+    }
+    for row in list_subscribers():
+        rich = messages.get(row["newsfeed_mode"])
+        if not rich:
+            continue
+        try:
+            await send_rich_message(client, row["chat_id"], rich)
+        except _GONE:
+            unsubscribe(row["chat_id"])
+        except Exception as err:
+            print(f"[service-alerts] newsfeed to chat {row['chat_id']} failed: {err}")
+        await asyncio.sleep(_SEND_GAP_SECONDS)
 
 
 async def _broadcast(client, train_update, new_incidents) -> None:

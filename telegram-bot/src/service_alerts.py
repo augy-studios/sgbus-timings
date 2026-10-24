@@ -17,8 +17,10 @@ from .db import db
 # 'disruptions': train updates only while a disruption is active (plus the one when it
 # clears) / only the incidents that can stop or reroute a bus.
 # 'off': none of that kind.
+# The newsfeed (notices.py) is a third kind: 'all' every new notice and piece of news,
+# 'disruptions' only those that change a service. Off unless chosen.
 MODES = ("all", "disruptions", "off")
-KINDS = ("train", "traffic")
+KINDS = ("train", "traffic", "newsfeed")
 
 # LTA incident types, lowercased, that can stop or reroute a bus. The rest (heavy
 # traffic, roadworks, weather, unattended vehicles and so on) are "All updates" only.
@@ -97,11 +99,11 @@ def update_for(modes: dict, train_update: "dict | None", new_incidents: list) ->
 
 
 def get_modes(chat_id: int) -> "dict | None":
-    """The chat's {"train", "traffic"} modes, or None if it isn't subscribed."""
+    """The chat's {"train", "traffic", "newsfeed"} modes, or None if it isn't subscribed."""
     row = db.execute(
-        "SELECT train_mode, traffic_mode FROM service_alert_subs WHERE chat_id = ?", (chat_id,)
+        "SELECT train_mode, traffic_mode, newsfeed_mode FROM service_alert_subs WHERE chat_id = ?", (chat_id,)
     ).fetchone()
-    return {"train": row["train_mode"], "traffic": row["traffic_mode"]} if row else None
+    return {"train": row["train_mode"], "traffic": row["traffic_mode"], "newsfeed": row["newsfeed_mode"]} if row else None
 
 
 def subscribe(chat_id: int) -> None:
@@ -122,7 +124,7 @@ def set_mode(chat_id: int, kind: str, mode: str) -> "dict | None":
     with db:
         db.execute(f"UPDATE service_alert_subs SET {kind}_mode = ? WHERE chat_id = ?", (mode, chat_id))
     modes = get_modes(chat_id)
-    if modes and modes["train"] == "off" and modes["traffic"] == "off":
+    if modes and all(modes[k] == "off" for k in KINDS):
         unsubscribe(chat_id)
         return None
     return modes
@@ -134,7 +136,7 @@ def unsubscribe(chat_id: int) -> None:
 
 
 def list_subscribers() -> list:
-    return db.execute("SELECT chat_id, train_mode, traffic_mode FROM service_alert_subs").fetchall()
+    return db.execute("SELECT chat_id, train_mode, traffic_mode, newsfeed_mode FROM service_alert_subs").fetchall()
 
 
 # ---------- what changed since the last poll ----------
@@ -154,6 +156,18 @@ def _set_state(feed: str, state: dict) -> None:
             """,
             (feed, json.dumps(state), _now_ms()),
         )
+
+
+def diff_newsfeed(items: list) -> list:
+    """Records the newsfeed's notices and returns the new ones. The first poll only records,
+    so a restart doesn't announce everything as new."""
+    prev = _get_state("newsfeed")
+    ids = [n["id"] for n in items]
+    _set_state("newsfeed", {"ids": ids})
+    if prev is None:
+        return []
+    seen = set(prev.get("ids") or [])
+    return [n for n in items if n["id"] not in seen]
 
 
 def diff_train(value: dict) -> "dict | None":

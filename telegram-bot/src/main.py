@@ -27,7 +27,7 @@ from .handlers.places import register_places
 from .handlers.newroute import register_newroute
 from .handlers.routines import register_routines
 from .handlers.search import register_search
-from .handlers.servicealerts import poll_service_alerts, register_servicealerts
+from .handlers.servicealerts import poll_newsfeed, poll_service_alerts, register_servicealerts
 from .handlers.setname import register_setname
 from .handlers.settings import register_settings
 from .handlers.start import register_start
@@ -102,6 +102,8 @@ async def main() -> None:
         int(config.service_alert_poll_seconds * 1000),
         lambda: poll_service_alerts(client),
     )
+    # The site reads the notices hourly; a quarter of an hour is soon enough to pass them on.
+    register_job("poll-newsfeed", 15 * 60 * 1000, lambda: poll_newsfeed(client))
 
     if bus_stops_count() == 0:
         print("Bus stop cache is empty, fetching from LTA DataMall before starting...")
