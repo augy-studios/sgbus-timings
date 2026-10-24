@@ -16,6 +16,11 @@
 // Leaflet (vendor/leaflet) where there's no WebGL at all, or MapLibre won't start: the map as it
 // was before, flat, north up, without turning.
 //
+// Explorer's stops and stations (js/map.js) are dots of their own, pois(list): every station
+// from zoom 11, every stop from zoom 15. A tap on one, or on a dot drawn with a `pick`, goes to
+// hooks.onPick(pick); a tap on the map elsewhere to hooks.onBlank(); hooks.onMove() as it moves,
+// for a card kept on its dot (js/map-card.js).
+//
 // Everything's cached by sw.js: the library, the styles, fonts, sprites and every tile seen.
 //
 // Zooms here are Leaflet's (OpenStreetMap's 256-pixel tiles): MapLibre's are one less for the
@@ -45,6 +50,10 @@
   const TILE_RETRY_MS = 10 * 1000;
   // Drawn above everything else in its group: lines, then stops, marks and you.
   const ORDER = { lines: 0, stops: 1, marks: 2, me: 3 };
+  // Explorer's dots: stations from here, stops from closer in (Leaflet's zooms).
+  const POI_STATION_ZOOM = 11;
+  const POI_STOP_ZOOM = 15;
+  const STOP_DOT = { fill: '#ffffff', stroke: '#1f9d55' };
 
   function load(js, css) {
     return new Promise((resolve, reject) => {
@@ -154,11 +163,28 @@
       flushing ??= requestAnimationFrame(flush);
     }
 
+    // Explorer's stops and stations, as one source under everything else drawn.
+    let poiData = { type: 'FeatureCollection', features: [] };
+    const poiPicks = new Map();
+
     // The sources and layers for what's drawn, over the style: put back each time it changes.
     function addOverlays() {
       const empty = { type: 'FeatureCollection', features: [] };
       for (const kind of ['fill', 'line', 'dot']) if (!map.getSource(`sg-${kind}`)) map.addSource(`sg-${kind}`, { type: 'geojson', data: empty });
       const add = (layer) => { if (!map.getLayer(layer.id)) map.addLayer(layer); };
+      if (!map.getSource('sg-poi')) map.addSource('sg-poi', { type: 'geojson', data: poiData });
+      const grow = (small, big) => ['interpolate', ['linear'], ['zoom'], toGl(POI_STOP_ZOOM), small, toGl(19), big];
+      add({
+        id: 'sg-poi-stop', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_STOP_ZOOM), filter: ['==', ['get', 'kind'], 'stop'],
+        paint: { 'circle-radius': grow(3.5, 7), 'circle-color': STOP_DOT.fill, 'circle-stroke-color': STOP_DOT.stroke, 'circle-stroke-width': grow(2, 3) },
+      });
+      add({
+        id: 'sg-poi-station', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_STATION_ZOOM), filter: ['==', ['get', 'kind'], 'station'],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], toGl(POI_STATION_ZOOM), 3.5, toGl(15), 6.5, toGl(19), 10],
+          'circle-color': ['get', 'color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2,
+        },
+      });
       add({ id: 'sg-fill', type: 'fill', source: 'sg-fill', paint: { 'fill-color': ['get', 'fill'], 'fill-opacity': ['get', 'opacity'] } });
       const line = (id, dash) => ({
         id, type: 'line', source: 'sg-line', filter: ['==', ['get', 'dash'], dash],
@@ -224,18 +250,37 @@
       else map.setStyle(dark() ? STYLE_DARK : STYLE_LIGHT, { diff: false });
     }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
 
-    // A stop's or a place's name, on a tap (or under the pointer, with a mouse).
+    // A stop's or a place's name, on a tap (or under the pointer, with a mouse). A dot that says
+    // what it is (a `pick`), or one of Explorer's, opens its card instead (hooks.onPick).
     const popup = new ml.Popup({ closeButton: false, closeOnClick: true, offset: 12, className: 'mapTip' });
     const tip = (e) => {
       const f = e.features?.find((x) => x.properties.label);
       if (!f) return;
       popup.setLngLat(f.geometry.coordinates).setText(f.properties.label).addTo(map);
     };
-    map.on('click', 'sg-dot', tip);
-    if (matchMedia('(hover: hover)').matches) {
-      map.on('mouseenter', 'sg-dot', (e) => { map.getCanvas().style.cursor = 'pointer'; tip(e); });
+    const hover = matchMedia('(hover: hover)').matches;
+    map.on('click', (e) => {
+      const layers = ['sg-dot', 'sg-poi-station', 'sg-poi-stop'].filter((id) => map.getLayer(id));
+      // A finger's width round the tap, as the dots are small.
+      const pad = 10;
+      const hits = map.queryRenderedFeatures([[e.point.x - pad, e.point.y - pad], [e.point.x + pad, e.point.y + pad]], { layers });
+      const dot = hits.find((f) => f.layer.id === 'sg-dot' && f.properties.pick);
+      const poi = hits.find((f) => f.layer.id === 'sg-poi-station') || hits.find((f) => f.layer.id === 'sg-poi-stop');
+      if (dot) return hooks.onPick?.(JSON.parse(dot.properties.pick));
+      if (poi) return hooks.onPick?.(poiPicks.get(poi.properties.id));
+      const label = hits.find((f) => f.layer.id === 'sg-dot' && f.properties.label);
+      if (label) return tip({ features: [label] });
+      hooks.onBlank?.();
+    });
+    if (hover) {
+      map.on('mouseenter', 'sg-dot', (e) => { map.getCanvas().style.cursor = 'pointer'; if (!e.features?.[0]?.properties.pick) tip(e); });
       map.on('mouseleave', 'sg-dot', () => { map.getCanvas().style.cursor = ''; popup.remove(); });
+      for (const id of ['sg-poi-station', 'sg-poi-stop']) {
+        map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
+        map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
+      }
     }
+    map.on('move', () => hooks.onMove?.());
 
     map.on('dragstart', () => hooks.onUserMove?.());
     map.on('zoomstart', (e) => { if (e.originalEvent) hooks.onUserZoom?.(); });
@@ -275,6 +320,7 @@
       dot(group, at, s) {
         const h = item(group, 'dot', { type: 'Point', coordinates: ll(at) }, {
           radius: s.radius, fill: s.fill, fillOpacity: s.fillOpacity ?? 1, stroke: s.stroke || '#fff', weight: s.weight ?? 0, label: s.label || '',
+          ...(s.pick && { pick: JSON.stringify(s.pick) }),
         });
         return { ...h, set: (p) => h.set({ type: 'Point', coordinates: ll(p) }), get alive() { return h.alive; } };
       },
@@ -289,6 +335,18 @@
       clear(group) {
         for (const [id, it] of items) if (it.group === group) items.delete(id);
         changed();
+      },
+      // Explorer's dots, [{ kind: 'stop' | 'station', lat, lng, color?, pick }]; [] takes them away.
+      pois(list) {
+        poiPicks.clear();
+        poiData = {
+          type: 'FeatureCollection',
+          features: list.map((p, i) => {
+            poiPicks.set(i, p.pick);
+            return { type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: i, kind: p.kind, color: p.color || '#7a4fd6' } };
+          }),
+        };
+        map.getSource('sg-poi')?.setData(poiData);
       },
       setView(at, z, animate = false) {
         map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate ? 500 : 0 });
@@ -362,6 +420,31 @@
       retry = setTimeout(refetch, TILE_RETRY_MS);
     });
     window.addEventListener('online', refetch);
+    // Explorer's dots under the rest, and only those in view: thousands of stops at once would
+    // make a canvas map crawl.
+    const poiLayer = L.layerGroup().addTo(map);
+    let pois = [];
+    function drawPois() {
+      poiLayer.clearLayers();
+      const z = map.getZoom();
+      if (!pois.length || z < POI_STATION_ZOOM) return;
+      const view = map.getBounds().pad(0.2);
+      for (const p of pois) {
+        if (p.kind === 'stop' && z < POI_STOP_ZOOM) continue;
+        if (!view.contains([p.lat, p.lng])) continue;
+        const style = p.kind === 'stop'
+          ? { radius: 5, color: STOP_DOT.stroke, weight: 2, fillColor: STOP_DOT.fill, fillOpacity: 1 }
+          : { radius: 7, color: '#ffffff', weight: 2, fillColor: p.color || '#7a4fd6', fillOpacity: 1 };
+        L.circleMarker([p.lat, p.lng], style).on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          hooks.onPick?.(p.pick);
+        }).addTo(poiLayer);
+      }
+    }
+    map.on('moveend zoomend', drawPois);
+    map.on('move', () => hooks.onMove?.());
+    map.on('click', () => hooks.onBlank?.());
+
     const groups = {};
     const group = (name) => (groups[name] ??= L.layerGroup().addTo(map));
     Object.keys(ORDER).forEach(group);
@@ -377,8 +460,13 @@
         return wrap(l, g, (p) => l.setLatLngs(p));
       },
       dot(g, at, s) {
-        const d = L.circleMarker(at, { radius: s.radius, color: s.stroke || '#fff', weight: s.weight ?? 0, fillColor: s.fill, fillOpacity: s.fillOpacity ?? 1, interactive: !!s.label });
-        if (s.label) d.bindTooltip(String(s.label).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`), { direction: 'top', offset: [0, -8] });
+        const d = L.circleMarker(at, { radius: s.radius, color: s.stroke || '#fff', weight: s.weight ?? 0, fillColor: s.fill, fillOpacity: s.fillOpacity ?? 1, interactive: !!(s.label || s.pick) });
+        if (s.pick) {
+          d.on('click', (e) => {
+            L.DomEvent.stopPropagation(e);
+            hooks.onPick?.(s.pick);
+          });
+        } else if (s.label) d.bindTooltip(String(s.label).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`), { direction: 'top', offset: [0, -8] });
         d.addTo(group(g));
         return wrap(d, g, (p) => d.setLatLng(p));
       },
@@ -391,6 +479,10 @@
         return wrap(p, g, (q) => p.setLatLngs(q));
       },
       clear: (g) => group(g).clearLayers(),
+      pois(list) {
+        pois = list;
+        drawPois();
+      },
       setView: (at, z, animate = false) => map.setView(at, z, { animate }),
       panTo: (at, ms) => map.panTo(at, { animate: true, duration: ms / 1000 }),
       fit: (pts, pad, maxZ) => map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom], maxZoom: maxZ }),

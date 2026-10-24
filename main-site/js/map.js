@@ -12,6 +12,11 @@
 //                           the stops, where you get off, and you. On a walk, its route.
 //   LiveMap.follow(data)    someone's shared trip (js/share.js): where they are, the way
 //                           they're going and where to, updated as their link is.
+//   LiveMap.explore()       Explorer, from its Edge Tray button: no way to follow, just every bus
+//                           stop and MRT and LRT station as a dot, and you. A tap on one opens
+//                           its card (js/map-card.js): a stop's buses, a station's doors.
+//
+// The stops and stations on a trip or a walk open the same card when tapped.
 //
 // It opens at street level, as close in as the map goes, on you (or on them, for a shared
 // trip), and keeps following. Overview shows the whole way at once; Recentre goes back to
@@ -42,8 +47,12 @@
   // A fix rougher than this isn't drawn as where you are.
   const ROUGH_M = 200;
   const TRIP_EVERY_MS = 5000;
-  // Street level: the closest OpenStreetMap's tiles go.
+  // Street level: the closest OpenStreetMap's tiles go. Explorer opens further out, to see the
+  // stops round about.
   const STREET_ZOOM = 19;
+  const EXPLORE_ZOOM = 16;
+  // A train ride's dot is the station within this of it.
+  const STATION_M = 300;
 
   const COLOURS = { walk: '#2f7dff', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
   // Each MRT and LRT line's own colour, for a train leg without one. Keep in step with
@@ -57,7 +66,7 @@
   let meCone = null;
   let destMark = null;
 
-  let mode = null; // 'walk' | 'trip' | 'follow'
+  let mode = null; // 'walk' | 'trip' | 'follow' | 'explore'
   let place = null; // where a walk goes: { lat, lng, label }
   let walk = null; // its route from /api/walk: { distance, minutes, path, steps, source }
   let walkFrom = null;
@@ -152,6 +161,9 @@
       onUserMove: () => setFollowing(false),
       onUserZoom: () => { if (!turning) setFollowing(false); },
       onTurn: needle,
+      onPick: openCard,
+      onBlank: () => MapCard.close(),
+      onMove: () => MapCard.place(),
     }).catch((err) => {
       opening = null;
       throw err;
@@ -253,8 +265,9 @@
     following = on;
     $('#mapRecentre').hidden = on;
     const at = on && focus();
-    if (at) ink.setView(at, STREET_ZOOM, true);
+    if (at) ink.setView(at, followZoom(), true);
   }
+  const followZoom = () => (mode === 'explore' ? EXPLORE_ZOOM : STREET_ZOOM);
 
   // The whole way at once: what's left of the walk or trip, or their trip, with you or them
   // and where it ends. Clear of the bars at the top and bottom.
@@ -288,7 +301,11 @@
     $('#mapStep').textContent = '';
     $('#mapNote').hidden = true;
     $('#mapActions').innerHTML = '';
+    $('#mapOverview').hidden = false;
     const panel = $('#mapPanel');
+    panel.classList.toggle('exploring', mode === 'explore');
+    panel.setAttribute('aria-label', mode === 'explore' ? 'Explorer' : 'Live map');
+    MapCard.close();
     const wasOpen = !panel.hidden;
     panel.hidden = false;
     document.body.classList.add('map-open');
@@ -308,6 +325,7 @@
     ink.clear('lines');
     ink.clear('stops');
     ink.clear('marks');
+    if (mode !== 'explore') ink.pois([]);
     destMark = null;
     builtTripLeg = null;
     setFollowing(true);
@@ -317,7 +335,9 @@
     const panel = $('#mapPanel');
     if (panel.hidden) return;
     setTurning(false);
+    MapCard.close();
     panel.hidden = true;
+    panel.classList.remove('exploring');
     document.body.classList.remove('map-open');
     stopWatching();
     clearInterval(tripTimer);
@@ -370,7 +390,7 @@
     if (!lastHere || metres([lastHere.lat, lastHere.lng], [next.lat, next.lng]) > 8) lastHere = next;
     const first = !here;
     here = next;
-    if (first && following && mode !== 'follow') ink.setView([here.lat, here.lng], STREET_ZOOM);
+    if (first && following && mode !== 'follow') ink.setView([here.lat, here.lng], followZoom());
     if (mode === 'walk') onWalkFix();
   }
 
@@ -437,13 +457,15 @@
   async function walkTo(to, { from = null, title = null } = {}) {
     if (to?.lat == null || to?.lng == null) return;
     $('#mapHeading').hidden = false;
+    mode = 'walk';
     await show(title || `Walk to ${to.label || 'here'}`, '');
     mode = 'walk';
     place = { lat: Number(to.lat), lng: Number(to.lng), label: to.label || 'Your destination' };
     walk = null;
     walkFrom = from;
     offRoute = 0;
-    destMark = flag([place.lat, place.lng], place.label);
+    // A stop's (to.code): its card on a tap.
+    destMark = flag([place.lat, place.lng], place.label, undefined, to.code ? { kind: 'stop', code: to.code } : null);
     // On you already (show() went in on your last fix); until there's one, on where it ends.
     if (!here) ink.setView([place.lat, place.lng], STREET_ZOOM - 2);
     $('#mapStep').textContent = 'Finding where you are…';
@@ -517,16 +539,19 @@
 
   // ---------- a trip ----------
 
-  // A place on the map, its name on a tap.
-  function flag(at, label, colour = '#d6336c') {
-    return ink.dot('marks', at, { radius: 9, stroke: '#fff', weight: 3, fill: colour, label });
+  // A place on the map, its name on a tap, or its card for a stop or station (`pick`).
+  function flag(at, label, colour = '#d6336c', pick = null) {
+    return ink.dot('marks', at, { radius: 9, stroke: '#fff', weight: 3, fill: colour, label, ...(pick && { pick }) });
   }
 
   async function trip() {
     const p = window.Trip?.progress();
     if (!p) return;
     $('#mapHeading').hidden = false;
+    mode = 'trip';
     await show(window.Trip.title?.() || 'Your trip', '');
+    // For the stations' cards on a train ride's dots.
+    await loadStations().catch(() => {});
     mode = 'trip';
     startWatching();
     drawTrip(true);
@@ -567,13 +592,14 @@
         if (leg.kind !== 'walk' && !done) {
           leg.points.forEach((pt, k) => {
             if (k === 0 || k === leg.points.length - 1) return;
-            ink.dot('stops', pt, { radius: 3.5, stroke: colour, weight: 2, fill: '#fff', label: leg.names?.[k] || `Stop ${k + 1}` });
+            const pick = pickAt(leg, k);
+            ink.dot('stops', pt, { radius: 3.5, stroke: colour, weight: 2, fill: '#fff', label: leg.names?.[k] || `Stop ${k + 1}`, ...(pick && { pick }) });
           });
         }
         if (!done) {
           const end = leg.points[leg.points.length - 1];
           const last = i === legs.length - 1;
-          flag(end, last ? leg.to : `${leg.kind === 'walk' ? 'Walk to' : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour);
+          flag(end, last ? leg.to : `${leg.kind === 'walk' ? 'Walk to' : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
         }
       });
       // On a walk, its streets: from where you are, or where it starts.
@@ -653,6 +679,7 @@
     // Their trip, centred on them: turning it with the way you face would make no sense.
     setTurning(false);
     $('#mapHeading').hidden = true;
+    mode = 'follow';
     await show(title || (data.name ? `${data.name}'s trip` : 'Shared trip'), '');
     mode = 'follow';
     themDot = themRing = themPath = null;
@@ -706,6 +733,73 @@
     $('#mapSub').textContent = live ? `Arriving ${mins ? `in ${mins} min, around ${clock(data.arriveAt)}` : 'now'}` : `at ${data.to?.label || ''}`;
   }
 
+  // ---------- Explorer and the cards ----------
+
+  // Every MRT and LRT station, { name, codes, lat, lng }, as station search has them.
+  let stations = null;
+  let stationsLoading = null;
+  function loadStations() {
+    stationsLoading ??= fetch('/data/rail-stations.json')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error('no stations'))))
+      .then((d) => { stations = d.stations || []; })
+      .catch((err) => { stationsLoading = null; throw err; });
+    return stationsLoading;
+  }
+
+  const stationPick = (s) => ({ kind: 'station', name: s.name, codes: s.codes, lat: s.lat, lng: s.lng });
+  const lineColour = (code) => LINE_COLOURS[String(code).toUpperCase().match(/^[A-Z]{2}/)?.[0]] || '#748477';
+
+  // What a dot on a trip is, for its card: a bus ride's stop by its code (Trip's `codes`), a
+  // train ride's station, the nearest within STATION_M. Null for anything else.
+  function pickAt(leg, k) {
+    if (leg.kind === 'bus' && leg.codes?.length === leg.points.length && leg.codes[k]) return { kind: 'stop', code: leg.codes[k] };
+    if (leg.kind !== 'train' || !stations) return null;
+    const pt = leg.points[k];
+    let best = null;
+    let bestM = STATION_M;
+    for (const s of stations) {
+      const m = metres(pt, [s.lat, s.lng]);
+      if (m < bestM) [best, bestM] = [s, m];
+    }
+    return best ? stationPick(best) : null;
+  }
+
+  function openCard(pick) {
+    if (!pick) return;
+    MapCard.open(pick, { panel: $('#mapPanel'), ink, onDirections: directionsTo });
+  }
+
+  // A card's Directions: Navigate's Bus and train, from where you are, once the map's gone
+  // (its step back in the page's history first, so Navigate's comes after it).
+  function directionsTo(to) {
+    const then = () => openNavFromHere(to);
+    if (!pushed) {
+      close();
+      return then();
+    }
+    window.addEventListener('popstate', () => setTimeout(then, 0), { once: true });
+    close();
+  }
+
+  // Explorer: no way to follow, just you, every stop and every station.
+  async function explore() {
+    $('#mapHeading').hidden = false;
+    mode = 'explore';
+    await show('Explorer', 'Tap a bus stop or a station');
+    mode = 'explore';
+    $('#mapOverview').hidden = true;
+    startWatching();
+    if (!here) ink.setView([1.3521, 103.8198], 12);
+    const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {})]);
+    if (mode !== 'explore') return;
+    const dots = [];
+    for (const [code, s] of Object.entries(index || {})) {
+      if (s.lat != null && s.lng != null) dots.push({ kind: 'stop', lat: s.lat, lng: s.lng, pick: { kind: 'stop', code } });
+    }
+    for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), pick: stationPick(s) });
+    ink.pois(dots);
+  }
+
   // ---------- links ----------
 
   // #map/84009 (a stop) and #map/1.3184,103.8932~Name (a place): from script.js's router.
@@ -713,7 +807,7 @@
     // stopsIndex is script.js's, a top-level let rather than a property of window.
     const stops = typeof stopsIndex === 'undefined' ? null : stopsIndex; // eslint-disable-line no-undef
     const stop = /^\d{5}$/.test(target) ? stops?.[target] : null;
-    if (stop) return walkTo({ lat: stop.lat, lng: stop.lng, label: stop.n || target }), true;
+    if (stop) return walkTo({ lat: stop.lat, lng: stop.lng, label: stop.n || target, code: target }), true;
     const m = /^(-?[\d.]+),(-?[\d.]+)(?:~(.*))?$/.exec(target);
     if (m) return walkTo({ lat: Number(m[1]), lng: Number(m[2]), label: m[3] || 'Pinned place' }), true;
     return false;
@@ -736,6 +830,6 @@
     });
   }
 
-  window.LiveMap = { walkTo, trip, follow, updateFollow, close, openFromHash, isOpen: () => mode != null, mode: () => mode };
+  window.LiveMap = { walkTo, trip, follow, explore, updateFollow, close, openFromHash, isOpen: () => mode != null, mode: () => mode };
   init();
 })();

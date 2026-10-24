@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v100";
+const VERSION = "v101";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -44,6 +44,7 @@ const ASSETS = [
   "/js/app-bridge.js",
   "/js/telegram.js",
   "/js/map.js",
+  "/js/map-card.js",
   // The MRT and LRT tracks a train ride's drawn along on the live map (js/rail-tracks.js).
   "/js/rail-tracks.js",
   "/data/rail-tracks.json",
@@ -57,8 +58,9 @@ const ASSETS = [
   "/js/make-it.js",
   "/js/board.js",
   "/js/pip.js",
-  // sgbus in the browser's console, fetched on its first call (script.js).
-  "/js/console.js",
+  // The sgbus terminal and its commands, fetched the first time it's opened (script.js).
+  "/js/sgbus-core.js",
+  "/js/terminal.js",
   // The desktop app's widgets (desktop/widgets.js).
   "/widget.html",
   "/js/widget.js",

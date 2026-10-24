@@ -689,5 +689,22 @@
     return 1;
   }
 
-  window.Calendar = { init, render, openSettings, parseIcs, upcoming, occurrences, syncList, mergeSync };
+  // ---------- the sgbus terminal (js/terminal.js) ----------
+
+  // `calendar set`: a link in place of whatever's linked, as Save does, unread until it's listed.
+  function setLink(url) {
+    saveSettings({ hidden: settings().hidden, url });
+    fetched = null;
+  }
+
+  // `calendar rm`: as Remove does, without asking first, since it was typed.
+  function unlink() {
+    saveSettings({ hidden: [] });
+    fetched = null;
+    try {
+      localStorage.removeItem(PLACES_KEY);
+    } catch { /* nothing to forget */ }
+  }
+
+  window.Calendar = { init, render, openSettings, parseIcs, upcoming, occurrences, syncList, mergeSync, connected, upcomingList, setLink, unlink };
 })();

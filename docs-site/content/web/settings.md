@@ -6,7 +6,7 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti, Open Places, Calendar settings, Show me around, Next bus at a glance, Custom home, pinning for favourite buses, the Get Off Alert switch, Restricted areas, Immigration time, pinning for favourite stops, the Edge Tray side and buttons, and syncing with another device." width="396" height="2631" loading="lazy">
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti, Open Places, Calendar settings, Open the sgbus terminal, Show me around, Next bus at a glance, Custom home, pinning for favourite buses, the Get Off Alert switch, Restricted areas, Immigration time, pinning for favourite stops, the Edge Tray side and buttons, and syncing with another device." width="396" height="2817" loading="lazy">
 <figcaption>Settings. Changes save as you make them.</figcaption>
 </figure>
 
@@ -19,6 +19,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |
 | **Home, Work and your places** | **Open Places** opens [Places](places.md), where Home, Work and your other places are set. |
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
+| **sgbus terminal** | **Open the sgbus terminal** opens the Linux app's `sgbus>` prompt, full screen: see [The sgbus terminal](terminal.md). |
 | **Show me around** | A button for each page's [tour](main-screen.md#the-tours), to see it again as it shows the first time that page opens. |
 | **Next bus at a glance** | **On** (the default) or **Off**: the Glance page, with the next bus in big letters and your stops' buses. Off takes it out of the Edge Tray, and the app opens on Bus timings. See [Your main screen](main-screen.md#glance). |
 | **Custom home** | The page the app opens on, first in the Edge Tray: **Glance** (the default), **Bus timings**, **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
@@ -29,7 +30,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Picture-in-picture** | The [Android app](android-app.md#picture-in-picture) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
-| **Edge Tray buttons** | Turn off any of **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee** and **Guide** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
+| **Edge Tray buttons** | Turn off any of **[Explorer](explorer.md)**, **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee** and **Guide** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
 | **Sync with another device** | See [Sync between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.

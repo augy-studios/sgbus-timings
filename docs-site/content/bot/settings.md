@@ -47,7 +47,7 @@ stop, a Google Maps link, GPS coordinates or a plus code, picked from the
 suggestions if there are several. Or
 tap **Send my location** to save where you are now, named Home or Work.
 
-The `/nav` and `/route` panels ([Navigate](nav.md#home-and-work),
+The `/nav` and `/route` panels ([Navigate](nav.md#home-work-and-your-places),
 [Routes](routes.md#home-and-work)) then have **🏠 From home**, **💼 From work**, **🏠 To home** and **💼 To work**
 buttons. **Clear home** and **Clear work** remove them.
 

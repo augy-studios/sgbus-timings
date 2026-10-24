@@ -150,5 +150,93 @@
     return `${head}: ${parts.join('; ')}.${p.numberAt ? ` The door number is ${NUMBER_AT[p.numberAt]}.` : ''}`;
   }
 
-  window.MrtDoors = { load, plan, tip, NUMBER_AT, ready: () => platforms != null };
+  // ---------- a station's platforms, for the live map's card (js/map-card.js) ----------
+
+  // "NS Line", "BP LRT": as the Service Alerts card names lines (js/mrt-stations.js).
+  const lineName = (l) => window.MRT?.lineLabel(`${l}L`) || `${l} Line`;
+
+  // Each direction's far end, its platform furthest into it (the highest `order`), and its
+  // platforms by order: a loop's ends are both Promenade, so the next station tells them apart.
+  function directions() {
+    const byDir = new Map();
+    for (const p of platforms) (byDir.get(p.d) || byDir.set(p.d, []).get(p.d)).push(p);
+    for (const list of byDir.values()) list.sort((a, b) => a.o - b.o);
+    return byDir;
+  }
+
+  // The way a direction goes, from station `here`: towards its far end, or on a loop, whose
+  // two ways both end at Promenade, towards its next station from here.
+  function towardsFrom(list, here) {
+    const end = list[list.length - 1];
+    if (list[0].n !== end.n) return end.n;
+    const at = list.find((q) => q.n === here);
+    return (at && list.find((q) => q.o > at.o)?.n) || end.n;
+  }
+
+  // Where a facility at station `here` leads, in words: "Exit", "NS Line towards Jurong East",
+  // "Jewel". To both ways on a line it's just the line, "NE Line".
+  function leadsOf(f, byDir, here) {
+    const out = [];
+    const lines = new Map(); // line -> the directions it leads to on it
+    for (const w of ways(f)) {
+      if (byDir.has(w)) {
+        const l = byDir.get(w)[0].l;
+        if (!lines.has(l)) out.push({ line: l });
+        (lines.get(l) || lines.set(l, []).get(l)).push(w);
+      } else {
+        const text = w.toLowerCase() === 'exit' ? 'Exit' : w;
+        if (!out.includes(text)) out.push(text);
+      }
+    }
+    const words = out.map((x) => {
+      if (typeof x === 'string') return x;
+      const dirs = lines.get(x.line);
+      if (dirs.length > 1) return lineName(x.line);
+      return `${lineName(x.line)} towards ${towardsFrom(byDir.get(dirs[0]), here)}`;
+    });
+    return words.length ? words : ['Exit'];
+  }
+
+  // Every platform at a station, by its codes ("NS24", "NE6", "CC1"): one for each way a train
+  // goes from it, [{ code, line, lineName, towards, next, last, rows, numberAt, cross }], each
+  // row { t, leads, doors } and `cross` the lines across the platform. Line by line, as the codes
+  // are given. Empty where the station isn't in the data, or isn't yet.
+  function station(codes) {
+    if (!platforms) return [];
+    const want = codes.map((c) => String(c).toUpperCase());
+    const byDir = directions();
+    const rank = (t) => (ORDER.includes(t) ? ORDER.indexOf(t) : ORDER.length);
+    return platforms
+      .filter((p) => want.includes(p.c.toUpperCase()))
+      .sort((a, b) => want.indexOf(a.c.toUpperCase()) - want.indexOf(b.c.toUpperCase()) || a.d.localeCompare(b.d) || a.o - b.o)
+      .map((p) => {
+        const list = byDir.get(p.d) || [p];
+        const end = list[list.length - 1];
+        const next = list.find((q) => q.o > p.o);
+        const max = DOORS[p.l] || 24;
+        const groups = new Map();
+        for (const f of p.f) {
+          const doors = [...new Set(f.doors)].filter((n) => Number.isInteger(n) && n >= 1 && n <= max);
+          if (!doors.length) continue;
+          const leads = leadsOf(f, byDir, p.n);
+          const key = `${f.t}|${leads.join('/')}`;
+          const g = groups.get(key) || { t: f.t, leads, doors: [] };
+          g.doors = [...new Set([...g.doors, ...doors])].sort((a, b) => a - b);
+          groups.set(key, g);
+        }
+        return {
+          code: p.c,
+          line: p.l,
+          lineName: lineName(p.l),
+          towards: end.n,
+          next: next?.n || null,
+          last: !next,
+          rows: [...groups.values()].sort((a, b) => rank(a.t) - rank(b.t) || a.leads.join().localeCompare(b.leads.join())),
+          numberAt: numberAt(p),
+          cross: p.x.map((d) => byDir.get(d)).filter(Boolean).map((l) => `${lineName(l[0].l)} towards ${towardsFrom(l, p.n)}`),
+        };
+      });
+  }
+
+  window.MrtDoors = { load, plan, tip, station, NUMBER_AT, ready: () => platforms != null };
 })();

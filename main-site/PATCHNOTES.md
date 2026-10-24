@@ -9,6 +9,33 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 24 October 2026 (later): Apps 2.2.5, the sgbus terminal
+
+### Web app
+
+- **The sgbus terminal** - The Linux app's `sgbus>` prompt, full screen in the web app: type `84009`, `nav home work`, `favs -w` or any other of its commands instead of tapping. Tab finishes a word, Up brings back what you typed, Ctrl+C stops a `-w`. Open it from Settings, with Ctrl+` on a computer, or by typing `sgbus` in your browser's console. The Edge Tray stays beside it. What it saves is the app's own: `fav add 84009` there is a favourite on Bus timings too.
+- **Every command, as on Linux** - The route planner, saved routes and navs, setting places, your calendar and Settings' pins, restricted areas and immigration time, with `--leave` and `--arrive`. It replaces `sgbus('...')` in the console, which took only some of them.
+- **A warning in the console** - Opening your browser's console shows a warning, as Discord's does: never paste code there that someone sent you.
+- **Explorer** - The live map from its own Edge Tray button, with every bus stop and MRT and LRT station round you as a dot to tap. A stop's card shows every bus there, green while it's running, red once it's down to its last three buses of the day, grey when it isn't running. A station's card has its codes in their lines' colours and, a platform at a time with arrows at the sides, the doors nearest its escalators, lifts and stairs and where each leads. Both have Directions, to Navigate's Bus and train from where you are. Explorer can be turned off in Settings, Edge Tray buttons.
+- **Tap the stops on your trip** - On the live map, a trip's stops and stations, and the stop a walk goes to, open the same cards.
+
+### Linux command line 2.2.5
+
+- **Its commands shared with the web app** - The same file runs both, so they say the same thing. `nav` and `place set` list plus codes among the ends they take.
+- **Safer to print** - Text from the data, such as a calendar event's title or a place synced from another device, can't send your terminal escape codes: only sgbus's own colours get through.
+- **Your calendar's link stays out of the history** - `calendar set <link>` isn't kept in `~/.cache/sgbus/history`, or for Up.
+- **Settings line up** - `sgbus settings` keeps its columns straight when a pin is at the bottom.
+
+### Android app 2.2.5
+
+- The web app's changes above. In the app, the terminal's `routine` commands set the app's routines.
+
+### Desktop app 2.2.5
+
+- The web app's changes above.
+
+---
+
 ## 24 October 2026: train doors at almost every station
 
 ### Web app

@@ -491,6 +491,7 @@ body.modal-open { overflow: hidden; }
 }
 :root[data-tray-closed] { --tray-room: 0px; }
 /* The optional buttons turned off in Settings (script.js, setTrayExtra). */
+:root[data-tray-hide~="explorer"] [data-tray-extra="explorer"],
 :root[data-tray-hide~="simplygo"] [data-tray-extra="simplygo"],
 :root[data-tray-hide~="telegram"] [data-tray-extra="telegram"],
 :root[data-tray-hide~="coffee"] [data-tray-extra="coffee"],
@@ -3224,3 +3225,232 @@ body.touring { overflow: hidden; }
     .tourHole { transition: none; }
     .tourLine { animation: none; stroke-dashoffset: 0; }
 }
+
+/* ----------- The sgbus terminal (js/terminal.js) -----------
+   The Linux app's sgbus> prompt, with a terminal's look in either theme: dark, monospace, and
+   the command line's colours (the t-* classes are its ANSI codes: 1 bold, 2 dim, 31 to 36 red,
+   green, yellow, blue, magenta, cyan). Long lines wrap, as a terminal's do. Full screen on
+   every screen, as the live map is (.mapPanel), and over it, for Ctrl+` there. The Edge Tray
+   stays over the terminal (js/terminal.js marks the page data-terminal while it's open), so
+   the terminal keeps clear of the tray's side as the page does: the tray's room while it's
+   out, the tab's when it's tucked away. */
+.terminalBackdrop { z-index: 70; padding: 0; align-items: stretch; background: #0d1117; }
+:root[data-terminal] .hud { z-index: 80; }
+.terminal {
+    --term-tray: max(var(--tray-room), calc(var(--tray-tab) + 16px));
+    --term-right: var(--term-tray);
+    --term-left: 0px;
+    --term-side: 14px;
+    --term-bg: #0d1117;
+    --term-bar: #161b22;
+    --term-fg: #d6dde3;
+    --term-dim: #8b949e;
+    width: 100%;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--term-bg);
+    color: var(--term-fg);
+    font-size: 13px;
+    line-height: 1.45;
+    outline: none;
+}
+/* Over the base rule's font for everything (*), and its text that can't be selected: what's
+   printed can be selected and copied, as in a terminal. */
+.terminal, .terminal * { font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+.termScreen, .termScreen * { -webkit-user-select: text; user-select: text; }
+:root[data-tray-side="left"] .terminal { --term-right: 0px; --term-left: var(--term-tray); }
+@media (min-width: 640px) {
+    .terminal { font-size: 14px; --term-side: 20px; }
+}
+.termBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px calc(8px + var(--term-right)) 6px calc(var(--term-side) + var(--term-left));
+    padding-top: max(6px, env(safe-area-inset-top));
+    background: var(--term-bar);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.termTitle { flex: 1; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.termTitle .ico { display: inline-flex; width: 16px; height: 16px; color: #3fb950; }
+.termTitle .ico svg { width: 100%; height: 100%; }
+.termStop {
+    font: inherit;
+    color: #ffb4ac;
+    background: rgba(209, 36, 47, 0.2);
+    border: 1px solid rgba(209, 36, 47, 0.55);
+    border-radius: 6px;
+    padding: 3px 14px;
+    cursor: pointer;
+}
+.terminal .termClose { background: transparent; border-color: transparent; color: var(--term-fg); }
+.termScroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 10px calc(var(--term-side) + var(--term-right)) 16px calc(var(--term-side) + var(--term-left));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.termScreen, .termLine { white-space: pre-wrap; overflow-wrap: anywhere; }
+.termRow { min-height: 1.45em; }
+.termLine { display: flex; align-items: baseline; gap: 1ch; }
+.termLine[hidden] { display: none; }
+.termIn {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    outline: none;
+    caret-color: #3fb950;
+}
+.terminal .t-1 { font-weight: 700; }
+.terminal .t-2 { color: var(--term-dim); }
+.terminal .t-31 { color: #ff7b72; }
+.terminal .t-32 { color: #3fb950; }
+.terminal .t-33 { color: #e3b341; }
+.terminal .t-34 { color: #58a6ff; }
+.terminal .t-35 { color: #d2a8ff; }
+.terminal .t-36 { color: #39c5cf; }
+/* Dim in a colour (the TE line's chip): the colour, fainter. */
+.terminal .t-2[class*="t-3"] { opacity: 0.75; }
+
+/* ----------- The live map's card (js/map-card.js) -----------
+   A tapped stop's or station's card, out of its dot like a chat bubble: its tail on the dot,
+   above it, or below where the top bar's in the way (.below), popping out from the tail. */
+.mapPanel.exploring .mapSheet { display: none; }
+.mapCard {
+    position: absolute;
+    z-index: 1050;
+    width: min(340px, calc(100vw - 16px));
+    --tail-x: 50%;
+}
+.mcBubble {
+    position: relative;
+    border-radius: 18px;
+    /* The glass colour over the page's own, so the map doesn't show through. */
+    --mc-bg: linear-gradient(var(--surface-strong), var(--surface-strong)), var(--bg);
+    background: var(--mc-bg);
+    color: var(--ink);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    transform-origin: var(--tail-x) calc(100% + 12px);
+    animation: mcPop 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.25);
+}
+.mapCard.below .mcBubble { transform-origin: var(--tail-x) -12px; }
+/* The tail: a square turned on its point, half of it under the bubble. */
+.mcBubble::after {
+    content: "";
+    position: absolute;
+    left: calc(var(--tail-x) - 9px);
+    bottom: -9px;
+    width: 18px;
+    height: 18px;
+    background: var(--mc-bg);
+    border-right: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    border-radius: 0 0 4px 0;
+    transform: rotate(45deg);
+}
+.mapCard.below .mcBubble::after { bottom: auto; top: -9px; transform: rotate(225deg); }
+@keyframes mcPop {
+    from { opacity: 0; transform: scale(0.35); }
+    to { opacity: 1; transform: none; }
+}
+.mcBody {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    max-height: min(68vh, 560px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.mcHead { display: flex; align-items: flex-start; gap: 10px; }
+.mcTitle { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.mcTitle strong { font-size: 17px; line-height: 1.2; }
+.mcTitle > span { font-size: 13px; color: var(--muted-strong); }
+.mcCode {
+    flex: none;
+    padding: 3px 8px;
+    border-radius: 8px;
+    background: var(--brand-fill);
+    color: var(--on-brand);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.mcClose { flex: none; margin: -4px -4px 0 0; }
+.mcCodes { display: flex; flex-wrap: wrap; gap: 6px; }
+/* A station's code, a pill in its line's colour. */
+.lineCode {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--line, #748477);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+/* A bus at the stop: green running, red down to its last three buses, grey not running. */
+.mcPills { display: flex; flex-wrap: wrap; gap: 6px; }
+.svcPill {
+    min-width: 44px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    background: #1f9d55;
+}
+.svcPill.last { background: #d1242f; }
+.svcPill.off { background: color-mix(in srgb, var(--ink) 18%, var(--surface-strong)); color: var(--muted-strong); }
+.mcKey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 12px; color: var(--muted); }
+.mcKeyDot { width: 9px; height: 9px; border-radius: 50%; background: #1f9d55; margin-left: 6px; }
+.mcKeyDot:first-child { margin-left: 0; }
+.mcKeyDot.last { background: #d1242f; }
+.mcKeyDot.off { background: color-mix(in srgb, var(--ink) 25%, var(--surface-strong)); }
+.mcNote { margin: 0; font-size: 13px; color: var(--muted-strong); display: flex; align-items: center; gap: 6px; }
+.mcNote .ico svg { width: 16px; height: 16px; }
+.mcGo { align-self: stretch; justify-content: center; }
+/* A station's platforms, a direction at a time, with an arrow at each side. */
+.mcCarousel { display: grid; grid-template-columns: 30px 1fr 30px; align-items: center; gap: 4px; }
+.mcArrow {
+    width: 30px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+    color: var(--ink);
+}
+.mcArrow[hidden] { visibility: hidden; display: inline-flex; }
+.mcArrow svg { width: 18px; height: 18px; }
+.mcSlide { min-width: 0; display: flex; flex-direction: column; gap: 10px; touch-action: pan-y; }
+.mcSlide.fromRight { animation: mcSlideIn 0.22s ease-out; --from: 24px; }
+.mcSlide.fromLeft { animation: mcSlideIn 0.22s ease-out; --from: -24px; }
+@keyframes mcSlideIn {
+    from { opacity: 0; transform: translateX(var(--from)); }
+    to { opacity: 1; transform: none; }
+}
+.mcDir { display: flex; align-items: center; gap: 8px; }
+.mcDirText { display: flex; flex-direction: column; font-size: 14px; }
+.mcDirText span { font-size: 12px; color: var(--muted); }
+.mcCount { margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
+.mapCard .legDoors { margin: 0; }
+.mapCard .doorChip { min-width: 46px; }
+.mapCard .doorChip b { font-size: 17px; }
+@media (prefers-reduced-motion: reduce) {
+    .mcBubble, .mcSlide.fromLeft, .mcSlide.fromRight { animation: none; }
+}
+/* In the card's width, each row's doors go under what it is and where it leads. */
+.mapCard .doorRow { grid-template-columns: 24px 1fr; grid-template-areas: "ico where" "ico chips"; align-items: start; row-gap: 6px; }
+.mapCard .doorRow > .doorWhere { color: var(--ink); }

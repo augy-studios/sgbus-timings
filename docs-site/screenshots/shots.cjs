@@ -595,5 +595,91 @@ async function el(page, sel, name) {
     await cardDown(page, N, '#navFromAc', 'nav-any-name.png');
     await ctx.close();
   }
+  // The sgbus terminal (main-site/js/terminal.js): opened as the console opens it, a stop's
+  // timings and a nav typed at its prompt; on a phone from Settings, with -w's Stop; and its
+  // button in Settings.
+  if (want('terminal-live')) {
+    const type = async (page, cmd) => {
+      await page.fill('.termIn', cmd);
+      await page.press('.termIn', 'Enter');
+      await page.waitForFunction(() => !document.querySelector('.termLine').hidden, null, { timeout: 60000 }).catch(() => console.log('still busy:', cmd));
+      await page.waitForTimeout(400);
+    };
+    let { ctx, page } = await open(browser, { width: 1000, height: 640 });
+    await page.evaluate(() => window.sgbus);
+    await page.waitForSelector('#terminalModal:not(.hidden) .termIn', { timeout: 15000 });
+    await type(page, '84009 14,60');
+    await type(page, 'fav');
+    await page.waitForTimeout(300);
+    await el(page, '.terminal', 'terminal.png');
+    await type(page, 'clear');
+    await type(page, 'nav home work');
+    await el(page, '.terminal', 'terminal-nav.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true }));
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(500);
+    const label = page.locator('#settingsTerminal');
+    const box = await page.evaluate(() => {
+      const btn = document.getElementById('settingsTerminal');
+      btn.scrollIntoView({ block: 'center' });
+      const top = btn.previousElementSibling.getBoundingClientRect();
+      const bottom = btn.nextElementSibling.getBoundingClientRect();
+      const card = btn.closest('.modal').getBoundingClientRect();
+      return { x: card.x, y: top.y - 10, width: card.width, height: bottom.bottom + 12 - (top.y - 10) };
+    });
+    await page.screenshot({ path: OUT + 'terminal-settings.png', clip: box });
+    console.log('wrote terminal-settings.png', Math.round(box.width), Math.round(box.height));
+    await label.click();
+    await page.waitForSelector('#terminalModal:not(.hidden) .termIn', { timeout: 15000 });
+    await page.fill('.termIn', '84009 14,60,30 -w');
+    await page.press('.termIn', 'Enter');
+    await page.waitForSelector('.termStop:not([hidden])', { timeout: 30000 }).catch(() => console.log('no Stop'));
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: OUT + 'terminal-phone.png', clip: { x: 0, y: 0, width: 390, height: 300 } });
+    console.log('wrote terminal-phone.png 390 300');
+    await ctx.close();
+  }
+  // Explorer (main-site/js/map.js, js/map-card.js): on a phone, "you" at a stop or a station,
+  // which Explorer opens on; the middle of the map is that dot, and a tap there opens its card.
+  // Live timings in the stop's pills, so in the day, while buses run.
+  if (want('explorer-live')) {
+    const stops = await (await fetch(`${SITE}api/bus-stops`)).json();
+    const bedok = stops.find((x) => x.c === '84009');
+    const spots = [
+      { name: 'stop', geo: { latitude: bedok.la, longitude: bedok.lo } },
+      { name: 'station', geo: { latitude: 1.298786, longitude: 103.84502 } },
+    ];
+    for (const spot of spots) {
+      const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: spot.geo });
+      await page.click('#explorerBtn');
+      await page.waitForTimeout(7000);
+      const box = await page.locator('#liveMap').boundingBox();
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await page.waitForTimeout(4000);
+      await page.screenshot({ path: OUT + `explorer-${spot.name}.png` });
+      console.log(`wrote explorer-${spot.name}.png 390 844`);
+      if (spot.name === 'station') {
+        await page.click('.mcArrow[data-mc-step="1"]');
+        await page.waitForTimeout(800);
+        await el(page, '.mcBubble', 'explorer-station-next.png');
+      }
+      await ctx.close();
+    }
+    // The overview, "you" a street away, so the station's dot isn't under yours.
+    let { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: { latitude: 1.2972, longitude: 103.8462 } });
+    await page.click('#explorerBtn');
+    await page.waitForTimeout(7000);
+    await page.screenshot({ path: OUT + 'explorer.png' });
+    console.log('wrote explorer.png 390 844');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 420, height: 3400 }));
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(500);
+    await el(page, '#trayExtrasPick', 'explorer-settings.png');
+    await ctx.close();
+  }
   await browser.close();
 })();

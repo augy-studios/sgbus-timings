@@ -15,11 +15,11 @@ Ubuntu 22.04, install Node.js 20 from [NodeSource](https://github.com/nodesource
 first.
 
 **Debian, Ubuntu, Mint, Raspberry Pi OS**: download
-`sg-bus-timings-cli-2.2.4-all.deb` from the
+`sg-bus-timings-cli-2.2.5-all.deb` from the
 [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest), then:
 
 ```bash
-sudo apt install ./sg-bus-timings-cli-2.2.4-all.deb
+sudo apt install ./sg-bus-timings-cli-2.2.5-all.deb
 ```
 
 **Any other Linux**, or without `sudo`: it's one file.
@@ -133,27 +133,9 @@ What you save is kept on this computer, in `~/.config/sgbus/config.json`. It doe
 > Add `--json` to a command for its data instead of the text, for your own scripts:
 > `sgbus 84009 14 --json`. `NO_COLOR=1` turns the colours off.
 
-## In a browser's console
+## In the web app
 
-Most of the same commands work in the web app itself, with nothing to install:
-open your browser's developer tools (**F12**, or **Ctrl+Shift+J**; **⌥⌘J** on a
-Mac) on [sgbus.uwuapps.org](https://sgbus.uwuapps.org), and type each one as
-`sgbus('...')`:
-
-```js
-sgbus('84009 22*')        // a stop's timings, narrowed to buses starting 22
-sgbus('favs -w')          // your favourite stops, kept up to date
-sgbus('nav home work')    // by bus and train, between two of your places
-sgbus('help')             // the rest
-```
-
-It takes a stop's timings (with `-w` and `-d`), finding stops, `near`, `bus`,
-`nav` (with `--way N`), `favs`, `fav add` and `fav rm`, `places`, `alerts` and
-`weather`, and `--json` hands back the data to look through. It uses what's saved
-in that browser, so `sgbus('fav add 84009')` saves the stop in the web app too.
-Routines, the route planner, the calendar and settings stay in the app and here.
-
-> [!WARNING]
-> Never paste code into the console that someone else sent you. Anything typed
-> there runs as you, with your saved stops and places. `sgbus('...')` only ever
-> reads your words as a command, never as code.
+The same commands work in the web app, with nothing to install: open the
+[sgbus terminal](terminal.md) from Settings, with **Ctrl+`**, or by typing `sgbus`
+in your browser's console, and type them at its `sgbus>` prompt. What it saves is
+the web app's own: `fav add 84009` there is a favourite on Bus timings too.

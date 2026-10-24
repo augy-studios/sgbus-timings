@@ -138,6 +138,9 @@
                 <button id="timingsBtn" class="glass-btn" type="button" aria-label="Bus timings" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
                 <button id="nearMeBtn" class="glass-btn" type="button" aria-label="Stops near me" title="Stops near me"><span data-icon="pin"></span></button>
+                <!-- Explorer: the live map with every stop and station to tap (js/map.js); can be
+                     turned off in Settings, Edge Tray buttons -->
+                <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" aria-label="Explorer" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
                 <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" aria-label="Service alerts" title="Service alerts"><span data-icon="bell"></span></button>
                 <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
@@ -584,6 +587,10 @@
             <p class="modal-section-label">Calendar</p>
             <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> Calendar settings</button>
             <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
+            <!-- The Linux app's sgbus> prompt on the page (js/terminal.js, loaded from script.js) -->
+            <p class="modal-section-label">sgbus terminal</p>
+            <button id="settingsTerminal" class="iconBtn settingsWide" type="button"><span data-icon="terminal"></span> Open the sgbus terminal</button>
+            <p class="mode-note">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
             <!-- Each page's tour, as it shows the first time that page opens (js/tour.js) -->
             <p class="modal-section-label">Show me around</p>
             <div id="settingsTour" class="tourPicks"></div>
@@ -697,6 +704,7 @@
             <p class="mode-note">The Edge Tray is the column of buttons at the top of the screen. Its arrow tucks it away at the edge.</p>
             <p class="modal-section-label">Edge Tray buttons</p>
             <div id="trayExtrasPick" class="mode-toggle trayExtrasPick">
+                <button class="mode-btn" type="button" data-tray-show="explorer" aria-pressed="true">Explorer</button>
                 <button class="mode-btn" type="button" data-tray-show="simplygo" aria-pressed="true">SimplyGo</button>
                 <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true">Telegram bot</button>
                 <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true">Buy Augy a Coffee</button>
@@ -1081,6 +1089,7 @@
     <script src="/js/rail-tracks.js"></script>
     <script src="/js/map-engine.js"></script>
     <script src="/js/map.js"></script>
+    <script src="/js/map-card.js"></script>
     <script src="/js/card.js"></script>
     <script src="/js/offline-share.js"></script>
     <script src="/js/reminders.js"></script>

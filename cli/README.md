@@ -14,8 +14,8 @@ Raspberry Pi, any distribution. No key, no account: the data is the site's own p
 **Debian, Ubuntu, Mint, Raspberry Pi OS** (any architecture):
 
 ```bash
-curl -LO https://github.com/augy-studios/sgbus-timings/releases/latest/download/sg-bus-timings-cli-2.2.4-all.deb
-sudo apt install ./sg-bus-timings-cli-2.2.4-all.deb
+curl -LO https://github.com/augy-studios/sgbus-timings/releases/latest/download/sg-bus-timings-cli-2.2.5-all.deb
+sudo apt install ./sg-bus-timings-cli-2.2.5-all.deb
 ```
 
 Debian 12 and later and Ubuntu 24.04 and later have a new enough Node.js. On Ubuntu 22.04,
@@ -93,14 +93,21 @@ bot yet.
 
 ## How it's made
 
-`sgbus.js` is the whole command. It runs the site's own code for the route planner, stop
-search with LTA's short forms, stations, train line names and reading iCal
-(`main-site/js/when.js`, `network.js`, `journeys.js`, `contractions.js`,
-`station-search.js`, `mrt-stations.js`, `calendar.js`) in a sandbox standing in for a
-browser, so it finds what the web app finds. In this repository it reads them from
-`main-site/js`, so `node cli/sgbus.js 84009` works as it is.
+The commands themselves are `main-site/js/sgbus-core.js`, the same file the web app's
+[sgbus terminal](../docs-site/content/web/terminal.md) runs, so the two say the same thing.
+`sgbus.js` is what only a terminal has around them: the config file and the cache on disk,
+colours, the `sgbus>` prompt and its history, `update`, and routines as notifications. It
+runs the site's own code for the route planner, stop search with LTA's short forms,
+stations, train line names and reading iCal (`main-site/js/when.js`, `network.js`,
+`journeys.js`, `contractions.js`, `station-search.js`, `mrt-stations.js`, `calendar.js`) in
+a sandbox standing in for a browser, so it finds what the web app finds. In this repository
+it reads them from `main-site/js`, so `node cli/sgbus.js 84009` works as it is.
 
-`node build.mjs` (from `cli/`) puts those scripts inside one file and builds the Debian
+Text from the data (a stop's name, an alert, a calendar event's title) has its control
+characters taken out before it's printed, so nothing but sgbus's own colours reaches your
+terminal.
+
+`node build.mjs` (from `cli/`) puts those scripts and the core inside one file and builds the Debian
 package, an `ar` archive written in plain Node, so it builds on Windows too:
 
 | File | What |

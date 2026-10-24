@@ -37,6 +37,7 @@ than about three taps to reach goes under Advanced.
 * [Navigate by bus and train](web/nav.md)
 * [Navigate by bus only](web/route-planner.md)
 * [Live map](web/live-map.md)
+* [Explorer](web/explorer.md)
 * [Places](web/places.md)
 * [Past searches](web/past-searches.md)
 * [Calendar](web/calendar.md)
@@ -45,6 +46,7 @@ than about three taps to reach goes under Advanced.
 * [Service alerts](web/service-alerts.md)
 * [Sync between devices](web/sync.md)
 * [Shortcuts and widgets](web/shortcuts-and-widgets.md)
+* [The sgbus terminal](web/terminal.md)
 
 ## Telegram bot: basics
 

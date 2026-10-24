@@ -454,9 +454,12 @@
     return added.length;
   }
 
+  // The sgbus terminal (js/terminal.js) lists and changes routines as the modal does: the
+  // whole list, handed to the app with each change.
   window.Reminders = {
     earphonesOnly, bell,
     has, syncRoutines, syncLastBus, mergeRoutines, mergeLastBus, MAX_ROUTINES,
+    routineList: routines, setRoutines: saveRoutines,
   };
   init();
 })();

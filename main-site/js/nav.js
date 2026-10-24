@@ -362,6 +362,18 @@ function openNav(from = null, to = null, { when = null, focus = true } = {}) {
   if (!nav.from && focus) Recents.quietFocus($('#navFrom'));
 }
 
+// Bus and train, from where you are to `to`: the live map's Directions on a stop or station
+// (js/map-card.js). The tab it opens on is Bus and train whichever was last.
+function openNavFromHere(to) {
+  if (!$('#plannerSection').hidden) closePlanner();
+  try {
+    localStorage.setItem(NAV_MODE_KEY, 'all');
+  } catch { /* opens on Bus and train this time anyway */ }
+  nav.from = null;
+  openNav(null, to, { focus: false });
+  locateNavEnd('from').catch(() => {});
+}
+
 // Something shared into the installed app (manifest.json's share_target): a Google Maps place,
 // or text naming one, goes in To as if pasted there. A link is set as the end once it's read;
 // anything else leaves its suggestions open to pick from.

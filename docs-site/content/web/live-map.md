@@ -4,7 +4,8 @@ description: Walking directions to a stop or place on a live map that follows yo
 ---
 
 The live map shows where you are, with the buildings in 3D, and follows you as
-you go. It opens three ways.
+you go. It opens three ways, and as [Explorer](explorer.md), with every stop and
+station to tap, from its own button in the Edge Tray.
 
 ## Walk to a stop or place
 
@@ -95,6 +96,9 @@ take are drawn too. A train ride follows its line's track, the way
 [sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station
 you board at to the one you get off at, and underground, where there's no GPS,
 your dot moves along the track too.
+
+Tap a stop or station on the trip for its card: a stop's buses, or a station's
+doors for each platform, as in [Explorer](explorer.md).
 
 ## Follow someone's trip
 

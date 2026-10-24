@@ -25,7 +25,12 @@ if (desktop !== version) throw new Error(`cli/package.json says ${version}, desk
 // ---------- the one file ----------
 
 const source = fs.readFileSync(path.join(here, 'sgbus.js'), 'utf8');
-const files = [...source.matchAll(/const SITE_FILES = \[([^\]]+)\]/g)][0][1].match(/'([^']+)'/g).map((s) => s.slice(1, -1));
+// The site's scripts it runs in its sandbox, and the commands themselves (sgbus-core.js, shared
+// with the web app's terminal).
+const files = [
+  ...[...source.matchAll(/const SITE_FILES = \[([^\]]+)\]/g)][0][1].match(/'([^']+)'/g).map((s) => s.slice(1, -1)),
+  source.match(/const CORE_FILE = '([^']+)'/)[1],
+];
 const scripts = Object.fromEntries(files.map((f) => [f, fs.readFileSync(path.join(root, 'main-site', 'js', f), 'utf8')]));
 const marker = "'use strict';\n";
 if (!source.includes(marker)) throw new Error("sgbus.js lost its 'use strict': the build puts the site's scripts after it.");

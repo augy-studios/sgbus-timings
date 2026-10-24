@@ -143,6 +143,18 @@
     return added;
   }
 
+  // ---------- the sgbus terminal (js/terminal.js) ----------
+
+  // Your own places as a whole, as `place set` and `place rm` leave them: each keeps its id,
+  // and a new one is given one.
+  function setCustom(list) {
+    storeCustom(list.filter(isPoint).map((p) => ({
+      id: p.id || crypto.randomUUID().slice(0, 8),
+      name: (p.name || '').trim().slice(0, 40),
+      label: p.label, lat: p.lat, lng: p.lng, ...(p.stop && { stop: p.stop }),
+    })));
+  }
+
   // ---------- the panel ----------
 
   let menuFor = null; // the key whose menu is open
@@ -297,5 +309,5 @@
     });
   }
 
-  window.Places = { init, open, all, get, set, remove, edit, nameNear, share, syncKey, syncList, clean, merge, FIXED };
+  window.Places = { init, open, all, get, set, remove, edit, nameNear, share, syncKey, syncList, clean, merge, setCustom, FIXED };
 })();

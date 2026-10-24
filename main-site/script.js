@@ -1395,8 +1395,8 @@ function syncTraySideButtons() {
     syncTrayExtras();
 }
 
-// The tray's optional buttons, SimplyGo, Telegram, Buy Augy a Coffee, the guide, and the
-// Android app's Timings near a stop and Routines (js/reminders.js), each
+// The tray's optional buttons, Explorer, SimplyGo, Telegram, Buy Augy a Coffee, the guide, and
+// the Android app's Timings near a stop and Routines (js/reminders.js), each
 // turned off or on in Settings: kept as data-tray-hide on <html>, "telegram coffee", which
 // index.html's head sets again before first paint.
 const trayHidden = () => (page.getAttribute('data-tray-hide') || '').split(' ').filter(Boolean);
@@ -1519,6 +1519,7 @@ $('#titleBtn').addEventListener('click', openSettings);
 $('#settingsBtn').addEventListener('click', openSettings);
 $('#settingsPlaces').addEventListener('click', () => { closeModal('settingsModal'); Places.open(); });
 $('#settingsCalendar').addEventListener('click', () => { closeModal('settingsModal'); Calendar.openSettings(); });
+$('#settingsTerminal').addEventListener('click', () => { closeModal('settingsModal'); openTerminal(); });
 
 $('#setName').addEventListener('input', e => { LS.setName(e.target.value.trim()); updateGreeting(); });
 $('#setBirthday').addEventListener('change', e => {
@@ -1585,6 +1586,8 @@ Recents.attach($('#q'), $('#acList'), {
 
 $('#nearMeBtn').addEventListener('click', e =>
     withLocating(e.currentTarget, () => findNearbyStops().then(openNearbyList)));
+// Explorer: the live map with every stop and station on it (js/map.js).
+$('#explorerBtn').addEventListener('click', () => LiveMap.explore());
 
 $('#refreshBtn').addEventListener('click', refreshStop);
 $('#stopFavBtn').addEventListener('click', () => {
@@ -1619,7 +1622,7 @@ $('#stopTools').addEventListener('click', e => {
         openBusPicker();
     } else if (tool === 'livemap') {
         const stop = stopsIndex?.[current.code];
-        if (stop) LiveMap.walkTo({ lat: stop.lat, lng: stop.lng, label: stop.n || current.code });
+        if (stop) LiveMap.walkTo({ lat: stop.lat, lng: stop.lng, label: stop.n || current.code, code: current.code });
     } else if (tool === 'navigate') {
         navOpen = true;
         renderStopTools();
@@ -1893,24 +1896,49 @@ function routeFromShare() {
     Tour.maybeStart();
 })();
 
-// sgbus in the browser's console, the Linux app's commands (js/console.js): this stand-in fetches
-// it the first time it's called, from this site only. Only ever run by typing it in the console.
-(function () {
-    let loading = null;
-    window.sgbus = (...args) => {
-        loading ??= new Promise((resolve, reject) => {
-            const s = document.createElement('script');
-            s.src = '/js/console.js';
-            s.onload = resolve;
-            s.onerror = reject;
-            document.head.appendChild(s);
-        });
-        loading.then(() => window.sgbus(...args), () => console.error("Couldn't load sgbus for the console."));
-    };
-    console.log('%cSG Bus Timings%c in this console: sgbus(\'84009 22*\'), sgbus(\'nav home work\'), sgbus(\'help\').\n' +
-        '%cDon\'t paste code here that someone sent you: it would run as you, with your saved stops and places.',
-        'font-weight:bold;color:#1f9d55', '', 'color:#d1242f');
-})();
+// The sgbus terminal (js/terminal.js), the Linux app's sgbus> prompt on the page: fetched with its
+// commands (js/sgbus-core.js) the first time it's opened, from this site only. Opened from
+// Settings, by Ctrl+` anywhere, or by typing sgbus in the browser's console, which a page can't
+// give a prompt of its own: what's typed there runs as code, so sgbus alone, a getter, opens it.
+let terminalLoading = null;
+function openTerminal(action = 'open') {
+    const load = src => new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+    terminalLoading ??= load('/js/sgbus-core.js').then(() => load('/js/terminal.js'));
+    terminalLoading.then(() => Terminal[action](), () => {
+        terminalLoading = null;
+        console.error("Couldn't load the sgbus terminal. Check your connection, then try again.");
+    });
+}
+
+document.addEventListener('keydown', e => {
+    if (e.ctrlKey && !e.altKey && !e.metaKey && e.code === 'Backquote') {
+        e.preventDefault();
+        openTerminal('toggle');
+    }
+});
+
+Object.defineProperty(window, 'sgbus', {
+    configurable: true,
+    get() {
+        openTerminal();
+        return 'sgbus> is open on the page.';
+    },
+});
+
+// What the browser's console shows when it's opened, as Discord's does: what's here, and a
+// warning, since a scam can have someone paste code into it that then runs as them.
+console.log('%csgbus', 'font: bold 40px ui-monospace, Menlo, Consolas, monospace; color: #1f9d55');
+console.log("%cSingapore's live bus timings, with the Linux app's commands.", 'font-size: 14px');
+console.log('%cWait!', 'font-size: 24px; font-weight: bold; color: #d1242f');
+console.log("%cIf someone told you to paste something here, don't. Whatever's pasted here runs as you on this site, and can read your saved stops, places, routines and calendar link.",
+    'font-size: 14px; color: #d1242f');
+console.log('%cType sgbus and press Enter for the sgbus> prompt, or press Ctrl+` on the page.', 'font-size: 14px; font-weight: bold');
 
 // What the app opens on when its link has nothing else to show: the home, from Settings' Custom
 // home, already on show (js/main-screen.js). Bus timings with the glance off opens the first
