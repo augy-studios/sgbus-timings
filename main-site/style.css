@@ -3235,13 +3235,15 @@ body.touring { overflow: hidden; }
    every screen, as the live map is (.mapPanel), and over it, for Ctrl+` there. The Edge Tray
    stays over the terminal (js/terminal.js marks the page data-terminal while it's open), so
    the terminal keeps clear of the tray's side as the page does: the tray's room while it's
-   out, the tab's when it's tucked away. */
+   out. Tucked away, the terminal takes the full width and the tab floats over its edge; only
+   the bar, level with the tab, steps clear of it, as the greeting does (.brand). */
 .terminalBackdrop { z-index: 70; padding: 0; align-items: stretch; background: #0d1117; }
 :root[data-terminal] .hud { z-index: 80; }
 .terminal {
-    --term-tray: max(var(--tray-room), calc(var(--tray-tab) + 16px));
-    --term-right: var(--term-tray);
+    --term-right: var(--tray-room);
     --term-left: 0px;
+    --term-bar-right: calc(8px + var(--term-right));
+    --term-bar-left: calc(var(--term-side) + var(--term-left));
     --term-side: 14px;
     --term-bg: #0d1117;
     --term-bar: #161b22;
@@ -3261,7 +3263,13 @@ body.touring { overflow: hidden; }
    printed can be selected and copied, as in a terminal. */
 .terminal, .terminal * { font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
 .termScreen, .termScreen * { -webkit-user-select: text; user-select: text; }
-:root[data-tray-side="left"] .terminal { --term-right: 0px; --term-left: var(--term-tray); }
+:root[data-tray-side="left"] .terminal { --term-right: 0px; --term-left: var(--tray-room); }
+/* The tab and a 10px gap, clear of the bar's Close button (or its title, on the left). */
+:root[data-tray-closed] .terminal { --term-bar-right: calc(var(--tray-tab) + 10px); }
+:root[data-tray-closed][data-tray-side="left"] .terminal {
+    --term-bar-right: 8px;
+    --term-bar-left: max(var(--term-side), calc(var(--tray-tab) + 10px));
+}
 @media (min-width: 640px) {
     .terminal { font-size: 14px; --term-side: 20px; }
 }
@@ -3269,10 +3277,11 @@ body.touring { overflow: hidden; }
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 6px calc(8px + var(--term-right)) 6px calc(var(--term-side) + var(--term-left));
+    padding: 6px var(--term-bar-right) 6px var(--term-bar-left);
     padding-top: max(6px, env(safe-area-inset-top));
     background: var(--term-bar);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    transition: padding-left var(--tray-time) var(--tray-ease), padding-right var(--tray-time) var(--tray-ease);
 }
 .termTitle { flex: 1; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
 .termTitle .ico { display: inline-flex; width: 16px; height: 16px; color: #3fb950; }
@@ -3293,6 +3302,7 @@ body.touring { overflow: hidden; }
     overscroll-behavior: contain;
     padding: 10px calc(var(--term-side) + var(--term-right)) 16px calc(var(--term-side) + var(--term-left));
     padding-bottom: max(16px, env(safe-area-inset-bottom));
+    transition: padding-left var(--tray-time) var(--tray-ease), padding-right var(--tray-time) var(--tray-ease);
 }
 .termScreen, .termLine { white-space: pre-wrap; overflow-wrap: anywhere; }
 .termRow { min-height: 1.45em; }
