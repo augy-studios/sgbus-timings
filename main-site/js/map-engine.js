@@ -208,9 +208,12 @@
 
     const toFeature = (it, id) => ({ type: 'Feature', id, geometry: it.geometry, properties: { ...it.props, z: ORDER[it.group] ?? 0 } });
 
+    // Into the sources as soon as they're there, tiles loading or not (isStyleLoaded() waits for
+    // every tile, so a route cleared or a dot moved would wait on the map's streets). Mid-change
+    // of style they aren't: addOverlays() flushes once it's in.
     function flush() {
       flushing = null;
-      if (!dirty || !map.isStyleLoaded()) return;
+      if (!dirty || !map.getSource('sg-dot')) return;
       dirty = false;
       const fc = { line: [], dot: [], fill: [] };
       for (const [id, it] of items) fc[it.kind].push(toFeature(it, id));
@@ -423,6 +426,12 @@
       setView(at, z, animate = false) {
         map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate ? 500 : 0 });
       },
+      // Straight there, flat and north up, however it was left; without `at`, only flat and
+      // north up.
+      jump(at, z) {
+        map.stop();
+        map.jumpTo({ ...(at && { center: ll(at), zoom: toGl(z) }), bearing: 0, pitch: 0 });
+      },
       panTo(at, ms) { map.easeTo({ center: ll(at), duration: ms }); },
       // The whole of `pts`, flat and north up, clear of the bars by `pad`.
       fit(pts, pad, maxZ) {
@@ -571,6 +580,7 @@
         drawPois();
       },
       setView: (at, z, animate = false) => map.setView(at, z, { animate }),
+      jump(at, z) { if (at) map.setView(at, z, { animate: false }); },
       panTo: (at, ms) => map.panTo(at, { animate: true, duration: ms / 1000 }),
       fit: (pts, pad, maxZ) => map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom], maxZoom: maxZ }),
       zoom: () => map.getZoom(),

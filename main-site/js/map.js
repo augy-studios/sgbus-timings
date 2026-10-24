@@ -260,12 +260,14 @@
     return here ? [here.lat, here.lng] : null;
   }
 
-  // Following goes back in to street level on whoever's followed.
-  function setFollowing(on) {
+  // Following goes back in to street level on whoever's followed: gliding there, or with
+  // `jump`, straight there, flat and north up.
+  function setFollowing(on, { jump = false } = {}) {
     following = on;
     $('#mapRecentre').hidden = on;
     const at = on && focus();
-    if (at) ink.setView(at, followZoom(), true);
+    if (jump) ink.jump(at || null, followZoom());
+    else if (at) ink.setView(at, followZoom(), true);
   }
   const followZoom = () => (mode === 'explore' ? EXPLORE_ZOOM : STREET_ZOOM);
 
@@ -328,7 +330,9 @@
     if (mode !== 'explore') ink.pois([]);
     destMark = null;
     builtTripLeg = null;
-    setFollowing(true);
+    // Opened afresh, it starts where this way of opening it does, not where the last left it
+    // (turned, tilted, or across town) and glides over.
+    setFollowing(true, { jump: !wasOpen });
   }
 
   function close({ fromHistory = false } = {}) {
@@ -342,6 +346,15 @@
     stopWatching();
     clearInterval(tripTimer);
     tripTimer = null;
+    // Nothing left drawn for the next time it opens, in whatever way: a walk's route, a
+    // trip's stops, their dot from a shared trip (drawn with yours).
+    if (ink) {
+      ink.clear('lines');
+      ink.clear('stops');
+      ink.clear('marks');
+      hideMe();
+    }
+    destMark = null;
     mode = null;
     walk = null;
     followData = null;
@@ -370,6 +383,8 @@
       else if (err.code === 1) note('Location is off for this site, so the map can only show the way, not follow you. Allow location to be followed.');
     }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
     drawTimer = setInterval(drawMe, DRAW_MS);
+    // Where you were last, straight away, rather than a timer's wait after it opens.
+    drawMe();
   }
 
   function stopWatching() {
