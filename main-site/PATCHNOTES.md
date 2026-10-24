@@ -18,6 +18,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **A warning in the console** - Opening your browser's console shows a warning, as Discord's does: never paste code there that someone sent you.
 - **Explorer** - The live map from its own Edge Tray button, with every bus stop and MRT and LRT station round you as a dot to tap. A stop's card shows every bus there, green while it's running, red once it's down to its last three buses of the day, grey when it isn't running. A station's card has its codes in their lines' colours and, a platform at a time with arrows at the sides, the doors nearest its escalators, lifts and stairs and where each leads. Both have Directions, to Navigate's Bus and train from where you are. Explorer can be turned off in Settings, Edge Tray buttons.
 - **Tap the stops on your trip** - On the live map, a trip's stops and stations, and the stop a walk goes to, open the same cards.
+- **Tours for Explorer and the terminal** - Each shows you round the first time it opens, as the pages do, and Settings, Show me around, has a button for each.
 
 ### Linux command line 2.2.5
 

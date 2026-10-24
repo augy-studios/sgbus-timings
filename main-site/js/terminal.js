@@ -363,6 +363,8 @@
       returnTo = document.activeElement;
       openModal(ID);
       document.documentElement.setAttribute('data-terminal', '');
+      // Its tour, the first time (js/tour.js).
+      window.Tour?.first('terminal');
     }
     if (busy) backdrop.querySelector('.terminal').focus();
     else input.focus();

@@ -3203,6 +3203,8 @@ section.panelModal.docked {
     color: #f6f1e6;
     font-size: 1.05rem;
 }
+/* Over something lit in the top left corner (Explorer's Back), Skip moves to the other side. */
+.tourSkip.right { left: auto; right: 16px; }
 .tourCard {
     position: fixed;
     left: 16px;
@@ -3454,3 +3456,7 @@ body.touring { overflow: hidden; }
 /* In the card's width, each row's doors go under what it is and where it leads. */
 .mapCard .doorRow { grid-template-columns: 24px 1fr; grid-template-areas: "ico where" "ico chips"; align-items: start; row-gap: 6px; }
 .mapCard .doorRow > .doorWhere { color: var(--ink); }
+/* Explorer's tour lights the dots round you (js/tour.js): a circle on the middle of the map,
+   where you are, seen only by the tour. */
+.mapSpot { display: none; position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; }
+.mapPanel.exploring .mapSpot { display: block; }

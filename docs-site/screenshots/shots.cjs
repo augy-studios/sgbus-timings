@@ -32,7 +32,7 @@ const STATE = {
   // Not the tour of the basics over every shot (main-site/js/tour.js), only where it's the subject.
   sgbus_tour: 'done',
   // Nor each page's own the first time it opens.
-  sgbus_tours: JSON.stringify(['timings', 'favs', 'nav', 'alerts', 'trips', 'places']),
+  sgbus_tours: JSON.stringify(['timings', 'favs', 'nav', 'alerts', 'trips', 'places', 'explorer', 'terminal']),
   sgbus_favs_v2: JSON.stringify([{ code: '84009', name: 'Bedok Int' }, { code: '75009', name: 'Tampines Int' }]),
   sgbus_fav_buses: JSON.stringify(['60', '14']),
   sgbus_fav_routes: JSON.stringify([{ start: '84009', startName: 'Bedok Int', end: '66009', endName: 'Serangoon Int' }]),
@@ -579,6 +579,19 @@ async function el(page, sel, name) {
     await page.waitForTimeout(900);
     await page.screenshot({ path: OUT + 'tour-nav.png' });
     console.log('wrote tour-nav.png 390 844');
+    await ctx.close();
+  }
+  // Explorer's tour, the first time it opens, "you" a street from Dhoby Ghaut.
+  if (want('tour-views')) {
+    const { ctx, page } = await open(browser, {
+      width: 390, height: 844, touch: true, geo: { latitude: 1.2972, longitude: 103.8462 },
+      extra: { sgbus_tours: JSON.stringify(['timings', 'favs', 'nav', 'alerts', 'trips', 'places', 'terminal']) },
+    });
+    await page.click('#explorerBtn');
+    await page.waitForSelector('.tour', { timeout: 20000 }).catch(() => console.log('no tour'));
+    await page.waitForTimeout(900);
+    await page.screenshot({ path: OUT + 'tour-explorer.png' });
+    console.log('wrote tour-explorer.png 390 844');
     await ctx.close();
   }
   // Navigate's From and To: a plus code, and a stop by any of its names.

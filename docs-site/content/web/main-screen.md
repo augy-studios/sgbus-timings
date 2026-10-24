@@ -140,5 +140,15 @@ with no trips just says how to start one.
 <figcaption>Navigate's tour, the first time it opens.</figcaption>
 </figure>
 
+[Explorer](explorer.md) and the [sgbus terminal](terminal.md) have one each too,
+the first time you open them: Explorer's lights up the dots round you, the
+compass and Back, and the terminal's the prompt, where the answers show, and
+how to close it.
+
+<figure>
+<img src="/screenshots/web/tour-explorer.png" alt="Explorer's tour, the first time it opens: the map dimmed but for a light round the dots near you, Dhoby Ghaut's red station dot and the bus stops round it, a chalk arrow to them, and the words Every bus stop round you is a white dot ringed in green, and every MRT and LRT station a dot in its line's colour. Zoom in to see the stops. With Next, Skip and the step dots." width="390" height="844" loading="lazy">
+<figcaption>Explorer's tour, the first time it opens.</figcaption>
+</figure>
+
 To see any of them again, open [Settings](settings.md): **Show me around** has
-a button for each page.
+a button for each page, for Explorer and for the sgbus terminal.

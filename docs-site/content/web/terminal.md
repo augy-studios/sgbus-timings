@@ -30,6 +30,9 @@ Any of these opens it:
 <figcaption>The terminal's button in Settings.</figcaption>
 </figure>
 
+The first time it opens, a short tour shows you round: where to type, where the
+answers show, and how to close it. **Show me around** in Settings shows it again.
+
 **Esc**, `exit`, the **×** at the top or Back closes it. What's on screen is still
 there the next time you open it.
 

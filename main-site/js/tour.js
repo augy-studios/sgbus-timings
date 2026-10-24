@@ -10,6 +10,9 @@
 // - A tour switches to its page (Glance's only while Glance is on) and ends back on the page it
 //   began on. A step whose thing isn't there (no trips yet, a button this phone hasn't) is left
 //   out.
+// - The views that aren't pages, the sgbus terminal and Explorer, each full screen over the page,
+//   have one too (`view`): shown the first time the view opens (first(id), from js/terminal.js
+//   and js/map.js), and from Settings opening the view (`open`) and leaving it open after.
 // Plain script: exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -81,6 +84,33 @@
         { el: '#placesList .placeRow', text: 'Home, Work and your own places. Tap one for the way there from where you are.' },
         { el: '#placesList .placeMore', text: 'The dots edit, share or delete it.' },
         { el: '#placeNewBtn', text: 'Add a place: the gym, school, a friend’s. Each one shows under From and To in Navigate, and on Glance.' },
+      ],
+    },
+    // The views that aren't pages.
+    explorer: {
+      icon: 'map',
+      label: 'Explorer',
+      view: true,
+      open: () => window.LiveMap?.explore(),
+      isOpen: () => window.LiveMap?.mode() === 'explore',
+      steps: [
+        { el: '#mapSpot', text: 'Every bus stop round you is a white dot ringed in green, and every MRT and LRT station a dot in its line’s colour. Zoom in to see the stops.' },
+        { el: '#mapSpot', text: 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.' },
+        { el: '#mapHeading', text: 'The compass turns the map with you, the way your phone points up.' },
+        { el: '#mapClose', text: 'Back closes Explorer. Its button in the Edge Tray can be turned off in Settings.' },
+      ],
+    },
+    terminal: {
+      icon: 'terminal',
+      label: 'sgbus terminal',
+      view: true,
+      open: () => window.openTerminal?.(),
+      isOpen: () => !!document.querySelector('#terminalModal:not(.hidden)'),
+      after: () => document.getElementById('termIn')?.focus(),
+      steps: [
+        { el: '#terminalModal .termLine', text: 'Type a command, as on the Linux command line: a stop like 84009, a stop’s name, nav home work, favs. Tab finishes a word, and Up brings back the last one.' },
+        { el: '#terminalModal .termScreen', text: 'The answers show here. Ctrl+C stops one that keeps updating, or clears the line; with text selected, it copies.' },
+        { el: '#terminalModal .termClose', text: 'Esc, exit or this closes it. Ctrl+` opens it again on a computer, as does Settings.' },
       ],
     },
   };
@@ -166,6 +196,8 @@
     hole.style.top = `${r.top - PAD}px`;
     hole.style.width = `${r.width + PAD * 2}px`;
     hole.style.height = `${r.height + PAD * 2}px`;
+    // Skip out of the way of what's lit, where that's in its corner.
+    root.querySelector('.tourSkip').classList.toggle('right', r.left < 140 && r.top < 90);
 
     const card = root.querySelector('.tourCard');
     const ch = card.offsetHeight;
@@ -206,6 +238,7 @@
 
   function end() {
     if (page) markSeen(page);
+    const view = TOURS[page]?.view ? TOURS[page] : null;
     window.removeEventListener('resize', place);
     window.removeEventListener('scroll', place, true);
     root?.remove();
@@ -214,15 +247,44 @@
     document.body.classList.remove('touring');
     const back = began;
     began = null;
+    // A view's stays open, to be used.
+    if (view) return view.after?.();
     window.scrollTo({ top: 0, behavior: 'instant' });
     // Back where it began, which may be a page with a tour of its own still to see.
     if (back && window.MainScreen && MainScreen.active() !== back) MainScreen.open(back);
     else setTimeout(forPage, 600);
   }
 
+  // A view's tour, over the view: opened first, from Settings, then a moment for it to draw.
+  function startView(id) {
+    const tour = TOURS[id];
+    const wasOpen = tour.isOpen();
+    // Marked as starting before the view opens, so its own first() doesn't start another.
+    root = true;
+    if (!wasOpen) tour.open();
+    setTimeout(() => {
+      root = null;
+      if (!tour.isOpen()) return;
+      steps = tour.steps.map((s) => ({ ...s, target: target(s) })).filter((s) => s.target);
+      if (!steps.length) return markSeen(id);
+      page = id;
+      began = null;
+      document.body.classList.add('touring');
+      build();
+      show(0);
+    }, wasOpen ? 600 : 1500);
+  }
+
+  // A view's tour, the first time it opens (js/terminal.js, js/map.js).
+  function first(id) {
+    if (!TOURS[id]?.view || seen(id) || root) return;
+    startView(id);
+  }
+
   // `id`'s tour, on its page.
   function start(id = 'glance') {
     if (root || !TOURS[id]) return;
+    if (TOURS[id].view) return startView(id);
     const from = window.MainScreen?.active() || null;
     const onPage = id !== 'glance' || window.Glance?.enabled();
     if (onPage && window.MainScreen && from !== id) MainScreen.open(id);
@@ -246,12 +308,15 @@
     }, from === id ? 0 : 400);
   }
 
+  // Something over the page: a window, the live map or Explorer, or the terminal.
+  const covered = () => document.body.classList.contains('modal-open') || document.body.classList.contains('map-open');
+
   // The page on show's tour, the first time: Glance's once it has its buses to show (or a few
-  // seconds without), the others once drawn. Not while a window is open over the page.
+  // seconds without), the others once drawn. Not while something's over the page.
   let waiting = null;
   function forPage() {
     const id = window.MainScreen?.active();
-    if (!id || root || seen(id) || !TOURS[id]) return;
+    if (!id || root || seen(id) || !TOURS[id] || TOURS[id].view) return;
     clearInterval(waiting);
     let tries = 0;
     waiting = setInterval(() => {
@@ -261,7 +326,7 @@
       const ready = id !== 'glance' || !window.Glance?.enabled() || (hero.textContent.trim() && !hero.textContent.includes('Getting the times'));
       if (ready ? tries < 2 : tries <= 16) return;
       clearInterval(waiting);
-      if (!document.body.classList.contains('modal-open')) start(id);
+      if (!covered()) start(id);
     }, 500);
   }
 
@@ -272,18 +337,18 @@
     window.addEventListener('viewchange', forPage);
     if (location.hash.length > 1 || location.search) return;
     if (!seen('glance') && window.MainScreen?.active() !== 'glance') {
-      setTimeout(() => { if (!document.body.classList.contains('modal-open')) start('glance'); }, 1500);
+      setTimeout(() => { if (!covered()) start('glance'); }, 1500);
       return;
     }
     forPage();
   }
 
-  // Settings' Show me around: a button for each page's tour.
+  // Settings' Show me around: a button for each page's tour, then the views'.
   function pickers() {
     return PAGES.filter((id) => id !== 'glance' || window.Glance?.enabled())
-      .map((id) => `<button class="iconBtn" type="button" data-tour="${id}"><span class="ico" aria-hidden="true">${window.icon(TOURS[id].icon)}</span> ${window.MainScreen?.label(id) || id}</button>`)
+      .map((id) => `<button class="iconBtn" type="button" data-tour="${id}"><span class="ico" aria-hidden="true">${window.icon(TOURS[id].icon)}</span> ${TOURS[id].label || window.MainScreen?.label(id) || id}</button>`)
       .join('');
   }
 
-  window.Tour = { start, maybeStart, end, pickers, PAGES };
+  window.Tour = { start, first, maybeStart, end, pickers, PAGES };
 })();

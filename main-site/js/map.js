@@ -798,6 +798,8 @@
     }
     for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), pick: stationPick(s) });
     ink.pois(dots);
+    // Its tour, the first time (js/tour.js), the dots round you lit by #mapSpot.
+    window.Tour?.first('explorer');
   }
 
   // ---------- links ----------

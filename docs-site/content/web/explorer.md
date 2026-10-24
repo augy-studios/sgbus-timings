@@ -12,7 +12,9 @@ with the map button in the Edge Tray.
 <figcaption>Stops in white and green, stations in their line's colour, and you in blue.</figcaption>
 </figure>
 
-It opens on you, close enough in to see the stops round about, and follows you
+The first time it opens, a short tour shows you round; **Show me around** in
+[Settings](settings.md) shows it again. It opens on you, close enough in to see
+the stops round about, and follows you
 as you move. Drag or zoom to look further; **Recentre** comes back to you. The
 stations show from further out, the stops once you're close in. The compass
 button turns the map with you, as on the [live map](live-map.md#turn-the-map-with-you).
