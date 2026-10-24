@@ -17,7 +17,8 @@
 // was before, flat, north up, without turning.
 //
 // Explorer's stops and stations (js/map.js) are dots of their own, pois(list): every station
-// from zoom 11, every stop from zoom 15. A tap on one, or on a dot drawn with a `pick`, goes to
+// from zoom 11, every stop from zoom 15. An interchange is a pill instead, its lines' colours
+// side by side, left to right in the order js/map.js gives them. A tap on one, or on a dot drawn with a `pick`, goes to
 // hooks.onPick(pick); a tap on the map elsewhere to hooks.onBlank(); hooks.onMove() as it moves,
 // for a card kept on its dot (js/map-card.js).
 //
@@ -54,6 +55,44 @@
   const POI_STATION_ZOOM = 11;
   const POI_STOP_ZOOM = 15;
   const STOP_DOT = { fill: '#ffffff', stroke: '#1f9d55' };
+  // An interchange's pill: as tall as a station's dot with its white edge, and longer by 60% of
+  // that for each line after the first. MapLibre's is drawn this tall and scaled down with the
+  // zoom, its edge 2px where a dot's is 17px across, as at zoom 15.
+  const PILL_H = 24;
+  const pillWidth = (n, h) => h * (1 + 0.6 * (n - 1));
+
+  // The pill on a canvas, `h` CSS pixels tall, drawn `ratio` times as big for sharp screens.
+  function pillCanvas(colours, h, edge, ratio) {
+    const w = pillWidth(colours.length, h);
+    const c = document.createElement('canvas');
+    c.width = Math.round(w * ratio);
+    c.height = Math.round(h * ratio);
+    const g = c.getContext('2d');
+    g.scale(ratio, ratio);
+    const shape = (x, y, pw, ph) => {
+      const r = ph / 2;
+      g.beginPath();
+      g.arc(x + r, y + r, r, Math.PI / 2, (3 * Math.PI) / 2);
+      g.arc(x + pw - r, y + r, r, -Math.PI / 2, Math.PI / 2);
+      g.closePath();
+    };
+    shape(0, 0, w, h);
+    g.fillStyle = '#ffffff';
+    g.fill();
+    shape(edge, edge, w - 2 * edge, h - 2 * edge);
+    g.clip();
+    // Each colour a little wider than its share, so no seam shows between them.
+    const seg = (w - 2 * edge) / colours.length;
+    colours.forEach((colour, i) => {
+      g.fillStyle = colour;
+      g.fillRect(edge + i * seg, 0, seg + 1, h);
+    });
+    return c;
+  }
+  const pillRatio = () => Math.max(2, Math.ceil(window.devicePixelRatio || 1));
+  // MapLibre's name for a pill's image, and the colours back from it.
+  const pillId = (colours) => `sg-pill-${colours.map((c) => c.slice(1)).join('-')}`;
+  const pillColours = (id) => id.slice('sg-pill-'.length).split('-').map((c) => `#${c}`);
 
   function load(js, css) {
     return new Promise((resolve, reject) => {
@@ -133,10 +172,18 @@
       fadeDuration: 0,
     });
     map.addControl(new ml.AttributionControl({ compact: true }), 'bottom-right');
-    // An icon OpenFreeMap's style names that its sprite hasn't got: nothing, rather than a
-    // warning for each.
+    // An interchange's pill, drawn the first time it's wanted, and again after the style
+    // changes. An icon OpenFreeMap's style names that its sprite hasn't got: nothing, rather
+    // than a warning for each.
     map.on('styleimagemissing', (e) => {
-      if (!map.hasImage(e.id)) map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
+      if (map.hasImage(e.id)) return;
+      if (e.id.startsWith('sg-pill-')) {
+        const ratio = pillRatio();
+        const c = pillCanvas(pillColours(e.id), PILL_H, (2 * PILL_H) / 17, ratio);
+        map.addImage(e.id, c.getContext('2d').getImageData(0, 0, c.width, c.height), { pixelRatio: ratio });
+        return;
+      }
+      map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
     });
 
     // What js/map.js has drawn: id -> { group, kind, geometry, props }.
@@ -179,10 +226,22 @@
         paint: { 'circle-radius': grow(3.5, 7), 'circle-color': STOP_DOT.fill, 'circle-stroke-color': STOP_DOT.stroke, 'circle-stroke-width': grow(2, 3) },
       });
       add({
-        id: 'sg-poi-station', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_STATION_ZOOM), filter: ['==', ['get', 'kind'], 'station'],
+        id: 'sg-poi-station', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_STATION_ZOOM),
+        filter: ['all', ['==', ['get', 'kind'], 'station'], ['!', ['has', 'pill']]],
         paint: {
           'circle-radius': ['interpolate', ['linear'], ['zoom'], toGl(POI_STATION_ZOOM), 3.5, toGl(15), 6.5, toGl(19), 10],
           'circle-color': ['get', 'color'], 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 2,
+        },
+      });
+      // Interchanges: as tall as the dots beside them (radius and edge, 11px, 17px, 24px), and
+      // level on the screen however the map's turned.
+      add({
+        id: 'sg-poi-pill', type: 'symbol', source: 'sg-poi', minzoom: toGl(POI_STATION_ZOOM),
+        filter: ['all', ['==', ['get', 'kind'], 'station'], ['has', 'pill']],
+        layout: {
+          'icon-image': ['get', 'pill'],
+          'icon-size': ['interpolate', ['linear'], ['zoom'], toGl(POI_STATION_ZOOM), 11 / PILL_H, toGl(15), 17 / PILL_H, toGl(19), 1],
+          'icon-allow-overlap': true, 'icon-ignore-placement': true,
         },
       });
       add({ id: 'sg-fill', type: 'fill', source: 'sg-fill', paint: { 'fill-color': ['get', 'fill'], 'fill-opacity': ['get', 'opacity'] } });
@@ -260,12 +319,12 @@
     };
     const hover = matchMedia('(hover: hover)').matches;
     map.on('click', (e) => {
-      const layers = ['sg-dot', 'sg-poi-station', 'sg-poi-stop'].filter((id) => map.getLayer(id));
+      const layers = ['sg-dot', 'sg-poi-station', 'sg-poi-pill', 'sg-poi-stop'].filter((id) => map.getLayer(id));
       // A finger's width round the tap, as the dots are small.
       const pad = 10;
       const hits = map.queryRenderedFeatures([[e.point.x - pad, e.point.y - pad], [e.point.x + pad, e.point.y + pad]], { layers });
       const dot = hits.find((f) => f.layer.id === 'sg-dot' && f.properties.pick);
-      const poi = hits.find((f) => f.layer.id === 'sg-poi-station') || hits.find((f) => f.layer.id === 'sg-poi-stop');
+      const poi = hits.find((f) => f.layer.id === 'sg-poi-station' || f.layer.id === 'sg-poi-pill') || hits.find((f) => f.layer.id === 'sg-poi-stop');
       if (dot) return hooks.onPick?.(JSON.parse(dot.properties.pick));
       if (poi) return hooks.onPick?.(poiPicks.get(poi.properties.id));
       const label = hits.find((f) => f.layer.id === 'sg-dot' && f.properties.label);
@@ -275,7 +334,7 @@
     if (hover) {
       map.on('mouseenter', 'sg-dot', (e) => { map.getCanvas().style.cursor = 'pointer'; if (!e.features?.[0]?.properties.pick) tip(e); });
       map.on('mouseleave', 'sg-dot', () => { map.getCanvas().style.cursor = ''; popup.remove(); });
-      for (const id of ['sg-poi-station', 'sg-poi-stop']) {
+      for (const id of ['sg-poi-station', 'sg-poi-pill', 'sg-poi-stop']) {
         map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
       }
@@ -336,14 +395,16 @@
         for (const [id, it] of items) if (it.group === group) items.delete(id);
         changed();
       },
-      // Explorer's dots, [{ kind: 'stop' | 'station', lat, lng, color?, pick }]; [] takes them away.
+      // Explorer's dots, [{ kind: 'stop' | 'station', lat, lng, color?, colors?, pick }], a pill
+      // where `colors` has more than one; [] takes them away.
       pois(list) {
         poiPicks.clear();
         poiData = {
           type: 'FeatureCollection',
           features: list.map((p, i) => {
             poiPicks.set(i, p.pick);
-            return { type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: { id: i, kind: p.kind, color: p.color || '#7a4fd6' } };
+            const props = { id: i, kind: p.kind, color: p.color || '#7a4fd6', ...(p.colors?.length > 1 && { pill: pillId(p.colors) }) };
+            return { type: 'Feature', geometry: { type: 'Point', coordinates: [p.lng, p.lat] }, properties: props };
           }),
         };
         map.getSource('sg-poi')?.setData(poiData);
@@ -424,6 +485,18 @@
     // make a canvas map crawl.
     const poiLayer = L.layerGroup().addTo(map);
     let pois = [];
+    // An interchange's pill, as tall as a station's dot (radius 7 and its edge), one image per
+    // set of colours.
+    const pillIcons = new Map();
+    const pillIcon = (colours) => {
+      const key = colours.join();
+      if (!pillIcons.has(key)) {
+        const h = 16;
+        const url = pillCanvas(colours, h, 2, pillRatio()).toDataURL();
+        pillIcons.set(key, L.icon({ iconUrl: url, iconSize: [pillWidth(colours.length, h), h] }));
+      }
+      return pillIcons.get(key);
+    };
     function drawPois() {
       poiLayer.clearLayers();
       const z = map.getZoom();
@@ -435,7 +508,10 @@
         const style = p.kind === 'stop'
           ? { radius: 5, color: STOP_DOT.stroke, weight: 2, fillColor: STOP_DOT.fill, fillOpacity: 1 }
           : { radius: 7, color: '#ffffff', weight: 2, fillColor: p.color || '#7a4fd6', fillOpacity: 1 };
-        L.circleMarker([p.lat, p.lng], style).on('click', (e) => {
+        const marker = p.kind === 'station' && p.colors?.length > 1
+          ? L.marker([p.lat, p.lng], { icon: pillIcon(p.colors), keyboard: false })
+          : L.circleMarker([p.lat, p.lng], style);
+        marker.on('click', (e) => {
           L.DomEvent.stopPropagation(e);
           hooks.onPick?.(p.pick);
         }).addTo(poiLayer);

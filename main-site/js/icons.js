@@ -33,7 +33,9 @@
     bell: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>`,
     train: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l1.5-4M15 21l-1.5-4"/><circle cx="9" cy="14" r=".8"/><circle cx="15" cy="14" r=".8"/></svg>`,
     // Ways off an MRT platform, for the doors to stand at (js/mrt-doors.js, js/nav.js).
-    escalator: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19h4.5L16 8h5"/><path d="M3 15h3l8.5-11"/><circle cx="10.5" cy="5.5" r="1.3"/><path d="M10.5 8.2v3.3"/></svg>`,
+    // An escalator, its handrail round from the bottom landing to the top, and someone on it
+    // in solid; no arrow, as which way it runs isn't known.
+    escalator: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 20.5H9l10-10h.5a2.5 2.5 0 0 0 0-5H17L7 15.5H4.5a2.5 2.5 0 0 0 0 5z"/><rect x="4.4" y="10.6" width="3.2" height="4.9" rx="1.6" fill="currentColor" stroke="none"/><circle cx="6" cy="7.6" r="1.7" fill="currentColor" stroke="none"/></svg>`,
     lift: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="m8.5 10 3.5-3.5 3.5 3.5M8.5 14l3.5 3.5 3.5-3.5"/></svg>`,
     stairs: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h5v-5h5v-5h5V5h3"/></svg>`,
     cone: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3h4l5 16H5z"/><path d="M3 21h18M8.2 9h7.6M6.9 14h10.2"/></svg>`,

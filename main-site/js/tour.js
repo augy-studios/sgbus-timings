@@ -94,7 +94,7 @@
       open: () => window.LiveMap?.explore(),
       isOpen: () => window.LiveMap?.mode() === 'explore',
       steps: [
-        { el: '#mapSpot', text: 'Every bus stop round you is a white dot ringed in green, and every MRT and LRT station a dot in its line’s colour. Zoom in to see the stops.' },
+        { el: '#mapSpot', text: 'Stops are white dots ringed in green, stations dots in their line’s colour, interchanges pills in all of theirs. Zoom in for the stops.' },
         { el: '#mapSpot', text: 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.' },
         { el: '#mapHeading', text: 'The compass turns the map with you, the way your phone points up.' },
         { el: '#mapClose', text: 'Back closes Explorer. Its button in the Edge Tray can be turned off in Settings.' },

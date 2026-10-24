@@ -748,6 +748,10 @@
 
   const stationPick = (s) => ({ kind: 'station', name: s.name, codes: s.codes, lat: s.lat, lng: s.lng });
   const lineColour = (code) => LINE_COLOURS[String(code).toUpperCase().match(/^[A-Z]{2}/)?.[0]] || '#748477';
+  // An interchange's colours for its pill, in one order everywhere on the map, whatever order
+  // its codes come in: LINE_COLOURS', green, red, purple, orange, blue, brown, the LRT's grey.
+  const COLOUR_ORDER = [...new Set(Object.values(LINE_COLOURS))];
+  const stationColours = (codes) => [...new Set(codes.map(lineColour))].sort((a, b) => COLOUR_ORDER.indexOf(a) - COLOUR_ORDER.indexOf(b));
 
   // What a dot on a trip is, for its card: a bus ride's stop by its code (Trip's `codes`), a
   // train ride's station, the nearest within STATION_M. Null for anything else.
@@ -796,7 +800,7 @@
     for (const [code, s] of Object.entries(index || {})) {
       if (s.lat != null && s.lng != null) dots.push({ kind: 'stop', lat: s.lat, lng: s.lng, pick: { kind: 'stop', code } });
     }
-    for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), pick: stationPick(s) });
+    for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), colors: stationColours(s.codes), pick: stationPick(s) });
     ink.pois(dots);
     // Its tour, the first time (js/tour.js), the dots round you lit by #mapSpot.
     window.Tour?.first('explorer');

@@ -146,7 +146,7 @@ compass and Back, and the terminal's the prompt, where the answers show, and
 how to close it.
 
 <figure>
-<img src="/screenshots/web/tour-explorer.png" alt="Explorer's tour, the first time it opens: the map dimmed but for a light round the dots near you, Dhoby Ghaut's red station dot and the bus stops round it, a chalk arrow to them, and the words Every bus stop round you is a white dot ringed in green, and every MRT and LRT station a dot in its line's colour. Zoom in to see the stops. With Next, Skip and the step dots." width="390" height="844" loading="lazy">
+<img src="/screenshots/web/tour-explorer.png" alt="Explorer's tour, the first time it opens: the map dimmed but for a light round the dots near you, Dhoby Ghaut's station, a pill in red, purple and orange, and the bus stops round it, a chalk arrow to them, and the words Stops are white dots ringed in green, stations dots in their line's colour, interchanges pills in all of theirs. Zoom in for the stops. With Next, Skip and the step dots." width="390" height="844" loading="lazy">
 <figcaption>Explorer's tour, the first time it opens.</figcaption>
 </figure>
 

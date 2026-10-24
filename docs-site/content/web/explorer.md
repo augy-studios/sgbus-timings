@@ -4,12 +4,14 @@ description: Every bus stop and MRT and LRT station on the live map, with a stop
 ---
 
 **Explorer** is the [live map](live-map.md) with nothing to follow: every bus
-stop and every MRT and LRT station round you, each a dot you can tap. Open it
-with the map button in the Edge Tray.
+stop and every MRT and LRT station round you, each a dot you can tap. An
+interchange is a pill instead, in each of its lines' colours: green, red, purple,
+orange, blue, brown and the LRT's grey, always in that order. Open it with the
+map button in the Edge Tray.
 
 <figure>
-<img src="/screenshots/web/explorer.png" alt="Explorer on a phone around Dhoby Ghaut and Fort Canning: bus stops as small white dots ringed in green, stations as larger dots in their line's colour, red for Dhoby Ghaut, blue for Fort Canning and purple for Clarke Quay, and a blue dot for you, under a bar saying Explorer, Tap a bus stop or a station." width="390" height="844" loading="lazy">
-<figcaption>Stops in white and green, stations in their line's colour, and you in blue.</figcaption>
+<img src="/screenshots/web/explorer.png" alt="Explorer on a phone around Dhoby Ghaut and Fort Canning: bus stops as small white dots ringed in green, stations as larger dots in their line's colour, a pill in red, purple and orange for Dhoby Ghaut, an interchange, blue for Fort Canning and purple for Clarke Quay, and a blue dot for you, under a bar saying Explorer, Tap a bus stop or a station." width="390" height="844" loading="lazy">
+<figcaption>Stops in white and green, stations in their line's colour, interchanges in each of theirs, and you in blue.</figcaption>
 </figure>
 
 The first time it opens, a short tour shows you round; **Show me around** in

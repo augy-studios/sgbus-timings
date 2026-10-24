@@ -217,7 +217,7 @@ Tap a way to see it part by part:
 ### Which door to stand at
 
 <figure>
-<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then door 20 for the escalator to T1, T3, T4 and Jewel, door 5 for the escalator to T2, door 5 for the lift to T2, and door 20 for the lift to T1, T3, T4 and Jewel, each door drawn as a little green platform door with its number. Under them, Look for the number on each platform door." width="310" height="487" loading="lazy">
+<img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then door 20 for the escalator to T1, T3, T4 and Jewel, door 5 for the escalator to T2, door 5 for the lift to T2, and door 20 for the lift to T1, T3, T4 and Jewel, each door drawn as a little green platform door with its number. Under them, Look for the number on each platform door." width="310" height="512" loading="lazy">
 <figcaption>Getting off: the doors nearest each way out, and where it leads.</figcaption>
 </figure>
 
@@ -250,7 +250,7 @@ Where it isn't known which, it says to look for the number on each platform door
 </figure>
 
 <figure>
-<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, doors 6 and 17 for the escalators and door 12 for the lift, on red doors." width="310" height="551" loading="lazy">
+<img src="/screenshots/web/nav-doors-across.png" alt="Two rides. Under the East-West Line to Jurong East: At Jurong East, change across the platform to the North-South Line. Under the North-South Line to Bukit Batok: Getting off at Bukit Batok, doors 6 and 17 for the escalators and door 12 for the lift, on red doors." width="310" height="576" loading="lazy">
 <figcaption>At Jurong East the next train is just across the platform.</figcaption>
 </figure>
 
