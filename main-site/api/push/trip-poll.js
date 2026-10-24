@@ -7,7 +7,7 @@
 import webpush from 'web-push';
 import { sendPush } from '../_push/send.js';
 import { fetchBusPositions, fetchNextArrival } from '../_push/lta.js';
-import { releaseLock, storeConfigured, takeLock, trips } from '../_push/store.js';
+import { storeConfigured, takeLock, trips } from '../_push/store.js';
 import { boardStep, step, ttlSeconds, waitingToBoard } from '../_push/trip.js';
 import { etaFromTrip, updateEta } from '../_lib/share-links.js';
 import { supabaseConfigured } from '../_lib/supabase.js';
@@ -28,14 +28,13 @@ export default async function handler(req, res) {
   }
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
+  // The lock lapses by itself before the next minute's poll.
   if (!(await takeLock('trips', LOCK_SECONDS))) return res.status(200).json({ skipped: 'a poll is already running' });
   try {
     return res.status(200).json(await poll(LTA_ACCOUNT_KEY));
   } catch (err) {
     console.error('trip poll failed:', err);
     return res.status(500).json({ error: 'trip poll failed' });
-  } finally {
-    await releaseLock('trips').catch(() => {});
   }
 }
 

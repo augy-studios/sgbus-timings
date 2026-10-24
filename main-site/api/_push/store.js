@@ -113,6 +113,12 @@ export async function getState(name) {
   return parse(await redis('GET', `${KEY}:state:${name}`));
 }
 
+// Several at once, in one request: { name: state }.
+export async function getStates(names) {
+  const values = await redis('MGET', ...names.map((n) => `${KEY}:state:${n}`));
+  return Object.fromEntries(names.map((n, i) => [n, parse(values?.[i] ?? null)]));
+}
+
 export async function setState(name, value) {
   if (value == null) await redis('DEL', `${KEY}:state:${name}`);
   else await redis('SET', `${KEY}:state:${name}`, JSON.stringify(value));
@@ -120,6 +126,8 @@ export async function setState(name, value) {
 
 // ---------- a lock, so a slow poll and the next one can't both send ----------
 
+// It lapses by itself after `seconds`; a cron run a minute apart needn't release it, which
+// saves a request every run.
 export async function takeLock(name, seconds) {
   return (await redis('SET', `${KEY}:lock:${name}`, '1', 'NX', 'EX', seconds)) === 'OK';
 }
@@ -130,9 +138,21 @@ export async function releaseLock(name) {
 
 // ---------- requests per IP per minute ----------
 
+// Counted in this function instance's memory, not Redis: a request or two less for every use of
+// Navigate, a walk or a road, which was most of the store's traffic. Each instance counts on
+// its own, so someone spread across several gets a little more; it's there to stop a runaway
+// script, not to meter. Kept async, as it was.
+const RATE_WINDOW_MS = 60 * 1000;
+const RATE_KEYS_MAX = 10000;
+const rates = new Map(); // key: { n, until }
 export async function rateLimited(ip, limit) {
-  const key = `${KEY}:rate:${ip}`;
-  const n = Number(await redis('INCR', key));
-  if (n === 1) await redis('EXPIRE', key, 60);
-  return n > limit;
+  const now = Date.now();
+  let r = rates.get(ip);
+  if (!r || r.until <= now) {
+    if (rates.size >= RATE_KEYS_MAX) for (const [k, v] of rates) if (v.until <= now) rates.delete(k);
+    r = { n: 0, until: now + RATE_WINDOW_MS };
+    rates.set(ip, r);
+  }
+  r.n += 1;
+  return r.n > limit;
 }

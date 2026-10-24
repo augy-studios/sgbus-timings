@@ -201,7 +201,8 @@
 
   function renderNewsfeed(data) {
     let html = `<h3 class="alertsHead">${ico("chart")} Newsfeed</h3>`;
-    if (!data) return html + `<p class="alertsLine">Couldn&rsquo;t get the newsfeed just now.</p>`;
+    // Nothing read yet (`at` null) isn't nothing announced.
+    if (!data || !data.at) return html + `<p class="alertsLine">Couldn&rsquo;t get the newsfeed just now. Tap Refresh in a minute.</p>`;
     const today = sgDate();
     const ahead = sgDate(AHEAD_DAYS);
     const items = data.items || [];
@@ -528,8 +529,27 @@
     }
     // Saved again, so a single pre-split mode moves to the new key.
     storeModes(modes);
+    // The server's told again only when the choice or the subscription has changed, or once a
+    // day to keep it fresh, rather than on every load: each telling is a write to its store.
+    // The desktop app watches by itself, every load.
+    if (!inDesktop()) {
+      let key = JSON.stringify(modes);
+      try {
+        key += (await subscription()).endpoint;
+        const last = JSON.parse(localStorage.getItem(SYNCED_KEY) || "null");
+        if (last?.key === key && Date.now() - last.at < RESYNC_MS) return;
+      } catch {}
+      subscribe(modes)
+        .then(() => {
+          try { localStorage.setItem(SYNCED_KEY, JSON.stringify({ key, at: Date.now() })); } catch {}
+        })
+        .catch((err) => console.warn("service alerts resync failed:", err));
+      return;
+    }
     subscribe(modes).catch((err) => console.warn("service alerts resync failed:", err));
   }
+  const SYNCED_KEY = "sgbus.alertSynced";
+  const RESYNC_MS = 24 * 60 * 60 * 1000;
 
   // ---------- the desktop app ----------
   // The same rules as api/_push/alerts.js (diffTrain, diffTraffic, updateFor): the first look

@@ -27,7 +27,9 @@ const PARALLEL = 12;
 const MAX_LINKS = 200000;
 // Older than this and it's not live traffic any more.
 const STALE_MS = 20 * 60 * 1000;
-const MEMO_MS = 60 * 1000;
+// It's refreshed every 5 minutes, so an instance asks the store at most this often: it's
+// 100 KB or so a read.
+const MEMO_MS = 4 * 60 * 1000;
 
 export const CELL_DEG = 0.003;
 const cellKey = (lat, lng) => `${Math.floor(lat / CELL_DEG)},${Math.floor(lng / CELL_DEG)}`;

@@ -10,8 +10,8 @@
 import webpush from "web-push";
 import { modesOf } from "./_push/alerts.js";
 import { sendPush } from "./_push/send.js";
-import { devices, releaseLock, storeConfigured, takeLock } from "./_push/store.js";
-import { changesService, getNotices, newsfeedNotification, refreshNotices, SOURCE_NAMES } from "./_lib/notices.js";
+import { devices, storeConfigured, takeLock } from "./_push/store.js";
+import { changesService, newsfeedNotification, noticesNow, refreshNotices, SOURCE_NAMES } from "./_lib/notices.js";
 import { originOf } from "./_nav/network.js";
 
 // A notice can wait: a push not delivered within a day is dropped.
@@ -53,26 +53,27 @@ async function push(fresh) {
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
   if (secret && req.headers.authorization === `Bearer ${secret}`) {
-    if (storeConfigured() && !(await takeLock("notices", LOCK_SECONDS))) return res.status(200).json({ skipped: "a refresh is already running" });
+    // The lock's a nicety: with the store not answering, the refresh goes ahead without it.
+    if (storeConfigured() && !(await takeLock("notices", LOCK_SECONDS).catch(() => true))) return res.status(200).json({ skipped: "a refresh is already running" });
     try {
       const done = await refreshNotices(originOf(req));
-      const pushed = storeConfigured() ? await push(done.new) : { sent: 0 };
+      const pushed = storeConfigured() ? await push(done.new).catch((err) => ({ sent: 0, error: err.message })) : { sent: 0 };
       return res.status(200).json({ ...done, new: done.new.length, ...pushed });
     } catch (err) {
       console.error("notices refresh failed:", err);
       return res.status(502).json({ error: err.message });
-    } finally {
-      if (storeConfigured()) await releaseLock("notices").catch(() => {});
     }
   }
 
   res.setHeader("Access-Control-Allow-Origin", "*");
-  const notices = await getNotices();
+  // As kept by the hourly refresh, or read now if it couldn't keep them.
+  const notices = await noticesNow(originOf(req));
   const stop = /^\d{5}$/.test(req.query.stop || "") ? req.query.stop : null;
   const items = (notices?.items || [])
     .filter((n) => !stop || n.stops?.[stop] || n.codes?.includes(stop))
     // What the page needs, not what the refresh keeps for itself.
     .map(({ read, seen, ...n }) => ({ ...n, seen }));
-  res.setHeader("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600");
+  // Not long, if there are none to show: the next ask reads them again.
+  res.setHeader("Cache-Control", notices?.at ? "public, s-maxage=600, stale-while-revalidate=3600" : "public, s-maxage=30");
   return res.status(200).json({ at: notices?.at ?? null, items, sources: SOURCE_NAMES });
 }

@@ -7,7 +7,7 @@ import webpush from 'web-push';
 import { sendPush } from '../_push/send.js';
 import { diffTraffic, diffTrain, modesOf, notificationFor, updateFor } from '../_push/alerts.js';
 import { fetchTrafficIncidents, fetchTrainAlerts } from '../_push/lta.js';
-import { devices, getState, releaseLock, setState, storeConfigured, takeLock } from '../_push/store.js';
+import { devices, getStates, setState, storeConfigured, takeLock } from '../_push/store.js';
 
 // A push the device can't receive within this many seconds is dropped: an alert about a
 // jam from yesterday is worse than none.
@@ -30,29 +30,28 @@ export default async function handler(req, res) {
   }
   webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
-  // A poll that overran is still sending; this one would announce the same changes again.
+  // A poll that overran is still sending; this one would announce the same changes again. The
+  // lock lapses by itself before the next minute's poll.
   if (!(await takeLock('poll', LOCK_SECONDS))) return res.status(200).json({ skipped: 'a poll is already running' });
   try {
     return res.status(200).json(await poll(LTA_ACCOUNT_KEY));
   } catch (err) {
     console.error('poll failed:', err);
     return res.status(500).json({ error: 'poll failed' });
-  } finally {
-    await releaseLock('poll').catch(() => {});
   }
 }
 
 async function poll(accountKey) {
   const [train, traffic] = await Promise.allSettled([fetchTrainAlerts(accountKey), fetchTrafficIncidents(accountKey)]);
 
+  // Every state in one read, and each written back only if it changed: most minutes, nothing does.
+  const states = await getStates(['train', 'traffic', 'error:train', 'error:traffic']);
+  const feeds = { train: states.train, traffic: states.traffic };
+  const before = { train: JSON.stringify(feeds.train), traffic: JSON.stringify(feeds.traffic) };
   // Each feed is diffed on its own, so one being down doesn't hold the other back.
-  const feeds = { train: await getState('train'), traffic: await getState('traffic') };
-  const trainUpdate = (await noteFeed('train', train)) ? diffTrain(feeds, train.value) : null;
-  const newIncidents = (await noteFeed('traffic', traffic)) ? diffTraffic(feeds, traffic.value) : [];
-  await Promise.all([
-    feeds.train && setState('train', feeds.train),
-    feeds.traffic && setState('traffic', feeds.traffic),
-  ]);
+  const trainUpdate = (await noteFeed('train', train, states['error:train'])) ? diffTrain(feeds, train.value) : null;
+  const newIncidents = (await noteFeed('traffic', traffic, states['error:traffic'])) ? diffTraffic(feeds, traffic.value) : [];
+  await Promise.all(['train', 'traffic'].map((f) => feeds[f] && JSON.stringify(feeds[f]) !== before[f] && setState(f, feeds[f])));
 
   if (!trainUpdate && !newIncidents.length) return { changed: false };
 
@@ -99,9 +98,9 @@ async function send(deviceId, device, payload) {
 }
 
 // An LTA outage is logged once when it starts and once when it clears, rather than every
-// minute. Functions don't keep memory between runs, so the last error is kept in Redis.
-async function noteFeed(feed, result) {
-  const last = await getState(`error:${feed}`);
+// minute. Functions don't keep memory between runs, so the last error is kept in Redis, and
+// read with the feeds' states (`last`).
+async function noteFeed(feed, result, last) {
   if (result.status === 'rejected') {
     const message = result.reason?.message ?? String(result.reason);
     if (message !== last) {

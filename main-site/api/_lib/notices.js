@@ -327,10 +327,10 @@ export async function refreshNotices(origin, now = Date.now()) {
     await Promise.all(unread.slice(i, i + DOCS_AT_ONCE).map(async (n) => {
       const docKey = `${DOC_KEY}:${idOf(n.url)}`;
       try {
-        let doc = storeConfigured() ? JSON.parse((await redis("GET", docKey)) || "null") : null;
+        let doc = JSON.parse((await kept("GET", docKey)) || "null");
         if (!doc) {
           doc = await readDoc(n.url, known);
-          if (storeConfigured()) await redis("SET", docKey, JSON.stringify(doc), "EX", String(DOC_TTL_S));
+          await kept("SET", docKey, JSON.stringify(doc), "EX", String(DOC_TTL_S));
         }
         n.services = [...new Set([...n.services, ...doc.services])];
         n.stops = doc.stops;
@@ -343,7 +343,6 @@ export async function refreshNotices(origin, now = Date.now()) {
     }));
   }
 
-  // Not what's long over.
   // Not what's long over: a notice ended a fortnight ago, or news from two months back.
   const keep = items.filter((n) => {
     if (n.kind === "news") return (n.published ?? sgToday(n.seen)) >= addDays(today, -NEWS_DAYS);
@@ -351,7 +350,7 @@ export async function refreshNotices(origin, now = Date.now()) {
     return !end || end >= addDays(today, -KEEP_PAST_DAYS);
   });
   const fresh = { at: now, items: keep };
-  if (storeConfigured()) await redis("SET", KEY, JSON.stringify(fresh));
+  await kept("SET", KEY, JSON.stringify(fresh));
   memo = { notices: fresh, at: Date.now() };
   // The first run only takes note of what's there, so it isn't all announced as new.
   return { items: keep.length, read, failed, new: had ? keep.filter((n) => !oldById.has(n.id)) : [] };
@@ -376,17 +375,47 @@ export function newsfeedNotification(items) {
   };
 }
 
-let memo = null;
-const MEMO_MS = 60 * 1000;
-
-export async function getNotices() {
-  if (memo && Date.now() - memo.at < MEMO_MS) return memo.notices;
-  let notices = null;
+// Redis, as a nicety rather than a need: without it (not set up, down, or out of requests), the
+// notices are read afresh and kept in this instance's memory instead. Null on any failure.
+let storeDown = false;
+async function kept(...command) {
+  if (!storeConfigured()) return null;
   try {
-    notices = storeConfigured() ? JSON.parse((await redis("GET", KEY)) || "null") : null;
+    const result = await redis(...command);
+    storeDown = false;
+    return result;
   } catch (err) {
-    console.warn("notices: couldn't read them:", err.message);
+    if (!storeDown) console.warn("notices: the store's not answering, so they're kept in memory:", err.message);
+    storeDown = true;
+    return null;
   }
+}
+
+let memo = null;
+// They change hourly, so an instance needn't ask the store more often than this.
+const MEMO_MS = 10 * 60 * 1000;
+
+// The notices as last kept: in this instance's memory, or Redis. A failed read of Redis keeps
+// what memory had.
+export async function getNotices() {
+  if (memo?.notices && Date.now() - memo.at < MEMO_MS) return memo.notices;
+  const stored = JSON.parse((await kept("GET", KEY)) || "null");
+  const notices = stored && (!memo?.notices || stored.at >= memo.notices.at) ? stored : memo?.notices ?? null;
   memo = { notices, at: Date.now() };
   return notices;
+}
+
+// Older than this, what's kept is read afresh when asked for, as the hourly refresh can't have
+// run (or kept it).
+const STALE_MS = 2 * 3600 * 1000;
+let reading = null;
+
+// The notices for a page: as kept, or read now if there are none or they're stale. One read at
+// a time per instance.
+export async function noticesNow(origin) {
+  const had = await getNotices();
+  if (had?.at && Date.now() - had.at < STALE_MS) return had;
+  reading ??= refreshNotices(origin).catch((err) => console.warn("notices: couldn't read them:", err.message)).finally(() => { reading = null; });
+  await reading;
+  return (await getNotices()) || had;
 }

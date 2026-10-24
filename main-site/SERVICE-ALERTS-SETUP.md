@@ -22,7 +22,11 @@ It takes about 10 minutes.
 
 1. In the Vercel dashboard, open the **sgbus** project, then **Storage**.
 2. **Create Database**, pick **Upstash**, then **Redis**. Any region near
-   Singapore; the free plan is plenty.
+   Singapore, with no read regions (they bill every write again). The crons
+   use about 250,000 requests a month, inside the free plan's 500,000, but
+   requests the plan turns away break Service Alerts, trips and share links
+   until the month's out, so **Pay as You Go** ($0.20 per 100,000) is the
+   safer choice.
 3. Connect it to the project, for Production and Preview.
 
 That adds `KV_REST_API_URL` and `KV_REST_API_TOKEN` to the project's

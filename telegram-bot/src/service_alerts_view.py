@@ -133,7 +133,8 @@ def _updated(doc: _Doc) -> None:
 def _add_newsfeed(doc: _Doc, notices: "dict | None") -> None:
     """The newsfeed's coming notices and the operators' latest news."""
     doc.blank().heading(2, "📰 Newsfeed")
-    if notices is None:
+    # Nothing read yet (`at` null) isn't nothing announced.
+    if notices is None or not notices.get("at"):
         doc.text("Couldn't get the newsfeed just now. Try Refresh in a minute.")
         return
     items, sources = notices.get("items") or [], notices.get("sources") or {}

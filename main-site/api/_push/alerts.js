@@ -37,6 +37,9 @@ export const BLOCKING_TYPES = new Set([
 
 // An incident LTA drops and lists again inside this window is not announced twice.
 const SEEN_FOR_MS = 6 * 60 * 60 * 1000;
+// An incident still listed has its time noted again only this often, so the state (and its
+// write to the store) changes when incidents come and go, not every minute.
+const RESEEN_MS = 60 * 60 * 1000;
 
 const hash = (value) => createHash('sha1').update(JSON.stringify(value)).digest('hex');
 const EMPTY_HASH = hash([]);
@@ -83,7 +86,7 @@ export function diffTraffic(state, incidents, now = Date.now()) {
   for (const incident of incidents) {
     const key = incidentKey(incident);
     if (!first && !(key in seen)) fresh.push(incident);
-    seen[key] = now;
+    if (!(key in seen) || now - seen[key] >= RESEEN_MS) seen[key] = now;
   }
   state.traffic = { seen };
   return fresh;
