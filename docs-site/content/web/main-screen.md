@@ -11,7 +11,7 @@ of its own. Make any of them your home, and the app opens on it.
 ## Glance
 
 <figure>
-<img src="/screenshots/web/glance.png" alt="Glance: a Saved stops chip, the next bus in big letters with when it comes and where, the weather, and under it one saved stop as a card with only the two favourite buses due there, each with where it is going and its next three times in minutes." width="280" height="447" loading="lazy">
+<img src="/screenshots/web/glance.png" alt="Glance: a Saved stops chip and a round refresh button beside it, the next bus in big letters with when it comes and where, the weather, and under it one saved stop as a card with only the two favourite buses due there, each with where it is going and its next three times in minutes." width="280" height="464" loading="lazy">
 <figcaption>The next bus, then your stops, with only your favourite buses.</figcaption>
 </figure>
 
@@ -35,12 +35,12 @@ Tap the big bus, a line or a stop's name for its full [timings](timings.md),
 on Bus timings, as a search would. **Back** comes back to Glance.
 
 The times count down by themselves, and fetch again every 30 seconds while
-the app is open on Glance.
+the app is open on Glance. The round arrows beside the chip fetch them at once.
 
 ### Pick whose buses
 
 <figure>
-<img src="/screenshots/web/glance-pick.png" alt="The chip over the next bus opened into a list: Saved stops, Nearby, Home, Work, Gym and Mum's." width="280" height="291" loading="lazy">
+<img src="/screenshots/web/glance-pick.png" alt="The chip over the next bus opened into a list: Saved stops, Nearby, Home, Work, Gym and Mum's." width="280" height="292" loading="lazy">
 <figcaption>The chip picks the stops: saved, nearby, or near one of your places.</figcaption>
 </figure>
 

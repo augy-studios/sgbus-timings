@@ -8,7 +8,7 @@
 // Nearby only looks for where you are once you've asked, or the browser already allows it.
 // The walk is Will I make it?'s guess (js/make-it.js): the straight line with a quarter more
 // for corners, at 80 m a minute. Times count down between fetches, every REFRESH_MS while the
-// page is on show.
+// page is on show, or at once with the refresh button beside the chip.
 // Loaded before script.js and uses its helpers (LS, nameOf, stopsNear, fetchArrivals, loadStop)
 // only once the page is running. Plain script: exports go on window.
 (function () {
@@ -37,6 +37,7 @@
   let needsLocation = false;
   let failed = false;
   let timer = null;
+  let since = 0;
 
   const store = {
     get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -266,7 +267,7 @@
 
   function loop() {
     clearInterval(timer);
-    let since = 0;
+    since = 0;
     timer = setInterval(() => {
       if (!showing()) return;
       since += TICK_MS;
@@ -278,6 +279,15 @@
     $('#glanceSource').addEventListener('click', (e) => {
       e.stopPropagation();
       openMenu($('#glanceMenu').hidden);
+    });
+    // The refresh button: the times now, its arrows turning till they're in, and the next
+    // fetch on its own a full REFRESH_MS after.
+    $('#glanceRefresh').addEventListener('click', async () => {
+      const btn = $('#glanceRefresh');
+      if (btn.classList.contains('busy')) return;
+      btn.classList.add('busy');
+      since = 0;
+      try { await refresh(); } finally { btn.classList.remove('busy'); }
     });
     $('#glanceMenu').addEventListener('click', (e) => {
       const item = e.target.closest('[data-source]');
