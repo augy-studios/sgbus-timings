@@ -176,11 +176,17 @@
   }
 
   // A page turned on or off: its tab comes or goes, and off its page, Bus timings is on show
-  // instead. Settings' switches and Custom home follow (script.js, "mainscreenchange").
+  // instead, as the step on show rather than a new one, as offline's below: Back has no page
+  // that's gone to go back to, and Back from the window it was turned off in (Settings, the
+  // first open's choice, js/first-run.js) closes just that. Settings' switches and Custom home
+  // follow (script.js, "mainscreenchange").
   function changed() {
     if (!ready) return;
     layout();
-    if (!here(active)) open(fallback());
+    if (!here(active)) {
+      quiet = true;
+      try { open(fallback()); } finally { quiet = false; }
+    }
     window.dispatchEvent(new Event('mainscreenchange'));
   }
 

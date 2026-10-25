@@ -1080,6 +1080,30 @@
         </div>
     </div>
 
+    <!-- The first open's choice, Minimal or Full, before the welcome: js/first-run.js -->
+    <div id="firstRunModal" class="modal-backdrop hidden">
+        <form class="modal glass" id="firstRunForm" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle" aria-describedby="firstRunNote">
+            <div class="modal-head">
+                <h2 id="firstRunTitle">Welcome to SG Bus Timings</h2>
+            </div>
+            <fieldset class="firstRunPick">
+                <legend class="modal-section-label">Start with everything, or just the essentials?</legend>
+                <label class="firstRunOption">
+                    <input type="radio" name="firstRun" value="minimal" />
+                    <span class="firstRunName">Minimal</span>
+                    <span class="firstRunWhat">Just Bus timings, Favourites, Navigate and Places. The rest is switched off.</span>
+                </label>
+                <label class="firstRunOption">
+                    <input type="radio" name="firstRun" value="full" checked />
+                    <span class="firstRunName">Full</span>
+                    <span class="firstRunWhat">Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.</span>
+                </label>
+            </fieldset>
+            <p class="mode-note" id="firstRunNote">You can change this any time in Settings, Edge Tray buttons.</p>
+            <button class="btn firstRunGo" type="submit">Start</button>
+        </form>
+    </div>
+
     <!-- Theme Picker Modal -->
     <div class="modal-backdrop hidden" id="themeModal">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
@@ -1103,6 +1127,8 @@
 
     <!-- First, so it sees every fetch (js/offline.js) -->
     <script src="/js/offline.js"></script>
+    <!-- Next, so it sees storage before anything writes to it (js/first-run.js) -->
+    <script src="/js/first-run.js"></script>
     <script src="/js/app-bridge.js"></script>
     <script src="/js/desktop-location.js"></script>
     <script src="/js/geo-retry.js"></script>

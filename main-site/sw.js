@@ -10,6 +10,8 @@ const ASSETS = [
   "/style.css",
   "/script.js",
   "/js/offline.js",
+  // The first open's choice, Minimal or Full (js/first-run.js).
+  "/js/first-run.js",
   "/js/icons.js",
   "/js/ui.js",
   "/js/confetti.js",
