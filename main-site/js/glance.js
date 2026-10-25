@@ -6,6 +6,8 @@
 // bus or a stop opens its full timings, as a search does. On unless Settings turns it off.
 //
 // Nearby only looks for where you are once you've asked, or the browser already allows it.
+// With the phone's Location off, only a tap (picking Nearby, Use my location) offers the app's
+// "Turn on location" dialog (js/geo-retry.js); a refresh on its own just says it's off.
 // The walk is Will I make it?'s guess (js/make-it.js): the straight line with a quarter more
 // for corners, at 80 m a minute. Times count down between fetches, every REFRESH_MS while the
 // page is on show, or at once with the refresh button beside the chip.
@@ -72,23 +74,24 @@
     } catch { return false; }
   }
 
-  function locate() {
+  function locate(turnOn) {
     if (here && Date.now() - here.at < FRESH_MS) return Promise.resolve(here);
     return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
       (pos) => { here = { lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }; resolve(here); },
       (err) => reject(new Error(locationMessage(err, 'to find stops near you'))),
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000, noTurnOn: !turnOn },
     ));
   }
 
-  // The source's stops, or null for Nearby until you've said it may look.
-  async function stopsOf(src, { ask = false } = {}) {
+  // The source's stops, or null for Nearby until you've said it may look. `turnOn` is a tap's:
+  // with Location off, it may offer to turn it on.
+  async function stopsOf(src, { ask = false, turnOn = false } = {}) {
     if (!src) return [];
     if (src.key === 'saved') return LS.getFavs().slice(0, STOPS).map((f) => ({ code: f.code }));
     await ensureStopsIndex();
     if (src.key === 'near') {
       if (!ask && !(await locationAllowed())) return null;
-      const at = await locate();
+      const at = await locate(turnOn);
       store.set(ASKED_KEY, '1');
       return stopsNear(at.lat, at.lng, STOPS).map((s) => ({ code: s.code, metres: s.distance }));
     }
@@ -97,13 +100,13 @@
     return [...(p.stop ? [{ code: p.stop }] : []), ...near.map((s) => ({ code: s.code }))].slice(0, STOPS);
   }
 
-  async function refresh({ ask = false } = {}) {
+  async function refresh({ ask = false, turnOn = ask } = {}) {
     if (!enabled()) return render();
     const src = chosen();
     source = src?.key || null;
     const mine = ++token;
     try {
-      const got = await stopsOf(src, { ask });
+      const got = await stopsOf(src, { ask, turnOn });
       if (mine !== token) return;
       needsLocation = got === null;
       stops = got || [];
@@ -157,7 +160,8 @@
   function renderHero(src) {
     const hero = $('#glanceHero');
     if (failed) {
-      hero.innerHTML = `<p class="glanceKicker">Next bus</p><p class="glanceSay">${esc(failed)}</p>`;
+      const retry = src?.key === 'near' ? `<button id="glanceLocate" class="btn glanceBtn" type="button">${ico('locate')} Use my location</button>` : '';
+      hero.innerHTML = `<p class="glanceKicker">Next bus</p><p class="glanceSay">${esc(failed)}</p>` + retry;
       return;
     }
     if (needsLocation) {
@@ -311,10 +315,12 @@
   }
 
   // A stop saved or removed: the saved stops' glance follows. A bus starred or not: the cards.
+  // Off Glance's page (Favourites calls this each time it opens), only saved stops refresh, as
+  // they need no location; Nearby or a place waits till Glance is shown again (viewchange).
   let started = false;
   function favsChanged() {
     if (!started) return;
-    if (chosen()?.key === 'saved' || !stops.length) refresh();
+    if (chosen()?.key === 'saved' || (!stops.length && showing())) refresh();
     else render();
   }
 
