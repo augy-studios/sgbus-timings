@@ -75,7 +75,7 @@ class PushError extends Error {
 }
 
 // `payload` is the same JSON string a Web Push carries: { type: 'service-alert', title, body,
-// url }, { type: 'get-off', tripId, leg, body } or { type: 'board', title, tripId, leg, body }.
+// url }, { type: 'get-off', tripId, leg, body, quiet } or { type: 'board', title, tripId, leg, body }.
 export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' } = {}) {
   if (!fcmConfigured()) throw new PushError(503, 'FIREBASE_SERVICE_ACCOUNT is not set');
   const msg = JSON.parse(payload);
@@ -94,8 +94,10 @@ export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' 
       ttl: `${ttl}s`,
       notification: {
         // The app's channels (Notifications.java): the Get Off Alert's buzzes "OFF". An app from
-        // before 2.0.4 has no board channel, and Android puts it on its default one.
-        channel_id: getOff ? 'get_off' : board ? 'board' : 'alerts',
+        // before 2.0.4 has no board channel, and Android puts it on its default one. With
+        // Settings' earphones only (`quiet`, sent only by an app from 2.1.0, which has the
+        // channel), get_off_quiet: it buzzes, and never sounds out loud.
+        channel_id: getOff ? (msg.quiet === true ? 'get_off_quiet' : 'get_off') : board ? 'board' : 'alerts',
         tag: getOff ? 'get-off' : board ? 'board' : 'service-alert',
         icon: 'ic_notification_icon',
         notification_priority: getOff ? 'PRIORITY_MAX' : board ? 'PRIORITY_HIGH' : 'PRIORITY_DEFAULT',

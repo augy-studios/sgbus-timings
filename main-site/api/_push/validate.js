@@ -130,6 +130,9 @@ export function parseTrip(body, now = Date.now()) {
     alerted: body.alerted.map(Boolean),
     readied: body.readied ? body.readied.map(Boolean) : legs.map(() => false),
     share: parseShare(body.share),
+    // Settings' earphones only, in the app: its Get Off Alert on the quiet channel
+    // (api/_push/fcm.js). An older page doesn't say.
+    quiet: body.quiet === true,
   };
 }
 

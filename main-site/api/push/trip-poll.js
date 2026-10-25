@@ -74,7 +74,7 @@ async function poll(accountKey) {
       const buses = leg.kind === 'bus' && leg.service && leg.alight ? await positions(leg.alight, leg.service) : null;
       const { alert, done } = step(trip, buses?.length ? buses : null, now);
 
-      if (alert && (await send(id, trip, { type: 'get-off', tripId: trip.tripId, leg: alert.leg, body: alert.text }))) sent++;
+      if (alert && (await send(id, trip, { type: 'get-off', tripId: trip.tripId, leg: alert.leg, body: alert.text, quiet: trip.quiet || undefined }))) sent++;
       // Still waiting for the bus, after this minute's step: is it a minute away?
       if (!done && waitingToBoard(trip)) {
         const l = trip.legs[trip.leg];
@@ -105,7 +105,8 @@ async function shareProgress(trip, done, now) {
   }
 }
 
-// `message` is { type: 'get-off' | 'board', tripId, leg, body }, and a title for 'board'.
+// `message` is { type: 'get-off' | 'board', tripId, leg, body }, and a title for 'board'; a
+// 'get-off' for an app with Settings' earphones only has quiet: true (api/_push/fcm.js).
 async function send(id, trip, message) {
   const payload = JSON.stringify(message);
   try {
