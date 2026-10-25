@@ -1861,14 +1861,16 @@ $('#favsModal').addEventListener('click', e => {
 // "#share/<id>" for a short share link (js/share.js), "#board/84009" for a stop's departures
 // board (js/board.js),
 // "#alerts" for the service alerts card, "#nav/lat,lng~Name/here" for Navigate (navHash in
-// js/nav.js), and "#near" and "#nav" for the installed app's shortcuts. Either end of a route
+// js/nav.js), with "/via/lat,lng~Name" after its ends for a stop on the way, and "#near" and
+// "#nav" for the installed app's shortcuts. Either end of a route
 // or nav can be "-", not set yet, as Share gives them part filled in, and "#route" opens the
 // planner empty. A route or nav can end "/leave/2026-10-09T08:30" or "/arrive/..." for a
 // picked time (js/when.js); one that has passed opens saying so.
 const WHEN_HASH = When.HASH_RE_SOURCE;
 const ROUTE_HASH_RE = new RegExp(`^route\\/(\\d{5}|-)\\/(\\d{5}|-)${WHEN_HASH}$`);
 const NAV_END = '(-|here|-?[\\d.]+,-?[\\d.]+(?:~[^/]*)?)';
-const NAV_HASH_RE = new RegExp(`^nav\\/${NAV_END}\\/${NAV_END}${WHEN_HASH}$`);
+const NAV_VIA = '(?:\\/via\\/(-?[\\d.]+,-?[\\d.]+(?:~[^/]*)?))?';
+const NAV_HASH_RE = new RegExp(`^nav\\/${NAV_END}\\/${NAV_END}${NAV_VIA}${WHEN_HASH}$`);
 
 function routeFromHash() {
     // The short link itself, when the app was served for it offline (sw.js) rather than
@@ -1914,7 +1916,7 @@ function routeFromHash() {
     if (hash === 'route') { openPlanner(); return true; }
     if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(end(m[1]), end(m[2]), { when: When.fromHash(m[3], m[4]) }); return true; }
     // Matched before decoding, so a "/" in a place's name stays inside it.
-    if ((m = raw.match(NAV_HASH_RE) || hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[3], m[4])); return true; }
+    if ((m = raw.match(NAV_HASH_RE) || hash.match(NAV_HASH_RE))) { openNavHash(m[1], m[2], When.fromHash(m[4], m[5]), m[3]); return true; }
     if ((m = hash.match(/^bus\/([0-9A-Za-z]{1,4})$/))) { openService(m[1]); return true; }
     const [hashCode, ...hashSvc] = hash.split(',');
     if (/^\d{5}$/.test(hashCode)) {

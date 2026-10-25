@@ -1635,6 +1635,12 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .swapBtn .ico,
 .swapBtn [data-icon] { transform: rotate(90deg); }
 
+/* Navigate's stop on the way (js/nav.js): side by side, a row of its own under both ends; on a
+   phone, between From and the swap button, in the order it's ridden. */
+.navVia { grid-column: 1 / -1; order: 1; min-width: 0; }
+.addStopBtn { height: 30px; padding: 0 10px; font-size: 13px; }
+.busChip.viaChip { background: var(--surface-strong); color: var(--ink); }
+
 .plannerBody { margin-top: 14px; }
 
 /* Leave now / Leave at / Arrive by, and the day and time for the last two (js/when.js). */
@@ -2281,6 +2287,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 
     /* The two ends stack, with the swap button between them swapping up and down. */
     .plannerFields { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+    .navVia { order: 0; }
     .swapBtn { justify-self: center; margin: 0; }
     .swapBtn .ico,
     .swapBtn [data-icon] { transform: none; }

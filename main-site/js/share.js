@@ -56,6 +56,9 @@
   // An end of the directions: Your location stays "wherever you are" for whoever opens it.
   const endOf = (p) => (p.label === HERE_LABEL ? 'here' : placeOf(p));
 
+  // ", via Tampines Mall" for directions with a stop on the way.
+  const viaText = () => (nav.via ? `, via ${placeOf(nav.via).label}` : '');
+
   function directionsData() {
     const o = nav.option;
     return {
@@ -65,6 +68,8 @@
       way: o ? wayKey(o) : null,
       summary: o ? `~${o.minutes} min · ${navMixText(o)}` : '',
       path: o ? thin(o.legs.flatMap((l) => (l.mode !== 'walk' && l.path) || []), PATH_POINTS) : null,
+      // A stop on the way, only when there is one, so a link without one stays the same link.
+      ...(nav.via && { via: placeOf(nav.via) }),
     };
   }
 
@@ -91,7 +96,7 @@
   function openMenu() {
     const items = [];
     if (Trip.active()) items.push({ pick: 'eta', icon: 'clock', title: 'Share my ETA', sub: 'Live progress, until you get there' });
-    if (nav.from && nav.to) items.push({ pick: 'directions', icon: 'route', title: 'Share these directions', sub: `${nav.from.label} to ${nav.to.label}` });
+    if (nav.from && nav.to) items.push({ pick: 'directions', icon: 'route', title: 'Share these directions', sub: `${nav.from.label} to ${nav.to.label}${viaText()}` });
     if (nav.from) items.push({ pick: 'start', icon: 'pin', title: 'Share start', sub: placeOf(nav.from).label });
     if (nav.to) items.push({ pick: 'end', icon: 'flag', title: 'Share end', sub: placeOf(nav.to).label });
     $('#shareMenuList').innerHTML = items.map((it) =>
@@ -113,11 +118,11 @@
       const o = nav.option;
       showCard({
         heading: 'Share these directions',
-        name: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}`,
+        name: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}${viaText()}`,
         sub: o ? `~${o.minutes} min · ${navMixText(o)}` : When.describe(nav.when),
         kind: 'directions',
         data: directionsData(),
-        text: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}, by bus and train`,
+        text: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}${viaText()}, by bus and train`,
       });
       return;
     }
@@ -200,7 +205,7 @@
     if (!card) return null;
     if (card.kind === 'eta') return card.url;
     const d = card.data;
-    const hash = card.kind === 'place' ? navHashFor('here', d) : navHashFor(d.from, d.to, d.when);
+    const hash = card.kind === 'place' ? navHashFor('here', d) : navHashFor(d.from, d.to, d.when, d.via);
     return `${location.origin}/${hash}`;
   }
 
@@ -439,7 +444,7 @@
     }
     const { kind, data } = got;
     if (kind === 'place') openNavAt('here', data);
-    else if (kind === 'directions') openNavAt(data.from, data.to, data.when, data.way);
+    else if (kind === 'directions') openNavAt(data.from, data.to, data.when, data.way, data.via || null);
     else if (kind === 'eta') openEtaView(id, { data, updatedAt: got.updatedAt });
   }
 
