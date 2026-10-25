@@ -14,8 +14,9 @@
 //   LiveMap.follow(data)    someone's shared trip (js/share.js): where they are, the way
 //                           they're going and where to, updated as their link is.
 //   LiveMap.explore()       Explorer, from its Edge Tray button: no way to follow, just every bus
-//                           stop and MRT and LRT station as a dot, and you. A tap on one opens
-//                           its card (js/map-card.js): a stop's buses, a station's doors.
+//                           stop and MRT and LRT station as a dot, and you, over the MRT and
+//                           LRT lines in their colours. A tap on a dot opens its card
+//                           (js/map-card.js): a stop's buses, a station's doors.
 //   LiveMap.traffic(way)    the traffic on a bus's way, from wherever the site says there's
 //                           traffic (Navigate, a trip, #traffic/ links from the Telegram bot):
 //                           its road, orange where it's slow and red where it's jammed, by LTA's
@@ -344,7 +345,10 @@
     ink.clear('lines');
     ink.clear('stops');
     ink.clear('marks');
-    if (mode !== 'explore') ink.pois([]);
+    if (mode !== 'explore') {
+      ink.pois([]);
+      ink.rails([]);
+    }
     destMark = null;
     builtTripLeg = null;
     builtTripLegs = null;
@@ -370,6 +374,7 @@
       ink.clear('lines');
       ink.clear('stops');
       ink.clear('marks');
+      ink.rails([]);
       hideMe();
     }
     destMark = null;
@@ -865,6 +870,11 @@
     $('#mapOverview').hidden = true;
     startWatching();
     if (!here) ink.setView([1.3521, 103.8198], 12);
+    // The lines under the dots, as soon as their tracks are in (js/rail-tracks.js), without
+    // waiting on the stops. None, offline before they were ever fetched.
+    RailTracks.lines()
+      .then((lines) => { if (mode === 'explore') ink.rails(lines.map((l) => ({ color: lineColour(l.line), points: l.points }))); })
+      .catch(() => {});
     const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {})]);
     if (mode !== 'explore') return;
     const dots = [];
