@@ -265,7 +265,8 @@
     if (!hinted) {
       setTimeout(function () {
         var tray = document.getElementById("trayButtons");
-        if (!tray) return;
+        // Not over a window, such as the first open's choice (js/first-run.js): next time.
+        if (!tray || document.body.classList.contains("modal-open")) return;
         try { localStorage.setItem(HINT_KEY, "1"); } catch (e) { /* shown again next time */ }
         showTip(tray, "Tip: press and hold a button to see what it does.", 5000);
       }, 2500);

@@ -344,9 +344,10 @@
 
   // At start: the welcome, unless a link opened something. On Glance it waits on its buses;
   // on another home (or with Glance off), it's Glance's page then back, or the tray and
-  // Settings, and the home's own tour after.
+  // Settings, and the home's own tour after. Someone new is first asked Minimal or Full
+  // (js/first-run.js), on the same visits the welcome would show, and the welcome waits for
+  // the answer, as do the pages' tours, so it covers only what's on.
   function maybeStart() {
-    window.addEventListener('viewchange', forPage);
     // A page's tour that's going when its page goes offline (js/offline.js) stops, not marked
     // seen, so it's shown when the page is back; and back where it began, or Favourites.
     window.Offline?.onChange(() => {
@@ -354,9 +355,16 @@
       page = null;
       end();
     });
-    if (location.hash.length > 1 || location.search) return;
-    // The welcome is Glance's, which isn't there offline: it waits for a visit online.
-    if (!seen('glance') && window.Offline?.on()) return;
+    if (!waits() && window.FirstRun?.ask(welcome)) return;
+    welcome();
+  }
+
+  // The welcome is Glance's, which isn't there offline: it waits for a visit online.
+  const waits = () => location.hash.length > 1 || !!location.search || (!seen('glance') && !!window.Offline?.on());
+
+  function welcome() {
+    window.addEventListener('viewchange', forPage);
+    if (waits()) return;
     if (!seen('glance') && window.MainScreen?.active() !== 'glance') {
       setTimeout(() => { if (!covered()) start('glance'); }, 1500);
       return;

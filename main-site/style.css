@@ -3390,6 +3390,29 @@ body.touring { overflow: hidden; }
     .tourHole { transition: none; }
     .tourLine { animation: none; stroke-dashoffset: 0; }
 }
+/* The first open's choice, Minimal or Full (js/first-run.js): a card for each, the one picked
+   in the brand fill, as the mode buttons are. */
+.firstRunPick { display: grid; gap: 8px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.firstRunPick legend { padding: 0; margin-bottom: 8px; }
+.firstRunOption {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.firstRunOption input { position: absolute; opacity: 0; pointer-events: none; }
+.firstRunName { font-weight: 700; }
+.firstRunWhat { font-size: 0.85rem; color: var(--muted-strong); }
+.firstRunOption:has(input:checked) { background: var(--brand-fill); color: var(--on-brand); }
+.firstRunOption:has(input:checked) .firstRunWhat { color: inherit; }
+.firstRunOption:has(input:focus-visible) { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+.firstRunGo { width: 100%; }
 
 /* ----------- The sgbus terminal (js/terminal.js) -----------
    The Linux app's sgbus> prompt, with a terminal's look in either theme: dark, monospace, and
