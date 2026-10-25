@@ -1940,6 +1940,9 @@
       clockRuns: underWay(trip.legs[trip.leg]),
       alerted: trip.alerted,
       readied: trip.readied,
+      // Settings' earphones only, in the app: the server's Get Off Alert goes on the app's
+      // quiet channel, which buzzes and never sounds out loud (api/_push/fcm.js).
+      quiet: Boolean(window.Reminders?.earphonesOnly()),
     });
     const moves = handMoves;
     try {

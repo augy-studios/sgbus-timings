@@ -7,7 +7,7 @@
  *   board    Get ready to board: your bus is a minute from the stop you're waiting at
  *   trip     the trip being followed, while it runs (TripService): silent
  *   get_off_quiet  the Get Off Alert when its sound is for earphones only: buzzes, and the
- *            app plays the sound itself, in the earphones, if there are any (TripPlugin)
+ *            app plays the sound itself, in the earphones, if there are any (EarBeep)
  *   near     a picked favourite stop's timings as you walk up to it (NearStops): silent
  *   last_bus a heads-up before the last bus (LastBus)
  *   leave    time to leave for a calendar event (LeaveTime)

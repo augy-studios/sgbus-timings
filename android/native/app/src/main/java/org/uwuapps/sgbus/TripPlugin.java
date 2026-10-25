@@ -154,34 +154,16 @@ public class TripPlugin extends Plugin {
     }
 
     // `quiet`: Settings has the alert's sound in earphones only (2.1.0). It buzzes, and sounds in
-    // earphones if there are any, never out loud.
+    // earphones if there are any, never out loud (EarBeep: a call-only Bluetooth earpiece too,
+    // from 2.2.6).
     @PluginMethod
     public void alert(PluginCall call) {
         boolean quiet = Boolean.TRUE.equals(call.getBoolean("quiet", false));
         JSObject out = new JSObject();
         out.put("shown", Notifications.post(getContext(), quiet ? Notifications.GET_OFF_QUIET : Notifications.GET_OFF, "get-off",
                 call.getString("title", "Get Off Alert"), call.getString("body", ""), null));
-        if (quiet && SgBusPlugin.earphones(getContext())) beepInEarphones();
+        if (quiet) EarBeep.beep(getContext());
         call.resolve(out);
-    }
-
-    // Three short beeps on the media stream, which goes to the earphones while they're in, as
-    // the page's own beeps (js/trip.js) would.
-    private void beepInEarphones() {
-        new Thread(() -> {
-            android.media.ToneGenerator tone = null;
-            try {
-                tone = new android.media.ToneGenerator(android.media.AudioManager.STREAM_MUSIC, 80);
-                for (int i = 0; i < 3; i++) {
-                    tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, 180);
-                    Thread.sleep(250);
-                }
-            } catch (RuntimeException | InterruptedException ignored) {
-                // No tone this time: it still buzzes.
-            } finally {
-                if (tone != null) tone.release();
-            }
-        }, "get-off-beep").start();
     }
 
     @PluginMethod
