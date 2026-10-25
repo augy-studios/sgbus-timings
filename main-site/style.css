@@ -497,7 +497,13 @@ body.modal-open { overflow: hidden; }
 :root[data-tray-hide~="coffee"] [data-tray-extra="coffee"],
 :root[data-tray-hide~="guide"] [data-tray-extra="guide"],
 :root[data-tray-hide~="nearstops"] [data-tray-extra="nearstops"],
-:root[data-tray-hide~="routines"] [data-tray-extra="routines"] { display: none !important; }
+:root[data-tray-hide~="routines"] [data-tray-extra="routines"],
+:root[data-tray-hide~="card"] [data-tray-extra="card"],
+:root[data-tray-hide~="receive"] [data-tray-extra="receive"] { display: none !important; }
+/* The pages turned off in Settings (js/main-screen.js, layout), set before first paint too. */
+:root[data-pages-off~="glance"] #glanceBtn,
+:root[data-pages-off~="alerts"] #alertsBtn,
+:root[data-pages-off~="trips"] #tripsBtn { display: none !important; }
 
 /* Clipped at the screen's edge: the tray tucked away slides past it, and anything out there
    would widen the page, which a phone then zooms out to fit, modals and all. Pinned to the

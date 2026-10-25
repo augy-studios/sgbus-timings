@@ -3,7 +3,10 @@
 // inside it), Service alerts, Your trips and Places are each a page of its own, switched by tabs
 // at the top of the Edge Tray (docs/edge-tray-spec.md, 6.2: the one on show in the brand fill).
 // Settings' Custom home is the page the app opens on, and its tab comes first: Glance unless
-// it's set otherwise, or turned off, which takes its tab away too. The small things (Settings,
+// it's set otherwise. Glance, Service alerts and Your trips can be turned off in Settings' Edge
+// Tray buttons, which takes their tabs away too, and a home that's off opens Bus timings
+// instead. The other pages don't need them: trips are still kept with Your trips off
+// (js/trip.js, TripHistory.record). The small things (Settings,
 // the theme, the weather, a bus's route, a list of stops) still open as windows over the page.
 //
 // Each page's panel or modal is "docked" (style.css): drawn in the page, with no close button.
@@ -40,9 +43,19 @@
   let active = 'glance';
   const opened = new Set();
 
-  // Glance's page, unless Settings has the glance off (js/glance.js).
+  // The pages Settings can turn off. Glance keeps its own switch (js/glance.js, and "glance" in
+  // js/sync.js); the others are kept as "alerts trips" under OFF_KEY. All of them are kept as
+  // data-pages-off on <html> too, which index.html's head sets again before first paint, so a
+  // page that's off doesn't show its tab for a moment first (style.css).
+  const CAN_HIDE = ['glance', 'alerts', 'trips'];
+  const OFF_KEY = 'sgbus_pages_off';
   const glanceOn = () => window.Glance?.enabled() ?? true;
-  const shows = (id) => id !== 'glance' || glanceOn();
+  const offList = new Set();
+  try {
+    for (const n of (localStorage.getItem(OFF_KEY) || '').split(' ')) if (n !== 'glance' && CAN_HIDE.includes(n)) offList.add(n);
+  } catch { /* all on */ }
+  const hidden = () => [...(glanceOn() ? [] : ['glance']), ...CAN_HIDE.filter((n) => offList.has(n))];
+  const shows = (id) => !hidden().includes(id);
 
   function home() {
     let v = null;
@@ -51,7 +64,8 @@
     return shows(v) ? v : 'timings';
   }
 
-  // Custom home: the app opens on `id`, its tab goes first, and it's on show at once.
+  // Custom home: the app opens on `id`, its tab goes first, and it's on show at once. One
+  // that's off (from a synced device) is kept for when it's on again: Bus timings until then.
   function setHome(id) {
     if (!IDS.includes(id)) return;
     try {
@@ -59,8 +73,22 @@
       else localStorage.setItem(HOME_KEY, id);
     } catch { /* this visit only */ }
     layout();
-    open(id);
+    open(home());
     window.dispatchEvent(new Event('mainscreenchange'));
+  }
+
+  // A page turned on or off, in Settings or from a synced device. Glance's goes through its own
+  // switch, which fires "glancechange" back here.
+  function setShown(id, on) {
+    if (!CAN_HIDE.includes(id)) return;
+    if (id === 'glance') return window.Glance?.setEnabled(on);
+    if (on) offList.delete(id);
+    else offList.add(id);
+    try {
+      if (offList.size) localStorage.setItem(OFF_KEY, [...offList].join(' '));
+      else localStorage.removeItem(OFF_KEY);
+    } catch { /* this visit only */ }
+    changed();
   }
 
   const docked = (elId) => !!byEl[elId];
@@ -70,6 +98,11 @@
   // Steps); a switch of Navigate's tab isn't.
   let ready = false;
   function select(id, el) {
+    // A page that's off isn't shown: whatever opened it (a link, Back to it) gets Bus timings.
+    if (!shows(id)) {
+      id = 'timings';
+      el = null;
+    }
     const changed = active !== id;
     active = id;
     if (el && byEl[el]?.id === id) shown[id] = el;
@@ -82,8 +115,9 @@
 
   // Shows `id` from its tab, filling it in as its own button would.
   function open(id) {
+    if (!byId[id]) return false;
+    if (!shows(id)) id = 'timings';
     const part = byId[id];
-    if (!part) return false;
     const first = !opened.has(id);
     select(id);
     if (part.show) part.show();
@@ -110,22 +144,27 @@
     window.syncModalOpen?.();
   }
 
-  // The tabs at the top of the tray, the home's first, and Glance's only while it's on.
+  // The tabs at the top of the tray, the home's first, and those turned off left out.
   function layout() {
     const views = $('trayViews');
     const first = home();
+    const off = hidden();
     for (const id of [first, ...IDS.filter((n) => n !== first)]) {
       const btn = $(byId[id].btn);
-      btn.hidden = !shows(id);
+      btn.hidden = off.includes(id);
       views.appendChild(btn);
     }
+    if (off.length) root.setAttribute('data-pages-off', off.join(' '));
+    else root.removeAttribute('data-pages-off');
   }
 
-  // The glance turned on or off in Settings: its tab comes or goes, and off its page, Bus
-  // timings is on show instead.
-  function glanceChanged() {
+  // A page turned on or off: its tab comes or goes, and off its page, Bus timings is on show
+  // instead. Settings' switches and Custom home follow (script.js, "mainscreenchange").
+  function changed() {
+    if (!ready) return;
     layout();
-    if (active === 'glance' && !glanceOn()) open('timings');
+    if (!shows(active)) open('timings');
+    window.dispatchEvent(new Event('mainscreenchange'));
   }
 
   function init() {
@@ -139,7 +178,7 @@
       btn.hidden = false;
       for (const id of part.els || []) $(id).classList.add('docked');
     }
-    window.addEventListener('glancechange', glanceChanged);
+    window.addEventListener('glancechange', changed);
     // The tabs switch the page, before the buttons' own handlers would open or close a window.
     $('trayButtons').addEventListener('click', (e) => {
       const tab = e.target.closest('[role="tab"][data-part]');
@@ -169,5 +208,5 @@
   }
 
   const label = (id) => byId[id]?.label || id;
-  window.MainScreen = { IDS, init, home, setHome, docked, select, open, label, active: () => active, byEl: (elId) => byEl[elId]?.id };
+  window.MainScreen = { IDS, CAN_HIDE, init, home, setHome, shows, hidden, setShown, docked, select, open, label, active: () => active, byEl: (elId) => byEl[elId]?.id };
 })();

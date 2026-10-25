@@ -83,7 +83,9 @@ const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}
 
 const tap = (selector) => document.querySelector(selector)?.click();
 const onOff = (v) => (v === 'on' ? 'On' : 'Off');
-const TRAY_EXTRAS = ['simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines'];
+const TRAY_EXTRAS = ['explorer', 'simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines', 'card', 'receive'];
+// The pages "pages.off" keeps (js/main-screen.js): Glance's is "glance", as it was before.
+const PAGES_OFF = () => MainScreen.CAN_HIDE.filter((n) => n !== 'glance');
 
 const SYNC_SETTINGS = {
   'pin.stop': {
@@ -161,6 +163,14 @@ const SYNC_SETTINGS = {
   glance: {
     label: 'Next bus at a glance', values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (Glance.enabled() ? 'on' : 'off'), set: (v) => Glance.setEnabled(v === 'on'),
+  },
+  // The other pages turned off in Settings' Edge Tray buttons, as "alerts trips".
+  'pages.off': {
+    label: 'Pages turned off', start: '',
+    ok: (v) => v.split(' ').filter(Boolean).every((n) => PAGES_OFF().includes(n)),
+    text: (v) => v.split(' ').filter(Boolean).map((n) => MainScreen.label(n)).join(', ') || 'None',
+    get: () => MainScreen.hidden().filter((n) => n !== 'glance').sort().join(' '),
+    set: (v) => { const off = v.split(' '); for (const n of PAGES_OFF()) MainScreen.setShown(n, !off.includes(n)); },
   },
   // Custom home (js/main-screen.js). The default, Glance, is kept as "stop", as Opens on's
   // default was: what a version from before Glance was a page sends for its Bus timings, with

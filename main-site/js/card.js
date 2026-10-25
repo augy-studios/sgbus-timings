@@ -150,8 +150,11 @@
   }
 
   function init() {
-    // The button shows once the app's said it can.
-    const showButton = () => { $('#cardBtn').hidden = !available(); };
+    // The button shows once the app's said it can, and its switch in Settings' Edge Tray buttons.
+    const showButton = () => {
+      $('#cardBtn').hidden = !available();
+      $('#trayExtrasPick [data-tray-show="card"]').hidden = !available();
+    };
     window.addEventListener('app:ready', showButton);
     showButton();
     $('#cardBtn').addEventListener('click', open);

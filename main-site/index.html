@@ -43,6 +43,10 @@
             // The tray's optional buttons turned off in Settings, as "telegram coffee".
             var trayHide = localStorage.getItem("sgbus_tray_hide");
             if (trayHide) document.documentElement.setAttribute("data-tray-hide", trayHide);
+            // And the pages turned off, as "glance trips": Glance's own switch, then the others.
+            // Keep the keys in step with OFF_KEY in js/main-screen.js and js/glance.js.
+            var pagesOff = (localStorage.getItem("sgbus_glance_off") === "1" ? "glance " : "") + (localStorage.getItem("sgbus_pages_off") || "");
+            if (pagesOff.trim()) document.documentElement.setAttribute("data-pages-off", pagesOff.trim());
         } catch (e) { /* the tray opens on the right */ }
     </script>
     <!-- Opened as the Telegram bot's Mini App (js/telegram.js): Telegram adds its launch data to
@@ -150,11 +154,12 @@
                      them (js/reminders.js). Either can be turned off in Settings, Edge Tray buttons -->
                 <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Timings near a stop" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="clock"></span></button>
                 <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Routines" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="alarm"></span></button>
-                <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js) -->
-                <button id="cardBtn" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
+                <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js).
+                     Can be turned off in Settings, Edge Tray buttons, as can Receive nearby -->
+                <button id="cardBtn" data-tray-extra="card" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
                 <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.1.0
                      with Google Play services only (js/offline-share.js) -->
-                <button id="receiveBtn" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
+                <button id="receiveBtn" data-tray-extra="receive" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
                 <!-- Check for updates: the Android app from 2.0.8 only (js/app-update.js) -->
                 <a id="appUpdateBtn" href="#" class="glass-btn" aria-label="Check for app updates" title="Check for app updates" hidden><span data-icon="download"></span></a>
                 <!-- SimplyGo, for card balances and top-ups: phones only (script.js, "SimplyGo") -->
@@ -603,13 +608,6 @@
             <p class="modal-section-label">Show me around</p>
             <div id="settingsTour" class="tourPicks"></div>
             <p class="mode-note">Each page shows you around the first time you open it. Pick one to see its tour again.</p>
-            <!-- The next bus at a glance, Glance's page (js/glance.js) -->
-            <p class="modal-section-label">Next bus at a glance</p>
-            <div class="mode-toggle">
-                <button class="mode-btn" type="button" data-glance="on" aria-pressed="true">On</button>
-                <button class="mode-btn" type="button" data-glance="off" aria-pressed="false">Off</button>
-            </div>
-            <p class="mode-note">Glance, a page of its own: the next bus in big letters, and your stops under it, each bus on one line. The chip over it picks the stops: saved, nearby, or near one of your places. Off, Glance leaves the Edge Tray and the app opens on Bus timings.</p>
             <!-- The page the app opens on, first in the Edge Tray (js/main-screen.js) -->
             <p class="modal-section-label">Custom home</p>
             <div id="homePick" class="mode-toggle trayExtrasPick">
@@ -621,7 +619,7 @@
                 <button class="mode-btn" type="button" data-home="trips" aria-pressed="false">Your trips</button>
                 <button class="mode-btn" type="button" data-home="places" aria-pressed="false">Places</button>
             </div>
-            <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that.</p>
+            <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that. Pages turned off in Edge Tray buttons, below, aren&rsquo;t here.</p>
             <p class="modal-section-label">Pin favourite buses in timings</p>
             <div class="mode-toggle" data-pin-kind="bus">
                 <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
@@ -719,6 +717,10 @@
             <p class="mode-note">The Edge Tray is the column of buttons at the top of the screen. Its arrow tucks it away at the edge.</p>
             <p class="modal-section-label">Edge Tray buttons</p>
             <div id="trayExtrasPick" class="mode-toggle trayExtrasPick">
+                <!-- Pages (js/main-screen.js, setShown); Glance's is the glance's own switch (js/glance.js) -->
+                <button class="mode-btn" type="button" data-page-show="glance" aria-pressed="true">Glance</button>
+                <button class="mode-btn" type="button" data-page-show="alerts" aria-pressed="true">Service alerts</button>
+                <button class="mode-btn" type="button" data-page-show="trips" aria-pressed="true">Your trips</button>
                 <button class="mode-btn" type="button" data-tray-show="explorer" aria-pressed="true">Explorer</button>
                 <button class="mode-btn" type="button" data-tray-show="simplygo" aria-pressed="true">SimplyGo</button>
                 <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true">Telegram bot</button>
@@ -727,8 +729,11 @@
                 <!-- Only where the app has them (js/reminders.js) -->
                 <button class="mode-btn" type="button" data-tray-show="nearstops" aria-pressed="true" hidden>Timings near a stop</button>
                 <button class="mode-btn" type="button" data-tray-show="routines" aria-pressed="true" hidden>Routines</button>
+                <!-- Only where the app can (js/card.js, js/offline-share.js) -->
+                <button class="mode-btn" type="button" data-tray-show="card" aria-pressed="true" hidden>Card value</button>
+                <button class="mode-btn" type="button" data-tray-show="receive" aria-pressed="true" hidden>Receive nearby</button>
             </div>
-            <p class="mode-note">Turn off the buttons you don&rsquo;t use, for a tidier tray. The guide is also at guide.sgbus.uwuapps.org.</p>
+            <p class="mode-note">Turn off the buttons you don&rsquo;t use, for a tidier tray. Glance, Service alerts and Your trips are pages: off, each leaves the tray and Custom home too, and if it was home, the app opens on Bus timings. The trips you take are still kept with Your trips off. The guide is also at guide.sgbus.uwuapps.org.</p>
 
             <!-- Sync with another device or the Telegram bot: js/sync.js -->
             <p class="modal-section-label">Sync with another device or Telegram</p>
