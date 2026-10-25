@@ -273,6 +273,21 @@
                             </div>
                             <div class="savedPlaceBtns" data-saved-for="from"></div>
                         </div>
+                        <!-- One stop on the way, if any (js/nav.js): Add a stop shows its box, the
+                             cross takes it away. Under both ends side by side (style.css). -->
+                        <div class="navVia">
+                            <button id="navAddStop" class="iconBtn addStopBtn" type="button" title="Stop somewhere on the way"><span data-icon="pin"></span> Add a stop</button>
+                            <div id="navViaField" class="plannerField" hidden>
+                                <label for="navVia">Stop at</label>
+                                <div class="plannerInputRow">
+                                    <div class="ac">
+                                        <input id="navVia" class="input" placeholder="Somewhere to stop on the way" autocomplete="off" enterkeyhint="next" />
+                                        <div id="navViaAc" class="acList" hidden></div>
+                                    </div>
+                                    <button id="navViaRemove" class="iconBtn" type="button" title="Remove the stop" aria-label="Remove the stop"><span data-icon="close"></span></button>
+                                </div>
+                            </div>
+                        </div>
                         <button id="navSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
                         <div class="plannerField">
                             <label for="navTo">To</label>

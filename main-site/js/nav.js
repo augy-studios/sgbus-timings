@@ -9,7 +9,9 @@
 // walksOpen: the walks of the open way whose Directions have been opened into map apps.
 // when: the time picked (js/when.js), null for Leave now.
 // pickWay: a shared way to open once the ways are in (openNavAt).
-const nav = { from: null, to: null, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null, pickWay: null };
+// via: one stop on the way, a place like either end, or null; viaOpen: its box shown, not yet
+// set (Add a stop).
+const nav = { from: null, to: null, via: null, viaOpen: false, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null, pickWay: null };
 
 const NAV_PLACES_DELAY_MS = 300;
 // A Google Maps link, which /api/places reads for the one place it points at (api/_lib/gmaps.js).
@@ -24,6 +26,24 @@ function initNav() {
       onSaved: (item) => (item.kind === 'event' ? navToEvent(field, item) : setNavEnd(field, { label: item.place.name, lat: item.place.lat, lng: item.place.lng })),
     });
   }
+  // A stop on the way (Add a stop): searched as the ends are, without the calendar.
+  attachPlaceSearch($('#navVia'), $('#navViaAc'), (place) => setNavEnd('via', place), {
+    recents: true,
+    onSaved: (item) => setNavEnd('via', { label: item.place.name, lat: item.place.lat, lng: item.place.lng }),
+  });
+  $('#navAddStop').addEventListener('click', () => {
+    nav.viaOpen = true;
+    showEnds();
+    $('#navVia').focus({ preventScroll: true });
+  });
+  $('#navViaRemove').addEventListener('click', () => {
+    const had = !!nav.via;
+    nav.via = null;
+    nav.viaOpen = false;
+    nav.option = null;
+    showEnds();
+    if (had) runNav();
+  });
   initSavedPlaces();
   nav.whenPicker = When.picker($('#navWhen'), (when) => {
     nav.when = when;
@@ -47,6 +67,7 @@ function initNav() {
   }
   $('#navClose').addEventListener('click', closeNav);
   wirePanel('navSection', closeNav);
+  // The stop stays where it is, between the two.
   $('#navSwap').addEventListener('click', () => {
     [nav.from, nav.to] = [nav.to, nav.from];
     showEnds();
@@ -313,6 +334,10 @@ function navToEvent(field, ev) {
 function showEnds() {
   $('#navFrom').value = nav.from?.label || '';
   $('#navTo').value = nav.to?.label || '';
+  $('#navVia').value = nav.via?.label || '';
+  const stop = !!(nav.via || nav.viaOpen);
+  $('#navViaField').hidden = !stop;
+  $('#navAddStop').hidden = stop;
 }
 
 // ---- Opening and closing ----
@@ -366,10 +391,15 @@ function switchNavMode(mode) {
 }
 
 // Opens over the page (a .panelModal, js/ui.js), at Leave now unless it's given a time: one
-// picked before isn't kept.
-function openNav(from = null, to = null, { when = null, focus = true } = {}) {
+// picked before isn't kept. Given an end, it starts without a stop on the way unless it's
+// given one too (`via`, a link's: openNavAt).
+function openNav(from = null, to = null, { when = null, focus = true, via } = {}) {
   if (from) nav.from = from;
   if (to) nav.to = to;
+  if (via !== undefined || from || to) {
+    nav.via = via || null;
+    nav.viaOpen = false;
+  }
   nav.option = null;
   nav.when = when;
   nav.whenPicker.set(when);
@@ -420,16 +450,18 @@ function backToNav() {
 const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
 // The nav as a link, for the address bar and Share: "#nav/1.30050,103.85580~Bedok%20Mall/here",
-// with "/arrive/2026-10-09T08:30" on the end for a picked time. Each end is its point and name;
+// with "/via/1.35330,103.94520~Tampines" after the ends for a stop on the way, and
+// "/arrive/2026-10-09T08:30" on the end for a picked time. Each end is its point and name;
 // "here" for Your location, so whoever opens the link starts or ends where they are; or "-"
 // while it isn't set. Just "#nav" with nothing set at all.
 function navHash() {
-  return navHashFor(nav.from, nav.to, nav.when);
+  return navHashFor(nav.from, nav.to, nav.when, nav.via);
 }
 
-// The same for any two ends, each a place, null, or "here" (as Share has them): Offline
-// Sharing's link (js/offline-share.js), which opens with no server to look it up.
-function navHashFor(from, to, when = null) {
+// The same for any two ends, each a place, null, or "here" (as Share has them), and a stop, a
+// place or null: Offline Sharing's link (js/offline-share.js), which opens with no server to
+// look it up.
+function navHashFor(from, to, when = null, via = null) {
   const end = (p) => {
     if (!p) return '-';
     if (p === 'here' || p.label === HERE_LABEL) return 'here';
@@ -437,12 +469,14 @@ function navHashFor(from, to, when = null) {
     // closing bracket doesn't end the link where it's pasted.
     return `${coord(p)}~${encodeURIComponent(p.label).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
   };
-  return from || to || when ? `#nav/${end(from)}/${end(to)}${When.hashPart(when)}` : '#nav';
+  // A stop is always a point: Your location as one is where you were.
+  const stop = via && via !== 'here' ? `/via/${end({ ...via, label: via.label === HERE_LABEL ? 'My location' : via.label })}` : '';
+  return from || to || when ? `#nav/${end(from)}/${end(to)}${stop}${When.hashPart(when)}` : '#nav';
 }
 
 // Opens a nav link (navHash). A link from before ends carried names takes a saved nav's
 // names for its points, or Start and End.
-function openNavHash(fromText, toText, when = null) {
+function openNavHash(fromText, toText, when = null, viaText = null) {
   const point = (t, fallback) => {
     if (t === '-' || t === 'here') return null;
     const [pos, ...rest] = t.split('~');
@@ -456,18 +490,18 @@ function openNavHash(fromText, toText, when = null) {
     }
     return { label: label.trim(), lat, lng };
   };
-  openNavAt(fromText === 'here' ? 'here' : point(fromText, 'Start'), toText === 'here' ? 'here' : point(toText, 'End'), when);
+  openNavAt(fromText === 'here' ? 'here' : point(fromText, 'Start'), toText === 'here' ? 'here' : point(toText, 'End'), when, null, viaText ? point(viaText, 'Stop') : null);
 }
 
 // Opens Navigate at two ends, from a link: each a place, null for not set, or "here" for
-// wherever the person opening it is. `way` (wayKey) is the way to open once they're planned,
-// if it's still among them.
-function openNavAt(from, to, when = null, way = null) {
+// wherever the person opening it is, and `via`, a stop on the way or null. `way` (wayKey) is
+// the way to open once they're planned, if it's still among them.
+function openNavAt(from, to, when = null, way = null, via = null) {
   nav.from = from === 'here' ? null : from;
   nav.to = to === 'here' ? null : to;
   nav.pickWay = way;
   // Not the keyboard up over From while it's finding where you are.
-  openNav(nav.from, nav.to, { when, focus: from !== 'here' });
+  openNav(nav.from, nav.to, { when, focus: from !== 'here', via });
   if (from === 'here') locateNavEnd('from');
   if (to === 'here') locateNavEnd('to');
 }
@@ -477,18 +511,22 @@ const wayKey = (o) => (o.walkOnly ? 'walk' : o.legs.filter((l) => l.mode !== 'wa
 
 // ---- Planning ----
 
-// The ways by bus and train from one place to another, now or at `when`: /api/nav's answer.
-// Also the trip's Find another way, when a last bus is lost (js/trip.js).
-async function fetchWays(from, to, when = null) {
+// The ways by bus and train from one place to another, now or at `when`, and by `via` if
+// it's given, a stop on the way: /api/nav's answer. Also the trip's Find another way, when a
+// last bus is lost (js/trip.js).
+async function fetchWays(from, to, when = null, via = null) {
   const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
   // Settings' Restricted areas (BusNet.setOpenAccess), and Immigration time when it's your own.
   const open = BusNet.openAccess() ? '&restricted=1' : '';
   const customs = LS.getCustoms() === 'auto' ? '' : `&customs=${LS.getCustoms()}`;
   // Settings' Cycling: ways by bike weighed too (`others.cycle`).
   const bike = LS.getBike() ? '&bike=1' : '';
-  const r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${at}${open}${customs}${bike}`, { cache: 'no-store' });
+  const stop = via ? `&via=${coord(via)}` : '';
+  const r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${stop}${at}${open}${customs}${bike}`, { cache: 'no-store' });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
+  // Each way's stop (`via`, api/_nav/via.js) by its name, for the way and its trip to show.
+  if (via) for (const o of data.options || []) if (o.via) o.via.label = via.label;
   return data;
 }
 
@@ -508,7 +546,7 @@ async function runNav() {
   const when = nav.when;
   $('#navBody').innerHTML = plannerStatus('Finding journeys by bus and train…');
   try {
-    const data = await fetchWays(nav.from, nav.to, when);
+    const data = await fetchWays(nav.from, nav.to, when, nav.via);
     if (token !== nav.token) return;
     nav.options = data.options || [];
     nav.onemap = !!data.onemap;
@@ -547,7 +585,7 @@ function renderNav() {
     plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there${nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : ''}, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
     navOthers() +
-    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>` +
+    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}${nav.via ? ' No time is counted at your stop: add what you’ll spend there.' : ''}</p>` +
     customsNote(nav.options);
 }
 
@@ -647,17 +685,21 @@ function walkMetres(o) {
   return o.legs.filter((l) => l.mode === 'walk').reduce((sum, l) => sum + (l.metres || 0), 0);
 }
 
+// A way's legs before its stop on the way and after it (/api/nav's `via`), or all in one.
+const wayHalves = (o) => (o.via ? [o.legs.slice(0, o.via.leg), o.legs.slice(o.via.leg)] : [o.legs]);
+
 function navMixText(o) {
   if (o.walkOnly) return 'Walk all the way';
-  const rides = o.legs.filter((l) => l.mode !== 'walk');
-  const changes = rides.length - 1;
+  // Getting off at the stop on the way isn't a change.
+  const changes = wayHalves(o).reduce((sum, legs) => sum + Math.max(0, legs.filter((l) => l.mode !== 'walk').length - 1), 0);
   return `${changes === 0 ? 'No change' : `${changes} change${changes === 1 ? '' : 's'}`} · ${formatDistance(walkMetres(o))} walk`;
 }
 
 function navOptionItem(o, i) {
-  const rides = o.legs.filter((l) => l.mode !== 'walk');
-  const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} Walk</span>` : rides.map(legChip).join(legArrow);
-  const notes = [];
+  // The rides in order, with a pin where the stop on the way comes.
+  const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} Walk</span>`
+    : wayHalves(o).map((legs) => legs.filter((l) => l.mode !== 'walk').map(legChip)).reduce((all, half) => [...all, `<span class="busChip viaChip">${ico('pin')} Stop</span>`, ...half]).join(legArrow);
+  const notes = o.via ? [`Stop at ${viaName(o)}`] : [];
   if (o.onemapMinutes != null) notes.push(`OneMap ~${o.onemapMinutes} min`);
   if (o.source === 'onemap') notes.push('Found by OneMap');
   // With a time picked, the clock times lead and the minutes go with the rest.
@@ -676,6 +718,10 @@ function navOptionItem(o, i) {
 }
 
 const placeName = (p) => (p?.kind === 'station' ? `${p.name} station` : p?.name ? `${p.name}${p.code && p.kind === 'stop' ? ` (${p.code})` : ''}` : '');
+// A way's stop on the way by name (fetchWays), and any place on a way, that stop included:
+// the walks to and from it end and start at it (api/_nav/via.js), marked `via`.
+const viaName = (o) => o?.via?.label || nav.via?.label || 'your stop';
+const wayPlaceName = (o, p) => (p?.via ? viaName(o) : placeName(p));
 
 async function renderNavOption(o) {
   const body = $('#navBody');
@@ -704,17 +750,22 @@ async function renderNavOption(o) {
   const leaveMs = When.span(nav.when, o.minutes).leave;
   const live = !nav.when || When.liveLead(leaveMs) != null;
 
-  const steps = (timings = {}) => o.legs.map((leg, k) => {
+  // The stop on the way, between the walk or ride that reaches it and the one that leaves it.
+  const viaStep = o.via
+    ? `<li class="step stepArrive">${ico('pin')}<span>Stop at <strong>${escapeHtml(viaName(o))}</strong>, around ${escapeHtml(When.clock(leaveMs + o.via.minutes * 60000))}</span></li>`
+    : '';
+  const legStep = (leg, k, timings) => {
     if (leg.mode === 'walk') {
-      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(placeName(leg.to));
+      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(wayPlaceName(o, leg.to));
       return `<li class="step stepWalk">${ico('walk')}<div class="walkBody">` +
         `<span>Walk ~${leg.metres} m to ${where}, ~${Math.max(1, Math.round(leg.minutes))} min</span>` +
         walkDirections(o, k) +
         `</div></li>`;
     }
     if (leg.mode === 'train') {
-      // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js).
-      const next = o.legs.slice(k + 1).find((l) => l.mode !== 'walk') || null;
+      // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js):
+      // no change when it's to the stop on the way.
+      const next = o.legs.slice(k + 1, k < o.via?.leg ? o.via.leg : undefined).find((l) => l.mode !== 'walk') || null;
       const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next), leg.color);
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
@@ -741,7 +792,8 @@ async function renderNavOption(o) {
       (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(leg.route)} timings at ${escapeHtml(leg.from.name)}</button>` : '') +
       `</li>` +
       navCrossingSteps(leg);
-  }).join('');
+  };
+  const steps = (timings = {}) => o.legs.map((leg, k) => (k === o.via?.leg ? viaStep : '') + legStep(leg, k, timings)).join('');
 
   let shown = undefined;
   const draw = (timings) => {
@@ -790,7 +842,7 @@ function walkDirections(o, k) {
   const from = leg.from || o.legs[k - 1]?.to || nav.from;
   const to = k === o.legs.length - 1 ? nav.to : leg.to;
   if (to?.lat == null || to?.lng == null) return '';
-  const dest = { lat: to.lat, lng: to.lng, n: to.label || placeName(to) };
+  const dest = { lat: to.lat, lng: to.lng, n: to.label || wayPlaceName(o, to) };
   const opts = { from: from?.lat != null && from?.lng != null ? from : null, walk: true };
   if (!nav.walksOpen.has(k)) {
     return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} Directions</button>`;
@@ -810,7 +862,8 @@ function isFavNav(from, to) {
   return LS.getFavNavs().some((n) => sameNav(n, from, to));
 }
 
-// Like a route, a nav and its reverse are two separate favourites.
+// Like a route, a nav and its reverse are two separate favourites. A stop on the way isn't kept
+// with one: a saved nav is its two ends, as synced (js/sync.js) and in the bot.
 function toggleFavNav(from, to) {
   if (!from || !to) return;
   const navs = LS.getFavNavs();
@@ -829,6 +882,7 @@ function renderNavFav() {
   btn.hidden = !(nav.from && nav.to);
   $('#navRefresh').hidden = btn.hidden;
   if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to), 'Save nav', 'Saved');
+  btn.title = nav.via ? 'Save to favourites: the start and end, not the stop' : 'Save to favourites';
 }
 
 // Refresh: the ways planned again, for new disruptions and the time of day, or, with one
@@ -865,6 +919,8 @@ function busCodes(l) {
   return codes?.length === l.path.length ? codes : null;
 }
 
+// A way with a stop on the way (`via`) is one trip, its two halves' legs in turn: the walk to
+// the stop is named for it, and no time is counted there.
 function tripFromNav(o, to, from = nav.from) {
   const legs = [];
   let walkBefore = 0;
@@ -875,13 +931,13 @@ function tripFromNav(o, to, from = nav.from) {
       const endPlace = k === o.legs.length - 1 ? to : l.to;
       const end = at(endPlace);
       if (start && end && (l.metres ?? WALK_LEG_MIN_M) >= WALK_LEG_MIN_M) {
-        const startName = k === 0 ? from?.label || 'Where you set off' : placeName(l.from || o.legs[k - 1]?.to);
+        const startName = k === 0 ? from?.label || 'Where you set off' : wayPlaceName(o, l.from || o.legs[k - 1]?.to);
         legs.push({
           kind: 'walk',
           label: 'Walk',
-          to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : placeName(endPlace),
+          to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace),
           points: [start, end],
-          names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : placeName(endPlace)],
+          names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace)],
           minutes: Math.max(1, Math.round(l.minutes || 1)),
           wait: 0,
           walkAfter: 0,

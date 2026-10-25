@@ -41,7 +41,7 @@ function details(link) {
     return {
       caption: d.path ? 'The way on the map' : 'Both ends on the map',
       heading: 'The trip',
-      rows: [['From', endText(d.from)], ['To', endText(d.to)], ['When', whenText(d.when)]],
+      rows: [['From', endText(d.from)], ...(d.via ? [['Stop at', d.via.label]] : []), ['To', endText(d.to)], ['When', whenText(d.when)]],
       note: 'Open them for live bus timings, the other ways there, and a Get Off Alert on the way.',
       open: 'Open these directions in SG Bus Timings',
     };
