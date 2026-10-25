@@ -6,7 +6,9 @@
 //   find you however the app's allowed, and the page only heard "couldn't get your location".
 //   Now the app's own "Turn on location" dialog comes first (SgBusPlugin.turnOnLocation), for
 //   what you asked for: only a lookup at high accuracy, as tapping Near me, Navigate or Places
-//   asks. How far's my walk? asks by itself as each stop opens, so it never prompts.
+//   asks. How far's my walk? asks by itself as each stop opens, so it never prompts, and a
+//   lookup nobody tapped for, such as Glance's own refreshes, passes `noTurnOn: true` so it
+//   just hears that Location is off.
 //
 //   A second try when the first, at high accuracy, times out or finds nothing: once more at
 //   ordinary accuracy, taking a fix up to RECENT_MS old. The app's WebView and some phones'
@@ -51,7 +53,7 @@
   }
 
   geo.getCurrentPosition = function (success, error, options) {
-    var asked = Boolean(options && options.enableHighAccuracy);
+    var asked = Boolean(options && options.enableHighAccuracy && !options.noTurnOn);
     phoneLocationOn(asked).then(function (on) {
       if (on) { lookup(success, error, options); return; }
       var message = 'Location is turned off on this phone. Turn it on, then try again.';
