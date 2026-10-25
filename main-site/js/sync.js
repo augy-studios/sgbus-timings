@@ -311,10 +311,10 @@ function prepareSync() {
 
 // A link from another device's QR code (#sync/CODE): the code filled in, waiting for a tap on
 // Connect rather than connecting outright, since connecting shows this device's favourites to
-// whoever made the link.
+// whoever made the link. Settings opens straight on its Sync group (script.js).
 function openSyncLink(code) {
   history.replaceState(null, '', location.pathname + location.search);
-  openSettings();
+  openSettings('sync');
   if (sync.role) return;
   $('#syncCodeInput').value = P2P.normaliseCode(code);
   showSyncStatus('Tap Connect to sync with the device showing this code.', 'busy');
@@ -878,8 +878,10 @@ function showSyncNote(text, tone = '') {
   $('#syncNote').classList.toggle('error', tone === 'error');
 }
 
-// The section sits at the foot of Settings, below the fold on a phone.
+// The status, in Settings' Sync group (script.js), which comes back on show if Back took
+// Settings to its list or another group meanwhile, as the other device connects.
 function revealSync() {
+  openSettingsGroup('sync');
   $('#syncStatus').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -897,7 +899,7 @@ function renderSync() {
   $('#syncEnd').textContent = connected ? 'Disconnect' : hosting ? 'Stop' : 'Cancel';
 
   if (role === 'host' && status === 'waiting') {
-    showSyncStatus('Waiting for the other device. In its Settings, enter this code, or scan the QR code with its camera.', 'warn');
+    showSyncStatus('Waiting for the other device. In its Settings, Sync, enter this code, or scan the QR code with its camera.', 'warn');
   } else if (role === 'bot' && status === 'waiting') {
     showSyncStatus(`Waiting for the Telegram bot. Tap Open the bot, or send it the command below. On a computer, scan the QR code with your phone.`, 'warn');
   } else if (role && status === 'connecting') {

@@ -1531,7 +1531,15 @@ $('#trayExtrasPick').addEventListener('click', e => {
     else setTrayExtra(btn.dataset.trayShow, show);
 });
 
-function openSettings() {
+// Settings opens on its list of groups (index.html, #settingsModal), or straight into the group
+// `group` names ('sync' for a sync link, js/sync.js); one already open stays as it is.
+function openSettings(group) {
+    if ($('#settingsModal').classList.contains('hidden')) {
+        $('#settingsFind').value = '';
+        settingsListHeight = 0;
+        findSettings();
+        settingsView(null);
+    }
     $('#setName').value = LS.getName();
     $('#setBirthday').value = LS.getBirthday();
     syncPinButtons();
@@ -1544,7 +1552,145 @@ function openSettings() {
     prepareSync();
     $('#settingsTour').innerHTML = Tour.pickers();
     openModal('settingsModal');
+    if (typeof group === 'string') openSettingsGroup(group);
 }
+
+// ----------- Settings' groups -----------
+// Each group is a view of its own, over the list, with Back (the arrow, Esc, Android's and a
+// browser's) going to the list before Settings closes: a step of its own (js/ui.js,
+// Steps.sub), which closing Settings from a group takes off too. A group with nothing on show
+// (the Android app's own settings, on the web) leaves the list, and each group's line names
+// what's on show in it, as js/reminders.js, js/shake.js and js/pip.js show and hide theirs.
+const settingsGroups = () => $$('#settingsModal [data-settings-group]');
+const settingsGroupEl = name => document.querySelector(`#settingsModal [data-settings-group="${name}"]`);
+let settingsAt = null;
+
+// Whether `el` is on show within its group, whether the group's open or not.
+function settingsShown(el, group) {
+    for (let n = el; n && n !== group; n = n.parentElement) if (n.hidden) return false;
+    return true;
+}
+
+const settingsLabels = group => [...group.querySelectorAll('.modal-section-label')].filter(l => settingsShown(l, group));
+const settingsShort = label => ('short' in label.dataset ? label.dataset.short : label.textContent.trim());
+
+function renderSettingsGroups() {
+    for (const group of settingsGroups()) {
+        const row = document.querySelector(`[data-settings-open="${group.dataset.settingsGroup}"]`);
+        const labels = settingsLabels(group);
+        // Only a change: the observer below watches this too.
+        if (row.hidden !== !labels.length) row.hidden = !labels.length;
+        row.querySelector('.sub').textContent = labels.map(settingsShort).filter(Boolean).join(' · ');
+    }
+}
+
+// The list (`name` null) or a group on show, Back's arrow and the title to match.
+function settingsView(name) {
+    const was = settingsAt;
+    settingsAt = settingsGroupEl(name) ? name : null;
+    $('#settingsHome').hidden = !!settingsAt;
+    settingsGroups().forEach(g => { g.hidden = g.dataset.settingsGroup !== settingsAt; });
+    $('#settingsBack').hidden = !settingsAt;
+    $('#settingsTitle').textContent = settingsAt ? settingsGroupEl(settingsAt).dataset.title : 'Settings';
+    // Back on the list with Find's words still there: the list's height again, as above.
+    const finding = !settingsAt && settingsListHeight && $('#settingsFind').value.trim();
+    $('#settingsModal .modal').style.minHeight = finding ? `${settingsListHeight}px` : '';
+    $('#settingsModal .modal').scrollTop = 0;
+    if (settingsAt) $('#settingsBack').focus({ preventScroll: true });
+    else if (was) $(`[data-settings-open="${was}"]`)?.focus({ preventScroll: true });
+}
+
+function openSettingsGroup(name) {
+    if (!settingsGroupEl(name) || $('#settingsModal').classList.contains('hidden')) return;
+    if (settingsAt === name) return;
+    Steps.sub('settingsModal', name);
+    settingsView(name);
+}
+
+function closeSettingsGroup() {
+    if (!settingsAt) return;
+    settingsView(null);
+    Steps.subBack('settingsModal');
+}
+
+// Find: the blocks whose label (or its data-find words) has every word typed, each a row that
+// opens its group on it. Nothing typed, the groups. The modal keeps the list's height while
+// there's something typed, so the box doesn't move up and down with what's found.
+let settingsListHeight = 0;
+function findSettings() {
+    const words = $('#settingsFind').value.toLowerCase().split(/\s+/).filter(Boolean);
+    const modal = $('#settingsModal .modal');
+    if (words.length && !settingsAt && !$('#settingsGroups').hidden) settingsListHeight = modal.offsetHeight;
+    modal.style.minHeight = words.length && settingsListHeight ? `${settingsListHeight}px` : '';
+    $('#settingsGroups').hidden = !!words.length;
+    $('#settingsFound').hidden = !words.length;
+    if (!words.length) return renderSettingsGroups();
+    const found = [];
+    for (const group of settingsGroups()) {
+        settingsLabels(group).forEach((label, i) => {
+            const text = `${label.textContent} ${label.dataset.find || ''} ${group.dataset.title}`.toLowerCase();
+            if (words.every(w => text.includes(w))) found.push({ group, label, i });
+        });
+    }
+    $('#settingsFound').innerHTML = found.length
+        ? found.map(f => `<button class="shareMenuItem" type="button" data-settings-find="${f.group.dataset.settingsGroup}:${f.i}">` +
+            `<span><strong>${escapeHtml(f.label.textContent.trim())}</strong><span class="sub">${escapeHtml(f.group.dataset.title)}</span></span>` +
+            `<span class="settingsGo" aria-hidden="true">${window.icon('chevron')}</span></button>`).join('')
+        : '<p class="mode-note settingsFindNone">No setting by that name. Try a word such as tray, alert or sync.</p>';
+}
+
+// A block from Find: its group, scrolled to it, its label lit a moment.
+function openSettingsFound(key) {
+    const [name, i] = key.split(':');
+    const group = settingsGroupEl(name);
+    const label = group && settingsLabels(group)[Number(i)];
+    if (!label) return;
+    openSettingsGroup(name);
+    label.scrollIntoView({ block: 'start' });
+    label.classList.remove('settingsFlash');
+    void label.offsetWidth;
+    label.classList.add('settingsFlash');
+}
+
+$('#settingsGroups').addEventListener('click', e => {
+    const row = e.target.closest('[data-settings-open]');
+    if (row) openSettingsGroup(row.dataset.settingsOpen);
+});
+$('#settingsFound').addEventListener('click', e => {
+    const row = e.target.closest('[data-settings-find]');
+    if (row) openSettingsFound(row.dataset.settingsFind);
+});
+$('#settingsFind').addEventListener('input', findSettings);
+$('#settingsFind').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const first = $('#settingsFound [data-settings-find]');
+    if (first) openSettingsFound(first.dataset.settingsFind);
+});
+$('#settingsBack').addEventListener('click', closeSettingsGroup);
+// Esc, with Settings the window on top: a group goes back to the list, and the list closes
+// Settings. In Find with words typed, Esc clears them first, as a search box does.
+document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || e.defaultPrevented || document.body.classList.contains('touring')) return;
+    const open = $$('.modal-backdrop:not(.hidden):not(.docked)');
+    if (open[open.length - 1]?.id !== 'settingsModal') return;
+    if (e.target === $('#settingsFind') && e.target.value) return;
+    e.preventDefault();
+    if (settingsAt) closeSettingsGroup();
+    else closeModal('settingsModal');
+});
+// Back (Android's, a browser's) from a group: the list. js/ui.js has closed whatever opened
+// after the step gone back to, and Settings too if it's not that step's.
+window.addEventListener('popstate', e => {
+    if ($('#settingsModal').classList.contains('hidden')) return;
+    const s = e.state;
+    const name = s?.sg && s.modal === 'settingsModal' ? s.sub || null : null;
+    if (name !== settingsAt) settingsView(name);
+});
+// The Android app's settings come and go as it says what it can: the list follows.
+new MutationObserver(() => {
+    if (!settingsAt && !$('#settingsGroups').hidden) renderSettingsGroups();
+}).observe($('#settingsModal'), { subtree: true, attributes: true, attributeFilter: ['hidden'] });
 
 // ----------- Search -----------
 async function runSearch() {

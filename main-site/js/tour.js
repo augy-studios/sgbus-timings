@@ -30,7 +30,7 @@
         { el: '#glanceSource', text: 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.' },
         { el: '#glanceStops .glanceStop', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.' },
         { el: '#trayViews', text: () => `Each page has its button at the top of the Edge Tray: ${pageList()}. Press and hold a button to see what it does.` },
-        { el: '#settingsBtn', text: 'In Settings, Custom home picks the page the app opens on, and Show me around shows any page’s tour again.' },
+        { el: '#settingsBtn', text: 'In Settings, Pages and Edge Tray has Custom home, the page the app opens on, and Help and extras has Show me around, for any page’s tour again.' },
       ],
     },
     timings: {

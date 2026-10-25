@@ -1928,6 +1928,25 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .legEtas strong { color: var(--ok); }
 
 /* ===== Settings ===== */
+/* The list of groups, and each group's view, one on show at a time (script.js,
+   settingsView): each a column with the modal's own gap. Back sits before the title in a
+   group. The rows are Share's menu items, their line allowed to wrap. */
+.settingsHead { justify-content: flex-start; gap: 8px; }
+.settingsHead h2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settingsView { display: flex; flex-direction: column; gap: 10px; }
+.settingsList .shareMenuItem > span:not(.ico):not(.settingsGo) { flex: 1; }
+.settingsList .shareMenuItem .sub { white-space: normal; }
+.settingsList .shareMenuItem > .ico svg { width: 20px; height: 20px; color: var(--brand-ink); }
+.settingsList .shareMenuItem:hover > .ico svg { color: inherit; }
+.settingsGo { color: var(--muted-strong); }
+.settingsGo svg { width: 1.1em; height: 1.1em; transform: rotate(90deg); }
+.shareMenuItem:hover .settingsGo { color: inherit; }
+.settingsFindNone { margin-top: 0; }
+/* A block found with Find: its label lights up a moment as the group opens on it. */
+.modal-section-label.settingsFlash { animation: settings-flash 1.6s ease; border-radius: 6px; }
+@keyframes settings-flash {
+    0%, 40% { background: color-mix(in srgb, var(--brand) 22%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent); color: var(--ink); }
+}
 .settingsInput { padding: 12px 14px; height: auto; }
 /* A routine's days, a week in a row (js/reminders.js). */
 .routineDays { grid-template-columns: repeat(7, 1fr); gap: 4px; }
