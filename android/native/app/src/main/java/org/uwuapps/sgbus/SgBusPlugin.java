@@ -57,8 +57,6 @@ import android.location.LocationManager;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
-import android.media.AudioDeviceInfo;
-import android.media.AudioManager;
 import android.net.Uri;
 import android.nfc.NfcAdapter;
 import android.os.Build;
@@ -528,18 +526,9 @@ public class SgBusPlugin extends Plugin {
         call.resolve(out);
     }
 
+    // Wired, Bluetooth (a call-only earpiece too, from 2.2.6), LE Audio or hearing aids: EarBeep.
     static boolean earphones(Context context) {
-        AudioManager am = context.getSystemService(AudioManager.class);
-        if (am == null) return false;
-        for (AudioDeviceInfo d : am.getDevices(AudioManager.GET_DEVICES_OUTPUTS)) {
-            int t = d.getType();
-            if (t == AudioDeviceInfo.TYPE_WIRED_HEADSET || t == AudioDeviceInfo.TYPE_WIRED_HEADPHONES
-                    || t == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP || t == AudioDeviceInfo.TYPE_USB_HEADSET
-                    || (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && (t == AudioDeviceInfo.TYPE_BLE_HEADSET))) {
-                return true;
-            }
-        }
-        return false;
+        return EarBeep.any(context);
     }
 
     // Called by Capacitor for every navigation in the page: true when it's been dealt with here.
