@@ -174,7 +174,7 @@
             `${ico(p.state === 'sent' ? 'check' : 'phone')}<span><strong>${esc(p.name || 'A phone')}</strong><span class="sub">${esc(sub)}</span></span></button>`;
         }).join('');
         html += rows ? `<div class="offlinePeers">${rows}</div>` : '';
-        html += `<p class="sub">${rows ? 'Not there? ' : 'Looking… '}On their phone, open SG Bus Timings and tap Receive nearby in the Edge Tray.</p>`;
+        html += `<p class="sub">${rows ? 'Not there? ' : 'Looking… '}On their phone, open SG Bus Timings and tap Receive nearby in the Edge Tray (Settings, Edge Tray buttons, if it's off).</p>`;
       }
     }
     if (canSticker()) {
@@ -260,7 +260,11 @@
   }
 
   function init() {
-    const showButton = () => { $('#receiveBtn').hidden = !canNearby(); };
+    // The button, and its switch in Settings' Edge Tray buttons.
+    const showButton = () => {
+      $('#receiveBtn').hidden = !canNearby();
+      $('#trayExtrasPick [data-tray-show="receive"]').hidden = !canNearby();
+    };
     window.addEventListener('app:ready', showButton);
     showButton();
     if (!native()) return;

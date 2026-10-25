@@ -223,17 +223,6 @@ function syncBikeButtons() {
     });
 }
 
-// The next bus at a glance, in Settings (js/glance.js).
-function syncGlanceButtons() {
-    const on = Glance.enabled();
-    $$('[data-glance]').forEach(btn => {
-        const active = (btn.dataset.glance === 'on') === on;
-        btn.classList.toggle('active', active);
-        btn.setAttribute('aria-pressed', String(active));
-    });
-    syncStopClose();
-}
-
 // The X on a stop's timings, which puts them away (closeStop): there with the glance on or off,
 // now Bus timings is a page of its own with the search box to come back to.
 function syncStopClose() {
@@ -244,8 +233,8 @@ function syncStopClose() {
 function syncMainButtons() {
     const home = MainScreen.home();
     $$('[data-home]').forEach(btn => {
-        // Glance only while it's on (js/glance.js).
-        btn.hidden = btn.dataset.home === 'glance' && !Glance.enabled();
+        // Only the pages that are on (Settings' Edge Tray buttons).
+        btn.hidden = !MainScreen.shows(btn.dataset.home);
         const on = btn.dataset.home === home;
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
@@ -1450,9 +1439,11 @@ function syncTraySideButtons() {
 }
 
 // The tray's optional buttons, Explorer, SimplyGo, Telegram, Buy Augy a Coffee, the guide, and
-// the Android app's Timings near a stop and Routines (js/reminders.js), each
-// turned off or on in Settings: kept as data-tray-hide on <html>, "telegram coffee", which
-// index.html's head sets again before first paint.
+// the Android app's Timings near a stop and Routines (js/reminders.js), Card value (js/card.js)
+// and Receive nearby (js/offline-share.js), each turned off or on in Settings: kept as
+// data-tray-hide on <html>, "telegram coffee", which index.html's head sets again before first
+// paint. The pages that can be turned off have their switches there too (data-page-show), kept
+// by js/main-screen.js.
 const trayHidden = () => (page.getAttribute('data-tray-hide') || '').split(' ').filter(Boolean);
 
 function setTrayExtra(name, show) {
@@ -1468,6 +1459,11 @@ function syncTrayExtras() {
     const hidden = trayHidden();
     $$('#trayExtrasPick [data-tray-show]').forEach(btn => {
         const on = !hidden.includes(btn.dataset.trayShow);
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+    $$('#trayExtrasPick [data-page-show]').forEach(btn => {
+        const on = MainScreen.shows(btn.dataset.pageShow);
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
     });
@@ -1512,8 +1508,11 @@ $('#traySidePick').addEventListener('click', e => {
     if (btn) setTraySide(btn.dataset.side);
 });
 $('#trayExtrasPick').addEventListener('click', e => {
-    const btn = e.target.closest('[data-tray-show]');
-    if (btn) setTrayExtra(btn.dataset.trayShow, btn.getAttribute('aria-pressed') !== 'true');
+    const btn = e.target.closest('[data-tray-show], [data-page-show]');
+    if (!btn) return;
+    const show = btn.getAttribute('aria-pressed') !== 'true';
+    if (btn.dataset.pageShow) MainScreen.setShown(btn.dataset.pageShow, show);
+    else setTrayExtra(btn.dataset.trayShow, show);
 });
 
 function openSettings() {
@@ -1525,7 +1524,6 @@ function openSettings() {
     syncRestrictedButtons();
     syncCustomsButtons();
     syncBikeButtons();
-    syncGlanceButtons();
     syncMainButtons();
     prepareSync();
     $('#settingsTour').innerHTML = Tour.pickers();
@@ -1599,17 +1597,15 @@ $$('[data-bike]').forEach(btn => btn.addEventListener('click', () => {
     LS.setBike(btn.dataset.bike === 'on');
     syncBikeButtons();
 }));
-$$('[data-glance]').forEach(btn => btn.addEventListener('click', () => {
-    Glance.setEnabled(btn.dataset.glance === 'on');
-    syncGlanceButtons();
-    syncMainButtons();
-}));
 $('#homePick').addEventListener('click', e => {
     const btn = e.target.closest('[data-home]');
     if (btn) MainScreen.setHome(btn.dataset.home);
 });
-// From Settings or a synced device.
-window.addEventListener('mainscreenchange', syncMainButtons);
+// From Settings or a synced device: the home, or a page turned on or off.
+window.addEventListener('mainscreenchange', () => {
+    syncMainButtons();
+    syncTrayExtras();
+});
 $('#clearBirthday').addEventListener('click', () => {
     LS.setBirthday('');
     $('#setBirthday').value = '';
@@ -1946,7 +1942,7 @@ function routeFromShare() {
     await buildAc();
     renderFavs();
     Glance.init();
-    syncGlanceButtons();
+    syncStopClose();
 
     BusNet.load(stopsIndex)
         .then(() => {
