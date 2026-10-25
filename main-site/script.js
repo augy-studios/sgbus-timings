@@ -1059,6 +1059,9 @@ function closeStop() {
 
 async function loadStop(code, { service = null, expanded = false, ctx = null, dir = null, pushHistory = true, scroll = false } = {}) {
     if (!/^\d{5}$/.test(code)) { alert('Please enter a valid 5-digit bus stop code.'); return; }
+    // Offline, Bus timings is gone till it's back (js/offline.js): a stop tapped anywhere, a
+    // link to one or Refresh brings the offline bar back to say so, and what's on show stays.
+    if (window.Offline?.blocked()) return;
     const seq = ++loadSeq;
     current = { code, service: service ? busFilter(service) : null, expanded, ctx, dir };
     navOpen = false;
@@ -1097,6 +1100,19 @@ function refreshStop() {
     if (!current) return Glance.refresh();
     loadStop(current.code, { ...current, pushHistory: false });
 }
+
+// Back online (js/offline.js): a stop left open in Bus timings, out of sight while offline,
+// has its times fetched again behind the page on show, which stays, so the ones from before
+// aren't what's there when Bus timings is opened.
+window.Offline?.onChange(off => {
+    if (off || !current) return;
+    const seq = ++loadSeq;
+    fetchArrivals(current.code).then(data => {
+        if (seq !== loadSeq) return;
+        lastArrivals = data;
+        renderArrivals();
+    }, () => {});
+});
 
 // One bus's times at the stop on screen fetched again, put in place of the ones it had, so the
 // list stays where it's scrolled to.

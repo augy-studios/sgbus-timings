@@ -53,6 +53,11 @@ function initNav() {
     runNav();
   });
   $('#navRefresh').addEventListener('click', refreshNav);
+  // Back online (js/offline.js): Bus and train on show, with both ends, plans again (or its way
+  // open fetches its live timings again), as Refresh would.
+  window.Offline?.onChange((off) => {
+    if (!off && !$('#navSection').hidden && nav.from && nav.to) refreshNav();
+  });
   $('#navFavBtn').addEventListener('click', () => {
     toggleFavNav(nav.from, nav.to);
     renderNavFav();
@@ -516,7 +521,9 @@ async function runNav() {
     renderNav();
   } catch (e) {
     if (token !== nav.token) return;
-    $('#navBody').innerHTML = plannerStatus(e.message || "Couldn't plan that right now.") +
+    // Offline (js/offline.js), the fetch's own "Failed to fetch" says nothing useful.
+    const why = window.Offline?.on() || navigator.onLine === false ? "You're offline. Try again when you reconnect, or plan by Bus only." : e.message;
+    $('#navBody').innerHTML = plannerStatus(why || "Couldn't plan that right now.") +
       `<button type="button" class="iconBtn" data-nav-action="retry">Try again</button>`;
   }
 }

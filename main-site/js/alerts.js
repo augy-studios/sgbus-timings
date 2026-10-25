@@ -46,8 +46,10 @@
 
   // ---------- the card ----------
 
-  // Over the page, as a .panelModal (js/ui.js).
+  // Over the page, as a .panelModal (js/ui.js). Offline, Service alerts is gone till it's back
+  // (js/offline.js): a link or notification to it brings the offline bar back to say so.
   function open() {
+    if (window.Offline?.blocked()) return;
     window.showPanel("alertsSection", true);
     load();
   }

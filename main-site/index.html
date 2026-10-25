@@ -48,6 +48,9 @@
             var pagesOff = (localStorage.getItem("sgbus_glance_off") === "1" ? "glance " : "") + (localStorage.getItem("sgbus_pages_off") || "");
             if (pagesOff.trim()) document.documentElement.setAttribute("data-pages-off", pagesOff.trim());
         } catch (e) { /* the tray opens on the right */ }
+        // Offline as the page opens, so the tabs that need the network don't show for a moment
+        // first (js/offline.js, which keeps it after this, and style.css).
+        if (navigator.onLine === false) document.documentElement.setAttribute("data-net-off", "");
     </script>
     <!-- Opened as the Telegram bot's Mini App (js/telegram.js): Telegram adds its launch data to
          the address's hash, "#tgWebAppData=..." or "#84009?tgWebAppData=..." after a page of
@@ -256,6 +259,8 @@
                         <button class="tab active" type="button" role="tab" aria-selected="true" data-nav-mode="all"><span data-icon="train"></span> Bus and train</button>
                         <button class="tab" type="button" role="tab" aria-selected="false" data-nav-mode="bus"><span data-icon="bus"></span> Bus only</button>
                     </div>
+                    <!-- Offline only (style.css, data-net-off: js/offline.js) -->
+                    <p class="offlineNote">You&rsquo;re offline. Bus and train needs a connection to plan; Bus only plans without one.</p>
                     <div class="plannerFields navFields">
                         <div class="plannerField">
                             <label for="navFrom">From</label>
@@ -551,6 +556,8 @@
                     <span data-icon="close"></span>
                 </button>
             </div>
+            <!-- Offline only (style.css, data-net-off: js/offline.js) -->
+            <p class="offlineNote">You&rsquo;re offline. A stop&rsquo;s timings come back when you reconnect; a bus&rsquo;s route and your bus-only routes open without a connection.</p>
             <div id="favStopsGroup" class="favGroup">
                 <div class="favGroupLabel">Bus stops</div>
                 <div id="favChips" class="favChips"></div>
@@ -1094,6 +1101,8 @@
         </div>
     </div>
 
+    <!-- First, so it sees every fetch (js/offline.js) -->
+    <script src="/js/offline.js"></script>
     <script src="/js/app-bridge.js"></script>
     <script src="/js/desktop-location.js"></script>
     <script src="/js/geo-retry.js"></script>

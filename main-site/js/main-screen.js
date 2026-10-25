@@ -9,6 +9,10 @@
 // (js/trip.js, TripHistory.record). The small things (Settings,
 // the theme, the weather, a bus's route, a list of stops) still open as windows over the page.
 //
+// Offline (js/offline.js), Glance, Bus timings and Service alerts need the network, so their tabs
+// go too, without touching what Settings keeps, and Favourites is on show in place of any of
+// them. Back online, they come back and the page on show stays.
+//
 // Each page's panel or modal is "docked" (style.css): drawn in the page, with no close button.
 // js/ui.js asks here before showing or hiding one: showing one switches to its page, and hiding
 // it is ignored, as a page can't be closed. So whatever opened a part before, such as a saved
@@ -22,12 +26,12 @@
   // at a time (Glance and Bus timings are the page's own glance, search and results, style.css,
   // data-view; Navigate has a panel per tab); `btn` its Edge Tray button. On its tab, `show`
   // runs every time and `first` only the first time, so Navigate keeps what was being planned,
-  // on the tab used last.
+  // on the tab used last, or offline, on Bus only, which plans without the network.
   const PARTS = [
     { id: 'glance', label: 'Glance', btn: 'glanceBtn' },
     { id: 'timings', label: 'Bus timings', btn: 'timingsBtn' },
     { id: 'favs', label: 'Favourites', btn: 'favsBtn', els: ['favsModal'], modal: true, show: () => renderFavs() },
-    { id: 'nav', label: 'Navigate', btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' ? openPlanner() : openNav()) },
+    { id: 'nav', label: 'Navigate', btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' || window.Offline?.on() ? openPlanner() : openNav()) },
     { id: 'alerts', label: 'Service alerts', btn: 'alertsBtn', els: ['alertsSection'], show: () => Alerts.open() },
     { id: 'trips', label: 'Your trips', btn: 'tripsBtn', els: ['tripsSection'], show: () => TripHistory.open() },
     { id: 'places', label: 'Places', btn: 'placesBtn', els: ['placesSection'], show: () => Places.open() },
@@ -57,15 +61,28 @@
   const hidden = () => [...(glanceOn() ? [] : ['glance']), ...CAN_HIDE.filter((n) => offList.has(n))];
   const shows = (id) => !hidden().includes(id);
 
+  // On top of those, the pages that need the network, while offline. hidden() and shows() stay
+  // what Settings says, which js/sync.js and Settings' switches show; here() is whether a page
+  // can be on show now, and fallback() the page on show when one can't: Bus timings, or
+  // offline, Favourites, which can't be turned off.
+  const NEEDS_NETWORK = ['glance', 'timings', 'alerts'];
+  const offline = () => !!window.Offline?.on();
+  const here = (id) => shows(id) && !(offline() && NEEDS_NETWORK.includes(id));
+  const fallback = () => (offline() ? 'favs' : 'timings');
+
+  // Settings' Custom home, or Bus timings while it's off. js/sync.js syncs this, so it's the
+  // same offline; start() is the page the app opens on now.
   function home() {
     let v = null;
     try { v = localStorage.getItem(HOME_KEY); } catch { /* Glance */ }
     if (!IDS.includes(v)) v = 'glance';
     return shows(v) ? v : 'timings';
   }
+  const start = () => (here(home()) ? home() : fallback());
 
   // Custom home: the app opens on `id`, its tab goes first, and it's on show at once. One
-  // that's off (from a synced device) is kept for when it's on again: Bus timings until then.
+  // that's off (from a synced device) is kept for when it's on again: Bus timings until then,
+  // or Favourites offline.
   function setHome(id) {
     if (!IDS.includes(id)) return;
     try {
@@ -73,7 +90,7 @@
       else localStorage.setItem(HOME_KEY, id);
     } catch { /* this visit only */ }
     layout();
-    open(home());
+    open(start());
     window.dispatchEvent(new Event('mainscreenchange'));
   }
 
@@ -97,26 +114,25 @@
   // panel `el` if it has more than one. A switch of page is a step Back goes back from (js/ui.js,
   // Steps); a switch of Navigate's tab isn't.
   let ready = false;
+  let quiet = false;
   function select(id, el) {
-    // A page that's off isn't shown: whatever opened it (a link, Back to it) gets Bus timings.
-    if (!shows(id)) {
-      id = 'timings';
-      el = null;
-    }
+    // A page that's off, or offline one that needs the network, isn't shown: whatever opened
+    // it (a link, Back to it) gets Bus timings, or offline Favourites, filled in as its tab would.
+    if (!here(id)) return open(fallback());
     const changed = active !== id;
     active = id;
     if (el && byEl[el]?.id === id) shown[id] = el;
     opened.add(id);
     apply();
     if (!changed) return;
-    if (ready) window.Steps?.step({});
+    if (ready && !quiet) window.Steps?.step({});
     window.dispatchEvent(new Event('viewchange'));
   }
 
   // Shows `id` from its tab, filling it in as its own button would.
   function open(id) {
     if (!byId[id]) return false;
-    if (!shows(id)) id = 'timings';
+    if (!here(id)) id = fallback();
     const part = byId[id];
     const first = !opened.has(id);
     select(id);
@@ -144,14 +160,15 @@
     window.syncModalOpen?.();
   }
 
-  // The tabs at the top of the tray, the home's first, and those turned off left out.
+  // The tabs at the top of the tray, the home's first, and those turned off, or offline, left
+  // out. data-pages-off is only Settings'; offline's are style.css's, on data-net-off.
   function layout() {
     const views = $('trayViews');
     const first = home();
     const off = hidden();
     for (const id of [first, ...IDS.filter((n) => n !== first)]) {
       const btn = $(byId[id].btn);
-      btn.hidden = off.includes(id);
+      btn.hidden = !here(id);
       views.appendChild(btn);
     }
     if (off.length) root.setAttribute('data-pages-off', off.join(' '));
@@ -163,8 +180,20 @@
   function changed() {
     if (!ready) return;
     layout();
-    if (!shows(active)) open('timings');
+    if (!here(active)) open(fallback());
     window.dispatchEvent(new Event('mainscreenchange'));
+  }
+
+  // Offline or online again: the tabs that need the network go or come back. On a page that
+  // went, Favourites is on show in its place, as the step on show rather than a new one Back
+  // would go back to the page from. Online again, the page on show stays.
+  function netChanged() {
+    if (!ready) return;
+    layout();
+    if (here(active)) return;
+    quiet = true;
+    try { open(fallback()); } finally { quiet = false; }
+    window.Steps?.mark();
   }
 
   function init() {
@@ -179,6 +208,7 @@
       for (const id of part.els || []) $(id).classList.add('docked');
     }
     window.addEventListener('glancechange', changed);
+    window.Offline?.onChange(netChanged);
     // The tabs switch the page, before the buttons' own handlers would open or close a window.
     $('trayButtons').addEventListener('click', (e) => {
       const tab = e.target.closest('[role="tab"][data-part]');
@@ -198,8 +228,9 @@
       open(tab.dataset.part);
       tab.focus();
     });
-    // On the home, unless a link opens something else (script.js, init).
-    active = home();
+    // On the home, unless a link opens something else (script.js, init). Offline, a home that
+    // needs the network opens Favourites.
+    active = start();
     layout();
     apply();
     if (active !== 'timings' && active !== 'glance') open(active);
@@ -208,5 +239,5 @@
   }
 
   const label = (id) => byId[id]?.label || id;
-  window.MainScreen = { IDS, CAN_HIDE, init, home, setHome, shows, hidden, setShown, docked, select, open, label, active: () => active, byEl: (elId) => byEl[elId]?.id };
+  window.MainScreen = { IDS, CAN_HIDE, init, home, setHome, shows, here, hidden, setShown, docked, select, open, label, active: () => active, byEl: (elId) => byEl[elId]?.id };
 })();

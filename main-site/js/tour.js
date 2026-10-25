@@ -116,8 +116,10 @@
   };
   const PAGES = Object.keys(TOURS);
 
-  // Is page `id` there: a page that's off isn't (js/main-screen.js), and the views always are.
-  const there = (id) => !window.MainScreen || !MainScreen.IDS.includes(id) || MainScreen.shows(id);
+  // Is page `id` there: a page that's off isn't (js/main-screen.js), nor offline one that needs
+  // the network, or Explorer (js/offline.js); the other views always are.
+  const there = (id) => (id === 'explorer' ? !window.Offline?.on()
+    : !window.MainScreen || !MainScreen.IDS.includes(id) || MainScreen.here(id));
 
   // The pages on, for the Edge Tray's step: "Glance, Bus timings, … and places".
   function pageList() {
@@ -345,7 +347,16 @@
   // Settings, and the home's own tour after.
   function maybeStart() {
     window.addEventListener('viewchange', forPage);
+    // A page's tour that's going when its page goes offline (js/offline.js) stops, not marked
+    // seen, so it's shown when the page is back; and back where it began, or Favourites.
+    window.Offline?.onChange(() => {
+      if (!root || root === true || !page || TOURS[page]?.view || there(page)) return;
+      page = null;
+      end();
+    });
     if (location.hash.length > 1 || location.search) return;
+    // The welcome is Glance's, which isn't there offline: it waits for a visit online.
+    if (!seen('glance') && window.Offline?.on()) return;
     if (!seen('glance') && window.MainScreen?.active() !== 'glance') {
       setTimeout(() => { if (!covered()) start('glance'); }, 1500);
       return;

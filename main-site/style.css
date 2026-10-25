@@ -356,6 +356,31 @@ body.modal-open { overflow: hidden; }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* The offline bar (js/offline.js): the update bar's look, but kept at the top as the page
+   scrolls, to say why tabs went. On the page's own colour, so nothing shows through, and
+   under the Edge Tray and the windows. Its words take what room there is, with OK beside
+   them even on a phone. It nudges when something that needs the network is tapped. */
+.offline-notice {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--brand) 22%, var(--bg));
+    border-bottom: 1px solid var(--surface-border);
+    color: var(--ink);
+    font-size: 0.875rem;
+    animation: update-notice-in 0.2s ease;
+}
+.offline-notice .update-notice-inner { flex-wrap: nowrap; }
+.offline-notice p { flex: 1 1 0; min-width: 0; }
+.offline-notice .iconBtn { flex: none; }
+.offline-notice.nudge { animation: offline-nudge 0.4s ease; }
+@keyframes offline-nudge {
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+/* The Android app's update bar waits while offline, as updating needs the network. */
+:root[data-net-off] .app-update-notice { display: none; }
+
 /* ===== Disruptions bar: under the update bar, only while a train line is disrupted (js/alerts.js) ===== */
 .disruption-bar {
     background: color-mix(in srgb, var(--error) 14%, transparent);
@@ -504,6 +529,24 @@ body.modal-open { overflow: hidden; }
 :root[data-pages-off~="glance"] #glanceBtn,
 :root[data-pages-off~="alerts"] #alertsBtn,
 :root[data-pages-off~="trips"] #tripsBtn { display: none !important; }
+/* Offline (js/offline.js, data-net-off, set before first paint too): the pages and buttons that
+   need the network, left as Settings has them for when it's back. */
+:root[data-net-off] #glanceBtn,
+:root[data-net-off] #timingsBtn,
+:root[data-net-off] #alertsBtn,
+:root[data-net-off] #explorerBtn,
+:root[data-net-off] #nearStopsTrayBtn,
+:root[data-net-off] #routinesTrayBtn,
+:root[data-net-off] #appUpdateBtn { display: none !important; }
+/* And on the pages that stay, where they need it: Navigate's Bus and train, and Favourites'
+   stops (index.html). */
+.offlineNote { display: none; }
+:root[data-net-off] .offlineNote {
+    display: block;
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
 
 /* Clipped at the screen's edge: the tray tucked away slides past it, and anything out there
    would widen the page, which a phone then zooms out to fit, modals and all. Pinned to the
