@@ -12,3 +12,6 @@ release/**
 !release/*/sgbus
 !release/*/sg-bus-timings-cli-*.deb
 
+
+# Agent worktrees (help desk and workspace boards).
+.claude/worktrees/
