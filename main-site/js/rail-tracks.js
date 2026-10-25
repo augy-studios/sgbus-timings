@@ -7,10 +7,15 @@
 // the [lat, lng] to draw, and the index in `path` where each station is. Null when the tracks
 // can't be had (offline before they were ever fetched) or the line has none.
 //
+// RailTracks.lines() resolves to every line's track as it is, for Explorer (js/map.js) to draw
+// them all: [{ line, points }], one for each part of a line, `line` its code and `points` its
+// [lat, lng]. Rejects when the tracks can't be had.
+//
 // The tracks are /data/rail-tracks.json (scripts/vendor-rail-tracks.mjs), fetched the first
-// time a train leg's drawn. Each stretch between two stations is cut from the part of the line
-// that passes both; the LRT loops and the Circle Line's are rings, cut the short way round. A
-// stretch the track can't be matched to stays a straight line, so a ride is always drawn.
+// time a train leg's drawn or Explorer opens. Each stretch between two stations is cut from
+// the part of the line that passes both; the LRT loops and the Circle Line's are rings, cut
+// the short way round. A stretch the track can't be matched to stays a straight line, so a
+// ride is always drawn.
 // Plain script: this project does not use ES modules, so it goes on window.
 (function () {
   // A station further than this from its line's track isn't on it. An interchange is one
@@ -163,5 +168,10 @@
     return track;
   }
 
-  window.RailTracks = { path };
+  async function lines() {
+    const all = await load();
+    return Object.entries(all).flatMap(([line, parts]) => parts.map((part) => ({ line, points: part.pts })));
+  }
+
+  window.RailTracks = { path, lines };
 })();
