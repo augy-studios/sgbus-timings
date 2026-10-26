@@ -25,10 +25,12 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### Favourites
 - Star bus stops, buses and planned routes; each appears as a one-tap chip
 - Favourite buses are starred and pinned in every stop's timings
+- **Buses at stops**: the star on a bus's row in a stop's timings saves that bus at that stop only, as LTA's MyTransport does (`sgbus_fav_stop_buses`, `toggleFavStopBus` in `script.js`). Favourites lists them under **Buses at stops**, a chip per stop; tapped, the stop's timings for just those buses, **Show all services** a tap away. They're pinned in that stop's timings, and on Glance that stop's card has just them
+- **Lists**: tabs at the top of Favourites. **Favourites** comes first, has every favourite and can't be deleted or renamed; **New list** makes a named group of some of them (stops, buses and buses at stops), with **Choose what's in it**, **Rename** and **Delete list** (`sgbus_fav_lists`, `renderFavLists` in `script.js`). A chip's cross in a list takes it out of that list only; a favourite removed from Favourites leaves every list too. Navs and bus-only routes are in Favourites only
 - Choose whether favourite buses and stops pin to the top or bottom of lists
 - Favourites are persisted in your browser's local storage
 - Favourites open in their own window from the star at the top of the Edge Tray
-- **Sync favourites with another device** (stops, buses, routes and navs) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
+- **Sync favourites with another device** (stops, buses, buses at stops, routes, navs and lists) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
   - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../docs/STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
@@ -82,6 +84,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Boarding is noticed without the road too: a fix off the bus's road falls back on the straight lines between its stops, and one within 250 m of a stop 150 m or more down the route counts as on board, once you're 150 m from the first stop (less a rough fix's error). A fix 150 m down the next ride (100 m further from the walk's end than you've been, 300 m without the accelerometer, or off the ride you were on) moves the trip on to it, on board
 - Walking is told from riding by the accelerometer (`Motion` in `js/trip.js`, `devicemotion`): steps are peaks in the acceleration above gravity, and walking is 7 in 5 s at an even rhythm, which a bus's bumps aren't. Walking never counts as boarding; your first steps within 250 m of a ride's last stop end the ride; and on a walk with no good fix, steps (0.7 m each, against 1.3 times the straight line) move you along instead of the clock. iOS asks for it as the trip starts
 - **Get ready to board**: while you wait at the stop for a bus ride's bus (not yet seen on board), its live timing there is checked, and at about a minute away a notification, two buzzes and the bar say so, once per ride. The server sends it too while the app's in the background (`api/_push/trip.js`, `boardStep`), and each side tells the other it's been said (`readied`)
+- With the phone's keyboard up (typing in a search box or Navigate's ends on a trip), the bar shrinks to one line, the trip and where you're at, so the page has the room; put the keyboard away and it's all back (`data-keyboard`, `fitKeyboard` in `js/trip.js`)
 - On by default; Settings turns it off
 
 ### Your trips and stats
@@ -124,6 +127,12 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
 - [Open-Meteo](https://open-meteo.com/) for the forecast; NEA's PSI and PM2.5 readings from [data.gov.sg](https://data.gov.sg/) (`DATA_GOV_KEY`)
 
+### Languages
+- The site's words can come from a json file per language, `i18n/<lang>.json`, each a flat map of key to words (`js/i18n.js`). English is what the page and code already say, so it never waits on a file: `i18n/en.json` lists every key with its English
+- In the page, `data-i18n="key"` marks an element's text, and `data-i18n-title`, `data-i18n-aria-label` and `data-i18n-placeholder` its attributes; in code, `tr('key', 'English, {name}', { name })` (script.js) or `I18n.t(...)`. A key missing from a language stays English
+- After marking new words, run `node scripts/i18n-check.mjs --write` from the repo's root to bring `en.json` up to date; without `--write` it checks, and says what each other language is missing
+- Only English so far, with the Favourites page and the Edge Tray's labels marked. A language is added to `LANGUAGES` in `js/i18n.js` with its file
+
 ### Themes
 - 7 built-in colour themes: **Classic**, **Not Green 1–5**, **Really Really Light Green**
 - Theme preference is saved automatically
@@ -147,6 +156,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### PWA / Offline Support
 - Installable on mobile and desktop as a standalone app
 - Service Worker with Workbox for offline caching
+- Offline (`js/offline.js`), the pages and buttons that need a connection step aside. Explorer stays once Singapore's map is saved from it (`js/map-save.js`, `data-map-saved`), its stop cards without Show bus timings; the trip bar's **Share my ETA** goes, and the share card makes no short link, though Offline Sharing still sends a place or directions phone to phone
 - Three app shortcuts (`manifest.json`): Stops near me, Navigate and Service alerts, with icons in `images/icons/`
 - A **Bus timings** widget for the Windows 11 Widgets board (Edge-installed app only): pick a stop and optionally its buses, like the bot's routines. An Adaptive Card (`widgets/timings.json`) filled in by `sw.js`; small, medium and large show 2, 4 and up to 12 buses
 

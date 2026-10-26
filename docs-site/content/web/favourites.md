@@ -1,10 +1,10 @@
 ---
 title: Favourites
-description: Save the stops, buses and routes you use, and open any of them with one tap.
+description: Save the stops, buses and routes you use, group them into lists, and open any of them with one tap.
 ---
 
-Tap the star at the top of the Edge Tray to open your favourites, in up to four groups:
-**Bus stops**, **Buses**, **Routes** and **Navs**. The number on the star is how many
+Tap the star at the top of the Edge Tray to open your favourites, in up to five groups:
+**Bus stops**, **Buses**, **Buses at stops**, **Bus-only routes** and **Navs**. The number on the star is how many
 you have. Each favourite is a chip; tap it to open it, which also closes the
 favourites, or tap the cross on its right to remove it.
 
@@ -19,6 +19,7 @@ favourites, or tap the cross on its right to remove it.
 |---|---|---|
 | A bus stop | Tap **Save** on the stop's timings | That stop's timings |
 | A bus | Tap **Save bus** on the bus's [route](bus-routes.md) | That bus's route |
+| A bus at one stop | Tap the star on the bus's row in the stop's timings | That stop's timings, for just your buses there |
 | A bus-only route | Tap **Save route** on Navigate's [Bus only](route-planner.md) tab | Bus only, with both ends set |
 | A nav | Tap **Save nav** in [Navigate](nav.md) | Navigate, with both ends set |
 
@@ -37,10 +38,39 @@ timings it is also pinned, to the top of the list by default, so the buses you
 actually catch are the first thing you read.
 
 On [Glance](main-screen.md#glance), your stops show only your favourite buses
-once you have any.
+once you have any. A stop with buses saved at it shows just those.
 
 Favourite stops are pinned in the same way in lists of stops, such as on a
 bus's route.
+
+## Buses at stops
+
+A favourite bus is that bus everywhere it goes. To save a bus only at the stop
+where you catch it, as LTA's MyTransport does, tap the star on its row in that
+stop's timings. The star fills in; tap it again to take it out.
+
+In Favourites, **Buses at stops** has a chip for each stop with the buses saved
+there, such as **Orchard Stn · 7, 174**. Tap it for that stop's timings with only
+those buses; **Show all services** brings back the rest. The cross removes every
+bus saved at that stop.
+
+## Lists
+
+The tabs at the top of Favourites are your lists. **Favourites** comes first: it
+has every favourite, and can't be deleted or renamed. To group some of them, such
+as the stops and buses you take to work:
+
+1. Tap **New list**, give it a name, and tap **Save**.
+2. Tick the stops, buses and buses at stops to put in it, then tap **Done**.
+3. Tap a list's tab to see just what's in it.
+
+On a list's tab, **Choose what's in it** changes what's in it, and **Rename** and
+**Delete list** do as they say. Deleting a list, or tapping the cross on a chip in
+it, only takes things out of that list: they stay in Favourites. Removing a
+favourite from Favourites takes it out of every list too.
+
+Lists hold stops, buses and buses at stops. Bus-only routes and navs stay in
+Favourites. You can have up to 20 lists.
 
 ## Top or bottom
 
