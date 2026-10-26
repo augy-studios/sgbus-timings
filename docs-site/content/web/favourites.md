@@ -72,6 +72,9 @@ favourite from Favourites takes it out of every list too.
 Lists hold stops, buses and buses at stops. Bus-only routes and navs stay in
 Favourites. You can have up to 20 lists.
 
+A list with a stop in it is also a choice on [Glance](main-screen.md#pick-whose-buses):
+pick it from the chip above the next bus to see just that list's stops and buses.
+
 ## Top or bottom
 
 <figure>

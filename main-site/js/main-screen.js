@@ -125,7 +125,7 @@
     opened.add(id);
     apply();
     if (!changed) return;
-    if (ready && !quiet) window.Steps?.step({});
+    if (ready && !quiet) window.Steps?.page();
     window.dispatchEvent(new Event('viewchange'));
   }
 

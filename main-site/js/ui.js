@@ -59,6 +59,15 @@
     else history.pushState(state, "", location.href);
   }
 
+  // A switch of page (js/main-screen.js): a step Back goes back from, in a browser. In the
+  // Android app from 2.2.7 (help desk #6, its "backtwice"), none: every page is at the bottom of
+  // Back, so Back closes what's open over it and then, pressed twice, leaves the app
+  // (MainActivity), whichever page is on show. An older app keeps a step per page.
+  function inApp() { return !!(window.AppBridge && window.AppBridge.native && window.AppBridge.has("backtwice")); }
+  function pageStep() {
+    if (!inApp()) step({});
+  }
+
   // The step for what's on show now, without adding one: as the page loads.
   function markStep() {
     history.replaceState(stepState({}), "", location.href);
@@ -126,9 +135,27 @@
     document.querySelectorAll(".modal-backdrop:not(.hidden):not(.docked)").forEach(function (m) {
       if (m.id !== state.modal) hideModal(m.id);
     });
-    if (state.page && window.MainScreen && window.MainScreen.active() !== state.page) window.MainScreen.select(state.page);
+    if (state.page && !inApp() && window.MainScreen && window.MainScreen.active() !== state.page) window.MainScreen.select(state.page);
     // A hashchange from the same step back comes just after.
     setTimeout(function () { restoring = false; }, 50);
+  });
+
+  // ---------- Reduced motion (help desk #6) ----------
+  // With the phone's Remove animations (prefers-reduced-motion), scrolling the code asks to be
+  // smooth jumps instead, wherever it's asked for.
+  var reduce = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  function calm(arg) {
+    if (!reduce || !reduce.matches || !arg || typeof arg !== "object" || arg.behavior !== "smooth") return arg;
+    return Object.assign({}, arg, { behavior: "auto" });
+  }
+  ["scrollIntoView", "scrollTo", "scrollBy"].forEach(function (name) {
+    [Element.prototype, window].forEach(function (target) {
+      var real = target[name];
+      if (typeof real !== "function") return;
+      target[name] = function (arg) {
+        return arguments.length === 1 ? real.call(this, calm(arg)) : real.apply(this, arguments);
+      };
+    });
   });
 
   // ---------- Focus (help desk #6) ----------
@@ -153,6 +180,10 @@
     try { opener.focus({ preventScroll: true }); } catch (e) { opener.focus(); }
   }
 
+  // The windows open, in the order they opened: the last is on top, whatever order they come
+  // in the page.
+  var opened = [];
+
   function openModal(id) {
     if (docked(id)) return window.MainScreen.select(window.MainScreen.byEl(id), id);
     var backdrop = document.getElementById(id);
@@ -162,6 +193,7 @@
     if (!was) {
       step({ modal: id });
       focusInto(backdrop);
+      opened = opened.filter(function (x) { return x !== id; }).concat(id);
     }
   }
 
@@ -170,6 +202,7 @@
     var backdrop = document.getElementById(id);
     if (backdrop.classList.contains("hidden")) return;
     backdrop.classList.add("hidden");
+    opened = opened.filter(function (x) { return x !== id; });
     backdrop.dispatchEvent(new Event("modalclose"));
     syncModalOpen();
     focusBack(backdrop);
@@ -304,7 +337,12 @@
     if (shown("#flagScreen") || shown("#boardScreen")) return;
     if (shown("#mapPanel") && window.LiveMap) { e.preventDefault(); return window.LiveMap.close(); }
     var open = document.querySelectorAll(".modal-backdrop:not(.hidden):not(.docked)");
-    var top = open[open.length - 1];
+    var top = null;
+    for (var i = opened.length - 1; i >= 0 && !top; i--) {
+      var el = document.getElementById(opened[i]);
+      if (el && !el.classList.contains("hidden") && !el.classList.contains("docked")) top = el;
+    }
+    top = top || open[open.length - 1];
     if (top) {
       if (OWN_ESC[top.id] || top.querySelector(".terminal")) return;
       e.preventDefault();
@@ -313,7 +351,7 @@
     // A panel (Navigate, Service alerts, Your trips, Places) not docked as a page: its own close.
     var panels = document.querySelectorAll(".panelModal:not([hidden]):not(.docked)");
     var panel = panels[panels.length - 1];
-    var close = panel && panel.querySelector('[aria-label^="Close"]');
+    var close = panel && panel.querySelector('button[id$="Close"]');
     if (close) { e.preventDefault(); close.click(); }
   });
 
@@ -450,6 +488,6 @@
   window.closeModal = closeModal;
   window.showPanel = showPanel;
   window.syncModalOpen = syncModalOpen;
-  window.Steps = { step: step, mark: markStep, sub: subStep, subBack: subBack };
+  window.Steps = { step: step, page: pageStep, mark: markStep, sub: subStep, subBack: subBack };
   window.wirePanel = wirePanel;
 })();

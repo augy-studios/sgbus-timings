@@ -36,8 +36,10 @@ import android.nfc.tech.Ndef;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
+import android.os.SystemClock;
 import android.util.Rational;
 import android.webkit.WebView;
+import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 
@@ -62,17 +64,47 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
 
         // Back goes back through the page's history, as in a browser: its panels and cards
-        // each add a step. Off the first page, the app goes to the background rather than
-        // closing, so a trip being followed carries on.
+        // each add a step. With nothing left to close, on whichever page (the page adds no step
+        // for switching pages in the app, main-site/js/ui.js), it takes two (2.2.7, help desk
+        // #6): the first says "Press back again to exit", and a second within EXIT_MS leaves.
+        // Leaving goes to the background rather than closing, so a trip being followed carries on.
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 WebView web = bridge == null ? null : bridge.getWebView();
-                if (web != null && web.canGoBack()) web.goBack();
-                else moveTaskToBack(true);
+                if (web != null && web.canGoBack()) {
+                    mBackAt = 0;
+                    web.goBack();
+                    return;
+                }
+                long now = SystemClock.uptimeMillis();
+                if (mBackAt != 0 && now - mBackAt < EXIT_MS) {
+                    mBackAt = 0;
+                    if (mBackToast != null) mBackToast.cancel();
+                    moveTaskToBack(true);
+                } else {
+                    mBackAt = now;
+                    mBackToast = Toast.makeText(MainActivity.this, R.string.exit_hint, Toast.LENGTH_SHORT);
+                    mBackToast.show();
+                }
             }
         });
     }
+
+    // The phone's font size (Settings, Display, Font size) for the page's text too (2.2.7, help
+    // desk #6): the WebView's text zoom set to it, checked again each time the app comes back,
+    // as it can be changed while the app's away. The page's sizes are in rem, so they all follow.
+    private void fitTextSize() {
+        WebView web = bridge == null ? null : bridge.getWebView();
+        if (web == null) return;
+        int zoom = Math.round(getResources().getConfiguration().fontScale * 100);
+        if (web.getSettings().getTextZoom() != zoom) web.getSettings().setTextZoom(zoom);
+    }
+
+    // Back's second press within this of the first leaves the app.
+    private static final long EXIT_MS = 2000;
+    private long mBackAt = 0;
+    private Toast mBackToast;
 
     // ---------- picture-in-picture ----------
     // While a trip runs or the live map is open, leaving the app shrinks it into a small window
@@ -126,6 +158,7 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onResume() {
         super.onResume();
+        fitTextSize();
         NfcAdapter nfc = NfcAdapter.getDefaultAdapter(this);
         if (nfc == null) return;
         PendingIntent self = PendingIntent.getActivity(this, 0,

@@ -52,8 +52,12 @@
   // The stops a chip can show: saved stops while there are any, nearby, and each place.
   function sources() {
     const out = [];
-    if (LS.getFavs().length || LS.getFavStopBuses().length) out.push({ key: 'saved', name: 'Saved stops', icon: 'star' });
-    if (navigator.geolocation) out.push({ key: 'near', name: 'Nearby', icon: 'locate' });
+    if (LS.getFavs().length || LS.getFavStopBuses().length) out.push({ key: 'saved', name: I18n.t('glance.source.saved', 'Saved stops'), icon: 'star' });
+    // Each list in Favourites with a stop in it (help desk #6, script.js), as a choice of its own.
+    for (const l of LS.getFavLists()) {
+      if (l.items.some((k) => /^stop(bus)?:/.test(k))) out.push({ key: `list:${l.id}`, name: l.name, icon: 'bookmark', list: l });
+    }
+    if (navigator.geolocation) out.push({ key: 'near', name: I18n.t('glance.source.near', 'Nearby'), icon: 'locate' });
     for (const p of window.Places?.all() || []) out.push({ key: `place:${p.key}`, name: p.name, icon: p.icon, place: p });
     return out;
   }
@@ -88,6 +92,11 @@
   async function stopsOf(src, { ask = false, turnOn = false } = {}) {
     if (!src) return [];
     // The saved stops, then the stops with a bus starred there (help desk #6).
+    // A list's stops, and the stops it has a bus at, in the order put in it.
+    if (src.list) {
+      const codes = [...new Set(src.list.items.map((k) => k.match(/^stop(?:bus)?:(\d{5})/)?.[1]).filter(Boolean))];
+      return codes.slice(0, STOPS).map((code) => ({ code }));
+    }
     if (src.key === 'saved') {
       const codes = [...new Set([...LS.getFavs().map((f) => f.code), ...LS.getFavStopBuses().map((b) => b.code)])];
       return codes.slice(0, STOPS).map((code) => ({ code }));
@@ -143,18 +152,20 @@
   }
 
   const mins = (ms) => Math.floor(ms / 60000);
-  const timeText = (ms) => (ms < 60000 ? 'Arr' : String(mins(ms)));
+  const timeText = (ms) => (ms < 60000 ? I18n.t('glance.arr', 'Arr') : String(mins(ms)));
+  const KICKER = () => esc(I18n.t('glance.nextBus', 'Next bus'));
 
   // The one big answer: the next bus you'd make from these stops, a favourite bus first if any
   // are coming. Nearby, a bus that'd go before you could walk there is left out.
   function nextBus() {
-    const favs = new Set(LS.getFavBuses());
+    const src = chosen();
     const all = [];
     for (const s of stops) {
       const walk = s.metres != null ? walkMins(s.metres) * 60000 : 0;
+      const keep = keepTo(src, s.code);
       for (const r of rowsOf(s.code)) {
         const t = r.times.find((ms) => ms >= walk);
-        if (t != null) all.push({ ...r, code: s.code, ms: t, walk, fav: favs.has(r.no) || starredAt(s.code).has(r.no) });
+        if (t != null) all.push({ ...r, code: s.code, ms: t, walk, fav: !!keep?.has(r.no) });
       }
     }
     const pool = all.some((b) => b.fav) ? all.filter((b) => b.fav) : all;
@@ -164,44 +175,64 @@
   function renderHero(src) {
     const hero = $('#glanceHero');
     if (failed) {
-      const retry = src?.key === 'near' ? `<button id="glanceLocate" class="btn glanceBtn" type="button">${ico('locate')} Use my location</button>` : '';
-      hero.innerHTML = `<p class="glanceKicker">Next bus</p><p class="glanceSay">${esc(failed)}</p>` + retry;
+      const retry = src?.key === 'near' ? `<button id="glanceLocate" class="btn glanceBtn" type="button">${ico('locate')} ${esc(I18n.t('glance.useLocation', 'Use my location'))}</button>` : '';
+      hero.innerHTML = `<p class="glanceKicker">${KICKER()}</p><p class="glanceSay">${esc(failed)}</p>` + retry;
       return;
     }
     if (needsLocation) {
-      hero.innerHTML = `<p class="glanceKicker">Next bus</p><p class="glanceSay">See the buses at the stops around you.</p>` +
-        `<button id="glanceLocate" class="btn glanceBtn" type="button">${ico('locate')} Use my location</button>`;
+      hero.innerHTML = `<p class="glanceKicker">${KICKER()}</p><p class="glanceSay">${esc(I18n.t('glance.seeAround', 'See the buses at the stops around you.'))}</p>` +
+        `<button id="glanceLocate" class="btn glanceBtn" type="button">${ico('locate')} ${esc(I18n.t('glance.useLocation', 'Use my location'))}</button>`;
       return;
     }
     if (!src || !stops.length) {
-      hero.innerHTML = `<p class="glanceKicker">Next bus</p><p class="glanceSay">${src?.place ? `No bus stops within ${PLACE_M} m of ${esc(src.name)}.` : 'Save a stop with its star, and its next bus shows here.'}</p>`;
+      hero.innerHTML = `<p class="glanceKicker">${KICKER()}</p><p class="glanceSay">${esc(src?.place ? I18n.t('glance.noStopsNear', 'No bus stops within {m} m of {place}.', { m: PLACE_M, place: src.name }) : I18n.t('glance.saveAStop', 'Save a stop with its star, and its next bus shows here.'))}</p>`;
       return;
     }
     if (!fetchedAt) {
-      hero.innerHTML = '<p class="glanceKicker">Next bus</p><p class="glanceSay">Getting the times&hellip;</p>';
+      hero.innerHTML = `<p class="glanceKicker">${KICKER()}</p><p class="glanceSay">${esc(I18n.t('glance.getting', 'Getting the times…'))}</p>`;
       return;
     }
     const bus = nextBus();
     if (!bus) {
-      hero.innerHTML = '<p class="glanceKicker">Next bus</p><p class="glanceSay">No buses due at these stops right now.</p>';
+      hero.innerHTML = `<p class="glanceKicker">${KICKER()}</p><p class="glanceSay">${esc(I18n.t('glance.noneDue', 'No buses due at these stops right now.'))}</p>`;
       return;
     }
     const m = mins(bus.ms);
-    const when = bus.ms < 60000 ? 'Arriving' : `in ${m} min`;
+    const when = bus.ms < 60000 ? I18n.t('glance.arriving', 'Arriving') : I18n.t('glance.inMin', 'in {m} min', { m });
     const leave = bus.walk ? Math.max(0, mins(bus.ms - bus.walk)) : null;
-    const walk = bus.walk ? `${bus.walk / 60000} min walk` : '';
+    const walk = bus.walk ? I18n.t('glance.minWalk', '{m} min walk', { m: bus.walk / 60000 }) : '';
     hero.innerHTML =
       // Read as shown, every line of it (help desk #6), rather than a shorter label.
       `<button class="glanceHeroBtn" type="button" data-stop="${esc(bus.code)}" data-svc="${esc(bus.no)}">` +
-      `<span class="glanceKicker">${leave != null ? (leave < 1 ? 'Leave now for' : `Leave in ${leave} min for`) : 'Next bus'}</span>` +
+      `<span class="glanceKicker">${esc(leave != null ? (leave < 1 ? I18n.t('glance.leaveNow', 'Leave now for') : I18n.t('glance.leaveIn', 'Leave in {m} min for', { m: leave })) : I18n.t('glance.nextBus', 'Next bus'))}</span>` +
       `<span class="glanceSvc">${esc(bus.no)}</span>` +
       `<span class="glanceWhen${bus.ms < 60000 ? ' now' : ''}">${esc(when)}</span>` +
-      `<span class="glanceWhere">${bus.to ? `to ${esc(bus.to)}, ` : ''}at ${esc(nameOf(bus.code))}${walk ? ` &middot; ${esc(walk)}` : ''}</span>` +
+      `<span class="glanceWhere">${esc(bus.to ? I18n.t('glance.toAt', 'to {to}, at {stop}', { to: bus.to, stop: nameOf(bus.code) }) : I18n.t('glance.at', 'at {stop}', { stop: nameOf(bus.code) }))}${walk ? ` &middot; ${esc(walk)}` : ''}</span>` +
       '</button>';
   }
 
   // The buses starred at a stop (script.js, favBusesAt).
   const starredAt = (code) => window.favBusesAt?.(code) || new Set();
+
+  // The buses a stop's card keeps to, or null for every bus. From a list: its buses at that stop
+  // and its buses anywhere; a stop in it without any has every bus. Otherwise: the buses starred
+  // at the stop, or the favourite buses, or every bus.
+  function keepTo(src, code) {
+    if (src?.list) {
+      const set = new Set();
+      for (const k of src.list.items) {
+        const at = k.match(/^stopbus:(\d{5})\/(.+)$/);
+        if (at && at[1] === code) set.add(at[2]);
+        const bus = k.match(/^bus:(.+)$/);
+        if (bus) set.add(bus[1]);
+      }
+      return set.size ? set : null;
+    }
+    const own = starredAt(code);
+    if (own.size) return own;
+    const favs = new Set(LS.getFavBuses());
+    return favs.size ? favs : null;
+  }
 
   // With favourite buses, each card has only those, and a stop none of them is due at is left
   // out: the few buses you take rather than every one at the stop. Without any, every bus. A
@@ -209,33 +240,34 @@
   function renderStops() {
     const wrap = $('#glanceStops');
     if (!fetchedAt || !stops.length) { wrap.innerHTML = ''; return; }
-    const favs = new Set(LS.getFavBuses());
-    const only = favs.size > 0;
+    const src = chosen();
+    let only = false;
     const cards = stops.map((s) => {
       const all = rowsOf(s.code);
-      const own = starredAt(s.code);
-      const rows = own.size ? all.filter((r) => own.has(r.no)) : only ? all.filter((r) => favs.has(r.no)) : all;
-      if ((own.size || only) && !rows.length) return '';
-      const walk = s.metres != null ? `<span class="glanceWalk">${walkMins(s.metres)} min walk</span>` : '';
+      const keep = keepTo(src, s.code);
+      if (keep) only = true;
+      const rows = keep ? all.filter((r) => keep.has(r.no)) : all;
+      if (keep && !rows.length) return '';
+      const walk = s.metres != null ? `<span class="glanceWalk">${esc(I18n.t('glance.minWalk', '{m} min walk', { m: walkMins(s.metres) }))}</span>` : '';
       const lines = rows.slice(0, ROWS).map((r) =>
         `<button class="glanceRow" type="button" data-stop="${esc(s.code)}" data-svc="${esc(r.no)}">` +
         `<span class="glanceNo">${esc(r.no)}</span>` +
-        `<span class="glanceTo">${r.to ? `to ${esc(r.to)}` : ''}</span>` +
-        `<span class="glanceTimes">${[0, 1, 2].map((i) => { const ms = r.times[i]; return ms == null ? '<span></span>' : `<span class="${i === 0 ? 'first' : ''}${ms < 60000 ? ' now' : ''}">${ms < 60000 ? '<span aria-hidden="true">Arr</span><span class="sr">Arriving</span>' : `${timeText(ms)}<span class="sr"> min</span>`}</span>`; }).join('')}</span>` +
+        `<span class="glanceTo">${r.to ? esc(I18n.t('glance.to', 'to {to}', { to: r.to })) : ''}</span>` +
+        `<span class="glanceTimes">${[0, 1, 2].map((i) => { const ms = r.times[i]; return ms == null ? '<span></span>' : `<span class="${i === 0 ? 'first' : ''}${ms < 60000 ? ' now' : ''}">${ms < 60000 ? `<span aria-hidden="true">${esc(I18n.t('glance.arr', 'Arr'))}</span><span class="sr">${esc(I18n.t('glance.arriving', 'Arriving'))}</span>` : `${timeText(ms)}<span class="sr"> ${esc(I18n.t('glance.min', 'min'))}</span>`}</span>`; }).join('')}</span>` +
         '</button>').join('');
-      const more = rows.length > ROWS ? `<button class="glanceMore" type="button" data-stop="${esc(s.code)}">+${rows.length - ROWS} more</button>` : '';
+      const more = rows.length > ROWS ? `<button class="glanceMore" type="button" data-stop="${esc(s.code)}">${esc(I18n.t('glance.more', '+{n} more', { n: rows.length - ROWS }))}</button>` : '';
       return `<div class="glanceStop card glass">` +
         `<button class="glanceStopHead" type="button" data-stop="${esc(s.code)}"><span class="glanceStopName">${esc(nameOf(s.code) || s.code)}</span>${walk}</button>` +
-        (lines || '<p class="glanceNone">No buses due right now.</p>') + more + '</div>';
+        (lines || `<p class="glanceNone">${esc(I18n.t('glance.noneDueHere', 'No buses due right now.'))}</p>`) + more + '</div>';
     }).join('');
-    wrap.innerHTML = cards || (only ? '<p class="glanceNone glanceOnly">None of your favourite buses are due at these stops right now.</p>' : '');
+    wrap.innerHTML = cards || (only ? `<p class="glanceNone glanceOnly">${esc(I18n.t('glance.noneOfYours', 'None of your favourite buses are due at these stops right now.'))}</p>` : '');
   }
 
   function renderBar(src) {
-    $('#glanceSourceLabel').textContent = src?.name || 'Nearby';
+    $('#glanceSourceLabel').textContent = src?.name || I18n.t('glance.source.near', 'Nearby');
     $('#glanceSourceIcon').dataset.icon = src?.icon || 'locate';
     hydrateIcons($('#glanceSource'));
-    $('#glanceUpdated').textContent = fetchedAt ? 'Times in minutes' : '';
+    $('#glanceUpdated').textContent = fetchedAt ? I18n.t('glance.inMinutes', 'Times in minutes') : '';
   }
 
   function render() {
@@ -330,7 +362,8 @@
   let started = false;
   function favsChanged() {
     if (!started) return;
-    if (chosen()?.key === 'saved' || (!stops.length && showing())) refresh();
+    const key = chosen()?.key || '';
+    if (key === 'saved' || key.startsWith('list:') || (!stops.length && showing())) refresh();
     else render();
   }
 

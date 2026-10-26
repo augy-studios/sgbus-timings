@@ -114,6 +114,7 @@ public class SgBusPlugin extends Plugin {
         if (OfflineSharePlugin.canTap(getContext())) features.put("sharetap");
         if (OfflineSharePlugin.canNearby(getContext())) features.put("sharenearby");
         features.put("widget");
+        features.put("backtwice"); // Back pressed twice to leave, on any page (MainActivity, 2.2.7)
         // 2.1.0
         features.put("places"); // setPlaces: Bus home and Bus to work
         features.put("flag"); // the flag-down screen's brightness

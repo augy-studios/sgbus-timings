@@ -228,7 +228,7 @@
     if (note) {
       note.hidden = activePreference !== "time";
       if (activePreference === "time") {
-        note.textContent = `Following the clock. Currently ${resolvedMode}.`;
+        note.textContent = resolvedMode === "dark" ? I18n.t("theme.note.dark", "Following the clock. Currently dark.") : I18n.t("theme.note.light", "Following the clock. Currently light.");
       }
     }
 

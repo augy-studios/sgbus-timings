@@ -678,7 +678,7 @@ async function runNav() {
     return;
   }
   const when = nav.when;
-  $('#navBody').innerHTML = plannerStatus(window.Offline?.on() ? 'Planning by bus and train on your phone…' : 'Finding journeys by bus and train…');
+  $('#navBody').innerHTML = plannerStatus(window.Offline?.on() ? I18n.t('nav.planningOffline', 'Planning by bus and train on your phone…') : I18n.t('nav.finding', 'Finding journeys by bus and train…'));
   try {
     const data = await fetchWays(nav.from, nav.to, when, nav.via);
     if (token !== nav.token) return;
@@ -696,8 +696,8 @@ async function runNav() {
   } catch (e) {
     if (token !== nav.token) return;
     // Offline, planning on the phone says why it couldn't (planOnPhone).
-    $('#navBody').innerHTML = plannerStatus(e.message || "Couldn't plan that right now.") +
-      `<button type="button" class="iconBtn" data-nav-action="retry">Try again</button>`;
+    $('#navBody').innerHTML = plannerStatus(e.message || I18n.t('nav.couldnt', 'Couldn’t plan that right now.')) +
+      `<button type="button" class="iconBtn" data-nav-action="retry">${escapeHtml(I18n.t('common.tryAgain', 'Try again'))}</button>`;
   }
 }
 
@@ -705,7 +705,7 @@ function renderNav() {
   const body = $('#navBody');
   renderNavFav();
   if (!nav.from || !nav.to) {
-    body.innerHTML = plannerStatus('Set where you\'re starting and where you\'re going: an address, a building, a postal code, a station, a bus stop, a Google Maps link, or your location.');
+    body.innerHTML = plannerStatus(I18n.t('nav.setEnds', 'Set where you’re starting and where you’re going: an address, a building, a postal code, a station, a bus stop, a Google Maps link, or your location.'));
     return;
   }
   if (nav.option) {
@@ -713,12 +713,12 @@ function renderNav() {
     return;
   }
   if (!nav.options.length) {
-    body.innerHTML = plannerStatus(`No way by bus or train running ${nav.when ? 'at that time' : 'right now'} was found between these two places. Try another time, or somewhere nearby.`);
+    body.innerHTML = plannerStatus(nav.when ? I18n.t('nav.noneAtTime', 'No way by bus or train running at that time was found between these two places. Try another time, or somewhere nearby.') : I18n.t('nav.noneNow', 'No way by bus or train running right now was found between these two places. Try another time, or somewhere nearby.'));
     return;
   }
   body.innerHTML =
-    (nav.offline ? `<p class="navOffline">${ico('alert')} Planned offline: times are estimates.</p>` : '') +
-    plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there${nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : ''}, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
+    (nav.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
+    plannerStatus((nav.options.length === 1 ? I18n.t('nav.waysOne', '1 way to get there') : I18n.t('nav.waysMany', '{n} ways to get there', { n: nav.options.length })) + (nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : '') + I18n.t('nav.waysTail', ', quickest first. Every mix of bus and train is listed, not just the fastest.')) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
     navOthers() +
     `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}${nav.via ? ' No time is counted at your stop: add what you’ll spend there.' : ''}${nav.offline ? ' Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.' : ''}</p>` +
@@ -825,10 +825,10 @@ function walkMetres(o) {
 const wayHalves = (o) => (o.via ? [o.legs.slice(0, o.via.leg), o.legs.slice(o.via.leg)] : [o.legs]);
 
 function navMixText(o) {
-  if (o.walkOnly) return 'Walk all the way';
+  if (o.walkOnly) return I18n.t('nav.walkAll', 'Walk all the way');
   // Getting off at the stop on the way isn't a change.
   const changes = wayHalves(o).reduce((sum, legs) => sum + Math.max(0, legs.filter((l) => l.mode !== 'walk').length - 1), 0);
-  return `${changes === 0 ? 'No change' : `${changes} change${changes === 1 ? '' : 's'}`} · ${formatDistance(walkMetres(o))} walk`;
+  return `${changes === 0 ? I18n.t('nav.noChange', 'No change') : changes === 1 ? I18n.t('nav.oneChange', '1 change') : I18n.t('nav.changes', '{n} changes', { n: changes })} · ${I18n.t('nav.walkDist', '{d} walk', { d: formatDistance(walkMetres(o)) })}`;
 }
 
 function navOptionItem(o, i) {
@@ -877,13 +877,13 @@ async function renderNavOption(o) {
   }
   const head =
     `<div class="plannerNav">` +
-    `<button type="button" class="iconBtn" data-nav-action="back">${ico('back')} All ways</button>` +
+    `<button type="button" class="iconBtn" data-nav-action="back">${ico('back')} ${escapeHtml(I18n.t('nav.allWays', 'All ways'))}</button>` +
     // Here as well as in the card's header, which has scrolled away by the time you're
     // reading a way on a phone; the route planner has its Refresh in the same place.
-    `<button type="button" class="iconBtn" data-nav-action="refresh">Refresh</button>` +
-    `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} Start trip</button>` +
+    `<button type="button" class="iconBtn" data-nav-action="refresh">${escapeHtml(I18n.t('nav.refresh', 'Refresh'))}</button>` +
+    `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} ${escapeHtml(I18n.t('nav.startTrip', 'Start trip'))}</button>` +
     `</div>` +
-    (o.offline ? `<p class="navOffline">${ico('alert')} Planned offline: times are estimates.</p>` : '') +
+    (o.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
     `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>` +
     (nav.when
       ? navTooLate(o)
@@ -905,7 +905,7 @@ async function renderNavOption(o) {
     if (leg.mode === 'walk') {
       const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(wayPlaceName(o, leg.to));
       return `<li class="step stepWalk">${ico('walk')}<div class="walkBody">` +
-        `<span>Walk ~${leg.metres} m to ${where}, ~${Math.max(1, Math.round(leg.minutes))} min</span>` +
+        `<span>${escapeHtml(I18n.t('nav.walkStep', 'Walk ~{m} m to {to}, ~{min} min', { m: leg.metres, to: '\u0000', min: Math.max(1, Math.round(leg.minutes)) })).replace('\u0000', where)}</span>` +
         walkDirections(o, k) +
         `</div></li>`;
     }
@@ -916,25 +916,29 @@ async function renderNavOption(o) {
       const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next), leg.color);
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
-        `<div class="legRide">From ${escapeHtml(placeName(leg.from))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}: ${leg.stops} stop${leg.stops === 1 ? '' : 's'} to ${escapeHtml(placeName(leg.to))}, ~${Math.round(leg.minutes)} min</div>` +
-        ((nav.when || o.offline) && leg.board != null ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}.</div>` : '') +
+        `<div class="legRide">${escapeHtml(leg.towards
+          ? I18n.t('nav.trainRideTowards', 'From {from}, towards {towards}: {n} stops to {to}, ~{min} min', { from: placeName(leg.from), towards: leg.towards, n: leg.stops, to: placeName(leg.to), min: Math.round(leg.minutes) })
+          : I18n.t('nav.trainRide', 'From {from}: {n} stops to {to}, ~{min} min', { from: placeName(leg.from), n: leg.stops, to: placeName(leg.to), min: Math.round(leg.minutes) }))}</div>` +
+        ((nav.when || o.offline) && leg.board != null ? `<div class="legNote">${escapeHtml(I18n.t('nav.boardAround', 'Board around {time}.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>` : '') +
         doors +
-        (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} LTA reports a disruption on this line. Check Service alerts.</div>` : '') +
+        (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disrupted', 'LTA reports a disruption on this line. Check Service alerts.'))}</div>` : '') +
         `</li>`;
     }
     const t = timings[k];
     const board = (nav.when || o.offline) && leg.board != null
-      ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}, after an average wait.</div>`
+      ? `<div class="legNote">${escapeHtml(I18n.t('nav.boardAroundWait', 'Board around {time}, after an average wait.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>`
       : '';
     const etas = !live ? board
-      : t === undefined ? `${board}<div class="legNote">Loading live timings…</div>`
-      : t && t.length ? `${board}<div class="legEtas">Next ${escapeHtml(leg.route)}: ${t.map((ms) => escapeHtml(msToMins(ms))).join(' &middot; ')}</div>`
-      : `${board}<div class="legNote">No live timings for this bus right now.</div>`;
+      : t === undefined ? `${board}<div class="legNote">${escapeHtml(I18n.t('nav.loadingLive', 'Loading live timings…'))}</div>`
+      : t && t.length ? `${board}<div class="legEtas">${escapeHtml(I18n.t('nav.nextBus', 'Next {no}:', { no: leg.route }))} ${t.map((ms) => escapeHtml(msToMins(ms))).join(' &middot; ')}</div>`
+      : `${board}<div class="legNote">${escapeHtml(I18n.t('nav.noLive', 'No live timings for this bus right now.'))}</div>`;
     return `<li class="step stepLeg">` +
-      `<div class="legHead">${legChip(leg)}<span>${leg.stops} stop${leg.stops === 1 ? '' : 's'} · ~${Math.round(leg.minutes)} min</span></div>` +
-      `<div class="legRide">From ${escapeHtml(placeName(leg.from))} to ${escapeHtml(placeName(leg.to))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}</div>` +
+      `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.stops === 1 ? I18n.t('nav.oneStopMin', '1 stop · ~{min} min', { min: Math.round(leg.minutes) }) : I18n.t('nav.stopsMin', '{n} stops · ~{min} min', { n: leg.stops, min: Math.round(leg.minutes) }))}</span></div>` +
+      `<div class="legRide">${escapeHtml(leg.towards
+        ? I18n.t('nav.busRideTowards', 'From {from} to {to}, towards {towards}', { from: placeName(leg.from), to: placeName(leg.to), towards: leg.towards })
+        : I18n.t('nav.busRide', 'From {from} to {to}', { from: placeName(leg.from), to: placeName(leg.to) }))}</div>` +
       etas +
-      (leg.lastBus ? `<div class="legNote legWarn">${ico('alert')} Last ${escapeHtml(leg.route)} from here today is at ${escapeHtml(leg.lastBus)}. Don't miss it.</div>` : '') +
+      (leg.lastBus ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.lastBus', 'Last {no} from here today is at {time}. Don’t miss it.', { no: leg.route, time: leg.lastBus }))}</div>` : '') +
       (leg.traffic ? `<button type="button" class="legTraffic" data-nav-traffic="${k}">${ico('alert')}<span>${escapeHtml(trafficText(leg.traffic))} <u>See it on the map</u></span></button>` : '') +
       (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(leg.route)} timings at ${escapeHtml(leg.from.name)}</button>` : '') +
       `</li>` +
@@ -1083,7 +1087,7 @@ function tripFromNav(o, to, from = nav.from) {
         const startName = k === 0 ? from?.label || 'Where you set off' : wayPlaceName(o, l.from || o.legs[k - 1]?.to);
         legs.push({
           kind: 'walk',
-          label: 'Walk',
+          label: I18n.t('trip.walk', 'Walk'),
           to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace),
           points: [start, end],
           names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace)],
@@ -1101,7 +1105,7 @@ function tripFromNav(o, to, from = nav.from) {
     if (!(l.path?.length >= 2)) return;
     legs.push({
       kind: l.mode,
-      label: l.mode === 'bus' ? `Bus ${l.route}` : `${l.route} ${l.lrt ? 'LRT' : 'Line'}`,
+      label: l.mode === 'bus' ? I18n.t('trip.bus', 'Bus {no}', { no: l.route }) : l.lrt ? I18n.t('trip.lrt', '{line} LRT', { line: l.route }) : I18n.t('trip.line', '{line} Line', { line: l.route }),
       to: placeName(l.to),
       points: l.path,
       names: l.mode === 'train' ? (l.names || []).map(stationName) : l.names,
@@ -1117,7 +1121,7 @@ function tripFromNav(o, to, from = nav.from) {
     });
   });
   return {
-    title: `To ${to?.label || 'your stop'}`,
+    title: to?.label ? I18n.t('trip.to', 'To {to}', { to: to.label }) : I18n.t('trip.toYourStop', 'To your stop'),
     legs,
     to: to ? { label: to.label, lat: to.lat, lng: to.lng } : null,
     from: from ? { label: from.label, lat: from.lat, lng: from.lng } : null,

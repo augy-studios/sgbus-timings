@@ -37,7 +37,7 @@ for (const m of html.matchAll(/<(\w+)([^>]*?)\sdata-i18n="([^"]+)"([^>]*)>([\s\S
   add(m[3], decode(m[5].replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim(), `index.html:${line(m.index)}`);
 }
 for (const m of html.matchAll(/<\w+[^>]*>/g)) {
-  for (const a of m[0].matchAll(/data-i18n-(title|aria-label|placeholder)="([^"]+)"/g)) {
+  for (const a of m[0].matchAll(/data-i18n-(data-title|title|aria-label|placeholder)="([^"]+)"/g)) {
     const v = m[0].match(new RegExp(`\\s${a[1]}="([^"]*)"`));
     if (!v) problems.push(`${a[2]}: index.html:${line(m.index)} has no ${a[1]} to take the English from`);
     else add(a[2], decode(v[1]), `index.html:${line(m.index)}`);

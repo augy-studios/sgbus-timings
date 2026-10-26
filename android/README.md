@@ -44,7 +44,11 @@ from there.
 
 `SgBusPlugin` also tells the page what this build can do (`info`, with `features`), posts
 notifications for it, and opens Android's settings pages. `MainActivity` makes Back go back
-through the page's history.
+through the page's history, closing what's open over the page; from 2.2.7 (`backtwice`), with
+nothing left to close, the first press shows "Press back again to exit" (`exit_hint` in
+`res/values/strings.xml`) and a second within two seconds sends the app to the background. Also
+from 2.2.7, the WebView's text zoom follows the phone's font size (`fitTextSize`, checked each
+time the app comes back).
 
 The site keeps its own versions of all of these that a browser can do (the Get Off Alert
 with the screen on, Web Push, the iCal calendar link), and only uses the app's when it's

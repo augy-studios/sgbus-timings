@@ -51,6 +51,7 @@ The chip above it picks the stops:
 | **Saved stops** | Your first four [favourite](favourites.md) stops. The one it starts on, once you've saved a stop. |
 | **Nearby** | The four stops nearest where you are, each with how long the walk is. The first time, it asks to use your location. |
 | **Home**, **Work** and your other [places](places.md) | Up to four stops within 500 m of the place, the place's own stop first if it's a bus stop. |
+| Your [lists](favourites.md#lists) | The stops in the list, each with just the list's buses there, or every bus at a stop the list has no buses for. A list shows here once it has a stop or a bus at a stop in it. |
 
 On **Nearby**, the big bus is the next one you'd make if you set off now,
 and it says when to leave: **Leave in 3 min for**, or **Leave now for**. The
@@ -103,6 +104,10 @@ the window that's open, then goes back to the page you were on before, one
 step at a time. Only once you're back where you started, with nothing open,
 does it leave the app. A window's **X**, or a tap outside it, still closes it
 too.
+
+In the Android app from version 2.2.7, Back closes what's open and then, on
+whichever page you're on, says **Press back again to exit**: press it again
+within two seconds to leave the app. It no longer steps back through the pages.
 
 ## Custom home
 

@@ -7,6 +7,9 @@ function readJson(key, fallback) {
     catch { return fallback; }
 }
 
+// The words for `key` in the language picked (js/i18n.js), or `en` with {vars} filled in.
+const tr = (key, en, vars) => (window.I18n ? I18n.t(key, en, vars) : String(en).replace(/\{(\w+)\}/g, (m, k) => vars?.[k] ?? m));
+
 const LS = {
     nameKey:       'sgbus_name',
     favKey:        'sgbus_favs_v2',
@@ -269,12 +272,13 @@ function msToMins(ms) {
     if (ms == null) return '-';
     const sec = Math.max(0, Math.round(ms / 1000));
     const m = Math.floor(sec / 60), s = sec % 60;
-    return m > 0 ? `${m} min${m > 1 ? 's' : ''}${s ? ` ${s}s` : ''}` : `${s}s`;
+    return m > 0 ? (m > 1 ? tr('time.mins', '{m} mins', { m }) : tr('time.min', '{m} min', { m })) + (s ? ` ${tr('time.secs', '{s}s', { s })}` : '') : tr('time.secs', '{s}s', { s });
 }
 
 // What a load's colour says, for a screen reader (help desk #6).
 function loadWords(load) {
-    return { SEA: 'seats available', SDA: 'standing room', LSD: 'limited standing' }[(load || '').toUpperCase()] || '';
+    const u = (load || '').toUpperCase();
+    return u === 'SEA' ? tr('load.sea', 'seats available') : u === 'SDA' ? tr('load.sda', 'standing room') : u === 'LSD' ? tr('load.lsd', 'limited standing') : '';
 }
 
 function loadTextClass(load) {
@@ -562,8 +566,6 @@ function chip(openAttr, removeAttr, code, name, title, removeLabel = 'Remove fro
         `</span>`;
 }
 
-// The words for `key` in the language picked (js/i18n.js), or `en` with {vars} filled in.
-const tr = (key, en, vars) => (window.I18n ? I18n.t(key, en, vars) : String(en).replace(/\{(\w+)\}/g, (m, k) => vars?.[k] ?? m));
 
 // ---- Lists (help desk #6) ----
 // Favourites is every favourite and can't be deleted; the lists you make (LS.getFavLists) each
@@ -1000,7 +1002,7 @@ const oneBus = (filter) => (filter && /^[0-9A-Z]{1,4}$/.test(filter) ? filter : 
 // "bus 174", "buses 174 and 175", "buses 22*".
 function busFilterText(filter) {
     const parts = filter.split(',');
-    return parts.length === 1 && !parts[0].endsWith('*') ? `bus ${parts[0]}` : `buses ${listText(parts)}`;
+    return parts.length === 1 && !parts[0].endsWith('*') ? tr('stop.filter.one', 'bus {no}', { no: parts[0] }) : tr('stop.filter.many', 'buses {list}', { list: listText(parts) });
 }
 
 async function fetchArrivals(code, service) {
@@ -1016,7 +1018,7 @@ function renderStopHeader() {
     $('#stopCode').textContent = code;
     $('#stopName').textContent = nameOf(code) || 'Bus Stop';
     $('#stopRoad').textContent = stopsIndex?.[code]?.road || '';
-    setFavButton($('#stopFavBtn'), isFavStop(code), 'Save', 'Saved');
+    setFavButton($('#stopFavBtn'), isFavStop(code), tr('stop.save', 'Save'), tr('stop.saved', 'Saved'));
 }
 
 function renderStopTools() {
@@ -1024,22 +1026,22 @@ function renderStopTools() {
     const parts = [];
     if (service) {
         parts.push(expanded
-            ? `<button type="button" class="iconBtn" data-tool="collapse" title="Show just these timings here">${ico('bus')} Only ${escapeHtml(busFilterText(service))}</button>`
-            : `<button type="button" class="iconBtn" data-tool="expand" title="Show every bus at this stop">Show all services</button>`);
-        if (!expanded && oneBus(service)) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="The stops this bus goes on to from here">${ico('route')} Route from here</button>`);
+            ? `<button type="button" class="iconBtn" data-tool="collapse" title="${escapeHtml(tr('stop.tool.collapse.title', 'Show just these timings here'))}">${ico('bus')} ${escapeHtml(tr('stop.tool.collapse', 'Only {buses}', { buses: busFilterText(service) }))}</button>`
+            : `<button type="button" class="iconBtn" data-tool="expand" title="${escapeHtml(tr('stop.tool.expand.title', 'Show every bus at this stop'))}">${escapeHtml(tr('stop.tool.expand', 'Show all services'))}</button>`);
+        if (!expanded && oneBus(service)) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="${escapeHtml(tr('stop.tool.onward.title', 'The stops this bus goes on to from here'))}">${ico('route')} ${escapeHtml(tr('stop.tool.onward', 'Route from here'))}</button>`);
     }
-    parts.push(`<button type="button" class="iconBtn" data-tool="pick" title="Pick one bus to see just its timings here">${ico('bus')} Pick a bus</button>`);
+    parts.push(`<button type="button" class="iconBtn" data-tool="pick" title="${escapeHtml(tr('stop.tool.pick.title', 'Pick one bus to see just its timings here'))}">${ico('bus')} ${escapeHtml(tr('stop.tool.pick', 'Pick a bus'))}</button>`);
 
     const stop = stopsIndex?.[code];
     if (stop && stop.lat != null && stop.lng != null) {
         parts.push(navOpen
-            ? `<button type="button" class="iconBtn" data-tool="livemap" title="Walk here on the live map">${ico('map')} Live map</button>` +
+            ? `<button type="button" class="iconBtn" data-tool="livemap" title="${escapeHtml(tr('stop.tool.livemap.title', 'Walk here on the live map'))}">${ico('map')} ${escapeHtml(tr('stop.tool.livemap', 'Live map'))}</button>` +
               MAP_APPS.map(app =>
                 `<a class="iconBtn" title="Walking directions here in ${escapeHtml(app.label)}" href="${escapeHtml(directionsUrl(stop, app.id))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
               ).join('')
-            : `<button type="button" class="iconBtn" data-tool="navigate" title="Walking directions to this stop">${ico('navigate')} Directions</button>`);
+            : `<button type="button" class="iconBtn" data-tool="navigate" title="${escapeHtml(tr('stop.tool.directions.title', 'Walking directions to this stop'))}">${ico('navigate')} ${escapeHtml(tr('stop.tool.directions', 'Directions'))}</button>`);
     }
-    parts.push(`<button type="button" class="iconBtn" data-tool="board" title="This stop's buses full screen, like an interchange's departure screens">${ico('clock')} Board</button>`);
+    parts.push(`<button type="button" class="iconBtn" data-tool="board" title="${escapeHtml(tr('stop.tool.board.title', 'This stop’s buses full screen, like an interchange’s departure screens'))}">${ico('clock')} ${escapeHtml(tr('stop.tool.board', 'Board'))}</button>`);
     // The desktop app: this stop's (or bus's) next buses in the tray (desktop/glance.js).
     if (window.sgbusDesktop?.tray) {
         parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="Show ${oneBus(service) && !expanded ? `bus ${escapeHtml(service)}'s` : "this stop's"} next buses in the tray, and stop it from the tray's menu">${ico('bell')} Tray countdown</button>`);
@@ -1053,12 +1055,12 @@ function renderStopTools() {
 
 function backLabel(ctx) {
     switch (ctx?.kind) {
-        case 'route':   return 'Back to route';
-        case 'journey': return 'Back to journey';
-        case 'service': return `Back to bus ${ctx.service}`;
-        case 'nearby':  return 'Back to nearby stops';
-        case 'nav':     return 'Back to Navigate';
-        default:        return 'Back';
+        case 'route':   return tr('stop.back.route', 'Back to route');
+        case 'journey': return tr('stop.back.journey', 'Back to journey');
+        case 'service': return tr('stop.back.service', 'Back to bus {no}', { no: ctx.service });
+        case 'nearby':  return tr('stop.back.nearby', 'Back to nearby stops');
+        case 'nav':     return tr('stop.back.nav', 'Back to Navigate');
+        default:        return tr('stop.back', 'Back');
     }
 }
 
@@ -1152,8 +1154,9 @@ function firstLastText(svcNo, code, dir = null) {
     const fl = BusNet.isReady() ? BusNet.firstLast(svcNo, code, dir) : null;
     if (!fl) return '';
     // LTA gives "-" for both on a day type the bus doesn't run.
-    if (fl.first === '-' && fl.last === '-') return `No ${DAY_NAMES[fl.label]} service at this stop`;
-    return `${fl.label}: first bus ${fl.first} · last bus ${fl.last}`;
+    const day = { Weekday: tr('day.weekday', 'Weekday'), Sat: tr('day.sat', 'Sat'), Sun: tr('day.sun', 'Sun') }[fl.label] || fl.label;
+    if (fl.first === '-' && fl.last === '-') return fl.label === 'Weekday' ? tr('stop.noService.weekday', 'No weekday service at this stop') : fl.label === 'Sat' ? tr('stop.noService.sat', 'No Saturday service at this stop') : tr('stop.noService.sun', 'No Sunday service at this stop');
+    return tr('stop.firstLast', '{day}: first bus {first} · last bus {last}', { day, first: fl.first, last: fl.last });
 }
 
 function renderArrivals() {
@@ -1182,8 +1185,8 @@ function renderArrivals() {
         const narrowed = service && !expanded;
         const fl = narrowed && oneBus(service) ? firstLastText(service, code) : '';
         $('#emptySvc').textContent = narrowed
-            ? `No live arrivals for ${busFilterText(service)} right now.${fl ? ` ${fl}.` : ''}`
-            : 'No live buses right now.';
+            ? tr('stop.noLiveFor', 'No live arrivals for {buses} right now.', { buses: busFilterText(service) }) + (fl ? ` ${fl}.` : '')
+            : tr('stop.noLive', 'No live buses right now.');
         $('#emptySvc').hidden = false;
         window.MakeIt?.render(code, []);
         return;
@@ -1207,13 +1210,13 @@ function renderArrivals() {
         const wheelchair = bus.wheelchair ? wheelchairBadge : '';
         const deck  = `<span class="badge">${escapeHtml(bus.deck || '')}</span>`;
         const distBadge = haveCoords
-            ? `<span class="badge badge-dist" title="${along != null ? 'Along its route' : 'In a straight line'}">${dist}</span>`
-            : `<span class="badge badge-dist badge-dist-na" role="img" aria-label="distance not known">~ &#8734;m</span>`;
+            ? `<span class="badge badge-dist" title="${escapeHtml(along != null ? tr('stop.dist.along', 'Along its route') : tr('stop.dist.straight', 'In a straight line'))}">${dist}</span>`
+            : `<span class="badge badge-dist badge-dist-na" role="img" aria-label="${escapeHtml(tr('stop.dist.unknown', 'distance not known'))}">~ &#8734;m</span>`;
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         // Gone before you could walk here (js/make-it.js): greyed.
         const late = window.MakeIt?.tooSoon(code, bus.eta_ms) ? ' tooSoon' : '';
         // Said aloud too: what's shown by colour (the load), italics (an estimate) and fading.
-        const words = [loadWords(bus.load), bus.rough ? 'estimated' : '', late ? 'leaves before you could get there' : ''].filter(Boolean).join(', ');
+        const words = [loadWords(bus.load), bus.rough ? tr('stop.estimated', 'estimated') : '', late ? tr('stop.tooSoon', 'leaves before you could get there') : ''].filter(Boolean).join(', ');
         return `<div class="eta${late}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${words ? `<span class="sr">, ${words}</span>` : ''}${badges}</div>`;
     };
 
@@ -1228,14 +1231,14 @@ function renderArrivals() {
             // Which way this one's going, or which time round, where the stop has it both ways.
             (way ? `<div class="svcTo" title="Bus ${escapeHtml(svcNo)}: ${escapeHtml(way.label)}">${escapeHtml(way.short)}</div>` : '') +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
-            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
+            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="${escapeHtml(tr('stop.svc.route.title', 'Bus {no}’s route and stops', { no: svcNo }))}">${escapeHtml(tr('stop.svc.route', 'Route'))}</button>` +
             // This bus at this stop, in Favourites (toggleFavStopBus), as LTA's MyTransport has it.
             `<button class="viewRouteBtn svcStar" data-fav-stopbus-at="${escapeHtml(svcNo)}" aria-pressed="${here.has(svcNo)}" ` +
-            `aria-label="${here.has(svcNo) ? 'Saved' : 'Save'}: bus ${escapeHtml(svcNo)} at this stop" title="${here.has(svcNo) ? `Bus ${escapeHtml(svcNo)} at this stop is in Favourites. Tap to take it out` : `Save bus ${escapeHtml(svcNo)} at this stop to Favourites`}">${ico('star')}</button>` +
+            `aria-label="${escapeHtml(here.has(svcNo) ? tr('stop.svc.starOn', 'Saved: bus {no} at this stop', { no: svcNo }) : tr('stop.svc.starOff', 'Save: bus {no} at this stop', { no: svcNo }))}" title="${escapeHtml(here.has(svcNo) ? tr('stop.svc.starOn.title', 'Bus {no} at this stop is in Favourites. Tap to take it out', { no: svcNo }) : tr('stop.svc.starOff.title', 'Save bus {no} at this stop to Favourites', { no: svcNo }))}">${ico('star')}</button>` +
             // The flag-down screen (js/flag.js).
-            `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="Show ${escapeHtml(svcNo)} full screen, to flag the bus down">Flag</button>` +
+            `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="${escapeHtml(tr('stop.svc.flag.title', 'Show {no} full screen, to flag the bus down', { no: svcNo }))}">${escapeHtml(tr('stop.svc.flag', 'Flag'))}</button>` +
             // Just this bus's times again, from wherever down the list it is (refreshService).
-            `<button class="viewRouteBtn svcRefresh" data-refresh-svc="${escapeHtml(svcNo)}" aria-label="Refresh bus ${escapeHtml(svcNo)}" title="Refresh bus ${escapeHtml(svcNo)}'s times">${ico('sync')}</button>` +
+            `<button class="viewRouteBtn svcRefresh" data-refresh-svc="${escapeHtml(svcNo)}" aria-label="${escapeHtml(tr('stop.svc.refresh', 'Refresh bus {no}', { no: svcNo }))}" title="${escapeHtml(tr('stop.svc.refresh.title', 'Refresh bus {no}’s times', { no: svcNo }))}">${ico('sync')}</button>` +
             `</div>` +
             `<div class="etaWrap">${piece(s.next, svcNo)}${piece(s.next2, svcNo)}${piece(s.next3, svcNo)}` +
             // With the Android app's last bus reminder bell (js/reminders.js).
@@ -1276,7 +1279,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     renderStopContext();
     renderStopAside();
     window.MakeIt?.forStop(code);
-    $('#services').innerHTML = '<div class="empty">Loading live arrivals&hellip;</div>';
+    $('#services').innerHTML = `<div class="empty">${escapeHtml(tr('stop.loading', 'Loading live arrivals…'))}</div>`;
     $('#emptySvc').hidden   = true;
     $('#resultCard').hidden = false;
     $('#incomingBar').hidden = true;
@@ -1289,13 +1292,13 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
         lastArrivals = data;
         renderArrivals();
         const n = $$('#services .svc').length;
-        stopSay(n ? `${n} bus${n === 1 ? '' : 'es'} at ${nameOf(code) || `stop ${code}`}` : $('#emptySvc').textContent);
+        stopSay(n ? (n === 1 ? tr('stop.say.one', '1 bus at {stop}', { stop: nameOf(code) || code }) : tr('stop.say.many', '{n} buses at {stop}', { n, stop: nameOf(code) || code })) : $('#emptySvc').textContent);
     } catch (e) {
         if (seq !== loadSeq) return;
         console.error(e);
         lastArrivals = null;
-        $('#services').innerHTML = '<div class="empty">Could not load arrivals. Please try again.</div>';
-        stopSay('Could not load arrivals. Please try again.');
+        $('#services').innerHTML = `<div class="empty">${escapeHtml(tr('stop.failed', 'Could not load arrivals. Please try again.'))}</div>`;
+        stopSay(tr('stop.failed', 'Could not load arrivals. Please try again.'));
     }
 }
 
@@ -2257,8 +2260,17 @@ $('#favListForm').addEventListener('submit', e => {
 });
 
 $('#favsModal').addEventListener('modalclose', () => { favListForm = null; });
-// Another language's words in (js/i18n.js): the parts drawn here are drawn again in them.
-window.addEventListener('langchange', () => renderFavs());
+
+// Settings' Language (js/i18n.js): the one in use pressed; another opens the app again in it.
+$$('#langPick [data-lang]').forEach(btn => {
+    const on = btn.dataset.lang === I18n.lang();
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+});
+$('#langPick').addEventListener('click', e => {
+    const btn = e.target.closest('[data-lang]');
+    if (btn) I18n.set(btn.dataset.lang);
+});
 
 // A tick in Choose what's in it.
 $('#favListPick').addEventListener('change', e => {
