@@ -65,8 +65,8 @@ SSH into the VPS, then:
    with your VPS's user and address in place of `you@your-vps`:
 
    ```powershell
-   scp "you@your-vps:~/sgbus-timings/release/2.2.5/sg-bus-timings-2.2.5-*" release\2.2.5\
-   scp "you@your-vps:~/sgbus-timings/release/2.2.5/latest-linux*.yml" release\2.2.5\
+   scp "you@your-vps:~/sgbus-timings/release/2.2.6/sg-bus-timings-2.2.6-*" release\2.2.6\
+   scp "you@your-vps:~/sgbus-timings/release/2.2.6/latest-linux*.yml" release\2.2.6\
    ```
 
    They then sit beside the Windows `.exe` and `.msi` and the Android `.apk`. See
@@ -81,8 +81,8 @@ don't drift apart.
 The VPS has no screen, so the app can't run there. To check the `.deb` is a sound package:
 
 ```bash
-dpkg-deb --info ~/sgbus-timings/release/2.2.5/sg-bus-timings-2.2.5-amd64.deb
-rpm -qip ~/sgbus-timings/release/2.2.5/sg-bus-timings-2.2.5-x86_64.rpm
+dpkg-deb --info ~/sgbus-timings/release/2.2.6/sg-bus-timings-2.2.6-amd64.deb
+rpm -qip ~/sgbus-timings/release/2.2.6/sg-bus-timings-2.2.6-x86_64.rpm
 ```
 
 ## If something goes wrong
@@ -103,11 +103,11 @@ Most PCs want the x64 files (`amd64`, `x86_64`); an Arm computer, such as a Rasp
 says which: `x86_64` or `aarch64`. There's no 32-bit build: Electron no longer makes one.
 
 - **`.deb`** (Debian, Ubuntu, Mint, Raspberry Pi OS): `sudo apt install
-  ./sg-bus-timings-2.2.5-amd64.deb` (or `-arm64.deb`), then open **SG Bus Timings** from the
+  ./sg-bus-timings-2.2.6-amd64.deb` (or `-arm64.deb`), then open **SG Bus Timings** from the
   app menu. For updates with the rest of the system, add the apt repository below instead.
-- **`.rpm`** (Fedora, openSUSE, RHEL): `sudo dnf install ./sg-bus-timings-2.2.5-x86_64.rpm`
+- **`.rpm`** (Fedora, openSUSE, RHEL): `sudo dnf install ./sg-bus-timings-2.2.6-x86_64.rpm`
   (or `-aarch64.rpm`; `sudo zypper install` on openSUSE).
-- **`.AppImage`** (any distribution): `chmod +x sg-bus-timings-2.2.5-x86_64.AppImage` (or
+- **`.AppImage`** (any distribution): `chmod +x sg-bus-timings-2.2.6-x86_64.AppImage` (or
   `-arm64.AppImage`), then run it. Some need FUSE 2 first: `sudo apt install libfuse2t64` on
   Debian 13 and Ubuntu 24.04 or later, `sudo apt install libfuse2` on older ones.
 

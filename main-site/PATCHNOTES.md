@@ -1,11 +1,40 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 24 October 2026**
+**Latest update: 26 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 26 October 2026: Apps 2.2.6, offline plans and a tidier Settings
+
+### Web app
+
+- **Minimal or Full** - The very first time you open the app, it asks: Minimal keeps to the essentials, with Glance, Service alerts, Your trips and the Edge Tray's optional buttons off; Full has everything. Either can be changed in Settings later. If you've used the app before, it doesn't ask.
+- **Settings in groups** - Settings opens on a list: You, Pages and Edge Tray, Trips and alerts, Navigate, Help and extras, and Sync. Tap one to open it, Back to return to the list. Find a setting at the top searches them all.
+- **Turn pages off** - Glance, Service alerts, Your trips, Card value and Receive nearby can each be turned off in Settings, Pages and Edge Tray. A page that's off leaves the Edge Tray, Custom home and the tour, and syncs to your other devices.
+- **A stop on the way** - Navigate's Bus and train can add one stop between From and To, planning each half on its own. Links, shares and trips carry it.
+- **Bus and train plans offline** - With no connection, Navigate's Bus and train plans on your phone from the bus routes and train lines it has kept, between stops, stations, your location or your places. Its times are estimates, and it plans again when you reconnect.
+- **Offline, the app steps aside** - With no connection, pages that need one step aside and Favourites opens instead; they're all back when you reconnect.
+- **Singapore's map, offline** - Explorer's download button saves the whole map of Singapore, under 50 MB, so it works with no connection. Update map and Remove are on the same panel.
+- **The MRT and LRT lines on Explorer** - The lines are drawn in their colours under the stations and stops.
+- **No location pop-up by itself** - Favourites and Glance never ask you to turn on location on their own; only tapping Nearby or Use my location does.
+
+### Linux command line 2.2.6
+
+- The same version number as the apps.
+
+### Android app 2.2.6
+
+- The web app's changes above.
+- **Get Off Alert in a Bluetooth earpiece** - Its beeps reach an earpiece or hearing aid that only takes calls, and with Earphones only on they're never played out loud.
+
+### Desktop app 2.2.6
+
+- The web app's changes above.
 
 ---
 

@@ -14,8 +14,8 @@ Raspberry Pi, any distribution. No key, no account: the data is the site's own p
 **Debian, Ubuntu, Mint, Raspberry Pi OS** (any architecture):
 
 ```bash
-curl -LO https://github.com/augy-studios/sgbus-timings/releases/latest/download/sg-bus-timings-cli-2.2.5-all.deb
-sudo apt install ./sg-bus-timings-cli-2.2.5-all.deb
+curl -LO https://github.com/augy-studios/sgbus-timings/releases/latest/download/sg-bus-timings-cli-2.2.6-all.deb
+sudo apt install ./sg-bus-timings-cli-2.2.6-all.deb
 ```
 
 Debian 12 and later and Ubuntu 24.04 and later have a new enough Node.js. On Ubuntu 22.04,
