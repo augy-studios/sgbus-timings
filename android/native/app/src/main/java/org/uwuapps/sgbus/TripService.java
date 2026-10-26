@@ -48,6 +48,11 @@ public class TripService extends Service {
     static final String ACTION_END = "org.uwuapps.sgbus.trip.END"; // the notification's End button
     static final String EXTRA_TITLE = "title";
     static final String EXTRA_TEXT = "text";
+    // How the notification looks for the part of the trip you're on (2.2.7, help desk #6):
+    // "bus", "train" or "walk" for its icon, the line's colour ("#009645") and "EW Line".
+    static final String EXTRA_ICON = "icon";
+    static final String EXTRA_COLOR = "color";
+    static final String EXTRA_SUB = "sub";
 
     private static final int NOTIFICATION_ID = 7001;
     // Twenty fixes a second, as fast as the GPS will give them, so the trip follows the bus
@@ -65,6 +70,9 @@ public class TripService extends Service {
     private PowerManager.WakeLock mWake;
     private String mTitle = "On a trip";
     private String mText = "";
+    private String mIcon = null;
+    private Integer mColor = null;
+    private String mSub = null;
 
     private final LocationCallback mCallback = new LocationCallback() {
         @Override
@@ -90,17 +98,19 @@ public class TripService extends Service {
         return sPace;
     }
 
-    static void start(Context context, String title, String text) {
+    static void start(Context context, String title, String text, String icon, String color, String sub) {
         Intent intent = new Intent(context, TripService.class).setAction(sRunning ? ACTION_UPDATE : ACTION_START)
-                .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_TEXT, text);
+                .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_TEXT, text)
+                .putExtra(EXTRA_ICON, icon).putExtra(EXTRA_COLOR, color).putExtra(EXTRA_SUB, sub);
         if (sRunning) context.startService(intent);
         else ContextCompat.startForegroundService(context, intent);
     }
 
-    static void update(Context context, String title, String text) {
+    static void update(Context context, String title, String text, String icon, String color, String sub) {
         if (!sRunning) return;
         context.startService(new Intent(context, TripService.class).setAction(ACTION_UPDATE)
-                .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_TEXT, text));
+                .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_TEXT, text)
+                .putExtra(EXTRA_ICON, icon).putExtra(EXTRA_COLOR, color).putExtra(EXTRA_SUB, sub));
     }
 
     static void stop(Context context) {
@@ -118,6 +128,16 @@ public class TripService extends Service {
         if (intent != null) {
             if (intent.getStringExtra(EXTRA_TITLE) != null) mTitle = intent.getStringExtra(EXTRA_TITLE);
             if (intent.getStringExtra(EXTRA_TEXT) != null) mText = intent.getStringExtra(EXTRA_TEXT);
+            if (intent.getStringExtra(EXTRA_ICON) != null) mIcon = intent.getStringExtra(EXTRA_ICON);
+            if (intent.getStringExtra(EXTRA_SUB) != null) mSub = intent.getStringExtra(EXTRA_SUB);
+            String color = intent.getStringExtra(EXTRA_COLOR);
+            if (color != null) {
+                try {
+                    mColor = android.graphics.Color.parseColor(color);
+                } catch (IllegalArgumentException e) {
+                    mColor = null;
+                }
+            }
         }
         if (!sRunning) {
             // Started with no location permission (it can be taken away in settings mid-trip):
@@ -162,12 +182,24 @@ public class TripService extends Service {
         mWake.acquire(MAX_MS);
     }
 
+    // The icon for the part you're on: the app's own until the page says (an older page never does).
+    private int icon() {
+        if ("train".equals(mIcon)) return R.drawable.ic_trip_train;
+        if ("walk".equals(mIcon)) return R.drawable.ic_trip_walk;
+        if ("bus".equals(mIcon)) return R.drawable.ic_trip_bus;
+        return R.drawable.ic_notification_icon;
+    }
+
     private Notification notification() {
         PendingIntent end = PendingIntent.getService(this, 1,
                 new Intent(this, TripService.class).setAction(ACTION_END),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-        return new NotificationCompat.Builder(this, Notifications.TRIP)
-                .setSmallIcon(R.drawable.ic_notification_icon)
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, Notifications.TRIP);
+        // Tinted the line's colour where Android tints a notification's icon and name.
+        if (mColor != null) builder.setColor(mColor);
+        if (mSub != null && !mSub.isEmpty()) builder.setSubText(mSub);
+        return builder
+                .setSmallIcon(icon())
                 .setContentTitle(mTitle)
                 .setContentText(mText)
                 .setOngoing(true)

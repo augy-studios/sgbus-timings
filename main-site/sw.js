@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v120";
+const VERSION = "v121";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -10,6 +10,11 @@ const ASSETS = [
   "/style.css",
   "/script.js",
   "/js/offline.js",
+  // Languages (js/i18n.js): English is the page's own; another language's file is kept here
+  // once it's added to LANGUAGES there.
+  "/js/i18n.js",
+  // A coffee, asked once every six months (js/donate.js).
+  "/js/donate.js",
   // The first open's choice, Minimal or Full (js/first-run.js).
   "/js/first-run.js",
   "/js/icons.js",

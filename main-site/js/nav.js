@@ -183,6 +183,7 @@ function initNav() {
 // recent picked there comes back as a place, and a saved place or calendar event (with
 // `calendar`) goes to `onSaved` if given, otherwise to `onPick` as a place.
 function attachPlaceSearch(input, box, pick, { recents = false, calendar = false, onSaved = null } = {}) {
+  window.wireCombobox?.(input, box);
   const onPick = (place) => {
     if (recents) Recents.add(Recents.placeItem(place));
     pick(place);
@@ -852,7 +853,16 @@ function navOptionItem(o, i) {
     `</button>`;
 }
 
-const placeName = (p) => (p?.kind === 'station' ? `${p.name} station` : p?.name ? `${p.name}${p.code && p.kind === 'stop' ? ` (${p.code})` : ''}` : '');
+// A station by its own name: OneMap's ways, and navs saved before api/_nav/onemap-check.js
+// named them as the router does, say "PASIR RIS MRT STATION" (help desk #6).
+const STATION_SUFFIX = /\s+(?:MRT|LRT)(?:\s+STATION)?(?:\s*\/\s*(?:MRT|LRT)(?:\s+STATION)?)?\s*$/i;
+function stationName(name) {
+  const s = String(name || '').replace(STATION_SUFFIX, '').trim();
+  return /[a-z]/.test(s) ? s : s.toLowerCase().replace(/(^|[\s(/-])\S/g, (c) => c.toUpperCase());
+}
+const placeName = (p) => (p?.kind === 'station' ? `${stationName(p.name)} station`
+  : STATION_SUFFIX.test(p?.name || '') ? `${stationName(p.name)} station`
+  : p?.name ? `${p.name}${p.code && p.kind === 'stop' ? ` (${p.code})` : ''}` : '');
 // A way's stop on the way by name (fetchWays), and any place on a way, that stop included:
 // the walks to and from it end and start at it (api/_nav/via.js), marked `via`.
 const viaName = (o) => o?.via?.label || nav.via?.label || 'your stop';
@@ -1094,7 +1104,7 @@ function tripFromNav(o, to, from = nav.from) {
       label: l.mode === 'bus' ? `Bus ${l.route}` : `${l.route} ${l.lrt ? 'LRT' : 'Line'}`,
       to: placeName(l.to),
       points: l.path,
-      names: l.names,
+      names: l.mode === 'train' ? (l.names || []).map(stationName) : l.names,
       minutes: l.minutes,
       wait: l.wait,
       walkAfter: 0,

@@ -1,6 +1,8 @@
 // Offline mode (help desk #3): with no connection, the pages and buttons that need one go,
-// Glance, Bus timings and Service alerts (js/main-screen.js) and Explorer, Timings near a stop,
-// Routines and Check for app updates (style.css, data-net-off), and a bar at the top says why.
+// Glance, Bus timings and Service alerts (js/main-screen.js) and Explorer (unless Singapore's
+// map is saved, js/map-save.js), Timings near a stop, Routines, Check for app updates and the
+// trip bar's Share my ETA (style.css, data-net-off; js/share.js makes no short links offline),
+// and a bar at the top says why.
 // Favourites, Navigate (both tabs plan without the network; Bus and train on the phone, with
 // stops, stations and your places for ends, js/nav.js), Your trips, Places and Stops near me
 // stay. Back online, it all comes back, on whatever page is on show.

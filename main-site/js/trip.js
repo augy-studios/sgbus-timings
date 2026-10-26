@@ -557,6 +557,21 @@
     }
   }
 
+  // How the app's trip notification looks for the part you're on (help desk #6): a bus, a train
+  // or walking for its icon, tinted the line's colour on a train (the bus green, a walk blue, as
+  // the live map draws them), and the bus or line next to the app's name. An app from before
+  // 2.2.7 ignores them and keeps its own icon.
+  const NATIVE_COLOURS = { bus: "#1f9d55", walk: "#2f7dff", train: "#7a4fd6" };
+  const LINE_COLOURS = { EW: "#009645", CG: "#009645", NS: "#d42e12", NE: "#9900aa", CC: "#fa9e0d", CE: "#fa9e0d", DT: "#005ec4", TE: "#9d5b25" };
+  function nativeLook() {
+    const leg = trip?.legs[trip.leg];
+    if (!leg) return {};
+    const kind = leg.kind === "train" ? "train" : leg.kind === "walk" ? "walk" : "bus";
+    const line = kind === "train" ? String(leg.route || "").toUpperCase().slice(0, 2) : "";
+    const color = /^#[0-9a-f]{6}$/i.test(leg.color || "") ? leg.color : LINE_COLOURS[line] || (leg.lrt ? "#748477" : NATIVE_COLOURS[kind]);
+    return { icon: kind, color, sub: leg.label || "" };
+  }
+
   // The app's TripService: its fixes come here as the browser's would, screen off or not.
   function followNatively() {
     const asked = trip;
@@ -568,7 +583,7 @@
       AppBridge.on("Trip", "end", () => stop()),
     ];
     nativeText = statusText();
-    AppBridge.call("Trip", "start", { title: trip.title, text: nativeText }).catch((err) => {
+    AppBridge.call("Trip", "start", { title: trip.title, text: nativeText, ...nativeLook() }).catch((err) => {
       if (trip !== asked) return;
       if (err?.code === "permission") {
         trip.noLocation = true;
@@ -2262,16 +2277,24 @@
     btn.rel = "noopener noreferrer";
   }
 
+  let spokenStatus = "";
   function render(message) {
     if (!trip) return;
     const leg = trip.legs[trip.leg];
     $("#tripTitle").textContent = trip.title;
     const status = statusText(message);
     $("#tripStatus").textContent = status;
+    // Said aloud by a screen reader (#tripSay, polite) only when it says something new: a part,
+    // a stop or an alert, not each minute counting down (help desk #6).
+    const said = message ? `!${status}` : status.replace(/\d+(\.\d+)?\s*(min|m|km)\b/g, "");
+    if (said !== spokenStatus) {
+      spokenStatus = said;
+      $("#tripSay").textContent = status;
+    }
     // The app's notification says the same, when it's changed.
     if (nativeSubs && status !== nativeText) {
       nativeText = status;
-      AppBridge.call("Trip", "update", { title: trip.title, text: status }).catch(() => {});
+      AppBridge.call("Trip", "update", { title: trip.title, text: status, ...nativeLook() }).catch(() => {});
     }
     needRoutes();
     const notes = [];
@@ -2506,6 +2529,33 @@
     const h = shown ? Math.max(0, window.innerHeight - bar.getBoundingClientRect().top) : 0;
     document.documentElement.style.setProperty("--trip-h", `${Math.round(h)}px`);
   }
+  // The phone's keyboard up (help desk #6): typing in a search box or Navigate's ends on a trip,
+  // the bar shrinks to its one line, the trip and where you're at, so the page above has the
+  // room (style.css, data-keyboard). Up is a text field focused and the screen this much
+  // shorter than it is without one: the app's WebView shrinks the window for its keyboard, and
+  // Chrome its visual viewport.
+  const KEYBOARD_PX = 120;
+  let tallest = 0;
+  let wide = 0;
+  const typingIn = (el) => !!el && (el.isContentEditable || el.tagName === "TEXTAREA" ||
+    (el.tagName === "INPUT" && !/^(button|checkbox|radio|range|color|file|submit|reset|image|hidden)$/i.test(el.type || "")));
+  function fitKeyboard() {
+    const h = window.visualViewport?.height ?? window.innerHeight;
+    // A turn of the phone starts the count again.
+    if (window.innerWidth !== wide) { wide = window.innerWidth; tallest = 0; }
+    const typing = typingIn(document.activeElement);
+    if (!typing) tallest = Math.max(tallest, h);
+    const up = typing && tallest - h > KEYBOARD_PX;
+    if (up === document.documentElement.hasAttribute("data-keyboard")) return;
+    document.documentElement.toggleAttribute("data-keyboard", up);
+    fitTray();
+  }
+  window.visualViewport?.addEventListener("resize", fitKeyboard);
+  window.addEventListener("resize", fitKeyboard);
+  document.addEventListener("focusin", () => setTimeout(fitKeyboard, 0));
+  document.addEventListener("focusout", () => setTimeout(fitKeyboard, 0));
+  fitKeyboard();
+
   if ("ResizeObserver" in window) new ResizeObserver(fitTray).observe($("#tripBar"));
   new MutationObserver(fitTray).observe($("#tripBar"), { attributes: true, attributeFilter: ["class"] });
   window.addEventListener("resize", fitTray);

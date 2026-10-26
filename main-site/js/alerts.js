@@ -179,8 +179,10 @@
   function yours(n) {
     // script.js's LS, a top-level const rather than a property of window.
     const ls = typeof LS === "undefined" ? null : LS; // eslint-disable-line no-undef
-    const stops = new Set((ls?.getFavs() || []).map((s) => s.code));
-    const buses = new Set((ls?.getFavBuses() || []).map((b) => String(b).toUpperCase()));
+    // A bus starred at a stop (help desk #6) counts as both.
+    const atStops = ls?.getFavStopBuses?.() || [];
+    const stops = new Set([...(ls?.getFavs() || []).map((s) => s.code), ...atStops.map((b) => b.code)]);
+    const buses = new Set([...(ls?.getFavBuses() || []), ...atStops.map((b) => b.service)].map((b) => String(b).toUpperCase()));
     const myStops = [...new Set([...(n.codes || []), ...Object.keys(n.stops || {})])].filter((c) => stops.has(c));
     const myBuses = (n.services || []).filter((s) => buses.has(s));
     return { myStops, myBuses };

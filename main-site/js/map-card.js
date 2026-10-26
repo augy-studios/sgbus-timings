@@ -78,7 +78,9 @@
     card.addEventListener('click', (e) => {
       const timings = e.target.closest('[data-mc-timings]');
       if (e.target.closest('[data-mc-close]')) close();
-      else if (timings) host.onTimings?.(timings.dataset.mcTimings, timings.dataset.mcBus || null);
+      // Offline, Bus timings is away (js/offline.js), so a tap stays on the map: Explorer opens
+      // offline once the map's saved (js/map-save.js), and its Show bus timings is hidden then.
+      else if (timings) { if (!window.Offline?.on()) host.onTimings?.(timings.dataset.mcTimings, timings.dataset.mcBus || null); }
       else if (e.target.closest('[data-mc-go]')) go();
     });
     host.panel.appendChild(card);

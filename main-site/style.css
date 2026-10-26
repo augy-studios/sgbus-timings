@@ -31,6 +31,13 @@ button {
 }
 button:disabled { cursor: not-allowed; opacity: 0.6; }
 
+/* Where the keyboard is (help desk #6): a ring the glass buttons don't swallow. A window or
+   panel given the focus as it opens (js/ui.js, focusInto) shows none for that. */
+:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+[tabindex="-1"]:focus:not(:focus-visible), [role="dialog"][tabindex="-1"]:focus { outline: none; }
+/* A stop's name and code can be pressed and held to copy them. */
+.stopName, #stopCode, .svcNo, .chip .name, .chip .code { -webkit-user-select: text; user-select: text; }
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -79,7 +86,8 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     --surface-strong: rgba(255, 255, 255, 0.11);
     --surface-border: rgba(255, 255, 255, 0.14);
     --ink: #eef2ef;
-    --muted: #9aa7a0;
+    /* At least 4.5:1 on a strong surface over the page (help desk #6: #9aa7a0 was about 4.4:1). */
+    --muted: #a9b5ae;
     --shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
     --brand-ink: #bff5cf;
     --ok: #4ade80;
@@ -530,14 +538,19 @@ body.modal-open { overflow: hidden; }
 :root[data-pages-off~="alerts"] #alertsBtn,
 :root[data-pages-off~="trips"] #tripsBtn { display: none !important; }
 /* Offline (js/offline.js, data-net-off, set before first paint too): the pages and buttons that
-   need the network, left as Settings has them for when it's back. */
+   need the network, left as Settings has them for when it's back. Explorer stays once
+   Singapore's map is saved for offline (js/map-save.js, data-map-saved, set before first paint
+   too), and the trip bar's Share my ETA goes, as live progress needs the network. */
 :root[data-net-off] #glanceBtn,
 :root[data-net-off] #timingsBtn,
 :root[data-net-off] #alertsBtn,
-:root[data-net-off] #explorerBtn,
+:root[data-net-off]:not([data-map-saved]) #explorerBtn,
 :root[data-net-off] #nearStopsTrayBtn,
 :root[data-net-off] #routinesTrayBtn,
-:root[data-net-off] #appUpdateBtn { display: none !important; }
+:root[data-net-off] #appUpdateBtn,
+:root[data-net-off] #tripShare,
+:root[data-net-off] .mapCard .mcGo[data-mc-timings] { display: none !important; }
+
 /* And on the pages that stay, where they need it: Navigate's Bus and train, and Favourites'
    stops (index.html). */
 .offlineNote { display: none; }
@@ -870,9 +883,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .acItem:last-child  { border-radius: 0 0 14px 14px; }
 .acItem:only-child  { border-radius: 14px; }
 
-.acItem:hover {
+.acItem:hover,
+.acItem.acActive {
     background: var(--brand-fill);
 }
+.acItem.acActive { outline: 2px solid var(--brand-ink); outline-offset: -2px; }
 
 .acItem .code {
     font-weight: 700;
@@ -896,9 +911,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .acItem .name .road {
-    opacity: 0.65;
+    /* A colour of its own rather than faded, which was under 3:1 (help desk #6). */
+    color: var(--muted);
     font-size: 12px;
 }
+.acItem:hover .name .road, .acItem.acActive .name .road { color: var(--on-brand); }
 
 /* A suggestion with a bus straight to the other end of a planned route, as in the stop list. */
 .acItem.direct { background: color-mix(in srgb, var(--ok) 14%, transparent); }
@@ -929,6 +946,26 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 /* ===== Favourites, in their own window (#favsModal) ===== */
+/* Its lists (script.js, renderFavLists): a row of tabs that scrolls sideways, then New list. */
+.favListBar { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+.favListTabs {
+    display: flex; gap: 8px; flex: 1 1 auto; min-width: 0;
+    overflow-x: auto; scrollbar-width: none; padding: 2px;
+}
+.favListTabs::-webkit-scrollbar { display: none; }
+.favListTabs .tab { flex: none; white-space: nowrap; max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
+.favListNew { flex: none; }
+.favListNew .ico svg, .favListTools .ico svg { width: 15px; height: 15px; }
+.favListTools { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.favListTools [aria-pressed="true"] { background: var(--brand-fill); color: var(--on-brand); }
+.favListForm { margin: 0 0 12px; }
+.favListForm label { display: block; font-size: 0.85rem; color: var(--muted-strong); margin: 0 2px 6px; }
+.favListFormRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.favListFormRow .input { flex: 1 1 12em; min-width: 0; }
+.favListFormError { margin: 6px 2px 0; font-size: 0.85rem; color: var(--error); }
+.favListPick { margin: 0 0 8px; }
+.favListDone { margin-top: 10px; }
+
 .favChips {
     display: flex;
     flex-wrap: wrap;
@@ -1266,6 +1303,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .iconBtn:active {
     transform: translateY(1px);
 }
+
+/* A bus's star at a stop (script.js, data-fav-stopbus-at): that bus here in Favourites. */
+.svcStar .ico svg { width: 14px; height: 14px; }
+.svcStar[aria-pressed="true"] { color: var(--brand-ink); }
+.svcStar[aria-pressed="true"] svg { fill: currentColor; }
 
 .viewRouteBtn {
     border: 1px solid var(--surface-border);
@@ -2277,12 +2319,19 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     font-size: 14px;
 }
 
+/* Read by a screen reader, not shown: clipped in place rather than moved off the screen, which
+   TalkBack's explore by touch can scroll after (help desk #6). */
 .sr {
     position: absolute;
-    left: -9999px;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
     overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* ===== Responsive ===== */
@@ -2516,6 +2565,22 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     .tripText { flex-basis: calc(100% - 72px); }
     #tripMap { margin-left: auto; }
 }
+
+/* The phone's keyboard up (js/trip.js, data-keyboard): the bar is just its one line, the
+   trip and where you're at, so what's being typed and its suggestions have the screen. Tapped,
+   or the keyboard put away, it's all back. */
+:root[data-keyboard] .tripBar .tripDrawer,
+:root[data-keyboard] .tripBar .tripWarn,
+:root[data-keyboard] .tripBar .tripTraffic,
+:root[data-keyboard] .tripBar .tripFaster,
+:root[data-keyboard] .tripBar .tripChange,
+:root[data-keyboard] .tripBar .tripNote,
+:root[data-keyboard] .tripBarInner > :not(.tripText):not(.tripIcon) { display: none !important; }
+:root[data-keyboard] .tripBarInner { flex-wrap: nowrap; padding: 6px 12px; gap: 8px; }
+:root[data-keyboard] .tripText { flex-basis: auto; flex-direction: row; gap: 6px; align-items: baseline; }
+:root[data-keyboard] .tripText > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-keyboard] .tripText strong { flex: 0 1 auto; max-width: 50%; }
+:root[data-keyboard] .tripIcon svg { width: 18px; height: 18px; }
 
 /* The drawer the timeline slides out of. Its one grid row grows from 0fr to 1fr, which
    animates to the timeline's own height; the bar is pinned to the bottom, so it opens
@@ -3682,7 +3747,7 @@ body.touring { overflow: hidden; }
 }
 .mcArrow[hidden] { visibility: hidden; display: inline-flex; }
 .mcArrow svg { width: 18px; height: 18px; }
-.mcSlide { min-width: 0; display: flex; flex-direction: column; gap: 10px; touch-action: pan-y; }
+.mcSlide { min-width: 0; display: flex; flex-direction: column; gap: 10px; touch-action: pan-y pinch-zoom; }
 .mcSlide.fromRight { animation: mcSlideIn 0.22s ease-out; --from: 24px; }
 .mcSlide.fromLeft { animation: mcSlideIn 0.22s ease-out; --from: -24px; }
 @keyframes mcSlideIn {

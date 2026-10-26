@@ -47,6 +47,8 @@
             // Keep the keys in step with OFF_KEY in js/main-screen.js and js/glance.js.
             var pagesOff = (localStorage.getItem("sgbus_glance_off") === "1" ? "glance " : "") + (localStorage.getItem("sgbus_pages_off") || "");
             if (pagesOff.trim()) document.documentElement.setAttribute("data-pages-off", pagesOff.trim());
+            // Singapore's map saved for offline (js/map-save.js, META_KEY): Explorer stays offline.
+            if (localStorage.getItem("sgbus_map_saved")) document.documentElement.setAttribute("data-map-saved", "");
         } catch (e) { /* the tray opens on the right */ }
         // Offline as the page opens, so the tabs that need the network don't show for a moment
         // first (js/offline.js, which keeps it after this, and style.css).
@@ -132,39 +134,39 @@
          settings, as glass buttons fixed at the top corner of the screen. Slides off its side,
          leaving the arrow tab; Settings picks the side (script.js, "The Edge Tray"). -->
     <div class="hud">
-        <div id="tray" class="tray">
+        <div id="tray" class="tray" role="navigation" aria-label="Edge Tray">
             <button id="trayTab" class="tray-tab" type="button" aria-controls="trayButtons" aria-expanded="true" aria-label="Hide the Edge Tray" title="Hide the Edge Tray">
                 <span data-icon="chevron"></span>
             </button>
             <div id="trayButtons" class="tray-buttons">
                 <!-- The app's pages, as tabs, Settings' Custom home first (js/main-screen.js moves
                      the buttons below in) -->
-                <nav id="trayViews" class="tray-views" role="tablist" aria-label="Pages" aria-orientation="vertical"></nav>
+                <div id="trayViews" class="tray-views" role="tablist" aria-label="Pages" aria-orientation="vertical"></div>
                 <span class="tray-rule" aria-hidden="true"></span>
-                <button id="glanceBtn" class="glass-btn" type="button" aria-label="Glance" title="Glance: your next bus, and your stops' buses"><span data-icon="eye"></span></button>
-                <button id="timingsBtn" class="glass-btn" type="button" aria-label="Bus timings" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
+                <button id="glanceBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.glance" aria-label="Glance" data-i18n-title="tray.glance.title" title="Glance: your next bus, and your stops' buses"><span data-icon="eye"></span></button>
+                <button id="timingsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.timings" aria-label="Bus timings" data-i18n-title="tray.timings.title" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
-                <button id="nearMeBtn" class="glass-btn" type="button" aria-label="Stops near me" title="Stops near me"><span data-icon="pin"></span></button>
+                <button id="nearMeBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.nearMe" aria-label="Stops near me" data-i18n-title="tray.nearMe.title" title="Stops near me"><span data-icon="pin"></span></button>
                 <!-- Explorer: the live map with every stop and station to tap (js/map.js); can be
                      turned off in Settings, Edge Tray buttons -->
-                <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" aria-label="Explorer" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
-                <button id="navBtn" class="glass-btn" type="button" aria-label="Navigate" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
-                <button id="alertsBtn" class="glass-btn" type="button" aria-label="Service alerts" title="Service alerts"><span data-icon="bell"></span></button>
-                <button id="tripsBtn" class="glass-btn" type="button" aria-label="Your trips and stats" title="Your trips and stats"><span data-icon="chart"></span></button>
-                <button id="placesBtn" class="glass-btn" type="button" aria-label="Places" title="Places"><span data-icon="bookmark"></span></button>
+                <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" data-i18n-aria-label="tray.explorer" aria-label="Explorer" data-i18n-title="tray.explorer.title" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
+                <button id="navBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.navigate" aria-label="Navigate" data-i18n-title="tray.navigate.title" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
+                <button id="alertsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.alerts" aria-label="Service alerts" data-i18n-title="tray.alerts.title" title="Service alerts"><span data-icon="bell"></span></button>
+                <button id="tripsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.trips" aria-label="Your trips and stats" data-i18n-title="tray.trips.title" title="Your trips and stats"><span data-icon="chart"></span></button>
+                <button id="placesBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.places" aria-label="Places" data-i18n-title="tray.places.title" title="Places"><span data-icon="bookmark"></span></button>
                 <span class="tray-rule" aria-hidden="true"></span>
                 <!-- The Android app's Timings near a stop (2.1.0) and Routines (2.2.0), where it has
                      them (js/reminders.js). Either can be turned off in Settings, Edge Tray buttons -->
-                <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Timings near a stop" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="clock"></span></button>
-                <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Routines" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="alarm"></span></button>
+                <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.nearStops" aria-label="Timings near a stop" data-i18n-title="tray.nearStops.title" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="clock"></span></button>
+                <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.routines" aria-label="Routines" data-i18n-title="tray.routines.title" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="alarm"></span></button>
                 <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js).
                      Can be turned off in Settings, Edge Tray buttons, as can Receive nearby -->
-                <button id="cardBtn" data-tray-extra="card" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
+                <button id="cardBtn" data-tray-extra="card" class="glass-btn" type="button" data-i18n-aria-label="tray.card" aria-label="Card value" data-i18n-title="tray.card.title" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
                 <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.1.0
                      with Google Play services only (js/offline-share.js) -->
-                <button id="receiveBtn" data-tray-extra="receive" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
+                <button id="receiveBtn" data-tray-extra="receive" class="glass-btn" type="button" data-i18n-aria-label="tray.receive" aria-label="Receive nearby" data-i18n-title="tray.receive.title" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
                 <!-- Check for updates: the Android app from 2.0.8 only (js/app-update.js) -->
-                <a id="appUpdateBtn" href="#" class="glass-btn" aria-label="Check for app updates" title="Check for app updates" hidden><span data-icon="download"></span></a>
+                <a id="appUpdateBtn" href="#" class="glass-btn" data-i18n-aria-label="tray.appUpdate" aria-label="Check for app updates" data-i18n-title="tray.appUpdate.title" title="Check for app updates" hidden><span data-icon="download"></span></a>
                 <!-- SimplyGo, for card balances and top-ups: phones only (script.js, "SimplyGo") -->
                 <!-- These four can each be turned off in Settings, Edge Tray buttons (data-tray-extra) -->
                 <a id="simplyGoBtn" data-tray-extra="simplygo" href="https://apps.apple.com/sg/app/simplygo/id667933103" target="_blank" rel="noopener noreferrer" class="glass-btn appIconBtn" aria-label="Open SimplyGo" title="Open SimplyGo: card balance, top-ups and travel history" hidden>
@@ -189,7 +191,7 @@
         </div>
     </div>
 
-    <div class="container">
+    <div class="container" role="main">
         <!-- The greeting, at the top of the page and scrolling with it, as sg-psi's brand line -->
         <div class="brand" id="titleBtn" title="Tap for settings: your name, birthday and favourites">
             <img class="logo" src="/sgbusicon1.png" alt="" aria-hidden="true" width="44" height="44">
@@ -212,7 +214,7 @@
                 <span id="glanceUpdated" class="glanceUpdated"></span>
                 <div id="glanceMenu" class="glanceMenu glass" role="menu" hidden></div>
             </div>
-            <div id="glanceHero" class="glanceHero card glass" aria-live="polite"></div>
+            <div id="glanceHero" class="glanceHero card glass"></div>
         </section>
 
         <!-- Search / Input -->
@@ -503,6 +505,7 @@
                 <div class="cardBody">
                     <div id="services" class="services"></div>
                     <div id="emptySvc" class="empty" hidden>No live buses right now.</div>
+                    <p id="stopSay" class="sr" role="status"></p>
                 </div>
             </div>
         </section>
@@ -523,11 +526,11 @@
             </div>
             <div class="modalBody">
                 <div id="svcMeta" class="svcMeta"></div>
-                <div id="svcModeTabs" class="dirTabs" hidden>
+                <div id="svcModeTabs" class="dirTabs" role="group" aria-label="Show" hidden>
                     <button class="tab" type="button" data-svc-mode="whole">Whole route</button>
                     <button class="tab" type="button" data-svc-mode="onward">From this stop</button>
                 </div>
-                <div id="svcDirTabs" class="dirTabs"></div>
+                <div id="svcDirTabs" class="dirTabs" role="group" aria-label="Direction"></div>
                 <div id="svcNote" class="svcNote" hidden></div>
                 <p id="getOffPickNote" class="svcNote getOffPickNote" role="status" hidden>Tap the stop you're getting off at. Keep the site open on the bus, and it alerts you two stops before.</p>
                 <div id="routeList" class="routeList"></div>
@@ -566,27 +569,49 @@
     <div id="favsModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="favsTitle">
             <div class="modal-head">
-                <h2 id="favsTitle">Favourites</h2>
+                <h2 id="favsTitle" data-i18n="favs.title">Favourites</h2>
                 <button class="icon-btn small" type="button" data-close-modal="favsModal" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
             <!-- Offline only (style.css, data-net-off: js/offline.js) -->
-            <p class="offlineNote">You&rsquo;re offline. A stop&rsquo;s timings come back when you reconnect; a bus&rsquo;s route and your bus-only routes open without a connection.</p>
+            <p class="offlineNote" data-i18n="favs.offline">You&rsquo;re offline. A stop&rsquo;s timings come back when you reconnect; a bus&rsquo;s route and your bus-only routes open without a connection.</p>
+            <!-- Lists (script.js, renderFavLists): Favourites, which has every favourite and can't
+                 be deleted, then the lists you've made of some of them. -->
+            <div class="favListBar">
+                <div id="favListTabs" class="favListTabs" role="tablist" aria-label="Your lists" data-i18n-aria-label="favs.lists.label"></div>
+                <button id="favListNew" class="iconBtn favListNew" type="button" data-fav-list-new title="Make a list of some of your favourites" data-i18n-title="favs.lists.new.title"><span data-icon="plus"></span> <span data-i18n="favs.lists.new">New list</span></button>
+            </div>
+            <div id="favListTools" class="favListTools" hidden></div>
+            <form id="favListForm" class="favListForm" hidden>
+                <label id="favListFormLabel" for="favListName">Name the new list</label>
+                <div class="favListFormRow">
+                    <input id="favListName" class="input" type="text" autocomplete="off" enterkeyhint="done" placeholder="Work, School, Weekends…" data-i18n-placeholder="favs.lists.name.placeholder" aria-describedby="favListFormError" />
+                    <button class="btn" type="submit" data-i18n="common.save">Save</button>
+                    <button class="iconBtn" type="button" data-fav-list-cancel data-i18n="common.cancel">Cancel</button>
+                </div>
+                <p id="favListFormError" class="favListFormError" role="alert" hidden></p>
+            </form>
+            <div id="favListPick" class="favListPick" hidden></div>
             <div id="favStopsGroup" class="favGroup">
-                <div class="favGroupLabel">Bus stops</div>
+                <div class="favGroupLabel" data-i18n="favs.group.stops">Bus stops</div>
                 <div id="favChips" class="favChips"></div>
             </div>
             <div id="favBusesGroup" class="favGroup">
-                <div class="favGroupLabel">Buses</div>
+                <div class="favGroupLabel" data-i18n="favs.group.buses">Buses</div>
                 <div id="favBusChips" class="favChips"></div>
             </div>
+            <!-- A bus at a stop, starred on the stop's timings (script.js, toggleFavStopBus) -->
+            <div id="favStopBusesGroup" class="favGroup">
+                <div class="favGroupLabel" data-i18n="favs.group.stopBuses">Buses at stops</div>
+                <div id="favStopBusChips" class="favChips"></div>
+            </div>
             <div id="favRoutesGroup" class="favGroup">
-                <div class="favGroupLabel">Bus-only routes</div>
+                <div class="favGroupLabel" data-i18n="favs.group.routes">Bus-only routes</div>
                 <div id="favRouteChips" class="favChips"></div>
             </div>
             <div id="favNavsGroup" class="favGroup">
-                <div class="favGroupLabel">Navs</div>
+                <div class="favGroupLabel" data-i18n="favs.group.navs">Navs</div>
                 <div id="favNavChips" class="favChips"></div>
             </div>
             <div id="favEmpty" class="empty">No favourites yet. Star a stop&rsquo;s timings, a bus on its route, or a nav (bus and train, or bus only).</div>
@@ -1096,7 +1121,7 @@
                 <button id="boardClose" class="flagBtn" type="button"><span data-icon="close"></span> Close</button></div>
         </div>
         <div class="boardRow boardLabels" aria-hidden="true"><span>Bus</span><span>To</span><span>Next</span><span>Then</span><span>Then</span></div>
-        <div id="boardRows" class="boardRows" role="status" aria-live="polite"></div>
+        <div id="boardRows" class="boardRows"></div>
         <div class="boardFoot"><span id="boardNote"></span><span>Minutes · <span class="load-ok">seats</span> · <span class="load-warn">standing</span> · <span class="load-busy">full</span></span><span id="boardPage"></span></div>
     </div>
 
@@ -1124,7 +1149,7 @@
             <span class="tripIcon" data-icon="bus"></span>
             <button id="tripToggle" class="tripText" type="button" aria-expanded="false" aria-controls="tripTimeline" title="Show the stops ahead">
                 <strong id="tripTitle"></strong>
-                <span id="tripStatus" role="status" aria-live="assertive"></span>
+                <span id="tripStatus"></span>
                 <span id="tripNote" class="tripNote" hidden></span>
             </button>
             <span class="tripChevron" data-icon="chevron" aria-hidden="true"></span>
@@ -1136,6 +1161,25 @@
             <button id="tripPrev" class="iconBtn" type="button" title="Back to the part before" aria-label="Back to the part before" hidden>Back</button>
             <button id="tripNext" class="iconBtn" type="button" title="On to the next part" aria-label="On to the next part" hidden>Next</button>
             <button id="tripEnd" class="iconBtn" type="button" title="End the trip">End trip</button>
+        </div>
+        <!-- What a screen reader says of the trip: only when it changes (js/trip.js, render) -->
+        <p id="tripSay" class="sr" aria-live="polite"></p>
+    </div>
+
+    <!-- A coffee, asked once every six months: js/donate.js. The link is the Edge Tray's. -->
+    <div id="donateModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="donateTitle" aria-describedby="donateText">
+            <div class="modal-head">
+                <h2 id="donateTitle">Buy Augy a Coffee?</h2>
+                <button class="icon-btn small" type="button" data-close-modal="donateModal" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <p id="donateText" class="mode-note donateText">SG Bus Timings is free, with no ads. If it&rsquo;s helped you get around, a coffee helps keep it going. You&rsquo;ll only be asked about once every six months.</p>
+            <div class="tripActions">
+                <a id="donateGo" class="btn" href="#" target="_blank" rel="noopener noreferrer">Buy Augy a Coffee</a>
+                <button id="donateLater" class="iconBtn" type="button">Not now</button>
+            </div>
         </div>
     </div>
 
@@ -1186,6 +1230,8 @@
 
     <!-- First, so it sees every fetch (js/offline.js) -->
     <script src="/js/offline.js"></script>
+    <!-- Languages: i18n/<lang>.json, English until another is added (js/i18n.js) -->
+    <script src="/js/i18n.js"></script>
     <!-- Next, so it sees storage before anything writes to it (js/first-run.js) -->
     <script src="/js/first-run.js"></script>
     <script src="/js/app-bridge.js"></script>
@@ -1238,6 +1284,7 @@
     <script src="/script.js"></script>
     <script src="/js/sw-update.js"></script>
     <script src="/js/app-update.js"></script>
+    <script src="/js/donate.js"></script>
 </body>
 
 </html>

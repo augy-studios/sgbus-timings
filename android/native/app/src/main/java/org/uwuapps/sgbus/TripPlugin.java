@@ -143,13 +143,15 @@ public class TripPlugin extends Plugin {
                 // A phone without the screen: nothing to ask.
             }
         }
-        TripService.start(getContext(), call.getString("title", "On a trip"), call.getString("text", ""));
+        TripService.start(getContext(), call.getString("title", "On a trip"), call.getString("text", ""),
+                call.getString("icon"), call.getString("color"), call.getString("sub"));
         call.resolve(status());
     }
 
     @PluginMethod
     public void update(PluginCall call) {
-        TripService.update(getContext(), call.getString("title", "On a trip"), call.getString("text", ""));
+        TripService.update(getContext(), call.getString("title", "On a trip"), call.getString("text", ""),
+                call.getString("icon"), call.getString("color"), call.getString("sub"));
         call.resolve();
     }
 

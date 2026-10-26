@@ -211,7 +211,21 @@
       btn.setAttribute('role', 'tab');
       btn.removeAttribute('aria-haspopup');
       btn.hidden = false;
-      for (const id of part.els || []) $(id).classList.add('docked');
+      // A page, not a window over one (help desk #6): no aria-modal, which would hide the Edge
+      // Tray from a screen reader, but its tab's panel, keeping its own name (or its tab's).
+      const panels = [];
+      for (const id of part.els || []) {
+        const el = $(id);
+        el.classList.add('docked');
+        const box = el.matches('[role="dialog"]') ? el : el.querySelector('[role="dialog"]');
+        if (!box) continue;
+        box.removeAttribute('aria-modal');
+        box.setAttribute('role', 'tabpanel');
+        if (!box.hasAttribute('aria-label') && !box.hasAttribute('aria-labelledby')) box.setAttribute('aria-labelledby', part.btn);
+        if (!box.id) box.id = `${id}Panel`;
+        panels.push(box.id);
+      }
+      if (panels.length) btn.setAttribute('aria-controls', panels.join(' '));
     }
     window.addEventListener('glancechange', changed);
     window.Offline?.onChange(netChanged);
