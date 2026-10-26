@@ -41,8 +41,8 @@ in the background. While it runs, an **On a trip** notification shows where you
 are on it, with **End trip** to stop it, and the Get Off Alert sounds and buzzes
 over the lock screen. The screen doesn't have to stay on.
 
-From version 2.2.7, the notification's icon shows what you're on: a bus, a train
-in its line's colour, or walking, with the bus or line beside the app's name.
+The notification's icon shows what you're on: a bus, a train in its line's
+colour, or walking, with the bus or line beside the app's name.
 
 The app also goes by how fast you're moving to tell walking
 from riding, as your steps can't be counted with the screen off. Up to about
@@ -63,10 +63,10 @@ Never out loud on a quiet bus.
 
 ## Back, and the size of the text
 
-From version 2.2.7, **Back** closes whatever's open, then says **Press back again
-to exit**; a second press within two seconds leaves the app, from any page. The
-app's text also follows your phone's font size (**Settings**, **Display**, **Font
-size**), changed while the app's away or not.
+**Back** closes whatever's open, then says **Press back again to exit**; a second
+press within two seconds leaves the app, from any page. The app's text also
+follows your phone's font size (**Settings**, **Display**, **Font size**),
+changed while the app's away or not.
 
 ## Card value
 

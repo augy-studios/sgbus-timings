@@ -9,7 +9,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 27 October 2026: buses at stops, lists, four languages, and a secret
+## 27 October 2026: Apps 2.2.7, buses at stops, lists, four languages, and a secret
 
 ### Web app
 
@@ -22,16 +22,25 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **No sharing your ETA offline** - With no connection, Share my ETA leaves the trip bar, as live progress needs one. Offline Sharing still sends a place or directions to a phone nearby.
 - **Room to type on a trip** - With the keyboard up, the trip bar shrinks to one line, so you can see what you're typing and its suggestions.
 - **Station names, tidied** - Ways from OneMap say "Pasir Ris station", not "PASIR RIS MRT STATION".
-- **Easier with a screen reader** - Windows take the focus when they open and give it back when they close, and Esc closes them. Bus timings read out how full a bus is and when a time is an estimate. Search suggestions can be picked with the arrow keys and say how many there are. The trip bar no longer interrupts every minute, and the Settings switches say what they're for. Pages have proper headings.
-- **Bigger text** - Text follows your browser's text size, small buttons are easier to tap, and the departures board's rows grow with the text. With Remove animations on, the page and the map jump rather than glide.
+- **Easier with a screen reader** - Windows take the focus when they open and give it back when they close, and Esc closes them. Bus timings read out how full a bus is and when a time is an estimate. Search suggestions can be picked with the arrow keys and say how many there are. The trip bar no longer interrupts every minute, and the Settings switches say what they're for. Pages have proper headings, and with a keyboard a clear ring shows where you are.
+- **Bigger text** - Text follows your browser's text size, small buttons are easier to tap, and the departures board's rows grow with the text. Stop and station cards on the map can be pinched to zoom. With your phone or computer set to reduce motion (Remove animations on Android), the page and the map jump rather than glide.
+- **Copy a stop's name or code** - Press and hold a stop's name, its code or a bus number to copy it.
 - **Love SG Bus Timings?** - About once every six months, a small window asks if you'd consider donating. Not in your first two weeks, never on a trip or offline, and never if you've turned the coffee button off in Settings.
 
-### Android app (next update)
+### Linux command line 2.2.7
+
+- The same version number as the apps.
+
+### Android app 2.2.7
 
 - The web app's changes above.
 - **The trip notification shows where you are** - Its icon is a bus, a train or walking for the part you're on, in the train line's colour, with the bus or line beside the app's name.
 - **Press back twice to exit** - With nothing open, Back says "Press back again to exit" on any page, and a second press leaves the app.
 - **Your font size** - The app's text follows your phone's font size.
+
+### Desktop app 2.2.7
+
+- The web app's changes above.
 
 ---
 

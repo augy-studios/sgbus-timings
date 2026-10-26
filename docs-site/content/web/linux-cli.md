@@ -15,11 +15,11 @@ Ubuntu 22.04, install Node.js 20 from [NodeSource](https://github.com/nodesource
 first.
 
 **Debian, Ubuntu, Mint, Raspberry Pi OS**: download
-`sg-bus-timings-cli-2.2.6-all.deb` from the
+`sg-bus-timings-cli-2.2.7-all.deb` from the
 [latest release](https://github.com/augy-studios/sgbus-timings/releases/latest), then:
 
 ```bash
-sudo apt install ./sg-bus-timings-cli-2.2.6-all.deb
+sudo apt install ./sg-bus-timings-cli-2.2.7-all.deb
 ```
 
 **Any other Linux**, or without `sudo`: it's one file.

@@ -99,15 +99,14 @@ the weather, a bus's route, and the list of stops near you.
 
 ### Going back
 
-**Back** (the Android app's back button, your browser's, or Telegram's) closes
-the window that's open, then goes back to the page you were on before, one
-step at a time. Only once you're back where you started, with nothing open,
-does it leave the app. A window's **X**, or a tap outside it, still closes it
-too.
+**Back** (your browser's, or Telegram's) closes the window that's open, then
+goes back to the page you were on before, one step at a time. Only once you're
+back where you started, with nothing open, does it leave the app. A window's
+**X**, or a tap outside it, still closes it too.
 
-In the Android app from version 2.2.7, Back closes what's open and then, on
-whichever page you're on, says **Press back again to exit**: press it again
-within two seconds to leave the app. It no longer steps back through the pages.
+In the Android app, Back closes what's open and then, on whichever page you're
+on, says **Press back again to exit**: press it again within two seconds to
+leave the app.
 
 ## Custom home
 
