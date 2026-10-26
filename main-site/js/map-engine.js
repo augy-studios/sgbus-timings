@@ -32,6 +32,9 @@
 // same scale, and this turns them.
 // Plain script: exports go on window.
 (function () {
+  // Reduced motion (help desk #6): the map jumps rather than glides.
+  const still = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
   const ML_JS = '/vendor/maplibre-4.7.1/maplibre-gl.js';
   const ML_CSS = '/vendor/maplibre-4.7.1/maplibre-gl.css';
   const LEAFLET_JS = '/vendor/leaflet/leaflet.js';
@@ -456,7 +459,7 @@
         map.getSource('sg-rail')?.setData(railData);
       },
       setView(at, z, animate = false) {
-        map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate ? 500 : 0 });
+        map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate && !still() ? 500 : 0 });
       },
       // Straight there, flat and north up, however it was left; without `at`, only flat and
       // north up.
@@ -464,13 +467,13 @@
         map.stop();
         map.jumpTo({ ...(at && { center: ll(at), zoom: toGl(z) }), bearing: 0, pitch: 0 });
       },
-      panTo(at, ms) { map.easeTo({ center: ll(at), duration: ms }); },
+      panTo(at, ms) { map.easeTo({ center: ll(at), duration: still() ? 0 : ms }); },
       // The whole of `pts`, flat and north up, clear of the bars by `pad`.
       fit(pts, pad, maxZ) {
         const b = new ml.LngLatBounds();
         pts.forEach((p) => b.extend(ll(p)));
         map.jumpTo({ bearing: 0, pitch: 0 });
-        map.fitBounds(b, { padding: pad, maxZoom: toGl(maxZ), duration: 500 });
+        map.fitBounds(b, { padding: pad, maxZoom: toGl(maxZ), duration: still() ? 0 : 500 });
       },
       zoom: () => map.getZoom() + 1,
       toScreen: (at) => map.project(ll(at)),
@@ -490,10 +493,10 @@
           map.touchZoomRotate.enable();
           map.touchZoomRotate.enableRotation();
           map.scrollZoom.enable();
-          map.easeTo({ bearing: 0, duration: 400 });
+          map.easeTo({ bearing: 0, duration: still() ? 0 : 400 });
         }
       },
-      upright() { map.easeTo({ bearing: 0, pitch: 0, duration: 400 }); },
+      upright() { map.easeTo({ bearing: 0, pitch: 0, duration: still() ? 0 : 400 }); },
       source: () => (fallen ? 'osm' : 'openfreemap'),
     };
   }
@@ -633,7 +636,7 @@
       },
       setView: (at, z, animate = false) => map.setView(at, z, { animate }),
       jump(at, z) { if (at) map.setView(at, z, { animate: false }); },
-      panTo: (at, ms) => map.panTo(at, { animate: true, duration: ms / 1000 }),
+      panTo: (at, ms) => map.panTo(at, { animate: !still(), duration: ms / 1000 }),
       fit: (pts, pad, maxZ) => map.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [pad.left, pad.top], paddingBottomRight: [pad.right, pad.bottom], maxZoom: maxZ }),
       zoom: () => map.getZoom(),
       toScreen: (at) => map.latLngToContainerPoint(at),

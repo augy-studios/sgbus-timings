@@ -4,7 +4,7 @@
 // as OneMap's. Nav works the same without it: any failure here is ignored.
 
 import { route } from "../_lib/onemap.js";
-import { LRT_LINES, rail } from "./network.js";
+import { LRT_LINES, haversine, rail } from "./network.js";
 
 const TIMEOUT_MS = 8000;
 // The wait to board where OneMap gives no times to work it out from, as router.js has it.
@@ -23,6 +23,34 @@ function lineCode(text) {
   return byName?.code ?? (t || "?");
 }
 
+// OneMap names a station in capitals with its kind: "PASIR RIS MRT STATION". A train ride's
+// stations are named as the router's are instead (help desk #6), by the rail network's own
+// station nearest OneMap's point (within STATION_M), as kind "station", so Navigate and the
+// trip bar say "Pasir Ris station" rather than "PASIR RIS MRT STATION station". A station
+// that can't be matched keeps OneMap's name without the suffix, and a walk's end at one is
+// "Pasir Ris station".
+const STATION_M = 400;
+const STATION_SUFFIX = /\s+(?:MRT|LRT)(?:\s+STATION)?(?:\s*\/\s*(?:MRT|LRT)(?:\s+STATION)?)?\s*$/i;
+const tidyName = (name) => {
+  const s = String(name || "").replace(STATION_SUFFIX, "").trim();
+  return /[a-z]/.test(s) ? s : s.toLowerCase().replace(/(^|[\s(/-])\S/g, (c) => c.toUpperCase());
+};
+function stationAt(p) {
+  if (!Number.isFinite(p?.lat) || !Number.isFinite(p?.lon)) return null;
+  let best = null;
+  let bestM = STATION_M;
+  for (const st of rail.stations) {
+    const m = haversine(p.lat, p.lon, st.lat, st.lng);
+    if (m < bestM) [best, bestM] = [st, m];
+  }
+  return best;
+}
+const stationPlace = (p) => {
+  const st = stationAt(p);
+  if (st) return { kind: "station", code: st.codes.join("/"), codes: st.codes, name: st.name, lat: st.lat, lng: st.lng };
+  return { kind: "station", code: null, codes: [], name: tidyName(p?.name), lat: p?.lat, lng: p?.lon };
+};
+
 // Each ride's `wait` is the gap OneMap's timetable leaves before it: since the previous leg
 // ended, and for the first ride also how much later than `when` OneMap has you setting off,
 // as it has you walk out just in time for the bus. Its own duration counts neither of those,
@@ -37,7 +65,7 @@ function toOption(it, when) {
   const legs = (it.legs || []).map((l) => {
     const before = prevEnd;
     prevEnd = l.endTime;
-    const place = (p) => ({ kind: p?.stopCode && /^\d{5}$/.test(p.stopCode) ? "stop" : "place", code: p?.stopCode || null, name: p?.name || "", lat: p?.lat, lng: p?.lon });
+    const place = (p) => ({ kind: p?.stopCode && /^\d{5}$/.test(p.stopCode) ? "stop" : "place", code: p?.stopCode || null, name: STATION_SUFFIX.test(p?.name || "") ? `${tidyName(p.name)} station` : p?.name || "", lat: p?.lat, lng: p?.lon });
     const minutes = (l.duration || 0) / 60;
     if (l.mode === "WALK") return { mode: "walk", metres: Math.round(l.distance || 0), minutes, to: place(l.to) };
     const bus = l.mode === "BUS";
@@ -61,12 +89,12 @@ function toOption(it, when) {
         color: line.color,
         lrt: LRT_LINES.has(line.code),
       }),
-      from: place(l.from),
-      to: place(l.to),
+      from: bus ? place(l.from) : stationPlace(l.from),
+      to: bus ? place(l.to) : stationPlace(l.to),
       stops: (l.intermediateStops?.length ?? 0) + 1,
       minutes,
       path: stops.map((p) => [p.lat, p.lon]),
-      names: stops.map((p) => p.name || ""),
+      names: stops.map((p) => (bus ? p.name || "" : stationAt(p)?.name || tidyName(p.name))),
       // A bus leg's stop codes too, as the router's have them, so the trip's timeline can
       // open each stop's timings. Null for a stop without a five-digit code.
       ...(bus && { codes: stops.map((p) => (/^\d{5}$/.test(p.stopCode || "") ? p.stopCode : null)) }),

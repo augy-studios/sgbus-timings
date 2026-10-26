@@ -1,4 +1,6 @@
 /* ---- base ---- */
+/* Text sizes are in rem (help desk #6), so they follow the browser's and the phone's text size
+   setting; 1rem is 16px at the usual size. */
 * {
     padding: 0;
     margin: 0;
@@ -30,6 +32,13 @@ button {
     color: inherit;
 }
 button:disabled { cursor: not-allowed; opacity: 0.6; }
+
+/* Where the keyboard is (help desk #6): a ring the glass buttons don't swallow. A window or
+   panel given the focus as it opens (js/ui.js, focusInto) shows none for that. */
+:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+[tabindex="-1"]:focus:not(:focus-visible), [role="dialog"][tabindex="-1"]:focus { outline: none; }
+/* A stop's name and code can be pressed and held to copy them. */
+.stopName, #stopCode, .svcNo, .chip .name, .chip .code { -webkit-user-select: text; user-select: text; }
 
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
@@ -79,7 +88,8 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     --surface-strong: rgba(255, 255, 255, 0.11);
     --surface-border: rgba(255, 255, 255, 0.14);
     --ink: #eef2ef;
-    --muted: #9aa7a0;
+    /* At least 4.5:1 on a strong surface over the page (help desk #6: #9aa7a0 was about 4.4:1). */
+    --muted: #a9b5ae;
     --shadow: 0 10px 34px rgba(0, 0, 0, 0.5);
     --brand-ink: #bff5cf;
     --ok: #4ade80;
@@ -101,6 +111,52 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     /* Secondary text on --surface-strong. Plain --muted only reaches 3.6:1
        there in dark mode, since the strong surface lightens the backdrop. */
     --muted-strong: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+/* High contrast (help desk #6, js/colours.js): the phone's setting (prefers-contrast: more), or
+   Theme's High contrast. Black or white text, solid cards with clear edges, no see-through
+   glass, and secondary text as dark as the rest. */
+:root[data-contrast="more"] {
+    --surface: #ffffff;
+    --surface-strong: #ffffff;
+    --surface-border: #121815;
+    --ink: #000000;
+    --muted: #1f2622;
+    --muted-strong: #111613;
+    --brand-ink: #0b4d26;
+    --on-brand: #000000;
+    --error: #8f1010;
+    --warn: #7a3600;
+    --ok: #0b5a28;
+}
+:root[data-contrast="more"][data-mode="dark"] {
+    --bg: #000000;
+    --surface: #0d0d0d;
+    --surface-strong: #161616;
+    --surface-border: #f2f2f2;
+    --ink: #ffffff;
+    --muted: #e3e8e5;
+    --muted-strong: #f0f3f1;
+    --brand-ink: #c8ffd9;
+    --error: #ffb3b3;
+    --warn: #ffd27a;
+    --ok: #8af0ad;
+}
+:root[data-contrast="more"] .glass,
+:root[data-contrast="more"] .tripBar { backdrop-filter: none; -webkit-backdrop-filter: none; }
+:root[data-contrast="more"] .glass,
+:root[data-contrast="more"] .iconBtn,
+:root[data-contrast="more"] .tab,
+:root[data-contrast="more"] .chip,
+:root[data-contrast="more"] .input { border-width: 2px; }
+:root[data-contrast="more"] .acItem .name .road,
+:root[data-contrast="more"] .eta.tooSoon { opacity: 1; }
+/* Windows' and others' high contrast colours (forced colours): the browser's own, with the
+   pressed and picked buttons marked by an outline rather than a fill it takes away. */
+@media (forced-colors: active) {
+    .tab.active, .mode-btn.active, [aria-pressed="true"], [aria-selected="true"] { outline: 2px solid Highlight; outline-offset: 1px; }
+    .glass { backdrop-filter: none; -webkit-backdrop-filter: none; border: 1px solid CanvasText; }
+    [data-icon] svg, .ico svg { forced-color-adjust: auto; }
 }
 
 /* flat, static colour derived from theme, no gradients */
@@ -139,6 +195,18 @@ body {
 .icon-btn svg { width: 20px; height: 20px; }
 .icon-btn.small { width: 34px; height: 34px; }
 .icon-btn.small svg { width: 16px; height: 16px; }
+/* Small buttons keep their look but take a tap 44px across, the least a finger or a shaky
+   hand needs (help desk #6): an invisible edge round each. */
+.icon-btn.small, .searchExtra, .lastBusBell, .mcArrow { position: relative; }
+.icon-btn.small::after, .searchExtra::after, .lastBusBell::after, .mcArrow::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+}
 
 /* ---- modal shell ---- */
 .modal-backdrop {
@@ -342,7 +410,7 @@ body.modal-open { overflow: hidden; }
 .app-update-notice .btn,
 .app-update-notice .iconBtn { flex: none; }
 .update-notice .btn,
-.app-update-notice .btn { padding: 8px 14px; font-size: 13px; text-decoration: none; }
+.app-update-notice .btn { padding: 8px 14px; font-size: 0.8125rem; text-decoration: none; }
 /* On a phone, beside the Edge Tray, the words take the line and the buttons go under them,
    rather than squeezing the words to a word or two a line. */
 @media (max-width: 520px) {
@@ -406,7 +474,7 @@ body.modal-open { overflow: hidden; }
 .disruption-inner p { flex: 1 1 auto; min-width: 0; }
 .disruption-inner .btn,
 .disruption-inner .iconBtn { flex: none; }
-.disruption-inner .btn { padding: 8px 14px; font-size: 13px; }
+.disruption-inner .btn { padding: 8px 14px; font-size: 0.8125rem; }
 
 /* ===== Layout ===== */
 .container {
@@ -448,7 +516,7 @@ body.modal-open { overflow: hidden; }
 .brand-text { min-width: 0; }
 
 .brand h1 {
-    font-size: 20px;
+    font-size: 1.25rem;
     font-weight: 700;
     margin: 0;
     white-space: nowrap;
@@ -477,7 +545,7 @@ body.modal-open { overflow: hidden; }
 }
 
 .subtitle {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
@@ -530,14 +598,19 @@ body.modal-open { overflow: hidden; }
 :root[data-pages-off~="alerts"] #alertsBtn,
 :root[data-pages-off~="trips"] #tripsBtn { display: none !important; }
 /* Offline (js/offline.js, data-net-off, set before first paint too): the pages and buttons that
-   need the network, left as Settings has them for when it's back. */
+   need the network, left as Settings has them for when it's back. Explorer stays once
+   Singapore's map is saved for offline (js/map-save.js, data-map-saved, set before first paint
+   too), and the trip bar's Share my ETA goes, as live progress needs the network. */
 :root[data-net-off] #glanceBtn,
 :root[data-net-off] #timingsBtn,
 :root[data-net-off] #alertsBtn,
-:root[data-net-off] #explorerBtn,
+:root[data-net-off]:not([data-map-saved]) #explorerBtn,
 :root[data-net-off] #nearStopsTrayBtn,
 :root[data-net-off] #routinesTrayBtn,
-:root[data-net-off] #appUpdateBtn { display: none !important; }
+:root[data-net-off] #appUpdateBtn,
+:root[data-net-off] #tripShare,
+:root[data-net-off] .mapCard .mcGo[data-mc-timings] { display: none !important; }
+
 /* And on the pages that stay, where they need it: Navigate's Bus and train, and Favourites'
    stops (index.html). */
 .offlineNote { display: none; }
@@ -610,7 +683,7 @@ body.modal-open { overflow: hidden; }
     justify-content: center;
     background: var(--brand-ink);
     color: var(--bg);
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 700;
     line-height: 1;
     pointer-events: none;
@@ -750,8 +823,9 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .cardTitle {
+    margin: 0;
     font-weight: 700;
-    font-size: 15px;
+    font-size: 0.9375rem;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -762,7 +836,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border: 1px solid var(--surface-border);
     padding: 4px 10px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     background: var(--surface-strong);
     white-space: nowrap;
@@ -803,7 +877,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
        (see .card.glass). */
     background: var(--surface-strong);
     outline: none;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: var(--ink);
     transition: border-color 0.2s, box-shadow 0.2s;
     height: 100%;
@@ -825,7 +899,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     font-weight: 700;
     padding: 14px 20px;
     border-radius: 14px;
-    font-size: 14px;
+    font-size: 0.875rem;
     transition: transform 0.15s, background 0.15s;
     white-space: nowrap;
     border: 1px solid var(--surface-border);
@@ -870,20 +944,22 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .acItem:last-child  { border-radius: 0 0 14px 14px; }
 .acItem:only-child  { border-radius: 14px; }
 
-.acItem:hover {
+.acItem:hover,
+.acItem.acActive {
     background: var(--brand-fill);
 }
+.acItem.acActive { outline: 2px solid var(--brand-ink); outline-offset: -2px; }
 
 .acItem .code {
     font-weight: 700;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--ink);
     flex-shrink: 0;
 }
 
 .acItem .name {
     color: var(--muted-strong);
-    font-size: 13px;
+    font-size: 0.8125rem;
     text-align: right;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -896,9 +972,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .acItem .name .road {
-    opacity: 0.65;
-    font-size: 12px;
+    /* A colour of its own rather than faded, which was under 3:1 (help desk #6). */
+    color: var(--muted);
+    font-size: 0.75rem;
 }
+.acItem:hover .name .road, .acItem.acActive .name .road { color: var(--on-brand); }
 
 /* A suggestion with a bus straight to the other end of a planned route, as in the stop list. */
 .acItem.direct { background: color-mix(in srgb, var(--ok) 14%, transparent); }
@@ -908,7 +986,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 400;
     color: var(--ok);
     white-space: nowrap;
@@ -916,19 +994,39 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .acItem:hover .acDirect { color: var(--on-brand); }
 .acNote {
     padding: 8px 14px 6px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     border-bottom: 1px solid var(--surface-border);
 }
 
 /* ===== Hint ===== */
 .hint {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted);
     margin-top: 8px;
 }
 
 /* ===== Favourites, in their own window (#favsModal) ===== */
+/* Its lists (script.js, renderFavLists): a row of tabs that scrolls sideways, then New list. */
+.favListBar { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; }
+.favListTabs {
+    display: flex; gap: 8px; flex: 1 1 auto; min-width: 0;
+    overflow-x: auto; scrollbar-width: none; padding: 2px;
+}
+.favListTabs::-webkit-scrollbar { display: none; }
+.favListTabs .tab { flex: none; white-space: nowrap; max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
+.favListNew { flex: none; }
+.favListNew .ico svg, .favListTools .ico svg { width: 15px; height: 15px; }
+.favListTools { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.favListTools [aria-pressed="true"] { background: var(--brand-fill); color: var(--on-brand); }
+.favListForm { margin: 0 0 12px; }
+.favListForm label { display: block; font-size: 0.85rem; color: var(--muted-strong); margin: 0 2px 6px; }
+.favListFormRow { display: flex; flex-wrap: wrap; gap: 8px; }
+.favListFormRow .input { flex: 1 1 12em; min-width: 0; }
+.favListFormError { margin: 6px 2px 0; font-size: 0.85rem; color: var(--error); }
+.favListPick { margin: 0 0 8px; }
+.favListDone { margin-top: 10px; }
+
 .favChips {
     display: flex;
     flex-wrap: wrap;
@@ -938,7 +1036,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .favGroup + .favGroup { margin-top: 4px; }
 
 .favGroupLabel {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     margin: 0 2px 6px;
 }
@@ -971,12 +1069,12 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .chip .code {
     font-weight: 800;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--ink);
 }
 
 .chip .name {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     max-width: 180px;
     overflow: hidden;
@@ -995,7 +1093,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     color: var(--muted-strong);
     padding: 3px 6px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 0.75rem;
     transition: background 0.12s, color 0.12s;
     flex-shrink: 0;
 }
@@ -1030,13 +1128,13 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .incomingTitle {
     font-weight: 700;
-    font-size: 13px;
+    font-size: 0.8125rem;
     letter-spacing: 0.06em;
     color: var(--ink);
 }
 
 .incomingNote {
-    font-size: 11px;
+    font-size: 0.6875rem;
     color: var(--muted-strong);
     font-style: italic;
     text-align: right;
@@ -1070,7 +1168,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .incomingBusTime {
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--ink);
     background: transparent;
@@ -1082,7 +1180,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .incomingBusNo {
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 700;
     background: var(--brand-fill-strong);
     color: var(--on-brand);
@@ -1104,7 +1202,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .incomingBusTo {
     max-width: 92px;
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 700;
     color: var(--tone);
     white-space: nowrap;
@@ -1116,7 +1214,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .svcTo {
     max-width: 104px;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 700;
     line-height: 1.25;
     text-align: center;
@@ -1196,7 +1294,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .eta strong {
     display: block;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 700;
 }
 
@@ -1225,7 +1323,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border: 1px solid var(--surface-border);
     border-radius: 999px;
     background: transparent;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--muted-strong);
 }
 
@@ -1249,7 +1347,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border-radius: 10px;
     cursor: pointer;
     color: var(--ink);
-    font-size: 13px;
+    font-size: 0.8125rem;
     transition: background 0.13s, transform 0.13s;
     display: inline-flex;
     align-items: center;
@@ -1266,6 +1364,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .iconBtn:active {
     transform: translateY(1px);
 }
+
+/* A bus's star at a stop (script.js, data-fav-stopbus-at): that bus here in Favourites. */
+.svcStar .ico svg { width: 14px; height: 14px; }
+.svcStar[aria-pressed="true"] { color: var(--brand-ink); }
+.svcStar[aria-pressed="true"] svg { fill: currentColor; }
 
 .viewRouteBtn {
     border: 1px solid var(--surface-border);
@@ -1300,7 +1403,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .modalTitle {
     font-weight: 700;
-    font-size: 15px;
+    font-size: 0.9375rem;
     color: var(--brand-ink);
     display: flex;
     align-items: center;
@@ -1324,7 +1427,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border: 1px solid var(--surface-border);
     padding: 7px 16px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--ink);
     transition: background 0.13s, color 0.13s;
 }
@@ -1343,7 +1446,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     align-items: center;
     justify-content: center;
     gap: 6px;
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 700;
     padding: 9px 12px;
 }
@@ -1370,7 +1473,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     padding: 8px 8px;
     border-radius: 10px;
     text-align: left;
-    font-size: 14px;
+    font-size: 0.875rem;
     transition: background 0.1s;
 }
 
@@ -1380,11 +1483,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 .routeStop .road {
     display: block;
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--muted-strong);
 }
 .routeStop .dist {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     white-space: nowrap;
 }
@@ -1395,14 +1498,14 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--ok);
     margin-top: 2px;
 }
 .routeStop:hover .via { color: var(--on-brand); }
 
 .stopListNote {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     padding: 0 8px 8px;
 }
@@ -1413,7 +1516,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .routeStop.me .dist { color: var(--on-brand); }
 
 .routeSection {
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-weight: 700;
     color: var(--muted-strong);
     padding: 10px 8px 4px;
@@ -1421,7 +1524,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .routeSection:first-child { padding-top: 4px; }
 
 .svcNote {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--ink);
     margin: 0 0 10px;
 }
@@ -1457,12 +1560,12 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     width: 2.7em;
     text-align: right;
     color: var(--muted-strong);
-    font-size: 13px;
+    font-size: 0.8125rem;
     flex-shrink: 0;
 }
 
 .svcMeta {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     line-height: 1.8;
     margin-bottom: 4px;
@@ -1496,7 +1599,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .stopTitle .cardTitle { flex-wrap: wrap; }
 
 .stopRoad {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     margin-top: 2px;
 }
@@ -1512,7 +1615,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border-bottom: 1px solid var(--surface-border);
 }
 .stopNote {
-    font-size: 13px;
+    font-size: 0.8125rem;
     flex: 1 1 220px;
 }
 
@@ -1528,7 +1631,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     gap: 8px;
     align-items: flex-start;
     flex-basis: 100%;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 .stopAsideNote .ico { flex-shrink: 0; margin-top: 2px; color: var(--warn); }
 
@@ -1542,13 +1645,13 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .stopTools:empty { display: none; }
 
 .svcOp {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--muted-strong);
 }
 
 .firstLast {
     flex-basis: 100%;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
 }
 
@@ -1565,7 +1668,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     justify-content: center;
     padding: 10px 6px;
     border-radius: 12px;
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 700;
     background: var(--brand-fill-strong);
     color: var(--on-brand);
@@ -1610,7 +1713,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 
 .plannerField label {
     display: block;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     margin: 0 2px 6px;
 }
@@ -1625,7 +1728,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 /* Home, Work and your places under each end (js/nav.js, "Home and Work"), wrapping onto as
    many lines as they need. */
 .savedPlaceBtns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-.savedPlaceBtns .iconBtn { height: 30px; padding: 0 10px; font-size: 13px; white-space: nowrap; }
+.savedPlaceBtns .iconBtn { height: 30px; padding: 0 10px; font-size: 0.8125rem; white-space: nowrap; }
 .savedPlaceBtns .iconBtn.unset:not(:hover) { color: var(--muted-strong); border-style: dashed; }
 
 /* The icon's arrows run up and down; side by side, the ends swap left and right. Down from
@@ -1638,7 +1741,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 /* Navigate's stop on the way (js/nav.js): side by side, a row of its own under both ends; on a
    phone, between From and the swap button, in the order it's ridden. */
 .navVia { grid-column: 1 / -1; order: 1; min-width: 0; }
-.addStopBtn { height: 30px; padding: 0 10px; font-size: 13px; }
+.addStopBtn { height: 30px; padding: 0 10px; font-size: 0.8125rem; }
 .busChip.viaChip { background: var(--surface-strong); color: var(--ink); }
 
 .plannerBody { margin-top: 14px; }
@@ -1669,7 +1772,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 /* Off, All updates, Disruptions only: three across, where the theme's toggle is two. */
 .alertModes { grid-template-columns: repeat(3, 1fr); }
 .alertModes .mode-btn { text-align: center; line-height: 1.25; }
-.alertsIntro { font-size: 13px; color: var(--muted-strong); }
+.alertsIntro { font-size: 0.8125rem; color: var(--muted-strong); }
 #alertModes .modal-section-label { display: flex; align-items: center; gap: 6px; margin-top: 10px; margin-bottom: 6px; }
 
 .alertsBody { margin-top: 6px; }
@@ -1677,7 +1780,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: var(--brand-ink);
     margin: 16px 0 8px;
 }
@@ -1685,28 +1788,28 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     display: flex;
     align-items: flex-start;
     gap: 8px;
-    font-size: 14px;
+    font-size: 0.875rem;
     line-height: 1.45;
 }
 .alertsLine .statusDot { margin-top: 0.4em; }
 .alertsDetail {
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.45;
     color: var(--muted-strong);
     margin-top: 4px;
 }
 /* The newsfeed (js/alerts.js): each notice its title, when and from whom, its buses, and
    whether it names your stops or buses. */
-.alertsSub { margin: 10px 0 4px; font-size: 13px; font-weight: 700; color: var(--muted-strong); }
+.alertsSub { margin: 10px 0 4px; font-size: 0.8125rem; font-weight: 700; color: var(--muted-strong); }
 .noticeList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.noticeItem { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); font-size: 14px; }
+.noticeItem { display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); font-size: 0.875rem; }
 .noticeItem.mine { border-color: color-mix(in srgb, var(--brand) 60%, transparent); }
 .noticeItem a { color: inherit; }
-.noticeMeta { font-size: 12px; color: var(--muted-strong); }
-.noticeBuses { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 12px; }
-.noticeBuses .busChip { font-size: 12px; padding: 1px 7px; }
-.noticeMine { display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--brand-ink); }
-.noticeList.news .noticeItem { font-size: 13px; }
+.noticeMeta { font-size: 0.75rem; color: var(--muted-strong); }
+.noticeBuses { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 0.75rem; }
+.noticeBuses .busChip { font-size: 0.75rem; padding: 1px 7px; }
+.noticeMine { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: var(--brand-ink); }
+.noticeList.news .noticeItem { font-size: 0.8125rem; }
 .alertItem {
     padding: 10px 12px;
     border-radius: 14px;
@@ -1717,7 +1820,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .alertsList {
     margin: 8px 0 0;
     padding-left: 18px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.5;
 }
 .alertsList li + li { margin-top: 4px; }
@@ -1730,7 +1833,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .plannerStatus {
-    font-size: 14px;
+    font-size: 0.875rem;
     margin-bottom: 10px;
 }
 
@@ -1745,7 +1848,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border-radius: 14px;
     border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent);
     background: color-mix(in srgb, var(--warn) 10%, transparent);
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 .sideHint strong { color: var(--warn); }
 
@@ -1790,13 +1893,13 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     gap: 4px;
 }
 .journeyMeta {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     white-space: nowrap;
 }
 .journeyDetail {
     grid-column: 1 / -1;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
 }
 
@@ -1805,7 +1908,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     padding: 3px 8px;
     border-radius: 8px;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 0.875rem;
     background: var(--brand-fill-strong);
     color: var(--on-brand);
     border: 1px solid var(--surface-border);
@@ -1813,14 +1916,14 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .legArrow { color: var(--muted-strong); }
 
 .estimateNote {
-    font-size: 13px;
+    font-size: 0.8125rem;
     font-style: italic;
     color: var(--muted-strong);
     margin-top: 10px;
 }
 
 .journeyHead {
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 700;
     margin-bottom: 10px;
 }
@@ -1836,10 +1939,10 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     display: flex;
     gap: 8px;
     align-items: flex-start;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 .stepWalk, .stepArrive { padding: 4px 4px; color: var(--muted-strong); }
-.stepArrive { color: var(--ink); font-size: 14px; }
+.stepArrive { color: var(--ink); font-size: 0.875rem; }
 /* A nav's walk: what to walk, then its Directions (js/nav.js). */
 .walkBody { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .walkApps { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1870,7 +1973,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     background: var(--surface-strong);
     border: 1px solid var(--surface-border);
 }
-.doorHead { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; }
+.doorHead { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 700; }
 .doorHead .ico { color: var(--muted-strong); }
 .doorFor { font-weight: 400; color: var(--muted-strong); }
 .doorRows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
@@ -1905,7 +2008,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     padding: 1px 6px 2px;
     background: var(--line, var(--brand-ink));
     color: #fff;
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1917,11 +2020,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     border-radius: 5px;
     background: var(--surface-strong);
     color: var(--ink);
-    font-size: 20px;
+    font-size: 1.25rem;
     line-height: 1.15;
 }
-.doorWhere { font-size: 13px; color: var(--muted-strong); }
-.doorFoot { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.doorWhere { font-size: 0.8125rem; color: var(--muted-strong); }
+.doorFoot { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: var(--muted); }
 .doorFoot b { font-weight: 700; color: var(--muted-strong); }
 /* Where on the platform door its number is (js/nav.js doorNumberAt). */
 .dnSvg { flex: none; width: 50px; height: 40px; }
@@ -1999,7 +2102,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 }
 .shareMenuItem:hover { background: var(--brand-fill); color: var(--on-brand); }
 .shareMenuItem > span { display: flex; flex-direction: column; min-width: 0; }
-.shareMenuItem .sub { font-size: 13px; color: var(--muted-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shareMenuItem .sub { font-size: 0.8125rem; color: var(--muted-strong); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shareMenuItem:hover .sub { color: inherit; }
 
 .shareBubble {
@@ -2034,9 +2137,9 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     transform: translateX(-50%) rotate(45deg);
     border-radius: 0 0 4px 0;
 }
-.shareName { font-weight: 700; font-size: 17px; }
-.shareSub { font-size: 13px; margin-top: 2px; }
-.shareUrl { font-size: 13px; margin-top: 4px; word-break: break-all; }
+.shareName { font-weight: 700; font-size: 1.0625rem; }
+.shareSub { font-size: 0.8125rem; margin-top: 2px; }
+.shareUrl { font-size: 0.8125rem; margin-top: 4px; word-break: break-all; }
 .shareUrl.making::before {
     content: "";
     display: inline-block;
@@ -2072,14 +2175,14 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     border: 1px solid var(--surface-border);
     background: var(--surface-strong);
     color: var(--ink);
-    font-size: 13px;
+    font-size: 0.8125rem;
     cursor: pointer;
     transition: background 0.13s;
 }
 .shareTarget:hover:not(:disabled) { background: var(--brand-fill); color: var(--on-brand); }
 .shareTarget:disabled { opacity: 0.5; cursor: default; }
 .shareTarget [data-icon] svg { width: 22px; height: 22px; }
-.etaLeg { font-size: 14px; color: var(--ink); }
+.etaLeg { font-size: 0.875rem; color: var(--ink); }
 
 /* ---- sync favourites (js/sync.js) ---- */
 .syncBlock {
@@ -2136,7 +2239,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 }
 
 .syncLink {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     text-align: center;
     word-break: break-all;
@@ -2197,7 +2300,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     border-radius: 999px;
     background: var(--surface);
     color: var(--ink);
-    font-size: 11px;
+    font-size: 0.6875rem;
     font-weight: 700;
     text-align: center;
 }
@@ -2222,7 +2325,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     padding: 8px;
     border-radius: 10px;
     cursor: pointer;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 .syncItem:hover { background: var(--surface-strong); }
 .syncItem input {
@@ -2250,10 +2353,10 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.syncItemText .sub { font-size: 13px; color: var(--muted-strong); }
+.syncItemText .sub { font-size: 0.8125rem; color: var(--muted-strong); }
 
 .syncTag {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--muted-strong);
     white-space: nowrap;
     flex: none;
@@ -2274,15 +2377,22 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     padding: 28px;
     text-align: center;
     color: var(--muted);
-    font-size: 14px;
+    font-size: 0.875rem;
 }
 
+/* Read by a screen reader, not shown: clipped in place rather than moved off the screen, which
+   TalkBack's explore by touch can scroll after (help desk #6). */
 .sr {
     position: absolute;
-    left: -9999px;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
     overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
 }
 
 /* ===== Responsive ===== */
@@ -2295,8 +2405,8 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 }
 
 @media (max-width: 520px) {
-    .brand h1 { font-size: 18px; }
-    .btn { padding: 14px 14px; font-size: 14px; }
+    .brand h1 { font-size: 1.125rem; }
+    .btn { padding: 14px 14px; font-size: 0.875rem; }
     .incomingNote { display: none; }
 
     /* A slimmer tray, as sg-psi's on a phone, so the page keeps more of the width. */
@@ -2332,14 +2442,14 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .weatherBody { display: flex; flex-direction: column; gap: 10px; }
 .wxNow { display: flex; align-items: center; gap: 12px; }
 .wxNow > .ico svg { width: 44px; height: 44px; color: var(--brand-ink); }
-.wxTemp { font-size: 28px; font-weight: 700; line-height: 1.1; }
-.wxSky, .wxSummary { font-size: 13px; color: var(--muted-strong); }
+.wxTemp { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+.wxSky, .wxSummary { font-size: 0.8125rem; color: var(--muted-strong); }
 .wxSummary { color: var(--ink); line-height: 1.5; }
 .wxFields {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px 12px;
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
 .wxFields div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid var(--surface-border); padding-bottom: 4px; }
 .wxFields dt { color: var(--muted-strong); }
@@ -2356,15 +2466,15 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     border-radius: 12px;
     background: var(--surface);
     border: 1px solid var(--surface-border);
-    font-size: 13px;
+    font-size: 0.8125rem;
 }
-.wxHourTime, .wxPop { color: var(--muted-strong); font-size: 12px; }
+.wxHourTime, .wxPop { color: var(--muted-strong); font-size: 0.75rem; }
 .wxNowcast { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
 .wxBar { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
 .wxBar span { width: 100%; border-radius: 6px 6px 2px 2px; background: var(--brand-fill-strong); border: 1px solid var(--surface-border); }
-.wxBar small { font-size: 11px; color: var(--muted-strong); }
-.wxAir { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
-.wxAir caption { text-align: left; font-size: 13px; color: var(--muted-strong); padding-bottom: 4px; }
+.wxBar small { font-size: 0.6875rem; color: var(--muted-strong); }
+.wxAir { width: 100%; border-collapse: collapse; font-size: 0.8125rem; margin-top: 6px; }
+.wxAir caption { text-align: left; font-size: 0.8125rem; color: var(--muted-strong); padding-bottom: 4px; }
 .wxAir td { padding: 5px 4px; border-bottom: 1px solid var(--surface-border); }
 .wxAir td:last-child { display: flex; align-items: center; gap: 6px; }
 
@@ -2393,16 +2503,16 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--warn);
 }
 /* Traffic on a bus leg (js/nav.js): orange, as slow roads are on the live map; on a way's own
    page, a button to the map. */
 .journeyTraffic, .legTraffic {
-    display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: #b35c00; text-align: left;
+    display: flex; align-items: flex-start; gap: 6px; font-size: 0.8125rem; color: #b35c00; text-align: left;
 }
 .legTraffic {
-    width: 100%; margin: 4px 0; padding: 8px 10px; border-radius: 10px; font: inherit; font-size: 13px; cursor: pointer;
+    width: 100%; margin: 4px 0; padding: 8px 10px; border-radius: 10px; font: inherit; font-size: 0.8125rem; cursor: pointer;
     border: 1px solid color-mix(in srgb, #f08c00 45%, transparent); background: color-mix(in srgb, #f08c00 10%, transparent);
 }
 .legTraffic u { white-space: nowrap; }
@@ -2411,12 +2521,12 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .journeyItem .journeyWarn, .journeyItem .journeyTraffic { grid-column: 1 / -1; }
 /* Walking or cycling the whole way, under the ways. */
 .navOthers { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
-.navOther { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); }
+.navOther { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); }
 .navOther > span:not(.ico) { flex: 1; }
 /* Ways planned on the phone with no connection (js/nav.js, planOnPhone): said once, above them. */
 .navOffline {
     display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 8px 10px; border-radius: 12px;
-    font-size: 14px; font-weight: 600; background: var(--surface); border: 1px solid var(--surface-border);
+    font-size: 0.875rem; font-weight: 600; background: var(--surface); border: 1px solid var(--surface-border);
 }
 :root[data-mode="dark"] .journeyTraffic, :root[data-mode="dark"] .legTraffic { color: #ffb347; }
 
@@ -2446,46 +2556,46 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .tripBarInner { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
 .tripIcon svg { width: 22px; height: 22px; }
 .tripText {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 13px;
+    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 0.8125rem;
     background: none; border: 0; padding: 0; margin: 0; text-align: left; color: inherit; font: inherit; cursor: pointer;
 }
-.tripText strong { font-size: 14px; }
-.tripNote { font-size: 12px; color: var(--muted-strong); }
+.tripText strong { font-size: 0.875rem; }
+.tripNote { font-size: 0.75rem; color: var(--muted-strong); }
 /* Last bus soon: red, as the last three buses are on Explorer's stop cards. */
 .tripWarn { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 0; }
 .tripWarnLine {
     display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 6px 8px; border-radius: 10px;
-    background: #d1242f; color: #fff; font-size: 13px; font-weight: 700; line-height: 1.3;
+    background: #d1242f; color: #fff; font-size: 0.8125rem; font-weight: 700; line-height: 1.3;
 }
 .tripWarnLine svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 /* Another way, under a lost last bus: what it is, Switch to it and See all ways. */
-.tripAnother { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 13px; }
+.tripAnother { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 0.8125rem; }
 .tripAnother p { flex-basis: 100%; margin: 0; font-weight: 600; }
 .tripGo { padding: 8px 14px; font-weight: 700; }
 /* Switched by itself: what happened and what's next, with Undo. */
 .tripSwitched {
-    display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 8px 10px; border-radius: 10px; font-size: 13px; line-height: 1.35;
+    display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 8px 10px; border-radius: 10px; font-size: 0.8125rem; line-height: 1.35;
     background: var(--brand-fill); color: var(--on-brand);
 }
 .tripSwitched svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 /* Traffic on a bus still ahead (orange, as slow roads are on the live map), tapped for the map. */
 .tripTraffic {
     display: flex; align-items: flex-start; gap: 6px; margin: 10px 12px 0; padding: 8px 10px; border-radius: 10px;
-    font: inherit; font-size: 13px; line-height: 1.35; text-align: left; cursor: pointer; color: #8a4500;
+    font: inherit; font-size: 0.8125rem; line-height: 1.35; text-align: left; cursor: pointer; color: #8a4500;
     border: 1px solid color-mix(in srgb, #f08c00 50%, transparent); background: color-mix(in srgb, #f08c00 14%, transparent);
 }
 :root[data-mode="dark"] .tripTraffic { color: #ffc069; }
 .tripTraffic svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 .tripTraffic u { white-space: nowrap; }
 /* A faster way: what it is and why, Reroute and Keep my way. */
-.tripFaster { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 0; font-size: 13px; }
+.tripFaster { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 0; font-size: 0.8125rem; }
 .tripFaster > p {
     display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 8px 10px; border-radius: 10px; line-height: 1.35;
     border: 1px solid var(--surface-border); background: var(--surface);
 }
 .tripFaster > p svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 /* Change here: the ways on from a stop, each a button to take it. */
-.tripChange { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 0; font-size: 13px; }
+.tripChange { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 0; font-size: 0.8125rem; }
 .tripChange p { margin: 0; }
 .tripChangeHead { font-weight: 700; }
 .tripChangeWay {
@@ -2493,15 +2603,15 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     padding: 8px 10px; border-radius: 12px; border: 1px solid var(--surface-border); background: var(--surface);
 }
 .tripChangeWay:hover { background: var(--brand-fill); color: var(--on-brand); }
-.tripChangeWay span { font-size: 12px; opacity: 0.85; }
+.tripChangeWay span { font-size: 0.75rem; opacity: 0.85; }
 .tripChangeActions { display: flex; gap: 8px; }
 .tlChange {
-    flex-shrink: 0; margin-left: auto; padding: 2px 8px; border-radius: 999px; font: inherit; font-size: 11px; font-weight: 600;
+    flex-shrink: 0; margin-left: auto; padding: 2px 8px; border-radius: 999px; font: inherit; font-size: 0.6875rem; font-weight: 600;
     border: 1px solid var(--surface-border); background: none; color: var(--muted-strong); cursor: pointer;
 }
 .tlTag ~ .tlChange { margin-left: 0; }
 /* Change my way, at the top of the timeline; while choosing, what to do and Cancel. */
-.tlChangeMode { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: 13px; }
+.tlChangeMode { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: 0.8125rem; }
 .tlChangeMode .iconBtn .ico { margin-right: 4px; }
 .tlChange:hover { background: var(--brand-fill); color: var(--on-brand); }
 .tripChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
@@ -2516,6 +2626,22 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     .tripText { flex-basis: calc(100% - 72px); }
     #tripMap { margin-left: auto; }
 }
+
+/* The phone's keyboard up (js/trip.js, data-keyboard): the bar is just its one line, the
+   trip and where you're at, so what's being typed and its suggestions have the screen. Tapped,
+   or the keyboard put away, it's all back. */
+:root[data-keyboard] .tripBar .tripDrawer,
+:root[data-keyboard] .tripBar .tripWarn,
+:root[data-keyboard] .tripBar .tripTraffic,
+:root[data-keyboard] .tripBar .tripFaster,
+:root[data-keyboard] .tripBar .tripChange,
+:root[data-keyboard] .tripBar .tripNote,
+:root[data-keyboard] .tripBarInner > :not(.tripText):not(.tripIcon) { display: none !important; }
+:root[data-keyboard] .tripBarInner { flex-wrap: nowrap; padding: 6px 12px; gap: 8px; }
+:root[data-keyboard] .tripText { flex-basis: auto; flex-direction: row; gap: 6px; align-items: baseline; }
+:root[data-keyboard] .tripText > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+:root[data-keyboard] .tripText strong { flex: 0 1 auto; max-width: 50%; }
+:root[data-keyboard] .tripIcon svg { width: 18px; height: 18px; }
 
 /* The drawer the timeline slides out of. Its one grid row grows from 0fr to 1fr, which
    animates to the timeline's own height; the bar is pinned to the bottom, so it opens
@@ -2547,11 +2673,11 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     border-bottom: 1px solid var(--surface-border);
 }
 .tlLeg + .tlLeg { margin-top: 14px; }
-.tlHead { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-weight: 700; font-size: 13px; }
+.tlHead { display: flex; align-items: center; gap: 6px; margin: 0 0 6px; font-weight: 700; font-size: 0.8125rem; }
 .tlHead svg { width: 16px; height: 16px; }
 .tlHead span { font-weight: 400; color: var(--muted-strong); }
 /* The other buses that go straight to the same stop (js/trip.js). */
-.tlAlso { margin: -2px 0 6px 22px; font-size: 12px; color: var(--muted-strong); }
+.tlAlso { margin: -2px 0 6px 22px; font-size: 0.75rem; color: var(--muted-strong); }
 .tlStops { position: relative; list-style: none; margin: 0; padding: 0 0 0 28px; }
 .tlTrack {
     position: absolute; left: 9px; top: 15px; bottom: 15px; width: 4px; border-radius: 2px;
@@ -2562,7 +2688,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 2px; background: var(--trip-dot);
     transform: scaleY(0); transform-origin: top; will-change: transform;
 }
-.tlStop { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 13px; }
+.tlStop { position: relative; display: flex; align-items: center; gap: 8px; min-height: 30px; font-size: 0.8125rem; }
 .tlNode {
     position: absolute; left: -23px; width: 12px; height: 12px; border-radius: 50%; box-sizing: border-box;
     background: var(--surface-strong); border: 2px solid color-mix(in srgb, var(--ink) 35%, transparent);
@@ -2580,7 +2706,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 .tlGo:focus-visible { outline: 2px solid var(--trip-dot); outline-offset: 2px; border-radius: 4px; }
 .tlTag {
     display: inline-flex; align-items: center; gap: 4px; margin-left: auto; padding: 2px 8px; border-radius: 999px;
-    font-size: 12px; font-weight: 700; background: var(--brand-fill); color: var(--brand-ink);
+    font-size: 0.75rem; font-weight: 700; background: var(--brand-fill); color: var(--brand-ink);
 }
 .tlTag svg { width: 12px; height: 12px; }
 .tlDot {
@@ -2618,7 +2744,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 }
 .tripWeekHead {
     padding: 10px 14px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     background: var(--surface);
     border-bottom: 1px solid var(--surface-border);
@@ -2635,11 +2761,11 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     transition: background 0.13s;
 }
 .tripRowMain:hover { background: color-mix(in srgb, var(--brand) 18%, transparent); }
-.tripWhen { font-size: 15px; }
+.tripWhen { font-size: 0.9375rem; }
 .tripChips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .tripChips .busChip { display: inline-flex; align-items: center; gap: 5px; }
 .tripDot { color: var(--muted-strong); }
-.tripTo { font-size: 13px; color: var(--muted-strong); margin-left: 4px; }
+.tripTo { font-size: 0.8125rem; color: var(--muted-strong); margin-left: 4px; }
 .tripDetails {
     display: flex;
     flex-direction: column;
@@ -2669,18 +2795,18 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     .tripMore, .tripRow.open > .tripMore, .tripDetails { transition: none; }
 }
 .tripLegs { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-.tripLeg { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; }
+.tripLeg { display: flex; align-items: flex-start; gap: 10px; font-size: 0.8125rem; }
 .tripLeg .busChip { display: inline-flex; align-items: center; gap: 5px; flex: none; }
-.tripTimes { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 13px; color: var(--muted-strong); }
+.tripTimes { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; font-size: 0.8125rem; color: var(--muted-strong); }
 .tripPlanned { font-style: italic; }
 .tripActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
 .tripsAll { align-self: stretch; text-align: center; }
 .tripsRule { border: 0; border-top: 1px solid var(--surface-border); margin: 8px 0; }
 .tripsClear { align-self: center; }
 
-.statsTitle { font-size: 18px; text-align: center; color: var(--brand-ink); }
-.statsSince { font-size: 13px; color: var(--muted-strong); text-align: center; }
-.statsHead { font-size: 15px; font-weight: 700; margin: 6px 2px 0; }
+.statsTitle { font-size: 1.125rem; text-align: center; color: var(--brand-ink); }
+.statsSince { font-size: 0.8125rem; color: var(--muted-strong); text-align: center; }
+.statsHead { font-size: 0.9375rem; font-weight: 700; margin: 6px 2px 0; }
 .statsCard {
     border: 1px solid var(--surface-border);
     background: var(--surface-strong);
@@ -2690,7 +2816,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     align-items: center;
     gap: 12px;
     padding: 14px 16px;
-    font-size: 15px;
+    font-size: 0.9375rem;
 }
 .statRow + .statRow { border-top: 1px solid var(--surface-border); }
 .statRow .ico svg { width: 20px; height: 20px; color: var(--brand-ink); }
@@ -2722,7 +2848,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 .placeMain > .ico svg { width: 22px; height: 22px; color: var(--brand-ink); }
 .placeMain > span { display: flex; flex-direction: column; min-width: 0; }
 .placeMain .sub, .recentText .sub {
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2800,7 +2926,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 }
 .recentTab svg { width: 20px; height: 20px; }
 .recentTab.active { background: var(--brand-fill); color: var(--on-brand); }
-.recentHead { font-size: 13px; color: var(--muted-strong); margin: 8px 4px 4px; }
+.recentHead { font-size: 0.8125rem; color: var(--muted-strong); margin: 8px 4px 4px; }
 .recentRow {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -2825,31 +2951,31 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 .recentMain > .ico svg, .calSetup > .ico svg { width: 20px; height: 20px; }
 .recentMain.unset { color: var(--muted-strong); }
 .recentText { display: flex; flex-direction: column; min-width: 0; flex: 1; }
-.recentText .name { font-size: 14px; }
+.recentText .name { font-size: 0.875rem; }
 .recentText .sub { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .recentText em { font-style: italic; }
-.recentLine { font-size: 12px; font-weight: 700; }
+.recentLine { font-size: 0.75rem; font-weight: 700; }
 .recentLine .lineDot { width: 8px; height: 8px; }
 .recentMore { padding: 8px; border-radius: 10px; color: var(--muted-strong); }
 .recentMore:hover { background: var(--surface-strong); color: var(--ink); }
 .recentMore svg { width: 18px; height: 18px; }
-.recentMenu .iconBtn { font-size: 13px; padding: 6px 10px; }
+.recentMenu .iconBtn { font-size: 0.8125rem; padding: 6px 10px; }
 .recentClear {
     display: block;
     margin: 8px auto 2px;
     padding: 6px 12px;
     border-radius: 999px;
-    font-size: 13px;
+    font-size: 0.8125rem;
     color: var(--muted-strong);
 }
 .recentClear:hover { background: var(--surface-strong); color: var(--ink); }
-.recentEmpty { padding: 14px 8px; font-size: 13px; color: var(--muted-strong); text-align: center; }
-.calWhen { font-size: 13px; color: var(--brand-ink); }
+.recentEmpty { padding: 14px 8px; font-size: 0.8125rem; color: var(--muted-strong); text-align: center; }
+.calWhen { font-size: 0.8125rem; color: var(--brand-ink); }
 .calSetup { border: 1px solid var(--surface-border); background: var(--surface); }
-.calHelp { font-size: 13px; }
+.calHelp { font-size: 0.8125rem; }
 .calHelp summary { cursor: pointer; color: var(--brand-ink); }
 .calHelp ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; color: var(--muted-strong); line-height: 1.45; }
-.calFile { font-size: 13px; color: var(--muted-strong); }
+.calFile { font-size: 0.8125rem; color: var(--muted-strong); }
 /* The Android app's calendar permission prompt, as a link to it (js/calendar.js). */
 .calAllow { justify-content: center; }
 .calAllowRow { display: flex; justify-content: center; margin: 2px 0 6px; }
@@ -2872,11 +2998,11 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
    and a stop's or place's name on a tap, in the page's own colours. */
 .mapPanel .maplibregl-ctrl-bottom-right { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 84px); }
 .mapPanel .maplibregl-ctrl.maplibregl-ctrl-attrib,
-.mapPanel .maplibregl-ctrl-attrib.maplibregl-compact { font-size: 10px; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--muted); }
+.mapPanel .maplibregl-ctrl-attrib.maplibregl-compact { font-size: 0.625rem; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--muted); }
 .mapPanel .maplibregl-ctrl-attrib a { color: var(--brand-ink); }
 .mapPanel .maplibregl-ctrl-attrib-button { background-color: transparent; }
 :root[data-mode="dark"] .mapPanel .maplibregl-ctrl-attrib-button { filter: invert(1); }
-.mapTip .maplibregl-popup-content { background: var(--surface-strong); color: var(--ink); font: inherit; font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 10px; box-shadow: var(--shadow); }
+.mapTip .maplibregl-popup-content { background: var(--surface-strong); color: var(--ink); font: inherit; font-size: 0.8125rem; font-weight: 700; padding: 6px 10px; border-radius: 10px; box-shadow: var(--shadow); }
 .mapTip .maplibregl-popup-tip { border-top-color: var(--surface-strong); border-bottom-color: var(--surface-strong); }
 .mapPanel .glass {
     backdrop-filter: none; -webkit-backdrop-filter: none;
@@ -2888,7 +3014,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 }
 .mapTitle { display: flex; flex-direction: column; min-width: 0; }
 .mapTitle strong, .mapTitle span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.mapTitle span { font-size: 13px; color: var(--muted); }
+.mapTitle span { font-size: 0.8125rem; color: var(--muted); }
 /* Overview, and Recentre under it once the map's stopped following. */
 .mapFabs {
     position: absolute; z-index: 1000; right: 12px; bottom: calc(max(12px, env(safe-area-inset-bottom)) + 120px);
@@ -2903,14 +3029,14 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     position: absolute; z-index: 1000; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
     max-width: 720px; margin: 0 auto; padding: 12px 14px; border-radius: 18px;
 }
-.mapStep { font-size: 16px; font-weight: 700; min-height: 1.4em; }
-.mapNote { margin-top: 4px; font-size: 13px; color: var(--muted); }
+.mapStep { font-size: 1rem; font-weight: 700; min-height: 1.4em; }
+.mapNote { margin-top: 4px; font-size: 0.8125rem; color: var(--muted); }
 .mapActions:empty { display: none; }
 .mapActions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .map-open { overflow: hidden; }
 /* Room for the bars, so Leaflet's attribution and zoom stay clear of them. */
 .mapPanel .leaflet-bottom { bottom: calc(max(10px, env(safe-area-inset-bottom)) + 84px); }
-.mapPanel .leaflet-control-attribution { font-size: 10px; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--muted); }
+.mapPanel .leaflet-control-attribution { font-size: 0.625rem; background: color-mix(in srgb, var(--bg) 80%, transparent); color: var(--muted); }
 .mapPanel .leaflet-control-attribution a { color: var(--brand-ink); }
 .mapPanel .leaflet-container { font: inherit; background: var(--bg); }
 /* The map in dark mode: its tiles darkened by the GPU, once per tile, as they're drawn. */
@@ -2946,26 +3072,26 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 
 /* ---- Offline Sharing (js/offline-share.js) ---- */
 .offlineBody { display: flex; flex-direction: column; gap: 10px; }
-.offlineBody > .sub { color: var(--muted); font-size: 13px; }
+.offlineBody > .sub { color: var(--muted); font-size: 0.8125rem; }
 .offlineBody .modal-section-label { margin: 6px 0 0; text-align: left; }
 .offlineBody > .btn { align-self: center; }
 .offlineWhat { font-weight: 600; }
-.offlineSent { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--ok); font-size: 14px; }
+.offlineSent { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--ok); font-size: 0.875rem; }
 .offlinePeers { display: flex; flex-direction: column; gap: 6px; }
 .offlinePeer.sent .sub { color: var(--ok); }
 .offlinePeer:disabled { opacity: 0.7; cursor: default; }
-.cardRead .sub { color: var(--muted); font-size: 13px; }
-.cardValue { font-size: 40px; font-weight: 700; line-height: 1.1; }
-.cardFacts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px auto 0; max-width: 300px; text-align: left; font-size: 14px; }
+.cardRead .sub { color: var(--muted); font-size: 0.8125rem; }
+.cardValue { font-size: 2.5rem; font-weight: 700; line-height: 1.1; }
+.cardFacts { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 12px auto 0; max-width: 300px; text-align: left; font-size: 0.875rem; }
 .cardFacts dt { color: var(--muted); }
 .cardHistLabel { margin-top: 14px; text-align: left; }
 .cardHistory { list-style: none; margin: 4px 0 0; padding: 0; text-align: left; }
-.cardHistory li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--surface-border); font-size: 14px; }
+.cardHistory li { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-top: 1px solid var(--surface-border); font-size: 0.875rem; }
 .cardRide { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.cardRide .sub { font-size: 13px; }
+.cardRide .sub { font-size: 0.8125rem; }
 .cardAmt { font-variant-numeric: tabular-nums; }
 .cardAmt.plus { color: var(--ok); }
-.cardRaw { margin-top: 12px; text-align: left; font-size: 13px; color: var(--muted); }
+.cardRaw { margin-top: 12px; text-align: left; font-size: 0.8125rem; color: var(--muted); }
 .cardRaw summary { cursor: pointer; }
 .cardRaw code { display: block; margin: 6px 0; font-family: ui-monospace, Consolas, monospace; word-break: break-all; user-select: text; -webkit-user-select: text; }
 .cardLow { margin-top: 10px; color: var(--warn); display: flex; gap: 6px; align-items: center; justify-content: center; }
@@ -2979,7 +3105,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 :root[data-pip] .mapTop, :root[data-pip] .mapFabs, :root[data-pip] .mapNote, :root[data-pip] .mapActions,
 :root[data-pip] .mapPanel .leaflet-control-container { display: none !important; }
 :root[data-pip] .mapSheet { left: 4px; right: 4px; bottom: 4px; padding: 4px 8px; border-radius: 10px; }
-:root[data-pip] .mapStep { font-size: 13px; min-height: 0; }
+:root[data-pip] .mapStep { font-size: 0.8125rem; min-height: 0; }
 :root[data-pip] body.on-trip { padding: 0; overflow: hidden; }
 :root[data-pip] .tripBar {
     inset: 0; margin: 0; max-width: none; border-radius: 0; border: 0;
@@ -2987,8 +3113,8 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 }
 :root[data-pip] .tripBar .tripDrawer, :root[data-pip] .tripBar .iconBtn, :root[data-pip] .tripChevron { display: none !important; }
 :root[data-pip] .tripBarInner { padding: 8px 12px; }
-:root[data-pip] .tripText strong { font-size: 13px; }
-:root[data-pip] #tripStatus { font-size: 15px; font-weight: 700; }
+:root[data-pip] .tripText strong { font-size: 0.8125rem; }
+:root[data-pip] #tripStatus { font-size: 0.9375rem; font-weight: 700; }
 
 /* Press and hold a button on a touch screen for what it does (js/ui.js), as a mouse's hover
    shows its title. */
@@ -3000,7 +3126,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     border-radius: 10px;
     background: var(--ink);
     color: var(--bg);
-    font-size: 14px;
+    font-size: 0.875rem;
     font-weight: 700;
     line-height: 1.3;
     box-shadow: var(--shadow);
@@ -3043,7 +3169,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 
 /* ---- Will I make it? (js/make-it.js) ---- */
 /* In from the card's edges as .stopTools is, so it lines up with the buttons above. */
-.makeIt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 18px; border-bottom: 1px solid var(--surface-border); font-size: 14px; color: var(--ink); }
+.makeIt { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 18px; border-bottom: 1px solid var(--surface-border); font-size: 0.875rem; color: var(--ink); }
 .makeIt .ico svg { width: 18px; height: 18px; }
 .eta.tooSoon { opacity: 0.4; }
 
@@ -3064,13 +3190,13 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 .lastBusBell .ico svg { width: 15px; height: 15px; }
 .lastBusBell.on { background: var(--brand-fill); color: var(--on-brand); border-color: transparent; }
 .lastBusList { display: flex; flex-direction: column; gap: 4px; }
-.lastBusRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 14px; }
-.lastBusRow .sub, .nearStopsList .sub { color: var(--muted); font-size: 12px; }
+.lastBusRow { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 0.875rem; }
+.lastBusRow .sub, .nearStopsList .sub { color: var(--muted); font-size: 0.75rem; }
 /* A routine's Edit sits by its Remove, at the end of the row; the one being edited is marked. */
 .lastBusRow > span:first-child { flex: 1; min-width: 0; }
 .lastBusRow.editing { border-radius: 10px; padding: 4px 6px; margin: 0 -6px; background: var(--surface-strong); outline: 2px solid var(--brand); }
 .nearStopsList { display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; margin-bottom: 10px; }
-.remindersNote { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface-strong); font-size: 13px; }
+.remindersNote { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--surface-strong); font-size: 0.8125rem; }
 .remindersNote .iconBtn { margin-top: 6px; }
 
 /* ---- the departures board (js/board.js): dark whatever the theme, like the real ones ---- */
@@ -3086,27 +3212,28 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     font-variant-numeric: tabular-nums;
 }
 .boardHead { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-.boardStop { margin: 0; font-size: clamp(22px, 4vw, 44px); font-weight: 800; line-height: 1.1; }
-.boardCode { font-size: clamp(14px, 2vw, 22px); color: #9fb3a4; }
+.boardStop { margin: 0; font-size: clamp(1.375rem, 4vw, 2.75rem); font-weight: 800; line-height: 1.1; }
+.boardCode { font-size: clamp(0.875rem, 2vw, 1.375rem); color: #9fb3a4; }
 .boardRight { display: flex; align-items: center; gap: 16px; }
-.boardClock { font-size: clamp(22px, 4vw, 44px); font-weight: 700; color: #ffd166; }
+.boardClock { font-size: clamp(1.375rem, 4vw, 2.75rem); font-weight: 700; color: #ffd166; }
 .boardRows { flex: 1; overflow: hidden; }
 .boardRow {
     display: grid;
     grid-template-columns: 3.5em minmax(0, 1fr) 3em 3em 3em;
     align-items: center;
     gap: 12px;
-    height: 64px;
+    /* At least, so enlarged text grows the row rather than being clipped (js/board.js measures). */
+    min-height: 64px;
     border-bottom: 1px solid #243028;
-    font-size: clamp(18px, 3vw, 34px);
+    font-size: clamp(1.125rem, 3vw, 2.125rem);
 }
-.boardLabels { height: auto; padding-bottom: 6px; font-size: 14px; color: #9fb3a4; text-transform: uppercase; letter-spacing: 0.06em; }
+.boardLabels { height: auto; padding-bottom: 6px; font-size: 0.875rem; color: #9fb3a4; text-transform: uppercase; letter-spacing: 0.06em; }
 .boardNo { font-weight: 800; color: #ffd166; }
 .boardTo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .boardEta { text-align: right; font-weight: 700; }
-.boardEmpty { font-size: 24px; color: #9fb3a4; }
-.boardFoot { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 14px; color: #9fb3a4; }
-.boardScreen .flagBtn { padding: 8px 14px; font-size: 14px; }
+.boardEmpty { font-size: 1.5rem; color: #9fb3a4; }
+.boardFoot { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 0.875rem; color: #9fb3a4; }
+.boardScreen .flagBtn { padding: 8px 14px; font-size: 0.875rem; }
 
 /* ---- the flag-down screen (js/flag.js) and the stop code scanner (js/scan.js) ---- */
 .flagScreen, .scanScreen {
@@ -3139,7 +3266,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
-    font-size: 16px;
+    font-size: 1rem;
     cursor: pointer;
 }
 .flagBtn [data-icon] svg { width: 20px; height: 20px; }
@@ -3162,7 +3289,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
     top: max(24px, env(safe-area-inset-top));
     margin: 0;
     text-align: center;
-    font-size: 16px;
+    font-size: 1rem;
     text-shadow: 0 1px 4px #000;
 }
 .scanClose { position: absolute; bottom: max(24px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); }
@@ -3472,7 +3599,7 @@ body.touring { overflow: hidden; }
     flex-direction: column;
     background: var(--term-bg);
     color: var(--term-fg);
-    font-size: 13px;
+    font-size: 0.8125rem;
     line-height: 1.45;
     outline: none;
 }
@@ -3488,7 +3615,7 @@ body.touring { overflow: hidden; }
     --term-bar-left: max(var(--term-side), calc(var(--tray-tab) + 10px));
 }
 @media (min-width: 640px) {
-    .terminal { font-size: 14px; --term-side: 20px; }
+    .terminal { font-size: 0.875rem; --term-side: 20px; }
 }
 .termBar {
     display: flex;
@@ -3556,14 +3683,14 @@ body.touring { overflow: hidden; }
 .mapPanel:not(.exploring) #mapSave { display: none; }
 .mapSaveSheet {
     position: absolute; z-index: 1001; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
-    max-width: 520px; margin: 0 auto; padding: 12px 14px; border-radius: 18px; font-size: 14px;
+    max-width: 520px; margin: 0 auto; padding: 12px 14px; border-radius: 18px; font-size: 0.875rem;
 }
 .mapSaveSheet[hidden] { display: none; }
 .mapPanel.mapSaveOpen .mapFabs { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 190px); }
 .mapSaveHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .mapSaveBody p { margin: 4px 0; }
 .mapSaveBody .ico { vertical-align: -3px; }
-.mapSaveMsg { font-size: 13px; color: var(--muted); }
+.mapSaveMsg { font-size: 0.8125rem; color: var(--muted); }
 .mapSaveBody progress { width: 100%; height: 8px; accent-color: var(--brand-fill); }
 .mapCard {
     position: absolute;
@@ -3616,8 +3743,8 @@ body.touring { overflow: hidden; }
 }
 .mcHead { display: flex; align-items: flex-start; gap: 10px; }
 .mcTitle { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
-.mcTitle strong { font-size: 17px; line-height: 1.2; }
-.mcTitle > span { font-size: 13px; color: var(--muted-strong); }
+.mcTitle strong { font-size: 1.0625rem; line-height: 1.2; }
+.mcTitle > span { font-size: 0.8125rem; color: var(--muted-strong); }
 .mcCode {
     flex: none;
     padding: 3px 8px;
@@ -3637,7 +3764,7 @@ body.touring { overflow: hidden; }
     border-radius: 999px;
     background: var(--line, #748477);
     color: #fff;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.02em;
 }
@@ -3652,7 +3779,7 @@ body.touring { overflow: hidden; }
     cursor: pointer;
     text-align: center;
     font-weight: 700;
-    font-size: 14px;
+    font-size: 0.875rem;
     color: #fff;
     background: #1f9d55;
 }
@@ -3660,12 +3787,12 @@ body.touring { overflow: hidden; }
 .svcPill.off { background: color-mix(in srgb, var(--ink) 18%, var(--surface-strong)); color: var(--muted-strong); }
 .svcPill:hover { filter: brightness(1.1); }
 .svcPill:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.mcKey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 12px; color: var(--muted); }
+.mcKey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 0.75rem; color: var(--muted); }
 .mcKeyDot { width: 9px; height: 9px; border-radius: 50%; background: #1f9d55; margin-left: 6px; }
 .mcKeyDot:first-child { margin-left: 0; }
 .mcKeyDot.last { background: #d1242f; }
 .mcKeyDot.off { background: color-mix(in srgb, var(--ink) 25%, var(--surface-strong)); }
-.mcNote { margin: 0; font-size: 13px; color: var(--muted-strong); display: flex; align-items: center; gap: 6px; }
+.mcNote { margin: 0; font-size: 0.8125rem; color: var(--muted-strong); display: flex; align-items: center; gap: 6px; }
 .mcNote .ico svg { width: 16px; height: 16px; }
 .mcGo { align-self: stretch; justify-content: center; }
 /* A station's platforms, a direction at a time, with an arrow at each side. */
@@ -3682,7 +3809,7 @@ body.touring { overflow: hidden; }
 }
 .mcArrow[hidden] { visibility: hidden; display: inline-flex; }
 .mcArrow svg { width: 18px; height: 18px; }
-.mcSlide { min-width: 0; display: flex; flex-direction: column; gap: 10px; touch-action: pan-y; }
+.mcSlide { min-width: 0; display: flex; flex-direction: column; gap: 10px; touch-action: pan-y pinch-zoom; }
 .mcSlide.fromRight { animation: mcSlideIn 0.22s ease-out; --from: 24px; }
 .mcSlide.fromLeft { animation: mcSlideIn 0.22s ease-out; --from: -24px; }
 @keyframes mcSlideIn {
@@ -3690,12 +3817,12 @@ body.touring { overflow: hidden; }
     to { opacity: 1; transform: none; }
 }
 .mcDir { display: flex; align-items: center; gap: 8px; }
-.mcDirText { display: flex; flex-direction: column; font-size: 14px; }
-.mcDirText span { font-size: 12px; color: var(--muted); }
-.mcCount { margin: 0; text-align: center; font-size: 12px; color: var(--muted); }
+.mcDirText { display: flex; flex-direction: column; font-size: 0.875rem; }
+.mcDirText span { font-size: 0.75rem; color: var(--muted); }
+.mcCount { margin: 0; text-align: center; font-size: 0.75rem; color: var(--muted); }
 .mapCard .legDoors { margin: 0; }
 .mapCard .doorChip { min-width: 46px; }
-.mapCard .doorChip b { font-size: 17px; }
+.mapCard .doorChip b { font-size: 1.0625rem; }
 @media (prefers-reduced-motion: reduce) {
     .mcBubble, .mcSlide.fromLeft, .mcSlide.fromRight { animation: none; }
 }
@@ -3706,3 +3833,71 @@ body.touring { overflow: hidden; }
    where you are, seen only by the tour. */
 .mapSpot { display: none; position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; }
 .mapPanel.exploring .mapSpot { display: block; }
+
+/* ===== Your colours, in Theme (js/colours.js) ===== */
+.customColours { margin-top: 6px; }
+.colourRows { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 8px; margin: 6px 0 10px; }
+.colourRow {
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 6px 10px; border-radius: 12px; border: 1px solid var(--surface-border); background: var(--surface-strong);
+    font-size: 0.85rem; color: var(--ink); cursor: pointer;
+}
+.colourRow input[type="color"] { width: 44px; height: 32px; border: 0; padding: 0; background: none; cursor: pointer; }
+.colourPreview {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; border-radius: 14px;
+    border: 1px solid var(--surface-border); font-size: 0.9rem;
+}
+.colourCard { padding: 6px 10px; border-radius: 10px; }
+.colourButton { padding: 6px 12px; border-radius: 10px; font-weight: 700; }
+.colourWarn { margin: 8px 2px 0; font-size: 0.85rem; color: var(--error); }
+/* Your colours on: the brand swatches step aside, and a note says how to have them back. */
+.brandAway { display: none; }
+:root[data-custom-colours] .brandAway { display: block; }
+:root[data-custom-colours] .brandLabel,
+:root[data-custom-colours] #swatchGrid { display: none; }
+.langFeedbackLink { font-weight: 700; color: var(--brand-ink); }
+
+/* ===== Choose a language (js/lang-pick.js) ===== */
+.langModal { display: flex; flex-direction: column; gap: 10px; padding: 20px; }
+.langTitle { margin: 0 0 4px; font-size: 1.35rem; color: var(--ink); }
+.langList { display: flex; flex-direction: column; gap: 8px; }
+.langRow {
+    display: flex; align-items: center; gap: 14px; width: 100%; min-height: 48px; padding: 12px 16px;
+    border-radius: 12px; border: 1px solid var(--surface-border); background: var(--surface-strong);
+    color: var(--ink); font: inherit; font-size: 1rem; font-weight: 700; text-align: left; cursor: pointer;
+}
+.langRow:hover { background: var(--brand-fill); color: var(--on-brand); }
+.langRow.active { border-color: var(--brand-ink); box-shadow: 0 0 0 1px var(--brand-ink) inset; }
+.langFlag { width: 30px; height: 22.5px; flex: none; border-radius: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+.langName { flex: 1; min-width: 0; }
+.langTick { display: inline-flex; color: var(--brand-ink); }
+.langTick svg { width: 20px; height: 20px; }
+.langCloseBtn { width: 100%; min-height: 48px; margin-top: 6px; }
+.langOpen .langNow { display: inline-flex; align-items: center; gap: 12px; flex: 1; font-weight: 700; }
+.langOpen .langFlag { width: 26px; height: 19.5px; }
+:root[data-contrast="more"] .langRow.active { box-shadow: 0 0 0 2px var(--ink) inset; }
+
+/* ===== The celebration, every line ridden (js/celebrate.js) ===== */
+.celebrateBackdrop { padding: 0; align-items: center; background: radial-gradient(ellipse at 50% 35%, #1d3327 0%, #060b08 75%); }
+.celebrate {
+    position: relative; width: min(960px, 100vw); max-width: none; height: min(720px, 100dvh); max-height: 100dvh; padding: 0;
+    display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden;
+    background: transparent; border: 0; box-shadow: none; color: #fff;
+}
+.celebrateScene { position: absolute; inset: 0; }
+.celebrateCanvas { width: 100%; height: 100%; display: block; }
+.celebrateText {
+    position: relative; margin: 0 16px max(16px, env(safe-area-inset-bottom)); padding: 16px 18px; border-radius: 18px;
+    background: rgba(6, 11, 8, 0.72); border: 1px solid rgba(255, 255, 255, 0.18); text-align: center;
+}
+.celebrateText h2 { margin: 0 0 6px; font-size: 1.5rem; color: #ffd166; }
+.celebrateText p { margin: 0 0 12px; font-size: 0.95rem; line-height: 1.4; color: #eef2ef; }
+.celebrateText .tripActions { justify-content: center; }
+.celebrateText .iconBtn { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+/* The flat celebration, on a phone with little memory (js/celebrate.js): the trophy in SVG. */
+.celebrateBackdrop.flat .celebrateScene { display: flex; align-items: center; justify-content: center; padding-bottom: 200px; }
+.flatTrophy { width: min(46vw, 220px); height: auto; filter: drop-shadow(0 10px 30px rgba(245, 197, 66, 0.35)); }
+@media (prefers-reduced-motion: no-preference) {
+    .celebrateBackdrop.flat .flatTrophy { animation: trophy-bob 2.4s ease-in-out infinite; }
+}
+@keyframes trophy-bob { 50% { transform: translateY(-8px) rotate(-2deg); } }

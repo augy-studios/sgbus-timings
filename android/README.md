@@ -18,7 +18,7 @@ from there.
 
 | Feature | Native side (`native/app/src/main/java/org/uwuapps/sgbus/`) | Site side (`main-site/`) |
 |---|---|---|
-| **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. From 2.0.8, walking or riding by your average speed (up to 10 km/h walking, a bus or train's 40 km/h or so riding), as the page can't count steps with the screen off | `TripPlugin`, `TripService` (a foreground service of the location type), `Pace` | `js/trip.js` |
+| **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. From 2.0.8, walking or riding by your average speed (up to 10 km/h walking, a bus or train's 40 km/h or so riding), as the page can't count steps with the screen off. From 2.2.7, the notification shows the part you're on: a bus, a train or walking for its icon, tinted the line's colour on a train, and the bus or line ("Bus 174", "EW Line") by the app's name; an older app keeps its own icon | `TripPlugin`, `TripService` (a foreground service of the location type; `ic_trip_bus`, `ic_trip_train` and `ic_trip_walk` in `res/drawable/`), `Pace` | `js/trip.js` (`nativeLook`) |
 | **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | Capacitor's PushNotifications plugin, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
 | **New versions as notifications** (2.1.1): "SG Bus Timings 2.1.1 is out" the moment a release is published, for phones that turned on **New versions of the app** in Service alerts. A GitHub webhook calls the site, which pushes to the FCM topic `sgbus-releases` the switch joins; tapping it opens `UpdateActivity`'s check for that version. Setup: `FIREBASE-SETUP.md` | `SgBusPlugin.releases` / `setReleases` (`firebase-messaging`), `Notifications` (`releases` channel), `MainActivity.onNewIntent`, `UpdateActivity.check` | `js/app-update.js`, `api/push/release.js`, `api/_lib/release.js`, `api/_push/fcm.js` (`sendToTopic`) |
 | **The phone's calendar**, for Navigate's Calendar tab | `PhoneCalendarPlugin`, `CalendarReader` | `js/calendar.js` |
@@ -44,7 +44,11 @@ from there.
 
 `SgBusPlugin` also tells the page what this build can do (`info`, with `features`), posts
 notifications for it, and opens Android's settings pages. `MainActivity` makes Back go back
-through the page's history.
+through the page's history, closing what's open over the page; from 2.2.7 (`backtwice`), with
+nothing left to close, the first press shows "Press back again to exit" (`exit_hint` in
+`res/values/strings.xml`) and a second within two seconds sends the app to the background. Also
+from 2.2.7, the WebView's text zoom follows the phone's font size (`fitTextSize`, checked each
+time the app comes back).
 
 The site keeps its own versions of all of these that a browser can do (the Get Off Alert
 with the screen on, Web Push, the iCal calendar link), and only uses the app's when it's

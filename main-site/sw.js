@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v120";
+const VERSION = "v124";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -10,6 +10,20 @@ const ASSETS = [
   "/style.css",
   "/script.js",
   "/js/offline.js",
+  // Languages (js/i18n.js): English is the page's own, and each other language's file is kept
+  // here, so the language can be changed offline.
+  "/js/i18n.js",
+  "/i18n/zh-SG.json",
+  "/i18n/ms.json",
+  "/i18n/ta.json",
+  // Rides really taken, and the secret colours they unlock (js/rides.js, js/colours.js).
+  "/js/rides.js",
+  "/js/colours.js",
+  // The celebration for every line ridden; three.js itself is kept as MapLibre is, once fetched.
+  "/js/celebrate.js",
+  "/js/lang-pick.js",
+  // A coffee, asked once every six months (js/donate.js).
+  "/js/donate.js",
   // The first open's choice, Minimal or Full (js/first-run.js).
   "/js/first-run.js",
   "/js/icons.js",
@@ -502,7 +516,8 @@ self.addEventListener("fetch", (event) => {
   }
 
   // MapLibre, in its versioned folder: kept apart from the site's cache, which a deploy clears.
-  if (url.pathname.startsWith("/vendor/maplibre-")) {
+  // three.js too, for the celebration (js/celebrate.js), the same way.
+  if (url.pathname.startsWith("/vendor/maplibre-") || url.pathname.startsWith("/vendor/three-")) {
     event.respondWith(mapKept(request));
     return;
   }

@@ -1,6 +1,7 @@
 // Confetti, on your birthday (script.js, "Greeting"): a burst from the top of the screen that
 // falls and fades over a few seconds, drawn on a canvas over everything that taps go through.
-// Nothing with reduced motion asked for.
+// Nothing with reduced motion asked for. burst({ colours, count, life }) for other occasions: the
+// flat celebration for every line ridden (js/celebrate.js) throws the lines' colours.
 // Plain script: exports go on window.
 (function () {
   const COLOURS = ["#ff5d8f", "#ffd166", "#06d6a0", "#4cc9f0", "#9b5de5", "#f15bb5", "#00bbf9", "#fee440"];
@@ -8,7 +9,7 @@
   const LIFE_MS = 4500;
   let running = null;
 
-  function burst() {
+  function burst({ colours = COLOURS, count = COUNT, life = LIFE_MS } = {}) {
     if (running || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const canvas = document.createElement("canvas");
     canvas.className = "confetti";
@@ -29,7 +30,7 @@
     window.addEventListener("resize", size);
 
     // Thrown up and out from two points along the top, then falling, tumbling as they go.
-    const bits = Array.from({ length: COUNT }, (_, i) => {
+    const bits = Array.from({ length: count }, (_, i) => {
       const fromLeft = i % 2 === 0;
       const angle = (fromLeft ? -60 : -120) + (Math.random() - 0.5) * 70;
       const speed = 5 + Math.random() * 7;
@@ -43,7 +44,7 @@
         spin: Math.random() * Math.PI,
         vspin: (Math.random() - 0.5) * 0.3,
         sway: Math.random() * Math.PI * 2,
-        colour: COLOURS[i % COLOURS.length],
+        colour: colours[i % colours.length],
         round: Math.random() < 0.25,
       };
     });
@@ -55,7 +56,7 @@
       last = now;
       const age = now - started;
       ctx.clearRect(0, 0, w, h);
-      ctx.globalAlpha = Math.max(0, Math.min(1, (LIFE_MS - age) / 1000));
+      ctx.globalAlpha = Math.max(0, Math.min(1, (life - age) / 1000));
       for (const b of bits) {
         b.vy += 0.18 * dt;
         b.vx *= Math.pow(0.985, dt);
@@ -78,7 +79,7 @@
         }
         ctx.restore();
       }
-      if (age < LIFE_MS) {
+      if (age < life) {
         running = requestAnimationFrame(frame);
         return;
       }

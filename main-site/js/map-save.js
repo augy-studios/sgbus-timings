@@ -60,11 +60,14 @@
       return null;
     }
   }
+  // data-map-saved on <html> while a map's saved, which index.html's head sets again before
+  // first paint: offline, Explorer's button stays for it (style.css).
   function setMeta(m) {
     try {
       if (m) localStorage.setItem(META_KEY, JSON.stringify(m));
       else localStorage.removeItem(META_KEY);
     } catch { /* shown as not saved next time; the tiles still serve */ }
+    document.documentElement.toggleAttribute('data-map-saved', !!m);
   }
 
   // ---------- counting ----------
@@ -311,6 +314,7 @@
   }
 
   function init() {
+    document.documentElement.toggleAttribute('data-map-saved', !!meta());
     $('#mapSave').addEventListener('click', () => ($('#mapSaveSheet').hidden ? open() : close()));
     $('#mapSaveClose').addEventListener('click', close);
     $('#mapSaveBody').addEventListener('click', (e) => {

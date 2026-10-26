@@ -1,11 +1,37 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 26 October 2026**
+**Latest update: 27 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 27 October 2026: buses at stops, lists, four languages, and a secret
+
+### Web app
+
+- **Save a bus at a stop** - Each bus in a stop's timings has a star: tap it to save that bus at that stop only, as LTA's MyTransport does. Favourites lists them under Buses at stops, one chip per stop; tap it for that stop's timings with just those buses. Glance shows just them at that stop too.
+- **Lists** - Group your favourites into lists, such as Work or School, with New list at the top of Favourites. Favourites itself keeps every favourite and can't be deleted. A list can be renamed, changed or deleted, and what's in it stays in Favourites. Each list with a stop in it is also a choice on Glance, with just its buses. Lists and buses at stops sync to your other devices.
+- **English, 中文, Bahasa Melayu, தமிழ்** - Pick the app's language in Settings, You, Language, from a list with each language's flag and its name in its own words; until you do, it follows your phone's. Think a translation looks wrong? The link under the list tells us. Glance, Bus timings, Navigate, the trip bar, Settings, Favourites and Theme are translated so far, the rest still in English. The translations are new: tell us anything that reads wrong.
+- **High contrast** - In Theme: black or white text, solid cards and clear edges. It follows your phone's high contrast setting unless you turn it on or off there.
+- **A secret** - Ride every MRT and LRT line at least once with the Get Off Alert and see what you unlock, with a celebration to match (a lighter one on phones with less memory). Only rides you really take count.
+- **Explorer offline** - Once Singapore's map is saved, Explorer stays with no connection, and its stop cards show which buses run there.
+- **No sharing your ETA offline** - With no connection, Share my ETA leaves the trip bar, as live progress needs one. Offline Sharing still sends a place or directions to a phone nearby.
+- **Room to type on a trip** - With the keyboard up, the trip bar shrinks to one line, so you can see what you're typing and its suggestions.
+- **Station names, tidied** - Ways from OneMap say "Pasir Ris station", not "PASIR RIS MRT STATION".
+- **Easier with a screen reader** - Windows take the focus when they open and give it back when they close, and Esc closes them. Bus timings read out how full a bus is and when a time is an estimate. Search suggestions can be picked with the arrow keys and say how many there are. The trip bar no longer interrupts every minute, and the Settings switches say what they're for. Pages have proper headings.
+- **Bigger text** - Text follows your browser's text size, small buttons are easier to tap, and the departures board's rows grow with the text. With Remove animations on, the page and the map jump rather than glide.
+- **Love SG Bus Timings?** - About once every six months, a small window asks if you'd consider donating. Not in your first two weeks, never on a trip or offline, and never if you've turned the coffee button off in Settings.
+
+### Android app (next update)
+
+- The web app's changes above.
+- **The trip notification shows where you are** - Its icon is a bus, a train or walking for the part you're on, in the train line's colour, with the bus or line beside the app's name.
+- **Press back twice to exit** - With nothing open, Back says "Press back again to exit" on any page, and a second press leaves the app.
+- **Your font size** - The app's text follows your phone's font size.
 
 ---
 

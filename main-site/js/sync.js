@@ -50,6 +50,11 @@ const FAV_KINDS = [
   { kind: 'stop',  list: 'stops',  label: 'Bus stops', key: (s) => `stop:${s.code}` },
   { kind: 'bus',   list: 'buses',  label: 'Buses',     key: (b) => `bus:${b}` },
   { kind: 'route', list: 'routes', label: 'Routes',    key: (r) => `route:${r.start}>${r.end}` },
+  // A bus at one stop, and the lists you've made in Favourites (help desk #6, script.js). A
+  // device from before these doesn't say it keeps them, so they aren't offered to it. A list
+  // is keyed by its name and what's in it: taking one adds what it has to the list of that name.
+  { kind: 'stopbus', list: 'stopBuses', label: 'Buses at stops', key: (b) => `stopbus:${b.code}/${b.service}` },
+  { kind: 'favlist', list: 'favLists', label: 'Lists', key: (l) => `favlist:${l.name.toLowerCase()}=${[...l.items].sort().join(',')}` },
   // Navs, from Navigate (js/nav.js): two places, keyed by where they are. A device from
   // before navs synced sends none and ignores these, so sync still works between the two.
   { kind: 'nav',   list: 'navs',   label: 'Navs',      key: (n) => `nav:${navPoint(n.from)}>${navPoint(n.to)}` },
@@ -206,7 +211,7 @@ function ownSettings() {
 // The kinds this device keeps, for the other side to offer only those.
 function ownKinds() {
   return [
-    ...LEGACY_KINDS, 'calendar',
+    ...LEGACY_KINDS, 'calendar', 'stopbus', 'favlist',
     ...(Reminders.has('routines') ? ['routine'] : []),
     ...(Reminders.has('lastbus') ? ['lastbus'] : []),
     ...Object.keys(SYNC_SETTINGS).filter(settingHere).map((field) => `setting:${field}`),
@@ -354,6 +359,7 @@ function ownFavs() {
   return {
     profile: ownProfile(),
     stops: LS.getFavs(), buses: LS.getFavBuses(), routes: LS.getFavRoutes(), navs: LS.getFavNavs(),
+    stopBuses: LS.getFavStopBuses(), favLists: LS.getFavLists().map((l) => ({ name: l.name, items: l.items })),
     places: Places.syncList(), trips: TripHistory.list().slice(0, SYNC_MAX_ITEMS), searches: Recents.syncList(),
     routines: Reminders.syncRoutines(), lastbus: Reminders.syncLastBus(), calendar: Calendar.syncList(),
     settings: ownSettings(),
@@ -401,6 +407,18 @@ function cleanFavs(raw) {
       .map((s) => ({ code: s.code, name: text(s.name) })),
     buses: list(raw.buses)
       .filter((b) => typeof b === 'string' && /^[0-9A-Z]{1,5}$/.test(b) && once(`bus:${b}`)),
+    stopBuses: list(raw.stopBuses)
+      .filter((b) => isStop(b?.code) && typeof b.service === 'string' && /^[0-9A-Z]{1,5}$/.test(b.service) && once(`stopbus:${b.code}/${b.service}`))
+      .map((b) => ({ code: b.code, service: b.service })),
+    // A list's items are keys of the kinds above, nothing else.
+    favLists: list(raw.favLists)
+      .filter((l) => typeof l?.name === 'string' && l.name.trim() && Array.isArray(l.items))
+      .map((l) => ({
+        name: l.name.trim().slice(0, 40),
+        items: [...new Set(l.items.filter((k) => typeof k === 'string' && /^(stop:\d{5}|bus:[0-9A-Z]{1,5}|stopbus:\d{5}\/[0-9A-Z]{1,5})$/.test(k)))].slice(0, SYNC_MAX_ITEMS),
+      }))
+      .filter((l) => !/^favou?rites$/i.test(l.name) && once(`favlist:${l.name.toLowerCase()}=${[...l.items].sort().join(',')}`))
+      .slice(0, 20),
     routes: list(raw.routes)
       .filter((r) => isStop(r?.start) && isStop(r?.end) && once(`route:${r.start}>${r.end}`))
       .map((r) => ({ start: r.start, startName: text(r.startName), end: r.end, endName: text(r.endName) })),
@@ -441,6 +459,9 @@ function mergeFavs(favs) {
   const buses = LS.getFavBuses();
   const routes = LS.getFavRoutes();
   const navs = LS.getFavNavs();
+  const stopBuses = LS.getFavStopBuses();
+  const favLists = LS.getFavLists();
+  let listsChanged = false;
   const places = [];
   const trips = [];
   const searches = [];
@@ -482,6 +503,21 @@ function mergeFavs(favs) {
       places.push(item);
       continue;
     }
+    // Into the list of the same name if there's one, adding only what it hasn't got.
+    if (kind === 'favlist') {
+      const same = favLists.find((l) => l.name.toLowerCase() === item.name.toLowerCase());
+      if (same) same.items = [...new Set([...same.items, ...item.items])];
+      else if (favLists.length < 20) favLists.push({ id: `l${Date.now().toString(36)}${favLists.length}`, name: item.name, items: item.items });
+      else continue;
+      listsChanged = true;
+      added++;
+      continue;
+    }
+    if (kind === 'stopbus') {
+      stopBuses.push(item);
+      added++;
+      continue;
+    }
     if (kind === 'trip') {
       trips.push(item);
       continue;
@@ -510,6 +546,8 @@ function mergeFavs(favs) {
     LS.setFavBuses(buses);
     LS.setFavRoutes(routes);
     LS.setFavNavs(navs);
+    LS.setFavStopBuses(stopBuses);
+    if (listsChanged) LS.setFavLists(favLists);
     favouritesChanged();
   }
   // The greeting, and Settings if it's open, show the name and birthday taken.
@@ -915,6 +953,8 @@ function favTitle(kind, item) {
   if (kind === 'profile') return item.field === 'name' ? 'Your name' : 'Your birthday';
   if (kind === 'stop') return nameOf(item.code) || item.name || 'Bus stop';
   if (kind === 'bus') return `Bus ${item}`;
+  if (kind === 'stopbus') return `Bus ${item.service} at ${nameOf(item.code) || item.code}`;
+  if (kind === 'favlist') return item.name;
   if (kind === 'nav') return `${item.from.label} → ${item.to.label}`;
   if (kind === 'place') return Places.FIXED[item.key]?.name || item.name || item.label;
   if (kind === 'trip') return `To ${item.to.label}`;
@@ -946,6 +986,8 @@ function favSubtitle(kind, item) {
     return road ? `${item.code} · ${road}` : item.code;
   }
   if (kind === 'bus') return serviceEndsText(item);
+  if (kind === 'stopbus') return `Bus stop ${item.code}`;
+  if (kind === 'favlist') return item.items.length ? `${item.items.length} favourite${item.items.length === 1 ? '' : 's'}` : 'Empty';
   if (kind === 'nav') return 'By bus and train';
   if (kind === 'place') return item.label;
   if (kind === 'search') return item.sub;

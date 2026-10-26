@@ -557,6 +557,21 @@
     }
   }
 
+  // How the app's trip notification looks for the part you're on (help desk #6): a bus, a train
+  // or walking for its icon, tinted the line's colour on a train (the bus green, a walk blue, as
+  // the live map draws them), and the bus or line next to the app's name. An app from before
+  // 2.2.7 ignores them and keeps its own icon.
+  const NATIVE_COLOURS = { bus: "#1f9d55", walk: "#2f7dff", train: "#7a4fd6" };
+  const LINE_COLOURS = { EW: "#009645", CG: "#009645", NS: "#d42e12", NE: "#9900aa", CC: "#fa9e0d", CE: "#fa9e0d", DT: "#005ec4", TE: "#9d5b25" };
+  function nativeLook() {
+    const leg = trip?.legs[trip.leg];
+    if (!leg) return {};
+    const kind = leg.kind === "train" ? "train" : leg.kind === "walk" ? "walk" : "bus";
+    const line = kind === "train" ? String(leg.route || "").toUpperCase().slice(0, 2) : "";
+    const color = /^#[0-9a-f]{6}$/i.test(leg.color || "") ? leg.color : LINE_COLOURS[line] || (leg.lrt ? "#748477" : NATIVE_COLOURS[kind]);
+    return { icon: kind, color, sub: leg.label || "" };
+  }
+
   // The app's TripService: its fixes come here as the browser's would, screen off or not.
   function followNatively() {
     const asked = trip;
@@ -568,7 +583,7 @@
       AppBridge.on("Trip", "end", () => stop()),
     ];
     nativeText = statusText();
-    AppBridge.call("Trip", "start", { title: trip.title, text: nativeText }).catch((err) => {
+    AppBridge.call("Trip", "start", { title: trip.title, text: nativeText, ...nativeLook() }).catch((err) => {
       if (trip !== asked) return;
       if (err?.code === "permission") {
         trip.noLocation = true;
@@ -634,6 +649,8 @@
       leg = trip.legs[trip.leg];
       boardedNow(alongLeg(here, leg, 0) ?? 0);
     }
+    // What's seen of this ride, for whether it was really taken (js/rides.js).
+    window.RideCheck?.see(trip, trip.leg, here, accuracy);
     if (isWalk(leg)) return onWalkFix(here, accuracy, leg);
     if (realign(here, accuracy, leg)) return;
     if (accuracy > GOOD_FIX_M) return;
@@ -1715,6 +1732,9 @@
     const from = trip.leg;
     trip.times[from] = {};
     trip.leg -= 1;
+    // Back on a ride judged not taken (moved on from too soon): it can be taken yet.
+    const seen = trip.seen?.[trip.leg];
+    if (seen && !seen.ok) seen.judged = false;
     const leg = trip.legs[trip.leg];
     const last = leg.points.length - 1;
     const was = trip.left?.[trip.leg];
@@ -1763,6 +1783,8 @@
   function endLegTime() {
     const t = trip.times?.[trip.leg];
     if (t && !t.end) t.end = Date.now();
+    // The ride's judged: kept by line or bus if it was really taken (js/rides.js).
+    try { window.RideCheck?.done(trip, trip.leg); } catch (err) { console.warn("couldn't judge the ride:", err); }
   }
 
   // The trip as it stands, for Your trips to keep. It works out the rides taken and their
@@ -2203,15 +2225,20 @@
     const left = stopsLeft();
     const arrived = left === 0 && trip.leg === trip.legs.length - 1;
     // Not on a walk that's the whole trip, which says its minutes already.
-    const togo = arrived || (trip.legs.length === 1 && isWalk(leg)) ? "" : ` · ~${Math.max(1, Math.round(minutesLeft()))} min left`;
+    const togo = arrived || (trip.legs.length === 1 && isWalk(leg)) ? "" : ` · ${I18n.t("trip.minLeft", "~{m} min left", { m: Math.max(1, Math.round(minutesLeft())) })}`;
     if (!message && trip.alertText && trip.alertLeft === left) message = trip.alertText;
     // Get ready to board stands while you're still waiting for the bus.
     if (!message && trip.boardText && trip.readied?.[trip.leg] && leg.kind === "bus" && !trip.boarded && target() < 0.5) message = trip.boardText;
     if (message) return message + togo;
     const where = isWalk(leg)
-      ? `${leg.cycle ? "Cycle" : "Walk"} to ${leg.to}${left === 0 ? ": there" : `, about ${Math.max(1, Math.round((leg.minutes || 1) * (1 - target())))} min`}`
-      : `${leg.label}: ${left === 0 ? `at ${leg.to}` : `${left} stop${left === 1 ? "" : "s"} to ${leg.to}`}`;
-    return where + (trip.legs.length > 1 ? ` · part ${trip.leg + 1} of ${trip.legs.length}` : "") + togo;
+      ? (left === 0
+        ? (leg.cycle ? I18n.t("trip.cycleThere", "Cycle to {to}: there", { to: leg.to }) : I18n.t("trip.walkThere", "Walk to {to}: there", { to: leg.to }))
+        : (leg.cycle ? I18n.t("trip.cycleAbout", "Cycle to {to}, about {m} min", { to: leg.to, m: Math.max(1, Math.round((leg.minutes || 1) * (1 - target()))) })
+          : I18n.t("trip.walkAbout", "Walk to {to}, about {m} min", { to: leg.to, m: Math.max(1, Math.round((leg.minutes || 1) * (1 - target()))) })))
+      : left === 0 ? I18n.t("trip.atStop", "{ride}: at {to}", { ride: leg.label, to: leg.to })
+      : left === 1 ? I18n.t("trip.oneStop", "{ride}: 1 stop to {to}", { ride: leg.label, to: leg.to })
+      : I18n.t("trip.stops", "{ride}: {n} stops to {to}", { ride: leg.label, n: left, to: leg.to });
+    return where + (trip.legs.length > 1 ? ` · ${I18n.t("trip.part", "part {n} of {of}", { n: trip.leg + 1, of: trip.legs.length })}` : "") + togo;
   }
 
   // ---------- MyICA, on a trip to a checkpoint ----------
@@ -2262,16 +2289,24 @@
     btn.rel = "noopener noreferrer";
   }
 
+  let spokenStatus = "";
   function render(message) {
     if (!trip) return;
     const leg = trip.legs[trip.leg];
     $("#tripTitle").textContent = trip.title;
     const status = statusText(message);
     $("#tripStatus").textContent = status;
+    // Said aloud by a screen reader (#tripSay, polite) only when it says something new: a part,
+    // a stop or an alert, not each minute counting down (help desk #6).
+    const said = message ? `!${status}` : status.replace(/\d+(\.\d+)?\s*(min|m|km)\b/g, "");
+    if (said !== spokenStatus) {
+      spokenStatus = said;
+      $("#tripSay").textContent = status;
+    }
     // The app's notification says the same, when it's changed.
     if (nativeSubs && status !== nativeText) {
       nativeText = status;
-      AppBridge.call("Trip", "update", { title: trip.title, text: status }).catch(() => {});
+      AppBridge.call("Trip", "update", { title: trip.title, text: status, ...nativeLook() }).catch(() => {});
     }
     needRoutes();
     const notes = [];
@@ -2502,10 +2537,38 @@
   // be scrolled to rather than sitting under the bar; the page's end likewise. Kept in step as the bar grows or goes.
   function fitTray() {
     const bar = $("#tripBar");
+    if (!bar) return;
     const shown = !bar.classList.contains("hidden") && bar.offsetHeight > 0;
     const h = shown ? Math.max(0, window.innerHeight - bar.getBoundingClientRect().top) : 0;
     document.documentElement.style.setProperty("--trip-h", `${Math.round(h)}px`);
   }
+  // The phone's keyboard up (help desk #6): typing in a search box or Navigate's ends on a trip,
+  // the bar shrinks to its one line, the trip and where you're at, so the page above has the
+  // room (style.css, data-keyboard). Up is a text field focused and the screen this much
+  // shorter than it is without one: the app's WebView shrinks the window for its keyboard, and
+  // Chrome its visual viewport.
+  const KEYBOARD_PX = 120;
+  let tallest = 0;
+  let wide = 0;
+  const typingIn = (el) => !!el && (el.isContentEditable || el.tagName === "TEXTAREA" ||
+    (el.tagName === "INPUT" && !/^(button|checkbox|radio|range|color|file|submit|reset|image|hidden)$/i.test(el.type || "")));
+  function fitKeyboard() {
+    const h = window.visualViewport?.height ?? window.innerHeight;
+    // A turn of the phone starts the count again.
+    if (window.innerWidth !== wide) { wide = window.innerWidth; tallest = 0; }
+    const typing = typingIn(document.activeElement);
+    if (!typing) tallest = Math.max(tallest, h);
+    const up = typing && tallest - h > KEYBOARD_PX;
+    if (up === document.documentElement.hasAttribute("data-keyboard")) return;
+    document.documentElement.toggleAttribute("data-keyboard", up);
+    fitTray();
+  }
+  window.visualViewport?.addEventListener("resize", fitKeyboard);
+  window.addEventListener("resize", fitKeyboard);
+  document.addEventListener("focusin", () => setTimeout(fitKeyboard, 0));
+  document.addEventListener("focusout", () => setTimeout(fitKeyboard, 0));
+  fitKeyboard();
+
   if ("ResizeObserver" in window) new ResizeObserver(fitTray).observe($("#tripBar"));
   new MutationObserver(fitTray).observe($("#tripBar"), { attributes: true, attributeFilter: ["class"] });
   window.addEventListener("resize", fitTray);

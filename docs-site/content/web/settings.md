@@ -14,6 +14,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 
 | Setting | What it does |
 |---|---|
+| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. In Chinese, Malay or Tamil, **Tell us** under the list emails Augy about a translation that looks wrong. |
 | **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
 | **Birthday** | On the day, the greeting becomes "Happy 28th Birthday, Sam!", on two lines so your whole name shows. The age comes from the year you were born. **Clear** removes it. |
 | **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |
@@ -116,6 +117,24 @@ Seven colours tint the page, the buttons and the highlights:
 
 Every colour works in both light and dark mode, and text stays readable in all
 fourteen combinations.
+
+### High contrast
+
+**Phone's setting** (the default) follows your phone's or computer's own high
+contrast or "increase contrast" setting. **On** turns it on whatever that says,
+and **Off** keeps it off. High contrast makes text black or white, cards solid
+rather than see-through, and their edges clear.
+
+### A secret
+
+There's one more thing in the theme picker, but only once you've earned it. Ride
+every MRT and LRT line at least once on a trip with the
+[Get Off Alert](get-off-alert.md): the North-South, East-West (its Changi Airport
+branch counts), North East, Circle, Downtown and Thomson-East Coast lines, and the
+Bukit Panjang, Sengkang and Punggol LRTs, on as many trips as you like. Then see
+what happens. Only rides you really take count: the app has to see your
+phone where the ride starts and where it ends, taking about as long as the
+ride does.
 
 > [!TIP]
 > This guide has the same theme picker, at the top right of every page. Its

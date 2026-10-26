@@ -7,6 +7,9 @@ function readJson(key, fallback) {
     catch { return fallback; }
 }
 
+// The words for `key` in the language picked (js/i18n.js), or `en` with {vars} filled in.
+const tr = (key, en, vars) => (window.I18n ? I18n.t(key, en, vars) : String(en).replace(/\{(\w+)\}/g, (m, k) => vars?.[k] ?? m));
+
 const LS = {
     nameKey:       'sgbus_name',
     favKey:        'sgbus_favs_v2',
@@ -14,6 +17,8 @@ const LS = {
     favBusKey:     'sgbus_fav_buses',
     favRouteKey:   'sgbus_fav_routes',
     favNavKey:     'sgbus_fav_navs',
+    favStopBusKey: 'sgbus_fav_stop_buses',
+    favListsKey:   'sgbus_fav_lists',
     pinKey:        'sgbus_pin_prefs',
     birthdayKey:   'sgbus_birthday',
     confettiKey:   'sgbus_confetti',
@@ -53,6 +58,27 @@ const LS = {
     // [{ from: { label, lat, lng }, to: { label, lat, lng } }], from Navigate (js/nav.js).
     getFavNavs() { const v = readJson(this.favNavKey, []); return Array.isArray(v) ? v : []; },
     setFavNavs(arr) { localStorage.setItem(this.favNavKey, JSON.stringify(arr)); },
+
+    // [{ code, service }]: a bus at one stop, starred on that stop's timings (help desk #6), as
+    // LTA's MyTransport has it, rather than the bus everywhere it goes as getFavBuses is.
+    getFavStopBuses() {
+        const v = readJson(this.favStopBusKey, []);
+        return Array.isArray(v) ? v.filter(b => /^\d{5}$/.test(b?.code) && typeof b.service === 'string' && b.service) : [];
+    },
+    setFavStopBuses(arr) { localStorage.setItem(this.favStopBusKey, JSON.stringify(arr)); },
+
+    // [{ id, name, items }]: the lists you've made in Favourites (help desk #6), each a name and
+    // the keys of the favourites in it (favKey below: "stop:84009", "bus:174",
+    // "stopbus:84009/174"). Favourites itself is every favourite, so it isn't one of these and
+    // can't be deleted; a list only groups favourites that are there.
+    getFavLists() {
+        const v = readJson(this.favListsKey, []);
+        return Array.isArray(v) ? v.filter(l => l && typeof l.id === 'string' && typeof l.name === 'string' && Array.isArray(l.items)) : [];
+    },
+    setFavLists(arr) {
+        if (arr.length) localStorage.setItem(this.favListsKey, JSON.stringify(arr));
+        else localStorage.removeItem(this.favListsKey);
+    },
 
     // Where favourites pin in a list, per kind ("bus" or "stop"): "top" unless set otherwise.
     getPin(kind) { return readJson(this.pinKey, {})?.[kind] === 'bottom' ? 'bottom' : 'top'; },
@@ -127,9 +153,9 @@ const LS = {
 // ----------- Greeting -----------
 function getGreeting(now = new Date()) {
     const h = now.getHours();
-    if (h < 12) return 'Good Morning';
-    if (h < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    if (h < 12) return tr('greeting.morning', 'Good Morning');
+    if (h < 18) return tr('greeting.afternoon', 'Good Afternoon');
+    return tr('greeting.evening', 'Good Evening');
 }
 
 function isBirthday(now = new Date()) {
@@ -246,7 +272,13 @@ function msToMins(ms) {
     if (ms == null) return '-';
     const sec = Math.max(0, Math.round(ms / 1000));
     const m = Math.floor(sec / 60), s = sec % 60;
-    return m > 0 ? `${m} min${m > 1 ? 's' : ''}${s ? ` ${s}s` : ''}` : `${s}s`;
+    return m > 0 ? (m > 1 ? tr('time.mins', '{m} mins', { m }) : tr('time.min', '{m} min', { m })) + (s ? ` ${tr('time.secs', '{s}s', { s })}` : '') : tr('time.secs', '{s}s', { s });
+}
+
+// What a load's colour says, for a screen reader (help desk #6).
+function loadWords(load) {
+    const u = (load || '').toUpperCase();
+    return u === 'SEA' ? tr('load.sea', 'seats available') : u === 'SDA' ? tr('load.sda', 'standing room') : u === 'LSD' ? tr('load.lsd', 'limited standing') : '';
 }
 
 function loadTextClass(load) {
@@ -284,7 +316,7 @@ function ico(name) {
     return `<span class="ico" aria-hidden="true">${window.icon(name)}</span>`;
 }
 
-const favMark = () => `<span class="favMark" title="Favourite">${window.icon('star')}</span>`;
+const favMark = () => `<span class="favMark" role="img" aria-label="Favourite" title="Favourite">${window.icon('star')}</span>`;
 
 // Stable-partitions items into favourited and not, per `position` ("top" or "bottom"),
 // keeping each group's own order. `key` pulls the value to look up out of each item.
@@ -472,6 +504,7 @@ function renderAcList(box, stops, services = [], postal = null, direct = null, n
 // where the route planner is going, or null), those stops go first and are marked, and
 // `directNote` (given how many) says so above them.
 function attachAutocomplete(input, box, { withServices = false, onStop, onService, onEnter, onPostal, directFor, directNote }) {
+    window.wireCombobox?.(input, box);
     onPostal ??= code => postalStops(code)
         .then(({ title, stops }) => openStopList(title, stops, { pin: false, onPick: onStop }))
         .catch(e => alert(e.message));
@@ -523,31 +556,185 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
 // ----------- Favourites -----------
 const removeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>';
 
-function chip(openAttr, removeAttr, code, name, title) {
+function chip(openAttr, removeAttr, code, name, title, removeLabel = 'Remove from favourites') {
     return `<span class="chip">` +
         `<button type="button" class="chipMain" ${openAttr} title="${escapeHtml(title)}">` +
         (code ? `<span class="code">${escapeHtml(code)}</span>` : '') +
         (name ? `<span class="name">${escapeHtml(name)}</span>` : '') +
         `</button>` +
-        `<button type="button" class="remove" ${removeAttr} title="Remove from favourites" aria-label="Remove ${escapeHtml(title)} from favourites">${removeIcon}</button>` +
+        `<button type="button" class="remove" ${removeAttr} title="${escapeHtml(removeLabel)}" aria-label="Remove ${escapeHtml(title)} from ${escapeHtml(removeLabel.replace(/^Remove from /, ''))}">${removeIcon}</button>` +
         `</span>`;
+}
+
+
+// ---- Lists (help desk #6) ----
+// Favourites is every favourite and can't be deleted; the lists you make (LS.getFavLists) each
+// group some of them, by key: a stop, a bus, or a bus at a stop. Navs and bus-only routes stay
+// in Favourites only. The list on show is kept for next time (FAV_LIST_ON_KEY).
+const FAV_LIST_ON_KEY = 'sgbus_fav_list_on';
+const FAV_LISTS_MAX = 20;
+const FAV_LIST_NAME_MAX = 40;
+const favKey = {
+    stop: code => `stop:${code}`,
+    bus: no => `bus:${no}`,
+    stopBus: (code, no) => `stopbus:${code}/${no}`,
+};
+// What Favourites' edit form is doing: null, { kind: 'new' }, { kind: 'rename' } or { kind: 'pick' }.
+let favListForm = null;
+
+function favListOn() {
+    let id = null;
+    try { id = localStorage.getItem(FAV_LIST_ON_KEY); } catch { /* Favourites */ }
+    return LS.getFavLists().find(l => l.id === id) || null;
+}
+function setFavListOn(id) {
+    try {
+        if (id && id !== 'favourites') localStorage.setItem(FAV_LIST_ON_KEY, id);
+        else localStorage.removeItem(FAV_LIST_ON_KEY);
+    } catch { /* this visit only */ }
+}
+
+// Every key a favourite has now, for the lists to keep to.
+function favKeysNow() {
+    return new Set([
+        ...LS.getFavs().map(f => favKey.stop(f.code)),
+        ...LS.getFavBuses().map(favKey.bus),
+        ...LS.getFavStopBuses().map(b => favKey.stopBus(b.code, b.service)),
+    ]);
+}
+
+// A favourite gone from Favourites goes from every list too.
+function pruneFavLists() {
+    const keys = favKeysNow();
+    const lists = LS.getFavLists();
+    let changed = false;
+    for (const l of lists) {
+        const kept = l.items.filter(k => keys.has(k));
+        if (kept.length !== l.items.length) { l.items = kept; changed = true; }
+    }
+    if (changed) LS.setFavLists(lists);
+}
+
+// The name typed for a list, or why it can't be: not Favourites, and not one already there.
+function favListNameError(name, id = null) {
+    if (!name) return tr('favs.lists.error.empty', 'Give the list a name.');
+    if (name.length > FAV_LIST_NAME_MAX) return tr('favs.lists.error.long', 'At most {max} letters.', { max: FAV_LIST_NAME_MAX });
+    const lower = name.toLowerCase();
+    if (lower === 'favourites' || lower === 'favorites' || lower === tr('favs.title', 'Favourites').toLowerCase()) return tr('favs.lists.error.favourites', 'Favourites is already there: it has every favourite.');
+    if (LS.getFavLists().some(l => l.id !== id && l.name.toLowerCase() === lower)) return tr('favs.lists.error.taken', 'There’s a list with that name already.');
+    return '';
+}
+
+// The buses starred at one stop, as a Set.
+function favBusesAt(code) {
+    return new Set(LS.getFavStopBuses().filter(b => b.code === code).map(b => b.service));
+}
+function isFavStopBus(code, no) {
+    return LS.getFavStopBuses().some(b => b.code === code && b.service === no);
+}
+function toggleFavStopBus(code, no) {
+    if (!/^\d{5}$/.test(code) || !no) return;
+    const all = LS.getFavStopBuses();
+    const on = all.some(b => b.code === code && b.service === no);
+    LS.setFavStopBuses(on ? all.filter(b => !(b.code === code && b.service === no)) : [...all, { code, service: no }]);
+    if (on) pruneFavLists();
+    renderFavs();
+    if (current?.code === code && lastArrivals) renderArrivals();
+}
+
+// The stops with starred buses, each with its buses in the order starred: [{ code, buses }].
+function favStopBusGroups(inList = () => true) {
+    const groups = new Map();
+    for (const b of LS.getFavStopBuses()) {
+        if (!inList(favKey.stopBus(b.code, b.service))) continue;
+        if (!groups.has(b.code)) groups.set(b.code, []);
+        groups.get(b.code).push(b.service);
+    }
+    return [...groups].map(([code, buses]) => ({ code, buses }));
+}
+
+function renderFavLists(list) {
+    const lists = LS.getFavLists();
+    const tab = (id, name, on) =>
+        `<button type="button" class="tab${on ? ' active' : ''}" role="tab" aria-selected="${on}" data-fav-list="${escapeHtml(id)}">${escapeHtml(name)}</button>`;
+    $('#favListTabs').innerHTML = tab('favourites', tr('favs.title', 'Favourites'), !list) +
+        lists.map(l => tab(l.id, l.name, list?.id === l.id)).join('');
+    $('#favListNew').hidden = lists.length >= FAV_LISTS_MAX || !!favListForm;
+
+    // A list's own tools: what's in it, its name, and deleting it. Favourites has none.
+    const tools = $('#favListTools');
+    tools.hidden = !list || !!favListForm;
+    if (list) {
+        tools.innerHTML =
+            `<button type="button" class="iconBtn" data-fav-list-pick aria-pressed="${favListForm?.kind === 'pick'}">${ico('check')} ${escapeHtml(tr('favs.lists.pick', 'Choose what’s in it'))}</button>` +
+            `<button type="button" class="iconBtn" data-fav-list-rename>${ico('edit')} ${escapeHtml(tr('favs.lists.rename', 'Rename'))}</button>` +
+            `<button type="button" class="iconBtn" data-fav-list-delete>${ico('trash')} ${escapeHtml(tr('favs.lists.delete', 'Delete list'))}</button>`;
+    }
+
+    // The form for a new list's name, or a list's new one.
+    const form = $('#favListForm');
+    const naming = favListForm && favListForm.kind !== 'pick';
+    form.hidden = !naming;
+    if (naming) {
+        $('#favListFormLabel').textContent = favListForm.kind === 'new' ? tr('favs.lists.name.new', 'Name the new list') : tr('favs.lists.name.rename', 'Rename {name}', { name: list?.name || '' });
+        $('#favListName').maxLength = FAV_LIST_NAME_MAX;
+        $('#favListFormError').textContent = favListForm.error || '';
+        $('#favListFormError').hidden = !favListForm.error;
+    }
+
+    // Choose what's in it: every stop, bus and bus at a stop in Favourites, ticked if it's in.
+    const pick = $('#favListPick');
+    pick.hidden = !(list && favListForm?.kind === 'pick');
+    if (!pick.hidden) {
+        const has = new Set(list.items);
+        const row = (key, name, sub) =>
+            `<label class="syncItem"><input type="checkbox" data-fav-list-item="${escapeHtml(key)}"${has.has(key) ? ' checked' : ''}>` +
+            `<span class="syncItemText"><span class="name">${escapeHtml(name)}</span>${sub ? `<span class="sub">${escapeHtml(sub)}</span>` : ''}</span></label>`;
+        const stopText = code => tr('favs.stop', 'Bus stop {code}', { code });
+        const stops = LS.getFavs().map(f => row(favKey.stop(f.code), f.name || nameOf(f.code) || tr('favs.stopNoName', 'Bus stop'), stopText(f.code)));
+        const buses = LS.getFavBuses().map(no => row(favKey.bus(no), tr('favs.bus', 'Bus {no}', { no }), serviceEndsText(no)));
+        const atStops = LS.getFavStopBuses().map(b => row(favKey.stopBus(b.code, b.service), tr('favs.busAt', 'Bus {no} at {stop}', { no: b.service, stop: nameOf(b.code) || b.code }), stopText(b.code)));
+        const group = (label, rows) => (rows.length ? `<div class="favGroupLabel">${escapeHtml(label)}</div>${rows.join('')}` : '');
+        pick.innerHTML = (group(tr('favs.group.stops', 'Bus stops'), stops) + group(tr('favs.group.buses', 'Buses'), buses) + group(tr('favs.group.stopBuses', 'Buses at stops'), atStops) ||
+            `<div class="empty">${escapeHtml(tr('favs.lists.pick.none', 'Nothing in Favourites to choose from yet. Star a stop, a bus, or a bus at a stop first.'))}</div>`) +
+            `<button type="button" class="btn favListDone" data-fav-list-done>${escapeHtml(tr('common.done', 'Done'))}</button>`;
+    }
 }
 
 function renderFavs() {
     window.Glance?.favsChanged();
-    const favs   = LS.getFavs();
-    const buses  = LS.getFavBuses();
-    const routes = LS.getFavRoutes();
-    const navs   = LS.getFavNavs();
+    const list = favListOn();
+    const inList = key => !list || list.items.includes(key);
+    const allFavs = LS.getFavs();
+    const favs   = allFavs.filter(f => inList(favKey.stop(f.code)));
+    const buses  = LS.getFavBuses().filter(no => inList(favKey.bus(no)));
+    const atStops = favStopBusGroups(inList);
+    // Navs and bus-only routes are in Favourites only.
+    const routes = list ? [] : LS.getFavRoutes();
+    const navs   = list ? [] : LS.getFavNavs();
+    // In a list, a chip's x takes it out of the list, not Favourites.
+    const out = list ? tr('favs.removeFromList', 'Remove from {name}', { name: list.name }) : tr('favs.remove', 'Remove from favourites');
+
+    renderFavLists(list);
 
     $('#favChips').innerHTML = favs.map(({ code, name }) => {
         const displayName = name || nameOf(code) || 'Bus Stop';
-        return chip(`data-fav="${escapeHtml(code)}"`, `data-remove="${escapeHtml(code)}"`, code, displayName, `${displayName} (${code})`);
+        return chip(`data-fav="${escapeHtml(code)}"`, list ? `data-list-out="${escapeHtml(favKey.stop(code))}"` : `data-remove="${escapeHtml(code)}"`, code, displayName, `${displayName} (${code})`, out);
     }).join('');
 
     $('#favBusChips').innerHTML = buses.map(no =>
-        chip(`data-fav-bus="${escapeHtml(no)}"`, `data-remove-bus="${escapeHtml(no)}"`, no, serviceEndsText(no), `Bus ${no}`)
+        chip(`data-fav-bus="${escapeHtml(no)}"`, list ? `data-list-out="${escapeHtml(favKey.bus(no))}"` : `data-remove-bus="${escapeHtml(no)}"`, no, serviceEndsText(no), `Bus ${no}`, out)
     ).join('');
+
+    // A stop with its starred buses: tapped, its timings for just those.
+    $('#favStopBusChips').innerHTML = atStops.map(({ code, buses: nos }) => {
+        const name = nameOf(code) || 'Bus stop';
+        const label = `${name} · ${nos.join(', ')}`;
+        const keys = nos.map(no => favKey.stopBus(code, no)).join(' ');
+        return chip(`data-fav-stopbus="${escapeHtml(code)}" data-buses="${escapeHtml(nos.join(','))}"`,
+            list ? `data-list-out="${escapeHtml(keys)}"` : `data-remove-stopbus="${escapeHtml(code)}"`,
+            code, label, `${nos.length === 1 ? `Bus ${nos[0]}` : `Buses ${listText(nos)}`} at ${name} (${code})`, out);
+    }).join('');
 
     $('#favRouteChips').innerHTML = routes.map((r, i) => {
         const label = `${nameOf(r.start) || r.startName} → ${nameOf(r.end) || r.endName}`;
@@ -559,21 +746,27 @@ function renderFavs() {
         return chip(`data-fav-nav="${i}"`, `data-remove-nav="${i}"`, '', label, label);
     }).join('');
 
-    shareFavsWithWidgets(favs);
+    shareFavsWithWidgets(allFavs);
 
-    // How many, on the star in the Edge Tray that opens them.
-    const total = favs.length + buses.length + routes.length + navs.length;
+    // How many, on the star in the Edge Tray that opens them: every favourite, whichever list's on show.
+    const total = allFavs.length + LS.getFavBuses().length + LS.getFavStopBuses().length + LS.getFavRoutes().length + LS.getFavNavs().length;
     $('#favCount').textContent = total > 99 ? '99+' : String(total);
     $('#favCount').hidden = !total;
-    const label = total ? `Favourites: ${total}` : 'Favourites';
+    const label = total ? tr('tray.favourites.count', 'Favourites: {n}', { n: total }) : tr('favs.title', 'Favourites');
     $('#favsBtn').setAttribute('aria-label', label);
     $('#favsBtn').title = label;
 
-    $('#favStopsGroup').hidden  = !favs.length;
-    $('#favBusesGroup').hidden  = !buses.length;
-    $('#favRoutesGroup').hidden = !routes.length;
-    $('#favNavsGroup').hidden   = !navs.length;
-    $('#favEmpty').hidden = favs.length + buses.length + routes.length + navs.length > 0;
+    const picking = favListForm?.kind === 'pick';
+    $('#favStopsGroup').hidden    = picking || !favs.length;
+    $('#favBusesGroup').hidden    = picking || !buses.length;
+    $('#favStopBusesGroup').hidden = picking || !atStops.length;
+    $('#favRoutesGroup').hidden   = picking || !routes.length;
+    $('#favNavsGroup').hidden     = picking || !navs.length;
+    const shown = favs.length + buses.length + atStops.length + routes.length + navs.length;
+    $('#favEmpty').hidden = picking || shown > 0;
+    $('#favEmpty').textContent = list
+        ? tr('favs.lists.empty', 'Nothing in {name} yet. Choose what’s in it from your favourites.', { name: list.name })
+        : tr('favs.empty', 'No favourites yet. Star a stop’s timings, a bus at a stop or on its route, or a nav (bus and train, or bus only).');
 }
 
 // The favourite stops, copied where the installed app's Bus timings widget can offer them in
@@ -618,6 +811,7 @@ function addFav(code) {
 
 function removeFav(code) {
     LS.setFavs(LS.getFavs().filter(f => f.code !== code));
+    pruneFavLists();
     renderFavs();
 }
 
@@ -628,6 +822,7 @@ function isFavBus(no) {
 function toggleFavBus(no) {
     const buses = LS.getFavBuses();
     LS.setFavBuses(buses.includes(no) ? buses.filter(b => b !== no) : [...buses, no]);
+    pruneFavLists();
     renderFavs();
     if (current && lastArrivals) renderArrivals();
 }
@@ -635,6 +830,7 @@ function toggleFavBus(no) {
 // Redraws everything that marks favourites, after they change from outside their own star
 // buttons: a sync with another device (js/sync.js).
 function favouritesChanged() {
+    pruneFavLists();
     renderFavs();
     if (current) renderStopHeader();
     if (current && lastArrivals) renderArrivals();
@@ -741,7 +937,7 @@ function renderIncomingBar(data) {
         const cls       = loadTextClass(item.load);
         const to        = item.to;
         return `<div class="incomingBusItem${to ? ` toned tone${to.tone}` : ''}"${to ? ` title="${escapeHtml(`${item.svcNo}: ${to.label}`)}"` : ''}>` +
-            `<div class="incomingBusTime${cls ? ' ' + cls : ''}">${timeLabel}</div>` +
+            `<div class="incomingBusTime${cls ? ' ' + cls : ''}">${timeLabel}${loadWords(item.load) ? `<span class="sr">, ${loadWords(item.load)}</span>` : ''}</div>` +
             `<div class="incomingBusNo">${escapeHtml(item.svcNo)}</div>` +
             (to ? `<div class="incomingBusTo">${escapeHtml(to.short)}</div>` : '') +
             `</div>`;
@@ -806,7 +1002,7 @@ const oneBus = (filter) => (filter && /^[0-9A-Z]{1,4}$/.test(filter) ? filter : 
 // "bus 174", "buses 174 and 175", "buses 22*".
 function busFilterText(filter) {
     const parts = filter.split(',');
-    return parts.length === 1 && !parts[0].endsWith('*') ? `bus ${parts[0]}` : `buses ${listText(parts)}`;
+    return parts.length === 1 && !parts[0].endsWith('*') ? tr('stop.filter.one', 'bus {no}', { no: parts[0] }) : tr('stop.filter.many', 'buses {list}', { list: listText(parts) });
 }
 
 async function fetchArrivals(code, service) {
@@ -822,7 +1018,7 @@ function renderStopHeader() {
     $('#stopCode').textContent = code;
     $('#stopName').textContent = nameOf(code) || 'Bus Stop';
     $('#stopRoad').textContent = stopsIndex?.[code]?.road || '';
-    setFavButton($('#stopFavBtn'), isFavStop(code), 'Save', 'Saved');
+    setFavButton($('#stopFavBtn'), isFavStop(code), tr('stop.save', 'Save'), tr('stop.saved', 'Saved'));
 }
 
 function renderStopTools() {
@@ -830,22 +1026,22 @@ function renderStopTools() {
     const parts = [];
     if (service) {
         parts.push(expanded
-            ? `<button type="button" class="iconBtn" data-tool="collapse" title="Show just these timings here">${ico('bus')} Only ${escapeHtml(busFilterText(service))}</button>`
-            : `<button type="button" class="iconBtn" data-tool="expand" title="Show every bus at this stop">Show all services</button>`);
-        if (!expanded && oneBus(service)) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="The stops this bus goes on to from here">${ico('route')} Route from here</button>`);
+            ? `<button type="button" class="iconBtn" data-tool="collapse" title="${escapeHtml(tr('stop.tool.collapse.title', 'Show just these timings here'))}">${ico('bus')} ${escapeHtml(tr('stop.tool.collapse', 'Only {buses}', { buses: busFilterText(service) }))}</button>`
+            : `<button type="button" class="iconBtn" data-tool="expand" title="${escapeHtml(tr('stop.tool.expand.title', 'Show every bus at this stop'))}">${escapeHtml(tr('stop.tool.expand', 'Show all services'))}</button>`);
+        if (!expanded && oneBus(service)) parts.push(`<button type="button" class="iconBtn" data-tool="onward" title="${escapeHtml(tr('stop.tool.onward.title', 'The stops this bus goes on to from here'))}">${ico('route')} ${escapeHtml(tr('stop.tool.onward', 'Route from here'))}</button>`);
     }
-    parts.push(`<button type="button" class="iconBtn" data-tool="pick" title="Pick one bus to see just its timings here">${ico('bus')} Pick a bus</button>`);
+    parts.push(`<button type="button" class="iconBtn" data-tool="pick" title="${escapeHtml(tr('stop.tool.pick.title', 'Pick one bus to see just its timings here'))}">${ico('bus')} ${escapeHtml(tr('stop.tool.pick', 'Pick a bus'))}</button>`);
 
     const stop = stopsIndex?.[code];
     if (stop && stop.lat != null && stop.lng != null) {
         parts.push(navOpen
-            ? `<button type="button" class="iconBtn" data-tool="livemap" title="Walk here on the live map">${ico('map')} Live map</button>` +
+            ? `<button type="button" class="iconBtn" data-tool="livemap" title="${escapeHtml(tr('stop.tool.livemap.title', 'Walk here on the live map'))}">${ico('map')} ${escapeHtml(tr('stop.tool.livemap', 'Live map'))}</button>` +
               MAP_APPS.map(app =>
                 `<a class="iconBtn" title="Walking directions here in ${escapeHtml(app.label)}" href="${escapeHtml(directionsUrl(stop, app.id))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
               ).join('')
-            : `<button type="button" class="iconBtn" data-tool="navigate" title="Walking directions to this stop">${ico('navigate')} Directions</button>`);
+            : `<button type="button" class="iconBtn" data-tool="navigate" title="${escapeHtml(tr('stop.tool.directions.title', 'Walking directions to this stop'))}">${ico('navigate')} ${escapeHtml(tr('stop.tool.directions', 'Directions'))}</button>`);
     }
-    parts.push(`<button type="button" class="iconBtn" data-tool="board" title="This stop's buses full screen, like an interchange's departure screens">${ico('clock')} Board</button>`);
+    parts.push(`<button type="button" class="iconBtn" data-tool="board" title="${escapeHtml(tr('stop.tool.board.title', 'This stop’s buses full screen, like an interchange’s departure screens'))}">${ico('clock')} ${escapeHtml(tr('stop.tool.board', 'Board'))}</button>`);
     // The desktop app: this stop's (or bus's) next buses in the tray (desktop/glance.js).
     if (window.sgbusDesktop?.tray) {
         parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="Show ${oneBus(service) && !expanded ? `bus ${escapeHtml(service)}'s` : "this stop's"} next buses in the tray, and stop it from the tray's menu">${ico('bell')} Tray countdown</button>`);
@@ -859,12 +1055,12 @@ function renderStopTools() {
 
 function backLabel(ctx) {
     switch (ctx?.kind) {
-        case 'route':   return 'Back to route';
-        case 'journey': return 'Back to journey';
-        case 'service': return `Back to bus ${ctx.service}`;
-        case 'nearby':  return 'Back to nearby stops';
-        case 'nav':     return 'Back to Navigate';
-        default:        return 'Back';
+        case 'route':   return tr('stop.back.route', 'Back to route');
+        case 'journey': return tr('stop.back.journey', 'Back to journey');
+        case 'service': return tr('stop.back.service', 'Back to bus {no}', { no: ctx.service });
+        case 'nearby':  return tr('stop.back.nearby', 'Back to nearby stops');
+        case 'nav':     return tr('stop.back.nav', 'Back to Navigate');
+        default:        return tr('stop.back', 'Back');
     }
 }
 
@@ -958,8 +1154,9 @@ function firstLastText(svcNo, code, dir = null) {
     const fl = BusNet.isReady() ? BusNet.firstLast(svcNo, code, dir) : null;
     if (!fl) return '';
     // LTA gives "-" for both on a day type the bus doesn't run.
-    if (fl.first === '-' && fl.last === '-') return `No ${DAY_NAMES[fl.label]} service at this stop`;
-    return `${fl.label}: first bus ${fl.first} · last bus ${fl.last}`;
+    const day = { Weekday: tr('day.weekday', 'Weekday'), Sat: tr('day.sat', 'Sat'), Sun: tr('day.sun', 'Sun') }[fl.label] || fl.label;
+    if (fl.first === '-' && fl.last === '-') return fl.label === 'Weekday' ? tr('stop.noService.weekday', 'No weekday service at this stop') : fl.label === 'Sat' ? tr('stop.noService.sat', 'No Saturday service at this stop') : tr('stop.noService.sun', 'No Sunday service at this stop');
+    return tr('stop.firstLast', '{day}: first bus {first} · last bus {last}', { day, first: fl.first, last: fl.last });
 }
 
 function renderArrivals() {
@@ -971,7 +1168,9 @@ function renderArrivals() {
         BusNet.load(stopsIndex).then(() => { if (lastArrivals === data && current?.code === code) renderArrivals(); }).catch(() => {});
     }
 
-    const favBuses = new Set(LS.getFavBuses());
+    // Favourite buses everywhere, and those starred at this stop alone (help desk #6).
+    const here = favBusesAt(code);
+    const favBuses = new Set([...LS.getFavBuses(), ...here]);
     // Over every bus at the stop, so narrowing to one still tells its two ways apart.
     const { services: apart, ways } = busWays(data?.services || []);
     let svcs = [...apart].sort((a, b) => BusNet.byNumber(a.serviceNo || '', b.serviceNo || ''));
@@ -986,8 +1185,8 @@ function renderArrivals() {
         const narrowed = service && !expanded;
         const fl = narrowed && oneBus(service) ? firstLastText(service, code) : '';
         $('#emptySvc').textContent = narrowed
-            ? `No live arrivals for ${busFilterText(service)} right now.${fl ? ` ${fl}.` : ''}`
-            : 'No live buses right now.';
+            ? tr('stop.noLiveFor', 'No live arrivals for {buses} right now.', { buses: busFilterText(service) }) + (fl ? ` ${fl}.` : '')
+            : tr('stop.noLive', 'No live buses right now.');
         $('#emptySvc').hidden = false;
         window.MakeIt?.render(code, []);
         return;
@@ -1011,12 +1210,14 @@ function renderArrivals() {
         const wheelchair = bus.wheelchair ? wheelchairBadge : '';
         const deck  = `<span class="badge">${escapeHtml(bus.deck || '')}</span>`;
         const distBadge = haveCoords
-            ? `<span class="badge badge-dist" title="${along != null ? 'Along its route' : 'In a straight line'}">${dist}</span>`
-            : `<span class="badge badge-dist badge-dist-na">~ &#8734;m</span>`;
+            ? `<span class="badge badge-dist" title="${escapeHtml(along != null ? tr('stop.dist.along', 'Along its route') : tr('stop.dist.straight', 'In a straight line'))}">${dist}</span>`
+            : `<span class="badge badge-dist badge-dist-na" role="img" aria-label="${escapeHtml(tr('stop.dist.unknown', 'distance not known'))}">~ &#8734;m</span>`;
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         // Gone before you could walk here (js/make-it.js): greyed.
         const late = window.MakeIt?.tooSoon(code, bus.eta_ms) ? ' tooSoon' : '';
-        return `<div class="eta${late}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${badges}</div>`;
+        // Said aloud too: what's shown by colour (the load), italics (an estimate) and fading.
+        const words = [loadWords(bus.load), bus.rough ? tr('stop.estimated', 'estimated') : '', late ? tr('stop.tooSoon', 'leaves before you could get there') : ''].filter(Boolean).join(', ');
+        return `<div class="eta${late}">${maybei}<strong class="${cls}">${mins}</strong>${maybei2}${words ? `<span class="sr">, ${words}</span>` : ''}${badges}</div>`;
     };
 
     svcWrap.innerHTML = svcs.map(s => {
@@ -1030,11 +1231,14 @@ function renderArrivals() {
             // Which way this one's going, or which time round, where the stop has it both ways.
             (way ? `<div class="svcTo" title="Bus ${escapeHtml(svcNo)}: ${escapeHtml(way.label)}">${escapeHtml(way.short)}</div>` : '') +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
-            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="Bus ${escapeHtml(svcNo)}'s route and stops">Route</button>` +
+            `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="${escapeHtml(tr('stop.svc.route.title', 'Bus {no}’s route and stops', { no: svcNo }))}">${escapeHtml(tr('stop.svc.route', 'Route'))}</button>` +
+            // This bus at this stop, in Favourites (toggleFavStopBus), as LTA's MyTransport has it.
+            `<button class="viewRouteBtn svcStar" data-fav-stopbus-at="${escapeHtml(svcNo)}" aria-pressed="${here.has(svcNo)}" ` +
+            `aria-label="${escapeHtml(here.has(svcNo) ? tr('stop.svc.starOn', 'Saved: bus {no} at this stop', { no: svcNo }) : tr('stop.svc.starOff', 'Save: bus {no} at this stop', { no: svcNo }))}" title="${escapeHtml(here.has(svcNo) ? tr('stop.svc.starOn.title', 'Bus {no} at this stop is in Favourites. Tap to take it out', { no: svcNo }) : tr('stop.svc.starOff.title', 'Save bus {no} at this stop to Favourites', { no: svcNo }))}">${ico('star')}</button>` +
             // The flag-down screen (js/flag.js).
-            `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="Show ${escapeHtml(svcNo)} full screen, to flag the bus down">Flag</button>` +
+            `<button class="viewRouteBtn" data-flag="${escapeHtml(svcNo)}" title="${escapeHtml(tr('stop.svc.flag.title', 'Show {no} full screen, to flag the bus down', { no: svcNo }))}">${escapeHtml(tr('stop.svc.flag', 'Flag'))}</button>` +
             // Just this bus's times again, from wherever down the list it is (refreshService).
-            `<button class="viewRouteBtn svcRefresh" data-refresh-svc="${escapeHtml(svcNo)}" aria-label="Refresh bus ${escapeHtml(svcNo)}" title="Refresh bus ${escapeHtml(svcNo)}'s times">${ico('sync')}</button>` +
+            `<button class="viewRouteBtn svcRefresh" data-refresh-svc="${escapeHtml(svcNo)}" aria-label="${escapeHtml(tr('stop.svc.refresh', 'Refresh bus {no}', { no: svcNo }))}" title="${escapeHtml(tr('stop.svc.refresh.title', 'Refresh bus {no}’s times', { no: svcNo }))}">${ico('sync')}</button>` +
             `</div>` +
             `<div class="etaWrap">${piece(s.next, svcNo)}${piece(s.next2, svcNo)}${piece(s.next3, svcNo)}` +
             // With the Android app's last bus reminder bell (js/reminders.js).
@@ -1075,7 +1279,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     renderStopContext();
     renderStopAside();
     window.MakeIt?.forStop(code);
-    $('#services').innerHTML = '<div class="empty">Loading live arrivals&hellip;</div>';
+    $('#services').innerHTML = `<div class="empty">${escapeHtml(tr('stop.loading', 'Loading live arrivals…'))}</div>`;
     $('#emptySvc').hidden   = true;
     $('#resultCard').hidden = false;
     $('#incomingBar').hidden = true;
@@ -1087,12 +1291,21 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
         if (seq !== loadSeq) return;
         lastArrivals = data;
         renderArrivals();
+        const n = $$('#services .svc').length;
+        stopSay(n ? (n === 1 ? tr('stop.say.one', '1 bus at {stop}', { stop: nameOf(code) || code }) : tr('stop.say.many', '{n} buses at {stop}', { n, stop: nameOf(code) || code })) : $('#emptySvc').textContent);
     } catch (e) {
         if (seq !== loadSeq) return;
         console.error(e);
         lastArrivals = null;
-        $('#services').innerHTML = '<div class="empty">Could not load arrivals. Please try again.</div>';
+        $('#services').innerHTML = `<div class="empty">${escapeHtml(tr('stop.failed', 'Could not load arrivals. Please try again.'))}</div>`;
+        stopSay(tr('stop.failed', 'Could not load arrivals. Please try again.'));
     }
+}
+
+// What a screen reader is told of a stop's timings as they come in (help desk #6), once a load.
+function stopSay(text) {
+    $('#stopSay').textContent = '';
+    setTimeout(() => { $('#stopSay').textContent = text; }, 50);
 }
 
 // Refresh, and Shake to refresh: the stop open, or with none, the glance (js/glance.js).
@@ -1256,15 +1469,18 @@ function renderServiceModal() {
     modeTabs.hidden = !fromStop;
     if (fromStop) {
         modeTabs.querySelector('[data-svc-mode="onward"]').textContent = `From ${nameOf(fromStop) || fromStop}`;
-        modeTabs.querySelectorAll('.tab').forEach(tab =>
-            tab.classList.toggle('active', (tab.dataset.svcMode === 'onward') === onward));
+        modeTabs.querySelectorAll('.tab').forEach(tab => {
+            const on = (tab.dataset.svcMode === 'onward') === onward;
+            tab.classList.toggle('active', on);
+            tab.setAttribute('aria-pressed', String(on));
+        });
     }
 
     const dirTabs = $('#svcDirTabs');
     const showDirs = !onward && dirs.length > 1;
     dirTabs.hidden = !showDirs;
     dirTabs.innerHTML = showDirs
-        ? dirs.map(d => `<button type="button" class="tab${d === svcState.dir ? ' active' : ''}" data-dir="${d}">${escapeHtml(dirLabel(service, d))}</button>`).join('')
+        ? dirs.map(d => `<button type="button" class="tab${d === svcState.dir ? ' active' : ''}" aria-pressed="${d === svcState.dir}" data-dir="${d}">${escapeHtml(dirLabel(service, d))}</button>`).join('')
         : '';
 
     const note = $('#svcNote');
@@ -1861,6 +2077,14 @@ $('#stopTools').addEventListener('click', e => {
 $('#services').addEventListener('click', e => {
     const again = e.target.closest('[data-refresh-svc]');
     if (again) return refreshService(again, again.dataset.refreshSvc);
+    const star = e.target.closest('[data-fav-stopbus-at]');
+    if (star && current) {
+        const no = star.dataset.favStopbusAt;
+        toggleFavStopBus(current.code, no);
+        // Redrawn: the star of the same bus back in focus, for a keyboard or screen reader.
+        $(`#services [data-fav-stopbus-at="${CSS.escape(no)}"]`)?.focus();
+        return;
+    }
     const btn = e.target.closest('[data-view-route]');
     if (!btn) return;
     const svc = btn.getAttribute('data-view-route');
@@ -1969,12 +2193,114 @@ $('#favsBtn').addEventListener('click', () => {
     openModal('favsModal');
 });
 
+// Favourites' lists (renderFavLists): a list's tab, New list, a list's tools, and what's in it.
+function favListAction(t) {
+    const d = t.dataset;
+    const list = favListOn();
+    const lists = LS.getFavLists();
+    const mine = list && lists.find(l => l.id === list.id);
+    if (d.favList) {
+        setFavListOn(d.favList);
+        favListForm = null;
+    } else if ('favListNew' in d) {
+        favListForm = { kind: 'new' };
+    } else if ('favListRename' in d && mine) {
+        favListForm = { kind: 'rename' };
+    } else if ('favListPick' in d && mine) {
+        favListForm = favListForm?.kind === 'pick' ? null : { kind: 'pick' };
+    } else if ('favListDone' in d || 'favListCancel' in d) {
+        favListForm = null;
+    } else if ('favListDelete' in d && mine) {
+        if (!confirm(tr('favs.lists.delete.confirm', 'Delete the list “{name}”? What’s in it stays in Favourites.', { name: mine.name }))) return true;
+        LS.setFavLists(lists.filter(l => l.id !== mine.id));
+        setFavListOn(null);
+        favListForm = null;
+    } else if (d.listOut && mine) {
+        const out = new Set(d.listOut.split(' '));
+        mine.items = mine.items.filter(k => !out.has(k));
+        LS.setFavLists(lists);
+    } else {
+        return false;
+    }
+    renderFavs();
+    if (favListForm && favListForm.kind !== 'pick') {
+        $('#favListName').value = favListForm.kind === 'rename' ? mine?.name || '' : '';
+        $('#favListName').focus();
+    } else if (d.favList) {
+        $(`#favListTabs [data-fav-list="${CSS.escape(d.favList)}"]`)?.focus();
+    }
+    return true;
+}
+
+$('#favListForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#favListName').value.trim().replace(/\s+/g, ' ');
+    const lists = LS.getFavLists();
+    const renaming = favListForm?.kind === 'rename' ? favListOn() : null;
+    const error = favListNameError(name, renaming?.id);
+    if (error) {
+        favListForm = { ...favListForm, error };
+        renderFavs();
+        $('#favListName').focus();
+        return;
+    }
+    if (renaming) {
+        lists.find(l => l.id === renaming.id).name = name;
+        LS.setFavLists(lists);
+        favListForm = null;
+    } else {
+        const id = `l${Date.now().toString(36)}`;
+        LS.setFavLists([...lists, { id, name, items: [] }]);
+        setFavListOn(id);
+        // Straight on to choosing what's in it.
+        favListForm = { kind: 'pick' };
+    }
+    renderFavs();
+    $('#favListTools [data-fav-list-pick]')?.focus();
+});
+
+$('#favsModal').addEventListener('modalclose', () => { favListForm = null; });
+
+// Settings' Language opens Choose a language (js/lang-pick.js).
+
+// A tick in Choose what's in it.
+$('#favListPick').addEventListener('change', e => {
+    const box = e.target.closest('[data-fav-list-item]');
+    const list = favListOn();
+    if (!box || !list) return;
+    const lists = LS.getFavLists();
+    const mine = lists.find(l => l.id === list.id);
+    const key = box.dataset.favListItem;
+    mine.items = box.checked ? [...new Set([...mine.items, key])] : mine.items.filter(k => k !== key);
+    LS.setFavLists(lists);
+});
+
+// Arrow keys move along the lists' tabs, as the Edge Tray's do.
+$('#favListTabs').addEventListener('keydown', e => {
+    const tabs = $$('#favListTabs [role="tab"]');
+    const i = tabs.indexOf(document.activeElement);
+    const next = { ArrowLeft: i - 1, ArrowRight: i + 1, Home: 0, End: tabs.length - 1 }[e.key];
+    if (i === -1 || next == null) return;
+    e.preventDefault();
+    tabs[(next + tabs.length) % tabs.length].click();
+});
+
 $('#favsModal').addEventListener('click', e => {
-    const t = e.target.closest('[data-remove],[data-fav],[data-remove-bus],[data-fav-bus],[data-remove-route],[data-fav-route],[data-remove-nav],[data-fav-nav]');
+    const list = e.target.closest('[data-fav-list],[data-fav-list-new],[data-fav-list-rename],[data-fav-list-pick],[data-fav-list-done],[data-fav-list-cancel],[data-fav-list-delete],[data-list-out]');
+    if (list && favListAction(list)) return;
+    const t = e.target.closest('[data-remove],[data-fav],[data-remove-bus],[data-fav-bus],[data-remove-stopbus],[data-fav-stopbus],[data-remove-route],[data-fav-route],[data-remove-nav],[data-fav-nav]');
     if (!t) return;
     const d = t.dataset;
-    if (d.fav || d.favBus || d.favRoute || d.favNav) closeModal('favsModal');
-    if (d.remove) {
+    if (d.fav || d.favBus || d.favStopbus || d.favRoute || d.favNav) closeModal('favsModal');
+    if (d.favStopbus) {
+        // Its timings for just the buses starred there, Show all services a tap away.
+        loadStop(d.favStopbus, { service: d.buses, scroll: true });
+    } else if (d.removeStopbus) {
+        LS.setFavStopBuses(LS.getFavStopBuses().filter(b => b.code !== d.removeStopbus));
+        pruneFavLists();
+        renderFavs();
+        if (current?.code === d.removeStopbus && lastArrivals) renderArrivals();
+    } else if (d.remove) {
         removeFav(d.remove);
         if (current?.code === d.remove) renderStopHeader();
     } else if (d.fav) {

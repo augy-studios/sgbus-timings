@@ -95,7 +95,8 @@
 
   function openMenu() {
     const items = [];
-    if (Trip.active()) items.push({ pick: 'eta', icon: 'clock', title: 'Share my ETA', sub: 'Live progress, until you get there' });
+    // Live progress needs a connection all the way, so offline it isn't offered (js/offline.js).
+    if (Trip.active() && !window.Offline?.on()) items.push({ pick: 'eta', icon: 'clock', title: 'Share my ETA', sub: 'Live progress, until you get there' });
     if (nav.from && nav.to) items.push({ pick: 'directions', icon: 'route', title: 'Share these directions', sub: `${nav.from.label} to ${nav.to.label}${viaText()}` });
     if (nav.from) items.push({ pick: 'start', icon: 'pin', title: 'Share start', sub: placeOf(nav.from).label });
     if (nav.to) items.push({ pick: 'end', icon: 'flag', title: 'Share end', sub: placeOf(nav.to).label });
@@ -171,6 +172,12 @@
     $('#shareMapImg').hidden = true;
     $('#shareStopEta').hidden = kind !== 'eta';
     openModal('shareCardModal');
+    // Offline, no short link can be made: said at once, rather than after the fetch fails.
+    // Offline Sharing's own link (offlineUrl) still goes, phone to phone.
+    if (!made && window.Offline?.on()) {
+      setLink(null, `You're offline, so there's no short link to send.${window.OfflineShare?.canSend() && kind !== 'eta' ? ' Offline Sharing still sends it to a phone nearby.' : ''} Try again when you reconnect.`);
+      return null;
+    }
     try {
       const link = made || (await makeLink(kind, data));
       if (card?.kind !== kind || card.title !== name) return;
@@ -270,6 +277,8 @@
   async function openEtaCard() {
     const p = Trip.progress();
     if (!p) return;
+    // The trip bar's Share is hidden offline (style.css); a tap that got there first is told why.
+    if (window.Offline?.blocked()) return;
     const mine = eta?.tripId === p.tripId ? eta : null;
     const link = await showCard({
       heading: 'Share live progress',

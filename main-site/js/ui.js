@@ -59,6 +59,15 @@
     else history.pushState(state, "", location.href);
   }
 
+  // A switch of page (js/main-screen.js): a step Back goes back from, in a browser. In the
+  // Android app from 2.2.7 (help desk #6, its "backtwice"), none: every page is at the bottom of
+  // Back, so Back closes what's open over it and then, pressed twice, leaves the app
+  // (MainActivity), whichever page is on show. An older app keeps a step per page.
+  function inApp() { return !!(window.AppBridge && window.AppBridge.native && window.AppBridge.has("backtwice")); }
+  function pageStep() {
+    if (!inApp()) step({});
+  }
+
   // The step for what's on show now, without adding one: as the page loads.
   function markStep() {
     history.replaceState(stepState({}), "", location.href);
@@ -126,10 +135,54 @@
     document.querySelectorAll(".modal-backdrop:not(.hidden):not(.docked)").forEach(function (m) {
       if (m.id !== state.modal) hideModal(m.id);
     });
-    if (state.page && window.MainScreen && window.MainScreen.active() !== state.page) window.MainScreen.select(state.page);
+    if (state.page && !inApp() && window.MainScreen && window.MainScreen.active() !== state.page) window.MainScreen.select(state.page);
     // A hashchange from the same step back comes just after.
     setTimeout(function () { restoring = false; }, 50);
   });
+
+  // ---------- Reduced motion (help desk #6) ----------
+  // With the phone's Remove animations (prefers-reduced-motion), scrolling the code asks to be
+  // smooth jumps instead, wherever it's asked for.
+  var reduce = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+  function calm(arg) {
+    if (!reduce || !reduce.matches || !arg || typeof arg !== "object" || arg.behavior !== "smooth") return arg;
+    return Object.assign({}, arg, { behavior: "auto" });
+  }
+  ["scrollIntoView", "scrollTo", "scrollBy"].forEach(function (name) {
+    [Element.prototype, window].forEach(function (target) {
+      var real = target[name];
+      if (typeof real !== "function") return;
+      target[name] = function (arg) {
+        return arguments.length === 1 ? real.call(this, calm(arg)) : real.apply(this, arguments);
+      };
+    });
+  });
+
+  // ---------- Focus (help desk #6) ----------
+  // A window opened takes the focus, so a screen reader (TalkBack) or a keyboard is in it rather
+  // than on the button behind; closed, the focus goes back to what opened it. A window that
+  // focuses something of its own as it opens (Settings' Find, an input) keeps that.
+  function focusInto(el) {
+    var opener = document.activeElement;
+    el._opener = opener && opener !== document.body && !el.contains(opener) ? opener : null;
+    setTimeout(function () {
+      if (el.hidden || el.classList.contains("hidden") || el.contains(document.activeElement)) return;
+      var target = el.querySelector('[role="dialog"]') || el;
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      try { target.focus({ preventScroll: true }); } catch (e) { target.focus(); }
+    }, 60);
+  }
+  function focusBack(el) {
+    var opener = el._opener;
+    el._opener = null;
+    var inside = el.contains(document.activeElement) || document.activeElement === document.body;
+    if (!opener || !opener.isConnected || !inside || opener.closest("[hidden], .hidden")) return;
+    try { opener.focus({ preventScroll: true }); } catch (e) { opener.focus(); }
+  }
+
+  // The windows open, in the order they opened: the last is on top, whatever order they come
+  // in the page.
+  var opened = [];
 
   function openModal(id) {
     if (docked(id)) return window.MainScreen.select(window.MainScreen.byEl(id), id);
@@ -137,7 +190,11 @@
     var was = !backdrop.classList.contains("hidden");
     backdrop.classList.remove("hidden");
     syncModalOpen();
-    if (!was) step({ modal: id });
+    if (!was) {
+      step({ modal: id });
+      focusInto(backdrop);
+      opened = opened.filter(function (x) { return x !== id; }).concat(id);
+    }
   }
 
   // Fires "modalclose" on the backdrop, for a modal with something to tidy up as it goes.
@@ -145,8 +202,10 @@
     var backdrop = document.getElementById(id);
     if (backdrop.classList.contains("hidden")) return;
     backdrop.classList.add("hidden");
+    opened = opened.filter(function (x) { return x !== id; });
     backdrop.dispatchEvent(new Event("modalclose"));
     syncModalOpen();
+    focusBack(backdrop);
   }
 
   // The step's going back is marked before the window hides, so an address its "modalclose"
@@ -172,10 +231,129 @@
       return;
     }
     var panel = document.getElementById(id);
+    var was = !panel.hidden;
     if (show && panel.hidden) panel.scrollTop = 0;
     panel.hidden = !show;
     syncModalOpen();
+    if (show && !was) focusInto(panel);
+    else if (!show && was) focusBack(panel);
   }
+
+  // ---------- Suggestions under a field, for screen readers and keyboards (help desk #6) ----------
+  // The field is a combobox and its box a listbox, each .acItem an option; Up and Down move
+  // through them (aria-activedescendant, .acActive), Enter picks the one moved to, and how many
+  // there are is said. For the stop search (script.js, attachAutocomplete) and Navigate's and
+  // Places' place search (js/nav.js, attachPlaceSearch).
+  var comboCount = 0;
+  function wireCombobox(input, box) {
+    if (!input || !box || input.dataset.combobox) return;
+    input.dataset.combobox = "1";
+    if (!box.id) box.id = "acBox" + ++comboCount;
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-autocomplete", "list");
+    input.setAttribute("aria-controls", box.id);
+    input.setAttribute("aria-expanded", "false");
+    box.setAttribute("role", "listbox");
+    var say = document.createElement("p");
+    say.className = "sr";
+    say.setAttribute("aria-live", "polite");
+    box.parentNode.insertBefore(say, box.nextSibling);
+    var active = -1;
+    var items = function () { return Array.prototype.slice.call(box.querySelectorAll(".acItem")); };
+    function mark(i) {
+      var all = items();
+      active = all.length ? Math.max(-1, Math.min(i, all.length - 1)) : -1;
+      all.forEach(function (el, k) {
+        el.classList.toggle("acActive", k === active);
+        el.setAttribute("aria-selected", String(k === active));
+      });
+      if (active >= 0) {
+        input.setAttribute("aria-activedescendant", all[active].id);
+        all[active].scrollIntoView({ block: "nearest" });
+      } else input.removeAttribute("aria-activedescendant");
+    }
+    var lastSaid = "";
+    new MutationObserver(function () {
+      var open = !box.hidden;
+      input.setAttribute("aria-expanded", String(open));
+      var all = items();
+      all.forEach(function (el, k) {
+        if (!el.id) el.id = box.id + "-o" + k + "-" + Math.random().toString(36).slice(2, 6);
+        el.setAttribute("role", "option");
+        if (!el.hasAttribute("aria-selected")) el.setAttribute("aria-selected", "false");
+      });
+      if (!open) active = -1;
+      var text = open && all.length ? all.length + (all.length === 1 ? " suggestion" : " suggestions") : "";
+      if (text !== lastSaid) { lastSaid = text; say.textContent = text; }
+    }).observe(box, { childList: true, attributes: true, attributeFilter: ["hidden"] });
+    input.addEventListener("keydown", function (e) {
+      if (box.hidden) return;
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        mark(active + (e.key === "ArrowDown" ? 1 : -1));
+      } else if (e.key === "Enter" && active >= 0) {
+        var pick = items()[active];
+        if (!pick) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        active = -1;
+        pick.click();
+      } else if (e.key === "Escape") {
+        box.hidden = true;
+      }
+    }, true);
+  }
+
+  // Settings' On and Off pairs (.mode-toggle) and the colour swatches, named by the label above
+  // each, so a screen reader says "Birthday confetti, On" rather than just "On" (help desk #6).
+  var groupCount = 0;
+  function nameGroups() {
+    document.querySelectorAll(".mode-toggle, #swatchGrid").forEach(function (box) {
+      if (box.hasAttribute("role")) return;
+      var label = box.previousElementSibling;
+      while (label && !label.classList.contains("modal-section-label")) {
+        if (label.classList.contains("mode-toggle")) { label = null; break; }
+        label = label.previousElementSibling;
+      }
+      if (!label) return;
+      if (!label.id) label.id = "groupLabel" + ++groupCount;
+      box.setAttribute("role", "group");
+      box.setAttribute("aria-labelledby", label.id);
+    });
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", nameGroups, { once: true });
+  else nameGroups();
+
+  // Esc closes the window on top (help desk #6), for those without an Esc of their own:
+  // Settings, the first open's choice, the tour, the terminal, the flag-down screen and the
+  // departures board have theirs, and run first (they're on document; this is on window). In a
+  // text field, Esc is the field's (clearing it, closing its suggestions).
+  var OWN_ESC = { settingsModal: 1, firstRunModal: 1 };
+  window.addEventListener("keydown", function (e) {
+    if (e.key !== "Escape" || e.defaultPrevented || document.body.classList.contains("touring")) return;
+    var t = e.target;
+    if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+    var shown = function (sel) { var el = document.querySelector(sel); return el && !el.hidden; };
+    if (shown("#flagScreen") || shown("#boardScreen")) return;
+    if (shown("#mapPanel") && window.LiveMap) { e.preventDefault(); return window.LiveMap.close(); }
+    var open = document.querySelectorAll(".modal-backdrop:not(.hidden):not(.docked)");
+    var top = null;
+    for (var i = opened.length - 1; i >= 0 && !top; i--) {
+      var el = document.getElementById(opened[i]);
+      if (el && !el.classList.contains("hidden") && !el.classList.contains("docked")) top = el;
+    }
+    top = top || open[open.length - 1];
+    if (top) {
+      if (OWN_ESC[top.id] || top.querySelector(".terminal")) return;
+      e.preventDefault();
+      return closeModal(top.id);
+    }
+    // A panel (Navigate, Service alerts, Your trips, Places) not docked as a page: its own close.
+    var panels = document.querySelectorAll(".panelModal:not([hidden]):not(.docked)");
+    var panel = panels[panels.length - 1];
+    var close = panel && panel.querySelector('button[id$="Close"]');
+    if (close) { e.preventDefault(); close.click(); }
+  });
 
   function wirePanel(id, onClose) {
     var panel = document.getElementById(id);
@@ -306,9 +484,10 @@
   window.hydrateIcons = hydrateIcons;
   window.toggleRowMenu = toggleRowMenu;
   window.openModal = openModal;
+  window.wireCombobox = wireCombobox;
   window.closeModal = closeModal;
   window.showPanel = showPanel;
   window.syncModalOpen = syncModalOpen;
-  window.Steps = { step: step, mark: markStep, sub: subStep, subBack: subBack };
+  window.Steps = { step: step, page: pageStep, mark: markStep, sub: subStep, subBack: subBack };
   window.wirePanel = wirePanel;
 })();

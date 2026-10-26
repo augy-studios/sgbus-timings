@@ -58,7 +58,10 @@
   }
 
   function perPage() {
-    return Math.max(3, Math.floor(($('#boardRows').clientHeight || innerHeight * 0.7) / ROW_PX));
+    // A row's real height, which enlarged text makes taller than ROW_PX (help desk #6).
+    const row = $('#boardRows .boardRow:not(.boardLabels)');
+    const h = Math.max(ROW_PX, row?.offsetHeight || 0);
+    return Math.max(3, Math.floor(($('#boardRows').clientHeight || innerHeight * 0.7) / h));
   }
 
   function turn() {

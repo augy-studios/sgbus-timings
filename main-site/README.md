@@ -25,10 +25,13 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### Favourites
 - Star bus stops, buses and planned routes; each appears as a one-tap chip
 - Favourite buses are starred and pinned in every stop's timings
+- **Buses at stops**: the star on a bus's row in a stop's timings saves that bus at that stop only, as LTA's MyTransport does (`sgbus_fav_stop_buses`, `toggleFavStopBus` in `script.js`). Favourites lists them under **Buses at stops**, a chip per stop; tapped, the stop's timings for just those buses, **Show all services** a tap away. They're pinned in that stop's timings, and on Glance that stop's card has just them
+- **Lists**: tabs at the top of Favourites. **Favourites** comes first, has every favourite and can't be deleted or renamed; **New list** makes a named group of some of them (stops, buses and buses at stops), with **Choose what's in it**, **Rename** and **Delete list** (`sgbus_fav_lists`, `renderFavLists` in `script.js`). A chip's cross in a list takes it out of that list only; a favourite removed from Favourites leaves every list too. Navs and bus-only routes are in Favourites only
+- Each list with a stop in it is a choice of its own in Glance's stops menu (`js/glance.js`, `keepTo`): its stops, each card keeping to the list's buses there, or every bus at a stop the list has no buses for
 - Choose whether favourite buses and stops pin to the top or bottom of lists
 - Favourites are persisted in your browser's local storage
 - Favourites open in their own window from the star at the top of the Edge Tray
-- **Sync favourites with another device** (stops, buses, routes and navs) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
+- **Sync favourites with another device** (stops, buses, buses at stops, routes, navs and lists) from Settings: show a code (with a link and QR code) on one device, enter it on the other, then tick which favourites to import or export, or select all. Copying only adds, never removes
   - Peer to peer over WebRTC, STUN only, as in [STUN-p2p-spec.md](../docs/STUN-p2p-spec.md): both devices must be on the same wifi, or one on the other's hotspot
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
@@ -82,6 +85,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Boarding is noticed without the road too: a fix off the bus's road falls back on the straight lines between its stops, and one within 250 m of a stop 150 m or more down the route counts as on board, once you're 150 m from the first stop (less a rough fix's error). A fix 150 m down the next ride (100 m further from the walk's end than you've been, 300 m without the accelerometer, or off the ride you were on) moves the trip on to it, on board
 - Walking is told from riding by the accelerometer (`Motion` in `js/trip.js`, `devicemotion`): steps are peaks in the acceleration above gravity, and walking is 7 in 5 s at an even rhythm, which a bus's bumps aren't. Walking never counts as boarding; your first steps within 250 m of a ride's last stop end the ride; and on a walk with no good fix, steps (0.7 m each, against 1.3 times the straight line) move you along instead of the clock. iOS asks for it as the trip starts
 - **Get ready to board**: while you wait at the stop for a bus ride's bus (not yet seen on board), its live timing there is checked, and at about a minute away a notification, two buzzes and the bar say so, once per ride. The server sends it too while the app's in the background (`api/_push/trip.js`, `boardStep`), and each side tells the other it's been said (`readied`)
+- With the phone's keyboard up (typing in a search box or Navigate's ends on a trip), the bar shrinks to one line, the trip and where you're at, so the page has the room; put the keyboard away and it's all back (`data-keyboard`, `fitKeyboard` in `js/trip.js`)
 - On by default; Settings turns it off
 
 ### Your trips and stats
@@ -106,6 +110,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - The site is also an Android app, `org.uwuapps.sgbus` (`../android/`): from 2.0.0 the site in Capacitor's WebView, with native plugins for what a web page can't do
 - `js/app-bridge.js` talks to the app: from 2.0.0 straight to its plugins through Capacitor's bridge (`AppBridge.call`, `AppBridge.on`); for 1.1.0 and 1.2.0 (Bubblewrap), over Chrome's postMessage for Trusted Web Activities. In a browser neither is there, and nothing changes
 - In the app: the Get Off Alert follows the trip with the screen off (`js/trip.js`, the app's TripPlugin), Service Alerts come through Firebase Cloud Messaging (`js/alerts.js`, `api/_push/fcm.js`), the Calendar tab reads the phone's calendar (`js/calendar.js`), and a card's value is read over NFC (`js/card.js`, the tray's card button). The website keeps its own versions of each that a browser can do
+- Back (from 2.2.7, the app's `backtwice`): with nothing open over the page, on any page, the first press says "Press back again to exit" and a second within two seconds leaves, to the background (`MainActivity`). Switching pages adds no step to the page's history in the app (`Steps.page` in `js/ui.js`), so Back never walks back through the pages; in a browser, and in an older app, it still does
 - Links into the app name its package, with a fallback for phones without it: the SimplyGo button (`intent://open/simplygo...`, falling back to SimplyGo's Play Store page), the calendar permission prompt for 1.1.0 to 1.2.0 (`intent://calendar/permission...`) and the app's updater (`intent://update...`). From 2.0.0 the app follows them itself (`SgBusPlugin.shouldOverrideLoad`)
 - `js/app-update.js` shows a bar when the app is older than its newest GitHub release, read through `GET /api/app-release` (cached 10 minutes at the edge, so GitHub's per-IP limit isn't shared by every phone). From app 1.2.0, Update has the app download and install it; on 1.1.0, Download opens the release's page
 - `.well-known/assetlinks.json` vouches for the app's signing key, with `handle_all_urls` (the site's links open in it) and `use_as_origin` (1.1.0 to 1.2.0's message channel)
@@ -124,15 +129,40 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
 - [Open-Meteo](https://open-meteo.com/) for the forecast; NEA's PSI and PM2.5 readings from [data.gov.sg](https://data.gov.sg/) (`DATA_GOV_KEY`)
 
+### Languages
+- English, Chinese (中文, simplified, as in Singapore), Malay (Bahasa Melayu) and Tamil (தமிழ்), picked in Settings, You, **Language**; until one's picked, the phone's own if it's one of these. Picking one opens the app again in it (`js/i18n.js`)
+- **Language** opens **Choose a language** (`js/lang-pick.js`), as gftv-linktree's switcher: a row each, a small flag and the language's name in its own words (read in that language, `lang`), a tick on the one in use, and Close. The flags are flag-icons 7.5.0's (MIT) as inline SVG, not emoji, which Windows doesn't draw: the United Kingdom, China, Malaysia and India, as Augy asked
+- In a language other than English, Settings' Language and Choose a language say "Think a translation looks wrong? Tell us.", the link an email to augy@augystudios.com (the contact the guide gives) with the language in its subject; the app has no feedback form of its own
+- The words come from a json file per language, `i18n/<lang>.json`, a flat map of key to words. English is what the page and code already say, so it never waits on a file; `i18n/en.json` lists every key with its English. A key missing from a language stays English
+- They're in before anything draws: `js/i18n.js` runs at the end of the page ahead of the other scripts and puts the page's marked words in at once, from a copy kept in storage (`sgbus_lang_words`) or, with none yet, the file fetched there and then. The file's fetched again behind the page, for the next open, and `sw.js` keeps every language's, so it can be changed offline
+- In the page, `data-i18n="key"` marks an element's text, and `data-i18n-title`, `data-i18n-aria-label`, `data-i18n-placeholder` and `data-i18n-data-title` its attributes; in code, `tr('key', 'English, {name}', { name })` (script.js) or `I18n.t(...)`
+- After marking new words, run `node scripts/i18n-check.mjs --write` from the repo's root to bring `en.json` up to date; without `--write` it checks, and says what each other language is missing
+- Marked so far: the Edge Tray, Glance, Bus timings and a stop's timings, a bus's route, Navigate (both tabs) and its ways, Service alerts, Your trips' and Places' headings, the trip bar and its status, Settings, Favourites, Theme and the coffee ask. Still English: the live map and Explorer, the share cards, Your trips' and Places' contents, Routines and Timings near a stop, and the server's notifications. The translations were made without a native speaker, so each wants checking by one
+
+### Accessibility
+- Windows take the focus when they open and give it back when they close; Esc closes the one on top (`js/ui.js`). The pages are tab panels of the Edge Tray's tabs, not windows, so a screen reader can always reach the tray
+- Live regions only for what's new: a stop's timings once loaded (`#stopSay`), the trip's part or stop changing (`#tripSay`), a search's number of suggestions. Search suggestions are a listbox, moved through with the arrow keys
+- Text sizes are in rem, so they follow the browser's text size; in the Android app (2.2.7) the phone's font size too (`MainActivity.fitTextSize`). Small buttons take a tap 44px across. With reduced motion, scrolling and the map jump rather than glide
+- **High contrast** (Theme): the phone's setting (`prefers-contrast: more`) unless turned on or off there, as `data-contrast="more"` (`js/colours.js`): black or white text, solid cards, clear edges. Windows' forced colours are followed too
+
 ### Themes
 - 7 built-in colour themes: **Classic**, **Not Green 1–5**, **Really Really Light Green**
 - Theme preference is saved automatically
+- **Your colours**, a secret: once every MRT and LRT line has been ridden at least once, on any trips (NS, EW with its Changi Airport branch, NE, CC, DT, TE, and the Bukit Panjang, Sengkang and Punggol LRTs: Augy's rule, `UNLOCK` in `js/rides.js`), the celebration says so and Theme offers a colour each for the background, the text, the buttons and the cards (`js/colours.js`). The text has to read at AA's 4.5:1 on the background and the cards, or they can't be used; the buttons' text is black or white, whichever reads better. **Back to the usual colours** takes them away
+- Only rides really taken count (`js/rides.js`): the phone seen near where the ride starts and then where it ends, taking at least half its planned time and never faster than a bus (70 km/h) or train (100 km/h), and a bus seen near some of its stops on the way (a train underground can't be). A ride skipped through with Next, ended early or taken with no location never counts. Kept by line and by bus (`sgbus_rides`), on this phone only. Each trip's lines and buses are kept too, should another rule be wanted
+- **The celebration** (`js/celebrate.js`): a three.js scene of the whole MRT and LRT network, its tracks (`/data/rail-tracks.json`) raised as tubes in the lines' colours with a bead at each station, on a dark slab, tilted and turning slowly; a gold trophy spinning over it, made from three.js's own shapes (a lathe for the cup, tori for its handles, a stem and a base, a star on the front); confetti in the lines' colours. Then **Pick my colours** (Theme, Your colours) or **Close**, and Esc. Shown once as Your colours unlocks, and again from Your colours' **Watch the celebration again**
+- three.js 0.169.0 (MIT) is vendored as `vendor/three-0.169.0/three.module.min.js` and fetched only when the celebration first runs; `sw.js` keeps it as it does MapLibre, and `js/rides.js` fetches it ahead once two lines are left, so it can run offline. With reduced motion the scene stands still with no confetti; without WebGL, with Data Saver on, or without three.js, the plain window (`#unlockModal`) says it instead
+- On a phone with little memory (`navigator.deviceMemory` of 2 GB or less, or, where the browser doesn't say, 2 processor cores or fewer), the flat celebration: the same card over a gold trophy drawn in SVG, with confetti in the lines' colours on a 2D canvas (`js/confetti.js`), and no three.js fetched (Augy's choice). Reduced motion still means no confetti
+- While Your colours is on, Theme's brand colour swatches step aside, with a note that **Back to the usual colours** brings them back
+- `node scripts/ride-check-test.cjs` tests it in Chrome under Playwright, with the location and clock moved along by hand: a genuine ride counts, one with no movement, gone through too fast, never seen along the way or with no location doesn't, and only the ninth line's genuine ride unlocks Your colours, opening the celebration, the flat one on a phone with little memory (with confetti, without three.js), or the plain window without WebGL
+
 
 ### Personalisation
 - Open settings from the gear or the app title to set your name and birthday, and to reach Places and Calendar
 - The greeting changes based on time of day, and on your birthday wishes you a happy one with your age from the birthday's year, on two lines so a long name isn't cut off: "Happy 25th Birthday," then "Sam!"
 - Confetti (`js/confetti.js`, a canvas over the page) each time the app's opened on your birthday, and again on coming back after 10 minutes away; Settings turns it off (`sgbus_confetti`), and there's none with reduced motion
 - Settings are stored in local storage
+- About once every six months, a small window asks "Love SG Bus Timings? Consider donating!", with the Edge Tray's Buy Augy a Coffee link (`js/donate.js`): only once the app's been open on 5 days, the first 14 days before, and never on a trip, offline, over another window, or with the coffee button turned off in Settings
 
 ### URL-based Navigation
 - Stops and services are reflected in the URL hash (e.g. `#84009` or `#84009,174`)
@@ -147,6 +177,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 ### PWA / Offline Support
 - Installable on mobile and desktop as a standalone app
 - Service Worker with Workbox for offline caching
+- Offline (`js/offline.js`), the pages and buttons that need a connection step aside. Explorer stays once Singapore's map is saved from it (`js/map-save.js`, `data-map-saved`), its stop cards without Show bus timings; the trip bar's **Share my ETA** goes, and the share card makes no short link, though Offline Sharing still sends a place or directions phone to phone
 - Three app shortcuts (`manifest.json`): Stops near me, Navigate and Service alerts, with icons in `images/icons/`
 - A **Bus timings** widget for the Windows 11 Widgets board (Edge-installed app only): pick a stop and optionally its buses, like the bot's routines. An Adaptive Card (`widgets/timings.json`) filled in by `sw.js`; small, medium and large show 2, 4 and up to 12 buses
 
@@ -181,6 +212,10 @@ vercel dev
 ```
 
 Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LTA DataMall API key](https://datamall.lta.gov.sg/content/datamall/en/request-for-api.html). Service Alerts notifications need a few more; see [SERVICE-ALERTS-SETUP.md](SERVICE-ALERTS-SETUP.md). `DATA_GOV_KEY`, a [data.gov.sg](https://data.gov.sg/) API key, is optional: without it the weather button's PSI and PM2.5 still load, at data.gov.sg's lower rate limit.
+
+### Checks
+
+From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English) and `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do).
 
 ## License
 

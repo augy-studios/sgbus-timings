@@ -4,6 +4,8 @@
     <string name="title_activity_main">SG Bus Timings</string>
     <string name="package_name">org.uwuapps.sgbus</string>
     <string name="custom_url_scheme">org.uwuapps.sgbus</string>
+    <!-- Back with nothing left to close (MainActivity, 2.2.7) -->
+    <string name="exit_hint">Press back again to exit</string>
     <string name="shortcut_near">Stops near me</string>
     <string name="shortcut_near_short">Near me</string>
     <string name="shortcut_nav">Navigate</string>
