@@ -16,7 +16,8 @@
 //   LiveMap.explore()       Explorer, from its Edge Tray button: no way to follow, just every bus
 //                           stop and MRT and LRT station as a dot, and you, over the MRT and
 //                           LRT lines in their colours. A tap on a dot opens its card
-//                           (js/map-card.js): a stop's buses, a station's doors.
+//                           (js/map-card.js): a stop's buses, a station's doors. Its Save the
+//                           map button keeps Singapore's map for offline (js/map-save.js).
 //   LiveMap.traffic(way)    the traffic on a bus's way, from wherever the site says there's
 //                           traffic (Navigate, a trip, #traffic/ links from the Telegram bot):
 //                           its road, orange where it's slow and red where it's jammed, by LTA's
@@ -326,6 +327,8 @@
     panel.classList.toggle('exploring', mode === 'explore');
     panel.setAttribute('aria-label', mode === 'explore' ? 'Explorer' : 'Live map');
     MapCard.close();
+    // Explorer's Save the map sheet (js/map-save.js), shut whichever way it opens.
+    window.MapSave?.close();
     const wasOpen = !panel.hidden;
     panel.hidden = false;
     document.body.classList.add('map-open');
@@ -362,6 +365,7 @@
     if (panel.hidden) return;
     setTurning(false);
     MapCard.close();
+    window.MapSave?.close();
     panel.hidden = true;
     panel.classList.remove('exploring');
     document.body.classList.remove('map-open');

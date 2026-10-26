@@ -3532,6 +3532,20 @@ body.touring { overflow: hidden; }
    A tapped stop's or station's card, out of its dot like a chat bubble: its tail on the dot,
    above it, or below where the top bar's in the way (.below), popping out from the tail. */
 .mapPanel.exploring .mapSheet { display: none; }
+/* Explorer's Save the map (js/map-save.js): its button with the others there only, and its sheet
+   where the live map's own is elsewhere. */
+.mapPanel:not(.exploring) #mapSave { display: none; }
+.mapSaveSheet {
+    position: absolute; z-index: 1001; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
+    max-width: 520px; margin: 0 auto; padding: 12px 14px; border-radius: 18px; font-size: 14px;
+}
+.mapSaveSheet[hidden] { display: none; }
+.mapPanel.mapSaveOpen .mapFabs { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 190px); }
+.mapSaveHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.mapSaveBody p { margin: 4px 0; }
+.mapSaveBody .ico { vertical-align: -3px; }
+.mapSaveMsg { font-size: 13px; color: var(--muted); }
+.mapSaveBody progress { width: 100%; height: 8px; accent-color: var(--brand-fill); }
 .mapCard {
     position: absolute;
     z-index: 1050;

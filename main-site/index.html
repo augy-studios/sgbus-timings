@@ -950,11 +950,20 @@
             <button id="mapHeading" class="glass-btn mapFab" type="button" aria-pressed="false" aria-label="Turn the map with the way you face" title="Turn the map with the way you face"><span data-icon="compass"></span></button>
             <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
             <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
+            <!-- Explorer only (style.css): Singapore's map saved for offline, js/map-save.js -->
+            <button id="mapSave" class="glass-btn mapFab" type="button" aria-expanded="false" aria-controls="mapSaveSheet" aria-label="Save the map for offline" title="Save Singapore's map for offline"><span data-icon="download"></span></button>
         </div>
         <div class="mapSheet glass">
             <p id="mapStep" class="mapStep" role="status" aria-live="polite"></p>
             <p id="mapNote" class="mapNote" hidden></p>
             <div id="mapActions" class="mapActions"></div>
+        </div>
+        <div id="mapSaveSheet" class="mapSaveSheet glass" role="dialog" aria-label="Singapore's map for offline" hidden>
+            <div class="mapSaveHead">
+                <strong>Singapore&rsquo;s map, offline</strong>
+                <button id="mapSaveClose" class="icon-btn small" type="button" aria-label="Close"><span data-icon="close"></span></button>
+            </div>
+            <div id="mapSaveBody" class="mapSaveBody" role="status" aria-live="polite"></div>
         </div>
     </section>
 
@@ -1168,6 +1177,7 @@
     <script src="/js/trip.js"></script>
     <script src="/js/rail-tracks.js"></script>
     <script src="/js/map-engine.js"></script>
+    <script src="/js/map-save.js"></script>
     <script src="/js/map.js"></script>
     <script src="/js/map-card.js"></script>
     <script src="/js/card.js"></script>

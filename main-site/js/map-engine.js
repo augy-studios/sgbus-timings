@@ -666,5 +666,7 @@
     return leafletEngine(el, hooks);
   }
 
-  window.MapEngine = { open };
+  // `styles` and `files`, for saving the map for offline (js/map-save.js): OpenFreeMap's styles
+  // and MapLibre's own files.
+  window.MapEngine = { open, styles: [STYLE_LIGHT, STYLE_DARK], files: [ML_JS, ML_CSS] };
 })();
