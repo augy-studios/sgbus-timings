@@ -662,13 +662,12 @@
 
             <section class="settingsView" data-settings-group="you" data-i18n-data-title="settings.you" data-title="You" hidden>
                 <!-- Language (js/i18n.js): each in its own words, so it can be found in any -->
-                <p class="modal-section-label" data-short="Language" data-find="language languages bahasa 语言 中文 மொழி chinese malay tamil english" data-i18n="settings.language">Language</p>
-                <div id="langPick" class="mode-toggle langPick">
-                    <button class="mode-btn" type="button" data-lang="en" lang="en" aria-pressed="false">English</button>
-                    <button class="mode-btn" type="button" data-lang="zh-SG" lang="zh-Hans-SG" aria-pressed="false">中文</button>
-                    <button class="mode-btn" type="button" data-lang="ms" lang="ms" aria-pressed="false">Bahasa Melayu</button>
-                    <button class="mode-btn" type="button" data-lang="ta" lang="ta" aria-pressed="false">தமிழ்</button>
-                </div>
+                <p class="modal-section-label" id="langLabel" data-short="Language" data-find="language languages bahasa 语言 中文 மொழி chinese malay tamil english" data-i18n="settings.language">Language</p>
+                <!-- Opens Choose a language (js/lang-pick.js), showing the one in use -->
+                <button id="langOpen" class="shareMenuItem langOpen" type="button" aria-haspopup="dialog" aria-labelledby="langLabel langOpenNow">
+                    <span id="langOpenNow" class="langNow"></span>
+                    <span class="settingsGo" data-icon="chevron" aria-hidden="true"></span>
+                </button>
                 <p class="mode-note" data-i18n="settings.language_note">The app opens again in the language picked. Translations are new: tell us anything that reads wrong.</p>
                 <label class="modal-section-label" for="setName" data-short="Name" data-i18n="settings.your_name_for_the_greeting">Your name, for the greeting</label>
                 <input id="setName" class="input settingsInput" maxlength="64" autocomplete="given-name" data-i18n-placeholder="settings.leave_blank_for_no_name" placeholder="Leave blank for no name" />
@@ -1275,8 +1274,33 @@
                 <div class="tripActions">
                     <button id="colourKeep" class="btn" type="button" data-i18n="colours.keep">Use these colours</button>
                     <button id="colourReset" class="iconBtn" type="button" data-i18n="colours.reset" hidden>Back to the usual colours</button>
+                    <button id="colourReplay" class="iconBtn" type="button" data-i18n="colours.replay">Watch the celebration again</button>
                 </div>
             </section>
+        </div>
+    </div>
+
+    <!-- Choose a language (js/lang-pick.js): a row each, its flag and its name in its own words -->
+    <div id="langModal" class="modal-backdrop hidden">
+        <div class="modal glass langModal" role="dialog" aria-modal="true" aria-labelledby="langTitle">
+            <h2 id="langTitle" class="langTitle" data-i18n="lang.title">Choose a language</h2>
+            <div id="langList" class="langList" role="group" aria-labelledby="langTitle"></div>
+            <button id="langClose" class="btn langCloseBtn" type="button" data-i18n="common.close">Close</button>
+        </div>
+    </div>
+
+    <!-- Every line ridden: the 3D celebration (js/celebrate.js), the plain window below where it can't run -->
+    <div id="celebrateModal" class="modal-backdrop hidden celebrateBackdrop">
+        <div class="modal celebrate" role="dialog" aria-modal="true" aria-labelledby="celebrateTitle" aria-describedby="celebrateText">
+            <div id="celebrateScene" class="celebrateScene" aria-hidden="true"></div>
+            <div class="celebrateText">
+                <h2 id="celebrateTitle" data-i18n="unlock.title">Every line ridden!</h2>
+                <p id="celebrateText" data-i18n="unlock.text">You&rsquo;ve ridden every MRT and LRT line, so you&rsquo;ve unlocked a secret: your own colours for the app. Pick them in Theme.</p>
+                <div class="tripActions">
+                    <button id="celebrateGo" class="btn" type="button" data-i18n="unlock.go">Pick my colours</button>
+                    <button id="celebrateClose" class="iconBtn" type="button" data-i18n="common.close">Close</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1357,6 +1381,8 @@
     <script src="/js/app-update.js"></script>
     <script src="/js/donate.js"></script>
     <script src="/js/colours.js"></script>
+    <script src="/js/celebrate.js"></script>
+    <script src="/js/lang-pick.js"></script>
 </body>
 
 </html>

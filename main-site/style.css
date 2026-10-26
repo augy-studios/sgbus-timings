@@ -3850,3 +3850,41 @@ body.touring { overflow: hidden; }
 .colourCard { padding: 6px 10px; border-radius: 10px; }
 .colourButton { padding: 6px 12px; border-radius: 10px; font-weight: 700; }
 .colourWarn { margin: 8px 2px 0; font-size: 0.85rem; color: var(--error); }
+
+/* ===== Choose a language (js/lang-pick.js) ===== */
+.langModal { display: flex; flex-direction: column; gap: 10px; padding: 20px; }
+.langTitle { margin: 0 0 4px; font-size: 1.35rem; color: var(--ink); }
+.langList { display: flex; flex-direction: column; gap: 8px; }
+.langRow {
+    display: flex; align-items: center; gap: 14px; width: 100%; min-height: 48px; padding: 12px 16px;
+    border-radius: 12px; border: 1px solid var(--surface-border); background: var(--surface-strong);
+    color: var(--ink); font: inherit; font-size: 1rem; font-weight: 700; text-align: left; cursor: pointer;
+}
+.langRow:hover { background: var(--brand-fill); color: var(--on-brand); }
+.langRow.active { border-color: var(--brand-ink); box-shadow: 0 0 0 1px var(--brand-ink) inset; }
+.langFlag { width: 30px; height: 22.5px; flex: none; border-radius: 3px; box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent); }
+.langName { flex: 1; min-width: 0; }
+.langTick { display: inline-flex; color: var(--brand-ink); }
+.langTick svg { width: 20px; height: 20px; }
+.langCloseBtn { width: 100%; min-height: 48px; margin-top: 6px; }
+.langOpen .langNow { display: inline-flex; align-items: center; gap: 12px; flex: 1; font-weight: 700; }
+.langOpen .langFlag { width: 26px; height: 19.5px; }
+:root[data-contrast="more"] .langRow.active { box-shadow: 0 0 0 2px var(--ink) inset; }
+
+/* ===== The celebration, every line ridden (js/celebrate.js) ===== */
+.celebrateBackdrop { padding: 0; align-items: center; background: radial-gradient(ellipse at 50% 35%, #1d3327 0%, #060b08 75%); }
+.celebrate {
+    position: relative; width: min(960px, 100vw); max-width: none; height: min(720px, 100dvh); max-height: 100dvh; padding: 0;
+    display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden;
+    background: transparent; border: 0; box-shadow: none; color: #fff;
+}
+.celebrateScene { position: absolute; inset: 0; }
+.celebrateCanvas { width: 100%; height: 100%; display: block; }
+.celebrateText {
+    position: relative; margin: 0 16px max(16px, env(safe-area-inset-bottom)); padding: 16px 18px; border-radius: 18px;
+    background: rgba(6, 11, 8, 0.72); border: 1px solid rgba(255, 255, 255, 0.18); text-align: center;
+}
+.celebrateText h2 { margin: 0 0 6px; font-size: 1.5rem; color: #ffd166; }
+.celebrateText p { margin: 0 0 12px; font-size: 0.95rem; line-height: 1.4; color: #eef2ef; }
+.celebrateText .tripActions { justify-content: center; }
+.celebrateText .iconBtn { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.3); }

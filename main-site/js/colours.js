@@ -12,7 +12,8 @@
 // and the buttons' text is black or white, whichever reads better on them. Back to the usual
 // colours takes them away.
 //
-// Unlocked, a window says so once, with a button to the Theme window.
+// Unlocked, the celebration says so once (js/celebrate.js), or a plain window where it can't
+// run, with a button to the Theme window; Your colours has Watch the celebration again.
 //
 // Window.Colours = { paint(c), contrast(a, b), open() }. Plain script: exports go on window.
 (function () {
@@ -149,7 +150,9 @@
   function told() {
     if (get(TOLD_KEY) || !document.getElementById('unlockModal')) return;
     put(TOLD_KEY, String(Date.now()));
-    window.openModal('unlockModal');
+    // The 3D celebration (js/celebrate.js), or the plain window where it can't run.
+    if (window.Celebrate) window.Celebrate.start();
+    else window.openModal('unlockModal');
   }
 
   function open() {
@@ -195,6 +198,11 @@
       setTimeout(open, 50);
     });
     $('unlockLater')?.addEventListener('click', () => window.closeModal('unlockModal'));
+    // Watch the celebration again, from Your colours.
+    $('colourReplay')?.addEventListener('click', () => {
+      window.closeModal('themeModal');
+      setTimeout(() => (window.Celebrate ? window.Celebrate.start() : window.openModal('unlockModal')), 80);
+    });
 
     window.addEventListener('rides:unlocked', () => { renderColours(); told(); });
     // Unlocked on a trip followed with the app away: said the next time it's open.

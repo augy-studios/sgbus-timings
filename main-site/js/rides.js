@@ -18,8 +18,8 @@
 // Circle Line's extension (CE) the Circle Line's, and the LRT loops' halves their line's. Not synced, so it's the rides taken with
 // this phone.
 //
-// The unlock is one rule (UNLOCK), with the others it could be beside it: Augy's to choose.
-// Unlocked once, it stays (UNLOCKED_KEY), and "rides:unlocked" fires on window.
+// The unlock is one rule (UNLOCK): every MRT and LRT line ridden at least once. Unlocked once,
+// it stays (UNLOCKED_KEY), and "rides:unlocked" fires on window.
 //
 // Window.RideCheck = { see(trip, i, here, accuracy), done(trip, i), verdict(leg, seen),
 // record(), unlocked(), progress(), LINES }. Plain script: exports go on window.
@@ -101,14 +101,9 @@
     try { localStorage.setItem(KEY, JSON.stringify(rec)); } catch { /* counted again next ride */ }
   }
 
-  // The rules it could be. UNLOCK is the one in use.
-  const RULES = {
-    // Every MRT and LRT line ridden at least once, on any trips.
-    everyLine: (rec) => LINES.every((l) => rec.lines[l]?.n >= 1),
-    // One trip on 5 different MRT and LRT lines, or on 5 different buses.
-    fiveInOneTrip: (rec) => rec.trips.some((t) => t.lines.length >= 5 || t.buses.length >= 5),
-  };
-  const UNLOCK = RULES.everyLine;
+  // The rule, Augy's (27 October 2026): every MRT and LRT line ridden at least once, on any
+  // trips. Each trip's lines and buses are kept too (trips), should another rule be wanted.
+  const UNLOCK = (rec) => LINES.every((l) => rec.lines[l]?.n >= 1);
 
   const unlocked = () => {
     try { return !!localStorage.getItem(UNLOCKED_KEY); } catch { return false; }
@@ -158,6 +153,8 @@
     }
     keep(rec);
     checkUnlock(rec);
+    // Nearly there: the celebration's three.js fetched ahead, in case the last line's offline.
+    if (!unlocked() && LINES.filter((l) => !(rec.lines[l]?.n >= 1)).length <= 2) window.Celebrate?.prefetch();
     return true;
   }
 
@@ -167,5 +164,5 @@
     return { done: LINES.filter((l) => rec.lines[l]?.n >= 1), left: LINES.filter((l) => !(rec.lines[l]?.n >= 1)) };
   }
 
-  window.RideCheck = { see, done, verdict, record, unlocked, progress, LINES, RULES };
+  window.RideCheck = { see, done, verdict, record, unlocked, progress, LINES };
 })();

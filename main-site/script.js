@@ -2261,16 +2261,7 @@ $('#favListForm').addEventListener('submit', e => {
 
 $('#favsModal').addEventListener('modalclose', () => { favListForm = null; });
 
-// Settings' Language (js/i18n.js): the one in use pressed; another opens the app again in it.
-$$('#langPick [data-lang]').forEach(btn => {
-    const on = btn.dataset.lang === I18n.lang();
-    btn.classList.toggle('active', on);
-    btn.setAttribute('aria-pressed', String(on));
-});
-$('#langPick').addEventListener('click', e => {
-    const btn = e.target.closest('[data-lang]');
-    if (btn) I18n.set(btn.dataset.lang);
-});
+// Settings' Language opens Choose a language (js/lang-pick.js).
 
 // A tick in Choose what's in it.
 $('#favListPick').addEventListener('change', e => {

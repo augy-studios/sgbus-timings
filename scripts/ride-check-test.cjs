@@ -17,7 +17,10 @@
 //   4. A bus ride seen only at its ends, never along the way, doesn't.
 //   5. A ride with no location at all doesn't.
 //   6. Your colours unlock only once every MRT and LRT line has a genuine ride, and the
-//      window saying so shows; eight lines, or a ninth gone through too fast, don't unlock it.
+//      celebration (js/celebrate.js) shows; eight lines, or a ninth gone through too fast,
+//      don't unlock it. Pick my colours opens Theme, and it can be watched again from there.
+//   7. Without WebGL, the unlock shows the plain window instead of the celebration.
+// SHOTS=<folder> saves a screenshot of the celebration there.
 const path = require('path');
 const fs = require('fs');
 
@@ -59,7 +62,12 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
 });
 
 (async () => {
-  const browser = await playwright.chromium.launch({ headless: true, ...(process.env.CHROME && { executablePath: process.env.CHROME }) });
+  // WebGL in headless Chrome, for the celebration (js/celebrate.js), from its software renderer.
+  const browser = await playwright.chromium.launch({
+    headless: true,
+    args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    ...(process.env.CHROME && { executablePath: process.env.CHROME }),
+  });
   const errors = [];
 
   // A fresh page: storage empty unless `keep`, location at `at`, the clock in our hands.
@@ -74,8 +82,17 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     return page;
   }
 
-  async function newContext(at) {
+  // `noWebGL`: a phone without it, for the celebration's plain window.
+  async function newContext(at, { noWebGL = false } = {}) {
     const context = await browser.newContext({ geolocation: { latitude: at[0], longitude: at[1], accuracy: 20 }, permissions: ['geolocation'], serviceWorkers: 'block' });
+    if (noWebGL) {
+      await context.addInitScript(() => {
+        const real = HTMLCanvasElement.prototype.getContext;
+        HTMLCanvasElement.prototype.getContext = function (kind, ...rest) {
+          return /webgl/i.test(kind) ? null : real.call(this, kind, ...rest);
+        };
+      });
+    }
     await context.route(`${ORIGIN}/**`, async (route) => {
       const url = new URL(route.request().url());
       if (url.pathname.startsWith('/api/')) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
@@ -220,12 +237,42 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     await rideGenuinely(page, context, last);
     ok('ninth genuine: unlocked', await page.evaluate(() => RideCheck.unlocked()));
     await wait(page, 2000);
-    ok('unlock window shown', await page.evaluate(() => !document.getElementById('unlockModal').classList.contains('hidden')));
+    // The celebration: its 3D scene drawn, the plain window not.
+    await page.waitForFunction(() => !document.getElementById('celebrateModal').classList.contains('hidden'), null, { timeout: 15000 }).catch(() => {});
+    ok('celebration shown', await page.evaluate(() => !document.getElementById('celebrateModal').classList.contains('hidden') && window.Celebrate.running() && !!document.querySelector('#celebrateScene canvas')));
+    ok('plain window not shown with the scene', await page.evaluate(() => document.getElementById('unlockModal').classList.contains('hidden')));
+    if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, 'celebration.png') });
+    // Close stops it, and Pick my colours opens Theme at Your colours.
+    await page.evaluate(() => document.getElementById('celebrateGo').click());
+    await wait(page, 500);
+    ok('pick my colours opens Theme', await page.evaluate(() => document.getElementById('celebrateModal').classList.contains('hidden') && !window.Celebrate.running() && !document.getElementById('themeModal').classList.contains('hidden')));
+    // Watched again from Your colours.
+    await page.evaluate(() => document.getElementById('colourReplay').click());
+    await page.waitForFunction(() => window.Celebrate.running(), null, { timeout: 15000 }).catch(() => {});
+    ok('watch the celebration again', await page.evaluate(() => window.Celebrate.running()));
+    await page.evaluate(() => document.getElementById('celebrateClose').click());
     ok('colours offered', await page.evaluate(() => !document.getElementById('customColours').hidden));
     // Unreadable colours are refused; readable ones are kept.
     const refused = await page.evaluate(() => Colours.problems({ bg: '#ffffff', text: '#dddddd', button: '#ccffcc', card: '#ffffff' }).length > 0);
     const fine = await page.evaluate(() => Colours.problems({ bg: '#101820', text: '#f5f5f5', button: '#ffcc00', card: '#1c2833' }).length === 0);
     ok('low contrast refused, good contrast allowed', refused && fine);
+    await context.close();
+  }
+
+  // ---- 7. no WebGL: the plain window instead ----
+  {
+    const lines = ['NS', 'EW', 'NE', 'CC', 'DT', 'TE', 'BP', 'SK'];
+    const last = trainLeg('PG', stretch('PE', 1, 3));
+    const context = await newContext(last.points[0], { noWebGL: true });
+    const page = await fresh(context);
+    await page.evaluate((ls) => {
+      const now = Date.now();
+      localStorage.setItem('sgbus_rides', JSON.stringify({ lines: Object.fromEntries(ls.map((l) => [l, { n: 1, first: now, last: now }])), buses: {}, trips: [] }));
+    }, lines);
+    await rideGenuinely(page, context, last);
+    await wait(page, 2000);
+    ok('no WebGL: unlocked', await page.evaluate(() => RideCheck.unlocked()));
+    ok('no WebGL: the plain window, no scene', await page.evaluate(() => !document.getElementById('unlockModal').classList.contains('hidden') && document.getElementById('celebrateModal').classList.contains('hidden')));
     await context.close();
   }
 
