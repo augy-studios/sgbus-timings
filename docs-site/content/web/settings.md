@@ -14,7 +14,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 
 | Setting | What it does |
 |---|---|
-| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. |
+| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. In Chinese, Malay or Tamil, **Tell us** under the list emails Augy about a translation that looks wrong. |
 | **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
 | **Birthday** | On the day, the greeting becomes "Happy 28th Birthday, Sam!", on two lines so your whole name shows. The age comes from the year you were born. **Clear** removes it. |
 | **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |

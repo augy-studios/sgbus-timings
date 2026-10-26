@@ -37,6 +37,17 @@
       `</button>`).join('');
   }
 
+  // Not English: a line asking to be told of a translation that reads wrong, as an email to
+  // Augy (the contact the guide gives, help/privacy.md), its subject naming the language.
+  function feedback() {
+    const now = I18n.lang();
+    document.querySelectorAll('[data-lang-feedback]').forEach((p) => {
+      p.hidden = now === 'en';
+      const a = p.querySelector('a');
+      if (a) a.href = `mailto:augy@augystudios.com?subject=${encodeURIComponent(`SG Bus Timings translation (${nameOf(now).name})`)}`;
+    });
+  }
+
   // The button in Settings: the language in use, its flag and name.
   function renderButton() {
     const btn = $('langOpen');
@@ -55,6 +66,7 @@
   function init() {
     if (!$(ID)) return;
     renderButton();
+    feedback();
     $('langOpen')?.addEventListener('click', open);
     $('langList').addEventListener('click', (e) => {
       const row = e.target.closest('[data-lang]');

@@ -3850,6 +3850,12 @@ body.touring { overflow: hidden; }
 .colourCard { padding: 6px 10px; border-radius: 10px; }
 .colourButton { padding: 6px 12px; border-radius: 10px; font-weight: 700; }
 .colourWarn { margin: 8px 2px 0; font-size: 0.85rem; color: var(--error); }
+/* Your colours on: the brand swatches step aside, and a note says how to have them back. */
+.brandAway { display: none; }
+:root[data-custom-colours] .brandAway { display: block; }
+:root[data-custom-colours] .brandLabel,
+:root[data-custom-colours] #swatchGrid { display: none; }
+.langFeedbackLink { font-weight: 700; color: var(--brand-ink); }
 
 /* ===== Choose a language (js/lang-pick.js) ===== */
 .langModal { display: flex; flex-direction: column; gap: 10px; padding: 20px; }
@@ -3888,3 +3894,10 @@ body.touring { overflow: hidden; }
 .celebrateText p { margin: 0 0 12px; font-size: 0.95rem; line-height: 1.4; color: #eef2ef; }
 .celebrateText .tripActions { justify-content: center; }
 .celebrateText .iconBtn { background: rgba(255, 255, 255, 0.12); color: #fff; border-color: rgba(255, 255, 255, 0.3); }
+/* The flat celebration, on a phone with little memory (js/celebrate.js): the trophy in SVG. */
+.celebrateBackdrop.flat .celebrateScene { display: flex; align-items: center; justify-content: center; padding-bottom: 200px; }
+.flatTrophy { width: min(46vw, 220px); height: auto; filter: drop-shadow(0 10px 30px rgba(245, 197, 66, 0.35)); }
+@media (prefers-reduced-motion: no-preference) {
+    .celebrateBackdrop.flat .flatTrophy { animation: trophy-bob 2.4s ease-in-out infinite; }
+}
+@keyframes trophy-bob { 50% { transform: translateY(-8px) rotate(-2deg); } }

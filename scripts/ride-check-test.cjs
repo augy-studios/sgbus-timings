@@ -20,6 +20,8 @@
 //      celebration (js/celebrate.js) shows; eight lines, or a ninth gone through too fast,
 //      don't unlock it. Pick my colours opens Theme, and it can be watched again from there.
 //   7. Without WebGL, the unlock shows the plain window instead of the celebration.
+//   8. On a phone with little memory (deviceMemory 2), the flat celebration: an SVG trophy and
+//      2D confetti, no three.js fetched; with reduced motion, no confetti.
 // SHOTS=<folder> saves a screenshot of the celebration there.
 const path = require('path');
 const fs = require('fs');
@@ -83,8 +85,10 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
   }
 
   // `noWebGL`: a phone without it, for the celebration's plain window.
-  async function newContext(at, { noWebGL = false } = {}) {
-    const context = await browser.newContext({ geolocation: { latitude: at[0], longitude: at[1], accuracy: 20 }, permissions: ['geolocation'], serviceWorkers: 'block' });
+  // `lowMemory`: a phone saying it has 2 GB, for the flat celebration.
+  async function newContext(at, { noWebGL = false, lowMemory = false, reducedMotion = 'no-preference' } = {}) {
+    const context = await browser.newContext({ geolocation: { latitude: at[0], longitude: at[1], accuracy: 20 }, permissions: ['geolocation'], serviceWorkers: 'block', reducedMotion });
+    if (lowMemory) await context.addInitScript(() => Object.defineProperty(Navigator.prototype, 'deviceMemory', { get: () => 2, configurable: true }));
     if (noWebGL) {
       await context.addInitScript(() => {
         const real = HTMLCanvasElement.prototype.getContext;
@@ -273,6 +277,41 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     await wait(page, 2000);
     ok('no WebGL: unlocked', await page.evaluate(() => RideCheck.unlocked()));
     ok('no WebGL: the plain window, no scene', await page.evaluate(() => !document.getElementById('unlockModal').classList.contains('hidden') && document.getElementById('celebrateModal').classList.contains('hidden')));
+    await context.close();
+  }
+
+  // ---- 8. little memory: the flat celebration, confetti and all, with no three.js ----
+  for (const reducedMotion of ['no-preference', 'reduce']) {
+    const lines = ['NS', 'EW', 'NE', 'CC', 'DT', 'TE', 'BP', 'SK'];
+    const last = trainLeg('PG', stretch('PE', 1, 3));
+    const context = await newContext(last.points[0], { lowMemory: true, reducedMotion });
+    let threeAsked = false;
+    context.on('request', (r) => { if (/\/vendor\/three-/.test(r.url())) threeAsked = true; });
+    const page = await fresh(context);
+    await page.evaluate((ls) => {
+      const now = Date.now();
+      localStorage.setItem('sgbus_rides', JSON.stringify({ lines: Object.fromEntries(ls.map((l) => [l, { n: 1, first: now, last: now }])), buses: {}, trips: [] }));
+      // The confetti's canvas comes and goes in a few seconds: noted as it comes.
+      new MutationObserver(() => { if (document.querySelector('canvas.confetti')) window.__confettiSeen = true; }).observe(document.body, { childList: true });
+    }, lines);
+    await rideGenuinely(page, context, last);
+    await wait(page, 500);
+    const got = await page.evaluate(() => ({
+      unlocked: RideCheck.unlocked(),
+      shown: !document.getElementById('celebrateModal').classList.contains('hidden'),
+      flat: document.getElementById('celebrateModal').classList.contains('flat') && !!document.querySelector('#celebrateScene .flatTrophy'),
+      mode: Celebrate.mode(),
+      webgl: !!document.querySelector('#celebrateScene canvas'),
+      confetti: !!window.__confettiSeen,
+      plain: !document.getElementById('unlockModal').classList.contains('hidden'),
+    }));
+    const still = reducedMotion === 'reduce';
+    if (process.env.SHOTS && !still) await page.screenshot({ path: path.join(process.env.SHOTS, 'celebration-flat.png') });
+    ok(`little memory${still ? ', reduced motion' : ''}: flat celebration`, got.unlocked && got.shown && got.flat && got.mode === 'flat' && !got.webgl && !got.plain, JSON.stringify(got));
+    ok(`little memory${still ? ', reduced motion' : ''}: ${still ? 'no confetti' : 'confetti'}`, got.confetti === !still);
+    ok(`little memory${still ? ', reduced motion' : ''}: three.js not fetched`, !threeAsked);
+    await page.evaluate(() => document.getElementById('celebrateClose').click());
+    ok(`little memory${still ? ', reduced motion' : ''}: Close stops it`, await page.evaluate(() => !Celebrate.running() && document.getElementById('celebrateModal').classList.contains('hidden')));
     await context.close();
   }
 

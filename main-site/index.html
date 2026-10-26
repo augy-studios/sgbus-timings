@@ -668,7 +668,9 @@
                     <span id="langOpenNow" class="langNow"></span>
                     <span class="settingsGo" data-icon="chevron" aria-hidden="true"></span>
                 </button>
-                <p class="mode-note" data-i18n="settings.language_note">The app opens again in the language picked. Translations are new: tell us anything that reads wrong.</p>
+                <p class="mode-note" data-i18n="settings.language_note2">The app opens again in the language picked.</p>
+                <!-- In a language other than English (js/lang-pick.js): an email to Augy, the contact the guide gives -->
+                <p class="mode-note langFeedback" data-lang-feedback hidden><span data-i18n="lang.feedback.ask">Think a translation looks wrong?</span> <a class="langFeedbackLink" href="mailto:augy@augystudios.com" target="_blank" rel="noopener noreferrer" data-i18n="lang.feedback.tell">Tell us.</a></p>
                 <label class="modal-section-label" for="setName" data-short="Name" data-i18n="settings.your_name_for_the_greeting">Your name, for the greeting</label>
                 <input id="setName" class="input settingsInput" maxlength="64" autocomplete="given-name" data-i18n-placeholder="settings.leave_blank_for_no_name" placeholder="Leave blank for no name" />
                 <label class="modal-section-label" for="setBirthday" data-i18n="settings.birthday">Birthday</label>
@@ -1245,8 +1247,10 @@
                 <button class="mode-btn mode-btn-wide" type="button" data-mode="time" aria-pressed="false"><span data-icon="clock"></span><span data-i18n="theme.time">Time-based</span></button>
             </div>
             <p class="mode-note" id="modeNote" hidden></p>
-            <p class="modal-section-label" data-i18n="theme.brand">Brand colour</p>
+            <p class="modal-section-label brandLabel" data-i18n="theme.brand">Brand colour</p>
             <div class="swatch-grid" id="swatchGrid"></div>
+            <!-- While Your colours is on, the brand colours step aside (style.css, data-custom-colours) -->
+            <p class="mode-note brandAway" data-i18n="theme.brandAway">Your colours are on. The brand colours come back with Back to the usual colours.</p>
             <!-- High contrast (js/colours.js): the phone's setting unless picked here -->
             <p class="modal-section-label" data-i18n="theme.contrast">High contrast</p>
             <div class="mode-toggle" id="contrastPick">
@@ -1285,6 +1289,7 @@
         <div class="modal glass langModal" role="dialog" aria-modal="true" aria-labelledby="langTitle">
             <h2 id="langTitle" class="langTitle" data-i18n="lang.title">Choose a language</h2>
             <div id="langList" class="langList" role="group" aria-labelledby="langTitle"></div>
+            <p class="mode-note langFeedback" data-lang-feedback hidden><span data-i18n="lang.feedback.ask">Think a translation looks wrong?</span> <a class="langFeedbackLink" href="mailto:augy@augystudios.com" target="_blank" rel="noopener noreferrer" data-i18n="lang.feedback.tell">Tell us.</a></p>
             <button id="langClose" class="btn langCloseBtn" type="button" data-i18n="common.close">Close</button>
         </div>
     </div>

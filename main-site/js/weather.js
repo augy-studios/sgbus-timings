@@ -66,7 +66,7 @@
           if (!$("#weatherModal").classList.contains("hidden")) renderModal();
         })
         .catch(() => {
-          if (!data) $("#weatherBtnText").textContent = "Weather";
+          if (!data) $("#weatherBtnText").textContent = I18n.t("timings.weather", "Weather");
         })
         .finally(() => (loading = null));
     }
@@ -79,7 +79,7 @@
     if (data.temp) parts.push(span(data.temp, " °C"));
     if (data.psi) parts.push(`${span(data.psi)} PSI`);
     if (data.pm25) parts.push(`${span(data.pm25)} PM2.5`);
-    $("#weatherBtnText").textContent = parts.join(", ") || "Weather";
+    $("#weatherBtnText").textContent = parts.join(", ") || I18n.t("timings.weather", "Weather");
     const btnIcon = $("#weatherBtn [data-icon]");
     btnIcon.setAttribute("data-icon", wmoIcon(data.now?.code ?? data.today?.code));
     window.hydrateIcons($("#weatherBtn"));

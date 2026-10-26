@@ -153,9 +153,9 @@ const LS = {
 // ----------- Greeting -----------
 function getGreeting(now = new Date()) {
     const h = now.getHours();
-    if (h < 12) return 'Good Morning';
-    if (h < 18) return 'Good Afternoon';
-    return 'Good Evening';
+    if (h < 12) return tr('greeting.morning', 'Good Morning');
+    if (h < 18) return tr('greeting.afternoon', 'Good Afternoon');
+    return tr('greeting.evening', 'Good Evening');
 }
 
 function isBirthday(now = new Date()) {

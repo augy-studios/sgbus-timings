@@ -11,9 +11,12 @@
 // download. The network is /data/rail-tracks.json (js/rail-tracks.js) and its stations
 // /data/rail-stations.json.
 //
-// With reduced motion, the scene is drawn once and stands still, with no confetti. Without
-// WebGL, or with Data Saver on, or if three.js can't be had, it isn't shown: the plain window
-// (#unlockModal) says it instead.
+// With reduced motion, the scene is drawn once and stands still, with no confetti. On a phone
+// with little memory (low(): navigator.deviceMemory of 2 GB or less, or where a browser doesn't
+// say, 2 processor cores or fewer), the flat celebration instead: the same card over a gold
+// trophy drawn in SVG, and confetti in the lines' colours on a 2D canvas (js/confetti.js), with
+// no three.js fetched (Augy, 27 October 2026). Without WebGL, or with Data Saver on, or if
+// three.js can't be had, the plain window (#unlockModal) says it instead.
 //
 // Window.Celebrate = { start() } → resolves to "scene" or "plain". Plain script: exports go
 // on window.
@@ -45,6 +48,29 @@
   }
 
   const canRun = () => webgl() && !navigator.connection?.saveData;
+  const low = () => (navigator.deviceMemory != null ? navigator.deviceMemory <= 2 : (navigator.hardwareConcurrency || 8) <= 2);
+
+  // The trophy, flat: a cup, its handles, stem and base, in gold, with a star.
+  const TROPHY_SVG = '<svg class="flatTrophy" viewBox="0 0 120 140" aria-hidden="true" focusable="false">' +
+    '<defs><linearGradient id="flatGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff1a8"/><stop offset="0.45" stop-color="#f5c542"/><stop offset="1" stop-color="#a87a12"/></linearGradient></defs>' +
+    '<path d="M28 18 C10 18 8 46 34 56" fill="none" stroke="url(#flatGold)" stroke-width="7" stroke-linecap="round"/>' +
+    '<path d="M92 18 C110 18 112 46 86 56" fill="none" stroke="url(#flatGold)" stroke-width="7" stroke-linecap="round"/>' +
+    '<path d="M26 10 H94 C94 52 80 72 60 76 C40 72 26 52 26 10 Z" fill="url(#flatGold)"/>' +
+    '<rect x="54" y="76" width="12" height="22" fill="url(#flatGold)"/>' +
+    '<path d="M38 98 H82 L88 110 H32 Z" fill="url(#flatGold)"/>' +
+    '<rect x="26" y="110" width="68" height="20" rx="3" fill="#1f2a24"/>' +
+    '<path d="M60 22 l5 10 11 1.6 -8 7.8 1.9 11 -9.9-5.2 -9.9 5.2 1.9-11 -8-7.8 11-1.6 Z" fill="#fff6c8" opacity="0.9"/>' +
+    '</svg>';
+
+  function flat() {
+    stop();
+    $(ID).classList.add('flat');
+    $('celebrateScene').innerHTML = TROPHY_SVG;
+    window.openModal(ID);
+    running = { scene: null, frame: 0, flat: true };
+    window.Confetti?.burst({ colours: [...new Set(Object.values(COLOURS))].concat(['#ffd166', '#ffffff']), count: 220, life: 6000 });
+    return 'flat';
+  }
 
   function loadThree() {
     three ??= import(THREE_URL).catch((e) => { three = null; throw e; });
@@ -261,7 +287,10 @@
   }
 
   async function start() {
-    if (!$(ID) || !canRun()) return plain();
+    if (!$(ID)) return plain();
+    // Little memory: the flat celebration, with no three.js fetched.
+    if (low()) return flat();
+    if (!canRun()) return plain();
     let T;
     let net;
     try {
@@ -271,6 +300,7 @@
       return plain();
     }
     stop();
+    $(ID).classList.remove('flat');
     const canvas = document.createElement('canvas');
     canvas.className = 'celebrateCanvas';
     $('celebrateScene').appendChild(canvas);
@@ -299,7 +329,7 @@
 
   // Fetched ahead, so it's there even if the last line's ridden offline (js/rides.js).
   function prefetch() {
-    if (canRun()) fetch(THREE_URL).catch(() => {});
+    if (canRun() && !low()) fetch(THREE_URL).catch(() => {});
   }
 
   function init() {
@@ -315,5 +345,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 
-  window.Celebrate = { start, prefetch, running: () => !!running };
+  window.Celebrate = { start, prefetch, running: () => !!running, mode: () => (running ? (running.flat ? 'flat' : 'scene') : null) };
 })();
