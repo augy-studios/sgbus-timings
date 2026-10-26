@@ -73,5 +73,8 @@
     return out.sort((a, b) => a.distance - b.distance);
   }
 
-  window.StationSearch = { load, find, label, stopsAt };
+  // Every station, once they're in (null before): Navigate's places offline (js/nav.js).
+  const all = () => stations;
+
+  window.StationSearch = { load, find, label, stopsAt, all };
 })();

@@ -2394,6 +2394,11 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .navOthers { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
 .navOther { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); }
 .navOther > span:not(.ico) { flex: 1; }
+/* Ways planned on the phone with no connection (js/nav.js, planOnPhone): said once, above them. */
+.navOffline {
+    display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 8px 10px; border-radius: 12px;
+    font-size: 14px; font-weight: 600; background: var(--surface); border: 1px solid var(--surface-border);
+}
 :root[data-mode="dark"] .journeyTraffic, :root[data-mode="dark"] .legTraffic { color: #ffb347; }
 
 /* ===== Get Off Alert: the trip bar (js/trip.js) ===== */
