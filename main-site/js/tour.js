@@ -7,9 +7,9 @@
 //   then the Edge Tray and Settings, on whatever page is home, and not over a link that opened
 //   something, which came for that; a page switched to later gets its own then.
 // - Settings, Show me around, has a button for each page's, to see it again.
-// - A tour switches to its page (Glance's only while Glance is on) and ends back on the page it
-//   began on. A step whose thing isn't there (no trips yet, a button this phone hasn't) is left
-//   out.
+// - A tour switches to its page (only while it's on: js/main-screen.js) and ends back on the
+//   page it began on. A step whose thing isn't there (no trips yet, a button this phone hasn't)
+//   is left out.
 // - The views that aren't pages, the sgbus terminal and Explorer, each full screen over the page,
 //   have one too (`view`): shown the first time the view opens (first(id), from js/terminal.js
 //   and js/map.js), and from Settings opening the view (`open`) and leaving it open after.
@@ -29,8 +29,8 @@
         { el: '#glanceHero', text: 'Your next bus, big enough to read on the move. Tap it for all its times.' },
         { el: '#glanceSource', text: 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.' },
         { el: '#glanceStops .glanceStop', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.' },
-        { el: '#trayViews', text: 'Each page has its button at the top of the Edge Tray: Glance, Bus timings, Favourites, Navigate, alerts, your trips and places. Press and hold a button to see what it does.' },
-        { el: '#settingsBtn', text: 'In Settings, Custom home picks the page the app opens on, and Show me around shows any page’s tour again.' },
+        { el: '#trayViews', text: () => `Each page has its button at the top of the Edge Tray: ${pageList()}. Press and hold a button to see what it does.` },
+        { el: '#settingsBtn', text: 'In Settings, Pages and Edge Tray has Custom home, the page the app opens on, and Help and extras has Show me around, for any page’s tour again.' },
       ],
     },
     timings: {
@@ -116,6 +116,18 @@
   };
   const PAGES = Object.keys(TOURS);
 
+  // Is page `id` there: a page that's off isn't (js/main-screen.js), nor offline one that needs
+  // the network, or Explorer (js/offline.js); the other views always are.
+  const there = (id) => (id === 'explorer' ? !window.Offline?.on()
+    : !window.MainScreen || !MainScreen.IDS.includes(id) || MainScreen.here(id));
+
+  // The pages on, for the Edge Tray's step: "Glance, Bus timings, … and places".
+  function pageList() {
+    const words = { glance: 'Glance', timings: 'Bus timings', favs: 'Favourites', nav: 'Navigate', alerts: 'alerts', trips: 'your trips', places: 'places' };
+    const on = Object.keys(words).filter(there).map((id) => words[id]);
+    return on.length > 1 ? `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]}` : on.join('');
+  }
+
   let steps = [];
   let at = 0;
   let root = null;
@@ -175,7 +187,7 @@
     const el = steps[i].target;
     if (el.closest('#trayButtons') && document.documentElement.hasAttribute('data-tray-closed')) window.setTrayOpen?.(true);
     el.scrollIntoView({ block: 'center', behavior: 'instant' });
-    root.querySelector('.tourText').textContent = steps[i].text;
+    root.querySelector('.tourText').textContent = typeof steps[i].text === 'function' ? steps[i].text() : steps[i].text;
     root.querySelector('.tourDots').innerHTML = steps.map((_, n) => `<span${n === i ? ' class="on"' : ''}></span>`).join('');
     root.querySelector('.tourNext').textContent = i === steps.length - 1 ? 'Done' : 'Next';
     requestAnimationFrame(place);
@@ -286,7 +298,7 @@
     if (root || !TOURS[id]) return;
     if (TOURS[id].view) return startView(id);
     const from = window.MainScreen?.active() || null;
-    const onPage = id !== 'glance' || window.Glance?.enabled();
+    const onPage = there(id);
     if (onPage && window.MainScreen && from !== id) MainScreen.open(id);
     // A moment for the page to draw what it shows, then the steps it has.
     root = true;
@@ -332,10 +344,27 @@
 
   // At start: the welcome, unless a link opened something. On Glance it waits on its buses;
   // on another home (or with Glance off), it's Glance's page then back, or the tray and
-  // Settings, and the home's own tour after.
+  // Settings, and the home's own tour after. Someone new is first asked Minimal or Full
+  // (js/first-run.js), on the same visits the welcome would show, and the welcome waits for
+  // the answer, as do the pages' tours, so it covers only what's on.
   function maybeStart() {
+    // A page's tour that's going when its page goes offline (js/offline.js) stops, not marked
+    // seen, so it's shown when the page is back; and back where it began, or Favourites.
+    window.Offline?.onChange(() => {
+      if (!root || root === true || !page || TOURS[page]?.view || there(page)) return;
+      page = null;
+      end();
+    });
+    if (!waits() && window.FirstRun?.ask(welcome)) return;
+    welcome();
+  }
+
+  // The welcome is Glance's, which isn't there offline: it waits for a visit online.
+  const waits = () => location.hash.length > 1 || !!location.search || (!seen('glance') && !!window.Offline?.on());
+
+  function welcome() {
     window.addEventListener('viewchange', forPage);
-    if (location.hash.length > 1 || location.search) return;
+    if (waits()) return;
     if (!seen('glance') && window.MainScreen?.active() !== 'glance') {
       setTimeout(() => { if (!covered()) start('glance'); }, 1500);
       return;
@@ -345,7 +374,7 @@
 
   // Settings' Show me around: a button for each page's tour, then the views'.
   function pickers() {
-    return PAGES.filter((id) => id !== 'glance' || window.Glance?.enabled())
+    return PAGES.filter(there)
       .map((id) => `<button class="iconBtn" type="button" data-tour="${id}"><span class="ico" aria-hidden="true">${window.icon(TOURS[id].icon)}</span> ${TOURS[id].label || window.MainScreen?.label(id) || id}</button>`)
       .join('');
   }

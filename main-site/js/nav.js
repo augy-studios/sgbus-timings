@@ -2,14 +2,17 @@
 // The journeys come from /api/nav (api/_nav/), which keeps the best for every mix of buses and
 // trains; the ends come from /api/places. Bus legs get live timings here, from
 // /api/bus-arrivals, and any journey can be started as a trip for the Get Off Alert
-// (js/trip.js).
+// (js/trip.js). Offline, the same router plans on the phone (planOnPhone), and the ends come
+// from the stations and stops it keeps (placesOnPhone).
 // Loaded before script.js and uses its helpers ($, LS, loadStop, ...), so nothing here runs
 // until script.js calls initNav().
 
 // walksOpen: the walks of the open way whose Directions have been opened into map apps.
 // when: the time picked (js/when.js), null for Leave now.
 // pickWay: a shared way to open once the ways are in (openNavAt).
-const nav = { from: null, to: null, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null, pickWay: null };
+// via: one stop on the way, a place like either end, or null; viaOpen: its box shown, not yet
+// set (Add a stop).
+const nav = { from: null, to: null, via: null, viaOpen: false, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null, pickWay: null };
 
 const NAV_PLACES_DELAY_MS = 300;
 // A Google Maps link, which /api/places reads for the one place it points at (api/_lib/gmaps.js).
@@ -24,6 +27,24 @@ function initNav() {
       onSaved: (item) => (item.kind === 'event' ? navToEvent(field, item) : setNavEnd(field, { label: item.place.name, lat: item.place.lat, lng: item.place.lng })),
     });
   }
+  // A stop on the way (Add a stop): searched as the ends are, without the calendar.
+  attachPlaceSearch($('#navVia'), $('#navViaAc'), (place) => setNavEnd('via', place), {
+    recents: true,
+    onSaved: (item) => setNavEnd('via', { label: item.place.name, lat: item.place.lat, lng: item.place.lng }),
+  });
+  $('#navAddStop').addEventListener('click', () => {
+    nav.viaOpen = true;
+    showEnds();
+    $('#navVia').focus({ preventScroll: true });
+  });
+  $('#navViaRemove').addEventListener('click', () => {
+    const had = !!nav.via;
+    nav.via = null;
+    nav.viaOpen = false;
+    nav.option = null;
+    showEnds();
+    if (had) runNav();
+  });
   initSavedPlaces();
   nav.whenPicker = When.picker($('#navWhen'), (when) => {
     nav.when = when;
@@ -47,12 +68,27 @@ function initNav() {
   }
   $('#navClose').addEventListener('click', closeNav);
   wirePanel('navSection', closeNav);
+  // The stop stays where it is, between the two.
   $('#navSwap').addEventListener('click', () => {
     [nav.from, nav.to] = [nav.to, nav.from];
     showEnds();
     runNav();
   });
   $('#navRefresh').addEventListener('click', refreshNav);
+  // Back online (js/offline.js): Bus and train on show, with both ends, plans again (or its way
+  // open fetches its live timings again), as Refresh would; ways planned offline are planned
+  // again by /api/nav. Gone offline with it on show: the phone's planner gets ready.
+  window.Offline?.onChange((off) => {
+    if ($('#navSection').hidden) return;
+    if (off) return warmPhonePlanner();
+    if (!nav.from || !nav.to) return;
+    // A way open from an offline plan opens again from the new plan, if it's still one of them.
+    if (nav.offline && nav.option) {
+      nav.pickWay = wayKey(nav.option);
+      nav.option = null;
+    }
+    refreshNav();
+  });
   $('#navFavBtn').addEventListener('click', () => {
     toggleFavNav(nav.from, nav.to);
     renderNavFav();
@@ -185,6 +221,12 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
     if (q.length < 2) return render([]);
     // A Google Maps link is pasted whole, so it's read at once and, once placed, set as the end.
     const link = MAPS_LINK_RE.test(q);
+    // Offline (js/offline.js), only what the phone has: stations and bus stops (placesOnPhone).
+    if (window.Offline?.on()) {
+      ++token;
+      if (link) return note('Reading a Google Maps link needs a connection. Pick a stop, a station or one of your places.');
+      return render(placesOnPhone(q));
+    }
     if (link) note('Reading the Google Maps link…');
     timer = setTimeout(async () => {
       const mine = ++token;
@@ -205,7 +247,8 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
       } catch {
         if (mine !== token) return;
         if (link) note("Couldn't read that Google Maps link. Check your connection and try again.");
-        else render([]);
+        // Not reached: what the phone has, as offline.
+        else render(placesOnPhone(q));
       }
     }, link ? 0 : NAV_PLACES_DELAY_MS);
   });
@@ -233,6 +276,26 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
       pick(Recents.asPlace(item));
     },
   });
+}
+
+// Places offline, with no /api/places to ask: MRT and LRT stations (js/station-search.js) and
+// bus stops (matchStops, script.js), as /api/places lists them, an exact stop code first. No
+// addresses or buildings, which are OneMap's.
+const PHONE_STATIONS = 4;
+const PHONE_STOPS = 6;
+function placesOnPhone(q) {
+  const lower = q.trim().toLowerCase();
+  const stations = (StationSearch.all() || [])
+    .filter((s) => s.name.toLowerCase().includes(lower) || s.codes.some((c) => c.toLowerCase() === lower))
+    .slice(0, PHONE_STATIONS)
+    .map((s) => ({ kind: 'station', label: `${s.name} station`, sub: s.codes.join(' / '), code: s.codes.join('/'), lat: s.lat, lng: s.lng }));
+  const stops = matchStops(q, PHONE_STOPS).stops.flatMap((s) => {
+    const at = stopsIndex?.[s.code];
+    if (at?.lat == null || at?.lng == null) return [];
+    return [{ kind: 'stop', label: s.name || s.code, sub: `Bus stop ${s.code}${s.road ? ` · ${s.road}` : ''}`, code: s.code, lat: at.lat, lng: at.lng }];
+  });
+  const exact = stops.filter((s) => s.code === lower);
+  return [...exact, ...stations, ...stops.filter((s) => s.code !== lower)];
 }
 
 // ---- Home, Work and your places ----
@@ -308,6 +371,10 @@ function navToEvent(field, ev) {
 function showEnds() {
   $('#navFrom').value = nav.from?.label || '';
   $('#navTo').value = nav.to?.label || '';
+  $('#navVia').value = nav.via?.label || '';
+  const stop = !!(nav.via || nav.viaOpen);
+  $('#navViaField').hidden = !stop;
+  $('#navAddStop').hidden = stop;
 }
 
 // ---- Opening and closing ----
@@ -361,10 +428,15 @@ function switchNavMode(mode) {
 }
 
 // Opens over the page (a .panelModal, js/ui.js), at Leave now unless it's given a time: one
-// picked before isn't kept.
-function openNav(from = null, to = null, { when = null, focus = true } = {}) {
+// picked before isn't kept. Given an end, it starts without a stop on the way unless it's
+// given one too (`via`, a link's: openNavAt).
+function openNav(from = null, to = null, { when = null, focus = true, via } = {}) {
   if (from) nav.from = from;
   if (to) nav.to = to;
+  if (via !== undefined || from || to) {
+    nav.via = via || null;
+    nav.viaOpen = false;
+  }
   nav.option = null;
   nav.when = when;
   nav.whenPicker.set(when);
@@ -372,6 +444,8 @@ function openNav(from = null, to = null, { when = null, focus = true } = {}) {
   showEnds();
   if (nav.from && nav.to) runNav();
   else renderNav();
+  // Offline, the phone's planner gets ready while the ends are picked.
+  if (window.Offline?.on() && !(nav.from && nav.to)) warmPhonePlanner();
   if (!nav.from && focus) Recents.quietFocus($('#navFrom'));
 }
 
@@ -415,16 +489,18 @@ function backToNav() {
 const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
 
 // The nav as a link, for the address bar and Share: "#nav/1.30050,103.85580~Bedok%20Mall/here",
-// with "/arrive/2026-10-09T08:30" on the end for a picked time. Each end is its point and name;
+// with "/via/1.35330,103.94520~Tampines" after the ends for a stop on the way, and
+// "/arrive/2026-10-09T08:30" on the end for a picked time. Each end is its point and name;
 // "here" for Your location, so whoever opens the link starts or ends where they are; or "-"
 // while it isn't set. Just "#nav" with nothing set at all.
 function navHash() {
-  return navHashFor(nav.from, nav.to, nav.when);
+  return navHashFor(nav.from, nav.to, nav.when, nav.via);
 }
 
-// The same for any two ends, each a place, null, or "here" (as Share has them): Offline
-// Sharing's link (js/offline-share.js), which opens with no server to look it up.
-function navHashFor(from, to, when = null) {
+// The same for any two ends, each a place, null, or "here" (as Share has them), and a stop, a
+// place or null: Offline Sharing's link (js/offline-share.js), which opens with no server to
+// look it up.
+function navHashFor(from, to, when = null, via = null) {
   const end = (p) => {
     if (!p) return '-';
     if (p === 'here' || p.label === HERE_LABEL) return 'here';
@@ -432,12 +508,14 @@ function navHashFor(from, to, when = null) {
     // closing bracket doesn't end the link where it's pasted.
     return `${coord(p)}~${encodeURIComponent(p.label).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
   };
-  return from || to || when ? `#nav/${end(from)}/${end(to)}${When.hashPart(when)}` : '#nav';
+  // A stop is always a point: Your location as one is where you were.
+  const stop = via && via !== 'here' ? `/via/${end({ ...via, label: via.label === HERE_LABEL ? 'My location' : via.label })}` : '';
+  return from || to || when ? `#nav/${end(from)}/${end(to)}${stop}${When.hashPart(when)}` : '#nav';
 }
 
 // Opens a nav link (navHash). A link from before ends carried names takes a saved nav's
 // names for its points, or Start and End.
-function openNavHash(fromText, toText, when = null) {
+function openNavHash(fromText, toText, when = null, viaText = null) {
   const point = (t, fallback) => {
     if (t === '-' || t === 'here') return null;
     const [pos, ...rest] = t.split('~');
@@ -451,18 +529,18 @@ function openNavHash(fromText, toText, when = null) {
     }
     return { label: label.trim(), lat, lng };
   };
-  openNavAt(fromText === 'here' ? 'here' : point(fromText, 'Start'), toText === 'here' ? 'here' : point(toText, 'End'), when);
+  openNavAt(fromText === 'here' ? 'here' : point(fromText, 'Start'), toText === 'here' ? 'here' : point(toText, 'End'), when, null, viaText ? point(viaText, 'Stop') : null);
 }
 
 // Opens Navigate at two ends, from a link: each a place, null for not set, or "here" for
-// wherever the person opening it is. `way` (wayKey) is the way to open once they're planned,
-// if it's still among them.
-function openNavAt(from, to, when = null, way = null) {
+// wherever the person opening it is, and `via`, a stop on the way or null. `way` (wayKey) is
+// the way to open once they're planned, if it's still among them.
+function openNavAt(from, to, when = null, way = null, via = null) {
   nav.from = from === 'here' ? null : from;
   nav.to = to === 'here' ? null : to;
   nav.pickWay = way;
   // Not the keyboard up over From while it's finding where you are.
-  openNav(nav.from, nav.to, { when, focus: from !== 'here' });
+  openNav(nav.from, nav.to, { when, focus: from !== 'here', via });
   if (from === 'here') locateNavEnd('from');
   if (to === 'here') locateNavEnd('to');
 }
@@ -472,19 +550,117 @@ const wayKey = (o) => (o.walkOnly ? 'walk' : o.legs.filter((l) => l.mode !== 'wa
 
 // ---- Planning ----
 
-// The ways by bus and train from one place to another, now or at `when`: /api/nav's answer.
-// Also the trip's Find another way, when a last bus is lost (js/trip.js).
-async function fetchWays(from, to, when = null) {
+// The ways by bus and train from one place to another, now or at `when`, and by `via` if
+// it's given, a stop on the way: /api/nav's answer. Also the trip's Find another way, when a
+// last bus is lost (js/trip.js). Offline (js/offline.js), or when /api/nav can't be reached,
+// planned on the phone instead (planOnPhone), in the same shape with `offline` set.
+async function fetchWays(from, to, when = null, via = null) {
+  const data = window.Offline?.on() ? await planOnPhone(from, to, when, via) : await askNav(from, to, when, via);
+  // Each way's stop (`via`, api/_nav/via.js) by its name, for the way and its trip to show.
+  if (via) for (const o of data.options || []) if (o.via) o.via.label = via.label;
+  return data;
+}
+
+async function askNav(from, to, when, via) {
   const at = when ? `&when=${when.mode}&at=${encodeURIComponent(when.at)}` : '';
   // Settings' Restricted areas (BusNet.setOpenAccess), and Immigration time when it's your own.
   const open = BusNet.openAccess() ? '&restricted=1' : '';
   const customs = LS.getCustoms() === 'auto' ? '' : `&customs=${LS.getCustoms()}`;
   // Settings' Cycling: ways by bike weighed too (`others.cycle`).
   const bike = LS.getBike() ? '&bike=1' : '';
-  const r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${at}${open}${customs}${bike}`, { cache: 'no-store' });
+  const stop = via ? `&via=${coord(via)}` : '';
+  let r;
+  try {
+    r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${stop}${at}${open}${customs}${bike}`, { cache: 'no-store' });
+  } catch (e) {
+    // Not reached at all (a network error is a TypeError): planned on the phone.
+    if (e instanceof TypeError) return planOnPhone(from, to, when, via);
+    throw e;
+  }
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
   return data;
+}
+
+// ---- Planning on the phone, offline ----
+
+// Bus and train with no connection (js/nav-core/offline.js): the same router as /api/nav, on
+// the bus routes and stops the phone keeps and the rail network precached with the app, in
+// js/nav-worker.js so building its graph doesn't hold the page still. Where a module worker
+// can't start, the same module runs in the page. No OneMap, live traffic, last bus warnings,
+// walking or cycling the whole way, or train disruptions: times are the router's estimates.
+const navWorker = { worker: null, failed: false, seq: 0, waiting: new Map(), stopsSent: null };
+
+async function planOnPhone(from, to, when = null, via = null) {
+  const point = (p) => ({ lat: p.lat, lng: p.lng });
+  const customs = LS.getCustoms() === 'auto' ? null : Number(LS.getCustoms());
+  const ask = { from: point(from), to: point(to), via: via ? point(via) : null, when: when ? { mode: when.mode, at: when.at } : null, open: BusNet.openAccess(), customs, now: Date.now() };
+  return phoneCall({ ask });
+}
+
+// Builds the graph ahead of the first plan, once offline with Navigate open, so the first plan
+// doesn't wait for it. Nothing happens if it can't.
+function warmPhonePlanner() {
+  phoneCall({ warm: { open: BusNet.openAccess() } }).catch(() => {});
+}
+
+async function phoneCall(message) {
+  const stops = await ensureStopsIndex();
+  if (!navWorker.failed && typeof Worker !== 'undefined' && !navWorker.worker) {
+    try {
+      navWorker.worker = new Worker('/js/nav-worker.js', { type: 'module' });
+      navWorker.worker.onmessage = ({ data }) => {
+        const waiting = navWorker.waiting.get(data.id);
+        navWorker.waiting.delete(data.id);
+        if (waiting) waiting.done(data);
+      };
+      // A worker that didn't start (no module workers here) hands what it was asked to the page.
+      navWorker.worker.onerror = (e) => {
+        e.preventDefault?.();
+        navWorker.failed = true;
+        navWorker.worker = null;
+        for (const waiting of navWorker.waiting.values()) waiting.fallback();
+        navWorker.waiting.clear();
+      };
+    } catch {
+      navWorker.failed = true;
+      navWorker.worker = null;
+    }
+  }
+  if (!navWorker.worker) return phoneHere(message, stops);
+  const id = ++navWorker.seq;
+  const sendStops = navWorker.stopsSent !== stops;
+  navWorker.stopsSent = stops;
+  return new Promise((resolve, reject) => {
+    navWorker.waiting.set(id, {
+      done: (data) => (data.error ? reject(new Error(data.error)) : resolve(data.data)),
+      fallback: () => phoneHere(message, stops).then(resolve, reject),
+    });
+    navWorker.worker.postMessage(sendStops ? { id, ...message, stops } : { id, ...message });
+  });
+}
+
+// The same, on the page's own thread.
+let phoneModule = null;
+let phoneStops = null;
+async function phoneHere({ ask, warm }, stops) {
+  if (!phoneModule) {
+    phoneModule = import('/js/nav-core/offline.js').catch((e) => {
+      phoneModule = null;
+      throw e;
+    });
+  }
+  let mod;
+  try {
+    mod = await phoneModule;
+  } catch {
+    throw new Error("Bus and train can't plan offline in this browser. Plan by Bus only, or try again when you reconnect.");
+  }
+  if (phoneStops !== stops) {
+    mod.setStops(stops);
+    phoneStops = stops;
+  }
+  return warm ? mod.warm(warm) : mod.planOffline(ask);
 }
 
 async function runNav() {
@@ -501,12 +677,14 @@ async function runNav() {
     return;
   }
   const when = nav.when;
-  $('#navBody').innerHTML = plannerStatus('Finding journeys by bus and train…');
+  $('#navBody').innerHTML = plannerStatus(window.Offline?.on() ? 'Planning by bus and train on your phone…' : 'Finding journeys by bus and train…');
   try {
-    const data = await fetchWays(nav.from, nav.to, when);
+    const data = await fetchWays(nav.from, nav.to, when, nav.via);
     if (token !== nav.token) return;
     nav.options = data.options || [];
     nav.onemap = !!data.onemap;
+    // Planned on the phone (planOnPhone): estimates, with nothing live.
+    nav.offline = !!data.offline;
     // Bus times by the traffic right now, and walking or cycling the whole way (api/_nav/live.js).
     nav.traffic = data.traffic || null;
     nav.others = data.others || {};
@@ -516,6 +694,7 @@ async function runNav() {
     renderNav();
   } catch (e) {
     if (token !== nav.token) return;
+    // Offline, planning on the phone says why it couldn't (planOnPhone).
     $('#navBody').innerHTML = plannerStatus(e.message || "Couldn't plan that right now.") +
       `<button type="button" class="iconBtn" data-nav-action="retry">Try again</button>`;
   }
@@ -537,10 +716,11 @@ function renderNav() {
     return;
   }
   body.innerHTML =
+    (nav.offline ? `<p class="navOffline">${ico('alert')} Planned offline: times are estimates.</p>` : '') +
     plannerStatus(`${nav.options.length} way${nav.options.length === 1 ? '' : 's'} to get there${nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : ''}, quickest first. Every mix of bus and train is listed, not just the fastest.`) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
     navOthers() +
-    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}</p>` +
+    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}${nav.via ? ' No time is counted at your stop: add what you’ll spend there.' : ''}${nav.offline ? ' Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.' : ''}</p>` +
     customsNote(nav.options);
 }
 
@@ -640,17 +820,21 @@ function walkMetres(o) {
   return o.legs.filter((l) => l.mode === 'walk').reduce((sum, l) => sum + (l.metres || 0), 0);
 }
 
+// A way's legs before its stop on the way and after it (/api/nav's `via`), or all in one.
+const wayHalves = (o) => (o.via ? [o.legs.slice(0, o.via.leg), o.legs.slice(o.via.leg)] : [o.legs]);
+
 function navMixText(o) {
   if (o.walkOnly) return 'Walk all the way';
-  const rides = o.legs.filter((l) => l.mode !== 'walk');
-  const changes = rides.length - 1;
+  // Getting off at the stop on the way isn't a change.
+  const changes = wayHalves(o).reduce((sum, legs) => sum + Math.max(0, legs.filter((l) => l.mode !== 'walk').length - 1), 0);
   return `${changes === 0 ? 'No change' : `${changes} change${changes === 1 ? '' : 's'}`} · ${formatDistance(walkMetres(o))} walk`;
 }
 
 function navOptionItem(o, i) {
-  const rides = o.legs.filter((l) => l.mode !== 'walk');
-  const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} Walk</span>` : rides.map(legChip).join(legArrow);
-  const notes = [];
+  // The rides in order, with a pin where the stop on the way comes.
+  const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} Walk</span>`
+    : wayHalves(o).map((legs) => legs.filter((l) => l.mode !== 'walk').map(legChip)).reduce((all, half) => [...all, `<span class="busChip viaChip">${ico('pin')} Stop</span>`, ...half]).join(legArrow);
+  const notes = o.via ? [`Stop at ${viaName(o)}`] : [];
   if (o.onemapMinutes != null) notes.push(`OneMap ~${o.onemapMinutes} min`);
   if (o.source === 'onemap') notes.push('Found by OneMap');
   // With a time picked, the clock times lead and the minutes go with the rest.
@@ -669,6 +853,10 @@ function navOptionItem(o, i) {
 }
 
 const placeName = (p) => (p?.kind === 'station' ? `${p.name} station` : p?.name ? `${p.name}${p.code && p.kind === 'stop' ? ` (${p.code})` : ''}` : '');
+// A way's stop on the way by name (fetchWays), and any place on a way, that stop included:
+// the walks to and from it end and start at it (api/_nav/via.js), marked `via`.
+const viaName = (o) => o?.via?.label || nav.via?.label || 'your stop';
+const wayPlaceName = (o, p) => (p?.via ? viaName(o) : placeName(p));
 
 async function renderNavOption(o) {
   const body = $('#navBody');
@@ -685,6 +873,7 @@ async function renderNavOption(o) {
     `<button type="button" class="iconBtn" data-nav-action="refresh">Refresh</button>` +
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} Start trip</button>` +
     `</div>` +
+    (o.offline ? `<p class="navOffline">${ico('alert')} Planned offline: times are estimates.</p>` : '') +
     `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>` +
     (nav.when
       ? navTooLate(o)
@@ -695,30 +884,36 @@ async function renderNavOption(o) {
   // Live timings only when setting off soon enough for them to be the buses you'd catch;
   // otherwise each bus is timed by the clock, from when the router has it boarded.
   const leaveMs = When.span(nav.when, o.minutes).leave;
-  const live = !nav.when || When.liveLead(leaveMs) != null;
+  // Planned offline (planOnPhone), there are none to fetch.
+  const live = !o.offline && (!nav.when || When.liveLead(leaveMs) != null);
 
-  const steps = (timings = {}) => o.legs.map((leg, k) => {
+  // The stop on the way, between the walk or ride that reaches it and the one that leaves it.
+  const viaStep = o.via
+    ? `<li class="step stepArrive">${ico('pin')}<span>Stop at <strong>${escapeHtml(viaName(o))}</strong>, around ${escapeHtml(When.clock(leaveMs + o.via.minutes * 60000))}</span></li>`
+    : '';
+  const legStep = (leg, k, timings) => {
     if (leg.mode === 'walk') {
-      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(placeName(leg.to));
+      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(wayPlaceName(o, leg.to));
       return `<li class="step stepWalk">${ico('walk')}<div class="walkBody">` +
         `<span>Walk ~${leg.metres} m to ${where}, ~${Math.max(1, Math.round(leg.minutes))} min</span>` +
         walkDirections(o, k) +
         `</div></li>`;
     }
     if (leg.mode === 'train') {
-      // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js).
-      const next = o.legs.slice(k + 1).find((l) => l.mode !== 'walk') || null;
+      // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js):
+      // no change when it's to the stop on the way.
+      const next = o.legs.slice(k + 1, k < o.via?.leg ? o.via.leg : undefined).find((l) => l.mode !== 'walk') || null;
       const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next), leg.color);
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
         `<div class="legRide">From ${escapeHtml(placeName(leg.from))}${leg.towards ? `, towards ${escapeHtml(leg.towards)}` : ''}: ${leg.stops} stop${leg.stops === 1 ? '' : 's'} to ${escapeHtml(placeName(leg.to))}, ~${Math.round(leg.minutes)} min</div>` +
-        (nav.when && leg.board != null ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}.</div>` : '') +
+        ((nav.when || o.offline) && leg.board != null ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}.</div>` : '') +
         doors +
         (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} LTA reports a disruption on this line. Check Service alerts.</div>` : '') +
         `</li>`;
     }
     const t = timings[k];
-    const board = nav.when && leg.board != null
+    const board = (nav.when || o.offline) && leg.board != null
       ? `<div class="legNote">Board around ${escapeHtml(When.clock(leaveMs + leg.board * 60000))}, after an average wait.</div>`
       : '';
     const etas = !live ? board
@@ -734,7 +929,8 @@ async function renderNavOption(o) {
       (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(leg.route)} timings at ${escapeHtml(leg.from.name)}</button>` : '') +
       `</li>` +
       navCrossingSteps(leg);
-  }).join('');
+  };
+  const steps = (timings = {}) => o.legs.map((leg, k) => (k === o.via?.leg ? viaStep : '') + legStep(leg, k, timings)).join('');
 
   let shown = undefined;
   const draw = (timings) => {
@@ -742,7 +938,9 @@ async function renderNavOption(o) {
     body.innerHTML = head + `<ol class="journeySteps">${steps(timings)}</ol>` +
       `<p class="estimateNote">${live
         ? 'Train times are estimates from distance. Bus timings are live from LTA.'
-        : 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.'}</p>`;
+        : o.offline
+          ? 'Times are estimates from distance, with an average wait to board. Live bus timings show here when you reconnect.'
+          : 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.'}</p>`;
   };
   draw();
   // The doors for its train rides, drawn in once they're in, if it's still this way on show.
@@ -783,7 +981,7 @@ function walkDirections(o, k) {
   const from = leg.from || o.legs[k - 1]?.to || nav.from;
   const to = k === o.legs.length - 1 ? nav.to : leg.to;
   if (to?.lat == null || to?.lng == null) return '';
-  const dest = { lat: to.lat, lng: to.lng, n: to.label || placeName(to) };
+  const dest = { lat: to.lat, lng: to.lng, n: to.label || wayPlaceName(o, to) };
   const opts = { from: from?.lat != null && from?.lng != null ? from : null, walk: true };
   if (!nav.walksOpen.has(k)) {
     return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} Directions</button>`;
@@ -803,7 +1001,8 @@ function isFavNav(from, to) {
   return LS.getFavNavs().some((n) => sameNav(n, from, to));
 }
 
-// Like a route, a nav and its reverse are two separate favourites.
+// Like a route, a nav and its reverse are two separate favourites. A stop on the way isn't kept
+// with one: a saved nav is its two ends, as synced (js/sync.js) and in the bot.
 function toggleFavNav(from, to) {
   if (!from || !to) return;
   const navs = LS.getFavNavs();
@@ -822,6 +1021,7 @@ function renderNavFav() {
   btn.hidden = !(nav.from && nav.to);
   $('#navRefresh').hidden = btn.hidden;
   if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to), 'Save nav', 'Saved');
+  btn.title = nav.via ? 'Save to favourites: the start and end, not the stop' : 'Save to favourites';
 }
 
 // Refresh: the ways planned again, for new disruptions and the time of day, or, with one
@@ -858,6 +1058,8 @@ function busCodes(l) {
   return codes?.length === l.path.length ? codes : null;
 }
 
+// A way with a stop on the way (`via`) is one trip, its two halves' legs in turn: the walk to
+// the stop is named for it, and no time is counted there.
 function tripFromNav(o, to, from = nav.from) {
   const legs = [];
   let walkBefore = 0;
@@ -868,13 +1070,13 @@ function tripFromNav(o, to, from = nav.from) {
       const endPlace = k === o.legs.length - 1 ? to : l.to;
       const end = at(endPlace);
       if (start && end && (l.metres ?? WALK_LEG_MIN_M) >= WALK_LEG_MIN_M) {
-        const startName = k === 0 ? from?.label || 'Where you set off' : placeName(l.from || o.legs[k - 1]?.to);
+        const startName = k === 0 ? from?.label || 'Where you set off' : wayPlaceName(o, l.from || o.legs[k - 1]?.to);
         legs.push({
           kind: 'walk',
           label: 'Walk',
-          to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : placeName(endPlace),
+          to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace),
           points: [start, end],
-          names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : placeName(endPlace)],
+          names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace)],
           minutes: Math.max(1, Math.round(l.minutes || 1)),
           wait: 0,
           walkAfter: 0,

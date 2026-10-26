@@ -1,4 +1,5 @@
-// Builds main-site/api/_nav/rail.json, the MRT and LRT network the nav router rides on:
+// Builds main-site/data/rail.json, the MRT and LRT network the nav router rides on, on the
+// server and on the phone offline (main-site/js/nav-core/network.js):
 // every station with its codes, position and exits, and each line's stations in order with
 // the links between neighbours. Vendored, never fetched at runtime, the way mrtroute-game
 // does it, and from the same snapshot.
@@ -57,7 +58,7 @@ const lines = network.lines.map((line) => {
 });
 
 const out = { source: `${network.source} (sgraildata, via mrtroute-game)`, stations, lines };
-writeFileSync("main-site/api/_nav/rail.json", JSON.stringify(out));
+writeFileSync("main-site/data/rail.json", JSON.stringify(out));
 
 // The Telegram bot's copy and the web app's: just the stations and their exits, so a search
 // for "Bedok MRT" can list the bus stops at the station (telegram-bot/src/stations.py,

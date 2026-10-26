@@ -64,7 +64,8 @@ function merge(old, sent) {
   if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, readied, track: null };
   const alerted = sent.alerted.map((a, i) => a || Boolean(old.alerted[i]));
   // The share link always as the app has it: started, or stopped, since it last sent.
-  if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted, readied, share: sent.share };
+  // So is earphones only (quiet).
+  if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted, readied, share: sent.share, quiet: sent.quiet };
   if (old.leg < sent.leg) return { ...sent, alerted, readied, track: null };
   // The bus being followed stays, unless the app has since seen you well past it: then it
   // was the wrong bus.

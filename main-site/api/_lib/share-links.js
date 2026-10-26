@@ -3,7 +3,8 @@
 //
 //   place       /go/<id>    "How to get to" one place: opened, it's Navigate's To, from
 //                           wherever the person opening it is.
-//   directions  /trip/<id>  Both ends of a nav, its time, and the way that was open.
+//   directions  /trip/<id>  Both ends of a nav, its stop on the way if any, its time, and
+//                           the way that was open.
 //   eta         /eta/<id>   Live progress on a trip (js/trip.js): when you'll arrive and how
 //                           far along you are, updated by the sharer's app as it goes.
 //
@@ -97,6 +98,9 @@ export function parseLink(kind, data, now = Date.now()) {
       way: data.way == null ? null : text(data.way, 300),
       summary: text(data.summary, 160),
       path: path(data.path, 400),
+      // A stop on the way (Navigate's Add a stop), only when there is one, so the same
+      // directions without one are still the same link.
+      ...(data.via != null && { via: place(data.via) }),
     };
     if (out.from === 'here' && out.to === 'here') throw new ValidationError('both ends are "here"');
     return out;
@@ -299,7 +303,7 @@ export function describeLink(link) {
   }
   if (kind === 'directions') {
     return {
-      title: `${endLabel(data.from)} to ${endLabel(data.to)}`,
+      title: `${endLabel(data.from)} to ${endLabel(data.to)}${data.via ? `, via ${data.via.label}` : ''}`,
       description: data.summary || 'Directions by bus and train, on SG Bus Timings.',
     };
   }

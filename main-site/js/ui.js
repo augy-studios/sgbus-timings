@@ -29,7 +29,8 @@
   // Back (the Android app's button, a browser's, Telegram's) closes the window that's open, then
   // goes back to the page that was on show before, and only then leaves: each window opened and
   // each page switched to (js/main-screen.js) adds a step to the page's history, its state
-  // { sg: true, page, modal }. The Android app goes back through that history, and leaves for
+  // { sg: true, page, modal }, and a view inside a window (Settings' groups) one of its own,
+  // { ..., sub }. The Android app goes back through that history, and leaves for
   // the background once there's none (MainActivity.java). Closing a window with its X or a tap
   // around it takes its step back off. The live map keeps steps of its own (js/map.js).
   var backPending = false;
@@ -40,6 +41,9 @@
   // so `backTo` keeps it, and the step before, with the old address, mustn't load the old stop.
   var backTo = null;
   var swallowHash = false;
+  // Closing a window from a view inside it (Settings' groups, subStep) takes two steps back:
+  // the view's and the window's. The first one back lands here, and goes on to the second.
+  var backMore = 0;
 
   function stepState(extra) {
     var s = history.state && history.state.sg ? history.state : {};
@@ -58,6 +62,26 @@
   // The step for what's on show now, without adding one: as the page loads.
   function markStep() {
     history.replaceState(stepState({}), "", location.href);
+  }
+
+  // A view inside the window `id` that's open, such as one of Settings' groups (script.js): a
+  // step of its own { modal: id, sub }, so Back goes to the window's first view before it
+  // closes the window. One deep: another view in its place replaces the step.
+  function subStep(id, sub) {
+    var s = history.state;
+    if (restoring || backPending || !s || !s.sg || s.modal !== id) return;
+    var state = Object.assign({}, s, { sub: sub });
+    if (s.sub) replace.call(history, state, "", location.href);
+    else history.pushState(state, "", location.href);
+  }
+
+  // Back to the window's first view, taking the view's step off. False when there's no step to
+  // take off, for the caller to show the first view itself.
+  function subBack(id) {
+    var s = history.state;
+    if (restoring || backPending || !s || !s.sg || s.modal !== id || !s.sub) return false;
+    history.back();
+    return true;
   }
 
   // The site replaces its address as things open (a stop's #84009); that keeps the step's state.
@@ -79,6 +103,11 @@
 
   window.addEventListener("popstate", function (e) {
     if (backPending) {
+      if (backMore > 0) {
+        backMore--;
+        history.back();
+        return;
+      }
       backPending = false;
       if (backTo && backTo !== location.href) {
         swallowHash = backTo.split("#")[1] !== location.href.split("#")[1];
@@ -129,6 +158,7 @@
     if (stepBack) {
       backPending = true;
       backTo = null;
+      backMore = history.state.sub ? 1 : 0;
     }
     hideModal(id);
     if (stepBack) history.back();
@@ -265,7 +295,8 @@
     if (!hinted) {
       setTimeout(function () {
         var tray = document.getElementById("trayButtons");
-        if (!tray) return;
+        // Not over a window, such as the first open's choice (js/first-run.js): next time.
+        if (!tray || document.body.classList.contains("modal-open")) return;
         try { localStorage.setItem(HINT_KEY, "1"); } catch (e) { /* shown again next time */ }
         showTip(tray, "Tip: press and hold a button to see what it does.", 5000);
       }, 2500);
@@ -278,6 +309,6 @@
   window.closeModal = closeModal;
   window.showPanel = showPanel;
   window.syncModalOpen = syncModalOpen;
-  window.Steps = { step: step, mark: markStep };
+  window.Steps = { step: step, mark: markStep, sub: subStep, subBack: subBack };
   window.wirePanel = wirePanel;
 })();

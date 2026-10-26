@@ -2,7 +2,7 @@
 list the bus stops at the station. LTA names those stops "Bedok Stn", or after a block or
 a road, never "MRT", so they're found by how close they are to an exit instead.
 
-The stations come from sgraildata, copied from main-site/api/_nav/rail.json into
+The stations come from sgraildata, copied from main-site/data/rail.json into
 rail_stations.json by scripts/vendor-rail.mjs."""
 
 import json

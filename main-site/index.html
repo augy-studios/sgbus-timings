@@ -43,7 +43,14 @@
             // The tray's optional buttons turned off in Settings, as "telegram coffee".
             var trayHide = localStorage.getItem("sgbus_tray_hide");
             if (trayHide) document.documentElement.setAttribute("data-tray-hide", trayHide);
+            // And the pages turned off, as "glance trips": Glance's own switch, then the others.
+            // Keep the keys in step with OFF_KEY in js/main-screen.js and js/glance.js.
+            var pagesOff = (localStorage.getItem("sgbus_glance_off") === "1" ? "glance " : "") + (localStorage.getItem("sgbus_pages_off") || "");
+            if (pagesOff.trim()) document.documentElement.setAttribute("data-pages-off", pagesOff.trim());
         } catch (e) { /* the tray opens on the right */ }
+        // Offline as the page opens, so the tabs that need the network don't show for a moment
+        // first (js/offline.js, which keeps it after this, and style.css).
+        if (navigator.onLine === false) document.documentElement.setAttribute("data-net-off", "");
     </script>
     <!-- Opened as the Telegram bot's Mini App (js/telegram.js): Telegram adds its launch data to
          the address's hash, "#tgWebAppData=..." or "#84009?tgWebAppData=..." after a page of
@@ -150,11 +157,12 @@
                      them (js/reminders.js). Either can be turned off in Settings, Edge Tray buttons -->
                 <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Timings near a stop" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="clock"></span></button>
                 <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Routines" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="alarm"></span></button>
-                <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js) -->
-                <button id="cardBtn" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
+                <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js).
+                     Can be turned off in Settings, Edge Tray buttons, as can Receive nearby -->
+                <button id="cardBtn" data-tray-extra="card" class="glass-btn" type="button" aria-label="Card value" title="Card value: hold your EZ-Link or NETS FlashPay card to the phone" hidden><span data-icon="card"></span></button>
                 <!-- Receive nearby, from another phone's Offline Sharing: the Android app from 2.1.0
                      with Google Play services only (js/offline-share.js) -->
-                <button id="receiveBtn" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
+                <button id="receiveBtn" data-tray-extra="receive" class="glass-btn" type="button" aria-label="Receive nearby" title="Receive nearby: from a phone sharing with Offline Sharing" hidden><span data-icon="nearby"></span></button>
                 <!-- Check for updates: the Android app from 2.0.8 only (js/app-update.js) -->
                 <a id="appUpdateBtn" href="#" class="glass-btn" aria-label="Check for app updates" title="Check for app updates" hidden><span data-icon="download"></span></a>
                 <!-- SimplyGo, for card balances and top-ups: phones only (script.js, "SimplyGo") -->
@@ -251,6 +259,8 @@
                         <button class="tab active" type="button" role="tab" aria-selected="true" data-nav-mode="all"><span data-icon="train"></span> Bus and train</button>
                         <button class="tab" type="button" role="tab" aria-selected="false" data-nav-mode="bus"><span data-icon="bus"></span> Bus only</button>
                     </div>
+                    <!-- Offline only (style.css, data-net-off: js/offline.js) -->
+                    <p class="offlineNote">You&rsquo;re offline. Bus and train plans on your phone, so times are estimates. Start and end at a stop, a station, your location or one of your places: searching for an address needs a connection.</p>
                     <div class="plannerFields navFields">
                         <div class="plannerField">
                             <label for="navFrom">From</label>
@@ -262,6 +272,21 @@
                                 <button class="iconBtn" type="button" data-nav-here="from" title="Start from where I am" aria-label="Start from where I am"><span data-icon="pin"></span></button>
                             </div>
                             <div class="savedPlaceBtns" data-saved-for="from"></div>
+                        </div>
+                        <!-- One stop on the way, if any (js/nav.js): Add a stop shows its box, the
+                             cross takes it away. Under both ends side by side (style.css). -->
+                        <div class="navVia">
+                            <button id="navAddStop" class="iconBtn addStopBtn" type="button" title="Stop somewhere on the way"><span data-icon="pin"></span> Add a stop</button>
+                            <div id="navViaField" class="plannerField" hidden>
+                                <label for="navVia">Stop at</label>
+                                <div class="plannerInputRow">
+                                    <div class="ac">
+                                        <input id="navVia" class="input" placeholder="Somewhere to stop on the way" autocomplete="off" enterkeyhint="next" />
+                                        <div id="navViaAc" class="acList" hidden></div>
+                                    </div>
+                                    <button id="navViaRemove" class="iconBtn" type="button" title="Remove the stop" aria-label="Remove the stop"><span data-icon="close"></span></button>
+                                </div>
+                            </div>
                         </div>
                         <button id="navSwap" class="iconBtn swapBtn" type="button" title="Swap start and end" aria-label="Swap start and end"><span data-icon="swap"></span></button>
                         <div class="plannerField">
@@ -546,6 +571,8 @@
                     <span data-icon="close"></span>
                 </button>
             </div>
+            <!-- Offline only (style.css, data-net-off: js/offline.js) -->
+            <p class="offlineNote">You&rsquo;re offline. A stop&rsquo;s timings come back when you reconnect; a bus&rsquo;s route and your bus-only routes open without a connection.</p>
             <div id="favStopsGroup" class="favGroup">
                 <div class="favGroupLabel">Bus stops</div>
                 <div id="favChips" class="favChips"></div>
@@ -566,210 +593,245 @@
         </div>
     </div>
 
-    <!-- Settings -->
+    <!-- Settings: a list of groups, each a view of its own inside the modal, with a step for Back
+         (script.js, openSettingsGroup; js/ui.js, Steps.sub). A group with nothing on show here
+         (the Android app's only, on the web) leaves the list. A block's label is what Find
+         matches, with its data-find words; data-short is its name in its group's line. -->
     <div id="settingsModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-            <div class="modal-head">
+            <div class="modal-head settingsHead">
+                <button id="settingsBack" class="icon-btn small" type="button" aria-label="Back to Settings" hidden>
+                    <span data-icon="back"></span>
+                </button>
                 <h2 id="settingsTitle">Settings</h2>
                 <button class="icon-btn small" type="button" data-close-modal="settingsModal" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
-            <label class="modal-section-label" for="setName">Your name, for the greeting</label>
-            <input id="setName" class="input settingsInput" maxlength="64" autocomplete="given-name" placeholder="Leave blank for no name" />
-            <label class="modal-section-label" for="setBirthday">Birthday</label>
-            <div class="settingsRow">
-                <input id="setBirthday" class="input settingsInput" type="date" />
-                <button id="clearBirthday" class="iconBtn" type="button">Clear</button>
+            <div id="settingsHome" class="settingsView">
+                <input id="settingsFind" class="input settingsInput" type="search" autocomplete="off" spellcheck="false" enterkeyhint="go" placeholder="Find a setting" aria-label="Find a setting" />
+                <div id="settingsFound" class="shareMenu settingsList" hidden></div>
+                <div id="settingsGroups" class="shareMenu settingsList">
+                    <button class="shareMenuItem" type="button" data-settings-open="you"><span class="ico" data-icon="home" aria-hidden="true"></span><span><strong>You</strong><span class="sub">Name · Birthday · Confetti · Places · Calendar</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="pages"><span class="ico" data-icon="more" aria-hidden="true"></span><span><strong>Pages and Edge Tray</strong><span class="sub">Custom home · Edge Tray side · Edge Tray buttons · Favourites first or last</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="trips"><span class="ico" data-icon="bell" aria-hidden="true"></span><span><strong>Trips and alerts</strong><span class="sub">Get Off Alert</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="navigate"><span class="ico" data-icon="navigate" aria-hidden="true"></span><span><strong>Navigate</strong><span class="sub">Restricted areas · Immigration time · Cycling</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="help"><span class="ico" data-icon="help" aria-hidden="true"></span><span><strong>Help and extras</strong><span class="sub">Show me around · sgbus terminal</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="sync"><span class="ico" data-icon="sync" aria-hidden="true"></span><span><strong>Sync</strong><span class="sub">With another device or the Telegram bot</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                </div>
             </div>
-            <p class="mode-note">On your birthday, the greeting wishes you a happy one, with your age if the year's set.</p>
-            <p class="modal-section-label">Birthday confetti</p>
-            <div class="mode-toggle">
-                <button class="mode-btn" type="button" data-confetti="on" aria-pressed="false">On</button>
-                <button class="mode-btn" type="button" data-confetti="off" aria-pressed="false">Off</button>
-            </div>
-            <p class="mode-note">Confetti each time you open the app on your birthday.</p>
-            <!-- Home, Work and other places live in Places (js/places.js); calendar in js/calendar.js -->
-            <p class="modal-section-label">Home, Work and your places</p>
-            <button id="settingsPlaces" class="iconBtn settingsWide" type="button"><span data-icon="bookmark"></span> Open Places</button>
-            <p class="modal-section-label">Calendar</p>
-            <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> Calendar settings</button>
-            <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
-            <!-- The Linux app's sgbus> prompt on the page (js/terminal.js, loaded from script.js) -->
-            <p class="modal-section-label">sgbus terminal</p>
-            <button id="settingsTerminal" class="iconBtn settingsWide" type="button"><span data-icon="terminal"></span> Open the sgbus terminal</button>
-            <p class="mode-note">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
-            <!-- Each page's tour, as it shows the first time that page opens (js/tour.js) -->
-            <p class="modal-section-label">Show me around</p>
-            <div id="settingsTour" class="tourPicks"></div>
-            <p class="mode-note">Each page shows you around the first time you open it. Pick one to see its tour again.</p>
-            <!-- The next bus at a glance, Glance's page (js/glance.js) -->
-            <p class="modal-section-label">Next bus at a glance</p>
-            <div class="mode-toggle">
-                <button class="mode-btn" type="button" data-glance="on" aria-pressed="true">On</button>
-                <button class="mode-btn" type="button" data-glance="off" aria-pressed="false">Off</button>
-            </div>
-            <p class="mode-note">Glance, a page of its own: the next bus in big letters, and your stops under it, each bus on one line. The chip over it picks the stops: saved, nearby, or near one of your places. Off, Glance leaves the Edge Tray and the app opens on Bus timings.</p>
-            <!-- The page the app opens on, first in the Edge Tray (js/main-screen.js) -->
-            <p class="modal-section-label">Custom home</p>
-            <div id="homePick" class="mode-toggle trayExtrasPick">
-                <button class="mode-btn mode-btn-wide" type="button" data-home="glance" aria-pressed="true">Glance</button>
-                <button class="mode-btn" type="button" data-home="timings" aria-pressed="false">Bus timings</button>
-                <button class="mode-btn" type="button" data-home="favs" aria-pressed="false">Favourites</button>
-                <button class="mode-btn" type="button" data-home="nav" aria-pressed="false">Navigate</button>
-                <button class="mode-btn" type="button" data-home="alerts" aria-pressed="false">Service alerts</button>
-                <button class="mode-btn" type="button" data-home="trips" aria-pressed="false">Your trips</button>
-                <button class="mode-btn" type="button" data-home="places" aria-pressed="false">Places</button>
-            </div>
-            <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that.</p>
-            <p class="modal-section-label">Pin favourite buses in timings</p>
-            <div class="mode-toggle" data-pin-kind="bus">
-                <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
-                <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false">Bottom</button>
-            </div>
-            <p class="modal-section-label">Get Off Alert on a trip</p>
-            <div class="mode-toggle">
-                <button class="mode-btn" type="button" data-getoff="on" aria-pressed="false">On</button>
-                <button class="mode-btn" type="button" data-getoff="off" aria-pressed="false">Off</button>
-            </div>
-            <p class="mode-note">Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification. Keep the site open on a trip.</p>
-            <!-- Where the Get Off Alert's beeps go: the Android app only (js/reminders.js) -->
-            <div id="earphonesSetting" hidden>
-                <p class="modal-section-label">Get Off Alert's sound</p>
+
+            <section class="settingsView" data-settings-group="you" data-title="You" hidden>
+                <label class="modal-section-label" for="setName" data-short="Name">Your name, for the greeting</label>
+                <input id="setName" class="input settingsInput" maxlength="64" autocomplete="given-name" placeholder="Leave blank for no name" />
+                <label class="modal-section-label" for="setBirthday">Birthday</label>
+                <div class="settingsRow">
+                    <input id="setBirthday" class="input settingsInput" type="date" />
+                    <button id="clearBirthday" class="iconBtn" type="button">Clear</button>
+                </div>
+                <p class="mode-note">On your birthday, the greeting wishes you a happy one, with your age if the year's set.</p>
+                <p class="modal-section-label" data-short="Confetti">Birthday confetti</p>
                 <div class="mode-toggle">
-                    <button class="mode-btn" type="button" data-earphones="off" aria-pressed="false">Out loud</button>
-                    <button class="mode-btn" type="button" data-earphones="on" aria-pressed="false">Earphones only</button>
+                    <button class="mode-btn" type="button" data-confetti="on" aria-pressed="false">On</button>
+                    <button class="mode-btn" type="button" data-confetti="off" aria-pressed="false">Off</button>
                 </div>
-                <p class="mode-note">Earphones only: with earphones in, the beeps play just in them; without, the phone only buzzes. Never out loud on a quiet bus.</p>
-            </div>
-            <!-- js/shake.js -->
-            <div id="shakeSetting" hidden>
-                <p class="modal-section-label">Shake to refresh</p>
+                <p class="mode-note">Confetti each time you open the app on your birthday.</p>
+                <!-- Home, Work and other places live in Places (js/places.js); calendar in js/calendar.js -->
+                <p class="modal-section-label" data-short="Places" data-find="home work">Home, Work and your places</p>
+                <button id="settingsPlaces" class="iconBtn settingsWide" type="button"><span data-icon="bookmark"></span> Open Places</button>
+                <p class="modal-section-label" data-find="ical ics events">Calendar</p>
+                <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> Calendar settings</button>
+                <p class="mode-note">Your events with a location show under Calendar in Navigate's From and To.</p>
+            </section>
+
+            <section class="settingsView" data-settings-group="pages" data-title="Pages and Edge Tray" hidden>
+                <!-- The page the app opens on, first in the Edge Tray (js/main-screen.js) -->
+                <p class="modal-section-label" data-find="start page opens">Custom home</p>
+                <div id="homePick" class="mode-toggle trayExtrasPick">
+                    <button class="mode-btn mode-btn-wide" type="button" data-home="glance" aria-pressed="true">Glance</button>
+                    <button class="mode-btn" type="button" data-home="timings" aria-pressed="false">Bus timings</button>
+                    <button class="mode-btn" type="button" data-home="favs" aria-pressed="false">Favourites</button>
+                    <button class="mode-btn" type="button" data-home="nav" aria-pressed="false">Navigate</button>
+                    <button class="mode-btn" type="button" data-home="alerts" aria-pressed="false">Service alerts</button>
+                    <button class="mode-btn" type="button" data-home="trips" aria-pressed="false">Your trips</button>
+                    <button class="mode-btn" type="button" data-home="places" aria-pressed="false">Places</button>
+                </div>
+                <p class="mode-note">The page the app opens on, first in the Edge Tray. Each of these is a page of its own: tap its button at the top of the tray to switch to it. A link to a stop, a bus or a journey still opens that. Pages turned off in Edge Tray buttons, below, aren&rsquo;t here.</p>
+                <p class="modal-section-label" data-find="left right">Edge Tray side</p>
+                <div id="traySidePick" class="mode-toggle">
+                    <button class="mode-btn" type="button" data-side="left" aria-pressed="false">Left</button>
+                    <button class="mode-btn" type="button" data-side="right" aria-pressed="false">Right</button>
+                </div>
+                <p class="mode-note">The Edge Tray is the column of buttons at the top of the screen. Its arrow tucks it away at the edge.</p>
+                <p class="modal-section-label" data-find="pages turn off hide glance service alerts your trips explorer simplygo telegram coffee guide card value receive nearby timings near a stop routines">Edge Tray buttons</p>
+                <div id="trayExtrasPick" class="mode-toggle trayExtrasPick">
+                    <!-- Pages (js/main-screen.js, setShown); Glance's is the glance's own switch (js/glance.js) -->
+                    <button class="mode-btn" type="button" data-page-show="glance" aria-pressed="true">Glance</button>
+                    <button class="mode-btn" type="button" data-page-show="alerts" aria-pressed="true">Service alerts</button>
+                    <button class="mode-btn" type="button" data-page-show="trips" aria-pressed="true">Your trips</button>
+                    <button class="mode-btn" type="button" data-tray-show="explorer" aria-pressed="true">Explorer</button>
+                    <button class="mode-btn" type="button" data-tray-show="simplygo" aria-pressed="true">SimplyGo</button>
+                    <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true">Telegram bot</button>
+                    <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true">Buy Augy a Coffee</button>
+                    <button class="mode-btn" type="button" data-tray-show="guide" aria-pressed="true">Guide</button>
+                    <!-- Only where the app has them (js/reminders.js) -->
+                    <button class="mode-btn" type="button" data-tray-show="nearstops" aria-pressed="true" hidden>Timings near a stop</button>
+                    <button class="mode-btn" type="button" data-tray-show="routines" aria-pressed="true" hidden>Routines</button>
+                    <!-- Only where the app can (js/card.js, js/offline-share.js) -->
+                    <button class="mode-btn" type="button" data-tray-show="card" aria-pressed="true" hidden>Card value</button>
+                    <button class="mode-btn" type="button" data-tray-show="receive" aria-pressed="true" hidden>Receive nearby</button>
+                </div>
+                <p class="mode-note">Turn off the buttons you don&rsquo;t use, for a tidier tray. Glance, Service alerts and Your trips are pages: off, each leaves the tray and Custom home too, and if it was home, the app opens on Bus timings. The trips you take are still kept with Your trips off. The guide is also at guide.sgbus.uwuapps.org.</p>
+                <p class="modal-section-label" data-short="Favourites first or last" data-find="top bottom favourites">Pin favourite stops in lists</p>
+                <div class="mode-toggle" data-pin-kind="stop">
+                    <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
+                    <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false">Bottom</button>
+                </div>
+                <p class="modal-section-label" data-short="" data-find="top bottom favourites">Pin favourite buses in timings</p>
+                <div class="mode-toggle" data-pin-kind="bus">
+                    <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
+                    <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false">Bottom</button>
+                </div>
+            </section>
+
+            <section class="settingsView" data-settings-group="trips" data-title="Trips and alerts" hidden>
+                <p class="modal-section-label" data-short="Get Off Alert" data-find="morse beep buzz">Get Off Alert on a trip</p>
                 <div class="mode-toggle">
-                    <button class="mode-btn" type="button" data-shake="on" aria-pressed="false">On</button>
-                    <button class="mode-btn" type="button" data-shake="off" aria-pressed="false">Off</button>
+                    <button class="mode-btn" type="button" data-getoff="on" aria-pressed="false">On</button>
+                    <button class="mode-btn" type="button" data-getoff="off" aria-pressed="false">Off</button>
                 </div>
-                <p class="mode-note">Give the phone a firm shake to refresh the timings on screen.</p>
-            </div>
-            <!-- Picture-in-picture: the Android app from 2.0.1 only (js/pip.js) -->
-            <div id="pipSetting" hidden>
-                <p class="modal-section-label">Picture-in-picture</p>
+                <p class="mode-note">Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification. Keep the site open on a trip.</p>
+                <!-- Where the Get Off Alert's beeps go: the Android app only (js/reminders.js) -->
+                <div id="earphonesSetting" hidden>
+                    <p class="modal-section-label" data-short="Its sound" data-find="earphones out loud">Get Off Alert's sound</p>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" type="button" data-earphones="off" aria-pressed="false">Out loud</button>
+                        <button class="mode-btn" type="button" data-earphones="on" aria-pressed="false">Earphones only</button>
+                    </div>
+                    <p class="mode-note">Earphones only: with earphones in, the beeps play just in them; without, the phone only buzzes. Never out loud on a quiet bus.</p>
+                </div>
+                <!-- js/shake.js -->
+                <div id="shakeSetting" hidden>
+                    <p class="modal-section-label" data-short="Shake">Shake to refresh</p>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" type="button" data-shake="on" aria-pressed="false">On</button>
+                        <button class="mode-btn" type="button" data-shake="off" aria-pressed="false">Off</button>
+                    </div>
+                    <p class="mode-note">Give the phone a firm shake to refresh the timings on screen.</p>
+                </div>
+                <!-- Picture-in-picture: the Android app from 2.0.1 only (js/pip.js) -->
+                <div id="pipSetting" hidden>
+                    <p class="modal-section-label" data-find="pip window">Picture-in-picture</p>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" type="button" data-pip-pref="on" aria-pressed="true">On</button>
+                        <button class="mode-btn" type="button" data-pip-pref="off" aria-pressed="false">Off</button>
+                    </div>
+                    <p class="mode-note">On a trip or with the live map open, leaving the app shrinks it into a small window over your other apps. Off, it goes to the background like any other app, and the Get Off Alert still comes as a notification.</p>
+                </div>
+                <!-- The Android app's reminders: js/reminders.js -->
+                <!-- Timings near a stop and Routines have their own buttons in the Edge Tray, and their
+                     own modals below -->
+                <div id="remindersSettings" hidden>
+                    <p class="modal-section-label" data-find="calendar reminder notification">Time to leave</p>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" type="button" data-leavetime="on" aria-pressed="false">On</button>
+                        <button class="mode-btn" type="button" data-leavetime="off" aria-pressed="false">Off</button>
+                    </div>
+                    <p class="mode-note">For events in this phone's calendar with a place: a notification when it's time to set off by bus and train, from where you are, or from Home.</p>
+                    <p class="modal-section-label" data-need="onabus" data-short="On a bus?" data-find="riding">&ldquo;On a bus?&rdquo;</p>
+                    <div class="mode-toggle" data-need="onabus">
+                        <button class="mode-btn" type="button" data-onabus="on" aria-pressed="false">On</button>
+                        <button class="mode-btn" type="button" data-onabus="off" aria-pressed="false">Off</button>
+                    </div>
+                    <p class="mode-note" data-need="onabus">When you seem to be riding with no trip running, a quiet notification offers to start one, for the Get Off Alert. Needs Physical activity.</p>
+                    <p class="modal-section-label" data-short="Last bus" data-find="reminder bell">Last bus reminders</p>
+                    <div id="lastBusList" class="lastBusList"></div>
+                    <p class="mode-note">Tap the bell by a bus's last bus time at a stop: a reminder <span id="lastBusLead">20</span> minutes before it, every day it runs.</p>
+                    <p id="remindersNote" class="remindersNote" role="status" hidden></p>
+                </div>
+            </section>
+
+            <section class="settingsView" data-settings-group="navigate" data-title="Navigate" hidden>
+                <!-- Navigate and the route planner through the stops behind a checkpoint (script.js,
+                     BusNet.setOpenAccess in js/network.js) -->
+                <p class="modal-section-label" data-find="pass changi cargo mindef">Restricted areas</p>
                 <div class="mode-toggle">
-                    <button class="mode-btn" type="button" data-pip-pref="on" aria-pressed="true">On</button>
-                    <button class="mode-btn" type="button" data-pip-pref="off" aria-pressed="false">Off</button>
+                    <button class="mode-btn" type="button" data-restricted="off" aria-pressed="false">Keep out</button>
+                    <button class="mode-btn" type="button" data-restricted="on" aria-pressed="false">I have a pass</button>
                 </div>
-                <p class="mode-note">On a trip or with the live map open, leaving the app shrinks it into a small window over your other apps. Off, it goes to the background like any other app, and the Get Off Alert still comes as a notification.</p>
-            </div>
-            <!-- The Android app's reminders: js/reminders.js -->
-            <!-- Timings near a stop and Routines have their own buttons in the Edge Tray, and their
-                 own modals below -->
-            <div id="remindersSettings" hidden>
-                <p class="modal-section-label">Time to leave</p>
+                <p class="mode-note">For people who work there: with a pass, Navigate can get on and off inside Changi Airport's cargo area and at MINDEF's stops, which it otherwise keeps away from.</p>
+                <!-- Clearing Woodlands and the Johor Bahru checkpoint on a bus across the Causeway (script.js, When.customsMin) -->
+                <p class="modal-section-label" data-find="customs causeway checkpoint jb johor woodlands">Immigration time</p>
+                <div class="mode-toggle customsPick">
+                    <button class="mode-btn" type="button" data-customs="auto" aria-pressed="false">By the time</button>
+                    <button class="mode-btn" type="button" data-customs="15" aria-pressed="false">15 min</button>
+                    <button class="mode-btn" type="button" data-customs="30" aria-pressed="false">30 min</button>
+                    <button class="mode-btn" type="button" data-customs="45" aria-pressed="false">45 min</button>
+                    <button class="mode-btn" type="button" data-customs="60" aria-pressed="false">1 hr</button>
+                </div>
+                <p class="mode-note">Journeys across the Causeway count this for getting off, clearing both checkpoints and getting on again. By the time: about 15 min when it's quiet, up to an hour at the rush (weekday mornings into Singapore, evenings and Friday nights out to JB, Sunday nights back).</p>
+                <!-- Cycling as well as buses and trains, in Navigate and on a trip (script.js, js/nav.js) -->
+                <p class="modal-section-label" data-find="bike bicycle">Cycling</p>
                 <div class="mode-toggle">
-                    <button class="mode-btn" type="button" data-leavetime="on" aria-pressed="false">On</button>
-                    <button class="mode-btn" type="button" data-leavetime="off" aria-pressed="false">Off</button>
+                    <button class="mode-btn" type="button" data-bike="off" aria-pressed="false">No bike</button>
+                    <button class="mode-btn" type="button" data-bike="on" aria-pressed="false">I have a bike</button>
                 </div>
-                <p class="mode-note">For events in this phone's calendar with a place: a notification when it's time to set off by bus and train, from where you are, or from Home.</p>
-                <p class="modal-section-label" data-need="onabus">&ldquo;On a bus?&rdquo;</p>
-                <div class="mode-toggle" data-need="onabus">
-                    <button class="mode-btn" type="button" data-onabus="on" aria-pressed="false">On</button>
-                    <button class="mode-btn" type="button" data-onabus="off" aria-pressed="false">Off</button>
-                </div>
-                <p class="mode-note" data-need="onabus">When you seem to be riding with no trip running, a quiet notification offers to start one, for the Get Off Alert. Needs Physical activity.</p>
-                <p class="modal-section-label">Last bus reminders</p>
-                <div id="lastBusList" class="lastBusList"></div>
-                <p class="mode-note">Tap the bell by a bus's last bus time at a stop: a reminder <span id="lastBusLead">20</span> minutes before it, every day it runs.</p>
-                <p id="remindersNote" class="remindersNote" role="status" hidden></p>
-            </div>
-            <!-- Navigate and the route planner through the stops behind a checkpoint (script.js,
-                 BusNet.setOpenAccess in js/network.js) -->
-            <p class="modal-section-label">Restricted areas</p>
-            <div class="mode-toggle">
-                <button class="mode-btn" type="button" data-restricted="off" aria-pressed="false">Keep out</button>
-                <button class="mode-btn" type="button" data-restricted="on" aria-pressed="false">I have a pass</button>
-            </div>
-            <p class="mode-note">For people who work there: with a pass, Navigate can get on and off inside Changi Airport's cargo area and at MINDEF's stops, which it otherwise keeps away from.</p>
-            <!-- Clearing Woodlands and the Johor Bahru checkpoint on a bus across the Causeway (script.js, When.customsMin) -->
-            <p class="modal-section-label">Immigration time</p>
-            <div class="mode-toggle customsPick">
-                <button class="mode-btn" type="button" data-customs="auto" aria-pressed="false">By the time</button>
-                <button class="mode-btn" type="button" data-customs="15" aria-pressed="false">15 min</button>
-                <button class="mode-btn" type="button" data-customs="30" aria-pressed="false">30 min</button>
-                <button class="mode-btn" type="button" data-customs="45" aria-pressed="false">45 min</button>
-                <button class="mode-btn" type="button" data-customs="60" aria-pressed="false">1 hr</button>
-            </div>
-            <p class="mode-note">Journeys across the Causeway count this for getting off, clearing both checkpoints and getting on again. By the time: about 15 min when it's quiet, up to an hour at the rush (weekday mornings into Singapore, evenings and Friday nights out to JB, Sunday nights back).</p>
-            <!-- Cycling as well as buses and trains, in Navigate and on a trip (script.js, js/nav.js) -->
-            <p class="modal-section-label">Cycling</p>
-            <div class="mode-toggle">
-                <button class="mode-btn" type="button" data-bike="off" aria-pressed="false">No bike</button>
-                <button class="mode-btn" type="button" data-bike="on" aria-pressed="false">I have a bike</button>
-            </div>
-            <p class="mode-note">With a bike, Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker.</p>
-            <p class="modal-section-label">Pin favourite stops in lists</p>
-            <div class="mode-toggle" data-pin-kind="stop">
-                <button class="mode-btn" type="button" data-pin="top" aria-pressed="false">Top</button>
-                <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false">Bottom</button>
-            </div>
-            <p class="modal-section-label">Edge Tray side</p>
-            <div id="traySidePick" class="mode-toggle">
-                <button class="mode-btn" type="button" data-side="left" aria-pressed="false">Left</button>
-                <button class="mode-btn" type="button" data-side="right" aria-pressed="false">Right</button>
-            </div>
-            <p class="mode-note">The Edge Tray is the column of buttons at the top of the screen. Its arrow tucks it away at the edge.</p>
-            <p class="modal-section-label">Edge Tray buttons</p>
-            <div id="trayExtrasPick" class="mode-toggle trayExtrasPick">
-                <button class="mode-btn" type="button" data-tray-show="explorer" aria-pressed="true">Explorer</button>
-                <button class="mode-btn" type="button" data-tray-show="simplygo" aria-pressed="true">SimplyGo</button>
-                <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true">Telegram bot</button>
-                <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true">Buy Augy a Coffee</button>
-                <button class="mode-btn" type="button" data-tray-show="guide" aria-pressed="true">Guide</button>
-                <!-- Only where the app has them (js/reminders.js) -->
-                <button class="mode-btn" type="button" data-tray-show="nearstops" aria-pressed="true" hidden>Timings near a stop</button>
-                <button class="mode-btn" type="button" data-tray-show="routines" aria-pressed="true" hidden>Routines</button>
-            </div>
-            <p class="mode-note">Turn off the buttons you don&rsquo;t use, for a tidier tray. The guide is also at guide.sgbus.uwuapps.org.</p>
+                <p class="mode-note">With a bike, Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker.</p>
+            </section>
+
+            <section class="settingsView" data-settings-group="help" data-title="Help and extras" hidden>
+                <!-- Each page's tour, as it shows the first time that page opens (js/tour.js) -->
+                <p class="modal-section-label" data-find="tour tutorial">Show me around</p>
+                <div id="settingsTour" class="tourPicks"></div>
+                <p class="mode-note">Each page shows you around the first time you open it. Pick one to see its tour again.</p>
+                <!-- The Linux app's sgbus> prompt on the page (js/terminal.js, loaded from script.js) -->
+                <p class="modal-section-label" data-find="command line linux">sgbus terminal</p>
+                <button id="settingsTerminal" class="iconBtn settingsWide" type="button"><span data-icon="terminal"></span> Open the sgbus terminal</button>
+                <p class="mode-note">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
+            </section>
 
             <!-- Sync with another device or the Telegram bot: js/sync.js -->
-            <p class="modal-section-label">Sync with another device or Telegram</p>
-            <p id="syncStatus" class="syncStatus" hidden><span class="statusDot" aria-hidden="true"></span><span id="syncStatusText" role="status"></span></p>
-            <div id="syncStart" class="syncBlock">
-                <p class="mode-note">Favourites, places, routines, your calendar, settings and more. Show a code on one device and enter it on the other. Both need to be on the same wifi, or one joined to the other&rsquo;s hotspot. Closing Settings ends the sync.</p>
-                <button id="syncHostBtn" class="btn" type="button"><span data-icon="sync"></span> Show a code on this device</button>
-                <div class="settingsRow">
-                    <input id="syncCodeInput" class="input settingsInput syncCodeInput" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="Or enter the other device&rsquo;s code" aria-label="Code from the other device" />
-                    <button id="syncJoinBtn" class="iconBtn" type="button">Connect</button>
+            <section class="settingsView" data-settings-group="sync" data-title="Sync" hidden>
+                <p class="modal-section-label" data-short="With another device or the Telegram bot" data-find="code qr bot import export">Sync with another device or Telegram</p>
+                <p id="syncStatus" class="syncStatus" hidden><span class="statusDot" aria-hidden="true"></span><span id="syncStatusText" role="status"></span></p>
+                <div id="syncStart" class="syncBlock">
+                    <p class="mode-note">Favourites, places, routines, your calendar, settings and more. Show a code on one device and enter it on the other. Both need to be on the same wifi, or one joined to the other&rsquo;s hotspot. Closing Settings ends the sync.</p>
+                    <button id="syncHostBtn" class="btn" type="button"><span data-icon="sync"></span> Show a code on this device</button>
+                    <div class="settingsRow">
+                        <input id="syncCodeInput" class="input settingsInput syncCodeInput" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go" placeholder="Or enter the other device&rsquo;s code" aria-label="Code from the other device" />
+                        <button id="syncJoinBtn" class="iconBtn" type="button">Connect</button>
+                    </div>
+                    <button id="syncBotBtn" class="iconBtn settingsWide" type="button"><span data-icon="chat"></span> Sync with the Telegram bot</button>
+                    <p class="mode-note">With the bot, what you sync passes through this site&rsquo;s server, kept for 10 minutes at most. Between two devices, it goes straight from one to the other.</p>
                 </div>
-                <button id="syncBotBtn" class="iconBtn settingsWide" type="button"><span data-icon="chat"></span> Sync with the Telegram bot</button>
-                <p class="mode-note">With the bot, what you sync passes through this site&rsquo;s server, kept for 10 minutes at most. Between two devices, it goes straight from one to the other.</p>
-            </div>
-            <div id="syncHost" class="syncBlock" hidden>
-                <button id="syncCode" class="syncCode" type="button" title="Tap to copy the link" aria-label="Sync code. Tap to copy the link">------</button>
-                <!-- Syncing with the Telegram bot: its link with the code, and the command to send it -->
-                <div id="syncBot" class="syncBot" hidden>
-                    <a id="syncBotOpen" class="btn" href="https://t.me/UwUsgbus_bot" target="_blank" rel="noopener noreferrer"><span data-icon="chat"></span> Open the bot</a>
-                    <p class="mode-note">Or send it <button id="syncBotCommand" class="syncBotCommand" type="button" title="Tap to copy">/sync</button></p>
+                <div id="syncHost" class="syncBlock" hidden>
+                    <button id="syncCode" class="syncCode" type="button" title="Tap to copy the link" aria-label="Sync code. Tap to copy the link">------</button>
+                    <!-- Syncing with the Telegram bot: its link with the code, and the command to send it -->
+                    <div id="syncBot" class="syncBot" hidden>
+                        <a id="syncBotOpen" class="btn" href="https://t.me/UwUsgbus_bot" target="_blank" rel="noopener noreferrer"><span data-icon="chat"></span> Open the bot</a>
+                        <p class="mode-note">Or send it <button id="syncBotCommand" class="syncBotCommand" type="button" title="Tap to copy">/sync</button></p>
+                    </div>
+                    <div id="syncQr" class="syncQr"></div>
+                    <p id="syncLink" class="syncLink"></p>
                 </div>
-                <div id="syncQr" class="syncQr"></div>
-                <p id="syncLink" class="syncLink"></p>
-            </div>
-            <div id="syncLive" class="syncBlock" hidden>
-                <div id="syncTabs" class="dirTabs" role="tablist">
-                    <button class="tab" type="button" role="tab" data-sync-tab="import">Import</button>
-                    <button class="tab" type="button" role="tab" data-sync-tab="export">Export</button>
+                <div id="syncLive" class="syncBlock" hidden>
+                    <div id="syncTabs" class="dirTabs" role="tablist">
+                        <button class="tab" type="button" role="tab" data-sync-tab="import">Import</button>
+                        <button class="tab" type="button" role="tab" data-sync-tab="export">Export</button>
+                    </div>
+                    <p id="syncListNote" class="mode-note"></p>
+                    <!-- A button per kind of thing on offer, to show just that one (js/sync.js) -->
+                    <div id="syncCats" class="syncCats" role="group" aria-label="Show"></div>
+                    <label class="syncItem syncAll"><input id="syncAll" type="checkbox"> <span id="syncAllLabel">Select all</span></label>
+                    <div id="syncList" class="syncList"></div>
+                    <button id="syncGo" class="btn" type="button" disabled></button>
                 </div>
-                <p id="syncListNote" class="mode-note"></p>
-                <!-- A button per kind of thing on offer, to show just that one (js/sync.js) -->
-                <div id="syncCats" class="syncCats" role="group" aria-label="Show"></div>
-                <label class="syncItem syncAll"><input id="syncAll" type="checkbox"> <span id="syncAllLabel">Select all</span></label>
-                <div id="syncList" class="syncList"></div>
-                <button id="syncGo" class="btn" type="button" disabled></button>
-            </div>
-            <p id="syncNote" class="mode-note syncNote" role="status" hidden></p>
-            <div id="syncControls" class="syncControls" hidden>
-                <button id="syncNewCode" class="iconBtn" type="button">New code</button>
-                <button id="syncEnd" class="iconBtn" type="button">Stop</button>
-            </div>
+                <p id="syncNote" class="mode-note syncNote" role="status" hidden></p>
+                <div id="syncControls" class="syncControls" hidden>
+                    <button id="syncNewCode" class="iconBtn" type="button">New code</button>
+                    <button id="syncEnd" class="iconBtn" type="button">Stop</button>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -923,11 +985,20 @@
             <button id="mapHeading" class="glass-btn mapFab" type="button" aria-pressed="false" aria-label="Turn the map with the way you face" title="Turn the map with the way you face"><span data-icon="compass"></span></button>
             <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
             <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
+            <!-- Explorer only (style.css): Singapore's map saved for offline, js/map-save.js -->
+            <button id="mapSave" class="glass-btn mapFab" type="button" aria-expanded="false" aria-controls="mapSaveSheet" aria-label="Save the map for offline" title="Save Singapore's map for offline"><span data-icon="download"></span></button>
         </div>
         <div class="mapSheet glass">
             <p id="mapStep" class="mapStep" role="status" aria-live="polite"></p>
             <p id="mapNote" class="mapNote" hidden></p>
             <div id="mapActions" class="mapActions"></div>
+        </div>
+        <div id="mapSaveSheet" class="mapSaveSheet glass" role="dialog" aria-label="Singapore's map for offline" hidden>
+            <div class="mapSaveHead">
+                <strong>Singapore&rsquo;s map, offline</strong>
+                <button id="mapSaveClose" class="icon-btn small" type="button" aria-label="Close"><span data-icon="close"></span></button>
+            </div>
+            <div id="mapSaveBody" class="mapSaveBody" role="status" aria-live="polite"></div>
         </div>
     </section>
 
@@ -1068,6 +1139,30 @@
         </div>
     </div>
 
+    <!-- The first open's choice, Minimal or Full, before the welcome: js/first-run.js -->
+    <div id="firstRunModal" class="modal-backdrop hidden">
+        <form class="modal glass" id="firstRunForm" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle" aria-describedby="firstRunNote">
+            <div class="modal-head">
+                <h2 id="firstRunTitle">Welcome to SG Bus Timings</h2>
+            </div>
+            <fieldset class="firstRunPick">
+                <legend class="modal-section-label">Start with everything, or just the essentials?</legend>
+                <label class="firstRunOption">
+                    <input type="radio" name="firstRun" value="minimal" />
+                    <span class="firstRunName">Minimal</span>
+                    <span class="firstRunWhat">Just Bus timings, Favourites, Navigate and Places. The rest is switched off.</span>
+                </label>
+                <label class="firstRunOption">
+                    <input type="radio" name="firstRun" value="full" checked />
+                    <span class="firstRunName">Full</span>
+                    <span class="firstRunWhat">Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.</span>
+                </label>
+            </fieldset>
+            <p class="mode-note" id="firstRunNote">You can change this any time in Settings, Edge Tray buttons.</p>
+            <button class="btn firstRunGo" type="submit">Start</button>
+        </form>
+    </div>
+
     <!-- Theme Picker Modal -->
     <div class="modal-backdrop hidden" id="themeModal">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
@@ -1089,6 +1184,10 @@
         </div>
     </div>
 
+    <!-- First, so it sees every fetch (js/offline.js) -->
+    <script src="/js/offline.js"></script>
+    <!-- Next, so it sees storage before anything writes to it (js/first-run.js) -->
+    <script src="/js/first-run.js"></script>
     <script src="/js/app-bridge.js"></script>
     <script src="/js/desktop-location.js"></script>
     <script src="/js/geo-retry.js"></script>
@@ -1113,6 +1212,7 @@
     <script src="/js/trip.js"></script>
     <script src="/js/rail-tracks.js"></script>
     <script src="/js/map-engine.js"></script>
+    <script src="/js/map-save.js"></script>
     <script src="/js/map.js"></script>
     <script src="/js/map-card.js"></script>
     <script src="/js/card.js"></script>

@@ -356,6 +356,31 @@ body.modal-open { overflow: hidden; }
     to { opacity: 1; transform: translateY(0); }
 }
 
+/* The offline bar (js/offline.js): the update bar's look, but kept at the top as the page
+   scrolls, to say why tabs went. On the page's own colour, so nothing shows through, and
+   under the Edge Tray and the windows. Its words take what room there is, with OK beside
+   them even on a phone. It nudges when something that needs the network is tapped. */
+.offline-notice {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: color-mix(in srgb, var(--brand) 22%, var(--bg));
+    border-bottom: 1px solid var(--surface-border);
+    color: var(--ink);
+    font-size: 0.875rem;
+    animation: update-notice-in 0.2s ease;
+}
+.offline-notice .update-notice-inner { flex-wrap: nowrap; }
+.offline-notice p { flex: 1 1 0; min-width: 0; }
+.offline-notice .iconBtn { flex: none; }
+.offline-notice.nudge { animation: offline-nudge 0.4s ease; }
+@keyframes offline-nudge {
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+/* The Android app's update bar waits while offline, as updating needs the network. */
+:root[data-net-off] .app-update-notice { display: none; }
+
 /* ===== Disruptions bar: under the update bar, only while a train line is disrupted (js/alerts.js) ===== */
 .disruption-bar {
     background: color-mix(in srgb, var(--error) 14%, transparent);
@@ -497,7 +522,31 @@ body.modal-open { overflow: hidden; }
 :root[data-tray-hide~="coffee"] [data-tray-extra="coffee"],
 :root[data-tray-hide~="guide"] [data-tray-extra="guide"],
 :root[data-tray-hide~="nearstops"] [data-tray-extra="nearstops"],
-:root[data-tray-hide~="routines"] [data-tray-extra="routines"] { display: none !important; }
+:root[data-tray-hide~="routines"] [data-tray-extra="routines"],
+:root[data-tray-hide~="card"] [data-tray-extra="card"],
+:root[data-tray-hide~="receive"] [data-tray-extra="receive"] { display: none !important; }
+/* The pages turned off in Settings (js/main-screen.js, layout), set before first paint too. */
+:root[data-pages-off~="glance"] #glanceBtn,
+:root[data-pages-off~="alerts"] #alertsBtn,
+:root[data-pages-off~="trips"] #tripsBtn { display: none !important; }
+/* Offline (js/offline.js, data-net-off, set before first paint too): the pages and buttons that
+   need the network, left as Settings has them for when it's back. */
+:root[data-net-off] #glanceBtn,
+:root[data-net-off] #timingsBtn,
+:root[data-net-off] #alertsBtn,
+:root[data-net-off] #explorerBtn,
+:root[data-net-off] #nearStopsTrayBtn,
+:root[data-net-off] #routinesTrayBtn,
+:root[data-net-off] #appUpdateBtn { display: none !important; }
+/* And on the pages that stay, where they need it: Navigate's Bus and train, and Favourites'
+   stops (index.html). */
+.offlineNote { display: none; }
+:root[data-net-off] .offlineNote {
+    display: block;
+    margin: 0 0 12px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
 
 /* Clipped at the screen's edge: the tray tucked away slides past it, and anything out there
    would widen the page, which a phone then zooms out to fit, modals and all. Pinned to the
@@ -1586,6 +1635,12 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .swapBtn .ico,
 .swapBtn [data-icon] { transform: rotate(90deg); }
 
+/* Navigate's stop on the way (js/nav.js): side by side, a row of its own under both ends; on a
+   phone, between From and the swap button, in the order it's ridden. */
+.navVia { grid-column: 1 / -1; order: 1; min-width: 0; }
+.addStopBtn { height: 30px; padding: 0 10px; font-size: 13px; }
+.busChip.viaChip { background: var(--surface-strong); color: var(--ink); }
+
 .plannerBody { margin-top: 14px; }
 
 /* Leave now / Leave at / Arrive by, and the day and time for the last two (js/when.js). */
@@ -1879,6 +1934,25 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .legEtas strong { color: var(--ok); }
 
 /* ===== Settings ===== */
+/* The list of groups, and each group's view, one on show at a time (script.js,
+   settingsView): each a column with the modal's own gap. Back sits before the title in a
+   group. The rows are Share's menu items, their line allowed to wrap. */
+.settingsHead { justify-content: flex-start; gap: 8px; }
+.settingsHead h2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settingsView { display: flex; flex-direction: column; gap: 10px; }
+.settingsList .shareMenuItem > span:not(.ico):not(.settingsGo) { flex: 1; }
+.settingsList .shareMenuItem .sub { white-space: normal; }
+.settingsList .shareMenuItem > .ico svg { width: 20px; height: 20px; color: var(--brand-ink); }
+.settingsList .shareMenuItem:hover > .ico svg { color: inherit; }
+.settingsGo { color: var(--muted-strong); }
+.settingsGo svg { width: 1.1em; height: 1.1em; transform: rotate(90deg); }
+.shareMenuItem:hover .settingsGo { color: inherit; }
+.settingsFindNone { margin-top: 0; }
+/* A block found with Find: its label lights up a moment as the group opens on it. */
+.modal-section-label.settingsFlash { animation: settings-flash 1.6s ease; border-radius: 6px; }
+@keyframes settings-flash {
+    0%, 40% { background: color-mix(in srgb, var(--brand) 22%, transparent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 22%, transparent); color: var(--ink); }
+}
 .settingsInput { padding: 12px 14px; height: auto; }
 /* A routine's days, a week in a row (js/reminders.js). */
 .routineDays { grid-template-columns: repeat(7, 1fr); gap: 4px; }
@@ -2232,6 +2306,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 
     /* The two ends stack, with the swap button between them swapping up and down. */
     .plannerFields { grid-template-columns: minmax(0, 1fr); align-items: stretch; }
+    .navVia { order: 0; }
     .swapBtn { justify-self: center; margin: 0; }
     .swapBtn .ico,
     .swapBtn [data-icon] { transform: none; }
@@ -2338,6 +2413,11 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .navOthers { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
 .navOther { display: flex; align-items: center; gap: 8px; font-size: 14px; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); }
 .navOther > span:not(.ico) { flex: 1; }
+/* Ways planned on the phone with no connection (js/nav.js, planOnPhone): said once, above them. */
+.navOffline {
+    display: flex; align-items: center; gap: 8px; margin: 0 0 10px; padding: 8px 10px; border-radius: 12px;
+    font-size: 14px; font-weight: 600; background: var(--surface); border: 1px solid var(--surface-border);
+}
 :root[data-mode="dark"] .journeyTraffic, :root[data-mode="dark"] .legTraffic { color: #ffb347; }
 
 /* ===== Get Off Alert: the trip bar (js/trip.js) ===== */
@@ -3341,6 +3421,29 @@ body.touring { overflow: hidden; }
     .tourHole { transition: none; }
     .tourLine { animation: none; stroke-dashoffset: 0; }
 }
+/* The first open's choice, Minimal or Full (js/first-run.js): a card for each, the one picked
+   in the brand fill, as the mode buttons are. */
+.firstRunPick { display: grid; gap: 8px; border: 0; margin: 0; padding: 0; min-width: 0; }
+.firstRunPick legend { padding: 0; margin-bottom: 8px; }
+.firstRunOption {
+    position: relative;
+    display: grid;
+    gap: 2px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--surface-border);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.firstRunOption input { position: absolute; opacity: 0; pointer-events: none; }
+.firstRunName { font-weight: 700; }
+.firstRunWhat { font-size: 0.85rem; color: var(--muted-strong); }
+.firstRunOption:has(input:checked) { background: var(--brand-fill); color: var(--on-brand); }
+.firstRunOption:has(input:checked) .firstRunWhat { color: inherit; }
+.firstRunOption:has(input:focus-visible) { outline: 2px solid var(--brand-ink); outline-offset: 2px; }
+.firstRunGo { width: 100%; }
 
 /* ----------- The sgbus terminal (js/terminal.js) -----------
    The Linux app's sgbus> prompt, with a terminal's look in either theme: dark, monospace, and
@@ -3448,6 +3551,20 @@ body.touring { overflow: hidden; }
    A tapped stop's or station's card, out of its dot like a chat bubble: its tail on the dot,
    above it, or below where the top bar's in the way (.below), popping out from the tail. */
 .mapPanel.exploring .mapSheet { display: none; }
+/* Explorer's Save the map (js/map-save.js): its button with the others there only, and its sheet
+   where the live map's own is elsewhere. */
+.mapPanel:not(.exploring) #mapSave { display: none; }
+.mapSaveSheet {
+    position: absolute; z-index: 1001; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom));
+    max-width: 520px; margin: 0 auto; padding: 12px 14px; border-radius: 18px; font-size: 14px;
+}
+.mapSaveSheet[hidden] { display: none; }
+.mapPanel.mapSaveOpen .mapFabs { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 190px); }
+.mapSaveHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.mapSaveBody p { margin: 4px 0; }
+.mapSaveBody .ico { vertical-align: -3px; }
+.mapSaveMsg { font-size: 13px; color: var(--muted); }
+.mapSaveBody progress { width: 100%; height: 8px; accent-color: var(--brand-fill); }
 .mapCard {
     position: absolute;
     z-index: 1050;

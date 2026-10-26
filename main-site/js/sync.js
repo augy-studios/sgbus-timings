@@ -83,7 +83,9 @@ const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}
 
 const tap = (selector) => document.querySelector(selector)?.click();
 const onOff = (v) => (v === 'on' ? 'On' : 'Off');
-const TRAY_EXTRAS = ['simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines'];
+const TRAY_EXTRAS = ['explorer', 'simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines', 'card', 'receive'];
+// The pages "pages.off" keeps (js/main-screen.js): Glance's is "glance", as it was before.
+const PAGES_OFF = () => MainScreen.CAN_HIDE.filter((n) => n !== 'glance');
 
 const SYNC_SETTINGS = {
   'pin.stop': {
@@ -161,6 +163,14 @@ const SYNC_SETTINGS = {
   glance: {
     label: 'Next bus at a glance', values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (Glance.enabled() ? 'on' : 'off'), set: (v) => Glance.setEnabled(v === 'on'),
+  },
+  // The other pages turned off in Settings' Edge Tray buttons, as "alerts trips".
+  'pages.off': {
+    label: 'Pages turned off', start: '',
+    ok: (v) => v.split(' ').filter(Boolean).every((n) => PAGES_OFF().includes(n)),
+    text: (v) => v.split(' ').filter(Boolean).map((n) => MainScreen.label(n)).join(', ') || 'None',
+    get: () => MainScreen.hidden().filter((n) => n !== 'glance').sort().join(' '),
+    set: (v) => { const off = v.split(' '); for (const n of PAGES_OFF()) MainScreen.setShown(n, !off.includes(n)); },
   },
   // Custom home (js/main-screen.js). The default, Glance, is kept as "stop", as Opens on's
   // default was: what a version from before Glance was a page sends for its Bus timings, with
@@ -301,10 +311,10 @@ function prepareSync() {
 
 // A link from another device's QR code (#sync/CODE): the code filled in, waiting for a tap on
 // Connect rather than connecting outright, since connecting shows this device's favourites to
-// whoever made the link.
+// whoever made the link. Settings opens straight on its Sync group (script.js).
 function openSyncLink(code) {
   history.replaceState(null, '', location.pathname + location.search);
-  openSettings();
+  openSettings('sync');
   if (sync.role) return;
   $('#syncCodeInput').value = P2P.normaliseCode(code);
   showSyncStatus('Tap Connect to sync with the device showing this code.', 'busy');
@@ -868,8 +878,10 @@ function showSyncNote(text, tone = '') {
   $('#syncNote').classList.toggle('error', tone === 'error');
 }
 
-// The section sits at the foot of Settings, below the fold on a phone.
+// The status, in Settings' Sync group (script.js), which comes back on show if Back took
+// Settings to its list or another group meanwhile, as the other device connects.
 function revealSync() {
+  openSettingsGroup('sync');
   $('#syncStatus').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -887,7 +899,7 @@ function renderSync() {
   $('#syncEnd').textContent = connected ? 'Disconnect' : hosting ? 'Stop' : 'Cancel';
 
   if (role === 'host' && status === 'waiting') {
-    showSyncStatus('Waiting for the other device. In its Settings, enter this code, or scan the QR code with its camera.', 'warn');
+    showSyncStatus('Waiting for the other device. In its Settings, Sync, enter this code, or scan the QR code with its camera.', 'warn');
   } else if (role === 'bot' && status === 'waiting') {
     showSyncStatus(`Waiting for the Telegram bot. Tap Open the bot, or send it the command below. On a computer, scan the QR code with your phone.`, 'warn');
   } else if (role && status === 'connecting') {

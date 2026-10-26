@@ -22,6 +22,10 @@
 // hooks.onPick(pick); a tap on the map elsewhere to hooks.onBlank(); hooks.onMove() as it moves,
 // for a card kept on its dot (js/map-card.js).
 //
+// Explorer's MRT and LRT lines, rails(list), go under those dots and over the map's own: each
+// line's track in its colour, a little wider the closer in, edged in white so a dark line still
+// shows on the dark map.
+//
 // Everything's cached by sw.js: the library, the styles, fonts, sprites and every tile seen.
 //
 // Zooms here are Leaflet's (OpenStreetMap's 256-pixel tiles): MapLibre's are one less for the
@@ -104,6 +108,17 @@
   // MapLibre's name for a pill's image, and the colours back from it.
   const pillId = (colours) => `sg-pill-${colours.map((c) => c.slice(1)).join('-')}`;
   const pillColours = (id) => id.slice('sg-pill-'.length).split('-').map((c) => `#${c}`);
+  // Explorer's lines, at Leaflet's zooms: [zoom, px] for the line itself, its edge one each
+  // side more. Thin enough out at the island not to hide the streets, and under a station's dot
+  // close in.
+  const RAIL_WIDTHS = [[11, 2], [13, 3], [15, 4], [19, 7]];
+  const railWidth = (z) => {
+    const at = RAIL_WIDTHS.findIndex(([zz]) => z <= zz);
+    if (at === -1) return RAIL_WIDTHS[RAIL_WIDTHS.length - 1][1];
+    if (at === 0) return RAIL_WIDTHS[0][1];
+    const [[z0, w0], [z1, w1]] = [RAIL_WIDTHS[at - 1], RAIL_WIDTHS[at]];
+    return w0 + ((z - z0) / (z1 - z0)) * (w1 - w0);
+  };
 
   function load(js, css) {
     return new Promise((resolve, reject) => {
@@ -224,15 +239,27 @@
       flushing ??= requestAnimationFrame(flush);
     }
 
-    // Explorer's stops and stations, as one source under everything else drawn.
+    // Explorer's stops and stations, as one source under everything else drawn, and its lines
+    // under them.
     let poiData = { type: 'FeatureCollection', features: [] };
     const poiPicks = new Map();
+    let railData = { type: 'FeatureCollection', features: [] };
 
     // The sources and layers for what's drawn, over the style: put back each time it changes.
     function addOverlays() {
       const empty = { type: 'FeatureCollection', features: [] };
       for (const kind of ['fill', 'line', 'dot']) if (!map.getSource(`sg-${kind}`)) map.addSource(`sg-${kind}`, { type: 'geojson', data: empty });
       const add = (layer) => { if (!map.getLayer(layer.id)) map.addLayer(layer); };
+      // Explorer's lines first, so every layer after is over them: the stops and stations, then
+      // what's drawn.
+      if (!map.getSource('sg-rail')) map.addSource('sg-rail', { type: 'geojson', data: railData });
+      const railWidths = (more) => ['interpolate', ['linear'], ['zoom'], ...RAIL_WIDTHS.flatMap(([z, w]) => [toGl(z), w + more])];
+      const railLayout = { 'line-cap': 'round', 'line-join': 'round' };
+      add({
+        id: 'sg-rail-edge', type: 'line', source: 'sg-rail', layout: railLayout,
+        paint: { 'line-color': '#ffffff', 'line-width': railWidths(2), 'line-opacity': dark() ? 0.35 : 0.9 },
+      });
+      add({ id: 'sg-rail', type: 'line', source: 'sg-rail', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': railWidths(0) } });
       if (!map.getSource('sg-poi')) map.addSource('sg-poi', { type: 'geojson', data: poiData });
       const grow = (small, big) => ['interpolate', ['linear'], ['zoom'], toGl(POI_STOP_ZOOM), small, toGl(19), big];
       add({
@@ -423,6 +450,11 @@
         };
         map.getSource('sg-poi')?.setData(poiData);
       },
+      // Explorer's lines, [{ color, points }] with points [lat, lng]; [] takes them away.
+      rails(list) {
+        railData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
+        map.getSource('sg-rail')?.setData(railData);
+      },
       setView(at, z, animate = false) {
         map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate ? 500 : 0 });
       },
@@ -538,6 +570,19 @@
       }
     }
     map.on('moveend zoomend', drawPois);
+    // Explorer's lines, in a pane of their own between the tiles and the rest (overlayPane is
+    // 400), drawn on a canvas of their own: all of them at once, as they're few.
+    map.createPane('sgRails').style.zIndex = 350;
+    const railLayer = L.layerGroup().addTo(map);
+    const railRenderer = L.canvas({ pane: 'sgRails' });
+    const railStyle = () => {
+      const w = railWidth(map.getZoom());
+      return { edge: { weight: w + 2, opacity: dark() ? 0.35 : 0.9 }, line: { weight: w } };
+    };
+    map.on('zoomend', () => {
+      const s = railStyle();
+      railLayer.eachLayer((l) => l.setStyle(l.options.sgEdge ? s.edge : s.line));
+    });
     map.on('move', () => hooks.onMove?.());
     map.on('click', () => hooks.onBlank?.());
 
@@ -579,6 +624,13 @@
         pois = list;
         drawPois();
       },
+      rails(list) {
+        railLayer.clearLayers();
+        const s = railStyle();
+        const opts = { pane: 'sgRails', renderer: railRenderer, lineCap: 'round', lineJoin: 'round', interactive: false };
+        for (const r of list) L.polyline(r.points, { ...opts, ...s.edge, color: '#ffffff', sgEdge: true }).addTo(railLayer);
+        for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1 }).addTo(railLayer);
+      },
       setView: (at, z, animate = false) => map.setView(at, z, { animate }),
       jump(at, z) { if (at) map.setView(at, z, { animate: false }); },
       panTo: (at, ms) => map.panTo(at, { animate: true, duration: ms / 1000 }),
@@ -614,5 +666,7 @@
     return leafletEngine(el, hooks);
   }
 
-  window.MapEngine = { open };
+  // `styles` and `files`, for saving the map for offline (js/map-save.js): OpenFreeMap's styles
+  // and MapLibre's own files.
+  window.MapEngine = { open, styles: [STYLE_LIGHT, STYLE_DARK], files: [ML_JS, ML_CSS] };
 })();
