@@ -1,8 +1,9 @@
 // Offline mode (help desk #3): with no connection, the pages and buttons that need one go,
 // Glance, Bus timings and Service alerts (js/main-screen.js) and Explorer, Timings near a stop,
 // Routines and Check for app updates (style.css, data-net-off), and a bar at the top says why.
-// Favourites, Navigate (Bus only plans without the network), Your trips, Places and Stops near
-// me stay. Back online, it all comes back, on whatever page is on show.
+// Favourites, Navigate (both tabs plan without the network; Bus and train on the phone, with
+// stops, stations and your places for ends, js/nav.js), Your trips, Places and Stops near me
+// stay. Back online, it all comes back, on whatever page is on show.
 //
 // Offline is data-net-off on <html>, which index.html's head sets before first paint from
 // navigator.onLine, so the tabs that need the network don't show for a moment first. After

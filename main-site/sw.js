@@ -70,11 +70,23 @@ const ASSETS = [
   // The live map's engine (js/map-engine.js), and Leaflet, its fallback without WebGL, so the
   // map opens offline too. MapLibre's kept apart, in MAP_CACHE, once it's first used.
   "/js/map-engine.js",
+  // Singapore's map saved for offline, from Explorer (js/map-save.js).
+  "/js/map-save.js",
   "/vendor/leaflet/leaflet.js",
   "/vendor/leaflet/leaflet.css",
   "/js/calendar.js",
   "/js/mrt-doors.js",
   "/js/nav.js",
+  // Bus and train planned on the phone offline (js/nav.js, planOnPhone): the router and graph
+  // /api/nav uses, as ES modules, in their worker, and the rail network they ride on.
+  "/js/nav-worker.js",
+  "/js/nav-core/offline.js",
+  "/js/nav-core/network.js",
+  "/js/nav-core/router.js",
+  "/js/nav-core/plan.js",
+  "/js/nav-core/via.js",
+  "/js/nav-core/when.js",
+  "/data/rail.json",
   "/js/share.js",
   "/js/sw-update.js",
   "/js/app-update.js",
@@ -124,6 +136,13 @@ const VECTOR_MAX = 1500;
 const OFM_HOST = "tiles.openfreemap.org";
 const isVectorTile = (url) => url.hostname === OFM_HOST && /\.pbf$/.test(url.pathname) && !url.pathname.startsWith("/fonts/");
 const isOfmFresh = (url) => url.hostname === OFM_HOST && (url.pathname.startsWith("/styles/") || /^\/planet\/?$/.test(url.pathname));
+// Singapore's map saved for offline (js/map-save.js, Explorer's Save the map): its vector tiles,
+// fetched and kept here by "map-save-tile" apart from VECTOR_CACHE, so trimming never drops one,
+// until it's removed. Each is kept under its zoom and place without the week (savedKey), with the
+// address it came from in x-saved-from: that week's is served from here as it is, and any week's
+// when the network can't be reached, as the map asks for this week's once it's been online.
+const SAVED_MAP_CACHE = "sgbus-map-saved";
+const savedKey = (url) => url.replace(/^(https:\/\/[^/]+\/planet\/)[^/]+\//, "$1saved/");
 
 // No skipWaiting() here: a new worker installs and then waits until somebody
 // presses Reload on the update bar (js/sw-update.js).
@@ -142,7 +161,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
-        keys.filter((key) => ![CACHE, WIDGET_CACHE, TILE_CACHE, MAP_CACHE, VECTOR_CACHE].includes(key)).map((key) => caches.delete(key))
+        keys.filter((key) => ![CACHE, WIDGET_CACHE, TILE_CACHE, MAP_CACHE, VECTOR_CACHE, SAVED_MAP_CACHE].includes(key)).map((key) => caches.delete(key))
       )
     )
   );
@@ -154,6 +173,11 @@ self.addEventListener("message", (event) => {
   // The only place either of these is ever called.
   if (type === "skip-waiting") {
     event.waitUntil(self.skipWaiting().then(() => self.clients.claim()));
+  }
+
+  // One tile of the map being saved for offline (js/map-save.js), answered on the port sent.
+  if (type === "map-save-tile") {
+    event.waitUntil(saveMapTile(event.data.url).catch(() => ({ ok: false })).then((r) => event.ports[0]?.postMessage(r)));
   }
 });
 
@@ -570,6 +594,8 @@ async function mapKept(request) {
 }
 
 // A style or TileJSON: what's kept at once, and the newest fetched behind it for next time.
+// Asked for afresh (cache: "no-cache", js/map-save.js checking this week's tiles), the
+// network's first, and what's kept only if it can't be reached.
 async function mapFresh(event, request) {
   const cache = await caches.open(MAP_CACHE);
   const hit = await cache.match(request);
@@ -577,6 +603,7 @@ async function mapFresh(event, request) {
     if (res.ok) await cache.put(request, res.clone());
     return res;
   });
+  if (hit && (request.cache === "no-cache" || request.cache === "reload")) return fresh.catch(() => hit);
   if (hit) {
     event.waitUntil(fresh.catch(() => {}));
     return hit;
@@ -589,10 +616,41 @@ async function vectorTile(request) {
   const cache = await caches.open(VECTOR_CACHE);
   const hit = await cache.match(request);
   if (hit) return hit;
-  const res = await fetch(request);
+  // The map saved for offline: this week's tile as it is, another week's only if the network
+  // can't give this one.
+  const saved = await caches.match(savedKey(request.url), { cacheName: SAVED_MAP_CACHE });
+  if (saved && saved.headers.get("x-saved-from") === request.url) return saved;
+  let res;
+  try {
+    res = await fetch(request);
+  } catch (err) {
+    if (saved) return saved;
+    throw err;
+  }
   if (res.ok) {
     await cache.put(request, res.clone());
     if (++vectorPuts % 50 === 0) trimTiles(cache, VECTOR_MAX);
+  } else if (saved) {
+    return saved;
   }
   return res;
+}
+
+// A tile of the map being saved: { ok, bytes, sent }, `bytes` as kept and `sent` as it came over
+// the network (compressed, where its Content-Length says), 0 when this week's was kept already.
+// OpenFreeMap's vector tiles only.
+async function saveMapTile(url) {
+  const u = new URL(url);
+  if (!isVectorTile(u)) return { ok: false };
+  const cache = await caches.open(SAVED_MAP_CACHE);
+  const key = savedKey(url);
+  const kept = await cache.match(key);
+  if (kept && kept.headers.get("x-saved-from") === url) return { ok: true, bytes: Number(kept.headers.get("x-saved-bytes")) || 0, sent: 0 };
+  const res = await fetch(url, { mode: "cors", credentials: "omit" });
+  if (!res.ok) return { ok: false, status: res.status };
+  const body = await res.blob();
+  await cache.put(key, new Response(body, {
+    headers: { "content-type": res.headers.get("content-type") || "application/x-protobuf", "x-saved-from": url, "x-saved-bytes": String(body.size), date: new Date().toUTCString() },
+  }));
+  return { ok: true, bytes: body.size, sent: Number(res.headers.get("content-length")) || body.size };
 }

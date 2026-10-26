@@ -26,12 +26,12 @@
   // at a time (Glance and Bus timings are the page's own glance, search and results, style.css,
   // data-view; Navigate has a panel per tab); `btn` its Edge Tray button. On its tab, `show`
   // runs every time and `first` only the first time, so Navigate keeps what was being planned,
-  // on the tab used last, or offline, on Bus only, which plans without the network.
+  // on the tab used last: both plan without the network (Bus and train on the phone, js/nav.js).
   const PARTS = [
     { id: 'glance', label: 'Glance', btn: 'glanceBtn' },
     { id: 'timings', label: 'Bus timings', btn: 'timingsBtn' },
     { id: 'favs', label: 'Favourites', btn: 'favsBtn', els: ['favsModal'], modal: true, show: () => renderFavs() },
-    { id: 'nav', label: 'Navigate', btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' || window.Offline?.on() ? openPlanner() : openNav()) },
+    { id: 'nav', label: 'Navigate', btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' ? openPlanner() : openNav()) },
     { id: 'alerts', label: 'Service alerts', btn: 'alertsBtn', els: ['alertsSection'], show: () => Alerts.open() },
     { id: 'trips', label: 'Your trips', btn: 'tripsBtn', els: ['tripsSection'], show: () => TripHistory.open() },
     { id: 'places', label: 'Places', btn: 'placesBtn', els: ['placesSection'], show: () => Places.open() },
