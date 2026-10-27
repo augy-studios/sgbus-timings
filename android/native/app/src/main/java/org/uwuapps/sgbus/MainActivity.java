@@ -63,6 +63,18 @@ public class MainActivity extends BridgeActivity {
         Notifications.createChannels(this);
         super.onCreate(savedInstanceState);
 
+        // The page at its own width, never zoomed out to fit something wider (help desk #11: a
+        // stop's timings showed the whole screen zoomed out). Capacitor (8.5.3) sets neither, so
+        // these are Android's defaults made sure of: no overview mode (zooming out to show the
+        // whole page's width as it loads), and the layout as wide as the WebView, as the page's
+        // viewport tag (width=device-width) asks anyway. The page itself clips anything wider
+        // (main-site/style.css, overflow-x: clip).
+        WebView page = bridge == null ? null : bridge.getWebView();
+        if (page != null) {
+            page.getSettings().setLoadWithOverviewMode(false);
+            page.getSettings().setUseWideViewPort(false);
+        }
+
         // Back goes back through the page's history, as in a browser: its panels and cards
         // each add a step. With nothing left to close, on whichever page (the page adds no step
         // for switching pages in the app, main-site/js/ui.js), it takes two (2.2.7, help desk
