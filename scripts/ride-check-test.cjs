@@ -22,7 +22,11 @@
 //   7. Without WebGL, the unlock shows the plain window instead of the celebration.
 //   8. On a phone with little memory (deviceMemory 2), the flat celebration: an SVG trophy and
 //      2D confetti, no three.js fetched; with reduced motion, no confetti.
-// SHOTS=<folder> saves a screenshot of the celebration there.
+//   9. The console's simulateAllLines() (help desk #13): a preview by default, each variant
+//      forced ('3d', 'flat', 'plain'), saving nothing; { unlock: true } unlocks Your colours
+//      with no rides saved, and 'undo' locks them again (and takes away colours picked since),
+//      but never a real unlock; without WebGL, '3d' gives the plain window.
+// SHOTS=<folder> saves a screenshot of the celebration there, and of each simulated one.
 const path = require('path');
 const fs = require('fs');
 
@@ -312,6 +316,84 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     ok(`little memory${still ? ', reduced motion' : ''}: three.js not fetched`, !threeAsked);
     await page.evaluate(() => document.getElementById('celebrateClose').click());
     ok(`little memory${still ? ', reduced motion' : ''}: Close stops it`, await page.evaluate(() => !Celebrate.running() && document.getElementById('celebrateModal').classList.contains('hidden')));
+    await context.close();
+  }
+
+  // ---- 9. the console's simulateAllLines() (help desk #13) ----
+  {
+    const context = await newContext([1.3521, 103.8198]);
+    const page = await fresh(context);
+    const logs = [];
+    page.on('console', (m) => logs.push(m.text()));
+    const keys = () => page.evaluate(() => Object.fromEntries(['sgbus_rides', 'sgbus_colours_unlocked', 'sgbus_colours_told', 'sgbus_colours', 'sgbus_colours_simulated'].map((k) => [k, localStorage.getItem(k)])));
+    const state = () => page.evaluate(() => ({
+      celebrate: !document.getElementById('celebrateModal').classList.contains('hidden'),
+      plain: !document.getElementById('unlockModal').classList.contains('hidden'),
+      mode: Celebrate.mode(),
+      canvas: !!document.querySelector('#celebrateScene canvas'),
+      flat: !!document.querySelector('#celebrateScene .flatTrophy'),
+      unlocked: RideCheck.unlocked(),
+    }));
+    const before = await keys();
+
+    const help = await page.evaluate(() => simulateAllLines('help'));
+    ok('simulate: help prints usage', help === 'help' && logs.some((l) => /simulateAllLines\(\) plays/.test(l)) && !(await state()).celebrate);
+
+    // A preview by default: this browser's own celebration, nothing saved.
+    logs.length = 0;
+    const own = await page.evaluate(() => simulateAllLines());
+    const s0 = await state();
+    ok('simulate: no args plays this browser\'s own and prints usage', own === 'scene' && s0.celebrate && s0.canvas && logs.some((l) => /Options:/.test(l)), JSON.stringify(s0));
+    for (const [as, want] of [['3d', 'scene'], ['flat', 'flat'], ['plain', 'plain']]) {
+      const got = await page.evaluate((a) => simulateAllLines(a), as);
+      await wait(page, 1500);
+      const s = await state();
+      const shown = want === 'plain' ? s.plain && !s.celebrate : s.celebrate && !s.plain && s.mode === want && (want === 'flat' ? s.flat && !s.canvas : s.canvas);
+      ok(`simulate: '${as}' shows the ${want} one`, got === want && shown, JSON.stringify(s));
+      // The windows fade on the real clock, not the page's.
+      if (process.env.SHOTS) { await page.waitForTimeout(1000); await page.screenshot({ path: path.join(process.env.SHOTS, `simulate-${as}.png`) }); }
+    }
+    ok('simulate: preview saves nothing', JSON.stringify(await keys()) === JSON.stringify(before) && !(await page.evaluate(() => RideCheck.unlocked())), JSON.stringify(await keys()));
+    ok('simulate: preview leaves Your colours hidden', await page.evaluate(() => { document.getElementById('celebrateGo')?.click(); return document.getElementById('customColours').hidden; }));
+    await page.evaluate(() => document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)));
+    ok('simulate: unknown variant only helps', (await page.evaluate(() => simulateAllLines('sparkly'))) === 'help' && !(await state()).celebrate);
+    ok('simulate: undo with nothing to undo', (await page.evaluate(() => simulateAllLines('undo'))) === 'nothing');
+
+    // Unlocking for real, then undone.
+    const unlockedAs = await page.evaluate(() => simulateAllLines({ unlock: true, as: 'flat' }));
+    await wait(page, 2000);
+    const s1 = await state();
+    const k1 = await keys();
+    ok('simulate: unlock unlocks and plays it once', unlockedAs === 'flat' && s1.unlocked && s1.celebrate && s1.mode === 'flat' && !s1.plain && !!k1.sgbus_colours_simulated && k1.sgbus_rides === before.sgbus_rides, JSON.stringify({ s1, k1 }));
+    await page.evaluate(() => document.getElementById('celebrateGo').click());
+    await wait(page, 500);
+    ok('simulate: unlocked, Your colours offered', await page.evaluate(() => !document.getElementById('customColours').hidden));
+    // Colours picked while it was unlocked go with the undo.
+    await page.evaluate(() => { const box = document.getElementById('customColours'); for (const [k, v] of Object.entries({ bg: '#101820', text: '#f5f5f5', button: '#ffcc00', card: '#1c2833' })) { const i = box.querySelector(`[data-colour="${k}"]`); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); } document.getElementById('colourKeep').click(); });
+    ok('simulate: colours kept while unlocked', !!(await keys()).sgbus_colours && (await page.evaluate(() => document.documentElement.hasAttribute('data-custom-colours'))));
+    const undone = await page.evaluate(() => simulateAllLines('undo'));
+    ok('simulate: undo locks again and takes the colours away', undone === 'undone' && JSON.stringify(await keys()) === JSON.stringify(before) && !(await page.evaluate(() => RideCheck.unlocked() || document.documentElement.hasAttribute('data-custom-colours'))), JSON.stringify(await keys()));
+    // A reload after the undo: no celebration comes back.
+    await page.reload();
+    await page.waitForFunction(() => window.RideCheck && window.Celebrate);
+    await wait(page, 3000);
+    ok('simulate: nothing after a reload', !(await state()).celebrate && !(await state()).plain && !(await page.evaluate(() => RideCheck.unlocked())));
+
+    // Colours unlocked by riding: unlock doesn't touch them and undo doesn't lock them.
+    await page.evaluate(() => localStorage.setItem('sgbus_colours_unlocked', '1'));
+    await page.evaluate(() => simulateAllLines({ unlock: true }));
+    ok('simulate: undo leaves a real unlock alone', (await page.evaluate(() => simulateAllLines('undo'))) === 'nothing' && (await page.evaluate(() => RideCheck.unlocked())));
+    await context.close();
+  }
+
+  // ---- 9b. the console's simulateAllLines() with no WebGL: '3d' falls back to plain ----
+  {
+    const context = await newContext([1.3521, 103.8198], { noWebGL: true });
+    const page = await fresh(context);
+    const got = await page.evaluate(() => simulateAllLines('3d'));
+    ok('simulate: no WebGL, 3d falls back to plain', got === 'plain' && (await page.evaluate(() => !document.getElementById('unlockModal').classList.contains('hidden'))));
+    const flat = await page.evaluate(() => simulateAllLines('flat'));
+    ok('simulate: no WebGL, flat still shows', flat === 'flat' && (await page.evaluate(() => !document.getElementById('celebrateModal').classList.contains('hidden') && document.getElementById('unlockModal').classList.contains('hidden'))));
     await context.close();
   }
 

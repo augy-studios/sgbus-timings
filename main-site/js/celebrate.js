@@ -18,7 +18,8 @@
 // no three.js fetched (Augy, 27 October 2026). Without WebGL, or with Data Saver on, or if
 // three.js can't be had, the plain window (#unlockModal) says it instead.
 //
-// Window.Celebrate = { start() } → resolves to "scene" or "plain". Plain script: exports go
+// Window.Celebrate = { start({ as }) } → resolves to "scene", "flat" or "plain". The
+// console's simulateAllLines() (below) plays it to see how it looks. Plain script: exports go
 // on window.
 (function () {
   const THREE_URL = '/vendor/three-0.169.0/three.module.min.js';
@@ -286,11 +287,13 @@
     return 'plain';
   }
 
-  async function start() {
-    if (!$(ID)) return plain();
+  // `as` picks one whatever this phone is ("scene", "flat" or "plain"), for the console's
+  // preview below; the 3D one still needs WebGL.
+  async function start({ as } = {}) {
+    if (!$(ID) || as === 'plain') return plain();
     // Little memory: the flat celebration, with no three.js fetched.
-    if (low()) return flat();
-    if (!canRun()) return plain();
+    if (as === 'flat' || (!as && low())) return flat();
+    if (as === 'scene' ? !webgl() : !canRun()) return plain();
     let T;
     let net;
     try {
@@ -346,4 +349,96 @@
   else init();
 
   window.Celebrate = { start, prefetch, running: () => !!running, mode: () => (running ? (running.flat ? 'flat' : 'scene') : null) };
+
+  // ---------- simulateAllLines(), in the browser's console (help desk #13) ----------
+  //
+  // The celebration, as riding the last line plays it, to see how it looks: typed in the
+  // browser's console, or in chrome://inspect's for the Android app. A preview unless asked:
+  // no rides are saved and Your colours stays locked, so what's been ridden stays true.
+  //
+  //   simulateAllLines()                     this phone's own (3D, flat or plain), and the help
+  //   simulateAllLines('3d' | 'flat' | 'plain')   that one, whatever this phone is
+  //   simulateAllLines({ unlock: true })     Your colours unlocked too, as riding them does
+  //   simulateAllLines('undo')               locked again, if this unlocked them
+  //   simulateAllLines('help')               the help only
+  //
+  // Unlocking saves no rides: it sets what js/rides.js sets (UNLOCKED_KEY) and fires
+  // "rides:unlocked" for js/colours.js, and notes what was there before under SIM_KEY, which
+  // undo puts back. Undo never locks colours that rides unlocked. It's this browser's own
+  // storage and nothing else, as anything typed in its console is; no link, message or sync
+  // can call it, and nothing on the page shows it.
+  const UNLOCKED_KEY = 'sgbus_colours_unlocked'; // js/rides.js
+  const TOLD_KEY = 'sgbus_colours_told'; // js/colours.js
+  const COLOURS_KEY = 'sgbus_colours'; // js/colours.js
+  const SIM_KEY = 'sgbus_colours_simulated';
+  const AS = { '3d': 'scene', scene: 'scene', flat: 'flat', low: 'flat', plain: 'plain', nowebgl: 'plain' };
+  const HELP = "simulateAllLines() plays the every-line celebration as a preview (nothing saved). Options: '3d', 'flat' (low-memory phones) or 'plain' (no WebGL); { unlock: true, as: 'flat' } unlocks Your colours too; 'undo' locks them again; 'help' shows this.";
+  const store = {
+    get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+    put: (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* this visit only */ } },
+  };
+  const closeAll = () => ['celebrateModal', 'unlockModal'].forEach((m) => $(m) && !$(m).classList.contains('hidden') && window.closeModal(m));
+
+  function undo() {
+    let was;
+    try { was = JSON.parse(store.get(SIM_KEY) || 'null'); } catch { was = null; }
+    if (!was) {
+      console.log(window.RideCheck?.unlocked() ? 'Nothing to undo: Your colours were unlocked by riding every line, so they stay.' : 'Nothing to undo: Your colours are locked.');
+      return 'nothing';
+    }
+    store.put(SIM_KEY, null);
+    closeAll();
+    window.Confetti?.stop?.();
+    // Ridden for real since: unlocked, as it would have been anyway.
+    if (!window.RideCheck?.progress().left.length) {
+      console.log('Every line has been ridden since, so Your colours stay unlocked.');
+      return 'kept';
+    }
+    store.put(UNLOCKED_KEY, was.unlocked ?? null);
+    store.put(TOLD_KEY, was.told ?? null);
+    store.put(COLOURS_KEY, was.colours ?? null);
+    let back = null;
+    try { back = was.colours ? JSON.parse(was.colours) : null; } catch { /* the usual colours */ }
+    window.Colours?.paint(back);
+    window.closeModal?.('themeModal');
+    console.log('Undone: Your colours are locked again, and the usual colours are back.');
+    return 'undone';
+  }
+
+  async function simulateAllLines(opts) {
+    const word = typeof opts === 'string' ? opts.trim().toLowerCase() : null;
+    if (word === 'help' || word === '?') {
+      console.log(HELP);
+      return 'help';
+    }
+    if (word === 'undo') return undo();
+    const o = word != null ? { as: word } : opts && typeof opts === 'object' ? opts : {};
+    const as = o.as == null ? undefined : AS[String(o.as).toLowerCase()];
+    if (o.as != null && !as) {
+      console.log(`No celebration called "${o.as}". ${HELP}`);
+      return 'help';
+    }
+    if (opts === undefined) console.log(HELP);
+    if (as === 'scene' && !webgl()) console.warn('No WebGL in this browser, so the 3D celebration can\'t be drawn: the plain window instead.');
+    if (o.unlock) {
+      if (window.RideCheck?.unlocked()) {
+        console.log(store.get(SIM_KEY) ? 'Already unlocked by simulateAllLines(); simulateAllLines(\'undo\') locks them again.' : 'Already unlocked by riding every line.');
+      } else {
+        store.put(SIM_KEY, JSON.stringify({ at: Date.now(), unlocked: store.get(UNLOCKED_KEY), told: store.get(TOLD_KEY), colours: store.get(COLOURS_KEY) }));
+        store.put(UNLOCKED_KEY, String(Date.now()));
+        // Said here, so js/colours.js doesn't play it a second time.
+        store.put(TOLD_KEY, String(Date.now()));
+        window.dispatchEvent(new Event('rides:unlocked'));
+        console.log('Your colours are unlocked (no rides saved). simulateAllLines(\'undo\') locks them again.');
+      }
+    } else {
+      console.log('Preview: nothing saved, so Pick my colours opens Theme with Your colours still locked.');
+    }
+    closeAll();
+    stop();
+    window.Confetti?.stop?.();
+    return start({ as });
+  }
+
+  window.simulateAllLines = simulateAllLines;
 })();

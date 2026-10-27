@@ -1,13 +1,15 @@
 // Confetti, on your birthday (script.js, "Greeting"): a burst from the top of the screen that
 // falls and fades over a few seconds, drawn on a canvas over everything that taps go through.
 // Nothing with reduced motion asked for. burst({ colours, count, life }) for other occasions: the
-// flat celebration for every line ridden (js/celebrate.js) throws the lines' colours.
-// Plain script: exports go on window.
+// flat celebration for every line ridden (js/celebrate.js) throws the lines' colours. stop() takes
+// a burst away at once (the console's simulateAllLines(), js/celebrate.js). Plain script: exports
+// go on window.
 (function () {
   const COLOURS = ["#ff5d8f", "#ffd166", "#06d6a0", "#4cc9f0", "#9b5de5", "#f15bb5", "#00bbf9", "#fee440"];
   const COUNT = 160;
   const LIFE_MS = 4500;
   let running = null;
+  let tidy = null;
 
   function burst({ colours = COLOURS, count = COUNT, life = LIFE_MS } = {}) {
     if (running || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -28,6 +30,10 @@
     };
     size();
     window.addEventListener("resize", size);
+    tidy = () => {
+      window.removeEventListener("resize", size);
+      canvas.remove();
+    };
 
     // Thrown up and out from two points along the top, then falling, tumbling as they go.
     const bits = Array.from({ length: count }, (_, i) => {
@@ -83,11 +89,19 @@
         running = requestAnimationFrame(frame);
         return;
       }
-      window.removeEventListener("resize", size);
-      canvas.remove();
+      tidy();
+      tidy = null;
       running = null;
     });
   }
 
-  window.Confetti = { burst };
+  function stop() {
+    if (!running) return;
+    cancelAnimationFrame(running);
+    tidy?.();
+    tidy = null;
+    running = null;
+  }
+
+  window.Confetti = { burst, stop };
 })();
