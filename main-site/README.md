@@ -72,6 +72,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Navigate** gets you from any place to any other by bus and train: addresses, buildings, postal codes, stations, bus stops (by LTA's short forms too, as the stop search), Google Maps links, GPS coordinates (`1.35, 103.85`), plus codes (`6PH57RQ8+X2`, or `7RQ8+X2` in Singapore) or your location, at either end
 - A Google Maps link, full or short (`maps.app.goo.gl`), is read by `/api/places` (`api/_lib/gmaps.js`) for the place it points at: its pin where the link has one, otherwise its address looked up on OneMap. Things shared into the installed app (the manifest's `share_target`, `/?text=...&url=...`) go into **To**
 - Lists the best journey for every mix of buses and trains (up to four vehicles), not just the fastest, with OneMap's timetable-based time where it rides the same way and a warning on lines LTA reports disrupted
+- An end more than 900m from any stop or station is reached through the nearest ones up to 3km away, with a note saying how far the nearest stop is
 - Open one part by part, with live timings for every bus ride; save it to Favourites (Navs); **Share** sends its link, part filled in or not, with **Your location** sent as `here` so it's whoever opens it. The Bus only tab has the same **Share**
 - The router is `api/_nav/` over the bus routes and a vendored MRT/LRT network (`scripts/vendor-rail.mjs`, from cheeaun/sgraildata via mrtroute-game); the Telegram bot's `/nav` uses the same `/api/nav`
 
@@ -215,7 +216,7 @@ Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LT
 
 ### Checks
 
-From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English) and `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do).
+From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English), `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do), `node scripts/nav-far-end-test.mjs` (Navigate reaches places far from any stop; `LIVE=1` adds a trip on the real network), and `node scripts/layout-check-test.cjs` (phone layout with the Edge Tray open on both sides; needs Playwright).
 
 ## License
 
