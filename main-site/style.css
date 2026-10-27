@@ -11,6 +11,10 @@
 }
 
 html, body { height: 100%; }
+/* Nothing wider than the screen can widen the page, which a phone (and the Android app's
+   WebView) then zooms out to fit, everything with it (help desk #11). clip, not hidden: it
+   makes no scroll container, so the offline bar's position: sticky still works. */
+html, body { overflow-x: clip; }
 input, textarea { user-select: text; -webkit-user-select: text; }
 
 /* The attribute wins over any display a class sets, so toggling .hidden on a flex or
@@ -165,6 +169,7 @@ body {
     color: var(--ink);
     min-height: 100vh;
     overflow-x: hidden;
+    overflow-x: clip;
     transition: background-color 0.25s ease, color 0.25s ease;
 }
 
@@ -397,8 +402,9 @@ body.modal-open { overflow: hidden; }
     max-width: 1000px;
     margin: 0 auto;
     padding: 0.5rem 16px;
-    padding-right: var(--tray-pad-right);
-    padding-left: var(--tray-pad-left);
+    /* Level with the Edge Tray's arrow tab, so clear of it too (--tray-room-top). */
+    padding-right: var(--tray-pad-top-right);
+    padding-left: var(--tray-pad-top-left);
     /* Under the notch on a phone, where the bar is the topmost thing on screen. */
     padding-top: max(0.5rem, env(safe-area-inset-top));
 }
@@ -465,8 +471,8 @@ body.modal-open { overflow: hidden; }
     max-width: 1000px;
     margin: 0 auto;
     padding: 0.5rem 16px;
-    padding-right: var(--tray-pad-right);
-    padding-left: var(--tray-pad-left);
+    padding-right: var(--tray-pad-top-right);
+    padding-left: var(--tray-pad-top-left);
 }
 /* Under the notch when there's no update bar above it. */
 .disruption-bar:first-child .disruption-inner { padding-top: max(0.5rem, env(safe-area-inset-top)); }
@@ -497,8 +503,11 @@ body.modal-open { overflow: hidden; }
     min-width: 0;
     transition: padding-left var(--tray-time) var(--tray-ease), padding-right var(--tray-time) var(--tray-ease);
 }
-/* With the Edge Tray tucked away the page takes the full width, and only this line, level
-   with the tab, steps clear of it. Open, the page's padding already keeps it clear. */
+/* The page reaches the Edge Tray's buttons, open or tucked away, and only this line, level
+   with the arrow tab, steps clear of it (help desk #11): open, by what the tab and its gap
+   take beyond the page's edge (--tab-clear-open); tucked away, by the tab at the screen's edge. */
+:root:not([data-tray-closed]) .brand { padding-right: var(--tab-clear-open); }
+:root:not([data-tray-closed])[data-tray-side="left"] .brand { padding-right: 0; padding-left: var(--tab-clear-open); }
 :root[data-tray-closed] .brand { padding-right: var(--tab-clear); }
 :root[data-tray-closed][data-tray-side="left"] .brand { padding-right: 0; padding-left: var(--tab-clear); }
 
@@ -547,10 +556,11 @@ body.modal-open { overflow: hidden; }
 .subtitle {
     font-size: 0.8125rem;
     color: var(--muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    line-height: 1.35;
 }
+/* Its phrases (index.html), each kept whole: on a phone the line breaks between them, so
+   "Made with ♥ by Augy" is never cut off (help desk #11). */
+.subtitle > span { white-space: nowrap; }
 
 /* ===== The Edge Tray (sg-psi's tray) ===== */
 /* A column of glass buttons fixed at the top of the screen, at the right edge or, picked in
@@ -561,18 +571,30 @@ body.modal-open { overflow: hidden; }
     --hud-edge: max(16px, calc(env(safe-area-inset-right) + 16px));
     --hud-top: max(14px, calc(env(safe-area-inset-top) + 14px));
     --tray-tab: 24px;
-    /* What the page keeps clear beside it while it's open. Tucked away, only the tab is
-       left, floating over the page's edge, so the page takes the whole width. */
-    --tray-room: calc(var(--hud-edge) + var(--glass-btn) + 8px + var(--tray-tab) + 8px);
+    /* What the page keeps clear beside it while it's open: up to 8px short of the buttons,
+       not of the arrow tab beside them, which floats over the page's edge as it does tucked
+       away (help desk #11), so a phone's page isn't squeezed. Only what's level with the tab
+       at the top keeps clear of it too (--tray-room-top): the bars there, the greeting
+       (.brand) and the terminal's bar. Tucked away, only the tab is left, floating over the
+       page's edge, so the page takes the whole width. */
+    --tray-room: calc(var(--hud-edge) + var(--glass-btn) + 8px);
+    --tray-room-top: calc(var(--tray-room) + var(--tray-tab) + 18px);
     /* The page's side padding, and the bars' at the top: the tray's room on its side, less
        whatever margin the screen leaves the page there already (none on a phone, all it
        needs on a wide screen), and 16px on the other. */
-    --tray-pad: max(16px, calc(var(--tray-room) - max(0px, (100vw - 1000px) / 2)));
+    --tray-margin: max(0px, (100vw - 1000px) / 2);
+    --tray-pad: max(16px, calc(var(--tray-room) - var(--tray-margin)));
+    --tray-pad-top: max(16px, calc(var(--tray-room-top) - var(--tray-margin)));
+    /* How far the greeting steps in from the page's edge to clear the open tray's tab: from
+       where the page ends to where the tab's room ends, none on a wide screen. */
+    --tab-clear-open: calc(max(var(--tray-room-top), 16px + var(--tray-margin)) - max(var(--tray-room), 16px + var(--tray-margin)));
     /* How far the greeting, level with the tucked-away tab, steps in to clear it: the tab and
        a 10px gap, less the page's own 16px and any margin the screen leaves beside it. */
     --tab-clear: max(0px, calc(var(--tray-tab) + 10px - 16px - max(0px, (100vw - 1000px) / 2)));
     --tray-pad-right: var(--tray-pad);
     --tray-pad-left: 16px;
+    --tray-pad-top-right: var(--tray-pad-top);
+    --tray-pad-top-left: 16px;
     /* One pace for the tray, its buttons, its arrow and the page making room for it. */
     --tray-time: 0.34s;
     --tray-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -581,8 +603,10 @@ body.modal-open { overflow: hidden; }
     --hud-edge: max(16px, calc(env(safe-area-inset-left) + 16px));
     --tray-pad-right: 16px;
     --tray-pad-left: var(--tray-pad);
+    --tray-pad-top-right: 16px;
+    --tray-pad-top-left: var(--tray-pad-top);
 }
-:root[data-tray-closed] { --tray-room: 0px; }
+:root[data-tray-closed] { --tray-room: 0px; --tray-room-top: 0px; }
 /* The optional buttons turned off in Settings (script.js, setTrayExtra). */
 :root[data-tray-hide~="explorer"] [data-tray-extra="explorer"],
 :root[data-tray-hide~="simplygo"] [data-tray-extra="simplygo"],
@@ -1016,6 +1040,12 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .favListTabs::-webkit-scrollbar { display: none; }
 .favListTabs .tab { flex: none; white-space: nowrap; max-width: 14em; overflow: hidden; text-overflow: ellipsis; }
 .favListNew { flex: none; }
+/* On a narrow page (a phone with the Edge Tray out), the tabs take the row and New list goes
+   under them, rather than squeezing the tabs to a word (help desk #11). */
+@media (max-width: 520px) {
+    .favListBar { flex-wrap: wrap; }
+    .favListTabs { flex-basis: 100%; }
+}
 .favListNew .ico svg, .favListTools .ico svg { width: 15px; height: 15px; }
 .favListTools { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .favListTools [aria-pressed="true"] { background: var(--brand-fill); color: var(--on-brand); }
@@ -1060,7 +1090,20 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     align-items: center;
     gap: 6px;
     min-width: 0;
+    /* What doesn't fit is cut off here, never drawn under the cross (help desk #11). */
+    flex: 0 1 auto;
+    overflow: hidden;
 }
+.chip .code { flex-shrink: 0; }
+/* A stop's starred buses (script.js, chip's `buses`): kept whole, the stop's name giving way. */
+.chip .buses {
+    flex-shrink: 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+}
+.chip:hover .buses { color: var(--on-brand); }
 
 .chip:hover {
     transform: translateY(-1px);
@@ -1077,6 +1120,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     font-size: 0.8125rem;
     color: var(--muted-strong);
     max-width: 180px;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1096,6 +1140,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     font-size: 0.75rem;
     transition: background 0.12s, color 0.12s;
     flex-shrink: 0;
+    margin-left: auto;
 }
 
 .chip .remove:hover {
@@ -1141,6 +1186,11 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .incomingBuses {
+    /* The containing block of each bus's words for a screen reader (.sr, absolute), so they
+       scroll with the row. Without it they hang off the page's right edge by the row's length
+       at a stop with many buses (17179's nine made the page 611px wide), and a phone, or the
+       Android app, zoomed the whole page out to fit (help desk #11). */
+    position: relative;
     display: flex;
     gap: 8px;
     overflow-x: auto;
@@ -1225,12 +1275,15 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 /* ===== Services Grid ===== */
 .services {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
+    /* minmax(0, 1fr), not 1fr: a row with something wide in it can't widen the grid past the
+       card (help desk #11). */
+    grid-template-columns: repeat(12, minmax(0, 1fr));
     gap: 10px;
 }
 
 .svc {
     grid-column: span 12;
+    min-width: 0;
     border: 1px solid var(--surface-border);
     border-radius: 14px;
     padding: 12px;
@@ -1275,6 +1328,7 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 
 .etaWrap {
+    min-width: 0;
     display: flex;
     gap: 8px;
     align-items: flex-start;
@@ -2382,6 +2436,8 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 
 /* Read by a screen reader, not shown: clipped in place rather than moved off the screen, which
    TalkBack's explore by touch can scroll after (help desk #6). */
+/* Absolute, so it takes no room. Inside anything that scrolls sideways, that scroller needs
+   position: relative, or this hangs past it and widens the page (.incomingBuses). */
 .sr {
     position: absolute;
     width: 1px;
@@ -3586,8 +3642,11 @@ body.touring { overflow: hidden; }
 .terminal {
     --term-right: var(--tray-room);
     --term-left: 0px;
-    --term-bar-right: calc(8px + var(--term-right));
-    --term-bar-left: calc(var(--term-side) + var(--term-left));
+    /* The bar, level with the tray's arrow tab, keeps clear of that too (help desk #11). */
+    --term-right-top: var(--tray-room-top);
+    --term-left-top: 0px;
+    --term-bar-right: calc(8px + var(--term-right-top));
+    --term-bar-left: calc(var(--term-side) + var(--term-left-top));
     --term-side: 14px;
     --term-bg: #0d1117;
     --term-bar: #161b22;
@@ -3607,7 +3666,7 @@ body.touring { overflow: hidden; }
    printed can be selected and copied, as in a terminal. */
 .terminal, .terminal * { font-family: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
 .termScreen, .termScreen * { -webkit-user-select: text; user-select: text; }
-:root[data-tray-side="left"] .terminal { --term-right: 0px; --term-left: var(--tray-room); }
+:root[data-tray-side="left"] .terminal { --term-right: 0px; --term-left: var(--tray-room); --term-right-top: 0px; --term-left-top: var(--tray-room-top); }
 /* The tab and a 10px gap, clear of the bar's Close button (or its title, on the left). */
 :root[data-tray-closed] .terminal { --term-bar-right: calc(var(--tray-tab) + 10px); }
 :root[data-tray-closed][data-tray-side="left"] .terminal {

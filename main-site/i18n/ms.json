@@ -453,5 +453,8 @@
   "unlock.go": "Pilih warna saya",
   "unlock.later": "Nanti",
   "unlock.text": "Anda telah menaiki setiap laluan MRT dan LRT, jadi anda telah membuka satu rahsia: warna anda sendiri untuk aplikasi ini. Pilih warnanya dalam Tema.",
-  "unlock.title": "Semua laluan sudah dinaiki!"
+  "unlock.title": "Semua laluan sudah dinaiki!",
+  "nav.farFrom": "Perhentian bas terdekat {d} dari tempat anda bermula",
+  "nav.farTo": "Perhentian bas terdekat {d} dari destinasi anda",
+  "stop.dist.noGps": "tiada GPS"
 }

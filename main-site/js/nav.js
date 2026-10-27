@@ -831,6 +831,15 @@ function navMixText(o) {
   return `${changes === 0 ? I18n.t('nav.noChange', 'No change') : changes === 1 ? I18n.t('nav.oneChange', '1 change') : I18n.t('nav.changes', '{n} changes', { n: changes })} · ${I18n.t('nav.walkDist', '{d} walk', { d: formatDistance(walkMetres(o)) })}`;
 }
 
+// A start or end with no stop or station within a walk (js/nav-core/router.js, `far`, help desk
+// #11): how far it is to the nearest, so the long walk in the way isn't a surprise.
+function farNotes(o) {
+  const out = [];
+  if (o.far?.from != null) out.push(I18n.t('nav.farFrom', 'The nearest stop is {d} from where you’re starting', { d: formatDistance(o.far.from) }));
+  if (o.far?.to != null) out.push(I18n.t('nav.farTo', 'The nearest stop is {d} from where you’re going', { d: formatDistance(o.far.to) }));
+  return out;
+}
+
 function navOptionItem(o, i) {
   // The rides in order, with a pin where the stop on the way comes.
   const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} Walk</span>`
@@ -846,6 +855,7 @@ function navOptionItem(o, i) {
     `<span class="journeyMeta">${escapeHtml(lead)}</span>` +
     `<span class="journeyDetail">${escapeHtml(detail)}</span>` +
     (o.disrupted ? `<span class="journeyWarn">${ico('alert')} A line on this journey has a disruption</span>` : '') +
+    farNotes(o).map((t) => `<span class="journeyWarn">${ico('walk')} ${escapeHtml(t)}</span>`).join('') +
     (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} Too late: you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}</span>` : '') +
     o.legs.filter((l) => l.lastBus).map((l) => `<span class="journeyWarn">${ico('alert')} Last ${escapeHtml(l.route)} from ${escapeHtml(l.from?.name || 'its stop')} at ${escapeHtml(l.lastBus)}</span>`).join('') +
     // Why it's slower, in a line; tapped, the way's own page has it on the map.
@@ -885,6 +895,7 @@ async function renderNavOption(o) {
     `</div>` +
     (o.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
     `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>` +
+    farNotes(o).map((t) => `<p class="journeyWarn">${ico('walk')} ${escapeHtml(t)}.</p>`).join('') +
     (nav.when
       ? navTooLate(o)
         ? `<p class="journeyWarn">${ico('alert')} To arrive by ${escapeHtml(When.clock(When.atToMs(nav.when.at)))} you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}.</p>`

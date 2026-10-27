@@ -269,7 +269,8 @@ function syncMainButtons() {
 
 // ----------- Helpers -----------
 function msToMins(ms) {
-    if (ms == null) return '-';
+    // No time (LTA's empty third bus) or not a number: a dash, never "NaNs" (help desk #11).
+    if (ms == null || ms === '' || !Number.isFinite(Number(ms))) return '-';
     const sec = Math.max(0, Math.round(ms / 1000));
     const m = Math.floor(sec / 60), s = sec % 60;
     return m > 0 ? (m > 1 ? tr('time.mins', '{m} mins', { m }) : tr('time.min', '{m} min', { m })) + (s ? ` ${tr('time.secs', '{s}s', { s })}` : '') : tr('time.secs', '{s}s', { s });
@@ -556,11 +557,14 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
 // ----------- Favourites -----------
 const removeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/></svg>';
 
-function chip(openAttr, removeAttr, code, name, title, removeLabel = 'Remove from favourites') {
+// `buses`, a stop's starred buses ("183, 188"), go after its name and are kept whole, the name
+// cut short first, so the numbers always show (help desk #11).
+function chip(openAttr, removeAttr, code, name, title, removeLabel = 'Remove from favourites', buses = '') {
     return `<span class="chip">` +
         `<button type="button" class="chipMain" ${openAttr} title="${escapeHtml(title)}">` +
         (code ? `<span class="code">${escapeHtml(code)}</span>` : '') +
         (name ? `<span class="name">${escapeHtml(name)}</span>` : '') +
+        (buses ? `<span class="buses">· ${escapeHtml(buses)}</span>` : '') +
         `</button>` +
         `<button type="button" class="remove" ${removeAttr} title="${escapeHtml(removeLabel)}" aria-label="Remove ${escapeHtml(title)} from ${escapeHtml(removeLabel.replace(/^Remove from /, ''))}">${removeIcon}</button>` +
         `</span>`;
@@ -729,11 +733,10 @@ function renderFavs() {
     // A stop with its starred buses: tapped, its timings for just those.
     $('#favStopBusChips').innerHTML = atStops.map(({ code, buses: nos }) => {
         const name = nameOf(code) || 'Bus stop';
-        const label = `${name} · ${nos.join(', ')}`;
         const keys = nos.map(no => favKey.stopBus(code, no)).join(' ');
         return chip(`data-fav-stopbus="${escapeHtml(code)}" data-buses="${escapeHtml(nos.join(','))}"`,
             list ? `data-list-out="${escapeHtml(keys)}"` : `data-remove-stopbus="${escapeHtml(code)}"`,
-            code, label, `${nos.length === 1 ? `Bus ${nos[0]}` : `Buses ${listText(nos)}`} at ${name} (${code})`, out);
+            code, name, `${nos.length === 1 ? `Bus ${nos[0]}` : `Buses ${listText(nos)}`} at ${name} (${code})`, out, nos.join(', '));
     }).join('');
 
     $('#favRouteChips').innerHTML = routes.map((r, i) => {
@@ -1197,7 +1200,9 @@ function renderArrivals() {
     const stopLng = stopsIndex?.[code]?.lng ?? null;
 
     const piece = (bus, svcNo) => {
-        if (!bus) return `<div class="eta"><strong>-</strong></div>`;
+        // LTA sends an empty slot for a bus with no third (or second) one coming: no time, no
+        // load, a "Single" deck. A dash, as with none at all (help desk #11).
+        if (!bus || bus.eta_ms == null) return `<div class="eta"><strong>-</strong></div>`;
         const mins  = msToMins(bus.eta_ms);
         const cls   = loadTextClass(bus.load);
         const haveCoords = bus.lat != null && bus.lng != null && stopLat != null && stopLng != null;
@@ -1211,7 +1216,8 @@ function renderArrivals() {
         const deck  = `<span class="badge">${escapeHtml(bus.deck || '')}</span>`;
         const distBadge = haveCoords
             ? `<span class="badge badge-dist" title="${escapeHtml(along != null ? tr('stop.dist.along', 'Along its route') : tr('stop.dist.straight', 'In a straight line'))}">${dist}</span>`
-            : `<span class="badge badge-dist badge-dist-na" role="img" aria-label="${escapeHtml(tr('stop.dist.unknown', 'distance not known'))}">~ &#8734;m</span>`;
+            // LTA has no position for a bus it times by the schedule (help desk #11: "~ ∞m" read as a bug).
+            : `<span class="badge badge-dist badge-dist-na" role="img" aria-label="${escapeHtml(tr('stop.dist.unknown', 'distance not known'))}">${escapeHtml(tr('stop.dist.noGps', 'no GPS'))}</span>`;
         const badges = `<div class="badges">${wheelchair}${deck}${distBadge}</div>`;
         // Gone before you could walk here (js/make-it.js): greyed.
         const late = window.MakeIt?.tooSoon(code, bus.eta_ms) ? ' tooSoon' : '';

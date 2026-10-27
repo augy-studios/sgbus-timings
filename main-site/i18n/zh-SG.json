@@ -453,5 +453,8 @@
   "unlock.go": "挑选我的颜色",
   "unlock.later": "以后再说",
   "unlock.text": "你已搭遍所有 MRT 和 LRT 线路，解锁了一个秘密：为应用设定你自己的颜色。到“主题”中挑选吧。",
-  "unlock.title": "所有线路都搭过了！"
+  "unlock.title": "所有线路都搭过了！",
+  "nav.farFrom": "离出发地最近的巴士站有 {d}",
+  "nav.farTo": "离目的地最近的巴士站有 {d}",
+  "stop.dist.noGps": "无GPS"
 }

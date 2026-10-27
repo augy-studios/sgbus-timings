@@ -45,6 +45,8 @@ function join(a, b, via) {
     via: { leg: first.length, minutes: a.minutes },
   };
   if (a.walkOnly && b.walkOnly) option.walkOnly = true;
+  // Where the start or the end is a long walk from any stop (router.js, `far`).
+  if (a.far?.from != null || b.far?.to != null) option.far = { ...(a.far?.from != null && { from: a.far.from }), ...(b.far?.to != null && { to: b.far.to }) };
   if (a.source === "onemap" || b.source === "onemap") option.source = "onemap";
   // OneMap's time for the whole of it, where it has one for each half that rides (a half
   // walked counts as walked).
