@@ -385,6 +385,8 @@
     mode = null;
     walk = null;
     followData = null;
+    cardPick = null;
+    leftFrom = null;
     if (location.hash.startsWith('#map/') || location.hash.startsWith('#traffic/')) history.replaceState(history.state, '', location.pathname);
     if (pushed && !fromHistory) {
       pushed = false;
@@ -844,8 +846,16 @@
     return best ? stationPick(best) : null;
   }
 
+  // The stop or station whose card is open, and the one Explorer was left from by its card's
+  // Show bus timings or Directions (help desk #13). Explorer opens on that one again, its card
+  // and all, so coming back from Bus timings or Navigate puts you where you were. Closing
+  // Explorer yourself, or leaving it any other way, forgets it.
+  let cardPick = null;
+  let leftFrom = null;
+
   function openCard(pick) {
     if (!pick) return;
+    cardPick = pick;
     MapCard.open(pick, { panel: $('#mapPanel'), ink, onDirections: directionsTo, onTimings: timingsAt });
   }
 
@@ -860,10 +870,17 @@
     close();
   }
 
+  // Leaving by a card: Explorer keeps its stop or station for next time (close() forgets it).
+  function leaveBy(then) {
+    const from = mode === 'explore' ? cardPick : null;
+    afterClose(then);
+    leftFrom = from;
+  }
+
   // A card's Directions: Navigate's Bus and train, from where you are.
-  const directionsTo = (to) => afterClose(() => openNavFromHere(to));
+  const directionsTo = (to) => leaveBy(() => openNavFromHere(to));
   // A stop card's Show bus timings: the stop's timings on Bus timings, as a search opens them.
-  const timingsAt = (code, service) => afterClose(() => loadStop(code, { service, scroll: true }));
+  const timingsAt = (code, service) => leaveBy(() => loadStop(code, { service, scroll: true }));
 
   // Explorer: no way to follow, just you, every stop and every station.
   async function explore() {
@@ -887,6 +904,14 @@
     }
     for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), colors: stationColours(s.codes), pick: stationPick(s) });
     ink.pois(dots);
+    // Back from Bus timings or Navigate: on the stop or station it was left from, card open.
+    const back = leftFrom;
+    const at = back?.kind === 'station' ? [back.lat, back.lng] : back?.kind === 'stop' && index?.[back.code]?.lat != null ? [index[back.code].lat, index[back.code].lng] : null;
+    if (at) {
+      setFollowing(false);
+      ink.jump(at, EXPLORE_ZOOM + 1);
+      openCard(back);
+    }
     // Its tour, the first time (js/tour.js), the dots round you lit by #mapSpot.
     window.Tour?.first('explorer');
   }
