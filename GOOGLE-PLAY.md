@@ -1,7 +1,10 @@
 # Putting SG Bus Timings on Google Play
 
-A step-by-step guide for publishing the Android app and the Wear OS watch app on Google Play,
-written for this repo as it stands on 2.2.7, ahead of the 3.0.0 release.
+A step-by-step guide for publishing the Android app on Google Play, written for this repo as it
+stands on 2.2.7, ahead of the 3.0.0 release.
+
+**Phone app only.** Augy has decided the Wear OS watch app stays off Google Play for now. It is
+built and shipped the way it is today, and section 8 says what adding it later would take.
 
 Written 28 October 2026 (Help desk #13). Google changes its Play rules often, so every rule below
 names the official page it came from; re-check a page if the date here is far behind you.
@@ -26,8 +29,8 @@ code changes in sections 4, 6 and 7 are not in the repo.
 5. [Step 1: Bump everything to 3.0.0](#5-step-1-bump-everything-to-300)
 6. [Step 2: SDK levels and what Play will not allow](#6-step-2-sdk-levels-and-what-play-will-not-allow)
 7. [Step 3: Play updates instead of GitHub updates](#7-step-3-play-updates-instead-of-github-updates)
-8. [Step 4: The Wear OS app](#8-step-4-the-wear-os-app)
-9. [Step 5: Build the .aab files (Windows)](#9-step-5-build-the-aab-files-windows)
+8. [Step 4: The Wear OS app (left out for now)](#8-step-4-the-wear-os-app-left-out-for-now)
+9. [Step 5: Build the .aab (Windows)](#9-step-5-build-the-aab-windows)
 10. [Step 6: Developer account](#10-step-6-developer-account)
 11. [Step 7: Create the app and fill in Play Console](#11-step-7-create-the-app-and-fill-in-play-console)
 12. [Step 8: Testing tracks, then production](#12-step-8-testing-tracks-then-production)
@@ -40,9 +43,8 @@ code changes in sections 4, 6 and 7 are not in the repo.
 
 ## 1. The short version
 
-- The phone app already targets **API 36** and compiles against 36, and the watch app targets 36
-  too. Play requires 36 for new phone apps and 35 for Wear OS (from 31 August 2026), so the SDK
-  levels need no change.
+- The phone app already targets **API 36** and compiles against 36. Play requires 36 for new
+  phone apps (from 31 August 2026), so the SDK level needs no change.
 - Google Play only takes an **Android App Bundle (.aab)**, not the APK that the GitHub releases use.
 - The app must be signed through **Play App Signing**. The big choice is whether Play signs with
   your **existing key** (so people who installed the GitHub APK can update from Play) or a new
@@ -50,8 +52,7 @@ code changes in sections 4, 6 and 7 are not in the repo.
 - The GitHub updater (`UpdateActivity`) and four permissions Play does not allow have to be left out
   of the Play build. Do that with a **`play` build flavor** that keeps the same `applicationId`.
   See sections 6 and 7.
-- The watch app's `versionCode` must be different from the phone's. Today they are identical, which
-  Play will not accept. See section 8.
+- The watch app is **not** going on Play for now. It keeps shipping as a GitHub APK. See section 8.
 - A personal developer account made after 13 November 2023 needs a **closed test with at least 12
   testers opted in for 14 days in a row** before it can apply for production. See section 10.
 
@@ -64,19 +65,17 @@ Everything here was read from the repo.
 | Thing | Value | Where |
 |---|---|---|
 | Phone app id | `org.uwuapps.sgbus` | `android/capacitor.config.json`, `android/native/app/build.gradle` (`applicationId`, `namespace`) |
-| Watch app id | `org.uwuapps.sgbus` (the same; its code namespace is `org.uwuapps.sgbus.wear`) | `android/native/wear/build.gradle` |
 | applicationIdSuffix / flavors | None. One variant, `release` | `android/native/app/build.gradle` |
 | Version | `versionName "2.2.7"`, `versionCode 23` | `android/native/app/build.gradle` |
-| Watch version | Read from the phone's `build.gradle`, so also 2.2.7 and 23 | `android/native/wear/build.gradle` |
-| minSdk | 24 (Android 7) phone, 30 (Wear OS 3) watch | `android/native/variables.gradle`, `wear/build.gradle` |
-| compileSdk / targetSdk | 36 / 36 for both | `android/native/variables.gradle` |
+| minSdk | 24 (Android 7) | `android/native/variables.gradle` |
+| compileSdk / targetSdk | 36 / 36 | `android/native/variables.gradle` |
 | Build tools | Android Gradle Plugin 8.13.0, Capacitor 8.5.3, JDK 21+ | `android/native/build.gradle`, `android/package.json` |
 | What the app is | The live site `https://sgbus.uwuapps.org` in Capacitor's WebView, plus native plugins | `capacitor.config.json` (`server.url`) |
 | Signing | Release APKs signed with `android/android.keystore`, read through `android/keystore.properties`. Both are kept out of git, and are not opened or copied in this guide | `build.gradle` (`signingConfigs.release`), `android/.gitignore` |
 | Signing key fingerprint (public) | SHA-256 `4E:D5:3F:F1:...:76:CB:44:EB`; `build-apk.ps1` refuses any other key | `android/README.md` |
 | Push notifications | Firebase Cloud Messaging; `google-services.json` kept out of git | `android/FIREBASE-SETUP.md` |
 | How people get it today | APK from GitHub Releases (tag `android-v<version>`); the app updates itself from there | `release/README.md`, `UpdateActivity.java`, `main-site/js/app-update.js`, `main-site/api/app-release.js` |
-| Watch app today | `sg-bus-timings-<version>-watch.apk`, installed by hand over `adb` Wi-Fi debugging | `docs-site/content/web/wear-os.md` |
+| Watch app today | Not on Play, and stays off it for now. `sg-bus-timings-<version>-watch.apk`, attached to the GitHub release and installed by hand over `adb` Wi-Fi debugging | `docs-site/content/web/wear-os.md` |
 | Build | `powershell -ExecutionPolicy Bypass -File android\build-apk.ps1` builds both signed APKs into `release/<version>/` | `android/build-apk.ps1` |
 | Languages | English, Chinese (`zh-SG`), Malay (`ms`), Tamil (`ta`) in the site; the native app's own few strings are English only | `main-site/i18n/` |
 | Ads | None | `docs-site/content/help/privacy.md` |
@@ -105,7 +104,7 @@ Two more facts matter for Play:
 | D5 | **Background location ("Allow all the time")**: keep it in the Play build or drop it? | **Drop it from the first Play release.** Google only approves it for core features, and calls "convenience" a minimal benefit. It is used only by "Timings near a stop" (geofences when the app is closed); trips run as a foreground service and do not need it. Add it later, with a video, if you want that reminder on Play. See section 6 |
 | D6 | **Exact alarms** (`USE_EXACT_ALARM`) for Last bus and Time to leave | **Leave it out of the Play build.** Play allows it only for alarm and calendar apps. The code already falls back to a slightly inexact alarm without it (`LastBus.java`, `Routines.java`, `LeaveTime.java`). Optionally ask for `SCHEDULE_EXACT_ALARM` instead (the user grants it) |
 | D7 | **Who is the app for?** (target audience) | "13 and over" or "18 and over", not children. A kids' target brings extra Families-policy rules |
-| D8 | **The watch app**: ship it with the first release, or later? | With the first release is possible, but it adds a second review. A phone-only first release is lower risk; add the watch in 3.0.1 once the phone app is live. Either way fix its `versionCode` first (section 8) |
+| D8 | **The watch app**: ship it on Play with the first release, or later? | **Decided by Augy: not on Play for now.** Phone app only. The watch stays a GitHub APK (section 8) |
 | D9 | **Same version series for GitHub and Play?** | Yes: both 3.0.0, same `versionCode` unless a Play upload needs a retry (section 5) |
 
 ---
@@ -141,7 +140,7 @@ Here is what that means for THIS app.
 | Play build over a GitHub-APK install | **Refused.** Same package, different key. Uninstall first | **Allowed.** Play offers it as an update | Installs beside it as a second app |
 | GitHub APK over a Play install | Refused | Allowed | Separate app |
 | Local data (favourites, places, settings) | Lost on uninstall unless moved first | **Kept** | Not shared; copy by hand |
-| Watch app pairing | Works (both signed by Play) | Works | Needs the new package on both |
+| Watch app pairing (the GitHub watch APK, not on Play) | **Breaks.** The watch APK stays signed with the existing key, and the Wearable Data Layer needs the same package and key on both | Works | Needs the new package on both |
 | Work needed | Add Google's fingerprint to `assetlinks.json` | Nothing extra; `assetlinks.json` already lists the key | New Firebase app + `google-services.json`, new `assetlinks.json` entry, change ~12 places that hard-code the name, a second app for users to confuse |
 
 ### Recommendation
@@ -211,8 +210,7 @@ Under Option 2 none of this is needed; it is the fallback if the key plan change
 
 | File | Change |
 |---|---|
-| `android/native/app/build.gradle` | `versionName "3.0.0"` and `versionCode 24` (or higher). **This is the one that matters on Play.** The watch reads both from here |
-| `android/native/wear/build.gradle` | Not edited for 3.0.0, but see section 8: its `versionCode` has to stop equalling the phone's |
+| `android/native/app/build.gradle` | `versionName "3.0.0"` and `versionCode 24` (or higher). **This is the one that matters on Play.** The GitHub watch APK reads both from here, so it follows by itself |
 | `desktop/package.json` | `"version": "3.0.0"` |
 | `desktop/package-lock.json` | `"version"` at lines 3 and 9 (`npm install --package-lock-only` does it) |
 | `cli/package.json` | `"version": "3.0.0"`. `cli/build.mjs` stops the build if it differs from `desktop/package.json` |
@@ -224,8 +222,7 @@ Under Option 2 none of this is needed; it is the fallback if the key plan change
 Docs that quote the old number (update them in the same commit, for a tidy release):
 `android/README.md`, `cli/README.md` (the `.deb` file name in the install lines),
 `desktop/LINUX-BUILD.md` (examples), `docs-site/content/web/linux-cli.md`,
-`docs-site/content/web/wear-os.md` (says the watch app "isn't on Google Play" and names the
-2.1.0 APK; both change once the watch is on Play), `main-site/README.md` and `main-site/PATCHNOTES.md` (a 3.0.0 entry).
+`main-site/README.md` and `main-site/PATCHNOTES.md` (a 3.0.0 entry).
 
 Version codes on Play:
 
@@ -252,7 +249,6 @@ Google's rule ([target API level page][target]), current as of this guide:
 | | New apps and updates | This app |
 |---|---|---|
 | Phone and tablet | **API 36** or higher, from 31 August 2026 | `targetSdk 36`, `compileSdk 36` |
-| Wear OS | **API 35** or higher, from 31 August 2026 | `targetSdk 36` |
 
 So no SDK change is needed. The 2.x releases already ran with the API 36 behaviour changes that Android
 documents (edge-to-edge always on, predictive back, large-screen rotation limits). `capacitor.config.json`
@@ -528,60 +524,69 @@ keep the package name and the key the same.
 
 ---
 
-## 8. Step 4: The Wear OS app
+## 8. Step 4: The Wear OS app (left out for now)
 
-The watch app (`android/native/wear/`) is a small native Java app: a **Bus timings tile** and a screen
-listing your favourite stops. Favourite stops come from the phone app over the Wearable Data
-Layer (`WearSync.java` to `FavouritesListener`).
+Augy has decided: **the watch app is not going on Google Play for now.** Nothing in the other
+sections depends on it, and the Play build is the phone app alone.
 
-### What it already has right
+The watch app (`android/native/wear/`) is a small native Java app: a **Bus timings tile** and a
+screen listing your favourite stops. Favourite stops come from the phone app over the Wearable
+Data Layer (`WearSync.java` to `FavouritesListener`).
 
-- `uses-feature android.hardware.type.watch` without `required="false"`, as Google requires.
-- `com.google.android.wearable.standalone` set to `true`: it fetches timings itself and only the
-  favourites come from the phone.
-- Same package name as the phone app, which Google wants for a shared listing
-  ([Wear OS packaging][wear]).
-- `targetSdk 36` (Wear OS needs 35 or higher), `minSdk 30` (Wear OS 3).
-- Only the permissions it needs: internet, network state, coarse location.
+### How it ships now
 
-### What has to change
+Unchanged:
 
-1. **A different `versionCode` from the phone.** Google: "a watch APK's version code must be unique
-   across all form factors" ([Wear OS packaging][wear]). `wear/build.gradle` sets
-   `versionCode phoneVersionCode`, so both would be 24, and Play would refuse the second upload.
-   [Dev] Make the watch's code the phone's plus a fixed offset, for example
-   `versionCode phoneVersionCode + 1000000`, and keep `versionName` from the phone. It stays
-   below Play's limit of 2,100,000,000. Google suggests a scheme that is independent of the phone's;
-   any scheme works if it is always higher than the last watch upload.
-2. **A Wear OS listing.** The watch app is a **form factor** of the same Play app, not a separate
-   one: in Play Console, Test and release, Advanced settings, Form factors tab, Add form factor,
-   Wear OS ([form factor tracks][formfactor]). Wear gets its own tracks, testers and review.
-3. **The listing must say "Wear OS"** and have **at least one screenshot taken on a Wear OS
-   device** (square, at least 384 x 384 pixels, with no device frame), or the app is rejected
-   ([Wear OS packaging][wear], [asset specs][assets]). Mention the tile in the description.
-4. **Round-screen check.** Reviewers reject layouts that break on round watches; test on a round
-   emulator and, if possible, a real watch.
-5. **Launch order.** Complete a closed test for Wear OS first, then opt in under Advanced settings
-   and agree to the review policy, then start the rollout.
-6. After it is live, the guide page `docs-site/content/web/wear-os.md` can drop its `adb`
-   instructions: it says the watch app "isn't on Google Play". Keep them for people without Play.
+- `android/build-apk.ps1` builds it with the phone app and writes
+  `release/<version>/sg-bus-timings-<version>-watch.apk`.
+- It is attached to the GitHub release (`release/README.md`) and installed by hand over `adb`
+  Wi-Fi debugging (`docs-site/content/web/wear-os.md`, which says it "isn't on Google Play").
+  That page stays as it is.
+- It has the phone's application id (`org.uwuapps.sgbus`), `versionName` and `versionCode`, read
+  from `android/native/app/build.gradle`, and is signed with the same key
+  (`android/native/wear/build.gradle`). It will be 3.0.0 with the phone app.
 
-Everything above is optional on day one (decision D8); the phone app has no dependency on the watch.
+### What to watch for
 
-Build the watch bundle with section 9's command. The Wear form factor takes the bundle in its
-own Wear OS track.
+- **Keep the signing key the same (Option 2, section 4).** The Data Layer pairs the phone and
+  watch apps only if both have the same package and key. If the Play phone app were signed with a
+  different key (Option 1), the GitHub watch APK would stop receiving favourites.
+- **Keep `build-apk.ps1` building the watch.** It runs `assembleRelease` over the whole project.
+  When it is changed for the flavors (section 9), it needs to build the watch APK as well as
+  `assembleGithubRelease`, for example `assembleGithubRelease :wear:assembleRelease`. The watch
+  has no flavors.
+
+### What adding it later would take
+
+None of this is done or needed now. From Google's [Wear OS packaging][wear] and
+[form factor tracks][formfactor] pages:
+
+1. A `versionCode` that differs from the phone's. A watch APK's code must be unique across all
+   form factors, and `wear/build.gradle` sets it equal to the phone's today. Something like the
+   phone's plus a fixed offset would do.
+2. A Wear OS form factor on the same Play app (Test and release, Advanced settings, Form factors
+   tab), with its own tracks, testers and review, and a `wear-release.aab` built with
+   `:wear:bundleRelease`, signed with the upload key.
+3. A listing that says "Wear OS", with at least one square screenshot (at least 384 x 384 pixels,
+   no device frame) taken on a Wear OS device, and a mention of the tile in the description.
+4. A check on a round emulator, and a real watch if possible.
+5. Updating `docs-site/content/web/wear-os.md` (it says the app isn't on Google Play).
+
+The watch app targets API 36 and Play asks Wear OS apps for 35 or higher, so the target level
+would already be met.
 
 ---
 
-## 9. Step 5: Build the .aab files (Windows)
+## 9. Step 5: Build the .aab (Windows)
 
 Play takes bundles, not APKs: "Starting August 2021, new apps are required to publish with the Android
 App Bundle" and bundles require Play App Signing ([publishing with bundles][aab]).
 
 [Dev] first change `android/build-apk.ps1` (or add `build-aab.ps1` beside it) for the flavors:
 
-- `assembleRelease` becomes `assembleGithubRelease`, and the APK path becomes
-  `native\app\build\outputs\apk\github\release\app-github-release.apk`. Without that edit, the old
+- `assembleRelease` becomes `assembleGithubRelease :wear:assembleRelease`, and the phone APK
+  path becomes `native\app\build\outputs\apk\github\release\app-github-release.apk`. The watch
+  APK path and the `-watch` file stay as they are (section 8). Without that edit, the old
   script builds both flavors and fails to find its file.
 - A new `build-aab.ps1` runs Gradle for the bundles and checks the **upload** key's fingerprint,
   not the old SHA-256 pinned in `build-apk.ps1`.
@@ -596,14 +601,13 @@ npx cap sync android
 
 ```powershell
 cd native
-.\gradlew.bat clean :app:bundlePlayRelease :wear:bundleRelease --no-daemon
+.\gradlew.bat clean :app:bundlePlayRelease --no-daemon
 ```
 
-The files appear at:
+The file appears at:
 
 ```text
 android\native\app\build\outputs\bundle\playRelease\app-play-release.aab
-android\native\wear\build\outputs\bundle\release\wear-release.aab
 ```
 
 Signing:
@@ -618,7 +622,7 @@ Signing:
   prints the SHA-256 of the key that signed it: it should be the upload key's, not the old one.
 - Check for native libraries (16 KB rule): rename a copy to `.zip` and look for `.so` files under
   `base/lib/`; there should be none, or use Android Studio's Analyze APK/bundle.
-- File names: keep `release/3.0.0/sg-bus-timings-3.0.0.aab` etc. for your own records. `.aab`
+- File name: keep `release/3.0.0/sg-bus-timings-3.0.0.aab` for your own records. `.aab`
   files are already ignored by git (`android/.gitignore`), so they are not committed. They are not
   the thing to put on GitHub: GitHub gets the `github` flavor's APK.
 
@@ -686,12 +690,11 @@ Size: an app of a few MB is far below Play's limits.
 |---|---|---|
 | App name | 30 characters | `SG Bus Timings` |
 | Short description | 80 characters | e.g. "Live bus arrival timings for every bus stop in Singapore" |
-| Full description | 4,000 characters | Describe the real features from `android/README.md`: widget, Get Off Alert, trip following, reminders, NFC card value, watch tile. Say what it needs. Include the background-location wording only if you keep that feature. Repeated keywords can get the app suspended |
+| Full description | 4,000 characters | Describe the real features from `android/README.md`: widget, Get Off Alert, trip following, reminders, NFC card value. Leave out the watch app, which is not on Play. Say what it needs. Include the background-location wording only if you keep that feature. Repeated keywords can get the app suspended |
 | App icon | 512 x 512 px, 32-bit PNG with alpha, up to 1024 KB | Make from the launcher icon (`res/mipmap-*`), not scaled up from small PNGs |
 | Feature graphic | 1024 x 500 px, JPEG or 24-bit PNG, **no alpha** | Required |
 | Phone screenshots | 2 to 8 per device type, JPEG or 24-bit PNG, 320 to 3840 px per side | To be considered for recommendations, at least 4 at 1080 px or larger (1080x1920 portrait) |
 | Tablet / Chromebook | At least 4, 1080 to 7680 px, 16:9 or 9:16 | The app runs resizable, so show it on a tablet |
-| Wear OS | At least 1, 1:1, at least 384 x 384 px | Just the interface: no device frame, no transparent corners, no mask |
 | Promo video | Optional | A public or unlisted YouTube link with ads off, not age-restricted. Only the first 30 seconds autoplay. A short screen recording of a trip is enough |
 | Category | One | Choose a transport / maps category |
 | Tags | Up to **5** | Console: Grow users, Store presence, Store settings, App category, **Manage tags**. Pick only tags that clearly fit (public transport and the like) ([tags][tags]). Changes can take 24 hours to show |
@@ -790,8 +793,7 @@ Other answers:
    list (Singapore alone, or worldwide; the site is Singapore-only), choose **managed publishing**
    if you want to control the go-live moment, then roll out. A staged percentage is available
    for the first release.
-5. **Wear OS** (decision D8): in its own track, closed test, then opt in and roll out (section 8).
-6. **Review.** The first review can take several days. Check email and the Policy status page.
+5. **Review.** The first review can take several days. Check email and the Policy status page.
 
 ---
 
@@ -825,9 +827,8 @@ Other answers:
       `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` and (D5) `ACCESS_BACKGROUND_LOCATION`
 - [ ] [Dev] `UpdateActivity` only in the `github` flavor; `Channel`, `PlayUpdatePlugin` in the `play` one
 - [ ] [Dev] `app-update.js` has the `playupdate` branch, deployed to the site first
-- [ ] [Dev] Watch `versionCode` is no longer equal to the phone's
-- [ ] [Dev] `build-apk.ps1` updated for the flavors; `build-aab.ps1` added; any new keystore
-      properties file added to `.gitignore`
+- [ ] [Dev] `build-apk.ps1` updated for the flavors and still building the watch APK;
+      `build-aab.ps1` added; any new keystore properties file added to `.gitignore`
 - [ ] The 2.2.7 and 3.0.0 GitHub builds still update themselves from GitHub
 
 **Account and signing**
@@ -839,7 +840,7 @@ Other answers:
 
 **Build**
 
-- [ ] [Windows] `app-play-release.aab` and `wear-release.aab` built, signed by the upload key
+- [ ] [Windows] `app-play-release.aab` built, signed by the upload key
 - [ ] [Windows] No `.so` files; merged manifest has none of the removed permissions
 - [ ] `google-services.json` present for the build
 
@@ -858,7 +859,6 @@ Other answers:
 - [ ] [Augy] Closed test: 12 or more testers, 14 days in a row
 - [ ] [Augy] Applied for production and approved
 - [ ] [Augy] Production release with notes in each language
-- [ ] [Augy] Wear OS: listing says "Wear OS", at least 1 Wear screenshot, closed test, opted in, rolled out (if shipping the watch)
 
 ---
 
@@ -914,7 +914,7 @@ Fetched on 28 October 2026.
 
 | Topic | Page |
 |---|---|
-| Target API level (36 phone, 35 Wear OS) | [Play target API requirements][target] |
+| Target API level (36 phone; 35 Wear OS, for later) | [Play target API requirements][target] |
 | Play App Signing | [Use Play App Signing][signing] |
 | Tags (up to five) | [App tags][tags] |
 | Publishing with an Android App Bundle | [Prepare and roll out][aab], [Create and set up your app][release] |
@@ -922,7 +922,7 @@ Fetched on 28 October 2026.
 | Build flavors | [Build variants][variants] |
 | New personal account testing | [Testing requirements][testing] |
 | Developer account and fee | [Get started with Play Console][account] |
-| Wear OS on Play | [Wear OS packaging][wear], [Form factor tracks][formfactor] |
+| Wear OS on Play (for later) | [Wear OS packaging][wear], [Form factor tracks][formfactor] |
 | Store listing assets | [Preview assets][assets], [Translate and localize][translate], [Prepare your app for review][review] |
 | Data safety | [Provide information for Data safety][datasafety] |
 | Exact alarms, foreground services, background location | [Exact alarm policy][alarm], [FGS declaration][fgs], [Background location][bgloc] |

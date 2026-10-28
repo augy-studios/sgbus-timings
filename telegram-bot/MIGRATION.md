@@ -1,41 +1,28 @@
 # Moving the bot from @UwUsgbus_bot to @sgbus_app
 
 This guide is for moving the Telegram bot to its new, shorter username, **@sgbus_app**
-(help desk #13). The bot lives at **@UwUsgbus_bot** today. It covers what to check first,
-BotFather, the `.env` changes, the data, how to reach existing users, the cut-over order with
-a rollback, every file in this repo that names the old bot, and testing.
+(help desk #13). The bot lives at **@UwUsgbus_bot** today. It covers BotFather, the `.env`
+changes, the data, the cut-over order with a way back, what happens to the old bot's links,
+every file in this repo that names the old bot, and testing.
 
 Nothing in the code has been switched yet. Change the links before the new bot is live and
 they break, so they're listed here (section 9) to change on the day.
 
+**There is no forwarder and no redirect.** Augy's decision: the old bot is stopped, and he
+tells people himself to switch over. Section 3 says what that means for them.
+
 ---
 
-## 0. First: what is @sgbus_app?
+## What @sgbus_app is
 
-BotFather only gives a new bot a username ending in `bot` (`sgbus_app_bot`, `sgbusappbot`).
-`sgbus_app` doesn't end in `bot`, so it's one of these:
+**@sgbus_app is a new bot, made through BotFather.** Augy says a recent BotFather update lets
+Telegram Premium users end a bot's username in `app`, `ai` or `agent`, as well as `bot`. I
+haven't checked that rule myself. So this is a plain move from one bot to another, and
+everything below applies as written. It's a separate bot with its own token, not a second name
+on @UwUsgbus_bot.
 
-| It is | How to tell | What to do |
-|---|---|---|
-| **A. A collectible username** (bought on Fragment) | fragment.com lists it under your account | Read **0.1**: you may not need a new bot at all |
-| **B. A new bot whose real username is a bit different** (for example `@sgbus_app_bot`) | BotFather's `/mybots` shows it | Follow this guide, with that username everywhere it says `sgbus_app` |
-| **C. Not a bot** (a user account, channel or group) | Open t.me/sgbus_app: is there a **Start** button? | A bot can't take it over as it is. Use it for a channel pointing at the bot, or make it collectible first (A) |
-
-### 0.1 Path A: put the username on the bot you already have
-
-Telegram lets a bot carry a collectible username as well as its own. If Fragment lets you
-assign **sgbus_app** to **@UwUsgbus_bot** rather than to a new bot, that's far the better
-move:
-
-- t.me/sgbus_app opens the same bot, with every user, chat, routine and favourite already in
-  place. There's no new token, no new session and no data to move.
-- Old t.me/UwUsgbus_bot links keep working, since the old name stays on the bot too.
-- Then all that's left is section 9's link swaps, which can be done whenever you like, and
-  BotFather's texts (section 2) if they name the bot.
-
-I couldn't check from here whether Fragment allows assigning to an existing bot. Check it in
-Fragment first, before you build anything below. If it does, skip to section 9 and stop
-there. The rest of this guide is **path B**: a separate new bot.
+If BotFather gave the new bot a slightly different username from `sgbus_app`, use that one
+everywhere this guide says `sgbus_app`.
 
 ---
 
@@ -98,11 +85,11 @@ reach nobody. For each user, until they tap Start on @sgbus_app:
 - **Birthday wishes** (09:00 SGT) and **Service Alerts** (`/sub`) don't arrive either.
 - **Buttons on old messages** (Refresh, favourites, pages, inline results posted in other
   chats) belong to the old bot. Telegram sends their taps to @UwUsgbus_bot, never to the new
-  one.
+  one, and once that's stopped nothing answers them.
 - **Groups**: someone in each group has to add @sgbus_app. Its favourites (by the group's
   `chat_id`) are there when they do.
 
-So the old bot has to stay up for a while and tell people to move (section 3).
+With no forwarder, the old bot can't tell them. Augy tells people to switch (section 3).
 
 ---
 
@@ -175,87 +162,60 @@ SETUP.md section 1, for the new bot.
 11. Keep the token BotFather gives you safe. It goes in `BOT_TOKEN` where the bot runs (on
     the server, in `telegram-bot/.env`), and nowhere else: not in a doc, a chat or a commit.
 
-Turn the same things off on the old bot at cut-over (step 4.8).
-
 ---
 
-## 3. The plan: move, then forward (recommended)
+## 3. The plan: switch, then tell people
 
 - **@sgbus_app becomes the real bot**, on the same server, the same code and the same
   `data/bot.db`. Users who start it find everything where they left it.
-- **@UwUsgbus_bot becomes a forwarder** for a while. Whatever anyone sends it, it answers
-  with "SG Bus Timings has moved to @sgbus_app: tap to open it, and your favourites, routines
-  and settings come with you", and a button to `https://t.me/sgbus_app?start=moved`. It also:
-  - passes deep links on: `/start sync_<code>` (the web app's Sync with the Telegram bot,
-    from a tab or phone still on the old link) answers with a button to
-    `https://t.me/sgbus_app?start=sync_<code>`, so syncing still works;
-  - answers taps on old buttons with a pop-up pointing at @sgbus_app, rather than nothing;
-  - answers inline queries (`@UwUsgbus_bot 84009`) with one result saying where it's gone;
-  - sends **one announcement** to every private chat in the database, the day it starts, and
-    a reminder about two weeks later to those who still haven't moved;
-  - **keeps sending routines and birthday wishes to people who haven't moved yet**, each
-    with a line saying to move, so nobody's morning timings stop without warning. Once a user
-    has started @sgbus_app, the old bot stops sending to them and the new bot takes over, so
-    nobody gets two.
-- Service Alerts come from the new bot only. Both polling the alerts would fight over
-  `service_alert_state`, and each would think the other had already announced a change, so
-  `/sub` subscribers are told in the announcement to tap Start on @sgbus_app to keep getting
-  them.
+- **@UwUsgbus_bot is stopped.** It isn't kept running as a forwarder, and nothing redirects
+  people to the new bot (Augy's decision). He tells them himself to switch.
+- Only one bot runs at a time, so nothing in the code needs to change: no second session file,
+  no second process on the database, and Service Alerts are polled by the new bot alone.
+- **Never delete the old bot.** Keep the account, with its name and about text pointing at
+  @sgbus_app (step 4.6), so no-one else can take the username and pose as the app.
 
-### 3.1 The code this needs (not built yet)
+### 3.1 What stops working, and what to tell people
 
-This is a small build, worth its own help desk request once you say yes. None of it changes
-what the bot does until it's switched on:
+Once @UwUsgbus_bot is stopped, it answers nothing. For anyone who hasn't moved:
 
-| # | Change | Where |
-|---|---|---|
-| C1 | `SESSION_NAME` (default `bot`) for the session file's name, so two bots can share one `data/` folder without sharing a login | `src/config.py`, `SESSION_PATH` in `src/main.py`, `.env.example` |
-| C2 | A `chat_bots` table (`chat_id`, `bot`, `first_seen`): the running bot notes, by its own username (`get_me()`), every chat it hears from. That's how the forwarder knows who's moved | `src/db.py`, a first handler in `src/main.py` |
-| C3 | `MOVED_TO` (blank by default): set to `sgbus_app`, the bot runs as the forwarder above. Only the forwarder handlers, and only the routine and birthday jobs, for chats `chat_bots` hasn't seen on `MOVED_TO`, with the move line added. No LTA refreshes, no alerts | `src/config.py`, `src/main.py`, a new `src/handlers/moved.py` |
-| C4 | `python -m src.announce_move`: run with the forwarder's settings, it messages every private chat (`chat_id` > 0, from the per-chat tables) that hasn't moved and hasn't been told yet, about 20 a second, waiting out Telegram's flood limits, skipping anyone who's blocked the bot, and noting who it told so a re-run only reaches the rest. Run it again for the reminder | a new `src/announce_move.py`, a `move_notices` table |
-| C5 | Optional: on `/start` from someone `chat_bots` has seen on the old bot, the new bot says "Welcome back: your N favourites and M routines came with you" | `src/handlers/start.py` |
+| What | What happens |
+|---|---|
+| Messaging @UwUsgbus_bot, or its buttons on old messages | No reply. Nothing says it has moved |
+| `@UwUsgbus_bot 84009` inline, in any chat | No results. They type `@sgbus_app 84009` |
+| Routines, birthday wishes, Service Alerts (`/sub`) | Stop arriving. They start again, from @sgbus_app, once the person taps **Start** on it (section 1.2) |
+| Old `t.me/UwUsgbus_bot` links, and `t.me/UwUsgbus_bot?start=sync_<code>` sync links | Open the old bot, which doesn't answer. They use `t.me/sgbus_app` |
+| Groups with @UwUsgbus_bot in them | Go quiet. An admin adds @sgbus_app |
 
-Both processes open the same SQLite file. That's safe on one machine (`db.py` puts it in WAL
-mode), though not over a network drive. They never write the same rows: each sends only its
-own chats' routines, and only the new bot refreshes the caches and polls the alerts.
+Their data isn't affected: it's still in `data/bot.db`, and it's there the moment they start
+the new bot.
 
-### 3.2 If you'd rather not build the forwarder
+Because the old bot can't say where it went, the news has to come from Augy, ahead of the
+switch and again on the day: wherever his users are (the Telegram groups and channels he
+runs, socials, pinned posts), plus the web app's patch notes (section 9). A short message he
+can post, in his own words if he'd rather:
 
-The plain switch: stop the old bot, start the new one on the same database, and change the
-links. It's quicker, but anyone who doesn't see the news elsewhere finds the old bot silent,
-and their routines and alerts stop with no word why. If you go this way, at least set the old
-bot's name, about and description (step 4.8) to say where it's gone, and post the move
-wherever your users are (the web app's notices, the guide, socials).
-
-### 3.3 How long to keep the old bot forwarding
-
-**At least three months, then keep it as long as it costs nothing.** It's a second process on
-the same server, idle nearly all the time. Users who only see their routines once a week,
-links in old chats and posts, the web app's cached copy on someone's phone, and old installs
-of the Linux `sgbus` (which prints `@UwUsgbus_bot` until it's updated) all keep sending
-people to the old name for months.
-
-At three months, look at how many chats `chat_bots` has on each: when no-one new has turned
-up at the old bot for a few weeks, stopping it is fine. **Never delete the old bot**, though:
-keep the account with its name and about pointing at @sgbus_app, so no-one else can ever take
-the username and pose as the app.
+> SG Bus Timings has a new Telegram bot: **@sgbus_app** (t.me/sgbus_app). The old
+> @UwUsgbus_bot has been switched off. Tap **Start** on @sgbus_app and your favourites,
+> routines, places and alerts are already there. Until you do, your routines and alerts won't
+> arrive. In a group, add @sgbus_app. For inline search, type `@sgbus_app` instead.
 
 ---
 
 ## 4. Cut-over, step by step
 
 Pick a quiet time. Routines only fire in their own minute (`due_routines` in
-`src/routines.py`), so one due while neither bot is running is missed, not sent late, and
+`src/routines.py`), so one due while no bot is running is missed, not sent late, and
 birthday wishes go at 09:00 SGT. Between about 01:00 and 05:00 SGT is quietest. Allow half an
-hour. Steps 4.1 to 4.7 are on the server, in the `tmux` session from SETUP.md section 6.
+hour. Steps 4.1 to 4.5 are on the server, in the `tmux` session from SETUP.md section 6.
 
 **Before the day:**
 
-- 3.1's code built, merged and running on the server with `MOVED_TO` blank (so no change
-  yet), if you're forwarding.
 - Section 2 done for @sgbus_app.
 - The new bot tried on its own (section 10, "Before the day"), then stopped.
 - Section 9's changes ready on a branch, **not merged**.
+- The message for users (section 3.1) written, and posted ahead of the day if Augy wants
+  people to have warning.
 
 **On the day:**
 
@@ -280,45 +240,41 @@ hour. Steps 4.1 to 4.7 are on the server, in the `tmux` session from SETUP.md se
    `data/bot.session` appears, logged in as @sgbus_app. From your own Telegram, start
    @sgbus_app and run section 10's quick checks: `/start`, `84009`, `/favstops` (yours
    should be there), `/routines`. **Don't go on until they work**, since what comes next tells
-   everyone to move.
-6. **Start the forwarder** in a second `tmux` session (`tmux new -s sgbus-old`), from a second
-   copy of `telegram-bot/` with its own `.env`: the **old** `BOT_TOKEN`, the same `API_ID`,
-   `API_HASH`, `LTA_ACCOUNT_KEY` and `BOT_API_TOKEN`, `DB_PATH` set to the live database's full
-   path, `SESSION_NAME=old-bot` and `MOVED_TO=sgbus_app`. Message @UwUsgbus_bot and check it
-   points you on.
-7. **Send the announcement**, from the forwarder's copy: `python -m src.announce_move`. Then
-   detach (`Ctrl+b`, `d`).
-8. **The old bot's profile, in BotFather** (`/mybots`, @UwUsgbus_bot):
+   everyone to move. Then detach (`Ctrl+b`, `d`).
+6. **The old bot's profile, in BotFather** (`/mybots`, @UwUsgbus_bot). Optional, and a
+   BotFather setting rather than code, but it's the one place the old bot can still point
+   people on:
    - `/setname`: `SG Bus Timings (moved to @sgbus_app)`
    - `/setabouttext` and `/setdescription`: `SG Bus Timings has moved to @sgbus_app. Tap
-     t.me/sgbus_app and your favourites, routines and settings come with you.`
-   - `/setcommands`: just `start - where the bot has moved to`
-   - `/setinline`: change its placeholder to `Moved to @sgbus_app`. It still answers
-     (section 3), so leave it on.
-   - If it has a Main Mini App, leave it there for now: old `startapp` links still open the
-     web app that way.
-9. **Deploy the links** (section 9): merge the branch, then `dev` into `main` (that's the
+     t.me/sgbus_app and your favourites, routines and settings come with you.` The
+     description is what someone sees on opening the old bot's empty chat, so it reaches
+     anyone who still follows an old link.
+   - If it has a Main Mini App, leave it there: it's set in BotFather, not run by the bot, so
+     old `startapp` links should still open the web app (not tried).
+7. **Deploy the links** (section 9): merge the branch, then `dev` into `main` (that's the
    web app's deploy, and the Android and desktop apps follow, since they load the site), the
    guide, and a Linux `sgbus` release when one's next due.
-10. **Over the next weeks:** a reminder (`python -m src.announce_move` again) at about two
-    weeks; at three months, section 3.3.
+8. **Tell people** (section 3.1): post Augy's message wherever his users are.
+
+After that, the old bot stays stopped. Keep its account (section 3), and keep its token safe
+like any other, in case you ever need to roll back.
 
 ### 4.1 Rollback
 
-Up to step 7, rolling back loses nothing: the database is the same one, and anything the new
+Up to step 8, rolling back loses nothing: the database is the same one, and anything the new
 bot saved meanwhile is under the same `chat_id`s.
 
-1. Stop both bots (`Ctrl+c` in each `tmux` session).
+1. Stop the new bot (`Ctrl+c` in its `tmux` session).
 2. `mv data/bot.session data/new-bot.session`, then `mv data/old-bot.session data/bot.session`.
 3. Put the old `BOT_TOKEN` back in `telegram-bot/.env`.
 4. Start the bot as before. It's @UwUsgbus_bot again, as it was.
 5. If section 9 was deployed, revert it on `dev` and release, so the links point back.
-6. Put back the old bot's name, about, description and commands in BotFather.
+6. If step 6 was done, put back the old bot's name, about and description in BotFather.
 
 The database itself only needs restoring (from `~/sgbus-backup/bot-before-move.db`, with
-both bots stopped) if something went wrong in it, not just because you rolled back. After
-step 7 the announcement's out and can't be taken back, so fix forward if you can, or send a
-short "not yet: stay on @UwUsgbus_bot for now" with the same script.
+the bot stopped) if something went wrong in it, not just because you rolled back. After
+step 8 the message is out and can't be taken back, so fix forward if you can, or post a
+short "not yet: stay on @UwUsgbus_bot for now".
 
 ---
 
@@ -327,17 +283,15 @@ short "not yet: stay on @UwUsgbus_bot for now" with the same script.
 Names only, never the values. Set them on the server, in `telegram-bot/.env` (see
 `.env.example`).
 
-| Setting | The new bot | The forwarder (old bot) |
-|---|---|---|
-| `BOT_TOKEN` | **@sgbus_app's token** | the old bot's token, as it is now |
-| `API_ID`, `API_HASH` | unchanged (they're the app's, from my.telegram.org, not a bot's) | the same |
-| `LTA_ACCOUNT_KEY`, `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | unchanged | the same |
-| `DB_PATH` | unchanged | the full path to the same database |
-| `BOT_API_TOKEN` | unchanged (it's shared with Vercel, not Telegram) | the same, for passing on `/sync` |
-| `MINI_APP_LINKS` | `1` only once @sgbus_app's Main Mini App is set up, otherwise `0` | `0` |
-| `WEBAPP_URL`, `MINI_APP_URL`, `MINI_APP_MENU_TEXT`, `NAV_API_URL`, `DONATE_URL`, `GUIDE_URL` | unchanged | unchanged |
-| `SESSION_NAME` (new, C1) | `bot` (or leave it out) | `old-bot` |
-| `MOVED_TO` (new, C3) | leave it out | `sgbus_app` |
+| Setting | Change |
+|---|---|
+| `BOT_TOKEN` | **@sgbus_app's token** |
+| `API_ID`, `API_HASH` | unchanged (they're the app's, from my.telegram.org, not a bot's) |
+| `LTA_ACCOUNT_KEY`, `ONEMAP_EMAIL`, `ONEMAP_PASSWORD` | unchanged |
+| `DB_PATH` | unchanged |
+| `BOT_API_TOKEN` | unchanged (it's shared with Vercel, not Telegram) |
+| `MINI_APP_LINKS` | `1` only once @sgbus_app's Main Mini App is set up, otherwise `0` |
+| `WEBAPP_URL`, `MINI_APP_URL`, `MINI_APP_MENU_TEXT`, `NAV_API_URL`, `DONATE_URL`, `GUIDE_URL` | unchanged |
 
 **Vercel:** nothing changes. The site holds no Telegram token, and `BOT_API_TOKEN` stays the
 same on both sides.
@@ -348,22 +302,22 @@ same on both sides.
 
 | Link | Who makes it | After the move |
 |---|---|---|
-| `t.me/<bot>` | the site's Telegram button, the guide, the README | changed to `t.me/sgbus_app` (section 9) |
-| `t.me/<bot>?start=sync_<code>` | `main-site/js/sync.js` (`SYNC_BOT`) | changed to `sgbus_app`. Old links still work through the forwarder (section 3) |
+| `t.me/<bot>` | the site's Telegram button, the guide, the README | changed to `t.me/sgbus_app` (section 9). Old links open @UwUsgbus_bot, which no longer answers |
+| `t.me/<bot>?start=sync_<code>` | `main-site/js/sync.js` (`SYNC_BOT`) | changed to `sgbus_app`. A tab or phone still showing the old page keeps the old link until it reloads, and that link now goes nowhere: they open the web app again for a new one |
 | `t.me/<bot>?startapp=<page>` | the bot itself (`src/mini_app.py`) | follows the running bot by itself; needs @sgbus_app's Main Mini App |
-| `@<bot> 84009` inline | users | they type the new name; the forwarder answers the old one |
+| `@<bot> 84009` inline | users | they type the new name. `@UwUsgbus_bot` gets no results |
 | Telegram's **Open web app** and menu button | the bot (`setup_mini_app`) | set again on every start, for whichever bot it is |
 
 ---
 
 ## 7. What users go through
 
-1. They get the old bot's announcement, or message it and get the same answer.
-2. They tap **Open @sgbus_app**, then **Start**.
-3. The new bot answers `/start` (with C5, "your N favourites came with you").
-   Favourites, routines, places, `/sub`, calendar and settings are all already there.
-4. From then on their routines, birthday wish and alerts come from @sgbus_app, and the old bot
-   stops sending them.
+1. They see Augy's message (section 3.1), or find @UwUsgbus_bot no longer answering.
+2. They open @sgbus_app and tap **Start**.
+3. The new bot answers `/start`. Favourites, routines, places, `/sub`, calendar and settings
+   are all already there.
+4. From then on their routines, birthday wish and alerts come from @sgbus_app. Until they
+   start it, none of those arrive (section 1.2).
 5. In a group, an admin adds @sgbus_app (and can remove the old one).
 
 ---
@@ -383,7 +337,7 @@ and safer than either, with `git grep -n -i uwusgbus_bot` to check nothing's lef
 ## 9. Every place in the repo that names the old bot
 
 Found with `git grep -n -i "uwusgbus\|t\.me/"` on `main` at e9ce39e. Change the ones marked
-**change** on the day (step 4.9), in one commit; leave the rest.
+**change** on the day (step 4.7), in one commit; leave the rest.
 
 ### Web app (`main-site/`): deploys with `main`, and the Android and desktop apps load it
 
@@ -395,7 +349,7 @@ Found with `git grep -n -i "uwusgbus\|t\.me/"` on `main` at e9ce39e. Change the 
 | `main-site/js/sgbus-core.js:31` | `const BOT = '@UwUsgbus_bot';` (the terminal's and the Linux app's `help` line) | **change** |
 | `main-site/llms.txt:64` | "The Telegram bot, for chat: https://t.me/UwUsgbus_bot" | **change** |
 | `main-site/PATCHNOTES.md:6` | The header's "Telegram bot: https://t.me/UwUsgbus_bot" | **change**, plus a new entry saying it moved |
-| `main-site/PATCHNOTES.md:829` | "Launched at @UwUsgbus_bot" | leave: it's history |
+| `main-site/PATCHNOTES.md:201`, `:829` | An inline example in an old entry, and "Launched at @UwUsgbus_bot" | leave: it's history |
 | `main-site/PATCHNOTES.md:707`, `:734` | `uwusgbus://` app links | leave: an old Android link scheme, not the bot |
 | `main-site/sw.js` | `VERSION` | **bump**, as `sgbus-core.js` and `sync.js` change |
 
@@ -425,7 +379,7 @@ Found with `git grep -n -i "uwusgbus\|t\.me/"` on `main` at e9ce39e. Change the 
 | `android/`, `desktop/` | Nothing: both load sgbus.uwuapps.org | none |
 | `docs/android-app-spec.md:426` | `@<bot>`, a placeholder | none |
 | `main-site/i18n/*.json` | No bot name in any language | none |
-| `GOOGLE-PLAY.md` | Being written now; check it when it lands | check |
+| `GOOGLE-PLAY.md` | Doesn't name the bot | none |
 
 ### Outside this repo
 
@@ -463,19 +417,18 @@ Then stop it and delete that folder's `data/`.
 
 - `/start`, then `84009`: timings come back.
 - `/favstops`, `/routines`, `/places`, `/settings`: yours are there, as on the old bot.
-- Set a routine for two minutes away: it arrives from @sgbus_app, and not from the old bot too.
+- Set a routine for two minutes away: it arrives from @sgbus_app.
 - `/sub`: your alert choices are there.
 
-### After the forwarder starts (step 4.6)
+### After the switch (steps 4.1 to 4.6)
 
-- From an account that **hasn't** started @sgbus_app: a message to @UwUsgbus_bot gets the
-  move message and its button; an old Refresh button gives the pop-up; `@UwUsgbus_bot 84009`
-  inline gives the one result; a routine due arrives from the old bot with the move line.
-- The same account taps Start on @sgbus_app: the next routine comes from the new bot only.
-- An old `t.me/UwUsgbus_bot?start=sync_<code>` link points on to @sgbus_app, and syncing
-  works from there.
+- Message @UwUsgbus_bot: no reply, as expected. If you did step 4.6, open its empty chat and
+  check the description points at @sgbus_app.
+- From an account that hasn't started @sgbus_app, a routine that falls due doesn't arrive
+  (the bot logs `routine N failed to fire` and carries on). Tap Start on @sgbus_app and the
+  next one does.
 
-### After the links are deployed (step 4.9)
+### After the links are deployed (step 4.7)
 
 - On sgbus.uwuapps.org (and in the Android app): the Telegram button and Sync's Open the bot
   link and QR code go to @sgbus_app.
