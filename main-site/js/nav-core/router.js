@@ -20,6 +20,12 @@ const ACCESS_M = 900;
 // The nearest few of each kind are enough to start from; more only slows the search.
 const ACCESS_STOPS = 30;
 const ACCESS_STATIONS = 5;
+// With nothing within ACCESS_M (a place out past the last bus stop, such as the yards along
+// Tuas South Boulevard, 2.5 km from the nearest: help desk #11), the nearest few this far off,
+// so there's still a way, with the long walk in it. The option says so (`far`, js/nav.js).
+const FAR_ACCESS_M = 3000;
+const FAR_ACCESS_STOPS = 3;
+const FAR_ACCESS_STATIONS = 1;
 // An option is worth showing if it's within this of the quickest.
 const KEEP_FACTOR = 1.6;
 const KEEP_EXTRA_MIN = 12;
@@ -31,14 +37,21 @@ const DETOUR_MIN = 5;
 const WALK_SAVING_M = 150;
 
 function access(graph, lat, lng) {
+  let near = nodesNear(graph, lat, lng, ACCESS_M);
+  const far = !near.length;
+  if (far) near = nodesNear(graph, lat, lng, FAR_ACCESS_M);
+  const maxStops = far ? FAR_ACCESS_STOPS : ACCESS_STOPS;
+  const maxStations = far ? FAR_ACCESS_STATIONS : ACCESS_STATIONS;
   let stops = 0;
   let stations = 0;
   const out = [];
-  for (const [node, metres] of nodesNear(graph, lat, lng, ACCESS_M)) {
+  for (const [node, metres] of near) {
     const station = graph.nodes[node].kind === "station";
-    if (station ? stations++ >= ACCESS_STATIONS : stops++ >= ACCESS_STOPS) continue;
+    if (station ? stations++ >= maxStations : stops++ >= maxStops) continue;
     out.push([node, metres / WALK_M_PER_MIN + (station ? STATION_ACCESS_MIN : 0), metres]);
   }
+  // How far the nearest is, when it's further than a walk.
+  out.far = far && out.length ? Math.round(Math.min(...out.map(([, , m]) => m))) : null;
   return out;
 }
 
@@ -167,6 +180,11 @@ export function plan(graph, from, to, { open = null, customs = null } = {}) {
   }
 
   const options = [...byMix.values()].map((o) => toOption(graph, o)).filter(Boolean);
+  // An end with no stop or station within a walk: how far off the nearest one is, in metres.
+  if (starts.far != null || ends.far != null) {
+    const far = { ...(starts.far != null && { from: starts.far }), ...(ends.far != null && { to: ends.far }) };
+    for (const o of options) o.far = far;
+  }
   const walkMetres = haversineDirect(from, to);
   return choose(options, walkMetres);
 }

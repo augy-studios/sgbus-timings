@@ -315,6 +315,12 @@ never covers the logo or the name; everything below it keeps the full width. On 
 zero. If the tab would cover something else that is interactive, move that
 control rather than reserve the strip.
 
+While the tray is open, the column reserves room only up to 8px short of the
+buttons (`--tray-room`), not the tab: the tab floats over the column's edge, as
+it does when the tray is collapsed. What sits level with the tab keeps clear of
+it (`--tray-room-top`, `--tab-clear-open`): the brand line, the update and
+disruption bars, and the terminal's bar (help desk #11, 2026-10-27).
+
 The padding animates with the tray, so the column narrows as the tray slides
 in and widens as it slides out, and the brand line steps in and out with it.
 
