@@ -19,7 +19,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Search by bus number (e.g. `22`, `NR7`) to open that bus's route
 - Autocomplete dropdown with matching buses and up to 20 stops
 - Filter results to a specific service by appending the bus number (e.g. `84009 174`)
-- **Stops near me** lists the 8 nearest stops to your location
+- **Stops near me**: a card on Bus timings' page lists the 8 nearest stops to your location, favourites pinned, while no stop's timings are open. It looks for you by itself only once location's allowed (Glance's `sgbus_glance_near`, or the browser's permission); until then it has a **Show stops near me** button. A stop's **Back to nearby stops** returns to the list
 - A 6-digit postal code (e.g. `519599`) lists the 8 stops nearest that address, in the search box or either end of the route planner. Looked up with OneMap; set `ONEMAP_EMAIL` and `ONEMAP_PASSWORD` in Vercel for the API token, renewed every 3 days
 
 ### Favourites
@@ -36,7 +36,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
 ### The Edge Tray
-- Favourites, Stops near me, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
+- Favourites, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
 - Its arrow tab tucks it away at the edge of the screen and remembers that; Settings puts it on the left or the right
 - Navigate (both its tabs) and Service alerts open as windows over the page (`.panelModal`, `showPanel` in `js/ui.js`); a tap outside closes them, and opening a stop's timings or starting a trip from one closes it
 - On a touch screen, pressing and holding any button with a `title` (or `aria-label`) shows it in a label beside it, as a mouse's hover does, and the tap that ends the hold is swallowed (`js/ui.js`). A note says so the first time the site's opened on a touch screen
@@ -130,6 +130,9 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
 - [Open-Meteo](https://open-meteo.com/) for the forecast; NEA's PSI and PM2.5 readings from [data.gov.sg](https://data.gov.sg/) (`DATA_GOV_KEY`)
 
+### Report a bug
+- Settings, Help and extras, **Report a bug** (`js/bug-report.js`): what went wrong (up to 2,000 characters) and an optional contact, with the app and its version, the device, the page and the language added, all shown before it's sent. `POST /api/bug-report` sends it to Augy as a plain-text Telegram message from a bot: set `BUG_REPORT_BOT_TOKEN` (the Telegram bot's own token will do) and `BUG_REPORT_CHAT_ID` (Augy's chat ID, after he's sent that bot `/start`) in Vercel. Without them, or if Telegram fails, the form offers an email instead. Limited to 2 a minute per IP, and with Redis 6 an hour per IP and 60 an hour in all
+
 ### Languages
 - English, Chinese (中文, simplified, as in Singapore), Malay (Bahasa Melayu) and Tamil (தமிழ்), picked in Settings, You, **Language**; until one's picked, the phone's own if it's one of these. Picking one opens the app again in it (`js/i18n.js`)
 - **Language** opens **Choose a language** (`js/lang-pick.js`), as gftv-linktree's switcher: a row each, a small flag and the language's name in its own words (read in that language, `lang`), a tick on the one in use, and Close. The flags are flag-icons 7.5.0's (MIT) as inline SVG, not emoji, which Windows doesn't draw: the United Kingdom, China, Malaysia and India, as Augy asked
@@ -172,7 +175,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - `#alerts` opens the Service alerts card
 - `#nav/1.30050,103.85580~Bedok%20Mall/1.33320,103.92920~Name` opens Navigate between two points; an end can be `here` (the opener's location) or `-` (not set), and the name after `~` is optional. `#route/-/75009` likewise leaves a route's start empty, and `#route` opens the planner empty
-- `#near` opens the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
+- `#near` opens Bus timings with the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
 - `/?text=<Google Maps link>` (what sharing to the installed app opens) opens Navigate with that place in **To**
 - Bookmark or share a direct link to any stop, service or route
 

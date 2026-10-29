@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v126";
+const VERSION = "v127";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -22,6 +22,8 @@ const ASSETS = [
   // The celebration for every line ridden; three.js itself is kept as MapLibre is, once fetched.
   "/js/celebrate.js",
   "/js/lang-pick.js",
+  // Report a bug, from Settings (js/bug-report.js).
+  "/js/bug-report.js",
   // A coffee, asked once every six months (js/donate.js).
   "/js/donate.js",
   // The first open's choice, Minimal or Full (js/first-run.js).
@@ -188,6 +190,9 @@ self.addEventListener("message", (event) => {
   if (type === "skip-waiting") {
     event.waitUntil(self.skipWaiting().then(() => self.clients.claim()));
   }
+
+  // This worker's version, for a bug report (js/bug-report.js), answered on the port sent.
+  if (type === "version") event.ports[0]?.postMessage(VERSION);
 
   // One tile of the map being saved for offline (js/map-save.js), answered on the port sent.
   if (type === "map-save-tile") {
@@ -603,7 +608,16 @@ async function mapKept(request) {
   const cache = await caches.open(MAP_CACHE);
   const hit = await cache.match(request);
   if (hit) return hit;
-  const res = await fetch(request);
+  let res;
+  try {
+    res = await fetch(request);
+  } catch (err) {
+    // A label font's range never fetched: none of its letters, rather than MapLibre leaving the
+    // whole tile undrawn (js/map-save.js, GLYPH_RANGES). Not kept, so it's fetched once the
+    // network's back.
+    if (new URL(request.url).pathname.startsWith("/fonts/")) return new Response(new Uint8Array(0), { headers: { "content-type": "application/x-protobuf" } });
+    throw err;
+  }
   if (res.ok) await cache.put(request, res.clone());
   return res;
 }

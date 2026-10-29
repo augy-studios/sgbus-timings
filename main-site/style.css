@@ -3960,3 +3960,25 @@ body.touring { overflow: hidden; }
     .celebrateBackdrop.flat .flatTrophy { animation: trophy-bob 2.4s ease-in-out infinite; }
 }
 @keyframes trophy-bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
+
+/* ===== Stops near me, in Bus timings (script.js, help desk #13) ===== */
+/* Over a stop's timings' place, while none are open: the same rows as a list of stops. */
+.nearStops .cardHeader { padding: 12px 14px 10px 18px; }
+.nearStops .cardTitle [data-icon] { display: inline-flex; color: var(--brand-ink); }
+.nearStops .cardTitle svg { width: 18px; height: 18px; }
+#nearStopsRefresh { padding: 8px 10px; }
+#nearStopsRefresh.busy svg { animation: share-spin 0.8s linear infinite; }
+.nearStopsBody { padding: 6px; }
+.nearStopsNote { margin: 8px 10px 4px; font-size: 0.875rem; color: var(--muted-strong); }
+.nearStopsAsk { display: inline-flex; align-items: center; gap: 8px; margin: 8px 10px 10px; }
+.nearStopsAsk svg { width: 16px; height: 16px; }
+
+/* ===== Report a bug (js/bug-report.js) ===== */
+.bugText { height: auto; min-height: 120px; resize: vertical; font: inherit; font-size: 0.9375rem; line-height: 1.4; }
+#bugModal .input + .modal-section-label { margin-top: 12px; }
+/* The field only a bot fills in: off the screen, not display: none, which some bots skip. */
+.bugTrap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.bugStatus { font-weight: 600; }
+.bugStatus a { color: var(--brand-ink); }
+#bugSend [data-icon] { display: inline-flex; }
+#bugSend svg { width: 16px; height: 16px; }

@@ -1134,7 +1134,7 @@ function goBack(ctx) {
     if (ctx.kind === 'route')        openPlanner(ctx.start, ctx.end, { when: ctx.when });
     else if (ctx.kind === 'journey') openPlanner(ctx.start, ctx.end, { journey: ctx.legs, when: ctx.when });
     else if (ctx.kind === 'service') openService(ctx.service, { fromStop: ctx.fromStop, onward: ctx.onward, dir: ctx.dir });
-    else if (ctx.kind === 'nearby')  openNearbyList(ctx.stops, ctx.title);
+    else if (ctx.kind === 'nearby')  ctx.inPage ? backToNearStops() : openNearbyList(ctx.stops, ctx.title);
     else if (ctx.kind === 'nav')     backToNav();
 }
 
@@ -1265,6 +1265,13 @@ function closeStop() {
     $('#q').value = '';
     history.replaceState(null, '', location.pathname);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    showNearStops();
+}
+
+// A stop's Back, picked from Stops near me: the list again, where it was.
+function backToNearStops() {
+    closeStop();
+    $('#nearStops').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function loadStop(code, { service = null, expanded = false, ctx = null, dir = null, pushHistory = true, scroll = false } = {}) {
@@ -1288,6 +1295,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     $('#services').innerHTML = `<div class="empty">${escapeHtml(tr('stop.loading', 'Loading live arrivals…'))}</div>`;
     $('#emptySvc').hidden   = true;
     $('#resultCard').hidden = false;
+    $('#nearStops').hidden = true;
     $('#incomingBar').hidden = true;
     if (scroll) $('#resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if (pushHistory) history.replaceState(null, '', stopHash());
@@ -1547,7 +1555,9 @@ function locationMessage(err, toDo) {
         : "Couldn't get your location. Check that Location is turned on for this device, then try again.";
 }
 
-function findNearbyStops(limit = 8) {
+// `noTurnOn` when it wasn't a tap that asked: with the phone's Location off, the Android app
+// then says so rather than offering to turn it on (js/geo-retry.js).
+function findNearbyStops(limit = 8, { noTurnOn = false } = {}) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
             reject(new Error("This browser can't share its location."));
@@ -1556,7 +1566,7 @@ function findNearbyStops(limit = 8) {
         navigator.geolocation.getCurrentPosition(
             pos => resolve(stopsNear(pos.coords.latitude, pos.coords.longitude, limit)),
             err => reject(new Error(locationMessage(err, 'to find stops near you'))),
-            { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000, noTurnOn }
         );
     });
 }
@@ -1577,11 +1587,22 @@ let stopListPick = null;
 // numbers) marks the stops with a bus straight to where the route planner is going, and
 // puts them first; `note` says above the list what that means.
 function openStopList(title, stops, { pin = true, onPick, direct = null, note = '' }) {
+    $('#stopListTitle').textContent = title;
+    const rows = stopRows(stops, { pin, direct });
+    $('#stopListBody').innerHTML = rows
+        ? (note ? `<p class="stopListNote">${escapeHtml(note)}</p>` : '') + rows
+        : '<div class="empty">No bus stops found nearby.</div>';
+    stopListPick = onPick;
+    openModal('stopListModal');
+}
+
+// The rows of a list of stops, each a button with its code in data-stop: the list above, and
+// Stops near me in Bus timings.
+function stopRows(stops, { pin = true, direct = null } = {}) {
     const favs = new Set(LS.getFavs().map(f => f.code));
     let list = pin ? pinFavourites(stops, favs, LS.getPin('stop'), s => s.code) : stops;
     if (direct?.size) list = [...list.filter(s => direct.has(s.code)), ...list.filter(s => !direct.has(s.code))];
-    $('#stopListTitle').textContent = title;
-    const rows = list.map(s => {
+    return list.map(s => {
         const road = stopsIndex?.[s.code]?.road || '';
         const buses = direct?.get(s.code);
         return `<button type="button" class="routeStop${buses ? ' direct' : ''}" data-stop="${escapeHtml(s.code)}">` +
@@ -1593,17 +1614,74 @@ function openStopList(title, stops, { pin = true, onPick, direct = null, note = 
             `<span class="pill">${escapeHtml(s.code)}</span>` +
             `</button>`;
     }).join('');
-    $('#stopListBody').innerHTML = rows
-        ? (note ? `<p class="stopListNote">${escapeHtml(note)}</p>` : '') + rows
-        : '<div class="empty">No bus stops found nearby.</div>';
-    stopListPick = onPick;
-    openModal('stopListModal');
 }
 
 function openNearbyList(stops, title = 'Nearby bus stops') {
     openStopList(title, stops, {
         onPick: code => loadStop(code, { ctx: { kind: 'nearby', stops, title }, scroll: true }),
     });
+}
+
+// ----------- Stops near me, in Bus timings -----------
+// The stops around you, nearest first, on Bus timings' page while no stop's timings are open
+// (help desk #13: it was a window from a pin in the Edge Tray). It looks for where you are by
+// itself only once you've let it, or Glance's Nearby, or the browser already allows the site;
+// until then it's a button that asks. A stop picked from it opens its timings in its place, and
+// their Back comes back to it. Where you were is kept NEAR_FRESH_MS, so switching pages doesn't
+// look again each time; the refresh button does.
+const NEAR_ASKED_KEY = 'sgbus_glance_near'; // Glance's ASKED_KEY (js/glance.js): one yes for both
+const NEAR_FRESH_MS = 60 * 1000;
+const near = { stops: null, at: 0, error: '', busy: false, seq: 0 };
+
+async function nearAllowed() {
+    try { if (localStorage.getItem(NEAR_ASKED_KEY) === '1') return true; } catch { /* asked below */ }
+    try { return (await navigator.permissions?.query({ name: 'geolocation' }))?.state === 'granted'; }
+    catch { return false; }
+}
+
+function renderNearStops() {
+    const card = $('#nearStops');
+    card.hidden = !navigator.geolocation || !!current;
+    if (card.hidden) return;
+    $('#nearStopsRefresh').hidden = !near.stops && !near.error;
+    $('#nearStopsRefresh').classList.toggle('busy', near.busy);
+    const body = $('#nearStopsBody');
+    if (near.busy && !near.stops) {
+        body.innerHTML = `<div class="empty">${escapeHtml(tr('timings.finding_stops_near_you', 'Finding stops near you…'))}</div>`;
+    } else if (near.error) {
+        body.innerHTML = `<p class="nearStopsNote">${escapeHtml(near.error)}</p>` +
+            `<button type="button" class="btn nearStopsAsk" data-near="ask">${ico('locate')} ${escapeHtml(tr('common.tryAgain', 'Try again'))}</button>`;
+    } else if (near.stops) {
+        body.innerHTML = stopRows(near.stops) || `<div class="empty">${escapeHtml(tr('timings.no_bus_stops_found_nearby', 'No bus stops found nearby.'))}</div>`;
+    } else {
+        body.innerHTML = `<p class="nearStopsNote">${escapeHtml(tr('timings.the_bus_stops_around_you', 'The bus stops around you, nearest first.'))}</p>` +
+            `<button type="button" class="btn nearStopsAsk" data-near="ask">${ico('locate')} ${escapeHtml(tr('timings.show_stops_near_me', 'Show stops near me'))}</button>`;
+    }
+}
+
+// Looks for the stops near you: `ask` is a tap's, which may ask for your location; otherwise
+// only if it's allowed already, and only when what's kept is NEAR_FRESH_MS old.
+async function showNearStops({ ask = false } = {}) {
+    if (!navigator.geolocation) return renderNearStops();
+    if (!ask && (near.busy || (near.stops && Date.now() - near.at < NEAR_FRESH_MS))) return renderNearStops();
+    if (!ask && !(await nearAllowed())) return renderNearStops();
+    const seq = ++near.seq;
+    near.busy = true;
+    near.error = '';
+    renderNearStops();
+    try {
+        await ensureStopsIndex();
+        const stops = await findNearbyStops(8, { noTurnOn: !ask });
+        if (seq !== near.seq) return;
+        try { localStorage.setItem(NEAR_ASKED_KEY, '1'); } catch { /* asked again next time */ }
+        Object.assign(near, { stops, at: Date.now() });
+    } catch (e) {
+        if (seq !== near.seq) return;
+        near.error = e.message;
+    } finally {
+        if (seq === near.seq) near.busy = false;
+    }
+    renderNearStops();
 }
 
 // The stops nearest the address with a 6-digit postal code, and a title naming it.
@@ -1957,6 +2035,7 @@ $('#settingsBtn').addEventListener('click', openSettings);
 $('#settingsPlaces').addEventListener('click', () => { closeModal('settingsModal'); Places.open(); });
 $('#settingsCalendar').addEventListener('click', () => { closeModal('settingsModal'); Calendar.openSettings(); });
 $('#settingsTerminal').addEventListener('click', () => { closeModal('settingsModal'); openTerminal(); });
+$('#settingsBug').addEventListener('click', () => { closeModal('settingsModal'); BugReport.open(); });
 
 $('#setName').addEventListener('input', e => { LS.setName(e.target.value.trim()); updateGreeting(); });
 $('#setBirthday').addEventListener('change', e => {
@@ -2023,8 +2102,14 @@ Recents.attach($('#q'), $('#acList'), {
         : r.kind === 'bus' ? searchBus(r.code) : r.kind === 'postal' ? searchPostal(r.code) : searchStop(r.code)),
 });
 
-$('#nearMeBtn').addEventListener('click', e =>
-    withLocating(e.currentTarget, () => findNearbyStops().then(openNearbyList)));
+// Stops near me, in Bus timings: a stop picked opens in the list's place, with Back to it.
+$('#nearStopsBody').addEventListener('click', e => {
+    if (e.target.closest('[data-near="ask"]')) return showNearStops({ ask: true });
+    const btn = e.target.closest('[data-stop]');
+    if (btn) loadStop(btn.dataset.stop, { ctx: { kind: 'nearby', inPage: true } });
+});
+$('#nearStopsRefresh').addEventListener('click', () => showNearStops({ ask: true }));
+window.addEventListener('viewchange', () => { if (MainScreen.active() === 'timings' && !current) showNearStops(); });
 // Explorer: the live map with every stop and station on it (js/map.js).
 $('#explorerBtn').addEventListener('click', () => LiveMap.explore());
 
@@ -2389,7 +2474,7 @@ function routeFromHash() {
     // directions open Navigate, live progress opens over the page.
     if ((m = hash.match(/^share\/([a-z0-9]{10})$/))) { Share.open(m[1]); return true; }
     // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
-    if (hash === 'near') { $('#nearMeBtn').click(); return true; }
+    if (hash === 'near') { MainScreen.open('timings'); closeStop(); showNearStops({ ask: true }); return true; }
     if (hash === 'nav') { openNav(); return true; }
     if (hash === 'route') { openPlanner(); return true; }
     if ((m = hash.match(ROUTE_HASH_RE))) { openPlanner(end(m[1]), end(m[2]), { when: When.fromHash(m[3], m[4]) }); return true; }
@@ -2448,6 +2533,8 @@ function routeFromShare() {
         .catch(() => {});
 
     if (!routeFromShare() && !routeFromHash()) openStartPage();
+    // Opened on Bus timings with no stop: Stops near me, if it may look (the tabs do it after).
+    if (MainScreen.active() === 'timings' && !current) showNearStops();
     Tour.maybeStart();
 })();
 
