@@ -37,7 +37,7 @@ def open_button(text: str, hash_path: str = "", private: bool = True):
     url = mini_app_url(hash_path)
     if not private:
         return Button.url(text, url)
-    return types.KeyboardInlineButton(text, types.InlineButtonTypeWebView(url))
+    return types.KeyboardButtonWebView(text=text, url=url)
 
 
 async def setup_mini_app(client) -> None:

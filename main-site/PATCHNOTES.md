@@ -1,11 +1,19 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 27 October 2026**
+**Latest update: 30 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 30 October 2026: /start works again
+
+### Telegram bot
+
+- **/start works again** - In a private chat, /start answered with nothing. Its 🌐 Open web app button now opens the web app inside Telegram, as it should.
 
 ---
 
