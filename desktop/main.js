@@ -12,9 +12,10 @@
 // - links to anywhere but the site opening in your own browser;
 // - uwu://sgbus/ links opening it, as they open the Android app (see fromAppLink), and other
 //   UwU apps' uwu:// links passed on to them (links.js);
-// - checking for its own updates (updater.js), every hour and from the tray's "Check for
-//   updates...", with a notification when there's one, unless the site's "New versions of the
-//   app" is off (2.1.1);
+// - checking for its own updates (updater.js): as it opens, in a small window as Discord's
+//   does, which downloads and installs one before the app opens (2.2.8); then every hour and
+//   from the tray's "Check for updates...", with a notification when there's one, unless the
+//   site's "New versions of the app" is off (2.1.1);
 // - Bus timings widgets on the desktop (widgets.js);
 // - a stop's next buses in the tray (the macOS menu bar, and its Dock badge), and favourite
 //   stops in the Windows Jump List, the taskbar thumbnail's buttons and the macOS Dock menu
@@ -590,7 +591,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   // macOS: clicking the Dock icon with the window hidden.
   app.on('activate', () => showWindow());
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
     // Started only to carry another UwU app's link: hand it over and go, before the window
     // or the tray.
     if (startLink && !fromAppLink(startLink) && links.passOn(startLink)) {
@@ -615,6 +616,9 @@ if (!app.requestSingleInstanceLock()) {
       setStartAtLogin(true);
       writeSettings({ loginChosen: true });
     }
+    // The small window first, as Discord's: an update found now is downloaded and installed
+    // before the app opens, unless Later (updater.js, startup).
+    await updater.startup();
     createWindow();
     // Before the tray, whose menu asks it for its lines, and before the page can send it
     // favourites; the countdown starts once the tray's there.

@@ -38,8 +38,14 @@
 // small script swaps the new SG Bus Timings.app in for the old and, for Restart to update,
 // opens it. That needs the app somewhere you can write to, as /Applications is for an admin;
 // not still on the .dmg, nor run straight from Downloads (macOS runs that from a read-only copy).
+//
+// From 2.2.8 it also checks as the app opens, as Discord does (startup): a small window,
+// splash.html, says "Checking for updates…", and an update it can install downloads there with a
+// bar, then "Installing update…" and the app opens again as the new version. Later, under the
+// bar, opens the app now and leaves the download to carry on as above. Restart to update shows
+// the same window, "Installing update…", as it goes.
 
-const { app, Notification, powerMonitor, shell } = require('electron');
+const { app, BrowserWindow, Notification, nativeTheme, powerMonitor, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const { execFile, spawn } = require('node:child_process');
 const fs = require('node:fs');
@@ -51,6 +57,8 @@ const FIRST_CHECK_MS = 30 * 1000;
 const CHECK_EVERY_MS = 60 * 60 * 1000;
 // After waking, the network takes a moment to come back.
 const AFTER_WAKE_MS = 20 * 1000;
+// At launch, how long to wait for GitHub before opening the app anyway.
+const STARTUP_CHECK_MS = 10 * 1000;
 
 const state = { available: null, ready: null, checking: false }; // the newer version, and once it's downloaded
 let onChange = () => {};
@@ -133,8 +141,12 @@ function notify(title, body, click) {
   n.show();
 }
 
-function restartToUpdate() {
+async function restartToUpdate() {
   if (!state.ready) return;
+  // As at launch: the small window, saying so, while it goes.
+  if (!splash) await openSplash();
+  say({ text: 'Installing update…', percent: -1 });
+  await wait(800);
   // main.js's close handler lets the window go once the app is quitting.
   app.emit('sgbus-quitting');
   if (mac) {
@@ -156,17 +168,18 @@ function downloadFailed(version) {
   notify(`Couldn't download SG Bus Timings ${version}`, 'It tries again within the hour, or click to download it from GitHub.', () => shell.openExternal(RELEASES));
 }
 
-// changed: called whenever there's something new for the tray's menu and the title bar.
-// wanted: whether "New versions of the app" is on, for the notifications it shows unasked.
-function start(changed, { wanted } = {}) {
-  if (!app.isPackaged) return; // nothing to update when run from source (npm start)
-  onChange = changed || onChange;
-  notices = wanted || notices;
+// How it updates, set once, for the check at launch and the ones after.
+let configured = false;
+function configure() {
+  if (configured) return;
+  configured = true;
   install = canInstall();
-  autoUpdater.autoDownload = install;
   // macOS installs it itself (swapMacOnQuit), never through Squirrel.Mac.
   autoUpdater.autoInstallOnAppQuit = install && !mac;
   autoUpdater.logger = null;
+  // Always heard, so one that comes with nothing else listening (a download left to carry on
+  // after Later, before start's handler) isn't an uncaught error that ends the app.
+  autoUpdater.on('error', () => {});
   if (mac && install) {
     // electron-updater would now serve the .zip to Squirrel.Mac (MacUpdater.updateDownloaded);
     // only say it's downloaded, with the file, and leave Squirrel out of it.
@@ -177,6 +190,16 @@ function start(changed, { wanted } = {}) {
     // Quit any other way than Restart to update: installed then, as on Windows, not reopened.
     app.on('will-quit', () => swapMacOnQuit(false));
   }
+}
+
+// changed: called whenever there's something new for the tray's menu and the title bar.
+// wanted: whether "New versions of the app" is on, for the notifications it shows unasked.
+function start(changed, { wanted } = {}) {
+  if (!app.isPackaged) return; // nothing to update when run from source (npm start)
+  onChange = changed || onChange;
+  notices = wanted || notices;
+  configure();
+  autoUpdater.autoDownload = install;
 
   autoUpdater.on('update-available', (info) => {
     state.available = info.version;
@@ -273,4 +296,146 @@ function checkItem() {
     : { label: 'Check for updates...', click: checkNow };
 }
 
-module.exports = { start, menuItem, checkItem, ready: () => state.ready, restart: restartToUpdate };
+// ---------- the window it opens with (splash.html) ----------
+
+let splash = null;
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const megabytes = (bytes) => (bytes / 1e6).toFixed(bytes < 10e6 ? 1 : 0);
+
+function openSplash() {
+  splash = new BrowserWindow({
+    width: 300,
+    height: 360,
+    frame: false,
+    resizable: false,
+    maximizable: false,
+    fullscreenable: false,
+    center: true,
+    show: false,
+    title: 'SG Bus Timings',
+    icon: path.join(__dirname, 'build', 'icon.png'),
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1b221a' : '#f3faf1',
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  splash.removeMenu();
+  splash.on('closed', () => { splash = null; });
+  const loaded = new Promise((resolve) => splash.webContents.once('did-finish-load', resolve));
+  splash.loadFile(path.join(__dirname, 'splash.html'));
+  splash.once('ready-to-show', () => splash?.show());
+  return loaded;
+}
+
+// What the window says: { text, detail, percent (0 to 100, -1 for no telling), later }.
+function say(status) {
+  splash?.webContents.executeJavaScript(`setStatus(${JSON.stringify(status)})`).catch(() => {});
+}
+
+function closeSplash() {
+  if (splash && !splash.isDestroyed()) splash.destroy();
+  splash = null;
+}
+
+// Later, under the download's bar: splash.html says so by its title, having no bridge here.
+const later = () => new Promise((resolve) => {
+  splash?.on('page-title-updated', (e, title) => {
+    e.preventDefault();
+    if (title === 'later') resolve('later');
+  });
+});
+
+// At launch, before the app's window: checks for an update, and downloads and installs one it
+// can install itself, as Discord does. Resolves once the app should open; never, if it's
+// restarting into the new version. From source, there's nothing to update, unless
+// SGBUS_SPLASH_DEMO=1 (npm start) has it go through the steps with made-up numbers.
+async function startup() {
+  const demo = !app.isPackaged && process.env.SGBUS_SPLASH_DEMO;
+  if (!app.isPackaged && !demo) return;
+  await openSplash();
+  if (demo) return demoSteps();
+  say({ text: 'Checking for updates…', percent: -1 });
+  configure();
+  // Downloaded here, by hand, so it's only once it's known there's one.
+  autoUpdater.autoDownload = false;
+
+  const found = await new Promise((resolve) => {
+    const done = (info) => {
+      autoUpdater.removeListener('update-available', onFound);
+      autoUpdater.removeListener('update-not-available', onNone);
+      autoUpdater.removeListener('error', onNone);
+      resolve(info);
+    };
+    const onFound = (info) => done(info);
+    const onNone = () => done(null);
+    autoUpdater.on('update-available', onFound);
+    autoUpdater.on('update-not-available', onNone);
+    autoUpdater.on('error', onNone);
+    autoUpdater.checkForUpdates().catch(() => done(null));
+    setTimeout(() => done(null), STARTUP_CHECK_MS);
+  });
+
+  // None, offline, or one it can't install itself (.msi, .deb): told about it as before, once
+  // the app's open (start).
+  if (!found || !install) return opening();
+
+  state.available = found.version;
+  downloading = found.version;
+  say({ text: 'Downloading update', detail: `Version ${found.version}`, percent: 0, later: true });
+  const onProgress = (p) => say({
+    text: 'Downloading update',
+    detail: `${megabytes(p.transferred)} of ${megabytes(p.total)} MB`,
+    percent: Math.floor(p.percent),
+    later: true,
+  });
+  autoUpdater.on('download-progress', onProgress);
+  const downloaded = new Promise((resolve) => autoUpdater.once('update-downloaded', (info) => resolve(info)));
+  // Only a failure ends the race from here: a download that worked ends it as `downloaded`.
+  const failed = autoUpdater.downloadUpdate().then(() => new Promise(() => {}), () => 'failed');
+  const outcome = await Promise.race([downloaded, failed, later()]);
+  autoUpdater.removeListener('download-progress', onProgress);
+
+  // Later: the app opens, and the download carries on, ready on the tray when it's done.
+  if (outcome === 'later') return opening();
+  if (outcome === 'failed') {
+    downloading = null;
+    return opening();
+  }
+  if (mac) {
+    try {
+      macStaged = await stageMac(outcome.downloadedFile);
+    } catch (err) {
+      console.warn('update unzip failed:', err?.message || err);
+      downloading = null;
+      return opening();
+    }
+  }
+  downloading = null;
+  state.ready = outcome.version;
+  await restartToUpdate();
+  // Quitting into the installer: the app doesn't open meanwhile.
+  return new Promise(() => {});
+}
+
+// "Starting…", then the app's window in its place.
+async function opening() {
+  say({ text: 'Starting…', percent: null });
+  await wait(500);
+  closeSplash();
+}
+
+// SGBUS_SPLASH_DEMO: the steps, made up, for seeing the window from source. Later works as it
+// does for real.
+async function demoSteps() {
+  say({ text: 'Checking for updates…', percent: -1 });
+  await wait(1500);
+  const total = 84.6e6;
+  const stop = later();
+  for (let p = 0; p <= 100; p += 4) {
+    say({ text: 'Downloading update', detail: `${megabytes(total * p / 100)} of ${megabytes(total)} MB`, percent: p, later: true });
+    if (await Promise.race([wait(120), stop]) === 'later') return opening();
+  }
+  say({ text: 'Installing update…', percent: -1 });
+  await wait(1500);
+  return opening();
+}
+
+module.exports = { start, startup, menuItem, checkItem, ready: () => state.ready, restart: restartToUpdate };

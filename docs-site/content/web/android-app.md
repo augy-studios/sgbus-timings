@@ -320,6 +320,38 @@ You can also check whenever you like: tap the download
 arrow in the Edge Tray (**Check for app updates**). It says if you already have
 the newest version, or which one is out, with **Update** to install it as above.
 
+### What's new in each version
+
+<figure>
+<img src="/screenshots/web/android-update.png" alt="The update page in blue, from the phone's wallpaper: Update available, SG Bus Timings v2.2.7, then v2.2.8 with a New chip, Yesterday, 4 changes, a line saying what's in it, and cards for Android app and Bus timings, each with its changes, and Update to 2.2.8 and Not now buttons at the bottom." width="360" height="800" loading="lazy">
+<figcaption>What's new in the version you'd get, in your phone's own colours.</figcaption>
+</figure>
+
+The update page is in your phone's own colours: on Android 12 and later they
+come from your wallpaper, as Android's own apps do, and it's light or dark as
+your phone is. On older Android, it's in the app's green.
+
+Under what's happening, each version is on a timeline, newest first: the one
+you'd get marked **New** and open, with what's in it in cards by part of the
+app, and the one you have marked **Installed**. **Earlier releases** are under
+them; tap any version to see what came with it, and **Show all** in a card for
+the rest of its changes.
+
+<figure>
+<img src="/screenshots/web/android-update-downloading.png" alt="The update page while it downloads: Updating, Downloading version 2.2.8, 5.2 MB of 6.2 MB, and a wavy line most of the way along its track, with the changelog under it and Cancel at the bottom." width="360" height="800" loading="lazy">
+<figcaption>Downloading, the wave growing as it goes.</figcaption>
+</figure>
+
+While it downloads, a wavy line grows along its track, with how much of the
+version has come; **Cancel** stops it. When you already have the newest version,
+the page says **You're up to date**, with your version open on the timeline and
+**GitHub** for its page there.
+
+<figure>
+<img src="/screenshots/web/android-update-dark.png" alt="The update page in dark mode: You're up to date, SG Bus Timings v2.2.7, then v2.2.7 with an Installed chip, 4 days ago, 16 changes, its summary and the Android app card with three changes, and GitHub and Close buttons at the bottom." width="360" height="800" loading="lazy">
+<figcaption>Up to date, in dark mode.</figcaption>
+</figure>
+
 ### Hear about new versions
 
 The app can tell you the moment a new version is out, even

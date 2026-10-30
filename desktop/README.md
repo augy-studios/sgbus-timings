@@ -62,6 +62,14 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   tries again. A check that fails, offline say, stays quiet unless it was asked for from the
   tray. Upload the `.yml` files, the Mac `.zip`s and the `.blockmap`s with the installers on
   every release (the workflow does).
+- **Updates as it opens, as Discord does** (2.2.8, `updater.js`'s `startup`, `splash.html`): a
+  small frameless window with the icon checks first ("Checking for updates…", up to 10
+  seconds), and an update the `.exe`, AppImage or Mac app can install downloads there with a
+  bar, then "Installing update…" and the app restarts as the new version. Later, under the bar,
+  opens the app and leaves the download to finish in the background as above. Nothing found,
+  offline, or the `.msi`, `.deb` or `.rpm`: "Starting…" and the app's window. Restart to update
+  shows the same window. From source, `SGBUS_SPLASH_DEMO=1 npm start` runs it through the
+  steps with made-up numbers (in a VS Code terminal, unset `ELECTRON_RUN_AS_NODE` first).
 - **New versions as notifications** (2.1.1): "SG Bus Timings 2.1.1 is out" (or "is ready",
   once downloaded, or "Couldn't download"), unless **New versions of the app** is turned off
   in the site's Service alerts (`main-site/js/app-update.js`, through `preload.js`'s `sgbusDesktop.releases`, kept

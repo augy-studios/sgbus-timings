@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!-- The window the app opens with, as Discord's does (updater.js, startup): its icon, and what
+     it's doing, "Checking for updates…", "Downloading update" with a bar, "Installing
+     update…", "Starting…". updater.js sets it with setStatus() and listens for Later. Light or
+     dark as the computer is. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>SG Bus Timings</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f3faf1;
+    --ink: #10200f;
+    --muted: #4c5c49;
+    --track: #d4e8cd;
+    --fill: #2e7d32;
+    --edge: rgba(0, 0, 0, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1b221a;
+      --ink: #eef6ea;
+      --muted: #a9b8a5;
+      --track: #34432f;
+      --fill: #8fd18a;
+      --edge: rgba(255, 255, 255, 0.08);
+    }
+  }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); color: var(--ink);
+    font: 600 15px/1.35 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Ubuntu", "Cantarell", sans-serif;
+    border: 1px solid var(--edge); box-sizing: border-box;
+    user-select: none; cursor: default;
+    /* Dragged by anywhere, as there's no title bar. */
+    -webkit-app-region: drag;
+  }
+  .logo { width: 92px; height: 92px; border-radius: 26px; animation: bob 2.4s ease-in-out infinite; }
+  @keyframes bob { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-6px) scale(1.04); } }
+  #status { margin-top: 28px; text-align: center; padding: 0 20px; }
+  #detail { margin-top: 4px; min-height: 18px; color: var(--muted); font-weight: 500; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .bar { width: 180px; height: 6px; margin-top: 12px; border-radius: 3px; background: var(--track); overflow: hidden; visibility: hidden; }
+  .bar.on { visibility: visible; }
+  .fill { height: 100%; width: 0; border-radius: 3px; background: var(--fill); transition: width 0.25s ease; }
+  /* No telling how far: a stretch sliding across. */
+  .bar.loose .fill { width: 35%; animation: slide 1.3s ease-in-out infinite; }
+  @keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(290%); } }
+  #later {
+    margin-top: 18px; padding: 6px 14px; border: 0; border-radius: 999px;
+    background: transparent; color: var(--muted); font: inherit; font-size: 13px;
+    cursor: pointer; visibility: hidden; -webkit-app-region: no-drag;
+  }
+  #later.on { visibility: visible; }
+  #later:hover, #later:focus-visible { background: var(--track); color: var(--ink); outline: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .logo, .bar.loose .fill { animation: none; }
+    .fill { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <img class="logo" src="build/icon.png" alt="">
+  <div id="status" role="status" aria-live="polite">Starting…</div>
+  <div id="detail"></div>
+  <div class="bar" id="bar"><div class="fill" id="fill"></div></div>
+  <button id="later" type="button">Later</button>
+  <script>
+    // From updater.js: what to say, a line under it, and how far along (0 to 100, -1 for no
+    // telling, null for no bar), and whether Later's offered.
+    window.setStatus = ({ text, detail = '', percent = null, later = false }) => {
+      document.getElementById('status').textContent = text;
+      document.getElementById('detail').textContent = detail;
+      const bar = document.getElementById('bar');
+      bar.classList.toggle('on', percent != null);
+      bar.classList.toggle('loose', percent != null && percent < 0);
+      document.getElementById('fill').style.width = percent != null && percent >= 0 ? `${percent}%` : '';
+      document.getElementById('later').classList.toggle('on', later);
+    };
+    // Later: the title changes, which updater.js watches for, as this page has no bridge to it.
+    document.getElementById('later').addEventListener('click', () => { document.title = 'later'; });
+  </script>
+</body>
+</html>

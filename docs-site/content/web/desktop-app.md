@@ -120,10 +120,28 @@ two you opened last.
 
 ## Updates
 
-The app checks for a new version when it starts, then every hour,
-and again when your computer wakes from sleep. To check now, right-click the
-tray's bus and pick **Check for updates...**: a notification says what it found,
-even if you're up to date.
+<figure>
+<img src="/screenshots/web/desktop-update.png" alt="The small window the desktop app opens with: the app's icon, Downloading update, 31 of 85 MB, a bar a third of the way along, and Later under it." width="300" height="360" loading="lazy">
+<figcaption>Updating as it opens.</figcaption>
+</figure>
+
+The app checks for a new version as it opens, in a small window with its icon:
+**Checking for updates...**, then **Starting...** and the app's window. When
+there's a new version it can install itself (installed with the `.exe`, as an
+AppImage, or on a Mac), it downloads in that window, with a bar and how much has
+come, then says **Installing update...** and opens again as the new version.
+**Later**, under the bar, opens the app now and lets the download carry on in
+the background. Offline, it opens after a few seconds without it. The window is
+light or dark as your computer is.
+
+<figure>
+<img src="/screenshots/web/desktop-update-dark.png" alt="The same window in dark mode: the app's icon on a dark green background, Downloading update, 31 of 85 MB, a bar a third of the way along, and Later." width="300" height="360" loading="lazy">
+<figcaption>The same, with your computer in dark mode.</figcaption>
+</figure>
+
+After that it checks every hour while it runs, and again when your computer
+wakes from sleep. To check now, right-click the tray's bus and pick **Check for
+updates...**: a notification says what it found, even if you're up to date.
 
 A new version is only found once its installers are on the release, which is a
 few minutes after it's out on Android.
@@ -135,7 +153,8 @@ The tray's menu and the title bar still offer the update.
 - Installed with the `.exe`, as an AppImage, or on a Mac: it downloads the
   update itself, then a notification, the tray's menu and a green **update**
   button in the title bar, right of the screenshot buttons, offer **Restart to
-  update**. If you don't, it updates the next time you quit.
+  update**, which shows the small window saying **Installing update...** as it
+  goes. If you don't, it updates the next time you quit.
 - Installed with the `.msi`, `.deb` or `.rpm`: a notification says there's a new version;
   click it to download the new installer, and install it over the old one.
 

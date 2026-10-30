@@ -21,7 +21,8 @@ export function newer(a, b) {
 // that isn't android-v*, or one published before its APK finished uploading.
 //
 //   { version: "1.2.0", apk: "https://github.com/.../sg-bus-timings-1.2.0.apk", size: 712345,
-//     sha256: "ab12…" (GitHub's checksum of the file, or null), page: the release's page }
+//     sha256: "ab12…" (GitHub's checksum of the file, or null), page: the release's page,
+//     date: when it was published, summary and notes: what's new in it (notesOf) }
 export function asRelease(rel) {
   const version = TAG.exec(rel?.tag_name || '')?.[1];
   if (!version || rel.draft || rel.prerelease) return null;
@@ -35,23 +36,68 @@ export function asRelease(rel) {
     size: apk.size,
     sha256: /^sha256:[0-9a-f]{64}$/i.test(apk.digest || '') ? apk.digest.slice(7).toLowerCase() : null,
     page: rel.html_url,
+    date: rel.published_at || null,
+    ...notesOf(rel.body),
   };
 }
 
-// The newest release to offer, or null while there's none. GitHub allows 60 requests an hour per
-// IP without a token; GITHUB_TOKEN (any token, no scopes needed for a public repository) raises
-// that to 5,000, and is optional.
-export async function latestRelease() {
+// What's new in a release, for the app's changelog (UpdateActivity.java), from its notes as
+// release/README.md has them written: the first paragraph as `summary`, and under "## What's new"
+// each "###" heading as a group of its items, "- **Title**: text" as { title, text }. Plain text,
+// the Markdown taken out.
+const plain = (s) => String(s)
+  .replace(/\*\*(.+?)\*\*/g, '$1')
+  .replace(/`([^`]+)`/g, '$1')
+  .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+  .replace(/(^|[\s(])_([^_]+)_(?=[\s).,:;]|$)/g, '$1$2')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+export function notesOf(body) {
+  const text = String(body || '').replace(/\r\n/g, '\n');
+  const first = text.trim().split(/\n\s*\n/)[0] || '';
+  const summary = first.startsWith('#') || first.startsWith('|') ? '' : plain(first);
+  const notes = [];
+  const at = text.search(/^##\s+What.s new\s*$/im);
+  if (at !== -1) {
+    let group = null;
+    for (const line of text.slice(at).split('\n').slice(1)) {
+      if (/^##\s/.test(line)) break;
+      const head = line.match(/^###\s+(.+)/);
+      if (head) {
+        group = { title: plain(head[1]), items: [] };
+        notes.push(group);
+        continue;
+      }
+      const item = line.match(/^[-*]\s+(.+)/);
+      if (item) {
+        if (!group) notes.push((group = { title: "What's new", items: [] }));
+        const titled = item[1].match(/^\*\*(.+?)\*\*\s*[:.]?\s*(.*)$/);
+        group.items.push(titled ? { title: plain(titled[1]).replace(/[:.]$/, ''), text: plain(titled[2]) } : { title: '', text: plain(item[1]) });
+      } else if (group?.items.length && /^\s+\S/.test(line)) {
+        // A line carried on, or a point under the item: part of the item.
+        const last = group.items[group.items.length - 1];
+        last.text = `${last.text} ${plain(line.replace(/^\s*[-*]\s+/, ''))}`.trim();
+      }
+    }
+  }
+  return { summary, notes: notes.filter((g) => g.items.length) };
+}
+
+// Every release to offer, newest first. GitHub allows 60 requests an hour per IP without a token;
+// GITHUB_TOKEN (any token, no scopes needed for a public repository) raises that to 5,000, and is
+// optional.
+export async function allReleases() {
   const headers = { accept: 'application/vnd.github+json', 'x-github-api-version': '2022-11-28', 'user-agent': 'sgbus-timings' };
   if (process.env.GITHUB_TOKEN) headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   const r = await fetch(RELEASES, { headers, signal: AbortSignal.timeout(10_000) });
   if (!r.ok) throw new Error(`GitHub replied ${r.status}`);
   const releases = await r.json();
+  return (Array.isArray(releases) ? releases : []).map(asRelease).filter(Boolean)
+    .sort((a, b) => (newer(a.version, b.version) ? -1 : newer(b.version, a.version) ? 1 : 0));
+}
 
-  let best = null;
-  for (const rel of Array.isArray(releases) ? releases : []) {
-    const release = asRelease(rel);
-    if (release && (!best || newer(release.version, best.version))) best = release;
-  }
-  return best;
+// The newest release to offer, or null while there's none.
+export async function latestRelease() {
+  return (await allReleases())[0] || null;
 }

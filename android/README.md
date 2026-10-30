@@ -39,7 +39,7 @@ from there.
 | **Wear OS** (2.1.0): favourite stops handed to the watch app over the Wearable Data Layer | `WearSync`, and the watch app in `native/wear/` (its README) | `script.js` (`shareFavsWithWidgets`) |
 | **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
 | **Opening MyICA Mobile** (2.2.1), from a trip to a checkpoint, for its immigration QR code | `OpenAppActivity` (`myica`), the `myica` feature | `js/trip.js` ("MyICA"), `js/network.js` (`ICA_CHECKPOINTS`) |
-| **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates". On a Samsung device (Android 14 and later), an update that doesn't install is put down to Auto Blocker, with how to turn it off and a button to Security settings, as nothing public says whether it's on | `UpdateActivity` | `js/app-update.js`, `api/app-release.js` |
+| **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates". On a Samsung device (Android 14 and later), an update that doesn't install is put down to Auto Blocker, with how to turn it off and a button to Security settings, as nothing public says whether it's on. From 2.2.8 a Material 3 page in the phone's own colours (Material You), with a changelog of each release's notes and a wavy progress bar (see "The updater's page" below) | `UpdateActivity`, `WavyProgressView`, `res/layout/update_*.xml` | `js/app-update.js`, `api/app-release.js` |
 | **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |
 
 `SgBusPlugin` also tells the page what this build can do (`info`, with `features`), posts
@@ -170,3 +170,28 @@ do it after 30 minutes where One UI has it.
 - **Upgrading Capacitor**: raise all three `@capacitor/*` versions together, `npm install`,
   `npx cap sync android`, and compare `native/` with a fresh `npx cap add android` for template
   changes.
+
+### The updater's page
+
+`UpdateActivity` is the app's one screen in Material 3 (Material Components, `materialVersion`
+in `native/variables.gradle`): `UpdateTheme` in `res/values/update.xml` takes its colours from
+the wallpaper on Android 12 and later (`DynamicColors`), and before that from the tonal palette
+of the app's green, light and dark (`values-night/update.xml`). Its icons are the site's
+(`update_ic_*.xml`, from `main-site/js/icons.js`). The changelog is `main-site/api/app-release.js`'s
+`history`: each release's notes on GitHub, its "## What's new" read into groups by their "###"
+headings, so write the notes as `release/README.md` shows for them to show well. Material's
+progress bar has no wave for views, so `WavyProgressView` draws Material 3 Expressive's.
+
+To see each step on an emulator, a debuggable build (`gradlew assembleDebug`, never a release)
+takes two extras: `org.uwuapps.sgbus.update.TEST_JSON`, a file in the app's cache to read in
+place of `/api/app-release`, and `org.uwuapps.sgbus.update.TEST_VERSION`, a version to be. For
+example, as 2.2.7 with 2.2.8 out, its JSON saved from the site with a 2.2.8 release added:
+
+```bash
+adb push release.json /data/local/tmp/
+adb shell "run-as org.uwuapps.sgbus cp /data/local/tmp/release.json cache/"
+adb shell am start -a android.intent.action.VIEW -d org.uwuapps.sgbus://update/check   -n org.uwuapps.sgbus/.UpdateActivity   --es org.uwuapps.sgbus.update.TEST_JSON release.json --es org.uwuapps.sgbus.update.TEST_VERSION 2.2.7
+```
+
+`adb shell cmd uimode night yes` shows it dark. Update downloads that release's real APK, which
+then isn't installed as it isn't newer than the build you're running.

@@ -9,7 +9,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 31 October 2026: bus times by the clock
+## 31 October 2026: Apps 2.2.8, bus times by the clock, and updates in your phone's colours
 
 ### Web app
 
@@ -18,6 +18,20 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Telegram bot
 
 - **Clock times** - 🕒 Show clock times in /settings shows each bus as the time it comes, such as 14:32, in a stop's timings, /nav and a route's journeys. It syncs with the web app's Bus times.
+
+### Linux command line 2.2.8
+
+- The same version number as the apps.
+
+### Android app 2.2.8
+
+- The web app's changes above, and Back to Navigate from 30 October.
+- **Updates in your phone's colours** - The update page is a page of its own in Material You: its colours from your wallpaper on Android 12 and later, light or dark as your phone is. It shows what's new in each version on a timeline, the one you'd get open with its changes in cards, and the one you have marked Installed. Downloads show as a wavy line growing along its track.
+
+### Desktop app 2.2.8
+
+- The web app's changes above, and Back to Navigate from 30 October.
+- **Updates as it opens** - A small window with the app's icon checks for a new version as the app opens. One it can install downloads there with a bar, then it installs and opens again as the new version; Later opens the app now and finishes the download in the background. Restart to update shows the same window as it installs.
 
 ---
 

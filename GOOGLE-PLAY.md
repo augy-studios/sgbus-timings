@@ -1,7 +1,7 @@
 # Putting SG Bus Timings on Google Play
 
 A step-by-step guide for publishing the Android app on Google Play, written for this repo as it
-stands on 2.2.7, ahead of the 3.0.0 release.
+stands on 2.2.8, ahead of the 3.0.0 release.
 
 **Phone app only.** Augy has decided the Wear OS watch app stays off Google Play for now. It is
 built and shipped the way it is today, and section 8 says what adding it later would take.
@@ -66,7 +66,7 @@ Everything here was read from the repo.
 |---|---|---|
 | Phone app id | `org.uwuapps.sgbus` | `android/capacitor.config.json`, `android/native/app/build.gradle` (`applicationId`, `namespace`) |
 | applicationIdSuffix / flavors | None. One variant, `release` | `android/native/app/build.gradle` |
-| Version | `versionName "2.2.7"`, `versionCode 23` | `android/native/app/build.gradle` |
+| Version | `versionName "2.2.8"`, `versionCode 24` | `android/native/app/build.gradle` |
 | minSdk | 24 (Android 7) | `android/native/variables.gradle` |
 | compileSdk / targetSdk | 36 / 36 | `android/native/variables.gradle` |
 | Build tools | Android Gradle Plugin 8.13.0, Capacitor 8.5.3, JDK 21+ | `android/native/build.gradle`, `android/package.json` |
@@ -175,7 +175,7 @@ With Option 2, and the same `applicationId`:
    keeps the updater).
 2. If they later install **SG Bus Timings from Play**, Play should treat it as an update to the
    app they have. This was not checked against a Google page; test it (section 12) with a phone
-   that has the 2.2.7 APK, before telling anyone.
+   that has the 2.2.8 APK, before telling anyone.
 3. After that, they get Play's updates. Their favourites, places, trips and settings stay, since
    Android keeps the app's data across an update.
 4. The GitHub updater and "New versions of the app" notifications only ever offer GitHub's
@@ -512,7 +512,7 @@ Also in the same file:
 - `main-site/api/push/release.js`'s `sgbus-releases` topic keeps serving the GitHub builds.
 
 Because the site is live for everyone, **deploy the site change before** (or with) the Play
-release, and check that 2.2.7 and 3.0.0 GitHub builds still behave.
+release, and check that 2.2.8 and 3.0.0 GitHub builds still behave.
 
 ### Testing it
 
@@ -779,7 +779,7 @@ Other answers:
 
 1. **Internal testing.** Upload `app-play-release.aab`. Add yourself and a few people by email.
    It is quick (no review in the usual case) and gives an install link. Use it to:
-   - Install the **2.2.7 GitHub APK** on a test phone, then install 3.0.0 from the internal test
+   - Install the **2.2.8 GitHub APK** on a test phone, then install 3.0.0 from the internal test
      link, and check it **updates in place** with favourites kept (Option 2 in section 4).
    - Test in-app updates: upload a higher `versionCode` and follow the test guide in section 7.
    - Check the Play build has none of the removed permissions: Play Console's bundle page shows the
@@ -829,7 +829,7 @@ Other answers:
 - [ ] [Dev] `app-update.js` has the `playupdate` branch, deployed to the site first
 - [ ] [Dev] `build-apk.ps1` updated for the flavors and still building the watch APK;
       `build-aab.ps1` added; any new keystore properties file added to `.gitignore`
-- [ ] The 2.2.7 and 3.0.0 GitHub builds still update themselves from GitHub
+- [ ] The 2.2.8 and 3.0.0 GitHub builds still update themselves from GitHub
 
 **Account and signing**
 
@@ -855,7 +855,7 @@ Other answers:
 - [ ] [Augy] Data safety form done and matches the privacy policy
 - [ ] [Augy] Foreground service declaration with video
 - [ ] [Augy] Permissions declarations, if background location or exact alarms are kept
-- [ ] [Augy] Internal test: 2.2.7 APK updates in place to the Play build; favourites survive; in-app update works
+- [ ] [Augy] Internal test: 2.2.8 APK updates in place to the Play build; favourites survive; in-app update works
 - [ ] [Augy] Closed test: 12 or more testers, 14 days in a row
 - [ ] [Augy] Applied for production and approved
 - [ ] [Augy] Production release with notes in each language
