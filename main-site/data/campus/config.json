@@ -1,5 +1,5 @@
 {
-  "_about": "Campus shuttles (help desk #13, js/campus.js). The stops, routes and times are Augy's nus.json and ntu.json beside this, as he sent them. This file is what goes with them and is easy to change: each university's name and dot colour, each route's colour, NUS's term dates, and the credit for NTU's stops. Colours are #rrggbb.",
+  "_about": "Campus shuttles (help desk #13, js/campus.js). The stops, routes and times are Augy's nus.json and ntu.json beside this, as he sent them. This file is what goes with them and is easy to change: each university's name and dot colour, each route's colour, NUS's term dates, and each university's credit (`credit`, linked to `creditUrl`), which the map shows only while that university's shuttles are on it. Colours are #rrggbb.",
   "nus": {
     "name": "NUS",
     "colour": "#ef7c00",
@@ -19,7 +19,10 @@
       ["2026-08-03", "2026-12-05"],
       ["2027-01-11", "2027-05-08"]
     ],
-    "covers": ["2026-08-03", "2027-08-01"]
+    "covers": ["2026-08-03", "2027-08-01"],
+    "_credit": "For the route colours, from NUS's network map.",
+    "credit": "NUS shuttles: NUS University Campus Infrastructure",
+    "creditUrl": "https://uci.nus.edu.sg/campus-life/campus-services/transportation/internal-shuttle-bus/"
   },
   "ntu": {
     "name": "NTU",

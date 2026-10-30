@@ -5,7 +5,7 @@
 //
 // The data is Augy's, as he sent it: /data/campus/nus.json and ntu.json, each { stops, routes },
 // read here as they are. /data/campus/config.json goes with them: each university's colour, each
-// route's colour, NUS's term dates and NTU's credit, easy to change by hand.
+// route's colour, NUS's term dates and each university's credit, easy to change by hand.
 //
 //   stops    [{ id, name, road, loc: "lat,lng" }]. An id of five digits is an LTA bus stop, one
 //            public buses use too: it's drawn and named as LTA has it (stopsIndex, script.js),
@@ -31,11 +31,12 @@
 // for the day doesn't run that day. NUS's term or vacation is by config.json's dates.
 //
 // Campus.load() fetches the three files and builds the shuttles against LTA's stops; then
-// Campus.at(code), Campus.listHtml(code), Campus.lines() and Campus.dots(), for Bus timings
-// (script.js), the map's cards (js/map-card.js) and Explorer (js/map.js). sw.js keeps the files.
+// Campus.at(code), Campus.listHtml(code), Campus.lines(), Campus.dots() and Campus.credits(view,
+// list), for Bus timings (script.js), the map's cards (js/map-card.js) and Explorer (js/map.js).
+// sw.js keeps the files.
 //
 // In Node (scripts/campus-test.mjs), module.exports is the same, for its pure parts: build,
-// readTimings, status and describe, given the files' contents and the time.
+// readTimings, status, describe and creditsIn, given the files' contents and the time.
 // Plain script: exports go on window.
 (function (root) {
   'use strict';
@@ -382,6 +383,58 @@
     }
   }
 
+  // ---------- the credits ----------
+
+  // Whether the stretch from a to b, [lat, lng] each, is anywhere in the box { s, w, n, e }:
+  // what's left of it once clipped to the box's four sides (Liang and Barsky's way).
+  function crosses(a, b, box) {
+    let t0 = 0;
+    let t1 = 1;
+    const dLat = b[0] - a[0];
+    const dLng = b[1] - a[1];
+    const sides = [[-dLat, a[0] - box.s], [dLat, box.n - a[0]], [-dLng, a[1] - box.w], [dLng, box.e - a[1]]];
+    for (const [p, q] of sides) {
+      if (p === 0) {
+        if (q < 0) return false;
+        continue;
+      }
+      const r = q / p;
+      if (p < 0) {
+        if (r > t1) return false;
+        if (r > t0) t0 = r;
+      } else {
+        if (r < t0) return false;
+        if (r < t1) t1 = r;
+      }
+    }
+    return true;
+  }
+
+  // The credit of each university with a line of `list`, [{ uni, points }], in `view`, [[south,
+  // west], [north, east]], grown by `pad` of its size each way, so it's there a little before a
+  // line comes on; every one with a line, without a view. From config.json's `credit` and
+  // `creditUrl`, in config.json's order: [{ uni, text, url }].
+  function creditsIn(config, list, view, pad = 0.1) {
+    let box = null;
+    if (view) {
+      const [[s, w], [n, e]] = view;
+      const dy = (n - s) * pad;
+      const dx = (e - w) * pad;
+      box = { s: s - dy, w: w - dx, n: n + dy, e: e + dx };
+    }
+    const shown = (l) => {
+      const pts = l.points || [];
+      if (!box) return pts.length > 0;
+      if (pts.length === 1) return crosses(pts[0], pts[0], box);
+      for (let i = 1; i < pts.length; i++) if (crosses(pts[i - 1], pts[i], box)) return true;
+      return false;
+    };
+    const unis = new Set((list || []).filter(shown).map((l) => l.uni));
+    return Object.keys(config || {})
+      .filter((u) => unis.has(u) && config[u]?.credit)
+      .map((u) => ({ uni: u, text: String(config[u].credit), url: config[u].creditUrl ? String(config[u].creditUrl) : '' }));
+  }
+
   // ---------- in the page ----------
 
   let files = null;
@@ -460,11 +513,12 @@
       `</div>`;
   }
 
-  // Each route as a line through its stops, for Explorer: [{ key, color, points }].
+  // Each route as a line through its stops, for Explorer: [{ key, uni, color, points }].
   function lines() {
     if (!model) return [];
     return model.routes.map((r) => ({
       key: r.key,
+      uni: r.uni,
       color: r.colour,
       points: r.keys.filter(Boolean).map((k) => model.stops.get(k)).map((s) => [s.lat, s.lng]),
     })).filter((l) => l.points.length >= 2);
@@ -477,11 +531,13 @@
     return [...model.stops.values()].filter((s) => !s.lta).map((s) => ({ key: s.key, lat: s.lat, lng: s.lng, color: model.config?.[s.uni]?.colour || '#7a4fd6' }));
   }
 
-  // The credit for data that asks for one, for the map's attribution.
-  const credits = () => (model ? ['nus', 'ntu'].map((u) => model.config?.[u]?.credit).filter(Boolean) : []);
+  // The credits for the map's attribution: those of the universities with a line of `list`
+  // (lines(), or the same drawn along the roads) in `view`, the map's [[south, west], [north,
+  // east]]; every one with a line, without a view.
+  const credits = (view, list = lines()) => (model ? creditsIn(model.config, list, view) : []);
 
   const api = {
-    MERGE_M, hhmm, clock, parseLoc, readTimings, build, season, status, describe, inkOn, sgDay,
+    MERGE_M, hhmm, clock, parseLoc, readTimings, build, season, status, describe, inkOn, sgDay, creditsIn,
     load, at, listHtml, lines, dots, credits, isReady: () => !!model,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;

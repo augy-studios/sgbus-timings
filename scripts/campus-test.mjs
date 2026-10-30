@@ -13,6 +13,7 @@
 //   4. Departures: from each end of K, a stop after either end, the end of R1, P's way back from
 //      OTH, the days K, R1, CR and CR-W don't run, after the last departure.
 //   5. The words, and the problems a broken file gives.
+//   6. The credits: each university's only while one of its lines is in the map's view.
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -188,6 +189,21 @@ ok('max under min is a problem', problems.some((p) => /z\.weekdays: every 5-3/.t
 // A campus stop within MERGE_M of an LTA stop is shown as that stop.
 const merged = C.build({ nus: { stops: [{ id: 'NUS-X', name: 'X', loc: '1.29430,103.76990' }, { id: 'NUS-Y', name: 'Y', loc: '1.2950,103.7700' }], routes: [{ id: 'T', stops: ['NUS-X', 'NUS-Y'], timings: { weekday: [{ start: '0700', end: '0800', min: 5, max: 5 }] } }] } }, LTA);
 ok(`a campus stop ${C.MERGE_M} m or less from an LTA stop is that stop`, merged.stops.has('16009') && !merged.stops.has('NUS-X') && merged.stops.has('NUS-Y'), [...merged.stops.keys()]);
+
+// ---------- 6. The credits ----------
+// Each route as Explorer draws it before the roads are in: straight from stop to stop.
+const drawn = m.routes.map((r) => ({ uni: r.uni, points: r.keys.map((k) => m.stops.get(k)).map((x) => [x.lat, x.lng]) }));
+const credited = (view, list = drawn) => C.creditsIn(raw.config, list, view).map((c) => c.uni);
+const around = ([lat, lng], d) => [[lat - d, lng - d], [lat + d, lng + d]];
+eq('credits: NUS\'s and NTU\'s, linked, from config.json', C.creditsIn(raw.config, drawn, null).map((c) => [c.uni, c.text === raw.config[c.uni].credit, /^https:\/\//.test(c.url)]), [['nus', true, true], ['ntu', true, true]]);
+eq('credits: none at Orchard', credited(around([1.3040, 103.8318], 0.006)), []);
+eq('credits: NUS only over Kent Ridge', credited(around([1.2966, 103.7764], 0.006)), ['nus']);
+eq('credits: NTU only over NTU', credited(around([1.3483, 103.6831], 0.006)), ['ntu']);
+eq('credits: both, zoomed out over Singapore', credited([[1.2, 103.6], [1.47, 104.05]]), ['nus', 'ntu']);
+eq('credits: NUS, where P crosses the view with no stop in it (Holland)', credited(around([1.3128, 103.7928], 0.002)), ['nus']);
+eq('credits: none just off P\'s line, padded or not', credited(around([1.3040, 103.7990], 0.002)), []);
+eq('credits: none without lines', credited(null, []), []);
+eq('credits: a university with no credit has none', C.creditsIn({ nus: {}, ntu: raw.config.ntu }, drawn, null).map((c) => c.uni), ['ntu']);
 
 console.log(fails ? `${fails} failed, ${passes} passed` : `all ${passes} passed`);
 process.exit(fails ? 1 : 0);

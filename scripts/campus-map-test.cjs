@@ -13,7 +13,9 @@
 // Needs Playwright as scripts/layout-check-test.cjs does (PLAYWRIGHT=<path>, or a global
 // install), and Chromium where Playwright finds it, or CHROME=<path to Chrome>. No server: the
 // page is served from main-site/ by Playwright itself, with /api/* answered from what's below.
-// The dots are tapped at the map's middle, where Explorer puts you.
+// The dots are tapped at the map's middle, where Explorer puts you. The map's attribution credits
+// each university (config.json) only while its shuttles are in view: none at Orchard, NUS's over
+// Kent Ridge, NTU's over NTU, both zoomed out over Singapore, with MapLibre and with Leaflet.
 const path = require('path');
 const fs = require('fs');
 
@@ -211,6 +213,19 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
     return c ? { label: c.getAttribute('aria-label'), rows: [...c.querySelectorAll('.campusRow')].map((r) => `${r.querySelector('.campusNo').textContent}: ${r.querySelector('.campusWhen').innerText.replace(/\s+/g, ' ')}`), pills: [...c.querySelectorAll('.svcPill')].map((p) => p.textContent), text: c.innerText } : null;
   });
   const closeExplorer = async () => { await page.evaluate(() => window.LiveMap.close()); await page.waitForTimeout(600); };
+  // The universities the map's attribution credits, and whether NUS's links to its page.
+  const credits = () => page.evaluate(() => {
+    const e = document.querySelector('#liveMap .maplibregl-ctrl-attrib-inner, #liveMap .leaflet-control-attribution');
+    const h = e?.innerHTML || '';
+    const unis = [/NUS shuttles: NUS University Campus Infrastructure/.test(h) && 'nus', /NTU stops: ntu-shuttle-bus-api/.test(h) && 'ntu'].filter(Boolean).join();
+    return { unis, nusLink: !!e?.querySelector('a[href^="https://uci.nus.edu.sg/"][target="_blank"]'), ntuLink: !!e?.querySelector('a[href="https://github.com/yeukfei02/ntu-shuttle-bus-api"]') };
+  });
+  // MapLibre's map moved straight there ([lng, lat], its own zoom), as if dragged, so it stops
+  // following you; then a moment for the attribution.
+  const glTo = async (center, zoom, pitch = 0) => {
+    await page.evaluate(([c, z, p]) => { window.__map.fire('dragstart'); window.__map.jumpTo({ center: c, zoom: z, pitch: p, bearing: 0 }); }, [center, zoom, pitch]);
+    await page.waitForTimeout(700);
+  };
 
   await page.clock.setFixedTime(sgTime('2026-10-30T08:30'));
   // Kent Vale, a campus stop LTA hasn't got.
@@ -228,6 +243,8 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
     ok('…with LTA\'s stops each drawn once (34, no campus copy)', drawn.stops === STOPS.length, String(drawn.stops));
     const order = drawn.layers;
     ok('…the shuttles over the MRT lines and under the stops', order.indexOf('sg-rail') < order.indexOf('sg-shuttle') && order.indexOf('sg-shuttle') < order.indexOf('sg-poi-stop') && order.indexOf('sg-poi-campus') > -1, order.join(' '));
+    const cr = await credits();
+    ok('…the attribution credits NUS only at Kent Vale, linked to its page', cr.unis === 'nus' && cr.nusLink, JSON.stringify(cr));
   } else {
     ok('Explorer drew with MapLibre (no WebGL here: Leaflet)', false);
   }
@@ -285,7 +302,27 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
   await page.evaluate(() => window.MapCard.close());
   await page.waitForTimeout(1500);
   await shot('7-explorer-ntu-lines');
+  // The credits as the map moves: the shuttles' lines stay as they are, only the credit changes.
+  if (gl) {
+    let cr = await credits();
+    ok('over NTU, the attribution credits NTU only, linked', cr.unis === 'ntu' && cr.ntuLink, JSON.stringify(cr));
+    await page.evaluate(() => { window.__shuttleSource = window.__map.getSource('sg-shuttle'); });
+    await glTo([103.8318, 1.3040], 15);
+    cr = await credits();
+    ok('at Orchard, neither credit', cr.unis === '', JSON.stringify(cr));
+    await glTo([103.8318, 1.3040], 15, 60);
+    cr = await credits();
+    ok('…nor tilted to 60°, as the guide\'s 3D shot is', cr.unis === '', JSON.stringify(cr));
+    await glTo([103.7764, 1.2966], 15);
+    cr = await credits();
+    ok('over NUS (Kent Ridge), NUS\'s only', cr.unis === 'nus' && cr.nusLink, JSON.stringify(cr));
+    await glTo([103.82, 1.35], 9);
+    cr = await credits();
+    ok('zoomed out over Singapore, both', cr.unis === 'nus,ntu', JSON.stringify(cr));
+    ok('…and the shuttles\' lines weren\'t made again for it', await page.evaluate(() => window.__map.getSource('sg-shuttle') === window.__shuttleSource && window.__map.getSource('sg-shuttle')._data.features.length === 12));
+  }
   await closeExplorer();
+  if (gl) ok('Explorer closed: no credit left', (await credits()).unis === '');
 
   // In Chinese: the words come from zh-SG.json.
   await page.evaluate(() => { localStorage.setItem('sgbus_lang', 'zh-SG'); localStorage.removeItem('sgbus_lang_words'); });
@@ -302,6 +339,16 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
   await page.addInitScript(() => {
     const get = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (type, ...a) { return /webgl/.test(type) ? null : get.call(this, type, ...a); };
+    // Leaflet's map, to move it.
+    let lf;
+    Object.defineProperty(window, 'L', {
+      configurable: true,
+      get: () => lf,
+      set(v) {
+        lf = v;
+        v.Map.addInitHook(function () { window.__lmap = this; });
+      },
+    });
   });
   await page.reload();
   await page.waitForFunction(() => window.MainScreen && document.documentElement.hasAttribute('data-view'));
@@ -312,7 +359,25 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
   c = await card();
   ok('…and Kent Vale\'s dot opens its card', /NUS shuttle stop Kent Vale/.test(c?.label || '') && c.rows.length === 4, c?.label);
   await shot('8-explorer-leaflet-kent-vale');
+  let lcr = await credits();
+  ok('…the attribution credits NUS only, linked', lcr.unis === 'nus' && lcr.nusLink, JSON.stringify(lcr));
+  // Moved straight there, as if dragged: Leaflet's own glides time themselves by the clock,
+  // stopped here.
+  const leafletTo = async (at, zoom) => {
+    await page.evaluate(([a, z]) => { window.__lmap.fire('dragstart'); window.__lmap.setView(a, z, { animate: false }); }, [at, zoom]);
+    await page.waitForTimeout(500);
+    return credits();
+  };
+  lcr = await leafletTo([1.3040, 103.8318], 16);
+  ok('Leaflet at Orchard: neither credit', lcr.unis === '', JSON.stringify(lcr));
+  lcr = await leafletTo([1.35, 103.82], 10);
+  ok('Leaflet zoomed out over Singapore: both', lcr.unis === 'nus,ntu', JSON.stringify(lcr));
+  lcr = await leafletTo([1.3436602, 103.6869854], 16);
+  ok('Leaflet over NTU: NTU\'s only, linked', lcr.unis === 'ntu' && lcr.ntuLink, JSON.stringify(lcr));
+  lcr = await leafletTo([1.2966, 103.7764], 16);
+  ok('Leaflet over NUS (Kent Ridge): NUS\'s only', lcr.unis === 'nus', JSON.stringify(lcr));
   await closeExplorer();
+  ok('Leaflet, Explorer closed: no credit left', (await credits()).unis === '');
 
   ok('no page or console errors', errors.length === 0, errors.join(' | '));
   await browser.close();

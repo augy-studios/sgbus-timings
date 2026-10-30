@@ -20,15 +20,17 @@
 // from zoom 11, every stop from zoom 15. An interchange is a pill instead, its lines' colours
 // side by side, left to right in the order js/map.js gives them. A tap on one, or on a dot drawn with a `pick`, goes to
 // hooks.onPick(pick); a tap on the map elsewhere to hooks.onBlank(); hooks.onMove() as it moves,
-// for a card kept on its dot (js/map-card.js).
+// for a card kept on its dot (js/map-card.js), and hooks.onMoveEnd() once it stops; bounds() is
+// what's in view then, [[south, west], [north, east]].
 //
 // Explorer's MRT and LRT lines, rails(list), go under those dots and over the map's own: each
 // line's track in its colour, a little wider the closer in, edged in white so a dark line still
 // shows on the dark map.
 //
-// Explorer's campus shuttles (js/campus.js), shuttles(list, credit), go over the MRT's lines and
-// under the dots: each route in its colour, thinner than a train line so the two aren't
-// mistaken, edged in white the same way. `credit` goes in the map's attribution. A campus stop
+// Explorer's campus shuttles (js/campus.js), shuttles(list), go over the MRT's lines and under
+// the dots: each route in its colour, thinner than a train line so the two aren't mistaken,
+// edged in white the same way. credit(html) puts the credit for what's in view in the map's
+// attribution, apart from the lines, so it changes without drawing them again. A campus stop
 // LTA hasn't got is a poi of kind 'campus' (pois), a stop's dot edged in its university's colour,
 // from zoom 14.
 //
@@ -264,7 +266,15 @@
     const poiPicks = new Map();
     let railData = { type: 'FeatureCollection', features: [] };
     let shuttleData = { type: 'FeatureCollection', features: [] };
-    let shuttleCredit = '';
+    // The credit in the map's attribution (credit()): a source with nothing in it but the
+    // credit, and a layer drawing nothing, as a source counts towards the attribution only while
+    // a layer uses it.
+    let creditHtml = '';
+    function addCredit() {
+      if (!creditHtml || map.getSource('sg-credit')) return;
+      map.addSource('sg-credit', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: creditHtml });
+      map.addLayer({ id: 'sg-credit', type: 'circle', source: 'sg-credit' });
+    }
 
     // The sources and layers for what's drawn, over the style: put back each time it changes.
     function addOverlays() {
@@ -282,17 +292,13 @@
       });
       add({ id: 'sg-rail', type: 'line', source: 'sg-rail', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': railWidths(0) } });
       // Campus shuttles over the trains' lines (js/campus.js).
-      if (!map.getSource('sg-shuttle')) map.addSource('sg-shuttle', { type: 'geojson', data: shuttleData, ...(shuttleCredit && { attribution: shuttleCredit }) });
+      if (!map.getSource('sg-shuttle')) map.addSource('sg-shuttle', { type: 'geojson', data: shuttleData });
       const shuttleWidths = (more) => ['interpolate', ['linear'], ['zoom'], ...SHUTTLE_WIDTHS.flatMap(([z, w]) => [toGl(z), w + more])];
-      // Under the dots, when made again for a new credit after they're in (shuttles()).
-      const underDots = map.getLayer('sg-poi-stop') ? 'sg-poi-stop' : undefined;
-      if (!map.getLayer('sg-shuttle-edge')) {
-        map.addLayer({
-          id: 'sg-shuttle-edge', type: 'line', source: 'sg-shuttle', layout: railLayout,
-          paint: { 'line-color': '#ffffff', 'line-width': shuttleWidths(2), 'line-opacity': dark() ? 0.35 : 0.9 },
-        }, underDots);
-      }
-      if (!map.getLayer('sg-shuttle')) map.addLayer({ id: 'sg-shuttle', type: 'line', source: 'sg-shuttle', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': shuttleWidths(0) } }, underDots);
+      add({
+        id: 'sg-shuttle-edge', type: 'line', source: 'sg-shuttle', layout: railLayout,
+        paint: { 'line-color': '#ffffff', 'line-width': shuttleWidths(2), 'line-opacity': dark() ? 0.35 : 0.9 },
+      });
+      add({ id: 'sg-shuttle', type: 'line', source: 'sg-shuttle', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': shuttleWidths(0) } });
       if (!map.getSource('sg-poi')) map.addSource('sg-poi', { type: 'geojson', data: poiData });
       const grow = (small, big) => ['interpolate', ['linear'], ['zoom'], toGl(POI_STOP_ZOOM), small, toGl(19), big];
       add({
@@ -342,6 +348,7 @@
           'circle-stroke-color': ['get', 'stroke'], 'circle-stroke-width': ['get', 'weight'],
         },
       });
+      addCredit();
       dirty = true;
       flush();
     }
@@ -426,6 +433,7 @@
       }
     }
     map.on('move', () => hooks.onMove?.());
+    map.on('moveend', () => hooks.onMoveEnd?.());
 
     map.on('dragstart', () => hooks.onUserMove?.());
     map.on('zoomstart', (e) => { if (e.originalEvent) hooks.onUserZoom?.(); });
@@ -500,18 +508,24 @@
         railData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
         map.getSource('sg-rail')?.setData(railData);
       },
-      // Explorer's campus shuttles, [{ color, points }], and the credit for their data; [] takes
-      // them away. The credit's set as the source is made, so it's made again for a new one.
-      shuttles(list, credit = '') {
+      // Explorer's campus shuttles, [{ color, points }]; [] takes them away.
+      shuttles(list) {
         shuttleData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
-        if (credit && credit !== shuttleCredit && map.getSource('sg-shuttle')) {
-          shuttleCredit = credit;
-          for (const id of ['sg-shuttle', 'sg-shuttle-edge']) if (map.getLayer(id)) map.removeLayer(id);
-          map.removeSource('sg-shuttle');
-          addOverlays();
-        }
-        shuttleCredit = credit || shuttleCredit;
         map.getSource('sg-shuttle')?.setData(shuttleData);
+      },
+      // The credit for the data in view, as HTML ready for the attribution ('' for none). A
+      // source's attribution is set as it's made, so the credit's source is made again for a new
+      // one; mid-change of style, addOverlays() makes it once the style's in.
+      credit(html = '') {
+        if (html === creditHtml) return;
+        creditHtml = html;
+        if (map.getLayer('sg-credit')) map.removeLayer('sg-credit');
+        if (map.getSource('sg-credit')) map.removeSource('sg-credit');
+        if (map.getSource('sg-dot')) addCredit();
+      },
+      bounds() {
+        const b = map.getBounds();
+        return [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]];
       },
       setView(at, z, animate = false) {
         map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate && !still() ? 500 : 0 });
@@ -640,8 +654,9 @@
       const w = railWidth(map.getZoom());
       return { edge: { weight: w + 2, opacity: dark() ? 0.35 : 0.9 }, line: { weight: w } };
     };
-    // Campus shuttles over them, on the same canvas, with their data's credit.
-    let shuttleLayer = L.layerGroup().addTo(map);
+    // Campus shuttles over them, on the same canvas.
+    const shuttleLayer = L.layerGroup().addTo(map);
+    let creditHtml = '';
     const shuttleStyle = () => {
       const w = shuttleWidth(map.getZoom());
       return { edge: { weight: w + 2, opacity: dark() ? 0.35 : 0.9 }, line: { weight: w } };
@@ -653,6 +668,7 @@
       shuttleLayer.eachLayer((l) => l.setStyle(l.options.sgEdge ? t.edge : t.line));
     });
     map.on('move', () => hooks.onMove?.());
+    map.on('moveend', () => hooks.onMoveEnd?.());
     map.on('click', () => hooks.onBlank?.());
 
     const groups = {};
@@ -700,14 +716,22 @@
         for (const r of list) L.polyline(r.points, { ...opts, ...s.edge, color: '#ffffff', sgEdge: true }).addTo(railLayer);
         for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1 }).addTo(railLayer);
       },
-      shuttles(list, credit = '') {
-        map.removeLayer(shuttleLayer);
-        shuttleLayer = L.layerGroup([], list.length && credit ? { attribution: credit } : {});
+      shuttles(list) {
+        shuttleLayer.clearLayers();
         const s = shuttleStyle();
         const opts = { pane: 'sgRails', renderer: railRenderer, lineCap: 'round', lineJoin: 'round', interactive: false };
         for (const r of list) L.polyline(r.points, { ...opts, ...s.edge, color: '#ffffff', sgEdge: true }).addTo(shuttleLayer);
         for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1 }).addTo(shuttleLayer);
-        shuttleLayer.addTo(map);
+      },
+      credit(html = '') {
+        if (html === creditHtml) return;
+        if (creditHtml) map.attributionControl.removeAttribution(creditHtml);
+        creditHtml = html;
+        if (html) map.attributionControl.addAttribution(html);
+      },
+      bounds() {
+        const b = map.getBounds();
+        return [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]];
       },
       setView: (at, z, animate = false) => map.setView(at, z, { animate }),
       jump(at, z) { if (at) map.setView(at, z, { animate: false }); },

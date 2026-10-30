@@ -184,6 +184,7 @@
       onPick: openCard,
       onBlank: () => MapCard.close(),
       onMove: () => MapCard.place(),
+      onMoveEnd: () => creditShuttles(),
     }).catch((err) => {
       opening = null;
       throw err;
@@ -354,7 +355,7 @@
     if (mode !== 'explore') {
       ink.pois([]);
       ink.rails([]);
-      ink.shuttles([]);
+      clearShuttles();
     }
     destMark = null;
     builtTripLeg = null;
@@ -383,7 +384,7 @@
       ink.clear('stops');
       ink.clear('marks');
       ink.rails([]);
-      ink.shuttles([]);
+      clearShuttles();
       hideMe();
     }
     destMark = null;
@@ -931,12 +932,15 @@
   // then along its road once /api/road has it (as a trip's bus rides are), kept for the page
   // view. Offline, the road from before if sw.js has it, or the straight lines.
   const shuttleRoads = new Map(); // route key -> its road, [[lat, lng], ...]
+  let shuttlesDrawn = []; // [{ uni, color, points }]
   function drawShuttles() {
     const list = window.Campus?.lines() || [];
     if (!list.length) return;
-    const credit = (window.Campus.credits?.() || []).map(escapeHtml).join(' · ');
     const draw = () => {
-      if (mode === 'explore') ink.shuttles(list.map((l) => ({ color: l.color, points: shuttleRoads.get(l.key) || l.points })), credit);
+      if (mode !== 'explore') return;
+      shuttlesDrawn = list.map((l) => ({ uni: l.uni, color: l.color, points: shuttleRoads.get(l.key) || l.points }));
+      ink.shuttles(shuttlesDrawn);
+      creditShuttles();
     };
     draw();
     for (const l of list) {
@@ -951,6 +955,22 @@
         })
         .catch(() => {});
     }
+  }
+
+  function clearShuttles() {
+    shuttlesDrawn = [];
+    ink.shuttles([]);
+    ink.credit('');
+  }
+
+  // The credit for each university's shuttles (config.json's), in the map's attribution only
+  // while some of its lines are in view: checked as the map stops moving, not as it moves.
+  function creditShuttles() {
+    if (!ink) return;
+    const shown = mode === 'explore' && shuttlesDrawn.length ? window.Campus?.credits?.(ink.bounds(), shuttlesDrawn) || [] : [];
+    ink.credit(shown.map((c) => (c.url
+      ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.text)}</a>`
+      : escapeHtml(c.text))).join(' · '));
   }
 
   // ---------- traffic on a bus's way ----------
