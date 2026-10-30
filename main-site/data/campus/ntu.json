@@ -1,0 +1,534 @@
+{
+ "stops": [
+  {
+   "name": "NIE Blk 2",
+   "id": "27219",
+   "road": "Nanyang Dr"
+  },
+  {
+   "name": "Opp Hall 3 & 16",
+   "id": "382999",
+   "loc": "1.3504544, 103.6804492",
+   "road": "Nanyang Wk"
+  },
+  {
+   "name": "Opp Hall 14 & 15",
+   "id": "378203",
+   "loc": "1.3531234, 103.6815281",
+   "road": "Nanyang Cres"
+  },
+  {
+   "name": "Opp Nanyang Cres Halls",
+   "id": "383048",
+   "loc": "1.3549830, 103.6840976",
+   "road": "Nanyang Cres"
+  },
+  {
+   "name": "Opp Hall 11",
+   "id": "378222",
+   "loc": "1.3542848, 103.6871175",
+   "road": "Nanyang Ave"
+  },
+  {
+   "name": "Nanyang Heights, Opp Hall 8",
+   "id": "383003",
+   "loc": "1.3509504, 103.6858585",
+   "road": "Nanyang Ave"
+  },
+  {
+   "name": "Opp Hall 2",
+   "id": "378234",
+   "loc": "1.3489940, 103.6855789",
+   "road": "Lien Ying Chong Dr"
+  },
+  {
+   "name": "Opp Hall 4",
+   "id": "383004",
+   "loc": "1.3436602, 103.6869854",
+   "road": "Nanyang Dr"
+  },
+  {
+   "name": "Opp Yunnan Gdn",
+   "id": "383006",
+   "loc": "1.3415807, 103.6844249",
+   "road": "Nanyang Dr"
+  },
+  {
+   "name": "Opp SPMS",
+   "id": "383009",
+   "loc": "1.3417392, 103.6812629",
+   "road": "Nanyang Link"
+  },
+  {
+   "name": "Opp WKWSCI",
+   "id": "383010",
+   "loc": "1.3419259, 103.6790940",
+   "road": "Nanyang Dr"
+  },
+  {
+   "name": "Opp CEE",
+   "id": "378226",
+   "loc": "1.3457685, 103.6783896",
+   "road": "Nanyang Dr"
+  },
+  {
+   "name": "Lee Wee Nam Lib",
+   "id": "27211"
+  },
+  {
+   "name": "Sch of CEE",
+   "id": "27221"
+  },
+  {
+   "name": "Wee Kim Wee Sch of C&I",
+   "id": "27231"
+  },
+  {
+   "name": "SPMS",
+   "id": "27241"
+  },
+  {
+   "name": "Wee Cho Yaw Plaza",
+   "id": "378229",
+   "loc": "1.3417781, 103.6839270",
+   "road": "Nanyang Ave"
+  },
+  {
+   "name": "Hall 4",
+   "id": "27261"
+  },
+  {
+   "name": "Hall 1",
+   "id": "27281"
+  },
+  {
+   "name": "Opp Hall 6",
+   "id": "27291"
+  },
+  {
+   "name": "Hall 11",
+   "id": "27199"
+  },
+  {
+   "name": "Hall 11 Blk 55",
+   "id": "27011"
+  },
+  {
+   "name": "Nanyang Cres Halls",
+   "id": "27071"
+  },
+  {
+   "name": "Hall 12",
+   "id": "27031"
+  },
+  {
+   "name": "Hall 2",
+   "id": "27311"
+  },
+  {
+   "id": "27209",
+   "name": "Halls 8 & 9"
+  },
+  {
+   "id": "NTU-OppS2",
+   "loc": "1.3410401, 103.6804716",
+   "name": "Opp S2",
+   "road": "Nanyang Link"
+  },
+  {
+   "loc": "1.3446269, 103.6786571",
+   "id": "NTU-SBS",
+   "name": "Sch of Biological Sciences",
+   "road": "Nanyang Dr"
+  },
+  {
+   "id": "22529",
+   "name": "Pioneer Stn Exit B"
+  },
+  {
+   "id": "NTU-UHS",
+   "loc": "1.3456974, 103.6828564",
+   "name": "Uni Health Service",
+   "road": "Nanyang Ave"
+  },
+  {
+   "id": "NTU-TCT-LT",
+   "name": "TCT-LT (Admin Bldg)",
+   "loc": "1.3449704, 103.6815177",
+   "road": "Nanyang Ave"
+  },
+  {
+   "id": "NTU-OppH1",
+   "name": "Opp Hall 1",
+   "loc": "1.3458449, 103.6877334",
+   "road": "Lien Ying Chow Dr"
+  },
+  {
+   "id": "NTU-H6",
+   "name": "Hall 6",
+   "loc": "1.3479130, 103.6867758",
+   "road": "Lien Ying Chow Dr"
+  },
+  {
+   "id": "NTU-H5",
+   "name": "Hall 5",
+   "loc": "1.3442394, 103.6875349",
+   "road": "Nanyang Dr"
+  }
+ ],
+ "stops_src": "https://github.com/yeukfei02/ntu-shuttle-bus-api/tree/main",
+ "stops_license": "https://github.com/yeukfei02/ntu-shuttle-bus-api/blob/main/LICENSE",
+ "routes": [
+  {
+   "name": "CL-B",
+   "stops": [
+    "378222",
+    "383003",
+    "NTU-H6",
+    "383004",
+    "383006",
+    "383009",
+    "NTU-OppS2",
+    "383010",
+    "378226",
+    "27219",
+    "382999",
+    "378203",
+    "383048",
+    "378222"
+   ],
+   "timetable": false,
+   "term_vacation": false,
+   "timings": {
+    "weekdays": [
+     {
+      "start": "0730",
+      "end": "0800",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "0800",
+      "end": "2100",
+      "min": 5,
+      "max": 7
+     },
+     {
+      "start": "2100",
+      "end": "2300",
+      "min": 7,
+      "max": 9
+     }
+    ],
+    "sat": [
+     {
+      "start": "0800",
+      "end": "1000",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "1000",
+      "end": "2200",
+      "min": 7,
+      "max": 9
+     },
+     {
+      "start": "2200",
+      "end": "2300",
+      "min": 9,
+      "max": 11
+     }
+    ],
+    "sun_ph": [
+     {
+      "start": "0800",
+      "end": "1100",
+      "min": 22,
+      "max": 25
+     },
+     {
+      "start": "1100",
+      "end": "1400",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "1400",
+      "end": "1700",
+      "min": 22,
+      "max": 25
+     },
+     {
+      "start": "1700",
+      "end": "2000",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "2000",
+      "end": "2300",
+      "min": 20,
+      "max": 25
+     }
+    ]
+   }
+  },
+  {
+   "name": "CL-R",
+   "stops": [
+    "27011",
+    "27071",
+    "27031",
+    "27211",
+    "NTU-SBS",
+    "27231",
+    "27241",
+    "378229",
+    "27261",
+    "27281",
+    "27311",
+    "27209",
+    "27199",
+    "27011"
+   ],
+   "timetable": false,
+   "term_vacation": false,
+   "timings": {
+    "weekdays": [
+     {
+      "start": "0730",
+      "end": "0800",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "0800",
+      "end": "2100",
+      "min": 5,
+      "max": 7
+     },
+     {
+      "start": "2100",
+      "end": "2300",
+      "min": 7,
+      "max": 9
+     }
+    ],
+    "sat": [
+     {
+      "start": "0800",
+      "end": "1000",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "1000",
+      "end": "2200",
+      "min": 7,
+      "max": 9
+     },
+     {
+      "start": "2200",
+      "end": "2300",
+      "min": 9,
+      "max": 11
+     }
+    ],
+    "sun_ph": [
+     {
+      "start": "0800",
+      "end": "1100",
+      "min": 22,
+      "max": 25
+     },
+     {
+      "start": "1100",
+      "end": "1400",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "1400",
+      "end": "1700",
+      "min": 22,
+      "max": 25
+     },
+     {
+      "start": "1700",
+      "end": "2000",
+      "min": 11,
+      "max": 13
+     },
+     {
+      "start": "2000",
+      "end": "2300",
+      "min": 20,
+      "max": 25
+     }
+    ]
+   }
+  },
+  {
+   "name": "CR",
+   "stops": [
+    "22529",
+    "27281",
+    "27311",
+    "NTU-UHS",
+    "NTU-TCT-LT",
+    "378234",
+    "NTU-H6",
+    "NTU-OppH1",
+    "22529"
+   ],
+   "timetable": false,
+   "term_vacation": false,
+   "timings": {
+    "weekdays": [
+     {
+      "start": "0730",
+      "end": "1030",
+      "min": 5,
+      "max": 6
+     },
+     {
+      "start": "1030",
+      "end": "1200",
+      "min": 9,
+      "max": 11
+     },
+     {
+      "start": "1200",
+      "end": "1430",
+      "min": 5,
+      "max": 6
+     },
+     {
+      "start": "1430",
+      "end": "1630",
+      "min": 9,
+      "max": 11
+     },
+     {
+      "start": "1630",
+      "end": "1930",
+      "min": 5,
+      "max": 6
+     },
+     {
+      "start": "1930",
+      "end": "2200",
+      "min": 9,
+      "max": 11
+     },
+     {
+      "start": "2200",
+      "end": "2300",
+      "min": 15,
+      "max": 15
+     }
+    ]
+   }
+  },
+  {
+   "name": "CR-W",
+   "stops": [
+    "22529",
+    "27281",
+    "27311",
+    "NTU-UHS",
+    "NTU-TCT-LT",
+    "27061",
+    "27211",
+    "NTU-SBS",
+    "27231",
+    "27241",
+    "378229",
+    "27261",
+    "NTU-H5",
+    "22529"
+   ],
+   "timetable": false,
+   "term_vacation": false,
+   "timings": {
+    "sat": [
+     {
+      "start": "0730",
+      "end": "0800",
+      "min": 10,
+      "max": 12
+     },
+     {
+      "start": "0800",
+      "end": "1000",
+      "min": 6,
+      "max": 8
+     },
+     {
+      "start": "1000",
+      "end": "1200",
+      "min": 8,
+      "max": 10
+     },
+     {
+      "start": "1200",
+      "end": "1400",
+      "min": 6,
+      "max": 8
+     },
+     {
+      "start": "1400",
+      "end": "1630",
+      "min": 8,
+      "max": 10
+     },
+     {
+      "start": "1630",
+      "end": "1900",
+      "min": 6,
+      "max": 8
+     },
+     {
+      "start": "1900",
+      "end": "2030",
+      "min": 10,
+      "max": 12
+     },
+     {
+      "start": "2030",
+      "end": "2200",
+      "min": 6,
+      "max": 8
+     },
+     {
+      "start": "2200",
+      "end": "2300",
+      "min": 10,
+      "max": 12
+     }
+    ],
+    "sun_ph": [
+     {
+      "start": "0730",
+      "end": "0800",
+      "min": 16,
+      "max": 18
+     },
+     {
+      "start": "0800",
+      "end": "2000",
+      "min": 10,
+      "max": 12
+     },
+     {
+      "start": "2000",
+      "end": "2300",
+      "min": 16,
+      "max": 18
+     }
+    ]
+   }
+  }
+ ]
+}

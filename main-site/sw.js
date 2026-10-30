@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v127";
+const VERSION = "v128";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -67,6 +67,12 @@ const ASSETS = [
   // The MRT and LRT tracks a train ride's drawn along on the live map (js/rail-tracks.js).
   "/js/rail-tracks.js",
   "/data/rail-tracks.json",
+  // NUS's and NTU's campus shuttles, their routes and timetables (js/campus.js): Augy's two files
+  // as he sent them, and what goes with them.
+  "/js/campus.js",
+  "/data/campus/nus.json",
+  "/data/campus/ntu.json",
+  "/data/campus/config.json",
   "/js/card.js",
   "/js/offline-share.js",
   "/js/reminders.js",

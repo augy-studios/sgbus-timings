@@ -1,0 +1,37 @@
+{
+  "_about": "Campus shuttles (help desk #13, js/campus.js). The stops, routes and times are Augy's nus.json and ntu.json beside this, as he sent them. This file is what goes with them and is easy to change: each university's name and dot colour, each route's colour, NUS's term dates, and the credit for NTU's stops. Colours are #rrggbb.",
+  "nus": {
+    "name": "NUS",
+    "colour": "#ef7c00",
+    "_routes": "From NUS's Internal Shuttle Bus network map (University Campus Infrastructure, with effect from 5 January 2026), its legend's colours, as Augy sent it on 2026-10-30. Change them here.",
+    "routes": {
+      "A1": "#fe0000",
+      "A2": "#e2cd0b",
+      "D1": "#c47be1",
+      "D2": "#6f1b6f",
+      "K": "#345a9b",
+      "R1": "#ee8136",
+      "R2": "#008000",
+      "P": "#bebebe"
+    },
+    "_terms": "Term time, when NUS's shuttles run their term timings; any other day in `covers` is vacation, and a day outside `covers` counts as term. AY2026/27: semester 1 from orientation, 3 Aug 2026, to the end of its exams, 5 Dec 2026; semester 2 from 11 Jan 2027 to the end of its exams, 8 May 2027. From NUS's academic calendar AY2026/2027 (nus.edu.sg/registrar/docs/info/calendar/ay2026-2027.pdf) as NUS Law's weekly calendars for AY2026/27 (version of 20 July 2026, law.nus.edu.sg) set it out. Add each new year's when it's out.",
+    "terms": [
+      ["2026-08-03", "2026-12-05"],
+      ["2027-01-11", "2027-05-08"]
+    ],
+    "covers": ["2026-08-03", "2027-08-01"]
+  },
+  "ntu": {
+    "name": "NTU",
+    "colour": "#d71440",
+    "_routes": "Blue, red, green and brown, as NTU's shuttle page (ntu.edu.sg, Internal Campus Shuttle) names them; the shades are picked.",
+    "routes": {
+      "CL-B": "#1f5fbf",
+      "CL-R": "#d0312d",
+      "CR": "#2e9e44",
+      "CR-W": "#8b5a2b"
+    },
+    "credit": "NTU stops: ntu-shuttle-bus-api by Donald Wu (MIT)",
+    "creditUrl": "https://github.com/yeukfei02/ntu-shuttle-bus-api"
+  }
+}

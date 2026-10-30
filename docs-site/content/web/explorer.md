@@ -69,6 +69,17 @@ the way each line goes.
 A station with no door details yet says so. Its name, codes and Directions are
 still there.
 
+## Campus shuttles
+
+NUS's and NTU's campus shuttles are on Explorer too: each route a thin line
+in its colour, and each campus stop a white dot edged in orange (NUS) or red
+(NTU). Tap one for its card: every shuttle route there, with what its
+timetable says now, such as **Every 4–6 min**, the next departures from where
+it starts, or when the next bus is. These are scheduled times, not live: the
+universities' shuttles have no live times the app can show. A campus stop that
+public buses use too is the usual stop, its card with the buses and the
+shuttles both.
+
 ## Directions
 
 Every card ends with **Directions**. It closes the map and opens

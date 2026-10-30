@@ -1182,6 +1182,7 @@ function renderArrivals() {
 
     renderIncomingBar({ services: svcs, ways });
 
+    renderCampus();
     const svcWrap = $('#services');
     if (!svcs.length) {
         svcWrap.innerHTML = '';
@@ -1255,6 +1256,21 @@ function renderArrivals() {
     window.MakeIt?.render(code, svcs);
 }
 
+// NUS's or NTU's campus shuttles at the stop (js/campus.js), under its live buses: scheduled
+// times, not live, so they're apart from them. Not while the stop's narrowed to some buses.
+function renderCampus() {
+    const box = $('#campusSvc');
+    const code = current?.code;
+    if (!box || !window.Campus) return;
+    const narrowed = current?.service && !current.expanded;
+    const html = code && !narrowed ? Campus.listHtml(code) : '';
+    box.innerHTML = html;
+    box.hidden = !html;
+    if (code && !Campus.isReady()) {
+        Campus.load().then(() => { if (current?.code === code && Campus.at(code)) renderCampus(); }).catch(() => {});
+    }
+}
+
 // Puts a stop's timings away, back to Bus timings' search box. Back goes back to the page the
 // stop was opened from, such as Glance.
 function closeStop() {
@@ -1294,6 +1310,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     window.MakeIt?.forStop(code);
     $('#services').innerHTML = `<div class="empty">${escapeHtml(tr('stop.loading', 'Loading live arrivals…'))}</div>`;
     $('#emptySvc').hidden   = true;
+    renderCampus();
     $('#resultCard').hidden = false;
     $('#nearStops').hidden = true;
     $('#incomingBar').hidden = true;

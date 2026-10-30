@@ -3854,6 +3854,43 @@ body.touring { overflow: hidden; }
 .mcNote { margin: 0; font-size: 0.8125rem; color: var(--muted-strong); display: flex; align-items: center; gap: 6px; }
 .mcNote .ico svg { width: 16px; height: 16px; }
 .mcGo { align-self: stretch; justify-content: center; }
+/* NUS's and NTU's campus shuttles at a stop (js/campus.js): in a stop's card on the map and under
+   its live buses in Bus timings. Each route's pill in its colour, with what its timetable says;
+   kept apart from the live buses, and said to be scheduled. */
+.campusSvc { margin-top: 12px; }
+.campusList { display: flex; flex-direction: column; gap: 8px; }
+.campusHead { margin: 0; display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--muted-strong); }
+.campusHead .ico svg { width: 16px; height: 16px; }
+.campusRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border: 1px solid var(--surface-border);
+    border-left: 4px solid var(--route, #7a4fd6);
+    border-radius: 12px;
+    background: var(--surface);
+}
+.campusNo {
+    flex: none;
+    min-width: 48px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: var(--route, #7a4fd6);
+    color: var(--route-ink, #fff);
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-align: center;
+}
+.campusWhen { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.campusWhen strong { font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+.campusWhen span { font-size: 0.75rem; color: var(--muted-strong); }
+.campusRow.off .campusWhen strong { color: var(--muted-strong); font-weight: 600; }
+.campusFoot { margin: 0; font-size: 0.75rem; color: var(--muted); }
+.mapCard .campusRow { padding: 6px 8px; }
+@media (forced-colors: active) {
+    .campusNo { border: 1px solid CanvasText; }
+}
 /* A station's platforms, a direction at a time, with an arrow at each side. */
 .mcCarousel { display: grid; grid-template-columns: 30px 1fr 30px; align-items: center; gap: 4px; }
 .mcArrow {

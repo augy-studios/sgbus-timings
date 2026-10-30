@@ -86,6 +86,9 @@ Under the stop's name, a few stops carry a note:
   **Immigration checkpoint**, and the stops in Johor Bahru, at its checkpoint,
   JB Sentral and Larkin Terminal, say **In Malaysia**: you'll need your
   passport to go on. Search results and route lists mark them too.
+- **Campus shuttles.** At a stop NUS's or NTU's campus shuttles call at, a
+  **Campus shuttles** list under the buses gives each route's timetable:
+  how often it runs now, or its next departures. Scheduled, not live.
 
 ## Arriving from a list
 

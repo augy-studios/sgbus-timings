@@ -18,6 +18,9 @@
 //                           LRT lines in their colours. A tap on a dot opens its card
 //                           (js/map-card.js): a stop's buses, a station's doors. Its Save the
 //                           map button keeps Singapore's map for offline (js/map-save.js).
+//                           NUS's and NTU's campus shuttles too (js/campus.js): each route a
+//                           thin line in its colour, and the campus stops LTA hasn't got as
+//                           dots of their own, whose card has the routes' timetables.
 //   LiveMap.traffic(way)    the traffic on a bus's way, from wherever the site says there's
 //                           traffic (Navigate, a trip, #traffic/ links from the Telegram bot):
 //                           its road, orange where it's slow and red where it's jammed, by LTA's
@@ -351,6 +354,7 @@
     if (mode !== 'explore') {
       ink.pois([]);
       ink.rails([]);
+      ink.shuttles([]);
     }
     destMark = null;
     builtTripLeg = null;
@@ -379,6 +383,7 @@
       ink.clear('stops');
       ink.clear('marks');
       ink.rails([]);
+      ink.shuttles([]);
       hideMe();
     }
     destMark = null;
@@ -896,17 +901,23 @@
     RailTracks.lines()
       .then((lines) => { if (mode === 'explore') ink.rails(lines.map((l) => ({ color: lineColour(l.line), points: l.points }))); })
       .catch(() => {});
-    const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {})]);
+    const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {}), window.Campus?.load().catch(() => {})]);
     if (mode !== 'explore') return;
     const dots = [];
     for (const [code, s] of Object.entries(index || {})) {
       if (s.lat != null && s.lng != null) dots.push({ kind: 'stop', lat: s.lat, lng: s.lng, pick: { kind: 'stop', code } });
     }
+    // The campus stops LTA hasn't got; those it has are its stops' dots already.
+    for (const c of window.Campus?.dots() || []) dots.push({ kind: 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } });
     for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), colors: stationColours(s.codes), pick: stationPick(s) });
     ink.pois(dots);
+    drawShuttles();
     // Back from Bus timings or Navigate: on the stop or station it was left from, card open.
     const back = leftFrom;
-    const at = back?.kind === 'station' ? [back.lat, back.lng] : back?.kind === 'stop' && index?.[back.code]?.lat != null ? [index[back.code].lat, index[back.code].lng] : null;
+    const campusBack = back?.kind === 'campus' ? window.Campus?.at(back.key) : null;
+    const at = back?.kind === 'station' ? [back.lat, back.lng]
+      : back?.kind === 'stop' && index?.[back.code]?.lat != null ? [index[back.code].lat, index[back.code].lng]
+      : campusBack ? [campusBack.lat, campusBack.lng] : null;
     if (at) {
       setFollowing(false);
       ink.jump(at, EXPLORE_ZOOM + 1);
@@ -914,6 +925,32 @@
     }
     // Its tour, the first time (js/tour.js), the dots round you lit by #mapSpot.
     window.Tour?.first('explorer');
+  }
+
+  // Explorer's campus shuttles (js/campus.js): each route straight from stop to stop at once,
+  // then along its road once /api/road has it (as a trip's bus rides are), kept for the page
+  // view. Offline, the road from before if sw.js has it, or the straight lines.
+  const shuttleRoads = new Map(); // route key -> its road, [[lat, lng], ...]
+  function drawShuttles() {
+    const list = window.Campus?.lines() || [];
+    if (!list.length) return;
+    const credit = (window.Campus.credits?.() || []).map(escapeHtml).join(' · ');
+    const draw = () => {
+      if (mode === 'explore') ink.shuttles(list.map((l) => ({ color: l.color, points: shuttleRoads.get(l.key) || l.points })), credit);
+    };
+    draw();
+    for (const l of list) {
+      if (shuttleRoads.has(l.key)) continue;
+      fetch(`/api/road?points=${pointsParam(l.points)}`)
+        .then((r) => (r.ok ? r.json() : undefined))
+        .then((got) => {
+          if (got === undefined) return; // asked again next time
+          // No road the router trusts: the straight lines, not asked again this page view.
+          shuttleRoads.set(l.key, got?.path?.length >= 2 ? got.path : null);
+          if (got?.path) draw();
+        })
+        .catch(() => {});
+    }
   }
 
   // ---------- traffic on a bus's way ----------
