@@ -198,7 +198,7 @@ Once you're in Citymapper, its own privacy policy applies.
 the line it shows you before you send it: the app and its version, your device
 and browser as they describe themselves, the window's size, the page you were on
 and your language. It goes through SG Bus Timings' server to Augy on Telegram,
-as a message. The server keeps no copy, only a count of how many come from one
+as a message, in the chats he's set it to go to. The server keeps no copy, only a count of how many come from one
 connection an hour, to stop floods. Nothing is sent until you tap **Send**.
 
 ## The Telegram bot

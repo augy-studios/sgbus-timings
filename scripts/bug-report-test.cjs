@@ -18,6 +18,8 @@
 //   5. Two a minute from one IP; with Redis, six an hour from one IP, sixty from everyone.
 //   6. The field only a bot fills in: told it went, nothing sent.
 //   7. Telegram failing or slow is a 502 that says to try again, with no token in the logs.
+//   9. Several chats: each gets it (a topic's ID too), one taking it is enough, all failing is
+//      a 502, and what isn't a chat is left out.
 //   8. The form: Settings, Help and extras, Report a bug; it shows what it adds, sends it, and
 //      says it's sent; not set up, it offers email instead with the words filled in.
 const path = require('path');
@@ -162,6 +164,35 @@ async function api() {
   console.error = error;
   ok('7. the reason logged, never the token', logs.some((l) => l.includes('chat not found')) && !logs.some((l) => l.includes(TOKEN)), logs.join(' | '));
   telegram = () => ({ status: 200, body: { ok: true } });
+
+  // Several chats.
+  const { chats } = await import(path.join(__dirname, '../main-site/api/bug-report.js'));
+  ok('9. read from commas, spaces and new lines', JSON.stringify(chats('424242, -1001234567890/17\n@sgbus_reports  -4012345678')) === JSON.stringify([
+    { chat_id: '424242' }, { chat_id: '-1001234567890', message_thread_id: 17 }, { chat_id: '@sgbus_reports' }, { chat_id: '-4012345678' },
+  ]), JSON.stringify(chats('424242, -1001234567890/17\n@sgbus_reports  -4012345678')));
+  ok('9. what isn\'t a chat is left out', JSON.stringify(chats('abc, 12a, @x, /5, , 42')) === JSON.stringify([{ chat_id: '42' }]), JSON.stringify(chats('abc, 12a, @x, /5, , 42')));
+  process.env.BUG_REPORT_CHAT_ID = 'nonsense';
+  r = await call(handler, { body: REPORT });
+  ok('9. no chat that reads as one: not set up, 503', r.statusCode === 503);
+  process.env.BUG_REPORT_CHAT_ID = `${CHAT}, -1001234567890/17, @sgbus_reports`;
+  sent.length = 0;
+  r = await call(handler, { body: REPORT });
+  ok('9. three chats: 204, three messages', r.statusCode === 204 && sent.length === 3, `${r.statusCode} ${sent.length}`);
+  ok('9. each to its chat, the topic with its ID, the same words', sent[0]?.body.chat_id === CHAT && !('message_thread_id' in sent[0].body)
+    && sent[1]?.body.chat_id === '-1001234567890' && sent[1].body.message_thread_id === 17
+    && sent[2]?.body.chat_id === '@sgbus_reports' && sent.every((x) => x.body.text === sent[0].body.text));
+  logs.length = 0;
+  console.error = (...a) => logs.push(a.join(' '));
+  telegram = (opts) => JSON.parse(opts.body).chat_id === CHAT ? { status: 200, body: { ok: true } } : { status: 403, body: { ok: false, description: 'Forbidden: bot is not a member of the channel chat' } };
+  r = await call(handler, { body: REPORT });
+  ok('9. one took it, two didn\'t: still 204', r.statusCode === 204);
+  ok('9. the two that didn\'t are logged by place, with the reason', logs.some((l) => l.includes('chat 2:') && l.includes('not a member')) && logs.some((l) => l.includes('chat 3:')) && !logs.some((l) => l.includes(TOKEN)), logs.join(' | '));
+  telegram = () => ({ status: 400, body: { ok: false, description: 'Bad Request: chat not found' } });
+  r = await call(handler, { body: REPORT });
+  ok('9. none took it: 502', r.statusCode === 502);
+  console.error = error;
+  telegram = () => ({ status: 200, body: { ok: true } });
+  process.env.BUG_REPORT_CHAT_ID = CHAT;
   return handler;
 }
 

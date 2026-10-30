@@ -9,7 +9,14 @@
 // language. Nothing else: not their address, location or anything from their favourites.
 //
 //   BUG_REPORT_BOT_TOKEN  the bot that sends it (BotFather's token; the Telegram bot's own will do)
-//   BUG_REPORT_CHAT_ID    the chat it's sent to: Augy's, who must have started that bot first
+//   BUG_REPORT_CHAT_ID    the chats it's sent to, one or more, split by commas, spaces or new
+//                         lines: a chat ID (a person, who must have started the bot first; a
+//                         group or channel the bot's in), a public group or channel's @name, or
+//                         <chat ID>/<topic ID> for one topic of a group with topics. README's
+//                         "Report a bug" says how to find each
+//
+// Sent to every chat at once; it counts as sent if one of them took it, and a chat that didn't
+// is logged by its place in the list, with Telegram's reason.
 //
 // Without either it answers 503, and the form offers email instead. A public endpoint, so it's
 // kept small: at most MAX_TEXT characters and MAX_BODY bytes in all, PER_MINUTE a minute from
@@ -29,7 +36,20 @@ const ALL_PER_HOUR = 60;
 const TELEGRAM_MS = 10 * 1000;
 const PLATFORMS = { web: "Web", pwa: "Web, installed", android: "Android app", desktop: "Desktop app", telegram: "Telegram Mini App" };
 
-export const configured = () => Boolean(process.env.BUG_REPORT_BOT_TOKEN && process.env.BUG_REPORT_CHAT_ID);
+// BUG_REPORT_CHAT_ID as [{ chat_id, message_thread_id? }], in order; anything that isn't a chat
+// ID, an @name or a chat ID with a topic is left out.
+export function chats(value = process.env.BUG_REPORT_CHAT_ID) {
+  return String(value || "")
+    .split(/[\s,]+/)
+    .map((t) => {
+      const m = t.match(/^(-?\d+)(?:\/(\d+))?$/);
+      if (m) return m[2] ? { chat_id: m[1], message_thread_id: Number(m[2]) } : { chat_id: m[1] };
+      return /^@[A-Za-z]\w{3,}$/.test(t) ? { chat_id: t } : null;
+    })
+    .filter(Boolean);
+}
+
+export const configured = () => Boolean(process.env.BUG_REPORT_BOT_TOKEN && chats().length);
 
 // A string as given, trimmed and cut to `max`, with control characters other than new lines
 // and tabs taken out. Anything that isn't a string is "".
@@ -102,26 +122,25 @@ export default async function handler(req, res) {
   if (body.website) return res.status(204).end();
   if (await overHour(ip)) return res.status(429).json({ error: "That's a lot of reports this hour. Try again later." });
 
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: process.env.BUG_REPORT_CHAT_ID,
-        text: message(body),
-        link_preview_options: { is_disabled: true },
-      }),
-      signal: AbortSignal.timeout(TELEGRAM_MS),
-    });
-    if (!r.ok) {
+  // To every chat at once. One that took it is enough; the others are logged.
+  const text = message(body);
+  const results = await Promise.all(chats().map(async (chat, i) => {
+    try {
+      const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...chat, text, link_preview_options: { is_disabled: true } }),
+        signal: AbortSignal.timeout(TELEGRAM_MS),
+      });
+      if (r.ok) return true;
       // Telegram's reason, for the logs: never the token, which is only in the address.
       const reason = await r.json().then((d) => d?.description).catch(() => null);
-      console.error(`bug-report: Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);
-      return res.status(502).json({ error: "Couldn't send it right now. Please try again." });
+      console.error(`bug-report: chat ${i + 1}: Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);
+    } catch (err) {
+      console.error(`bug-report: chat ${i + 1}: ${err.name === "TimeoutError" ? "Telegram took too long" : err.message}`);
     }
-  } catch (err) {
-    console.error(`bug-report: ${err.name === "TimeoutError" ? "Telegram took too long" : err.message}`);
-    return res.status(502).json({ error: "Couldn't send it right now. Please try again." });
-  }
+    return false;
+  }));
+  if (!results.includes(true)) return res.status(502).json({ error: "Couldn't send it right now. Please try again." });
   return res.status(204).end();
 }
