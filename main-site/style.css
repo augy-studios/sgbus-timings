@@ -2666,9 +2666,10 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
     border: 1px solid var(--surface-border); background: none; color: var(--muted-strong); cursor: pointer;
 }
 .tlTag ~ .tlChange { margin-left: 0; }
-/* Change my way, at the top of the timeline; while choosing, what to do and Cancel. */
-.tlChangeMode { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: 0.8125rem; }
-.tlChangeMode .iconBtn .ico { margin-right: 4px; }
+/* Change my way and Back to Navigate, at the top of the timeline; while choosing, what to do and
+   Cancel. They wrap onto two lines rather than squeeze, with big text. */
+.tlChangeMode { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: 0.8125rem; }
+.tlChangeMode .iconBtn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .tlChange:hover { background: var(--brand-fill); color: var(--on-brand); }
 .tripChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
 .tripBar.expanded .tripChevron svg { transform: rotate(180deg); }
@@ -3287,6 +3288,7 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 .boardNo { font-weight: 800; color: #ffd166; }
 .boardTo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .boardEta { text-align: right; font-weight: 700; }
+:root[data-clock-times] .boardRow { grid-template-columns: 3.5em minmax(0, 1fr) 3.4em 3.4em 3.4em; }
 .boardEmpty { font-size: 1.5rem; color: #9fb3a4; }
 .boardFoot { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 0.875rem; color: #9fb3a4; }
 .boardScreen .flagBtn { padding: 8px 14px; font-size: 0.875rem; }
@@ -3546,6 +3548,8 @@ section.panelModal.docked {
 .glanceTimes > span { text-align: right; color: var(--muted-strong); }
 .glanceTimes > .first { color: var(--ok); }
 .glanceTimes > .now { color: var(--error); }
+/* Settings' Bus times on Clock time: "14:32" rather than a minute or two. */
+:root[data-clock-times] .glanceTimes { grid-template-columns: repeat(3, 2.9em); font-size: 1rem; }
 .glanceNone { padding: 8px 18px; color: var(--muted-strong); font-size: 0.9rem; }
 /* None of your favourite buses at any of the stops: the line on its own, across the cards. */
 .glanceOnly { grid-column: 1 / -1; margin: 0; }

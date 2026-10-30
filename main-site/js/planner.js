@@ -157,6 +157,8 @@ function initPlanner() {
           const j = stops.indexOf(leg.to, i + 1);
           return tripLegForBus(leg.bus, stops.slice(i, j + 1), leg.to);
         }),
+        // This journey, for the timeline's Back to Navigate (openTripOrigin, js/nav.js).
+        origin: { kind: 'route', start: planner.start, end: planner.end, journey: planner.journey, when: planner.when },
       });
       closePlanner();
     }
@@ -601,7 +603,7 @@ async function renderJourney(token) {
     let etaHtml;
     if (etas.length) {
       const cells = etas.map((eta) => {
-        const shown = escapeHtml(msToMins(eta * 60000));
+        const shown = escapeHtml(etaText(eta * 60000));
         if (t != null && eta < t) return `<s title="Gone by the time you get there">${shown}</s>`;
         if (eta === catchAt) return `<strong title="The one you'd catch">${shown}</strong>`;
         return `<span>${shown}</span>`;

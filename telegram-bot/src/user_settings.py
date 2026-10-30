@@ -85,6 +85,26 @@ def set_has_bike(chat_id: int, on: bool) -> None:
         )
 
 
+def get_clock_times(chat_id: "int | None") -> bool:
+    """Whether the chat sees each bus as the time it comes ("14:32") rather than how long
+    till it does ("3m 20s"): the web app's Settings, Bus times."""
+    if chat_id is None:
+        return False
+    row = db.execute("SELECT clock_times FROM user_settings WHERE chat_id = ?", (chat_id,)).fetchone()
+    return bool(row and row["clock_times"])
+
+
+def set_clock_times(chat_id: int, on: bool) -> None:
+    with db:
+        db.execute(
+            """
+            INSERT INTO user_settings (chat_id, clock_times) VALUES (?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET clock_times = excluded.clock_times
+            """,
+            (chat_id, int(on)),
+        )
+
+
 def chats_with_birthday_today(month_day: str, today: str) -> list:
     """Rows for chats whose birthday's MM-DD matches `month_day` (today, GMT+8)
     and who haven't already been wished on `today` (YYYY-MM-DD)."""

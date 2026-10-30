@@ -56,6 +56,19 @@ The bar at the top of the card lists the next bus of every service at once,
 soonest first, coloured by how full it is. It is the quickest way to answer
 "which bus comes first?" at a stop served by several that go your way.
 
+## Clock times
+
+<figure>
+<img src="/screenshots/web/timings-clock-times.png" alt="Bedok Int's timings with Bus times on Clock time: the incoming buses bar with 08:31 over buses 33, 33B, 155 and 228, then bus 14's next three at 08:35, 08:43 and 08:52, and bus 60's at 08:43, 08:52 and 09:07, each with its badges." width="342" height="1074" loading="lazy">
+<figcaption>With Clock time, each bus shows the time it comes.</figcaption>
+</figure>
+
+Each bus shows how long till it comes, such as `3 mins 20s`. To see the time it
+comes instead, such as `08:35`, pick **Clock time** under **Bus times** in
+[Settings](settings.md). The card, the incoming buses bar,
+[Glance](main-screen.md#glance), the departures board and the next buses in
+[Navigate](nav.md) all show clock times then.
+
 ## First and last bus
 
 <figure>

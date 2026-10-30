@@ -88,12 +88,23 @@ function fakeApp(answers) {
 // Made-up timings for STILL (see the top), from the real stops and routes: each bus that calls at
 // the stop and runs at STILL_AT on a weekday, due in a few minutes picked by its number, and on
 // the road the stops before it that far back, so its distance shows as it does live.
+// Fetched once however many stops ask at the same time, and again a few times over: the live site
+// answers some of these with an HTML page rather than the route list while the page fetches its own.
 let NET = null;
-async function stillNet() {
-  if (!NET) {
-    const [stops, routes] = await Promise.all(['bus-stops', 'bus-routes'].map((a) => fetch(`${SITE}api/${a}`).then((r) => r.json())));
-    NET = { at: Object.fromEntries(stops.map((x) => [x.c, [x.la, x.lo]])), runs: routes.runs || {}, ops: routes.services || {} };
+async function liveJson(api, tries = 4) {
+  for (let i = 1; ; i++) {
+    const r = await fetch(`${SITE}api/${api}`);
+    const text = await r.text();
+    try { return JSON.parse(text); } catch {
+      if (i >= tries) throw new Error(`/api/${api} answered ${r.status} ${text.slice(0, 80)}`);
+      await new Promise((ok) => setTimeout(ok, 1500 * i));
+    }
   }
+}
+function stillNet() {
+  NET ??= Promise.all(['bus-stops', 'bus-routes'].map((a) => liveJson(a)))
+    .then(([stops, routes]) => ({ at: Object.fromEntries(stops.map((x) => [x.c, [x.la, x.lo]])), runs: routes.runs || {}, ops: routes.services || {} }))
+    .catch((e) => { NET = null; throw e; });
   return NET;
 }
 async function stillArrivals(stop) {
@@ -1155,6 +1166,63 @@ async function el(page, sel, name) {
     await page.waitForTimeout(1500);
     await page.screenshot({ path: OUT + 'explorer-save-map.png' });
     console.log('wrote explorer-save-map.png 390 844');
+    await ctx.close();
+  }
+  // Settings' Bus times on Clock time (main-site/script.js, etaText): the setting, then a stop's
+  // timings and Glance with each bus as the time it comes. Always still, so the times read the
+  // same whenever they're taken.
+  if (want('bus-times')) {
+    const clock = { sgbus_times: 'clock' };
+    let { ctx, page } = await open(browser, { width: 420, height: 2800, extra: clock, still: true });
+    await settingsGroup(page, 'pages');
+    const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Bus times' }).boundingBox();
+    const b = await page.locator('[data-times="clock"]').locator('xpath=../following-sibling::p[1]').boundingBox();
+    const m = await page.locator('#settingsModal .modal').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-bus-times.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-bus-times.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 420, height: 1400, hash: '#84009', extra: clock, still: true }));
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no buses'));
+    await page.waitForTimeout(800);
+    await blur(page);
+    await cardDown(page, '#resultCard', '#services .svc:nth-of-type(2)', 'timings-clock-times.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 390, height: 1400, touch: true, extra: clock, still: true }));
+    await page.waitForSelector('#glanceStops .glanceRow', { timeout: 20000 }).catch(() => console.log('no buses'));
+    await page.waitForTimeout(800);
+    await cardDown(page, '#glance', '#glanceStops', 'glance-clock-times.png', 12);
+    await ctx.close();
+  }
+  // Back to Navigate on a trip's timeline (main-site/js/trip.js): a trip started from Navigate's
+  // bus way with its Start trip, the timeline with Back to Navigate beside Change my way, and
+  // Navigate opened again on that way over the page, the trip bar below.
+  if (want('trip-back-nav')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: bedokGeo });
+    const ride = await liveRide(page);
+    const nav = liveNav(ride);
+    nav.options[1].legs[1].traffic = undefined;
+    await liveMocks(ctx, ride, { nav, etas: { [ride.route]: [3, 14] } });
+    await page.evaluate(() => { BusNet.lastBuses = () => null; });
+    await page.evaluate(([a, b]) => { location.hash = `#nav/${a}/${b}`; }, [enc(P.bedokMall), enc(LIVE_TO)]);
+    await idle(page, '#navBody');
+    await page.click('[data-nav-option="1"]');
+    await page.waitForTimeout(1500);
+    await page.click('[data-nav-action="trip"]');
+    await page.waitForTimeout(3000);
+    await page.click('#tripBar .tripBarInner');
+    await page.waitForTimeout(1200);
+    await bar(page, 'trip-back-nav-timeline.png');
+    // Tall enough for both ends and the way above the trip bar.
+    await page.setViewportSize({ width: 390, height: 1500 });
+    await page.click('[data-tl-origin]');
+    await page.waitForTimeout(1500);
+    await blur(page);
+    await page.evaluate(() => document.querySelector('#navSection').scrollTo(0, 0));
+    await page.waitForTimeout(400);
+    await page.screenshot({ path: OUT + 'trip-back-nav.png' });
+    console.log('wrote trip-back-nav.png 390 1500');
     await ctx.close();
   }
   await browser.close();

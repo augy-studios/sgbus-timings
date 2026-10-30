@@ -44,7 +44,7 @@ buses run. Behind a proxy, start `serve.cjs` with `NODE_USE_ENV_PROXY=1`.
 `STILL=1` takes any group still instead: the page's clock stopped on a Friday morning
 (`STILL_AT`) and every stop's timings made up from its real routes, so a shot comes out the
 same whenever it's taken. The help desk #13 groups (`near-me`, `bug-report`, `explorer-back`,
-`campus`, `campus-ntu`, `campus-timings`, `map-save`) are always still; the campus ones draw
+`campus`, `campus-ntu`, `campus-timings`, `map-save`) and `bus-times` are always still; the campus ones draw
 the shuttles along their roads from the live site's `/api/road`. Explorer's offline 3D shot
 (`explorer-offline-3d.png`) is the light zoom 16 view from
 `SCALE=3 SHOTS=<folder> node ../scripts/map-save-3d-test.cjs`, the map saved and the

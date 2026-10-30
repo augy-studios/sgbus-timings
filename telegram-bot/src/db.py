@@ -85,7 +85,8 @@ db.executescript(
         birthday TEXT,
         notifications_enabled INTEGER NOT NULL DEFAULT 1,
         last_birthday_wish TEXT,
-        has_bike INTEGER NOT NULL DEFAULT 0
+        has_bike INTEGER NOT NULL DEFAULT 0,
+        clock_times INTEGER NOT NULL DEFAULT 0
     );
 
     CREATE TABLE IF NOT EXISTS routines (
@@ -246,6 +247,10 @@ if "last_birthday_wish" not in _user_settings_columns:
 if "has_bike" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN has_bike INTEGER NOT NULL DEFAULT 0")
+# Whether bus timings show the time each bus comes ("14:32") rather than how long till it does.
+if "clock_times" not in _user_settings_columns:
+    with db:
+        db.execute("ALTER TABLE user_settings ADD COLUMN clock_times INTEGER NOT NULL DEFAULT 0")
 
 # A routine's `services` is a comma-separated list of the bus numbers it sends; NULL, as
 # every routine saved before buses could be picked has, means every bus at the stop.

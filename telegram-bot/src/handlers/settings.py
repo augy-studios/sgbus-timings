@@ -18,6 +18,7 @@ from ..service_alerts import get_modes as get_alert_modes
 from ..service_alerts_view import MODE_LABELS
 from ..user_settings import (
     get_birthday,
+    get_clock_times,
     get_display_name,
     get_has_bike,
     get_notifications_enabled,
@@ -81,6 +82,7 @@ def build_settings_view(chat_id: int, sender):
     birthday = get_birthday(chat_id)
     notifications_on = get_notifications_enabled(chat_id)
     has_bike = get_has_bike(chat_id)
+    clock_times = get_clock_times(chat_id)
     alert_modes = get_alert_modes(chat_id)
     fav_buses = list_favourite_buses(chat_id)
     fav_stops = list_favourites(chat_id)
@@ -99,6 +101,7 @@ def build_settings_view(chat_id: int, sender):
         ),
         f"- **Routine notifications**: {'Enabled' if notifications_on else 'Disabled'}",
         f"- **Cycling**: {'I have a bike: /nav says how long cycling takes too' if has_bike else 'No bike'}",
+        f"- **Bus times**: {'Clock time, such as 14:32' if clock_times else 'Minutes and seconds, such as 3m 20s'}",
         f"- **Service Alerts**: "
         + (
             f"trains {MODE_LABELS[alert_modes['train']].lower()}, traffic {MODE_LABELS[alert_modes['traffic']].lower()}"
@@ -150,6 +153,7 @@ def build_settings_view(chat_id: int, sender):
             )
         ],
         [Button.inline("🚲 I don't have a bike" if has_bike else "🚲 I have a bike", make_button("settings_toggle_bike", {}))],
+        [Button.inline("⏱ Show minutes and seconds" if clock_times else "🕒 Show clock times", make_button("settings_toggle_clock", {}))],
     ]
     return rich, buttons
 

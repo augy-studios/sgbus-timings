@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 30 October 2026**
+**Latest update: 31 October 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
@@ -9,7 +9,23 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 30 October 2026: /start works again
+## 31 October 2026: bus times by the clock
+
+### Web app
+
+- **Clock times** - Settings' new Bus times: keep each bus as how long till it comes, such as 3 mins 20s, or pick Clock time to see the time it comes, such as 14:32. A stop's timings, the incoming buses bar, Glance, the departures board, Navigate and Bus only all follow it, and so do the desktop app's widgets. It syncs with your other devices and the Telegram bot.
+
+### Telegram bot
+
+- **Clock times** - 🕒 Show clock times in /settings shows each bus as the time it comes, such as 14:32, in a stop's timings, /nav and a route's journeys. It syncs with the web app's Bus times.
+
+---
+
+## 30 October 2026: back to Navigate from a trip, /start works again
+
+### Web app
+
+- **Back to Navigate** - On a trip's timeline, beside Change my way: Navigate as it was when you started the trip, the same ends and the way you picked, on Bus and train or Bus only.
 
 ### Telegram bot
 

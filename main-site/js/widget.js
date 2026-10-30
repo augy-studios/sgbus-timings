@@ -26,7 +26,10 @@
   let timer = null;
 
   const clock = (ms) => new Date(ms).toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' });
+  // Settings' Bus times, from the app's page (script.js's LS): Clock time shows when each comes.
+  const clockTimes = () => { try { return localStorage.getItem('sgbus_times') === 'clock'; } catch { return false; } };
   const mins = (ms) => {
+    if (clockTimes()) return clock(Math.max(ms, Date.now()));
     const m = Math.floor((ms - Date.now()) / 60000);
     return m < 1 ? 'Arr' : `${m} min`;
   };

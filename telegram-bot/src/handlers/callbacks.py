@@ -18,7 +18,15 @@ from ..service_alerts import set_mode as set_alert_mode
 from ..service_alerts_view import MODE_LABELS, alerts_buttons, format_alerts_now, format_subscription, sub_mode_buttons
 from ..stop_buses_view import build_stop_buses_view
 from ..stop_view import build_stop_view
-from ..user_settings import clear_birthday, get_has_bike, get_notifications_enabled, set_has_bike, set_notifications_enabled
+from ..user_settings import (
+    clear_birthday,
+    get_clock_times,
+    get_has_bike,
+    get_notifications_enabled,
+    set_clock_times,
+    set_has_bike,
+    set_notifications_enabled,
+)
 from .addroutine import build_bus_picker, clear_buses, finalize_stop, save_draft, toggle_bus
 from .favbuses import build_favbuses_view
 from .favouritepref import build_favouritepref_view
@@ -160,7 +168,7 @@ def register_callbacks(client):
                 start_code, end_code = payload.get("start"), payload.get("end")
                 if payload.get("journey"):
                     route = {k: v for k, v in payload.items() if k != "journey"}
-                    rich, buttons = await build_journey_view(start_code, end_code, payload["journey"], route)
+                    rich, buttons = await build_journey_view(start_code, end_code, payload["journey"], route, get_clock_times(user_id))
                     await edit_rich_message(client, event, rich, buttons)
                     await event.answer()
                     return
@@ -506,6 +514,14 @@ def register_callbacks(client):
                 rich, buttons = build_settings_view(user_id, sender)
                 await edit_rich_message(client, event, rich, buttons)
                 await event.answer("Cycling on: /nav says how long it takes" if get_has_bike(user_id) else "Cycling off")
+                return
+
+            if action == "settings_toggle_clock":
+                set_clock_times(user_id, not get_clock_times(user_id))
+                sender = await event.get_sender()
+                rich, buttons = build_settings_view(user_id, sender)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Bus times: the time each bus comes" if get_clock_times(user_id) else "Bus times: minutes and seconds")
                 return
 
             # Also re-subscribes, so tapping a mode under an old /sub reply after /unsub

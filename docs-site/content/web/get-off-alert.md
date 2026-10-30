@@ -217,6 +217,26 @@ the Get Off Alert goes off before it, and the new rides follow. The bar says
 what changed, with **Undo** to put the trip back as it was, if it was a slip,
 and **OK** to put the note away.
 
+### Back to Navigate
+
+<figure>
+<img src="/screenshots/web/trip-back-nav-timeline.png" alt="The trip bar opened into its timeline, with Change my way and Back to Navigate side by side at the top, then bus 38 to Tampines Int with the blue dot at Bedok Int and the stops ahead." width="366" height="546" loading="lazy">
+<figcaption>Back to Navigate, beside Change my way.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/trip-back-nav.png" alt="Navigate opened again over the page: from Bedok Mall to Our Tampines Hub, Leave now, the bus 38 way open with Start trip, its walk, bus 38's 28 stops with its next buses in 3 and 14 mins, and the trip bar still at the bottom." width="390" height="1500" loading="lazy">
+<figcaption>Navigate as the trip was started from it, the trip still running below.</figcaption>
+</figure>
+
+A trip started from [Navigate](nav.md) has **Back to Navigate** beside
+**Change my way**, at the top of the timeline. It opens Navigate as it was when
+you started: the same start, end and stop on the way, with the way you picked
+open, on Bus and train or Bus only, whichever it was. Navigate opens over the
+page while the trip carries on, and it's the same screen however the trip has
+changed since. A time you picked that has passed is left out, so it plans for
+now.
+
 <figure>
 <img src="/screenshots/web/trip-changed.png" alt="The trip bar after a way was picked: a green note, Changed at Tanah Merah Stn Exit 2. Now: walk 2 min to Tanah Merah station, take the EW Line there, with Undo and OK, and the trip now bus 38 for 8 stops to Tanah Merah Stn Exit 2, part 2 of 5." width="366" height="262" loading="lazy">
 <figcaption>The trip changed, with Undo in case it was a slip.</figcaption>

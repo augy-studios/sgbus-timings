@@ -16,8 +16,10 @@
 
   const clock = () => new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' });
 
+  // In whole minutes, or with Settings' Bus times on Clock time, the time it comes (script.js).
   function when(bus, fetched) {
     if (!bus || bus.eta_ms == null) return '';
+    if (LS.getClockTimes()) return `<span class="${loadTextClass(bus.load)}">${When.clock(fetched + Math.max(0, bus.eta_ms))}</span>`;
     const mins = Math.floor(Math.max(0, bus.eta_ms - (Date.now() - fetched)) / 60000);
     return `<span class="${loadTextClass(bus.load)}">${mins === 0 ? 'Arr' : `${mins}`}</span>`;
   }
@@ -94,6 +96,7 @@
       }).join('')
       : `<p class="boardEmpty">${board.fetched ? 'No live buses right now.' : 'Getting the timings…'}</p>`;
     $('#boardPage').textContent = pages > 1 ? `${board.page + 1} / ${pages}` : '';
+    $('#boardUnit').textContent = LS.getClockTimes() ? 'Clock times' : 'Minutes';
   }
 
   function close() {

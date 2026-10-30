@@ -25,6 +25,7 @@ const LS = {
     restrictedKey: 'sgbus_restricted',
     customsKey:    'sgbus_customs',
     bikeKey:       'sgbus_bike',
+    timesKey:      'sgbus_times',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
 
@@ -124,6 +125,17 @@ const LS = {
         try {
             if (on) localStorage.setItem(this.bikeKey, 'on');
             else localStorage.removeItem(this.bikeKey);
+        } catch { /* this visit only */ }
+    },
+    // Bus times, in Settings: each bus as the time it comes ("14:32") rather than how long till
+    // it does ("3 mins 20s"). etaText, below.
+    getClockTimes() {
+        try { return localStorage.getItem(this.timesKey) === 'clock'; } catch { return false; }
+    },
+    setClockTimes(on) {
+        try {
+            if (on) localStorage.setItem(this.timesKey, 'clock');
+            else localStorage.removeItem(this.timesKey);
         } catch { /* this visit only */ }
     },
 
@@ -249,6 +261,18 @@ function syncBikeButtons() {
     });
 }
 
+// Bus times, in Settings (etaText). Clock times on the page too, as data-clock-times, so the
+// columns sized for a minute or two have room for "14:32" (style.css).
+function syncTimesButtons() {
+    $$('[data-times]').forEach(btn => {
+        const on = (btn.dataset.times === 'clock') === LS.getClockTimes();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+    document.documentElement.toggleAttribute('data-clock-times', LS.getClockTimes());
+}
+syncTimesButtons();
+
 // The X on a stop's timings, which puts them away (closeStop): there with the glance on or off,
 // now Bus timings is a page of its own with the search box to come back to.
 function syncStopClose() {
@@ -274,6 +298,15 @@ function msToMins(ms) {
     const sec = Math.max(0, Math.round(ms / 1000));
     const m = Math.floor(sec / 60), s = sec % 60;
     return m > 0 ? (m > 1 ? tr('time.mins', '{m} mins', { m }) : tr('time.min', '{m} min', { m })) + (s ? ` ${tr('time.secs', '{s}s', { s })}` : '') : tr('time.secs', '{s}s', { s });
+}
+
+// A bus `ms` from now, as Settings' Bus times has it: the time it comes by Singapore's clock,
+// "14:32", or how long till it does, "3 mins 20s". Every timing on the page goes by it; the
+// ones that count whole minutes (Glance, the board) take busClock alone.
+const busClock = ms => When.clock(Date.now() + Math.max(0, Number(ms)));
+function etaText(ms) {
+    if (ms == null || ms === '' || !Number.isFinite(Number(ms))) return '-';
+    return LS.getClockTimes() ? busClock(ms) : msToMins(ms);
 }
 
 // What a load's colour says, for a screen reader (help desk #6).
@@ -936,7 +969,7 @@ function renderIncomingBar(data) {
     container.innerHTML = items.map(item => {
         const secs      = Math.max(0, Math.round(item.eta_ms / 1000));
         const m         = Math.floor(secs / 60), s = secs % 60;
-        const timeLabel = m > 0 ? `${m} min` : `${s}s`;
+        const timeLabel = LS.getClockTimes() ? busClock(item.eta_ms) : m > 0 ? `${m} min` : `${s}s`;
         const cls       = loadTextClass(item.load);
         const to        = item.to;
         return `<div class="incomingBusItem${to ? ` toned tone${to.tone}` : ''}"${to ? ` title="${escapeHtml(`${item.svcNo}: ${to.label}`)}"` : ''}>` +
@@ -1204,7 +1237,7 @@ function renderArrivals() {
         // LTA sends an empty slot for a bus with no third (or second) one coming: no time, no
         // load, a "Single" deck. A dash, as with none at all (help desk #11).
         if (!bus || bus.eta_ms == null) return `<div class="eta"><strong>-</strong></div>`;
-        const mins  = msToMins(bus.eta_ms);
+        const mins  = etaText(bus.eta_ms);
         const cls   = loadTextClass(bus.load);
         const haveCoords = bus.lat != null && bus.lng != null && stopLat != null && stopLng != null;
         // Along its route where the route list has the distances (js/network.js), otherwise
@@ -1865,6 +1898,7 @@ function openSettings(group) {
     syncRestrictedButtons();
     syncCustomsButtons();
     syncBikeButtons();
+    syncTimesButtons();
     syncMainButtons();
     prepareSync();
     $('#settingsTour').innerHTML = Tour.pickers();
@@ -2076,6 +2110,13 @@ $$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
 $$('[data-bike]').forEach(btn => btn.addEventListener('click', () => {
     LS.setBike(btn.dataset.bike === 'on');
     syncBikeButtons();
+}));
+// The timings on show change over at once; Glance hears it too (timeschange).
+$$('[data-times]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setClockTimes(btn.dataset.times === 'clock');
+    syncTimesButtons();
+    if (current && lastArrivals) renderArrivals();
+    window.dispatchEvent(new Event('timeschange'));
 }));
 $('#homePick').addEventListener('click', e => {
     const btn = e.target.closest('[data-home]');

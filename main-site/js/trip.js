@@ -8,13 +8,14 @@
 // sent to the server, which follows the bus from LTA's live positions while the app is in the
 // background and pushes the alert itself (api/push/trip-poll.js).
 //
-// Trip.start({ title, legs, to, from, walkBefore }) with legs of
+// Trip.start({ title, legs, to, from, walkBefore, origin }) with legs of
 // { kind: "bus" | "train" | "walk", label, to, points: [[lat, lng], ...], names, minutes, wait,
 //   walkAfter, service, board, alight, route, color, lrt }, and `to` (optional) the place it
 // ends at, { label, lat, lng }, for a live ETA link (js/share.js); `walkAfter` is the minutes
 // walked after the ride, to the next one or the end, for the same. `from` (optional) is where
 // it starts and `walkBefore` the minutes walked to the first ride, for Your trips
 // (js/history.js); a train leg's `route`, `color` and `lrt` are its line, for the same.
+// `origin` (optional) is the Navigate screen it was started from, for Back to Navigate (below).
 //
 // Your trips hears of the trip as it goes (record): when it starts, as each ride is boarded
 // and left, and as it ends, so a tab closed mid-trip still leaves the rides taken so far.
@@ -82,6 +83,12 @@
 // the way on from there to where the trip ends, for getting off somewhere else and changing to
 // another bus or train. The bar lists the ways, quickest first; the one picked becomes the trip
 // from that stop (replan), the ride cut short there.
+//
+// Back to Navigate, beside Change my way, opens the Navigate screen the trip was started from,
+// `origin`: { kind: "nav", from, to, via, when, way } for Bus and train (js/nav.js, `way` its
+// wayKey), or { kind: "route", start, end, journey, when } for Bus only (js/planner.js). It's
+// kept through every change to the trip, as those change its legs, not where it began
+// (openTripOrigin, js/nav.js). A trip started anywhere else has none, and no button.
 //
 // Every change to the trip, by itself or by you (a way picked after Change here, Reroute), says
 // so on the bar with Undo, to put the trip back as it was if it was a slip (trip.switched).
@@ -445,7 +452,7 @@
 
   // ---------- starting and ending ----------
 
-  function start({ title, legs, to = null, from = null, walkBefore = 0 }) {
+  function start({ title, legs, to = null, from = null, walkBefore = 0, origin = null }) {
     if (!legs?.length) return;
     legs = acrossTheCauseway(legs);
     // A trip still running is over as this one starts: Your trips keeps what it got to.
@@ -476,6 +483,7 @@
       to,
       from,
       walkBefore,
+      origin,
       startedAt: now,
       leg: 0,
       at: 0, // the index of the stop you're at or have just passed, on the current leg
@@ -2394,12 +2402,14 @@
   // Every leg from this one on, each a column of its stops. Only this leg has the dot.
   function buildTimeline() {
     const box = $("#tripTimeline");
-    // Change my way, where there's a ride still ahead to change from.
+    // Change my way, where there's a ride still ahead to change from, and beside it Back to
+    // Navigate, for a trip started there.
     const canChange = trip.legs.some((l, i) => i >= trip.leg && !isWalk(l));
-    const mode = !canChange ? ""
-      : choosingChange
-        ? `<p class="tlChangeMode"><span>Tap Change here by the stop to get off at.</span><button type="button" class="iconBtn" data-tl-change-mode="off">Cancel</button></p>`
-        : `<p class="tlChangeMode"><button type="button" class="iconBtn" data-tl-change-mode="on">${window.icon("swap")} Change my way</button></p>`;
+    const change = canChange ? `<button type="button" class="iconBtn" data-tl-change-mode="on">${window.icon("swap")} Change my way</button>` : "";
+    const back = trip.origin ? `<button type="button" class="iconBtn" data-tl-origin>${window.icon("navigate")} ${esc(I18n.t("stop.back.nav", "Back to Navigate"))}</button>` : "";
+    const mode = canChange && choosingChange
+      ? `<p class="tlChangeMode"><span>Tap Change here by the stop to get off at.</span><button type="button" class="iconBtn" data-tl-change-mode="off">Cancel</button></p>`
+      : change || back ? `<p class="tlChangeMode">${change}${back}</p>` : "";
     box.innerHTML = mode + trip.legs
       .slice(trip.leg)
       .map((leg, k) => {
@@ -2615,6 +2625,12 @@
         choosingChange = mode.dataset.tlChangeMode === "on";
         buildTimeline();
         return;
+      }
+      // Back to Navigate: the timeline closes, as for a stop, and Navigate opens over the page.
+      if (e.target.closest("[data-tl-origin]")) {
+        if (!trip?.origin || typeof openTripOrigin !== "function") return;
+        setExpanded(false);
+        return openTripOrigin(trip.origin);
       }
       const change = e.target.closest("[data-tl-change]");
       if (change) {

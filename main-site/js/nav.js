@@ -167,7 +167,8 @@ function initNav() {
         alert("This way can't be followed as a trip. Try another way.");
         return;
       }
-      Trip.start(trip);
+      // This screen, for the timeline's Back to Navigate (openTripOrigin).
+      Trip.start({ ...trip, origin: { kind: 'nav', from: nav.from, to: nav.to, via: nav.via, when: nav.when, way: wayKey(nav.option) } });
       closeNav();
     } else if (action === 'retry') {
       runNav();
@@ -485,6 +486,30 @@ function backToNav() {
   showPanel('navSection', true);
   if (nav.from && nav.to) history.replaceState(null, '', navHash());
   renderNav();
+}
+
+// Back to Navigate, from a trip's timeline (js/trip.js): the screen the trip was started from,
+// its `origin`, on the tab it was on. A way in Bus and train shows as it was left if Navigate
+// still has it (the same ends, stop, time and way open), as backToNav does; otherwise it's
+// planned again with that way open, if it's still one of them. A journey in Bus only opens as
+// it was. A time picked that has passed since is left out, so it plans for now rather than
+// only saying the time has gone.
+function openTripOrigin(o) {
+  const when = o.when && When.problem(o.when) == null ? o.when : null;
+  try {
+    localStorage.setItem(NAV_MODE_KEY, o.kind === 'route' ? 'bus' : 'all');
+  } catch { /* the tab opened this time all the same */ }
+  if (o.kind === 'route') {
+    if (!$('#navSection').hidden) closeNav();
+    openPlanner(o.start, o.end, { journey: o.journey, when });
+    return;
+  }
+  if (!$('#plannerSection').hidden) closePlanner();
+  const same = (a, b) => (!a && !b) || (!!a && !!b && a.label === b.label && coord(a) === coord(b));
+  const kept = nav.option && wayKey(nav.option) === o.way && same(nav.from, o.from) && same(nav.to, o.to) &&
+    same(nav.via, o.via) && JSON.stringify(nav.when) === JSON.stringify(o.when);
+  if (kept) return backToNav();
+  openNavAt(o.from, o.to, when, o.way, o.via);
 }
 
 const coord = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}`;
@@ -941,7 +966,7 @@ async function renderNavOption(o) {
       : '';
     const etas = !live ? board
       : t === undefined ? `${board}<div class="legNote">${escapeHtml(I18n.t('nav.loadingLive', 'Loading live timings…'))}</div>`
-      : t && t.length ? `${board}<div class="legEtas">${escapeHtml(I18n.t('nav.nextBus', 'Next {no}:', { no: leg.route }))} ${t.map((ms) => escapeHtml(msToMins(ms))).join(' &middot; ')}</div>`
+      : t && t.length ? `${board}<div class="legEtas">${escapeHtml(I18n.t('nav.nextBus', 'Next {no}:', { no: leg.route }))} ${t.map((ms) => escapeHtml(etaText(ms))).join(' &middot; ')}</div>`
       : `${board}<div class="legNote">${escapeHtml(I18n.t('nav.noLive', 'No live timings for this bus right now.'))}</div>`;
     return `<li class="step stepLeg">` +
       `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.stops === 1 ? I18n.t('nav.oneStopMin', '1 stop · ~{min} min', { min: Math.round(leg.minutes) }) : I18n.t('nav.stopsMin', '{n} stops · ~{min} min', { n: leg.stops, min: Math.round(leg.minutes) }))}</span></div>` +

@@ -101,13 +101,14 @@ def crossing_lines(leg: dict) -> list:
     return out
 
 
-async def build_journey_view(start_code: str, end_code: str, legs: list, route: dict):
+async def build_journey_view(start_code: str, end_code: str, legs: list, route: dict, clock_times=False):
     """One journey from the route panel, leg by leg, with the live timings of each bus at
     the stop it's boarded at. Past the first bus, each leg says roughly when you'd reach
     its stop, and the buses due before then are struck through: they'll have gone.
 
     `route` is the route panel this was opened from, minus the journey, which is where the
-    back button goes. Returns (rich, buttons)."""
+    back button goes. `clock_times` shows each bus as the time it comes (Settings' Bus
+    times). Returns (rich, buttons)."""
     here = {**route, "journey": legs}
     back_row = [Button.inline("🔙 Back to route", make_button("route_view", route))]
     # Immigration across the Causeway, for the time planned for, as the route was planned.
@@ -194,7 +195,7 @@ async def build_journey_view(start_code: str, end_code: str, legs: list, route: 
         if etas:
             cells, plain = [], []
             for eta in etas:
-                shown = _format_eta(eta * 60000)
+                shown = _format_eta(eta * 60000, clock_times)
                 if t is not None and eta < t:
                     cells.append(f"~~{escape_md(shown)}~~")
                     plain.append(f"{shown} (gone by then)")

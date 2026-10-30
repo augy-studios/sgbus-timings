@@ -37,6 +37,15 @@ on Bus timings, as a search would. **Back** comes back to Glance.
 The times count down by themselves, and fetch again every 30 seconds while
 the app is open on Glance. The round arrows beside the chip fetch them at once.
 
+<figure>
+<img src="/screenshots/web/glance-clock-times.png" alt="Glance with Bus times on Clock time: Clock times beside the refresh button, the next bus 14 at 08:35 to Clementi Int, at Bedok Int, and Bedok Int's card with bus 14 at 08:35, 08:43 and 08:52, and bus 60 at 08:43, 08:52 and 09:07." width="312" height="448" loading="lazy">
+<figcaption>With Clock time, Glance shows when each bus comes.</figcaption>
+</figure>
+
+With **Bus times** on **Clock time** in [Settings](settings.md), Glance shows
+the time each bus comes, such as **at 08:35**, rather than minutes, and says
+**Clock times** beside the refresh button.
+
 ### Pick whose buses
 
 <figure>

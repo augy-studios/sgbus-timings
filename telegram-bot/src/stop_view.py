@@ -10,6 +10,7 @@ from .journey_view import stops_left_note
 from .lta import fetch_arrivals
 from .maps import navigate_buttons
 from .routines import service_wanted
+from .user_settings import get_clock_times
 
 
 def _with_navigate(buttons: list, stop, origin: dict, navigate_open: bool) -> list:
@@ -95,7 +96,8 @@ async def build_stop_view(
     bus_pin_position = get_pref(chat_id, "bus") if chat_id is not None else "top"
     note = stops_left_note(route, code, only_service) if route and only_service else None
     rich = format_arrival_message(
-        stop, arrivals, favourite, fav_bus_nos, bus_pin_position, note, wanted=wanted if not expanded else None
+        stop, arrivals, favourite, fav_bus_nos, bus_pin_position, note, wanted=wanted if not expanded else None,
+        clock=get_clock_times(chat_id),
     )
 
     if inline_only:

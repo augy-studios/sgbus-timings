@@ -242,10 +242,11 @@ def option_is_live(option: dict, when) -> bool:
     return not when or live_lead(span(when, option["minutes"])[0]) is not None
 
 
-def build_nav_option(start, end, option: dict, timings: dict, when=None):
+def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_times=False):
     """One way, leg by leg. `timings` maps a bus leg's index to its next ETAs in ms (or None
     when LTA has none); for a way setting off too far ahead for those (option_is_live), each
-    bus and train says when it's boarded instead, by the clock."""
+    bus and train says when it's boarded instead, by the clock. `clock_times` shows the ETAs as
+    the time each bus comes (Settings' Bus times)."""
     md = [f"# 🧭 ~{option['minutes']} min", f"{escape_md(start['label'])} → {escape_md(end['label'])}", ""]
     plain = [f"🧭 ~{option['minutes']} min", f"{start['label']} → {end['label']}", ""]
     buttons = []
@@ -292,7 +293,7 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None):
             plain.append(line)
             if live:
                 etas = timings.get(k)
-                eta_line = (f"   Next {leg['route']}: {' · '.join(_format_eta(ms) for ms in etas)}" if etas
+                eta_line = (f"   Next {leg['route']}: {' · '.join(_format_eta(ms, clock_times) for ms in etas)}" if etas
                             else "   No live timings for this bus right now.")
             else:
                 eta_line = board_line(leg, after_wait=True)

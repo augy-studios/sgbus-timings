@@ -30,6 +30,7 @@ straight to one.
 | **Next bus at a glance** | **On** (the default) or **Off**: the Glance page, with the next bus in big letters and your stops' buses. Off takes it out of the Edge Tray, and the app opens on Bus timings. See [Your main screen](main-screen.md#glance). |
 | **Custom home** | The page the app opens on, first in the Edge Tray: **Glance** (the default), **Bus timings**, **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
 | **Pin favourite buses in timings** | **Top** or **Bottom** of a stop's timings. |
+| **Bus times** | **Minutes and seconds** (the default), how long till each bus comes, such as 3 mins 20s; or **Clock time**, the time it comes, such as 14:32. A stop's timings, the incoming buses bar, [Glance](main-screen.md#glance), the departures board, [Navigate](nav.md), the [route planner](route-planner.md) and the desktop app's widgets all follow it. It syncs with the [Telegram bot](../bot/settings.md#bus-times). |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
 | **Immigration time** | How long a journey across the Causeway counts for getting off, clearing both checkpoints and getting on again. **By the time** (the default): about 15 minutes when it's quiet, up to an hour at the rush. Or your own: **15 min**, **30 min**, **45 min** or **1 hr**. See [Navigate](nav.md#across-the-causeway). |
@@ -55,6 +56,11 @@ Changes save as you make them. There is no Save button.
 <figure>
 <img src="/screenshots/web/settings-cycling.png" alt="Settings' Cycling, with No bike and I have a bike, I have a bike picked, and a note that with a bike Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker." width="396" height="161" loading="lazy">
 <figcaption>Cycling, for Navigate and trips to weigh a bike too.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/settings-bus-times.png" alt="Settings' Bus times, with Minutes and seconds and Clock time, Clock time picked, and a note that it's how long till each bus comes, such as 3 mins 20s, or the time it comes, such as 14:32, and that every bus timing in the app follows it." width="396" height="161" loading="lazy">
+<figcaption>Bus times: how long till each bus comes, or the time it comes.</figcaption>
 </figure>
 
 > [!NOTE]

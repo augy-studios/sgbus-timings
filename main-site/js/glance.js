@@ -152,7 +152,11 @@
   }
 
   const mins = (ms) => Math.floor(ms / 60000);
-  const timeText = (ms) => (ms < 60000 ? I18n.t('glance.arr', 'Arr') : String(mins(ms)));
+  // Settings' Bus times (script.js): whole minutes, or the time each bus comes, "14:32".
+  const clockTimes = () => LS.getClockTimes();
+  const timeCell = (ms) => (clockTimes() ? esc(busClock(ms))
+    : ms < 60000 ? `<span aria-hidden="true">${esc(I18n.t('glance.arr', 'Arr'))}</span><span class="sr">${esc(I18n.t('glance.arriving', 'Arriving'))}</span>`
+      : `${mins(ms)}<span class="sr"> ${esc(I18n.t('glance.min', 'min'))}</span>`);
   const KICKER = () => esc(I18n.t('glance.nextBus', 'Next bus'));
 
   // The one big answer: the next bus you'd make from these stops, a favourite bus first if any
@@ -198,7 +202,8 @@
       return;
     }
     const m = mins(bus.ms);
-    const when = bus.ms < 60000 ? I18n.t('glance.arriving', 'Arriving') : I18n.t('glance.inMin', 'in {m} min', { m });
+    const when = clockTimes() ? I18n.t('glance.atClock', 'at {time}', { time: busClock(bus.ms) })
+      : bus.ms < 60000 ? I18n.t('glance.arriving', 'Arriving') : I18n.t('glance.inMin', 'in {m} min', { m });
     const leave = bus.walk ? Math.max(0, mins(bus.ms - bus.walk)) : null;
     const walk = bus.walk ? I18n.t('glance.minWalk', '{m} min walk', { m: bus.walk / 60000 }) : '';
     hero.innerHTML =
@@ -253,7 +258,7 @@
         `<button class="glanceRow" type="button" data-stop="${esc(s.code)}" data-svc="${esc(r.no)}">` +
         `<span class="glanceNo">${esc(r.no)}</span>` +
         `<span class="glanceTo">${r.to ? esc(I18n.t('glance.to', 'to {to}', { to: r.to })) : ''}</span>` +
-        `<span class="glanceTimes">${[0, 1, 2].map((i) => { const ms = r.times[i]; return ms == null ? '<span></span>' : `<span class="${i === 0 ? 'first' : ''}${ms < 60000 ? ' now' : ''}">${ms < 60000 ? `<span aria-hidden="true">${esc(I18n.t('glance.arr', 'Arr'))}</span><span class="sr">${esc(I18n.t('glance.arriving', 'Arriving'))}</span>` : `${timeText(ms)}<span class="sr"> ${esc(I18n.t('glance.min', 'min'))}</span>`}</span>`; }).join('')}</span>` +
+        `<span class="glanceTimes">${[0, 1, 2].map((i) => { const ms = r.times[i]; return ms == null ? '<span></span>' : `<span class="${i === 0 ? 'first' : ''}${ms < 60000 ? ' now' : ''}">${timeCell(ms)}</span>`; }).join('')}</span>` +
         '</button>').join('');
       const more = rows.length > ROWS ? `<button class="glanceMore" type="button" data-stop="${esc(s.code)}">${esc(I18n.t('glance.more', '+{n} more', { n: rows.length - ROWS }))}</button>` : '';
       return `<div class="glanceStop card glass">` +
@@ -267,7 +272,8 @@
     $('#glanceSourceLabel').textContent = src?.name || I18n.t('glance.source.near', 'Nearby');
     $('#glanceSourceIcon').dataset.icon = src?.icon || 'locate';
     hydrateIcons($('#glanceSource'));
-    $('#glanceUpdated').textContent = fetchedAt ? I18n.t('glance.inMinutes', 'Times in minutes') : '';
+    $('#glanceUpdated').textContent = !fetchedAt ? ''
+      : clockTimes() ? I18n.t('glance.byClock', 'Clock times') : I18n.t('glance.inMinutes', 'Times in minutes');
   }
 
   function render() {
@@ -351,6 +357,8 @@
     }
     document.addEventListener('visibilitychange', () => { if (showing()) refresh(); });
     window.addEventListener('viewchange', () => { if (showing()) refresh(); });
+    // Settings' Bus times changed: the times already in, shown the other way.
+    window.addEventListener('timeschange', render);
     started = true;
     loop();
     refresh();

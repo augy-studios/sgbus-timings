@@ -62,7 +62,7 @@ database anywhere it doesn't need to be):
 |---|---|
 | `favourites`, `favourite_buses`, `favourite_routes`, `favourite_navs`, `favourite_prefs` | Favourite stops, buses, routes and navs, and top or bottom pinning |
 | `saved_places` | Home, Work and own places |
-| `user_settings` | Name, birthday, routine notifications on or off, has a bike, last birthday wish |
+| `user_settings` | Name, birthday, routine notifications on or off, has a bike, bus times as clock times, last birthday wish |
 | `routines` | Scheduled timings: hour, minute, days, stop, buses, `last_fired_key` |
 | `service_alert_subs` | `/sub` choices (train, traffic, newsfeed) |
 | `calendar_links` | The private iCal link, as good as a password to the calendar |

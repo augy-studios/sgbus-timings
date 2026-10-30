@@ -6,7 +6,7 @@ from ..nav_api import NavError, places, plan
 from ..nav_view import NO_MATCH, build_mynavs_view, build_nav_option, build_nav_panel, nav_place_buttons, option_is_live
 from ..navs import clear_nav_draft, draft_place, draft_when, get_favourite_nav, get_nav_draft, start_nav_draft
 from ..reply import edit_rich_message, send_rich_message
-from ..user_settings import get_has_bike
+from ..user_settings import get_clock_times, get_has_bike
 from ..when import parse_typed, problem
 from ..when_view import TYPED_HINT, build_when_prompt
 
@@ -112,7 +112,7 @@ async def show_option(client, event, start, end, option, when=None):
             timings[k] = etas or None
         except Exception:
             timings[k] = None
-    rich, buttons = build_nav_option(start, end, option, timings, when)
+    rich, buttons = build_nav_option(start, end, option, timings, when, clock_times=get_clock_times(event.sender_id))
     await edit_rich_message(client, event, rich, buttons)
 
 

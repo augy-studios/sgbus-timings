@@ -19,6 +19,10 @@ The time is how long until the bus reaches the stop. The web app writes it as
 bus that is arriving now. It counts from the moment the timings were fetched,
 so it does not tick down by itself. Refresh to bring it up to date.
 
+To see the time each bus comes instead, such as `14:32`, pick **Clock time**
+under **Bus times** in the web app's [Settings](../web/settings.md), or tap
+**Show clock times** in the bot's [/settings](../bot/settings.md#bus-times).
+
 LTA works these times out from where the bus is and how traffic is moving. They
 can jump around, and two buses of different services can arrive in a different
 order from the one shown.

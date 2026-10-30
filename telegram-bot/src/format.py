@@ -1,6 +1,6 @@
 import math
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .bus_routes import direction_ending_at, first_last_bus_times
@@ -24,9 +24,13 @@ def _escape_cell(text) -> str:
     return escape_md(str(text).replace("\n", " "))
 
 
-def _format_eta(ms) -> str:
+def _format_eta(ms, clock=False) -> str:
+    """How long till a bus `ms` from now comes, "3m 20s", or with `clock` (Settings' Bus
+    times), the time it comes by Singapore's clock, "14:32"."""
     if ms is None:
         return "no data"
+    if clock:
+        return (datetime.now(ZoneInfo("Asia/Singapore")) + timedelta(milliseconds=max(0, ms))).strftime("%H:%M")
     total_seconds = round(ms / 1000)
     if total_seconds <= 0:
         return "arr"
@@ -104,7 +108,7 @@ def _deck_cell(deck) -> str:
     return "🚍 Single"
 
 
-def _build_service_table(svc, stop) -> "str | None":
+def _build_service_table(svc, stop, clock=False) -> "str | None":
     """Builds a GFM Markdown table (Next 1/2/3 columns) of a service's upcoming buses."""
     nexts = [n for n in (svc.get("next"), svc.get("next2"), svc.get("next3")) if n]
     if not nexts:
@@ -112,7 +116,7 @@ def _build_service_table(svc, stop) -> "str | None":
 
     headers = [f"Next {i + 1}" for i in range(len(nexts))]
     rows = [
-        ["Time", *(_format_eta(n["etaMs"]) for n in nexts)],
+        ["Time", *(_format_eta(n["etaMs"], clock) for n in nexts)],
         ["Dist", *(_format_distance(_bus_distance(stop, n)) for n in nexts)],
         ["Type", *(_deck_cell(n["deck"]) for n in nexts)],
         ["Seats", *(_load_cell(n["load"]) for n in nexts)],
@@ -244,12 +248,13 @@ def _none_due(wanted) -> str:
 
 
 def format_arrival_message(
-    stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top", note=None, wanted=None
+    stop, arrivals, is_favourite, favourite_service_nos=None, bus_pin_position="top", note=None, wanted=None, clock=False
 ) -> dict:
     """Builds the rich-message Markdown body showing live arrivals for a bus stop.
     `note` is a line of plain text shown under the stop's name, such as how many stops
     the bus picked off a route has left to go. `wanted` is the buses the view is narrowed
-    to, if it is, for saying so when none of them are due."""
+    to, if it is, for saying so when none of them are due. `clock` shows each bus as the time
+    it comes rather than how long till it does (Settings' Bus times)."""
     favourite_service_nos = favourite_service_nos or set()
     star = "⭐ " if is_favourite else ""
     lines = [f"# {star}{escape_md(stop['name'])} ({escape_md(stop['code'])})"]
@@ -269,7 +274,7 @@ def format_arrival_message(
             svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
             to = f" {way[0]} {escape_md(way[1])}" if way else ""
             lines.append(f"## {svc_star}{escape_md(svc['serviceNo'])} ({escape_md(svc.get('operator') or '?')}){to}")
-            table = _build_service_table(svc, stop)
+            table = _build_service_table(svc, stop, clock)
             lines.append(table if table else "No arrival data.")
             first_last = _first_last_bus_line(svc["serviceNo"], stop["code"], way[2] if way else None)
             if first_last:
@@ -281,13 +286,13 @@ def format_arrival_message(
 
     markdown = "\n".join(lines)
     fallback = _build_fallback_text(
-        stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note, wanted
+        stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note, wanted, clock
     )
     return {"markdown": markdown, "fallback": fallback}
 
 
 def _build_fallback_text(
-    stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note=None, wanted=None
+    stop, arrivals, is_favourite, favourite_service_nos, bus_pin_position, updated, note=None, wanted=None, clock=False
 ) -> str:
     """Plain-text summary for the required SendMessageRequest.message field / older clients."""
     star = "⭐ " if is_favourite else ""
@@ -306,7 +311,7 @@ def _build_fallback_text(
             svc_star = "⭐ " if svc["serviceNo"] in favourite_service_nos else ""
             to = f" {way[0]} {way[1]}" if way else ""
             nexts = [n for n in (svc.get("next"), svc.get("next2"), svc.get("next3")) if n]
-            etas = ", ".join(_format_eta(n["etaMs"]) for n in nexts) or "no data"
+            etas = ", ".join(_format_eta(n["etaMs"], clock) for n in nexts) or "no data"
             lines.append(f"{svc_star}{svc['serviceNo']} ({svc.get('operator') or '?'}){to}: {etas}")
             first_last = _first_last_bus_line(svc["serviceNo"], stop["code"], way[2] if way else None)
             if first_last:

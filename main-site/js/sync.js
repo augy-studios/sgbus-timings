@@ -84,7 +84,7 @@ const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}
 // ---- Settings ----
 // Each: what Settings calls it, its value as words, what it starts as, and how it's read and
 // put in place, through the same buttons Settings has, so the page follows as if tapped.
-// `here` is whether this device has it. The bot keeps only the two pins.
+// `here` is whether this device has it. The bot keeps only the two pins, Cycling and Bus times.
 
 const tap = (selector) => document.querySelector(selector)?.click();
 const onOff = (v) => (v === 'on' ? 'On' : 'Off');
@@ -102,6 +102,11 @@ const SYNC_SETTINGS = {
     label: 'Pin favourite buses at a stop', values: ['top', 'bottom'], start: 'top',
     text: (v) => (v === 'bottom' ? 'Bottom' : 'Top'),
     get: () => LS.getPin('bus'), set: (v) => tap(`[data-pin-kind="bus"] [data-pin="${v}"]`),
+  },
+  'bus.times': {
+    label: 'Bus times', values: ['mins', 'clock'], start: 'mins',
+    text: (v) => (v === 'clock' ? 'Clock time' : 'Minutes and seconds'),
+    get: () => (LS.getClockTimes() ? 'clock' : 'mins'), set: (v) => tap(`[data-times="${v}"]`),
   },
   'theme.mode': {
     label: 'Light or dark', values: () => window.MODE_PREFERENCES || [], start: 'light',

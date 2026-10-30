@@ -10,6 +10,7 @@ change it:
 - **Birthday**: the date it has saved, or "not set".
 - **Home** and **Work**: the places saved for them, or "not set".
 - **Routine notifications**: Enabled or Disabled.
+- **Bus times**: minutes and seconds, or clock time.
 - **Service Alerts**: your choice for trains and for traffic, or Off. Change it with
   `/sub` and `/unsub`; see [Service Alerts](service-alerts.md).
 - **Favourite buses** and **Favourite bus stops**: what you have saved, and
@@ -59,6 +60,14 @@ listed with Home and Work in `/places`. See [Places with /places](places.md).
 **🚲 I have a bike** says you have one with you: [/nav](nav.md) then also says
 how long cycling there takes. **🚲 I don't have a bike** turns it off again. It
 syncs with the web app's **Cycling** setting.
+
+## Bus times
+
+Bus timings show how long till each bus comes, such as `3m 20s`. **🕒 Show
+clock times** shows the time each bus comes instead, such as `14:32`, and
+**⏱ Show minutes and seconds** goes back. A stop's timings, the next buses in
+[/nav](nav.md) and the buses on a route's journeys all follow it. It syncs with
+the web app's **Bus times** setting.
 
 ## Routine notifications
 

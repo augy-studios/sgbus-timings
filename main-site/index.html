@@ -750,6 +750,13 @@
                     <button class="mode-btn" type="button" data-pin="top" aria-pressed="false" data-i18n="settings.top">Top</button>
                     <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false" data-i18n="settings.bottom">Bottom</button>
                 </div>
+                <!-- How long till each bus, or the time it comes (script.js, etaText) -->
+                <p class="modal-section-label" data-find="clock countdown minutes seconds hh:mm arrival time eta" data-i18n="settings.bus_times">Bus times</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-times="mins" aria-pressed="false" data-i18n="settings.minutes_and_seconds">Minutes and seconds</button>
+                    <button class="mode-btn" type="button" data-times="clock" aria-pressed="false" data-i18n="settings.clock_time">Clock time</button>
+                </div>
+                <p class="mode-note" data-i18n="settings.bus_times_note">How long till each bus comes, such as 3 mins 20s, or the time it comes, such as 14:32. Every bus timing in the app follows it.</p>
             </section>
 
             <section class="settingsView" data-settings-group="trips" data-i18n-data-title="settings.trips_and_alerts" data-title="Trips and alerts" hidden>
@@ -1159,7 +1166,7 @@
         </div>
         <div class="boardRow boardLabels" aria-hidden="true"><span>Bus</span><span>To</span><span>Next</span><span>Then</span><span>Then</span></div>
         <div id="boardRows" class="boardRows"></div>
-        <div class="boardFoot"><span id="boardNote"></span><span>Minutes · <span class="load-ok">seats</span> · <span class="load-warn">standing</span> · <span class="load-busy">full</span></span><span id="boardPage"></span></div>
+        <div class="boardFoot"><span id="boardNote"></span><span><span id="boardUnit">Minutes</span> · <span class="load-ok">seats</span> · <span class="load-warn">standing</span> · <span class="load-busy">full</span></span><span id="boardPage"></span></div>
     </div>
 
     <!-- Scan a stop's code with the camera: the Android app only (js/scan.js) -->
