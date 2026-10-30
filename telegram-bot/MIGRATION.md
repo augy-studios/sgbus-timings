@@ -36,9 +36,10 @@ everywhere this guide says `sgbus_app`.
 - **The session file is tied to the old bot.** Telethon keeps its login in
   `data/bot.session`, next to `DB_PATH` (`SESSION_PATH = config.db_path.parent / "bot"` in
   `src/main.py`). **Trap:** if that file is still there when you start with the new
-  `BOT_TOKEN`, Telethon sees an existing login and carries on as **the old bot**. It only
-  prints a warning that it didn't use the token, which is easy to miss in the log. Move the old
-  session file aside before the new bot's first start (step 4.3).
+  `BOT_TOKEN`, Telethon sees an existing login and ignores the token, printing only a
+  warning ("the session already had an authorized user…"). `src/main.py` then stops with
+  an error naming the account the file holds, rather than carry on as **the old bot**. Move
+  the old session file aside before the new bot's first start (step 4.3).
 - **Everything a user has is keyed by `chat_id`.** In a private chat, `chat_id` is the
   user's own Telegram ID, and that's the same whichever bot they talk to. So when someone
   taps **Start** on @sgbus_app, the new bot, running on the same `data/bot.db`, already has

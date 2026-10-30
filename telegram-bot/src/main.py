@@ -52,6 +52,15 @@ SESSION_PATH = config.db_path.parent / "bot"
 async def main() -> None:
     client = TelegramClient(str(SESSION_PATH), config.api_id, config.api_hash)
     await client.start(bot_token=config.bot_token)
+    # A session file that's already logged in wins over BOT_TOKEN: Telethon only warns and
+    # carries on as whoever the file holds (the old bot, after a move to a new token).
+    me = await client.get_me()
+    if str(me.id) != config.bot_token.split(":", 1)[0]:
+        await client.disconnect()
+        raise SystemExit(
+            f"{SESSION_PATH}.session is logged in as @{me.username} (id {me.id}), not the bot "
+            "BOT_TOKEN belongs to. Move that file aside and start again."
+        )
     await setup_mini_app(client)
 
     register_start(client)
