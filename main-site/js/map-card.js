@@ -13,7 +13,12 @@
 //                escalators, lifts and stairs, and where each leads (js/mrt-doors.js), drawn as
 //                Navigate draws them (js/nav.js).
 //
-// Both end with Directions: Navigate's Bus and train, from where you are (openNavFromHere). A
+//   A campus     a stop of NUS's or NTU's shuttles that LTA hasn't got (js/campus.js): its name
+//   stop         and university, and each shuttle route there with what its timetable says now,
+//                marked as scheduled times, not live. An LTA stop with campus shuttles has the
+//                same list under its buses.
+//
+// All end with Directions: Navigate's Bus and train, from where you are (openNavFromHere). A
 // stop's has Show bus timings above it: the stop's timings on Bus timings, as a search opens
 // them (host.onTimings).
 // Plain script: exports go on window.
@@ -150,10 +155,13 @@
         head(`<span class="mcCode">${esc(code)}</span><div class="mcTitle"><strong>${esc(s.n || 'Bus stop')}</strong><span>${esc(s.road || '')}</span></div>`) +
         `<div class="mcPills">${pills}</div>` +
         (buses.length ? '<p class="mcKey"><span class="mcKeyDot on"></span>Running<span class="mcKeyDot last"></span>Last 3 buses<span class="mcKeyDot off"></span>Not running now</p>' : '') +
+        // NUS's or NTU's shuttles here too (js/campus.js).
+        (window.Campus?.listHtml(code) || '') +
         timingsBtn(code) + foot();
       place();
     };
     draw(null);
+    if (window.Campus && !Campus.isReady()) Campus.load().then(() => { if (Campus.at(code)) draw(null); }).catch(() => {});
     if (!BusNet.isReady()) {
       await BusNet.load(stopsIndex).catch(() => {});
       draw(null);
@@ -169,6 +177,25 @@
       }
       draw(etas);
     } catch { /* the timetable's word alone */ }
+  }
+
+  // ---------- a campus stop ----------
+
+  function campusCard(key) {
+    const s = window.Campus?.at(key);
+    if (!s) return;
+    const uni = { nus: 'NUS', ntu: 'NTU' }[s.uni] || s.uni.toUpperCase();
+    const body = frame(I18n.t('campus.card', '{uni} shuttle stop {name}', { uni, name: s.name }));
+    at = [s.lat, s.lng];
+    dest = { label: s.name, lat: s.lat, lng: s.lng };
+    // A code worth showing: NTU's six digits, not NUS-KV.
+    const code = /^\d+$/.test(s.id) ? ` ${s.id}` : '';
+    body.innerHTML =
+      head(`<span class="mcCode">${esc(uni)}</span><div class="mcTitle"><strong>${esc(s.name)}</strong><span>${esc(s.road || '')}${esc(code)}</span></div>`) +
+      Campus.listHtml(key) +
+      `<p class="mcNote">${esc(I18n.t('campus.noLive', 'No live times for campus shuttles: these are from the timetable.'))}</p>` +
+      foot();
+    place();
   }
 
   // ---------- a station ----------
@@ -242,10 +269,12 @@
 
   // ---------- opening ----------
 
-  // `pick` is { kind: 'stop', code } or { kind: 'station', name, codes, lat, lng }.
+  // `pick` is { kind: 'stop', code }, { kind: 'campus', key } or { kind: 'station', name, codes,
+  // lat, lng }.
   function open(pick, hostNow) {
     host = hostNow;
     if (pick?.kind === 'stop') return stopCard(pick.code);
+    if (pick?.kind === 'campus') return campusCard(pick.key);
     if (pick?.kind === 'station') return stationCard(pick);
     return null;
   }

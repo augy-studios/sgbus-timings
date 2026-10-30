@@ -161,9 +161,9 @@ alarm clock, under the line; the rest are in **Settings**. Either button can be 
 
 ### Location turned off
 
-When you tap **Near me**, start from where you are in
-Navigate, or save where you are in Places with your phone's Location turned
-off, the app asks to turn it on with one tap, then carries on. Without Google
+When you tap **Show stops near me** on Bus timings or the **Near me** shortcut,
+start from where you are in Navigate, or save where you are in Places with your
+phone's Location turned off, the app asks to turn it on with one tap, then carries on. Without Google
 Play services it opens Android's Location settings instead.
 
 <figure>

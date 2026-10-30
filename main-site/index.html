@@ -160,7 +160,6 @@
                 <button id="glanceBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.glance" aria-label="Glance" data-i18n-title="tray.glance.title" title="Glance: your next bus, and your stops' buses"><span data-icon="eye"></span></button>
                 <button id="timingsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.timings" aria-label="Bus timings" data-i18n-title="tray.timings.title" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
                 <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
-                <button id="nearMeBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.nearMe" aria-label="Stops near me" data-i18n-title="tray.nearMe.title" title="Stops near me"><span data-icon="pin"></span></button>
                 <!-- Explorer: the live map with every stop and station to tap (js/map.js); can be
                      turned off in Settings, Edge Tray buttons -->
                 <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" data-i18n-aria-label="tray.explorer" aria-label="Explorer" data-i18n-title="tray.explorer.title" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
@@ -474,6 +473,14 @@
 
         <!-- Results -->
         <section class="resultsSection">
+            <!-- Stops near me, while no stop's timings are open (script.js, "Nearby stops") -->
+            <div id="nearStops" class="card glass nearStops" hidden>
+                <div class="cardHeader">
+                    <h2 class="cardTitle" id="nearStopsTitle"><span data-icon="locate"></span> <span data-i18n="timings.stops_near_me">Stops near me</span></h2>
+                    <button id="nearStopsRefresh" class="iconBtn" type="button" data-i18n-aria-label="timings.look_again" aria-label="Look again" data-i18n-title="timings.look_again" title="Look again" hidden><span data-icon="sync"></span></button>
+                </div>
+                <div id="nearStopsBody" class="nearStopsBody" aria-live="polite"></div>
+            </div>
             <div id="resultCard" class="card glass" hidden>
                 <div class="cardHeader">
                     <div class="stopTitle">
@@ -519,6 +526,8 @@
                 <div class="cardBody">
                     <div id="services" class="services"></div>
                     <div id="emptySvc" class="empty" hidden data-i18n="stop.no_live_buses_right_now">No live buses right now.</div>
+                    <!-- NUS's or NTU's campus shuttles at this stop, by their timetable: js/campus.js -->
+                    <div id="campusSvc" class="campusSvc" hidden></div>
                     <p id="stopSay" class="sr" role="status"></p>
                 </div>
             </div>
@@ -566,7 +575,7 @@
         </div>
     </div>
 
-    <!-- A list of stops to pick from: nearby stops -->
+    <!-- A list of stops to pick from: the stops near a postal code, or an end of the route planner -->
     <div id="stopListModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="stopListTitle">
             <div class="modal-head">
@@ -837,6 +846,10 @@
                 <p class="modal-section-label" data-find="command line linux" data-i18n="settings.sgbus_terminal">sgbus terminal</p>
                 <button id="settingsTerminal" class="iconBtn settingsWide" type="button"><span data-icon="terminal"></span> <span data-i18n="settings.open_the_sgbus_terminal">Open the sgbus terminal</span></button>
                 <p class="mode-note" data-i18n="settings.the_linux_apps_commands_typed">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
+                <!-- What went wrong, sent to Augy on Telegram (js/bug-report.js, api/bug-report.js) -->
+                <p class="modal-section-label" data-find="bug problem broken feedback wrong error" data-i18n="settings.report_a_bug">Report a bug</p>
+                <button id="settingsBug" class="iconBtn settingsWide" type="button"><span data-icon="alert"></span> <span data-i18n="settings.report_a_bug2">Report a bug</span></button>
+                <p class="mode-note" data-i18n="settings.something_not_working_tell_augy">Something not working? Tell Augy what happened, and it reaches him on Telegram.</p>
             </section>
 
             <!-- Sync with another device or the Telegram bot: js/sync.js -->
@@ -1207,6 +1220,30 @@
         </div>
     </div>
 
+    <!-- Report a bug, from Settings' Help and extras: js/bug-report.js, sent by api/bug-report.js -->
+    <div id="bugModal" class="modal-backdrop hidden">
+        <form class="modal glass" id="bugForm" role="dialog" aria-modal="true" aria-labelledby="bugTitle" novalidate>
+            <div class="modal-head">
+                <h2 id="bugTitle" data-i18n="bug.report_a_bug">Report a bug</h2>
+                <button class="icon-btn small" type="button" data-close-modal="bugModal" data-i18n-aria-label="bug.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <label class="modal-section-label" for="bugText" data-i18n="bug.what_went_wrong">What went wrong?</label>
+            <textarea id="bugText" class="input bugText" rows="5" maxlength="2000" required data-i18n-placeholder="bug.what_you_did_what_happened" placeholder="What you did, what happened, and what you expected"></textarea>
+            <label class="modal-section-label" for="bugContact" data-i18n="bug.how_to_reach_you_optional">How to reach you (optional)</label>
+            <input id="bugContact" class="input" type="text" maxlength="200" autocomplete="off" spellcheck="false" data-i18n-placeholder="bug.telegram_or_email_for_an" placeholder="Telegram @name or email, for an answer" />
+            <!-- Never seen or filled in by a person: a bot that fills it in is ignored -->
+            <div class="bugTrap" aria-hidden="true"><label>Website <input id="bugWebsite" type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
+            <p class="mode-note"><span data-i18n="bug.sent_with_it">Sent with it, to help find the bug:</span> <span id="bugDetails"></span></p>
+            <p id="bugStatus" class="mode-note bugStatus" role="status" hidden></p>
+            <div class="tripActions">
+                <button id="bugSend" class="btn" type="submit"><span data-icon="forward"></span> <span data-i18n="bug.send">Send</span></button>
+                <button class="iconBtn" type="button" data-close-modal="bugModal" data-i18n="bug.cancel">Cancel</button>
+            </div>
+        </form>
+    </div>
+
     <!-- The first open's choice, Minimal or Full, before the welcome: js/first-run.js -->
     <div id="firstRunModal" class="modal-backdrop hidden">
         <form class="modal glass" id="firstRunForm" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle" aria-describedby="firstRunNote">
@@ -1357,6 +1394,7 @@
     <script src="/js/rides.js"></script>
     <script src="/js/trip.js"></script>
     <script src="/js/rail-tracks.js"></script>
+    <script src="/js/campus.js"></script>
     <script src="/js/map-engine.js"></script>
     <script src="/js/map-save.js"></script>
     <script src="/js/map.js"></script>
@@ -1388,6 +1426,7 @@
     <script src="/js/colours.js"></script>
     <script src="/js/celebrate.js"></script>
     <script src="/js/lang-pick.js"></script>
+    <script src="/js/bug-report.js"></script>
 </body>
 
 </html>

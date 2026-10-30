@@ -78,13 +78,24 @@ point it at the 5-digit number and the stop opens.
 ## Stops near me
 
 <figure>
-<img src="/screenshots/web/search-near-me.png" alt="The Nearby bus stops list: Bedok Int, starred as a favourite, then Bedok Stn Exit B, Bedok Stn Exit A and more, each with its road, its distance in metres and its stop code." width="440" height="486" loading="lazy">
+<img src="/screenshots/web/search-near-me.png" alt="The Stops near me card on Bus timings: Bedok Int, starred as a favourite, then Bedok Stn Exit B, Bedok Stn Exit A, Aft Heartbeat @ Bedok and more, each with its road, its distance in metres and its stop code, and a refresh button at the top." width="362" height="462" loading="lazy">
 <figcaption>The 8 nearest stops, with how far away each one is. Favourite stops are starred.</figcaption>
 </figure>
 
-Tap **Stops near me**, the pin under the star in the Edge Tray. The first time, your browser asks
-whether the app may use your location; allow it. A list of the 8 nearest stops
-opens, each with how far away it is. Tap one to see its timings.
+**Stops near me** is a card on **Bus timings**, under the search box, while no
+stop's timings are open. It lists the 8 nearest stops, each with how far away
+it is. Tap one for its timings in the card's place; **Back to nearby stops** at their
+top brings the list back.
+
+<figure>
+<img src="/screenshots/web/search-near-me-ask.png" alt="The Stops near me card before it may use your location: The bus stops around you, nearest first, and a Show stops near me button." width="362" height="153" loading="lazy">
+<figcaption>Until the app may use your location, the card asks first.</figcaption>
+</figure>
+
+The first time, tap **Show stops near me**: your browser asks whether the app
+may use your location; allow it. After that, the card finds the stops round you
+by itself each time you open Bus timings. The refresh button at its top right
+looks again, after you've moved.
 
 Your location is only used in your browser to measure the distance to each
 stop. It is not sent anywhere. If nothing happens, see

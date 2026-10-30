@@ -39,7 +39,7 @@
         { el: '.searchWrap', text: 'Look up any stop by its name or 5-digit code, the stops near an address by its postal code, or a bus by its number for its route.' },
         { el: '#voiceBtn', text: 'Or say it: a stop, a road or a bus number.' },
         { el: '#scanBtn', text: 'Or scan the code on a bus stop’s pole with the camera.' },
-        { el: '#nearMeBtn', text: 'The stops around you, nearest first.' },
+        { el: '#nearStops:not([hidden])', text: 'The stops around you, nearest first. Tap one for its timings.' },
         { el: '#weatherBtn', text: 'Today’s weather and air, before you head out.' },
       ],
     },

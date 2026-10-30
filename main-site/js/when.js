@@ -253,6 +253,8 @@
 
   window.When = {
     BUS_WAIT_MIN,
+    // Whether a Singapore date ("2026-11-09") is a public holiday: campus shuttles (js/campus.js).
+    isHoliday: (ymd) => HOLIDAYS.has(ymd),
     atToMs,
     msToAt,
     busRunsAt,

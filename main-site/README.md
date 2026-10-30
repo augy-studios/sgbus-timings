@@ -19,7 +19,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - Search by bus number (e.g. `22`, `NR7`) to open that bus's route
 - Autocomplete dropdown with matching buses and up to 20 stops
 - Filter results to a specific service by appending the bus number (e.g. `84009 174`)
-- **Stops near me** lists the 8 nearest stops to your location
+- **Stops near me**: a card on Bus timings' page lists the 8 nearest stops to your location, favourites pinned, while no stop's timings are open. It looks for you by itself only once location's allowed (Glance's `sgbus_glance_near`, or the browser's permission); until then it has a **Show stops near me** button. A stop's **Back to nearby stops** returns to the list
 - A 6-digit postal code (e.g. `519599`) lists the 8 stops nearest that address, in the search box or either end of the route planner. Looked up with OneMap; set `ONEMAP_EMAIL` and `ONEMAP_PASSWORD` in Vercel for the API token, renewed every 3 days
 
 ### Favourites
@@ -36,7 +36,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
   - PeerJS's public broker introduces the two devices and sees their IP addresses, and each device learns the other's; the favourites themselves never pass through a server
 
 ### The Edge Tray
-- Favourites, Stops near me, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
+- Favourites, Navigate and Service alerts, then the Telegram bot, coffee, the guide, Settings and the theme, as a column of glass buttons fixed at the top corner of the screen (sg-psi's tray); the weather stays under the search box. There's no top bar: the greeting sits above the search box and scrolls with the page
 - Its arrow tab tucks it away at the edge of the screen and remembers that; Settings puts it on the left or the right
 - Navigate (both its tabs) and Service alerts open as windows over the page (`.panelModal`, `showPanel` in `js/ui.js`); a tap outside closes them, and opening a stop's timings or starting a trip from one closes it
 - On a touch screen, pressing and holding any button with a `title` (or `aria-label`) shows it in a label beside it, as a mouse's hover does, and the tap that ends the hold is swallowed (`js/ui.js`). A note says so the first time the site's opened on a touch screen
@@ -106,6 +106,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **Live map** (`js/map.js`): OpenStreetMap with Leaflet (`vendor/leaflet/`, loaded the first time it opens), full screen, following your location. Replaces Google Maps: a stop's Directions, a walk in a nav, `#map/<stop>` and `#map/<lat>,<lng>~<name>` (the Telegram bot's Live map button) walk you there turn by turn, from `GET /api/walk` (OneMap's walking router, OSRM's as a fallback, a straight line without either; cached a day at the edge), asked again if you stray
 - On a trip, the trip bar's map button shows every ride and walk, the stops and you; a shared trip's viewer follows the sharer's dot on it
 - Kept light: one canvas, markers moved rather than redrawn, fixes drawn at most once a second, tiles cached by `sw.js` (cache-first, 2,000 tiles, refreshed after 14 days); OpenStreetMap's tiles only (OneMap's lag), with tiles that failed asked for again once the signal's back
+- **Campus shuttles** (help desk #13, `js/campus.js`): NUS's and NTU's internal shuttles, routes and timetables only, as there are no live times the app may use. Augy's data as he sent it, `data/campus/nus.json` and `ntu.json`, with `data/campus/config.json` for what's easy to change: route and university colours, NUS's term dates (term or vacation timings) and each university's credit, in the map's attribution only while its shuttle lines are on screen. Explorer draws each route as a thin line in its colour (along its road from `/api/road`, straight offline) and the campus stops LTA hasn't got as dots of their own; a stop that's an LTA stop (five digits) stays LTA's, drawn once. A stop's card on the map, and Bus timings under its live buses, list the routes there: "Every 4–6 min" while one runs at a frequency, the next departures from its terminal for a timetabled one, or when the next bus is, marked as scheduled times, not live. Singapore's day, with public holidays as Sundays (`When.isHoliday`). Add each academic year's term dates to `config.json`
 
 ### In the Android app
 - The site is also an Android app, `org.uwuapps.sgbus` (`../android/`): from 2.0.0 the site in Capacitor's WebView, with native plugins for what a web page can't do
@@ -129,6 +130,16 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - The button at the right of the quick actions reads today's ranges across Singapore: temperature, 24-hour PSI and 1-hour PM2.5, lowest to highest region
 - Tap it for today's weather: current conditions, the day's range and rain chance, the next hours, the two-hour rain nowcast, and PSI and PM2.5 by region with NEA's bands
 - [Open-Meteo](https://open-meteo.com/) for the forecast; NEA's PSI and PM2.5 readings from [data.gov.sg](https://data.gov.sg/) (`DATA_GOV_KEY`)
+
+### Report a bug
+- Settings, Help and extras, **Report a bug** (`js/bug-report.js`): what went wrong (up to 2,000 characters) and an optional contact, with the app and its version, the device, the page and the language added, all shown before it's sent. `POST /api/bug-report` sends it as a plain-text Telegram message from a bot to one or more chats: set `BUG_REPORT_BOT_TOKEN` and `BUG_REPORT_CHAT_ID` in Vercel (Production), then redeploy. `BUG_REPORT_CHAT_ID` takes several chats split by commas, e.g. `424242,-1001234567890,-1001234567890/17`: each gets the report at once, and it counts as sent if one took it (a chat that didn't is in Vercel's log as `bug-report: chat 2: …` with Telegram's reason). Without them, or if every chat fails, the form offers an email instead. Limited to 2 a minute per IP, and with Redis 6 an hour per IP and 60 an hour in all
+- **The bot:** easiest is one just for reports: BotFather, `/newbot`, and its token is `BUG_REPORT_BOT_TOKEN`. The SG Bus bot's own token works for sending, but that bot runs on Telethon, which takes its updates, so `getUpdates` below shows nothing for it; a reports-only bot runs nowhere, so it does
+- **Finding a chat's ID:** do the step for that kind of chat, then open `https://api.telegram.org/bot<token>/getUpdates` in your own browser (the token's a password: never paste it anywhere else) and find `"chat":{"id": …}` in the newest update. It lists the last day's updates
+  - **You, or anyone, in a private chat:** open the bot and press **Start**. The ID is a positive number, e.g. `424242`. Each person has to start the bot first, or Telegram won't let it message them
+  - **A group:** add the bot to the group, then send `/start@<botname>` in it (a bot only sees commands in groups). A small group's ID is negative, e.g. `-4012345678`; a supergroup's starts `-100`. A group that becomes a supergroup (topics, a public link, more members) gets a new `-100…` ID, and the old one fails with "group chat was upgraded to a supergroup chat": find the ID again
+  - **A topic in a group with topics:** the group's `-100…` ID, a `/`, and the topic's ID: send `/start@<botname>` in the topic and read `message_thread_id`, or take it from the topic's link (Copy link: `t.me/c/1234567890/17` is `-1001234567890/17`). For the General topic, use the group's ID alone
+  - **A channel:** add the bot as an admin with **Post messages**, then post something in the channel: the ID is in `channel_post`, starting `-100`. A public channel can be given as `@channelname` instead. A private channel's message link works too: `t.me/c/1234567890/5` is `-1001234567890`
+- After setting them, send a test from Settings, Help and extras, Report a bug, and check each chat got it
 
 ### Languages
 - English, Chinese (中文, simplified, as in Singapore), Malay (Bahasa Melayu) and Tamil (தமிழ்), picked in Settings, You, **Language**; until one's picked, the phone's own if it's one of these. Picking one opens the app again in it (`js/i18n.js`)
@@ -154,8 +165,9 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - **The celebration** (`js/celebrate.js`): a three.js scene of the whole MRT and LRT network, its tracks (`/data/rail-tracks.json`) raised as tubes in the lines' colours with a bead at each station, on a dark slab, tilted and turning slowly; a gold trophy spinning over it, made from three.js's own shapes (a lathe for the cup, tori for its handles, a stem and a base, a star on the front); confetti in the lines' colours. Then **Pick my colours** (Theme, Your colours) or **Close**, and Esc. Shown once as Your colours unlocks, and again from Your colours' **Watch the celebration again**
 - three.js 0.169.0 (MIT) is vendored as `vendor/three-0.169.0/three.module.min.js` and fetched only when the celebration first runs; `sw.js` keeps it as it does MapLibre, and `js/rides.js` fetches it ahead once two lines are left, so it can run offline. With reduced motion the scene stands still with no confetti; without WebGL, with Data Saver on, or without three.js, the plain window (`#unlockModal`) says it instead
 - On a phone with little memory (`navigator.deviceMemory` of 2 GB or less, or, where the browser doesn't say, 2 processor cores or fewer), the flat celebration: the same card over a gold trophy drawn in SVG, with confetti in the lines' colours on a 2D canvas (`js/confetti.js`), and no three.js fetched (Augy's choice). Reduced motion still means no confetti
+- **To see it without riding every line**, type `simulateAllLines()` in the browser's console (help desk #13; `js/celebrate.js`). It plays the celebration this browser would show, as a preview: no rides saved and Your colours stays locked. `simulateAllLines('3d')`, `('flat')` or `('plain')` shows that one whatever the phone is (3D still needs WebGL); `simulateAllLines({ unlock: true })` unlocks Your colours too, still with no rides saved (`{ unlock: true, as: 'flat' }` picks the one), and `simulateAllLines('undo')` locks them again and takes away colours picked since, but never a real unlock. `simulateAllLines('help')` prints this. It's only that browser's own storage. In the Android app: a debug build (`native\gradlew.bat installDebug`, android/README.md) and Chrome's `chrome://inspect` on the computer; a release build's WebView can't be inspected
 - While Your colours is on, Theme's brand colour swatches step aside, with a note that **Back to the usual colours** brings them back
-- `node scripts/ride-check-test.cjs` tests it in Chrome under Playwright, with the location and clock moved along by hand: a genuine ride counts, one with no movement, gone through too fast, never seen along the way or with no location doesn't, and only the ninth line's genuine ride unlocks Your colours, opening the celebration, the flat one on a phone with little memory (with confetti, without three.js), or the plain window without WebGL
+- `node scripts/ride-check-test.cjs` tests it in Chrome under Playwright, with the location and clock moved along by hand: a genuine ride counts, one with no movement, gone through too fast, never seen along the way or with no location doesn't, and only the ninth line's genuine ride unlocks Your colours, opening the celebration, the flat one on a phone with little memory (with confetti, without three.js), or the plain window without WebGL; and `simulateAllLines()`'s preview, each forced celebration, its unlock and its undo
 
 
 ### Personalisation
@@ -171,7 +183,7 @@ A Progressive Web App (PWA) for real-time Singapore bus arrival timings.
 - `#sync/BCDFGH` opens Settings with another device's sync code filled in
 - `#alerts` opens the Service alerts card
 - `#nav/1.30050,103.85580~Bedok%20Mall/1.33320,103.92920~Name` opens Navigate between two points; an end can be `here` (the opener's location) or `-` (not set), and the name after `~` is optional. `#route/-/75009` likewise leaves a route's start empty, and `#route` opens the planner empty
-- `#near` opens the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
+- `#near` opens Bus timings with the stops near you and `#nav` opens Navigate empty (the app's shortcuts)
 - `/?text=<Google Maps link>` (what sharing to the installed app opens) opens Navigate with that place in **To**
 - Bookmark or share a direct link to any stop, service or route
 
@@ -216,7 +228,7 @@ Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LT
 
 ### Checks
 
-From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English), `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do), `node scripts/nav-far-end-test.mjs` (Navigate reaches places far from any stop; `LIVE=1` adds a trip on the real network), and `node scripts/layout-check-test.cjs` (phone layout with the Edge Tray open on both sides; needs Playwright).
+From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English), `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do), `node scripts/nav-far-end-test.mjs` (Navigate reaches places far from any stop; `LIVE=1` adds a trip on the real network), and `node scripts/layout-check-test.cjs` (phone layout with the Edge Tray open on both sides; needs Playwright), `node scripts/campus-test.mjs` (campus shuttle data and timetables, no browser) and `node scripts/campus-map-test.cjs` (campus shuttles on Explorer and Bus timings; needs Playwright).
 
 ## License
 

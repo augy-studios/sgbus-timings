@@ -158,3 +158,7 @@ area uses some data.
 
 Somewhere with a weak signal, like underground, parts of the map that didn't load
 are fetched again once the signal's back.
+
+To have all of Singapore offline, not only what you've seen, save the map from
+[Explorer](explorer.md#save-the-map-for-offline): it goes right down to street
+level, buildings in 3D and all.

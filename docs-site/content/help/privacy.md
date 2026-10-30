@@ -192,6 +192,15 @@ The **Directions** button on a stop's timings opens the live map (see
 [The live map](#the-live-map)) or Citymapper, with the stop as the destination.
 Once you're in Citymapper, its own privacy policy applies.
 
+### Bug reports
+
+[Report a bug](../web/settings.md#report-a-bug) sends only what you type, and
+the line it shows you before you send it: the app and its version, your device
+and browser as they describe themselves, the window's size, the page you were on
+and your language. It goes through SG Bus Timings' server to Augy on Telegram,
+as a message, in the chats he's set it to go to. The server keeps no copy, only a count of how many come from one
+connection an hour, to stop floods. Nothing is sent until you tap **Send**.
+
 ## The Telegram bot
 
 ### What the bot keeps

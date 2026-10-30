@@ -18,6 +18,9 @@
 //                           LRT lines in their colours. A tap on a dot opens its card
 //                           (js/map-card.js): a stop's buses, a station's doors. Its Save the
 //                           map button keeps Singapore's map for offline (js/map-save.js).
+//                           NUS's and NTU's campus shuttles too (js/campus.js): each route a
+//                           thin line in its colour, and the campus stops LTA hasn't got as
+//                           dots of their own, whose card has the routes' timetables.
 //   LiveMap.traffic(way)    the traffic on a bus's way, from wherever the site says there's
 //                           traffic (Navigate, a trip, #traffic/ links from the Telegram bot):
 //                           its road, orange where it's slow and red where it's jammed, by LTA's
@@ -181,6 +184,7 @@
       onPick: openCard,
       onBlank: () => MapCard.close(),
       onMove: () => MapCard.place(),
+      onMoveEnd: () => creditShuttles(),
     }).catch((err) => {
       opening = null;
       throw err;
@@ -351,6 +355,7 @@
     if (mode !== 'explore') {
       ink.pois([]);
       ink.rails([]);
+      clearShuttles();
     }
     destMark = null;
     builtTripLeg = null;
@@ -379,12 +384,15 @@
       ink.clear('stops');
       ink.clear('marks');
       ink.rails([]);
+      clearShuttles();
       hideMe();
     }
     destMark = null;
     mode = null;
     walk = null;
     followData = null;
+    cardPick = null;
+    leftFrom = null;
     if (location.hash.startsWith('#map/') || location.hash.startsWith('#traffic/')) history.replaceState(history.state, '', location.pathname);
     if (pushed && !fromHistory) {
       pushed = false;
@@ -844,8 +852,16 @@
     return best ? stationPick(best) : null;
   }
 
+  // The stop or station whose card is open, and the one Explorer was left from by its card's
+  // Show bus timings or Directions (help desk #13). Explorer opens on that one again, its card
+  // and all, so coming back from Bus timings or Navigate puts you where you were. Closing
+  // Explorer yourself, or leaving it any other way, forgets it.
+  let cardPick = null;
+  let leftFrom = null;
+
   function openCard(pick) {
     if (!pick) return;
+    cardPick = pick;
     MapCard.open(pick, { panel: $('#mapPanel'), ink, onDirections: directionsTo, onTimings: timingsAt });
   }
 
@@ -860,10 +876,17 @@
     close();
   }
 
+  // Leaving by a card: Explorer keeps its stop or station for next time (close() forgets it).
+  function leaveBy(then) {
+    const from = mode === 'explore' ? cardPick : null;
+    afterClose(then);
+    leftFrom = from;
+  }
+
   // A card's Directions: Navigate's Bus and train, from where you are.
-  const directionsTo = (to) => afterClose(() => openNavFromHere(to));
+  const directionsTo = (to) => leaveBy(() => openNavFromHere(to));
   // A stop card's Show bus timings: the stop's timings on Bus timings, as a search opens them.
-  const timingsAt = (code, service) => afterClose(() => loadStop(code, { service, scroll: true }));
+  const timingsAt = (code, service) => leaveBy(() => loadStop(code, { service, scroll: true }));
 
   // Explorer: no way to follow, just you, every stop and every station.
   async function explore() {
@@ -879,16 +902,75 @@
     RailTracks.lines()
       .then((lines) => { if (mode === 'explore') ink.rails(lines.map((l) => ({ color: lineColour(l.line), points: l.points }))); })
       .catch(() => {});
-    const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {})]);
+    const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {}), window.Campus?.load().catch(() => {})]);
     if (mode !== 'explore') return;
     const dots = [];
     for (const [code, s] of Object.entries(index || {})) {
       if (s.lat != null && s.lng != null) dots.push({ kind: 'stop', lat: s.lat, lng: s.lng, pick: { kind: 'stop', code } });
     }
+    // The campus stops LTA hasn't got; those it has are its stops' dots already.
+    for (const c of window.Campus?.dots() || []) dots.push({ kind: 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } });
     for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), colors: stationColours(s.codes), pick: stationPick(s) });
     ink.pois(dots);
+    drawShuttles();
+    // Back from Bus timings or Navigate: on the stop or station it was left from, card open.
+    const back = leftFrom;
+    const campusBack = back?.kind === 'campus' ? window.Campus?.at(back.key) : null;
+    const at = back?.kind === 'station' ? [back.lat, back.lng]
+      : back?.kind === 'stop' && index?.[back.code]?.lat != null ? [index[back.code].lat, index[back.code].lng]
+      : campusBack ? [campusBack.lat, campusBack.lng] : null;
+    if (at) {
+      setFollowing(false);
+      ink.jump(at, EXPLORE_ZOOM + 1);
+      openCard(back);
+    }
     // Its tour, the first time (js/tour.js), the dots round you lit by #mapSpot.
     window.Tour?.first('explorer');
+  }
+
+  // Explorer's campus shuttles (js/campus.js): each route straight from stop to stop at once,
+  // then along its road once /api/road has it (as a trip's bus rides are), kept for the page
+  // view. Offline, the road from before if sw.js has it, or the straight lines.
+  const shuttleRoads = new Map(); // route key -> its road, [[lat, lng], ...]
+  let shuttlesDrawn = []; // [{ uni, color, points }]
+  function drawShuttles() {
+    const list = window.Campus?.lines() || [];
+    if (!list.length) return;
+    const draw = () => {
+      if (mode !== 'explore') return;
+      shuttlesDrawn = list.map((l) => ({ uni: l.uni, color: l.color, points: shuttleRoads.get(l.key) || l.points }));
+      ink.shuttles(shuttlesDrawn);
+      creditShuttles();
+    };
+    draw();
+    for (const l of list) {
+      if (shuttleRoads.has(l.key)) continue;
+      fetch(`/api/road?points=${pointsParam(l.points)}`)
+        .then((r) => (r.ok ? r.json() : undefined))
+        .then((got) => {
+          if (got === undefined) return; // asked again next time
+          // No road the router trusts: the straight lines, not asked again this page view.
+          shuttleRoads.set(l.key, got?.path?.length >= 2 ? got.path : null);
+          if (got?.path) draw();
+        })
+        .catch(() => {});
+    }
+  }
+
+  function clearShuttles() {
+    shuttlesDrawn = [];
+    ink.shuttles([]);
+    ink.credit('');
+  }
+
+  // The credit for each university's shuttles (config.json's), in the map's attribution only
+  // while some of its lines are in view: checked as the map stops moving, not as it moves.
+  function creditShuttles() {
+    if (!ink) return;
+    const shown = mode === 'explore' && shuttlesDrawn.length ? window.Campus?.credits?.(ink.bounds(), shuttlesDrawn) || [] : [];
+    ink.credit(shown.map((c) => (c.url
+      ? `<a href="${escapeHtml(c.url)}" target="_blank" rel="noopener">${escapeHtml(c.text)}</a>`
+      : escapeHtml(c.text))).join(' · '));
   }
 
   // ---------- traffic on a bus's way ----------

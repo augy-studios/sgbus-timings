@@ -43,8 +43,17 @@
   const MAX_ZOOM = 14;
   // A tile's size when none have been seen yet to go by, from Singapore's at each zoom.
   const GUESS_TILE_BYTES = 40 * 1024;
-  // The label fonts' ranges fetched: Latin, its accents, and punctuation (’ – …).
-  const GLYPH_RANGES = ['0-255', '256-511', '8192-8447'];
+  // The label fonts' ranges fetched: every one a label in Singapore's tiles has a letter from.
+  // MapLibre draws Chinese, Japanese and Korean letters itself, but not the rest: offline, one
+  // label with a letter from a range not saved (a shop's "・" or "（", a Tamil or Russian name)
+  // leaves the whole tile it's in undrawn, buildings and all, from the zoom that label shows.
+  // So: Latin and its accents, Greek, Cyrillic, Arabic, Devanagari and Bengali, Tamil, Thai,
+  // Vietnamese, punctuation (’ – …), letterlike symbols (℃ ™), CJK punctuation (、。・ー), the
+  // emoji selector and full-width forms (（），): 45 files over the three fonts, about 3 MB.
+  const GLYPH_RANGES = [
+    '0-255', '256-511', '512-767', '768-1023', '1024-1279', '1536-1791', '2304-2559', '2816-3071', '3584-3839',
+    '7680-7935', '8192-8447', '8448-8703', '12288-12543', '65024-65279', '65280-65535',
+  ];
   const RENDER_MS = 150;
 
   let state = null; // the download under way: { total, done, bytes, sent, failed, cancelled, tooBig, update }

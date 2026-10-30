@@ -40,6 +40,7 @@ still opens without a connection: on the MRT between stations, say.
 | Live arrival timings | No |
 | The Service alerts card | No; notifications still arrive once you're back online |
 | Stops near me | Usually: it needs only your device's location and the saved list of stops |
+| The live map and Explorer | Places you've looked at before, or all of Singapore once you've [saved the map](explorer.md#save-the-map-for-offline) |
 | Searching by postal code | No: the address is looked up online |
 | Sync between devices | No |
 

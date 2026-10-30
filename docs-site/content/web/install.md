@@ -10,19 +10,21 @@ stays in that browser.
 ## A tour of the screen
 
 <figure>
-<img src="/screenshots/web/install-tour.png" alt="The top of the app: the greeting, Good Afternoon, Sam!; the search box with Get Timings and the weather under it; Bedok Int's timings; and down the right, the Edge Tray: Favourites with a 6 on it, Stops near me, Plan a route, Navigate and Service alerts, then Telegram, coffee, the guide, Settings and the theme, with the arrow tab beside it." width="1000" height="604" loading="lazy">
-<figcaption>The greeting, the search box and the weather, a stop's timings, and the Edge Tray down the side.</figcaption>
+<img src="/screenshots/web/install-tour.png" alt="The app on a computer, on Bus timings: the greeting, Good Morning, Sam!; the search box with 84009 and Get Timings; Bedok Int's timings, with its incoming buses and each bus's next three; and down the right, the Edge Tray: the eye for Glance, the bus for Bus timings, filled in, Favourites with a 6 on it, Navigate, Service alerts, Your trips and Places, then Explorer's map, then Telegram, coffee, the guide, Settings and the theme, with the arrow tab beside it." width="1000" height="800" loading="lazy">
+<figcaption>The greeting, the search box, a stop's timings, and the Edge Tray down the side.</figcaption>
 </figure>
 
 - **The greeting** at the top greets you by the time of day, and by name once you have set
   one. Tap the title for [Settings](settings.md).
 - **The Edge Tray** is the column of buttons at the top right of
-  the screen. From the top: [**Favourites**](favourites.md) (the star),
-  **Stops near me**,
+  the screen. First come the app's [pages](main-screen.md#pages-in-the-edge-tray):
+  [**Glance**](main-screen.md#glance) (the eye), **Bus timings** (the bus),
+  [**Favourites**](favourites.md) (the star),
   [**Navigate**](nav.md) (the arrowhead, with its **Bus only** tab for the
   [route planner](route-planner.md)), [**Service alerts**](service-alerts.md),
   [**Your trips**](trips.md) (the bar chart) and [**Places**](places.md) (the
-  bookmark), then, in the [Android app](android-app.md#card-value) on a phone with
+  bookmark). Under a line, [**Explorer**](explorer.md) (the map), then, in the
+  [Android app](android-app.md#card-value) on a phone with
   NFC, **Card value** (the card), on a phone or tablet, [SimplyGo](#simplygo) (its own icon), the
   Telegram bot, a page to buy Augy a coffee, this guide (the question mark),
   [Settings](settings.md) (the gear) and the [theme picker](settings.md#themes).
@@ -30,10 +32,11 @@ stays in that browser.
   The arrow beside the Edge Tray tucks it away at
   the edge of the screen, and brings it back. To have it on the left, see
   [Settings](settings.md).
-- **The search box** finds a stop, a bus or an address. See
-  [Find a bus stop](search.md). The [weather](weather.md) is under it, on the
-  right.
-- **The timings card** opens below once you pick a stop.
+- **The search box**, on Bus timings, finds a stop, a bus or an address. See
+  [Find a bus stop](search.md). The [weather](weather.md) is on Glance.
+- **Stops near me**, under the search box, lists the stops around you. See
+  [Find a bus stop](search.md#stops-near-me).
+- **The timings card** opens in its place once you pick a stop.
 
 ### What a button does
 

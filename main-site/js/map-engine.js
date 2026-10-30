@@ -20,11 +20,19 @@
 // from zoom 11, every stop from zoom 15. An interchange is a pill instead, its lines' colours
 // side by side, left to right in the order js/map.js gives them. A tap on one, or on a dot drawn with a `pick`, goes to
 // hooks.onPick(pick); a tap on the map elsewhere to hooks.onBlank(); hooks.onMove() as it moves,
-// for a card kept on its dot (js/map-card.js).
+// for a card kept on its dot (js/map-card.js), and hooks.onMoveEnd() once it stops; bounds() is
+// what's in view then, [[south, west], [north, east]].
 //
 // Explorer's MRT and LRT lines, rails(list), go under those dots and over the map's own: each
 // line's track in its colour, a little wider the closer in, edged in white so a dark line still
 // shows on the dark map.
+//
+// Explorer's campus shuttles (js/campus.js), shuttles(list), go over the MRT's lines and under
+// the dots: each route in its colour, thinner than a train line so the two aren't mistaken,
+// edged in white the same way. credit(html) puts the credit for what's in view in the map's
+// attribution, apart from the lines, so it changes without drawing them again. A campus stop
+// LTA hasn't got is a poi of kind 'campus' (pois), a stop's dot edged in its university's colour,
+// from zoom 14.
 //
 // Everything's cached by sw.js: the library, the styles, fonts, sprites and every tile seen.
 //
@@ -61,6 +69,7 @@
   // Explorer's dots: stations from here, stops from closer in (Leaflet's zooms).
   const POI_STATION_ZOOM = 11;
   const POI_STOP_ZOOM = 15;
+  const POI_CAMPUS_ZOOM = 14;
   const STOP_DOT = { fill: '#ffffff', stroke: '#1f9d55' };
   // An interchange's pill: as tall as a station's dot with its white edge, and longer by 60% of
   // that for each line after the first. MapLibre's is drawn this tall and scaled down with the
@@ -120,6 +129,15 @@
     if (at === -1) return RAIL_WIDTHS[RAIL_WIDTHS.length - 1][1];
     if (at === 0) return RAIL_WIDTHS[0][1];
     const [[z0, w0], [z1, w1]] = [RAIL_WIDTHS[at - 1], RAIL_WIDTHS[at]];
+    return w0 + ((z - z0) / (z1 - z0)) * (w1 - w0);
+  };
+  // A campus shuttle's line, as RAIL_WIDTHS: thinner than a train line at every zoom.
+  const SHUTTLE_WIDTHS = [[11, 1], [13, 1.5], [15, 2.5], [19, 4.5]];
+  const shuttleWidth = (z) => {
+    const at = SHUTTLE_WIDTHS.findIndex(([zz]) => z <= zz);
+    if (at === -1) return SHUTTLE_WIDTHS[SHUTTLE_WIDTHS.length - 1][1];
+    if (at === 0) return SHUTTLE_WIDTHS[0][1];
+    const [[z0, w0], [z1, w1]] = [SHUTTLE_WIDTHS[at - 1], SHUTTLE_WIDTHS[at]];
     return w0 + ((z - z0) / (z1 - z0)) * (w1 - w0);
   };
 
@@ -247,6 +265,16 @@
     let poiData = { type: 'FeatureCollection', features: [] };
     const poiPicks = new Map();
     let railData = { type: 'FeatureCollection', features: [] };
+    let shuttleData = { type: 'FeatureCollection', features: [] };
+    // The credit in the map's attribution (credit()): a source with nothing in it but the
+    // credit, and a layer drawing nothing, as a source counts towards the attribution only while
+    // a layer uses it.
+    let creditHtml = '';
+    function addCredit() {
+      if (!creditHtml || map.getSource('sg-credit')) return;
+      map.addSource('sg-credit', { type: 'geojson', data: { type: 'FeatureCollection', features: [] }, attribution: creditHtml });
+      map.addLayer({ id: 'sg-credit', type: 'circle', source: 'sg-credit' });
+    }
 
     // The sources and layers for what's drawn, over the style: put back each time it changes.
     function addOverlays() {
@@ -263,11 +291,27 @@
         paint: { 'line-color': '#ffffff', 'line-width': railWidths(2), 'line-opacity': dark() ? 0.35 : 0.9 },
       });
       add({ id: 'sg-rail', type: 'line', source: 'sg-rail', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': railWidths(0) } });
+      // Campus shuttles over the trains' lines (js/campus.js).
+      if (!map.getSource('sg-shuttle')) map.addSource('sg-shuttle', { type: 'geojson', data: shuttleData });
+      const shuttleWidths = (more) => ['interpolate', ['linear'], ['zoom'], ...SHUTTLE_WIDTHS.flatMap(([z, w]) => [toGl(z), w + more])];
+      add({
+        id: 'sg-shuttle-edge', type: 'line', source: 'sg-shuttle', layout: railLayout,
+        paint: { 'line-color': '#ffffff', 'line-width': shuttleWidths(2), 'line-opacity': dark() ? 0.35 : 0.9 },
+      });
+      add({ id: 'sg-shuttle', type: 'line', source: 'sg-shuttle', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': shuttleWidths(0) } });
       if (!map.getSource('sg-poi')) map.addSource('sg-poi', { type: 'geojson', data: poiData });
       const grow = (small, big) => ['interpolate', ['linear'], ['zoom'], toGl(POI_STOP_ZOOM), small, toGl(19), big];
       add({
         id: 'sg-poi-stop', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_STOP_ZOOM), filter: ['==', ['get', 'kind'], 'stop'],
         paint: { 'circle-radius': grow(3.5, 7), 'circle-color': STOP_DOT.fill, 'circle-stroke-color': STOP_DOT.stroke, 'circle-stroke-width': grow(2, 3) },
+      });
+      add({
+        id: 'sg-poi-campus', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_CAMPUS_ZOOM), filter: ['==', ['get', 'kind'], 'campus'],
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], toGl(POI_CAMPUS_ZOOM), 3, toGl(19), 7],
+          'circle-color': STOP_DOT.fill, 'circle-stroke-color': ['get', 'color'],
+          'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], toGl(POI_CAMPUS_ZOOM), 2, toGl(19), 3.5],
+        },
       });
       add({
         id: 'sg-poi-station', type: 'circle', source: 'sg-poi', minzoom: toGl(POI_STATION_ZOOM),
@@ -304,6 +348,7 @@
           'circle-stroke-color': ['get', 'stroke'], 'circle-stroke-width': ['get', 'weight'],
         },
       });
+      addCredit();
       dirty = true;
       flush();
     }
@@ -363,12 +408,16 @@
     };
     const hover = matchMedia('(hover: hover)').matches;
     map.on('click', (e) => {
-      const layers = ['sg-dot', 'sg-poi-station', 'sg-poi-pill', 'sg-poi-stop'].filter((id) => map.getLayer(id));
+      const layers = ['sg-dot', 'sg-poi-station', 'sg-poi-pill', 'sg-poi-stop', 'sg-poi-campus'].filter((id) => map.getLayer(id));
       // A finger's width round the tap, as the dots are small.
       const pad = 10;
       const hits = map.queryRenderedFeatures([[e.point.x - pad, e.point.y - pad], [e.point.x + pad, e.point.y + pad]], { layers });
       const dot = hits.find((f) => f.layer.id === 'sg-dot' && f.properties.pick);
-      const poi = hits.find((f) => f.layer.id === 'sg-poi-station' || f.layer.id === 'sg-poi-pill') || hits.find((f) => f.layer.id === 'sg-poi-stop');
+      // A station first; otherwise the stop nearest the tap, an LTA stop or a campus one, as a
+      // campus stop can be across the road from an LTA one.
+      const off = (f) => { const p = map.project(f.geometry.coordinates); return Math.hypot(p.x - e.point.x, p.y - e.point.y); };
+      const stopHits = hits.filter((f) => f.layer.id === 'sg-poi-stop' || f.layer.id === 'sg-poi-campus').sort((a, b) => off(a) - off(b));
+      const poi = hits.find((f) => f.layer.id === 'sg-poi-station' || f.layer.id === 'sg-poi-pill') || stopHits[0];
       if (dot) return hooks.onPick?.(JSON.parse(dot.properties.pick));
       if (poi) return hooks.onPick?.(poiPicks.get(poi.properties.id));
       const label = hits.find((f) => f.layer.id === 'sg-dot' && f.properties.label);
@@ -378,12 +427,13 @@
     if (hover) {
       map.on('mouseenter', 'sg-dot', (e) => { map.getCanvas().style.cursor = 'pointer'; if (!e.features?.[0]?.properties.pick) tip(e); });
       map.on('mouseleave', 'sg-dot', () => { map.getCanvas().style.cursor = ''; popup.remove(); });
-      for (const id of ['sg-poi-station', 'sg-poi-pill', 'sg-poi-stop']) {
+      for (const id of ['sg-poi-station', 'sg-poi-pill', 'sg-poi-stop', 'sg-poi-campus']) {
         map.on('mouseenter', id, () => { map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', id, () => { map.getCanvas().style.cursor = ''; });
       }
     }
     map.on('move', () => hooks.onMove?.());
+    map.on('moveend', () => hooks.onMoveEnd?.());
 
     map.on('dragstart', () => hooks.onUserMove?.());
     map.on('zoomstart', (e) => { if (e.originalEvent) hooks.onUserZoom?.(); });
@@ -439,8 +489,8 @@
         for (const [id, it] of items) if (it.group === group) items.delete(id);
         changed();
       },
-      // Explorer's dots, [{ kind: 'stop' | 'station', lat, lng, color?, colors?, pick }], a pill
-      // where `colors` has more than one; [] takes them away.
+      // Explorer's dots, [{ kind: 'stop' | 'station' | 'campus', lat, lng, color?, colors?, pick }],
+      // a pill where `colors` has more than one; [] takes them away.
       pois(list) {
         poiPicks.clear();
         poiData = {
@@ -457,6 +507,25 @@
       rails(list) {
         railData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
         map.getSource('sg-rail')?.setData(railData);
+      },
+      // Explorer's campus shuttles, [{ color, points }]; [] takes them away.
+      shuttles(list) {
+        shuttleData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
+        map.getSource('sg-shuttle')?.setData(shuttleData);
+      },
+      // The credit for the data in view, as HTML ready for the attribution ('' for none). A
+      // source's attribution is set as it's made, so the credit's source is made again for a new
+      // one; mid-change of style, addOverlays() makes it once the style's in.
+      credit(html = '') {
+        if (html === creditHtml) return;
+        creditHtml = html;
+        if (map.getLayer('sg-credit')) map.removeLayer('sg-credit');
+        if (map.getSource('sg-credit')) map.removeSource('sg-credit');
+        if (map.getSource('sg-dot')) addCredit();
+      },
+      bounds() {
+        const b = map.getBounds();
+        return [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]];
       },
       setView(at, z, animate = false) {
         map.easeTo({ center: ll(at), zoom: toGl(z), duration: animate && !still() ? 500 : 0 });
@@ -559,10 +628,13 @@
       const view = map.getBounds().pad(0.2);
       for (const p of pois) {
         if (p.kind === 'stop' && z < POI_STOP_ZOOM) continue;
+        if (p.kind === 'campus' && z < POI_CAMPUS_ZOOM) continue;
         if (!view.contains([p.lat, p.lng])) continue;
         const style = p.kind === 'stop'
           ? { radius: 5, color: STOP_DOT.stroke, weight: 2, fillColor: STOP_DOT.fill, fillOpacity: 1 }
-          : { radius: 7, color: '#ffffff', weight: 2, fillColor: p.color || '#7a4fd6', fillOpacity: 1 };
+          : p.kind === 'campus'
+            ? { radius: 5, color: p.color || '#7a4fd6', weight: 2.5, fillColor: STOP_DOT.fill, fillOpacity: 1 }
+            : { radius: 7, color: '#ffffff', weight: 2, fillColor: p.color || '#7a4fd6', fillOpacity: 1 };
         const marker = p.kind === 'station' && p.colors?.length > 1
           ? L.marker([p.lat, p.lng], { icon: pillIcon(p.colors), keyboard: false })
           : L.circleMarker([p.lat, p.lng], style);
@@ -582,11 +654,21 @@
       const w = railWidth(map.getZoom());
       return { edge: { weight: w + 2, opacity: dark() ? 0.35 : 0.9 }, line: { weight: w } };
     };
+    // Campus shuttles over them, on the same canvas.
+    const shuttleLayer = L.layerGroup().addTo(map);
+    let creditHtml = '';
+    const shuttleStyle = () => {
+      const w = shuttleWidth(map.getZoom());
+      return { edge: { weight: w + 2, opacity: dark() ? 0.35 : 0.9 }, line: { weight: w } };
+    };
     map.on('zoomend', () => {
       const s = railStyle();
       railLayer.eachLayer((l) => l.setStyle(l.options.sgEdge ? s.edge : s.line));
+      const t = shuttleStyle();
+      shuttleLayer.eachLayer((l) => l.setStyle(l.options.sgEdge ? t.edge : t.line));
     });
     map.on('move', () => hooks.onMove?.());
+    map.on('moveend', () => hooks.onMoveEnd?.());
     map.on('click', () => hooks.onBlank?.());
 
     const groups = {};
@@ -633,6 +715,23 @@
         const opts = { pane: 'sgRails', renderer: railRenderer, lineCap: 'round', lineJoin: 'round', interactive: false };
         for (const r of list) L.polyline(r.points, { ...opts, ...s.edge, color: '#ffffff', sgEdge: true }).addTo(railLayer);
         for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1 }).addTo(railLayer);
+      },
+      shuttles(list) {
+        shuttleLayer.clearLayers();
+        const s = shuttleStyle();
+        const opts = { pane: 'sgRails', renderer: railRenderer, lineCap: 'round', lineJoin: 'round', interactive: false };
+        for (const r of list) L.polyline(r.points, { ...opts, ...s.edge, color: '#ffffff', sgEdge: true }).addTo(shuttleLayer);
+        for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1 }).addTo(shuttleLayer);
+      },
+      credit(html = '') {
+        if (html === creditHtml) return;
+        if (creditHtml) map.attributionControl.removeAttribution(creditHtml);
+        creditHtml = html;
+        if (html) map.attributionControl.addAttribution(html);
+      },
+      bounds() {
+        const b = map.getBounds();
+        return [[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]];
       },
       setView: (at, z, animate = false) => map.setView(at, z, { animate }),
       jump(at, z) { if (at) map.setView(at, z, { animate: false }); },
