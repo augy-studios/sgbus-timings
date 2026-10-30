@@ -140,3 +140,8 @@ station and bus stop.
 - Send `/routines` and check the time, the days and the stop. Times are
   Singapore time.
 - If you have muted the bot's chat in Telegram, its messages arrive silently.
+
+## Something else is wrong
+
+In the web app, [Report a bug](../web/settings.md#report-a-bug) from Settings'
+**Help and extras**: say what happened, and it reaches Augy on Telegram.

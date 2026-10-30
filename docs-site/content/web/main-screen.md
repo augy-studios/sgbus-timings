@@ -65,14 +65,15 @@ Tray, and the app opens on Bus timings instead.
 ## Bus timings
 
 **Bus timings**, the bus under Glance in the Edge Tray, is the
-[search](search.md) box and, once you pick a stop, its
-[timings](timings.md). The **X** at the top of a stop's timings puts them away,
-back to the search box.
+[search](search.md) box, the [stops near you](search.md#stops-near-me) under
+it, and, once you pick a stop, its [timings](timings.md) in their place. The
+**X** at the top of a stop's timings puts them away, back to the search box and
+the stops near you.
 
 ## Pages in the Edge Tray
 
 <figure>
-<img src="/screenshots/web/main-screen-tabs.png" alt="The app on a phone on Navigate: the Edge Tray first has its pages, the eye for Glance, Bus timings, Favourites, Navigate, which is filled in, Service alerts, Your trips and Places, over a line, with Stops near me and the rest below." width="390" height="844" loading="lazy">
+<img src="/screenshots/web/main-screen-tabs.png" alt="The app on a phone on Navigate: the Edge Tray first has its pages, the eye for Glance, Bus timings, Favourites, Navigate, which is filled in, Service alerts, Your trips and Places, over a line, with Explorer's map, then SimplyGo, Telegram, coffee, the guide, Settings and the theme below." width="390" height="844" loading="lazy">
 <figcaption>Navigate on show, its button filled in at the top of the Edge Tray.</figcaption>
 </figure>
 
@@ -95,7 +96,7 @@ and a stop in a journey opens its timings. A bus's timings opened from a way in
 Navigate have **Back to Navigate**, back to that same way.
 
 The small things still open as windows over the page: Settings, the theme,
-the weather, a bus's route, and the list of stops near you.
+the weather, a bus's route, and the stops near a postal code.
 
 ### Going back
 
@@ -111,7 +112,7 @@ leave the app.
 ## Custom home
 
 <figure>
-<img src="/screenshots/web/settings-main-screen.png" alt="Settings, Custom home, with Glance picked from Glance, Bus timings, Favourites, Navigate, Service alerts, Your trips and Places, and a note that it is the page the app opens on, first in the Edge Tray." width="396" height="295" loading="lazy">
+<img src="/screenshots/web/settings-main-screen.png" alt="Settings, Custom home, with Glance picked from Glance, Bus timings, Favourites, Navigate, Service alerts, Your trips and Places, and a note that it is the page the app opens on, first in the Edge Tray." width="396" height="312" loading="lazy">
 <figcaption>Custom home, in Settings.</figcaption>
 </figure>
 

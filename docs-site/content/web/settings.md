@@ -6,11 +6,15 @@ description: Set your name and birthday, choose where favourites pin, and pick a
 ## Settings
 
 <figure>
-<img src="/screenshots/web/settings-settings.png" alt="The Settings window: your name, birthday with a Clear button, Birthday confetti, Open Places, Calendar settings, Open the sgbus terminal, Show me around, Next bus at a glance, Custom home, pinning for favourite buses, the Get Off Alert switch, Restricted areas, Immigration time, pinning for favourite stops, the Edge Tray side and buttons, and syncing with another device." width="396" height="2817" loading="lazy">
-<figcaption>Settings. Changes save as you make them.</figcaption>
+<img src="/screenshots/web/settings-settings.png" alt="The Settings window: a Find a setting box, then its groups, each with what's in it: You, Pages and Edge Tray, Trips and alerts, Navigate, Help and extras (Show me around, sgbus terminal, Report a bug) and Sync." width="396" height="574" loading="lazy">
+<figcaption>Settings opens on its groups. Changes save as you make them.</figcaption>
 </figure>
 
 Open Settings with the gear in the Edge Tray, or by tapping the app's title.
+It opens on its groups: **You**, **Pages and Edge Tray**, **Trips and alerts**,
+**Navigate**, **Help and extras** and **Sync**. Tap one to open it, and the back
+arrow at the top for the groups again. Or type in **Find a setting** to go
+straight to one.
 
 | Setting | What it does |
 |---|---|
@@ -21,6 +25,7 @@ Open Settings with the gear in the Edge Tray, or by tapping the app's title.
 | **Home, Work and your places** | **Open Places** opens [Places](places.md), where Home, Work and your other places are set. |
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **sgbus terminal** | **Open the sgbus terminal** opens the Linux app's `sgbus>` prompt, full screen: see [The sgbus terminal](terminal.md). |
+| **Report a bug** | In **Help and extras**: tell Augy what went wrong, and it reaches him on Telegram. See [Report a bug](#report-a-bug). |
 | **Show me around** | A button for each page's [tour](main-screen.md#the-tours), to see it again as it shows the first time that page opens. |
 | **Next bus at a glance** | **On** (the default) or **Off**: the Glance page, with the next bus in big letters and your stops' buses. Off takes it out of the Edge Tray, and the app opens on Bus timings. See [Your main screen](main-screen.md#glance). |
 | **Custom home** | The page the app opens on, first in the Edge Tray: **Glance** (the default), **Bus timings**, **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
@@ -82,6 +87,46 @@ set to reduce motion, there's no confetti.
 
 Home and Work moved to [Places](places.md), with any other places you save.
 **Open Places** opens it, as does the bookmark in the Edge Tray.
+
+## Report a bug
+
+<figure>
+<img src="/screenshots/web/bug-report-settings.png" alt="Settings' Help and extras: Report a bug, its button, and a note: Something not working? Tell Augy what happened, and it reaches him on Telegram." width="366" height="135" loading="lazy">
+<figcaption>Report a bug, in Settings' Help and extras.</figcaption>
+</figure>
+
+Something not working? Open [Settings](#settings), **Help and extras**, and tap
+**Report a bug**.
+
+1. Under **What went wrong?**, say what you did, what happened, and what you
+   expected.
+2. Under **How to reach you**, add your Telegram @name or your email if you'd
+   like an answer. It's optional.
+3. Read the line under it, **Sent with it, to help find the bug**: that's
+   everything else that goes with your words.
+4. Tap **Send**. It reaches Augy on Telegram, and the window says **Sent. Thank
+   you! Augy will look into it.**
+
+<figure>
+<img src="/screenshots/web/bug-report.png" alt="The Report a bug window filled in: What went wrong? says bus 60's timings at Bedok Int showed Arr for 5 minutes, but the bus didn't come till 8 minutes later; How to reach you says @sam_tan; under them, Sent with it, to help find the bug: Web, site v128, Android 15, Chrome 141, 390×844, Bus timings, stop 84009; then Send and Cancel." width="366" height="479" loading="lazy">
+<figcaption>Before you send it: your words, and what goes with them.</figcaption>
+</figure>
+
+What goes with it is only what helps find the bug: which app and its version,
+your phone or computer and browser as they describe themselves, the size of the
+window, the page you were on (with the stop's or bus's number if one was open)
+and your language. Never where you are, your places or your saved stops.
+
+<figure>
+<img src="/screenshots/web/bug-report-sent.png" alt="The Report a bug window after Send: the boxes empty again, and Sent. Thank you! Augy will look into it." width="366" height="514" loading="lazy">
+<figcaption>Sent: the boxes clear, ready for the next one.</figcaption>
+</figure>
+
+- What you've typed stays while the app's open, even if you close the window,
+  until it's sent.
+- Offline, it says so and keeps it: send it once you're back online.
+- If it can't be sent from the app, it says so and offers **Email it instead**,
+  with your words filled in.
 
 ## Themes
 

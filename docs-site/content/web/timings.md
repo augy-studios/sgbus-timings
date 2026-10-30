@@ -88,7 +88,31 @@ Under the stop's name, a few stops carry a note:
   passport to go on. Search results and route lists mark them too.
 - **Campus shuttles.** At a stop NUS's or NTU's campus shuttles call at, a
   **Campus shuttles** list under the buses gives each route's timetable:
-  how often it runs now, or its next departures. Scheduled, not live.
+  how often it runs now, or its next departures. Scheduled, not live: see
+  [Campus shuttles](#campus-shuttles).
+
+## Campus shuttles
+
+<figure>
+<img src="/screenshots/web/timings-campus.png" alt="Ctrl Lib (16181) on Kent Ridge Crescent: its live buses 95 and 151, each with its next three, then Campus shuttles, scheduled times, not live: A1 every 4–6 min till 23:00, D1 every 6–8 min till 23:00, K at 09:04, 09:44 and 10:24 from PGP, and R1 at 08:40, 09:00 and 09:20 from Kent Vale, each in its route's colour, and NUS term timings under them." width="342" height="1344" loading="lazy">
+<figcaption>Ctrl Lib at NUS on a Friday morning in term: its public buses, live, then the shuttles' timetable.</figcaption>
+</figure>
+
+At a stop NUS's or NTU's campus shuttles call at, **Campus shuttles** comes
+under the live buses, each route in its colour:
+
+- **Every 4–6 min** while it runs at a frequency, with when it stops for the day.
+- Its **next three departures** from where it starts, for a route that keeps
+  to a timetable, such as **Leaves PGP**.
+- **No bus till 14:16**, **First bus 09:07**, **No more buses today** or **Not
+  running today**, with when the next one is, when it isn't running now.
+
+These are the universities' timetables, not live times: the shuttles have none
+the app can show. NUS's change in the vacation, and the line under the list
+says whether it's **NUS term timings** or **NUS vacation timings**. Public
+holidays run to Sunday's times. Narrowed to one bus, the list steps aside.
+On [Explorer](explorer.md#campus-shuttles), the shuttles' routes and their own
+stops are on the map.
 
 ## Arriving from a list
 

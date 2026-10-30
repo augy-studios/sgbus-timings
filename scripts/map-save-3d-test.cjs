@@ -12,7 +12,8 @@
 // and Chromium where Playwright finds it, or CHROME=<path to Chrome>, drawing WebGL with
 // SwiftShader. The page is served from main-site/ by a server started here on
 // http://localhost:PORT (8765; a secure context, so sw.js runs as it does live), with /api/*
-// answered from what's below. SHOTS=<folder> saves a screenshot of each view. About a minute.
+// answered from what's below. SHOTS=<folder> saves a screenshot of each view, SCALE=<n> at n
+// times the pixels (the guide's are 3). About a minute.
 //
 // What it checks:
 //   1. The save finishes with every tile in (none missing, none cut short at 50 MB).
@@ -86,7 +87,7 @@ const server = http.createServer((req, res) => {
     args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--host-resolver-rules=MAP www.googletagmanager.com 127.0.0.1, MAP *.google-analytics.com 127.0.0.1, MAP analytics.google.com 127.0.0.1, MAP www.google.com 127.0.0.1'],
     ...(process.env.CHROME && { executablePath: process.env.CHROME }),
   };
-  const options = { viewport: { width: 400, height: 820 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, geolocation: { latitude: ORCHARD[0], longitude: ORCHARD[1], accuracy: 10 }, permissions: ['geolocation'], serviceWorkers: 'allow' };
+  const options = { viewport: { width: 400, height: 820 }, deviceScaleFactor: Number(process.env.SCALE) || 1, isMobile: true, hasTouch: true, geolocation: { latitude: ORCHARD[0], longitude: ORCHARD[1], accuracy: 10 }, permissions: ['geolocation'], serviceWorkers: 'allow' };
   let browser = null;
   let context;
   if (PROFILE) context = await playwright.chromium.launchPersistentContext(PROFILE, { ...launch, ...options });

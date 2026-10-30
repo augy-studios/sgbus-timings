@@ -8,6 +8,10 @@
 // The app-* groups show the page as the Android app has it (2.1.0's reminders, Offline
 // Sharing, the search box's mic and camera): `app: true` stands a fake window.Capacitor in for
 // the app, answering as the app would (APP_ANSWERS), so the page draws what it does there.
+//
+// STILL=1 takes any group still: the page's clock stopped at STILL_AT, and each stop's bus
+// timings made up (stillArrivals) for the buses its routes have running then, so a shot comes
+// out the same whenever it's taken. The groups after "help desk #13" are always taken still.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -23,6 +27,8 @@ const P = {
   changi: { label: 'Changi Airport', lat: 1.357338, lng: 103.988565 },
   punggol: { label: 'Punggol Coast Mall', lat: 1.414553, lng: 103.908235 },
 };
+// The moment a still shot is taken: a Friday morning in an NUS term.
+const STILL_AT = new Date('2026-10-30T08:30:00+08:00');
 const enc = (p) => `${p.lat.toFixed(5)},${p.lng.toFixed(5)}~${encodeURIComponent(p.label)}`;
 const navHash = (a, b, when = '') => `#nav/${a === 'here' ? 'here' : enc(a)}/${enc(b)}${when}`;
 
@@ -79,8 +85,48 @@ function fakeApp(answers) {
   };
 }
 
-// `ua`: a browser to be, such as Chrome on Android for the app's download bar.
-async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, ua = null } = {}) {
+// Made-up timings for STILL (see the top), from the real stops and routes: each bus that calls at
+// the stop and runs at STILL_AT on a weekday, due in a few minutes picked by its number, and on
+// the road the stops before it that far back, so its distance shows as it does live.
+let NET = null;
+async function stillNet() {
+  if (!NET) {
+    const [stops, routes] = await Promise.all(['bus-stops', 'bus-routes'].map((a) => fetch(`${SITE}api/${a}`).then((r) => r.json())));
+    NET = { at: Object.fromEntries(stops.map((x) => [x.c, [x.la, x.lo]])), runs: routes.runs || {}, ops: routes.services || {} };
+  }
+  return NET;
+}
+async function stillArrivals(stop) {
+  const { at, runs, ops } = await stillNet();
+  const now = STILL_AT.toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' }).replace(':', '');
+  const services = [];
+  for (const [no, dirs] of Object.entries(runs)) {
+    for (const run of Object.values(dirs)) {
+      const i = run.stops.indexOf(stop);
+      if (i === -1 || (i === run.stops.length - 1 && run.stops.length > 1 && run.stops[0] !== stop)) continue;
+      const t = run.times?.[i] || '';
+      const [first, last] = [t.slice(0, 4), t.slice(4, 8)];
+      if (!first || (first <= last ? now < first || now > last : now < first && now > last)) continue;
+      const h = [...no].reduce((a, c) => a * 31 + c.charCodeAt(0), 7);
+      const m1 = (h % 13) + (h % 5 === 0 ? 0 : 1);
+      const mins = [m1, m1 + 8 + (h % 6), m1 + 17 + (h % 9)];
+      // From where it starts, a bus not out yet is timed by the timetable, with no position: as
+      // LTA has it.
+      const bus = (m, k) => {
+        const back = i - Math.max(1, Math.round(m / 1.8));
+        const [lat, lng] = (back >= 0 && at[run.stops[back]]) || [null, null];
+        return { eta_ms: m * 60000, load: ['SEA', 'SEA', 'SDA'][(h + k) % 3], wheelchair: true, deck: (h + k) % 3 ? 'Double' : 'Single', lat, lng, rough: back < 0, origin: run.stops[0], dest: run.stops[run.stops.length - 1], visit: 1 };
+      };
+      services.push({ serviceNo: no, operator: ops[no]?.op || 'SBST', next: bus(mins[0], 0), next2: bus(mins[1], 1), next3: bus(mins[2], 2) });
+      break;
+    }
+  }
+  return { busStopCode: stop, services };
+}
+
+// `ua`: a browser to be, such as Chrome on Android for the app's download bar. `still`: see the
+// top. `mapHook`: the live map's MapLibre map kept as window.__map, to move by hand.
+async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, ua = null, still = !!process.env.STILL, mapHook = false } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: 3, isMobile: touch, hasTouch: touch, colorScheme: 'light', locale: 'en-SG', timezoneId: 'Asia/Singapore',
     ...(ua && { userAgent: ua }),
@@ -92,6 +138,29 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
   await ctx.route(/\/api\/share$/, (r) => (r.request().method() === 'POST'
     ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'k3v9q2x7ma', path: '/go/k3v9q2x7ma' }) })
     : r.continue()));
+  if (still) {
+    await ctx.clock.setFixedTime(STILL_AT);
+    await ctx.route(/\/api\/bus-arrivals\?/, async (r) => {
+      const q = new URL(r.request().url()).searchParams;
+      const a = await stillArrivals(q.get('stop'));
+      if (q.get('service')) a.services = a.services.filter((x) => x.serviceNo === q.get('service'));
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify(a) });
+    });
+  }
+  if (mapHook) {
+    await ctx.addInitScript(() => {
+      let ml;
+      Object.defineProperty(window, 'maplibregl', {
+        configurable: true,
+        get: () => ml,
+        set(v) {
+          ml = v;
+          const on = v.Map.prototype.on;
+          v.Map.prototype.on = function (...a) { window.__map = this; return on.apply(this, a); };
+        },
+      });
+    });
+  }
   if (app) await ctx.addInitScript(fakeApp, APP_ANSWERS);
   await ctx.addInitScript((s) => {
     if (sessionStorage.getItem('seeded')) return;
@@ -107,6 +176,13 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
 }
 
 const blur = (page) => page.evaluate(() => document.activeElement?.blur());
+// Settings, open on one of its groups (`you`, `pages`, `trips`, `navigate`, `help`, `sync`).
+async function settingsGroup(page, id) {
+  await page.click('#settingsBtn');
+  await page.waitForTimeout(400);
+  await page.click(`#settingsGroups [data-settings-open="${id}"]`);
+  await page.waitForTimeout(500);
+}
 async function idle(page, sel, ms = 25000) {
   // Until the panel's body stops saying it's working.
   await page.waitForFunction((s) => {
@@ -136,12 +212,12 @@ async function el(page, sel, name) {
   const N = '#navSection .card';
 
   if (want('install-tour')) {
-    const { ctx, page } = await open(browser, { width: 1000, height: 604, hash: '#84009' });
+    const { ctx, page } = await open(browser, { width: 1000, height: 800, hash: '#84009' });
     await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => {});
     await page.waitForTimeout(1500);
     await page.evaluate(() => scrollTo(0, 0));
     await page.screenshot({ path: OUT + 'install-tour.png' });
-    console.log('wrote install-tour.png 1000 604');
+    console.log('wrote install-tour.png 1000 800');
     await ctx.close();
   }
   if (want('route-live')) {
@@ -304,7 +380,7 @@ async function el(page, sel, name) {
   }
   if (want('birthday')) {
     // Today in Singapore, where the page's clock is.
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }).slice(5);
+    const today = (process.env.STILL ? STILL_AT : new Date()).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }).slice(5);
     const { ctx, page } = await open(browser, { width: 390, height: 844, extra: { sgbus_birthday: `1998-${today}`, sgbus_name: 'Samantha Tan Wei Ling' } });
     await page.waitForTimeout(300);
     await page.screenshot({ path: OUT + 'settings-birthday.png', clip: { x: 0, y: 0, width: 390, height: 300 } });
@@ -507,8 +583,7 @@ async function el(page, sel, name) {
   // (main-site/js/main-screen.js).
   if (want('main-screen')) {
     let { ctx, page } = await open(browser, { width: 420, height: 3000, extra: {} });
-    await page.click('#settingsBtn');
-    await page.waitForTimeout(500);
+    await settingsGroup(page, 'pages');
     const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Custom home' }).boundingBox();
     const b = await page.locator('#homePick').locator('xpath=following-sibling::p[1]').boundingBox();
     const m = await page.locator('#settingsModal .modal').boundingBox();
@@ -631,8 +706,7 @@ async function el(page, sel, name) {
     await ctx.close();
 
     ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true }));
-    await page.click('#settingsBtn');
-    await page.waitForTimeout(500);
+    await settingsGroup(page, 'help');
     const label = page.locator('#settingsTerminal');
     const box = await page.evaluate(() => {
       const btn = document.getElementById('settingsTerminal');
@@ -934,6 +1008,153 @@ async function el(page, sel, name) {
     await page.waitForSelector('#stopAside .noticeNote', { timeout: 20000 }).catch(() => console.log('no stop note'));
     await page.waitForTimeout(800);
     await cardDown(page, '#resultCard', '#stopAside', 'timings-newsfeed-note.png');
+    await ctx.close();
+  }
+  // ---------- help desk #13 (always still) ----------
+  const stopsList = async () => (await stillNet(), (await (await fetch(`${SITE}api/bus-stops`)).json()));
+  const geoOf = (stops, code) => { const x = stops.find((y) => y.c === code); return { latitude: x.la, longitude: x.lo, accuracy: 10 }; };
+  const exploreOpen = async (page, ms = 7000) => {
+    await page.click('#explorerBtn');
+    await page.waitForFunction(() => window.LiveMap?.mode() === 'explore', null, { timeout: 15000 });
+    await page.waitForTimeout(ms);
+  };
+  const tapMiddle = async (page) => {
+    const box = await page.locator('#liveMap').boundingBox();
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.waitForTimeout(4000);
+  };
+  // Stops near me, a card on Bus timings while no stop's open (main-site/script.js), "you" at
+  // Bedok Mall with location allowed.
+  if (want('near-me')) {
+    const { ctx, page } = await open(browser, {
+      width: 440, height: 1400, touch: true, geo: { latitude: 1.324736, longitude: 103.929256, accuracy: 10 }, still: true,
+      extra: { sgbus_glance_near: '1' },
+    });
+    await page.click('#timingsBtn');
+    await page.waitForSelector('#nearStops:not([hidden]) #nearStopsBody [data-stop]', { timeout: 20000 }).catch(() => console.log('no stops near'));
+    await page.waitForTimeout(800);
+    await blur(page);
+    await el(page, '#nearStops', 'search-near-me.png');
+    // Before location's allowed: the button that asks.
+    await ctx.close();
+    const second = await open(browser, { width: 440, height: 1400, touch: true, still: true });
+    await second.page.click('#timingsBtn');
+    await second.page.waitForTimeout(800);
+    await el(second.page, '#nearStops', 'search-near-me-ask.png');
+    await second.ctx.close();
+  }
+  // Report a bug (main-site/js/bug-report.js), from Settings' Help and extras: its button, the
+  // form filled in with what's sent with it, and sent, /api/bug-report stood in for as it
+  // answers once the site's set up. Chrome on an Android phone.
+  if (want('bug-report')) {
+    const ua = 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, ua, hash: '#84009', still: true });
+    let sent = null;
+    await ctx.route(/\/api\/bug-report$/, (r) => { sent = r.request().postDataJSON(); r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+    // The site's version as its service worker says it, the first time the form opens.
+    await page.evaluate(async () => { await navigator.serviceWorker?.ready; });
+    if (!(await page.evaluate(() => !!navigator.serviceWorker?.controller))) {
+      await page.reload();
+      await page.waitForTimeout(1500);
+    }
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no timings'));
+    await settingsGroup(page, 'help');
+    const box = await page.evaluate(() => {
+      const btn = document.getElementById('settingsBug');
+      btn.scrollIntoView({ block: 'center' });
+      const top = btn.previousElementSibling.getBoundingClientRect();
+      const bottom = btn.nextElementSibling.getBoundingClientRect();
+      const card = btn.closest('.modal').getBoundingClientRect();
+      return { x: card.x, y: top.y - 10, width: card.width, height: bottom.bottom + 12 - (top.y - 10) };
+    });
+    await page.screenshot({ path: OUT + 'bug-report-settings.png', clip: box });
+    console.log('wrote bug-report-settings.png', Math.round(box.width), Math.round(box.height));
+    await page.click('#settingsBug');
+    await page.waitForTimeout(2500);
+    await page.fill('#bugText', "Bus 60's timings at Bedok Int showed Arr for 5 minutes, but the bus didn't come till 8 minutes later.");
+    await page.fill('#bugContact', '@sam_tan');
+    await blur(page);
+    await page.waitForTimeout(400);
+    await el(page, '#bugModal .modal', 'bug-report.png');
+    await page.click('#bugSend');
+    await page.waitForFunction(() => /Sent/.test(document.querySelector('#bugStatus')?.textContent || ''), null, { timeout: 10000 }).catch(() => console.log('not sent'));
+    await page.waitForTimeout(400);
+    await blur(page);
+    await el(page, '#bugModal .modal', 'bug-report-sent.png');
+    console.log('sent', JSON.stringify(sent));
+    await ctx.close();
+  }
+  // Explorer back on the stop it was left from (main-site/js/map.js): Tampines Int's Show bus
+  // timings, then Explorer again from Bedok, a few km away.
+  if (want('explorer-back')) {
+    const stops = await stopsList();
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: geoOf(stops, '75009'), still: true });
+    await exploreOpen(page);
+    await tapMiddle(page);
+    await page.click('#mapPanel .mapCard .mcGo[data-mc-timings]');
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no timings'));
+    await ctx.setGeolocation({ latitude: 1.324736, longitude: 103.929256, accuracy: 10 });
+    await page.waitForTimeout(1000);
+    await exploreOpen(page, 6000);
+    await page.screenshot({ path: OUT + 'explorer-back.png' });
+    console.log('wrote explorer-back.png 390 844');
+    await ctx.close();
+  }
+  // Campus shuttles (main-site/js/campus.js): NUS's routes along their roads (/api/road, from the
+  // live site through serve.cjs), an LTA stop the shuttles share on Explorer and on Bus timings,
+  // a campus-only stop, and NTU's routes. A Friday morning in term (STILL_AT).
+  if (want('campus')) {
+    const stops = await stopsList();
+    let { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: geoOf(stops, '16181'), still: true, mapHook: true });
+    await exploreOpen(page, 9000);
+    await tapMiddle(page);
+    await page.screenshot({ path: OUT + 'explorer-campus-stop.png' });
+    console.log('wrote explorer-campus-stop.png 390 844');
+    await page.evaluate(() => window.MapCard?.close());
+    await page.evaluate(() => window.__map?.jumpTo({ center: [103.7745, 1.2985], zoom: 14.6 }));
+    await page.waitForTimeout(7000);
+    await page.screenshot({ path: OUT + 'explorer-campus.png' });
+    console.log('wrote explorer-campus.png 390 844');
+    await ctx.close();
+
+    // Kent Vale, a stop of NUS's own.
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: { latitude: 1.302182, longitude: 103.769265, accuracy: 10 }, still: true }));
+    await exploreOpen(page, 9000);
+    await tapMiddle(page);
+    await page.screenshot({ path: OUT + 'explorer-campus-own.png' });
+    console.log('wrote explorer-campus-own.png 390 844');
+    await ctx.close();
+
+  }
+  // NTU's, "you" in the middle of its campus, which Explorer keeps in the middle.
+  if (want('campus-ntu')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: { latitude: 1.3462, longitude: 103.6853, accuracy: 10 }, still: true, mapHook: true });
+    await exploreOpen(page, 5000);
+    await page.evaluate(() => window.__map?.jumpTo({ center: [103.6853, 1.3462], zoom: 14.5 }));
+    await page.waitForTimeout(8000);
+    await page.screenshot({ path: OUT + 'explorer-campus-ntu.png' });
+    console.log('wrote explorer-campus-ntu.png 390 844');
+    await ctx.close();
+  }
+  // Bus timings at Ctrl Lib: its buses, then the shuttles under them.
+  if (want('campus-timings')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 2400, hash: '#16181', still: true });
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no timings'));
+    await page.waitForSelector('#campusSvc:not([hidden]) .campusRow', { timeout: 20000 }).catch(() => console.log('no shuttles'));
+    await page.waitForTimeout(1200);
+    await blur(page);
+    await cardDown(page, '#resultCard', '#campusSvc', 'timings-campus.png');
+    await ctx.close();
+  }
+  // Explorer's Save the map (main-site/js/map-save.js): its sheet before a download.
+  if (want('map-save')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: { latitude: 1.3040, longitude: 103.8320, accuracy: 10 }, still: true });
+    await exploreOpen(page);
+    await page.click('#mapSave');
+    await page.waitForFunction(() => !/…/.test(document.querySelector('#mapSaveBody')?.textContent || '…'), null, { timeout: 30000 }).catch(() => console.log('no estimate'));
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: OUT + 'explorer-save-map.png' });
+    console.log('wrote explorer-save-map.png 390 844');
     await ctx.close();
   }
   await browser.close();

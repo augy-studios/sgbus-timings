@@ -13,7 +13,7 @@ Linux or ChromeOS, for three shortcuts:
 
 | Shortcut | Opens |
 | --- | --- |
-| **Stops near me** | The bus stops around you, with their timings. See [Find a bus stop](search.md). |
+| **Stops near me** | Bus timings, with the bus stops around you. See [Stops near me](search.md#stops-near-me). |
 | **Navigate** | [Navigate by bus and train](nav.md), ready for where you're going. |
 | **Service alerts** | [Service alerts](service-alerts.md): train disruptions and traffic incidents right now. |
 

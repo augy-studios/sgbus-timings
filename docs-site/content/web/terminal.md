@@ -62,7 +62,7 @@ your [places](places.md) by its name, a stop, a postal code, an address, a
 station, GPS coordinates or a plus code, as in [Navigate](nav.md).
 
 <figure>
-<img src="/screenshots/web/terminal-nav.png" alt="nav home work in the sgbus terminal: three ways from Bedok Mall to One Raffles Place, quickest first, then the first step by step: a walk to the stop, bus 30 with its next three buses, a walk to Eunos and the East-West Line to Raffles Place." width="1000" height="640" loading="lazy">
+<img src="/screenshots/web/terminal-nav.png" alt="nav home work in the sgbus terminal: two ways from Bedok Mall to One Raffles Place, quickest first, the East-West Line all the way or bus 9 then the East-West Line, then the first step by step: a walk to Bedok station, the East-West Line towards Tuas Link to Raffles Place, and a walk to One Raffles Place." width="1000" height="640" loading="lazy">
 <figcaption>nav home work: the ways there, and the first step by step.</figcaption>
 </figure>
 
