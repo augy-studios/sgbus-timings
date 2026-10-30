@@ -25,25 +25,49 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Android app 2.2.8
 
-- The web app's changes above, and Back to Navigate from 30 October.
+- The web app's changes above, and those from 28 and 30 October.
+- **Never zoomed out** - From 28 October: the page always stays at its own size.
 - **Updates in your phone's colours** - The update page is a page of its own in Material You: its colours from your wallpaper on Android 12 and later, light or dark as your phone is. It shows what's new in each version on a timeline, the one you'd get open with its changes in cards, and the one you have marked Installed. Downloads show as a wavy line growing along its track.
 
 ### Desktop app 2.2.8
 
-- The web app's changes above, and Back to Navigate from 30 October.
+- The web app's changes above, and those from 28 and 30 October.
 - **Updates as it opens** - A small window with the app's icon checks for a new version as the app opens. One it can install downloads there with a bar, then it installs and opens again as the new version; Later opens the app now and finishes the download in the background. Restart to update shows the same window as it installs.
 
 ---
 
-## 30 October 2026: back to Navigate from a trip, /start works again
+## 30 October 2026: campus shuttles, report a bug, back to Navigate from a trip, /start works again
 
 ### Web app
 
 - **Back to Navigate** - On a trip's timeline, beside Change my way: Navigate as it was when you started the trip, the same ends and the way you picked, on Bus and train or Bus only.
+- **Change my way, the right size** - Its icon filled half the timeline. It's the size of the others now.
+- **NUS and NTU campus shuttles** - Explorer draws each university's shuttle routes in their own colours, with their stops; a stop's card and Bus timings list the shuttles that call there under the live buses, marked as scheduled, not live, with when they run today. Public holidays run as Sundays.
+- **Report a bug** - In Settings, Help and extras: say what went wrong, and it reaches Augy on Telegram, with the app's version and your device to help track it down. A way to reach you is optional.
+- **Stops near me on Bus timings** - The stops around you are a list on Bus timings' page, nearest first with your favourites pinned, rather than a pin in the Edge Tray. Once you've allowed your location, it finds them by itself.
+- **Buildings in 3D offline** - With Singapore's map saved, a few places lost their whole tile offline, buildings and all, over a street name in an unusual script. Every tile shows now. Save the map again to get the fix.
 
 ### Telegram bot
 
 - **/start works again** - In a private chat, /start answered with nothing. Its 🌐 Open web app button now opens the web app inside Telegram, as it should.
+
+---
+
+## 28 October 2026: Navigate far from any stop, Explorer where you left it, room on small screens
+
+### Web app
+
+- **Navigate far from any stop** - A place with no stop or station within 900 m, such as a ferry terminal or a lodge out in Tuas, used to get no way at all. Navigate now walks you to the nearest stops and stations within 3 km, and says how far the walk is.
+- **Explorer where you left it** - Show bus timings or Directions on a stop's or station's card closes Explorer; open it again and it's back on that stop or station, its card open. Close Explorer yourself and it starts afresh.
+- **More room beside the Edge Tray** - With the tray open, the page reaches its buttons rather than stopping at its arrow, about a finger's width more on a phone, on either side. The greeting and the bars at the top keep clear of the arrow.
+- **No more zooming out** - Some stops, such as 17179, zoomed the whole page out on a phone, everything tiny. They fit now.
+- **"no GPS", not "~ ∞m"** - A bus LTA times by its timetable, with no position, says "no GPS" rather than an infinite distance, and an empty slot shows a dash, never "NaN".
+- **Favourites on narrow screens** - New list wraps under the tabs, and a bus at a stop's chip shortens the stop's name before its bus numbers.
+- **The subtitle wraps neatly** - It breaks between phrases, keeping "Made with ♥ by Augy" together.
+
+### Android app
+
+- **Never zoomed out** - The app keeps the page at its own size, whatever's on it. Needs version 2.2.8.
 
 ---
 
