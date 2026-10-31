@@ -11,8 +11,8 @@
 //            public buses use too: it's drawn and named as LTA has it (stopsIndex, script.js),
 //            so it's never on the map twice. A stop without `loc`, or a route's stop missing from
 //            `stops` (NTU's CR-W lists 27061), is found in LTA's stops the same way. Any other id
-//            is a campus stop of its own (NUS-KV, NTU-OppS2, NTU's six-digit 382999): drawn by
-//            Explorer as a dot of its own. One within MERGE_M of an LTA stop is taken as that stop.
+//            is a campus stop of its own, by the postcode nearest it (help desk #16: NUS's Kent
+//            Vale 129800, NTU's Opp S2 637717): drawn by Explorer as a dot of its own. One within MERGE_M of an LTA stop is taken as that stop.
 //   routes   [{ id | name, stops: [stop ids, in order], timetable, term_vacation, timings }].
 //            `timings` comes in three shapes, all read by the one walk (readTimings):
 //              1. Bands: [{ start: "HHMM", end: "HHMM", min, max }], a bus every min to max
@@ -21,7 +21,7 @@
 //              2. Departures from each end: NUS K, R1, R2, { <terminal stop id>: { weekdays|sat:
 //                 ["HHMM", ...] } }.
 //              3. Both: NUS P, { term|vacation: { weekday: { <terminal>: ["HHMM", ...] } } }.
-//                 Its terminals are Kent Vale (NUS-KV) and OTH (NUS-OTH, the Oei Tiong Ham
+//                 Its terminals are Kent Vale (129800) and OTH (259772, the Oei Tiong Ham
 //                 Building on NUS's Bukit Timah campus, a stop in nus.json), the way back.
 //            A key is a season (term, vacation), a day (DAY_KEYS) or a stop on the route; any
 //            other is a problem, said in the console, and left out.

@@ -188,7 +188,7 @@
     const body = frame(I18n.t('campus.card', '{uni} shuttle stop {name}', { uni, name: s.name }));
     at = [s.lat, s.lng];
     dest = { label: s.name, lat: s.lat, lng: s.lng };
-    // A code worth showing: NTU's six digits, not NUS-KV.
+    // A code worth showing: the postcode a campus stop goes by, not a made-up id.
     const code = /^\d+$/.test(s.id) ? ` ${s.id}` : '';
     body.innerHTML =
       head(`<span class="mcCode">${esc(uni)}</span><div class="mcTitle"><strong>${esc(s.name)}</strong><span>${esc(s.road || '')}${esc(code)}</span></div>`) +

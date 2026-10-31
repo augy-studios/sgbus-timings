@@ -14,6 +14,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Web app
 
 - **Clock times** - Settings' new Bus times: keep each bus as how long till it comes, such as 3 mins 20s, or pick Clock time to see the time it comes, such as 14:32. A stop's timings, the incoming buses bar, Glance, the departures board, Navigate and Bus only all follow it, and so do the desktop app's widgets. It syncs with your other devices and the Telegram bot.
+- **Campus shuttle stops** - NUS's A1, A2, D2, K and P show at Kent Ridge Stn Exit A / NUH, where they stop, instead of the NUH stop up the road, and every campus stop's card shows its postcode.
 
 ### Telegram bot
 

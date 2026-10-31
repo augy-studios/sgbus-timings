@@ -6,8 +6,8 @@
 // No browser or network: js/campus.js runs in a sandbox of its own, given the files in
 // main-site/data/campus/ and LTA's stops for the codes they use (below, as LTA lists them).
 //   1. The files read with no problems: 12 routes, every stop placed, 27061 (CR-W) from LTA's
-//      stops, NUS-OTH a stop of NUS's own, nothing merged, and each shape as it should be.
-//   2. Without LTA's stops, NTU's stops with no position are said to be missing.
+//      stops, 259772 (OTH) a stop of NUS's own, nothing merged, and each shape as it should be.
+//   2. Without LTA's stops, the stops with no position are said to be missing.
 //   3. Frequencies: running, before the first bus, a gap between bands, after the last, a
 //      Saturday night, term and vacation, a public holiday, bands that share a minute.
 //   4. Departures: from each end of K, a stop after either end, the end of R1, P's way back from
@@ -38,8 +38,8 @@ const LTA = Object.fromEntries([
   ['16179', 1.29898, 103.77418, 'Opp Yusof Ishak Hse', 'Kent Ridge Cres'],
   ['16181', 1.29657, 103.77254, 'Ctrl Lib', 'Kent Ridge Cres'],
   ['16189', 1.29723, 103.77276, 'Information Technology', 'Kent Ridge Cres'],
-  ['18221', 1.2963, 103.78347, 'NUH', 'Lower Kent Ridge Rd'],
-  ['18239', 1.29679, 103.78319, 'Opp NUH', 'Lower Kent Ridge Rd'],
+  ['18331', 1.29485, 103.78438, 'Kent Ridge Stn Exit A/NUH', 'Lower Kent Ridge Rd'],
+  ['18339', 1.29498, 103.78458, 'Opp Kent Ridge Stn Exit A', 'Lower Kent Ridge Rd'],
   ['18301', 1.29739, 103.78093, 'Lim Seng Tjoe Bldg (LT 27)', 'Lower Kent Ridge Rd'],
   ['18309', 1.29752, 103.78134, 'Blk S17', 'Lower Kent Ridge Rd'],
   ['18311', 1.29744, 103.77792, 'Blk S12', 'Lower Kent Ridge Rd'],
@@ -95,26 +95,27 @@ const adm = m.stops.get('27061');
 ok('27061 (CR-W, not in ntu.json) from LTA: Sch of ADM', adm?.lta && adm.name === 'Sch of ADM' && adm.road === 'Nanyang Dr', adm);
 ok('the note says 27061 came from LTA', m.notes.some((n) => /27061 isn't in ntu\.json/.test(n)));
 ok('NTU stops with no loc placed by LTA (27219 NIE Blk 2)', m.stops.get('27219')?.lat === 1.34793);
-ok('NUS-OTH is a stop of NUS own, at the Bukit Timah campus', m.stops.get('NUS-OTH')?.lta === false && m.stops.get('NUS-OTH').road === 'Bukit Timah Rd');
+ok('259772 is a stop of NUS own, at the Bukit Timah campus', m.stops.get('259772')?.lta === false && m.stops.get('259772').road === 'Bukit Timah Rd');
 ok('nothing merged with an LTA stop', !m.notes.some((n) => /shown as that stop/.test(n)));
 ok('a shared LTA stop is one stop, LTA-named: 16009 Kent Ridge Ter, on A1, A2', m.stops.get('16009')?.lta && m.stops.get('16009').routes.map((x) => x.route.code).join() === 'A1,A2');
 ok('16181 Ctrl Lib has A1, D1, K, R1', m.stops.get('16181')?.routes.map((x) => x.route.code).join() === 'A1,D1,K,R1');
-ok('a campus stop keeps its loc with a space after the comma: NUS-KV', Math.abs(m.stops.get('NUS-KV').lat - 1.302182) < 1e-5);
+ok('a campus stop keeps its loc with a space after the comma: 129800', Math.abs(m.stops.get('129800').lat - 1.302182) < 1e-5);
 const campusOnly = [...m.stops.values()].filter((s) => !s.lta).length;
 const ltaShared = [...m.stops.values()].filter((s) => s.lta).length;
 eq('stops drawn: 33 campus-only (14 NUS, 19 NTU) and 33 LTA (19 NUS, 14 NTU)', [campusOnly, ltaShared], [33, 33]);
 ok('27221 Sch of CEE and 27291 Opp Hall 6 are on no route, and said so', ['27221', '27291'].every((c) => m.notes.some((n) => new RegExp(`${c}.*isn't on any route`).test(n)) && !m.stops.has(c)));
 eq('A1: term and vacation, weekday, sat and sun_ph', Object.keys(route('A1').timings).concat(Object.keys(route('A1').timings.term)), ['term', 'vacation', 'weekday', 'sat', 'sun_ph']);
 eq('A1 term weekday has 11 bands', route('A1').timings.term.weekday.bands.length, 11);
-eq('K: departures from both ends, weekdays and Saturday', [Object.keys(route('K').timings.all), Object.keys(route('K').timings.all.weekday.departs)], [['weekday', 'sat'], ['NUS-PGP', 'NUS-KV']]);
-eq('P: term and vacation weekdays, from KV and OTH', [Object.keys(route('P').timings), Object.keys(route('P').timings.term.weekday.departs)], [['term', 'vacation'], ['NUS-KV', 'NUS-OTH']]);
+eq('K: departures from both ends, weekdays and Saturday', [Object.keys(route('K').timings.all), Object.keys(route('K').timings.all.weekday.departs)], [['weekday', 'sat'], ['118401', '129800']]);
+eq('P: term and vacation weekdays, from KV and OTH', [Object.keys(route('P').timings), Object.keys(route('P').timings.term.weekday.departs)], [['term', 'vacation'], ['129800', '259772']]);
 eq('NTU CL-B: all year, three days', Object.keys(route('CL-B').timings.all), ['weekday', 'sat', 'sun_ph']);
 eq('NTU CR weekdays only, CR-W weekends only', [Object.keys(route('CR').timings.all), Object.keys(route('CR-W').timings.all)], [['weekday'], ['sat', 'sun_ph']]);
 
 // ---------- 2. Without LTA's stops ----------
 const bare = C.build(raw, {});
 ok('without LTA, NTU stops with no loc are problems', bare.problems.some((p) => /27219 \(NIE Blk 2\) has no position/.test(p)) && bare.problems.some((p) => /stop 27061 has no position, and LTA has no such stop/.test(p)));
-ok('without LTA, NUS LTA-coded stops still drawn from Augy locs', bare.stops.get('16009')?.lta === false);
+ok('without LTA, NUS stops with no loc are problems too', bare.problems.some((p) => /16009 \(Kent Ridge Ter\) has no position/.test(p)));
+ok('without LTA, campus stops of their own still drawn from their locs', bare.stops.get('129800')?.lta === false);
 
 // ---------- 3. Frequencies ----------
 const at = (code, stop, when) => {
@@ -140,22 +141,22 @@ eq('NTU CL-B, Fri 08:00, where two bands meet: the later, every 5-7', pick(at('C
 eq('NTU CL-B, Sun 12:00: every 11-13', pick(at('CL-B', '378222', '2026-11-01T12:00'), 'min', 'max'), { min: 11, max: 13 });
 
 // ---------- 4. Departures ----------
-const k0700 = at('K', 'NUS-PGP', '2026-10-30T07:00');
-eq('K at PGP, Fri 07:00: leaves here 07:04, 07:44, 08:24', pick(k0700, 'state', 'from', 'here', 'times'), { state: 'departs', from: 'NUS-PGP', here: true, times: [424, 464, 504] });
-eq('K at 16151 (before KV): PGP departures', pick(at('K', '16151', '2026-10-30T07:00'), 'from', 'here'), { from: 'NUS-PGP', here: false });
-eq('K at 16161 (after KV): KV departures, 07:20 first', pick(at('K', '16161', '2026-10-30T07:00'), 'from', 'times'), { from: 'NUS-KV', times: [440, 480, 520] });
-eq('K at 07:04 itself: that bus counts', at('K', 'NUS-PGP', '2026-10-30T07:04').times[0], 424);
-const kSun = at('K', 'NUS-PGP', '2026-11-01T10:00');
-eq('K on a Sunday: not running; Monday 07:04 from PGP', [kSun.state, kSun.next.inDays, kSun.next.dow, kSun.next.at, kSun.next.from], ['notToday', 1, 1, 424, 'NUS-PGP']);
-const kLate = at('K', 'NUS-KV', '2026-10-30T23:30');
+const k0700 = at('K', '118401', '2026-10-30T07:00');
+eq('K at PGP, Fri 07:00: leaves here 07:04, 07:44, 08:24', pick(k0700, 'state', 'from', 'here', 'times'), { state: 'departs', from: '118401', here: true, times: [424, 464, 504] });
+eq('K at 16151 (before KV): PGP departures', pick(at('K', '16151', '2026-10-30T07:00'), 'from', 'here'), { from: '118401', here: false });
+eq('K at 16161 (after KV): KV departures, 07:20 first', pick(at('K', '16161', '2026-10-30T07:00'), 'from', 'times'), { from: '129800', times: [440, 480, 520] });
+eq('K at 07:04 itself: that bus counts', at('K', '118401', '2026-10-30T07:04').times[0], 424);
+const kSun = at('K', '118401', '2026-11-01T10:00');
+eq('K on a Sunday: not running; Monday 07:04 from PGP', [kSun.state, kSun.next.inDays, kSun.next.dow, kSun.next.at, kSun.next.from], ['notToday', 1, 1, 424, '118401']);
+const kLate = at('K', '129800', '2026-10-30T23:30');
 eq('K at KV after 23:20: done; Saturday 07:20', [kLate.state, kLate.next.inDays, kLate.next.at], ['done', 1, 440]);
-eq('K on Saturday 19:50 at KV: one left, 20:00', at('K', 'NUS-KV', '2026-10-31T19:50').times, [1200]);
-eq('R1 at PGP, its end: KV times, ends here', pick(at('R1', 'NUS-PGP', '2026-10-30T07:50'), 'from', 'end', 'times'), { from: 'NUS-KV', end: true, times: [480, 500, 520] });
-const r1Sat = at('R1', 'NUS-KV', '2026-10-31T09:00');
+eq('K on Saturday 19:50 at KV: one left, 20:00', at('K', '129800', '2026-10-31T19:50').times, [1200]);
+eq('R1 at PGP, its end: KV times, ends here', pick(at('R1', '118401', '2026-10-30T07:50'), 'from', 'end', 'times'), { from: '129800', end: true, times: [480, 500, 520] });
+const r1Sat = at('R1', '129800', '2026-10-31T09:00');
 eq('R1 on Saturday: not running; Monday', [r1Sat.state, r1Sat.next.inDays, r1Sat.next.dow], ['notToday', 2, 1]);
-eq('P at 41021 (after OTH), term Fri 09:00: from OTH, 09:00 first', pick(at('P', '41021', '2026-10-30T09:00'), 'from', 'times'), { from: 'NUS-OTH', times: [540, 605, 665] });
-eq('P at KV, term Fri 08:00: from KV 08:20', pick(at('P', 'NUS-KV', '2026-10-30T08:00'), 'from', 'here', 'times'), { from: 'NUS-KV', here: true, times: [500, 575, 635] });
-eq('P at KV, vacation Tue 15 Dec 10:00: vacation times (11:35 next)', pick(at('P', 'NUS-KV', '2026-12-15T10:00'), 'season', 'times'), { season: 'vacation', times: [695, 755, 995] });
+eq('P at 41021 (after OTH), term Fri 09:00: from OTH, 09:00 first', pick(at('P', '41021', '2026-10-30T09:00'), 'from', 'times'), { from: '259772', times: [540, 605, 665] });
+eq('P at KV, term Fri 08:00: from KV 08:20', pick(at('P', '129800', '2026-10-30T08:00'), 'from', 'here', 'times'), { from: '129800', here: true, times: [500, 575, 635] });
+eq('P at KV, vacation Tue 15 Dec 10:00: vacation times (11:35 next)', pick(at('P', '129800', '2026-12-15T10:00'), 'season', 'times'), { season: 'vacation', times: [695, 755, 995] });
 const crSat = at('CR', '22529', '2026-10-31T10:00');
 eq('NTU CR on Saturday: not running; Monday 07:30', [crSat.state, crSat.next.inDays, crSat.next.at], ['notToday', 2, 450]);
 const crwFri = at('CR-W', '22529', '2026-10-30T10:00');
@@ -169,9 +170,9 @@ eq('words: running, one figure', C.describe(at('A1', '16009', '2026-10-30T20:00'
 eq('words: before the first', { ...C.describe(at('A1', '16009', '2026-10-30T06:00'), name) }, { main: 'First bus 07:15', sub: 'Every 8–10 min' });
 eq('words: a gap', { ...C.describe(at('A1', '16009', '2026-10-30T14:05'), name) }, { main: 'No bus till 14:16', sub: 'Every 8–10 min' });
 eq('words: departures', { ...C.describe(at('K', '16161', '2026-10-30T07:00'), name) }, { main: '07:20 · 08:00 · 08:40', sub: 'Leaves Kent Vale' });
-eq('words: the end of R1', C.describe(at('R1', 'NUS-PGP', '2026-10-30T07:50'), name).sub, 'Leaves Kent Vale · ends here');
+eq('words: the end of R1', C.describe(at('R1', '118401', '2026-10-30T07:50'), name).sub, 'Leaves Kent Vale · ends here');
 eq('words: done', { ...C.describe(late, name) }, { main: 'No more buses today', sub: 'Next: tomorrow 07:15' });
-eq('words: not today, two days on, from a terminal', { ...C.describe(at('R1', 'NUS-KV', '2026-10-31T09:00'), name) }, { main: 'Not running today', sub: 'Next: Mon 07:40 from Kent Vale' });
+eq('words: not today, two days on, from a terminal', { ...C.describe(at('R1', '129800', '2026-10-31T09:00'), name) }, { main: 'Not running today', sub: 'Next: Mon 07:40 from Kent Vale' });
 eq('hhmm and clock', [C.hhmm('0715'), C.hhmm('2300'), C.hhmm('715'), C.hhmm('2460'), C.clock(435)], [435, 1380, null, null, '07:15']);
 eq('parseLoc with and without a space', [C.parseLoc('1.3,103.8'), C.parseLoc('1.3, 103.8'), C.parseLoc('x'), C.parseLoc('51.5,0.1')], [[1.3, 103.8], [1.3, 103.8], null, null]);
 eq('black on yellow, white on red', [C.inkOn('#e0a800'), C.inkOn('#d6312b')], ['#000', '#fff']);
@@ -201,7 +202,7 @@ eq('credits: NUS only over Kent Ridge', credited(around([1.2966, 103.7764], 0.00
 eq('credits: NTU only over NTU', credited(around([1.3483, 103.6831], 0.006)), ['ntu']);
 eq('credits: both, zoomed out over Singapore', credited([[1.2, 103.6], [1.47, 104.05]]), ['nus', 'ntu']);
 eq('credits: NUS, where P crosses the view with no stop in it (Holland)', credited(around([1.3128, 103.7928], 0.002)), ['nus']);
-eq('credits: none just off P\'s line, padded or not', credited(around([1.3040, 103.7990], 0.002)), []);
+eq('credits: none just off P\'s line, padded or not', credited(around([1.3040, 103.8010], 0.002)), []);
 eq('credits: none without lines', credited(null, []), []);
 eq('credits: a university with no credit has none', C.creditsIn({ nus: {}, ntu: raw.config.ntu }, drawn, null).map((c) => c.uni), ['ntu']);
 
