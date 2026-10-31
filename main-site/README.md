@@ -228,7 +228,7 @@ Copy `.env.example` to `.env.local` and set at least `LTA_ACCOUNT_KEY`, your [LT
 
 ### Checks
 
-From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English), `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do), `node scripts/nav-far-end-test.mjs` (Navigate reaches places far from any stop; `LIVE=1` adds a trip on the real network), and `node scripts/layout-check-test.cjs` (phone layout with the Edge Tray open on both sides; needs Playwright), `node scripts/campus-test.mjs` (campus shuttle data and timetables, no browser) and `node scripts/campus-map-test.cjs` (campus shuttles on Explorer and Bus timings; needs Playwright).
+From the repo's root: `node scripts/i18n-check.mjs` (the language files against the site's English), `node scripts/i18n-routines-test.cjs` (Routines' form and the location messages in each language; needs Playwright), `node scripts/ride-check-test.cjs` (only rides really taken unlock Your colours; needs Playwright, as the guide's screenshots do), `node scripts/nav-far-end-test.mjs` (Navigate reaches places far from any stop; `LIVE=1` adds a trip on the real network), and `node scripts/layout-check-test.cjs` (phone layout with the Edge Tray open on both sides; needs Playwright), `node scripts/campus-test.mjs` (campus shuttle data and timetables, no browser) and `node scripts/campus-map-test.cjs` (campus shuttles on Explorer and Bus timings; needs Playwright).
 
 ## License
 
