@@ -1,202 +1,164 @@
 {
  "stops": [
   {
-   "loc": "1.3006613351963097,103.76988887553495",
    "id": "16151",
-   "name": "The Japanese Pri Sch",
-   "road": "Clementi Rd"
+   "name": "The Japanese Pri Sch"
   },
   {
-   "loc": "1.2979590367062315,103.76965710309582",
    "id": "16141",
-   "name": "Tentera Diraja Mque",
-   "road": "Clementi Rd"
+   "name": "Tentera Diraja Mque"
   },
   {
-   "loc": "1.2943523772776047,103.7699023837244",
    "id": "16009",
-   "name": "Kent Ridge Ter",
-   "road": "Clementi Rd"
+   "name": "Kent Ridge Ter"
   },
   {
-   "loc": "1.297313371137676,103.77281494364928",
    "id": "16189",
-   "name": "Information Technology",
-   "road": "Kent Ridge Cres"
+   "name": "Information Technology"
   },
   {
-   "loc": "1.2965496779550563,103.77248450615002",
    "id": "16181",
-   "name": "Ctrl Lib",
-   "road": "Kent Ridge Cres"
+   "name": "Ctrl Lib"
   },
   {
-   "loc": "1.2989392, 103.7741488",
    "id": "16179",
-   "name": "Opp Yusof Ishak Hse",
-   "road": "Kent Ridge Cres"
+   "name": "Opp Yusof Ishak Hse"
   },
   {
-   "loc": "1.2988172, 103.7743634",
    "id": "16171",
-   "name": "Yusof Ishak Hse",
-   "road": "Kent Ridge Cres"
+   "name": "Yusof Ishak Hse"
   },
   {
-   "loc": "1.3009661, 103.7727668",
    "id": "16169",
-   "name": "NUS Raffles Hall",
-   "road": "Kent Ridge Cres"
+   "name": "NUS Raffles Hall"
   },
   {
-   "loc": "1.3010600, 103.7737726",
    "id": "16161",
-   "name": "NUS Museums",
-   "road": "Kent Ridge Cres"
+   "name": "NUS Museums"
   },
   {
-   "loc": "1.2987662, 103.7755419",
    "id": "18321",
-   "name": "Opp University Health Ctr",
-   "road": "Lower Kent Ridge Rd"
+   "name": "Opp University Health Ctr"
   },
   {
-   "loc": "1.2989191, 103.7760424",
    "id": "18329",
-   "name": "University Health Ctr",
-   "road": "Lower Kent Ridge Rd"
+   "name": "University Health Ctr"
   },
   {
-   "loc": "1.2971456, 103.7787236",
    "id": "18311",
-   "name": "Blk S12",
-   "road": "Lower Kent Ridge Rd"
+   "name": "Blk S12"
   },
   {
-   "loc": "1.2975016, 103.7782200",
    "id": "18319",
-   "name": "Opp University Hall",
-   "road": "Lower Kent Ridge Rd"
+   "name": "Opp University Hall"
   },
   {
-   "loc": "1.2973554, 103.7808902",
    "id": "18301",
-   "name": "Lim Seng Tjoe Bldg (LT 27)",
-   "road": "Lower Kent Ridge Rd"
+   "name": "Lim Seng Tjoe Bldg (LT 27)"
   },
   {
-   "loc": "1.2975287, 103.7807849",
    "id": "18309",
-   "name": "Blk S17",
-   "road": "Lower Kent Ridge Rd"
+   "name": "Blk S17"
   },
   {
-   "loc": "1.2947530, 103.7844475",
-   "id": "18221",
-   "name": "NUH",
-   "road": "Lower Kent Ridge Rd"
+   "id": "18331",
+   "name": "Kent Ridge Stn Exit A / NUH"
   },
   {
-   "loc": "1.2949783, 103.7846054",
-   "id": "18239",
-   "name": "Opp NUH",
-   "road": "Lower Kent Ridge Rd"
+   "id": "18339",
+   "name": "Opp Kent Ridge Stn Exit A"
   },
   {
    "loc": "1.302182011055529, 103.76926465870102",
-   "id": "NUS-KV",
+   "id": "129800",
    "name": "Kent Vale",
    "road": "Clementi Rd"
   },
   {
    "loc": "1.3035589693545893, 103.77441517057157",
-   "id": "NUS-UTown",
+   "id": "138602",
    "name": "University Town",
    "road": "College Link Rd"
   },
   {
-   "loc": "1.2947300662487882, 103.77060643369506",
-   "id": "NUS-LT13",
+   "loc": "1.294748, 103.770595",
+   "id": "117569",
    "name": "LT 13",
    "road": "Kent Ridge Dr"
   },
   {
-   "loc": "1.2952958677861188, 103.77053669625836",
-   "id": "NUS-Ventus",
+   "loc": "1.295321, 103.770606",
+   "id": "119246",
    "name": "Ventus (Opp LT13)",
    "road": "Kent Ridge Dr"
   },
   {
-   "loc": "1.2937727619252575, 103.77139232094756",
-   "id": "NUS-AS5",
+   "loc": "1.293495, 103.771821",
+   "id": "117571",
    "name": "AS 5",
    "road": "Arts Link"
   },
   {
-   "loc": "1.2933678515839506, 103.7725242131424",
-   "id": "NUS-OppNUSS",
+   "loc": "1.293246, 103.772459",
+   "id": "119241",
    "name": "Opp NUSS",
    "road": "Kent Ridge Dr"
   },
   {
    "loc": "1.2931935524046028, 103.77509108718206",
-   "id": "NUS-BIZ2",
+   "id": "117592",
    "name": "BIZ 2",
    "road": "Business Link"
   },
   {
    "loc": "1.2929495335453152, 103.77513534363227",
-   "id": "NUS-OppHSSML",
+   "id": "119613",
    "name": "Opp HSSML",
    "road": "Business Link"
   },
   {
    "loc": "1.295006458350925, 103.77492721419033",
-   "id": "NUS-COM3",
+   "id": "119391",
    "name": "COM 3",
    "road": "Research Link"
   },
   {
-   "loc": "1.293839995174935, 103.77679939606317",
-   "id": "NUS-OppTCOMS",
+   "loc": "1.293723, 103.777016",
+   "id": "117604",
    "name": "Opp TCOMS",
    "road": "Prince George's Pk"
   },
   {
-   "loc": "1.2936120655300023, 103.77692277768193",
-   "id": "NUS-TCOMS",
+   "loc": "1.293597, 103.777014",
+   "id": "118411",
    "name": "TCOMS",
    "road": "Prince George's Pk"
   },
   {
-   "loc": "1.2922323421360251, 103.78031336766689",
-   "id": "NUS-PGP",
+   "loc": "1.291857, 103.780428",
+   "id": "118401",
    "name": "PGP",
    "road": "Prince George's Pk"
   },
   {
    "loc": "1.291010906377802, 103.78115289911136",
-   "id": "NUS-PGPFoyer",
+   "id": "118425",
    "name": "PGP Foyer",
    "road": "Prince George's Pk"
   },
   {
    "loc": "1.31941081117335, 103.818094964164",
-   "id": "NUS-OTH",
+   "id": "259772",
    "name": "OTH",
    "road": "Bukit Timah Rd"
   },
   {
-   "loc": "1.323384787851158, 103.81627642649971",
    "id": "41029",
-   "name": "Opp Botanic Gdns Stn",
-   "road": "Dunearn Rd"
+   "name": "Opp Botanic Gdns Stn"
   },
   {
-   "loc": "1.3227144143808318, 103.81512844098661",
    "id": "41021",
-   "name": "Botanic Gdns",
-   "road": "Bukit Timah Rd"
+   "name": "Botanic Gdns"
   }
  ],
  "routes": [
@@ -204,12 +166,12 @@
    "id": "A1",
    "stops": [
     "16009",
-    "NUS-LT13",
-    "NUS-AS5",
-    "NUS-BIZ2",
-    "NUS-OppTCOMS",
-    "NUS-PGP",
-    "18221",
+    "117569",
+    "117571",
+    "117592",
+    "117604",
+    "118401",
+    "18331",
     "18301",
     "18311",
     "18321",
@@ -398,12 +360,12 @@
     "18329",
     "18319",
     "18309",
-    "18239",
-    "NUS-PGPFoyer",
-    "NUS-TCOMS",
-    "NUS-OppHSSML",
-    "NUS-OppNUSS",
-    "NUS-Ventus",
+    "18339",
+    "118425",
+    "118411",
+    "119613",
+    "119241",
+    "119246",
     "16009"
    ],
    "timetable": false,
@@ -574,20 +536,20 @@
   {
    "id": "D1",
    "stops": [
-    "NUS-COM3",
-    "NUS-OppHSSML",
-    "NUS-OppNUSS",
-    "NUS-Ventus",
+    "119391",
+    "119613",
+    "119241",
+    "119246",
     "16189",
     "16179",
     "16161",
-    "NUS-UTown",
+    "138602",
     "16171",
     "16181",
-    "NUS-LT13",
-    "NUS-AS5",
-    "NUS-BIZ2",
-    "NUS-COM3"
+    "117569",
+    "117571",
+    "117592",
+    "119391"
    ],
    "timetable": false,
    "term_vacation": true,
@@ -733,22 +695,22 @@
   {
    "id": "D2",
    "stops": [
-    "NUS-COM3",
-    "NUS-TCOMS",
-    "NUS-PGP",
-    "18221",
+    "119391",
+    "117604",
+    "118401",
+    "18331",
     "18301",
     "18311",
     "18321",
     "16161",
-    "NUS-UTown",
+    "138602",
     "18329",
     "18319",
     "18309",
-    "18239",
-    "NUS-PGPFoyer",
-    "NUS-TCOMS",
-    "NUS-COM3"
+    "18339",
+    "118425",
+    "118411",
+    "119391"
    ],
    "timetable": false,
    "term_vacation": true,
@@ -924,8 +886,8 @@
   {
    "id": "K",
    "stops": [
-    "NUS-PGP",
-    "18221",
+    "118401",
+    "18331",
     "18301",
     "18311",
     "18321",
@@ -933,18 +895,18 @@
     "16181",
     "16141",
     "16151",
-    "NUS-KV",
+    "129800",
     "16161",
     "18329",
     "18319",
     "18309",
-    "18239",
-    "NUS-PGPFoyer"
+    "18339",
+    "118425"
    ],
    "timetable": true,
    "term_vacation": false,
    "timings": {
-    "NUS-PGP": {
+    "118401": {
      "weekdays": [
       "0704",
       "0744",
@@ -995,7 +957,7 @@
       "1944"
      ]
     },
-    "NUS-KV": {
+    "129800": {
      "weekdays": [
       "0720",
       "0800",
@@ -1051,20 +1013,20 @@
   {
    "id": "R1",
    "stops": [
-    "NUS-KV",
+    "129800",
     "16161",
-    "NUS-UTown",
+    "138602",
     "16171",
     "16181",
-    "NUS-LT13",
-    "NUS-AS5",
-    "NUS-BIZ2",
-    "NUS-PGP"
+    "117569",
+    "117571",
+    "117592",
+    "118401"
    ],
    "timetable": true,
    "term_vacation": false,
    "timings": {
-    "NUS-KV": {
+    "129800": {
      "weekdays": [
       "0740",
       "0800",
@@ -1109,20 +1071,20 @@
   {
    "id": "R2",
    "stops": [
-    "NUS-PGP",
-    "NUS-OppHSSML",
-    "NUS-OppNUSS",
-    "NUS-Ventus",
+    "118401",
+    "119613",
+    "119241",
+    "119246",
     "16189",
     "16179",
-    "NUS-UTown",
+    "138602",
     "16169",
-    "NUS-KV"
+    "129800"
    ],
    "timetable": true,
    "term_vacation": false,
    "timings": {
-    "NUS-PGP": {
+    "118401": {
      "weekdays": [
       "0820",
       "0840",
@@ -1165,21 +1127,21 @@
   {
    "id": "P",
    "stops": [
-    "NUS-KV",
+    "129800",
     "41029",
-    "NUS-OTH",
+    "259772",
     "41021",
-    "18221",
+    "18331",
     "18321",
-    "NUS-UTown",
-    "NUS-KV"
+    "138602",
+    "129800"
    ],
    "timetable": true,
    "term_vacation": true,
    "timings": {
     "term": {
      "weekday": {
-      "NUS-KV": [
+      "129800": [
        "0820",
        "0935",
        "1035",
@@ -1191,7 +1153,7 @@
        "1635",
        "1725"
       ],
-      "NUS-OTH": [
+      "259772": [
        "0900",
        "1005",
        "1105",
@@ -1207,7 +1169,7 @@
     },
     "vacation": {
      "weekday": {
-      "NUS-KV": [
+      "129800": [
        "0820",
        "0935",
        "1135",
@@ -1215,7 +1177,7 @@
        "1635",
        "1725"
       ],
-      "NUS-OTH": [
+      "259772": [
        "0900",
        "1005",
        "1205",
