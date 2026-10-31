@@ -56,7 +56,7 @@
     var asked = Boolean(options && options.enableHighAccuracy && !options.noTurnOn);
     phoneLocationOn(asked).then(function (on) {
       if (on) { lookup(success, error, options); return; }
-      var message = 'Location is turned off on this phone. Turn it on, then try again.';
+      var message = I18n.t('glance.locationDisabledOnMobile', 'Location is turned off on this phone. Turn it on, then try again.');
       if (error) error({ code: 2, message: message, appMessage: message, PERMISSION_DENIED: 1, POSITION_UNAVAILABLE: 2, TIMEOUT: 3 });
     });
   };

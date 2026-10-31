@@ -245,7 +245,7 @@
         } catch { /* named plainly */ }
         choose({ label, lat, lng });
         resolve();
-      }, (err) => reject(new Error(locationMessage(err, 'to save where you are'))),
+      }, (err) => reject(new Error(locationMessage(err, I18n.t('location.toSaveHere', 'to save where you are')))),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
     }));
   }

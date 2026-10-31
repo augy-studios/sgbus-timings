@@ -82,7 +82,7 @@
     if (here && Date.now() - here.at < FRESH_MS) return Promise.resolve(here);
     return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
       (pos) => { here = { lat: pos.coords.latitude, lng: pos.coords.longitude, at: Date.now() }; resolve(here); },
-      (err) => reject(new Error(locationMessage(err, 'to find stops near you'))),
+      (err) => reject(new Error(locationMessage(err, I18n.t('location.toFindStops', 'to find stops near you')))),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000, noTurnOn: !turnOn },
     ));
   }

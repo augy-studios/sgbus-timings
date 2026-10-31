@@ -337,7 +337,7 @@ function locateNavEnd(field) {
       if (!navigator.geolocation) return reject(new Error("This browser can't share its location."));
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve(setNavEnd(field, { label: HERE_LABEL, lat: pos.coords.latitude, lng: pos.coords.longitude })),
-        (err) => reject(new Error(locationMessage(err, 'to start from where you are'))),
+        (err) => reject(new Error(locationMessage(err, I18n.t('location.toStartHere', 'to start from where you are')))),
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
       );
     })

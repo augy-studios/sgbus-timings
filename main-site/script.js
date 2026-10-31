@@ -1601,8 +1601,8 @@ function stopsNear(lat, lng, limit = 8) {
 function locationMessage(err, toDo) {
     if (err?.desktopMessage || err?.appMessage) return err.desktopMessage || err.appMessage;
     return err?.code === 1
-        ? `Location access is turned off for this site. Allow it in your browser ${toDo}.`
-        : "Couldn't get your location. Check that Location is turned on for this device, then try again.";
+        ? tr('glance.locationBlocked', 'Location access is turned off for this site. Allow it in your browser {toDo}.', { toDo })
+        : tr('glance.locationRetrievalFail', "Couldn't get your location. Check that Location is turned on for this device, then try again.");
 }
 
 // `noTurnOn` when it wasn't a tap that asked: with the phone's Location off, the Android app
@@ -1615,7 +1615,7 @@ function findNearbyStops(limit = 8, { noTurnOn = false } = {}) {
         }
         navigator.geolocation.getCurrentPosition(
             pos => resolve(stopsNear(pos.coords.latitude, pos.coords.longitude, limit)),
-            err => reject(new Error(locationMessage(err, 'to find stops near you'))),
+            err => reject(new Error(locationMessage(err, tr('location.toFindStops', 'to find stops near you')))),
             { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000, noTurnOn }
         );
     });

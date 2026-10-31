@@ -297,14 +297,14 @@
     }
     $('#routineStop').innerHTML = options.length
       ? options.map((o) => `<option value="${esc(o.code)}">${esc(o.name)} (${esc(o.code)})</option>`).join('')
-      : '<option value="">Open a stop or save a favourite first</option>';
+      : `<option value="">${esc(I18n.t('routine.new.stop_required', 'Open a stop or save a favourite first'))}</option>`;
     $('#routineSave').disabled = !options.length;
     // A new one: the stop's buses as narrowed (script.js busFilter), wildcards and all.
     $('#routineBuses').value = r ? r.buses.join(', ') : (current?.service || '').split(',').filter(Boolean).join(', ');
     if (r) $('#routineTime').value = clockText(r.time);
     setDays(r ? r.days : [1, 2, 3, 4, 5]);
     $('#routineError').hidden = true;
-    document.querySelector('.routineFormHead').textContent = r ? 'Edit routine' : 'Add a routine';
+    document.querySelector('.routineFormHead').textContent = r ? I18n.t('routine.edit', 'Edit routine') : I18n.t('routine.add', 'Add a routine');
     $('#routineSave').textContent = r ? 'Save' : 'Add';
     $('#routineCancel').hidden = !r;
   }

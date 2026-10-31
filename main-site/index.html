@@ -1121,11 +1121,11 @@
             <div id="routineList" class="lastBusList"></div>
             <p id="routinesNote" class="remindersNote" role="status" hidden></p>
             <div id="routineForm">
-            <p class="modal-section-label routineFormHead">Add a routine</p>
+            <p class="modal-section-label routineFormHead" data-i18n="routine.add">Add a routine</p>
             <label class="modal-section-label" for="routineStop">Stop</label>
             <select id="routineStop" class="input settingsInput"></select>
             <label class="modal-section-label" for="routineBuses">Buses</label>
-            <input id="routineBuses" class="input settingsInput" autocomplete="off" autocapitalize="characters" placeholder="All of them, or some: 22, 222, or 22* for every 22" />
+            <input id="routineBuses" class="input settingsInput" autocomplete="off" autocapitalize="characters" data-i18n-placeholder="routine.new.buses" placeholder="All of them, or some: 22, 222, or 22* for every 22" />
             <label class="modal-section-label" for="routineTime">Time</label>
             <input id="routineTime" class="input settingsInput" type="time" value="07:45" />
             <p class="modal-section-label">Days</p>
@@ -1143,7 +1143,7 @@
                 <button id="routineSave" class="btn" type="button">Add</button>
                 <button id="routineCancel" class="iconBtn" type="button" hidden>Cancel</button>
             </div>
-            <p class="mode-note">At that time, on those days, a notification shows the stop&rsquo;s next buses. Tap it for their timings.</p>
+            <p class="mode-note" data-i18n="routine.explain.notification">At that time, on those days, a notification shows the stop&rsquo;s next buses. Tap it for their timings.</p>
             </div>
         </div>
     </div>
