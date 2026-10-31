@@ -2,72 +2,71 @@
  "stops": [
   {
    "name": "NIE Blk 2",
-   "id": "27219",
-   "road": "Nanyang Dr"
+   "id": "27219"
   },
   {
    "name": "Opp Hall 3 & 16",
-   "id": "382999",
+   "id": "639929",
    "loc": "1.3504544, 103.6804492",
    "road": "Nanyang Wk"
   },
   {
    "name": "Opp Hall 14 & 15",
-   "id": "378203",
+   "id": "637634",
    "loc": "1.3531234, 103.6815281",
    "road": "Nanyang Cres"
   },
   {
    "name": "Opp Nanyang Cres Halls",
-   "id": "383048",
+   "id": "636866",
    "loc": "1.3549830, 103.6840976",
    "road": "Nanyang Cres"
   },
   {
    "name": "Opp Hall 11",
-   "id": "378222",
-   "loc": "1.3542848, 103.6871175",
+   "id": "639756",
+   "loc": "1.354336, 103.686993",
    "road": "Nanyang Ave"
   },
   {
    "name": "Nanyang Heights, Opp Hall 8",
-   "id": "383003",
+   "id": "639807",
    "loc": "1.3509504, 103.6858585",
    "road": "Nanyang Ave"
   },
   {
    "name": "Opp Hall 2",
-   "id": "378234",
+   "id": "639548",
    "loc": "1.3489940, 103.6855789",
    "road": "Lien Ying Chong Dr"
   },
   {
    "name": "Opp Hall 4",
-   "id": "383004",
+   "id": "639779",
    "loc": "1.3436602, 103.6869854",
    "road": "Nanyang Dr"
   },
   {
    "name": "Opp Yunnan Gdn",
-   "id": "383006",
+   "id": "637721",
    "loc": "1.3415807, 103.6844249",
    "road": "Nanyang Dr"
   },
   {
    "name": "Opp SPMS",
-   "id": "383009",
+   "id": "637371",
    "loc": "1.3417392, 103.6812629",
    "road": "Nanyang Link"
   },
   {
    "name": "Opp WKWSCI",
-   "id": "383010",
+   "id": "637718",
    "loc": "1.3419259, 103.6790940",
    "road": "Nanyang Dr"
   },
   {
    "name": "Opp CEE",
-   "id": "378226",
+   "id": "637798",
    "loc": "1.3457685, 103.6783896",
    "road": "Nanyang Dr"
   },
@@ -89,7 +88,7 @@
   },
   {
    "name": "Wee Cho Yaw Plaza",
-   "id": "378229",
+   "id": "639956",
    "loc": "1.3417781, 103.6839270",
    "road": "Nanyang Ave"
   },
@@ -130,14 +129,14 @@
    "name": "Halls 8 & 9"
   },
   {
-   "id": "NTU-OppS2",
+   "id": "637717",
    "loc": "1.3410401, 103.6804716",
    "name": "Opp S2",
    "road": "Nanyang Link"
   },
   {
    "loc": "1.3446269, 103.6786571",
-   "id": "NTU-SBS",
+   "id": "637551",
    "name": "Sch of Biological Sciences",
    "road": "Nanyang Dr"
   },
@@ -146,31 +145,31 @@
    "name": "Pioneer Stn Exit B"
   },
   {
-   "id": "NTU-UHS",
+   "id": "639801",
    "loc": "1.3456974, 103.6828564",
    "name": "Uni Health Service",
    "road": "Nanyang Ave"
   },
   {
-   "id": "NTU-TCT-LT",
+   "id": "639798",
    "name": "TCT-LT (Admin Bldg)",
    "loc": "1.3449704, 103.6815177",
    "road": "Nanyang Ave"
   },
   {
-   "id": "NTU-OppH1",
+   "id": "637124",
    "name": "Opp Hall 1",
    "loc": "1.3458449, 103.6877334",
    "road": "Lien Ying Chow Dr"
   },
   {
-   "id": "NTU-H6",
+   "id": "637296",
    "name": "Hall 6",
    "loc": "1.3479130, 103.6867758",
    "road": "Lien Ying Chow Dr"
   },
   {
-   "id": "NTU-H5",
+   "id": "637719",
    "name": "Hall 5",
    "loc": "1.3442394, 103.6875349",
    "road": "Nanyang Dr"
@@ -182,20 +181,20 @@
   {
    "name": "CL-B",
    "stops": [
-    "378222",
-    "383003",
-    "NTU-H6",
-    "383004",
-    "383006",
-    "383009",
-    "NTU-OppS2",
-    "383010",
-    "378226",
+    "639756",
+    "639807",
+    "637296",
+    "639779",
+    "637721",
+    "637371",
+    "637717",
+    "637718",
+    "637798",
     "27219",
-    "382999",
-    "378203",
-    "383048",
-    "378222"
+    "639929",
+    "637634",
+    "636866",
+    "639756"
    ],
    "timetable": false,
    "term_vacation": false,
@@ -281,10 +280,10 @@
     "27071",
     "27031",
     "27211",
-    "NTU-SBS",
+    "637551",
     "27231",
     "27241",
-    "378229",
+    "639956",
     "27261",
     "27281",
     "27311",
@@ -375,11 +374,11 @@
     "22529",
     "27281",
     "27311",
-    "NTU-UHS",
-    "NTU-TCT-LT",
-    "378234",
-    "NTU-H6",
-    "NTU-OppH1",
+    "639801",
+    "639798",
+    "639548",
+    "637296",
+    "637124",
     "22529"
    ],
    "timetable": false,
@@ -437,16 +436,16 @@
     "22529",
     "27281",
     "27311",
-    "NTU-UHS",
-    "NTU-TCT-LT",
+    "639801",
+    "639798",
     "27061",
     "27211",
-    "NTU-SBS",
+    "637551",
     "27231",
     "27241",
-    "378229",
+    "639956",
     "27261",
-    "NTU-H5",
+    "637719",
     "22529"
    ],
    "timetable": false,
