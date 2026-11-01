@@ -20,6 +20,10 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Explorer's layers** - A Layers button on Explorer turns bus stops, MRT and LRT stations, MRT and LRT lines, and the campus shuttles' routes and stops off or on.
 - **More in your language** - Routines' days, the line under the greeting, Navigate's Leave now, Leave at and Arrive by, a trip's Also direct and Change my way, the train door tips, the Wheelchair badge, and Settings' Last bus reminders and Sync show in Chinese, Malay and Tamil.
 
+### Android app
+
+- **Every version in Updates** - The app's update page lists every version back to 1.0.0, not just the newest twelve. It needs no app update.
+
 ---
 
 ## 31 October 2026: Apps 2.2.8, bus times by the clock, and updates in your phone's colours

@@ -333,8 +333,8 @@ your phone is. On older Android, it's in the app's green.
 
 Under what's happening, each version is on a timeline, newest first: the one
 you'd get marked **New** and open, with what's in it in cards by part of the
-app, and the one you have marked **Installed**. **Earlier releases** are under
-them; tap any version to see what came with it, and **Show all** in a card for
+app, and the one you have marked **Installed**. **Earlier releases**, every one
+back to the first, are under them; tap any version to see what came with it, and **Show all** in a card for
 the rest of its changes.
 
 <figure>

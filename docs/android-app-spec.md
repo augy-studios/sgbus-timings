@@ -631,7 +631,7 @@ Two kinds, one bar (the site's update prompt bar, `update-bar-spec.md`):
 
 ### 8.1 Server: `api/app-release.js`
 
-Reads `https://api.github.com/repos/<owner>/<repo>/releases?per_page=30`, keeps releases that
+Reads every page of `https://api.github.com/repos/<owner>/<repo>/releases?per_page=100`, keeps releases that
 are **not draft, not pre-release, tagged `android-v<version>`, with an `.apk` whose `state` is
 `uploaded`**, and answers the highest version:
 `{ version, apk, size, sha256, page }` (`sha256` from GitHub's `digest`, `sha256:…`), or
