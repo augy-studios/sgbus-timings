@@ -35,13 +35,13 @@ it away.
 ## Spin the wheel
 
 <figure>
-<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, two with an egg and the others 20, 50, 30, 40, 150 and 60 coins, a pointer at the top, Spin for 100, then how it works, 1 of 6 feats done with five still hidden, and 1 of 6 Easter eggs found." width="358" height="521" loading="lazy">
+<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 100, then how it works, 1 of 6 feats done with five still hidden, and 1 of 6 Easter eggs found." width="358" height="520" loading="lazy">
 <figcaption>The wheel, in Settings' Help and extras.</figcaption>
 </figure>
 
 The wheel is in [Settings](settings.md), **Help and extras**, and it works like
 gacha: a spin costs 100 uwuCoins and lands on one of eight slices at random: an **Easter egg** you haven't found
-yet, or more coins, up to 150. Once you've found every egg, its slices are coins
+yet, or more coins, up to 150. Once you've found every egg, its slice is coins
 too. Under the wheel, how many feats you've done and eggs you've found, and
 **See your achievements**.
 

@@ -12,7 +12,7 @@
 //   + PER_LINE for each MRT or LRT line
 // A feat is worth Eggs.FEAT_COINS, once.
 //
-// The wheel: SPIN_COST a spin, and SLOTS, each as likely as the others. An egg slot gives an egg
+// The wheel: SPIN_COST a spin, and SLOTS, each as likely as the others. The egg slot gives an egg
 // not found yet, at random (Eggs.found); once every egg's found, it's coins instead.
 //
 // Kept under KEY as { balance, log: [{ at, n, why, trip?, feat? }] (the last LOG_MAX), spins }:
@@ -32,8 +32,9 @@
   const PER_LINE = 2;
   const SPIN_COST = 100;
   // Round the wheel, clockwise from the top.
-  const SLOTS = [{ egg: true }, { coins: 20 }, { coins: 50 }, { coins: 30 }, { egg: true }, { coins: 40 }, { coins: 150 }, { coins: 60 }];
-  // An egg slot once every egg's found.
+  // One egg among them (Augy, 2 November 2026): an egg is one spin in eight.
+  const SLOTS = [{ egg: true }, { coins: 20 }, { coins: 50 }, { coins: 30 }, { coins: 70 }, { coins: 40 }, { coins: 150 }, { coins: 60 }];
+  // The egg slot once every egg's found.
   const EGG_GONE_COINS = 80;
   const SPIN_MS = 3600;
   // The LRT loops' halves and the branches go by their line; SBS Transit runs these, SMRT the rest.
