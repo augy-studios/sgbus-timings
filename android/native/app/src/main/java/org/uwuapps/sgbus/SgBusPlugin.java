@@ -38,6 +38,11 @@
  *                            server pushes to when a release is published
  *                            (main-site/api/push/release.js), so it keeps no list of phones.
  *                            Rejects with a sentence when Firebase can't be reached (2.1.1)
+ *   phoneColours()           the phone's own colours, Material You's, from its wallpaper or the
+ *                            colours picked in its settings, for the secret "Your phone's
+ *                            colours" (js/colours.js): { accent1, accent2, accent3, neutral1,
+ *                            neutral2 }, each tone ("0", "10", "50", "100" … "900", "1000") as
+ *                            "#rrggbb". Android 12 and later only, as "phonecolours" (2.3.0)
  *
  * And intent: links, which a WebView can't follow by itself as Chrome does: the site's
  * SimplyGo button, the calendar permission and the update bar each link to one of this app's
@@ -149,6 +154,8 @@ public class SgBusPlugin extends Plugin {
         features.put("myica"); // OpenAppActivity opens MyICA Mobile, from a trip to a checkpoint
         features.put("routinewild"); // 2.2.3: a routine's buses can be a wildcard, "22*" (NearStops.wanted)
         features.put("cardreading"); // CardPlugin's "reading" event
+        // 2.3.0
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) features.put("phonecolours"); // phoneColours
         // Firebase is set up for this build (google-services.json): the server can push.
         if (firebaseReady()) {
             features.put("push");
@@ -156,6 +163,32 @@ public class SgBusPlugin extends Plugin {
         }
         out.put("features", features);
         out.put("android", Build.VERSION.SDK_INT);
+        call.resolve(out);
+    }
+
+    // Material You's tonal palettes, as Android 12 and later name them: system_accent1_500 and
+    // the rest. Read each time, so a new wallpaper's colours come with the next ask.
+    private static final String[] PALETTES = { "accent1", "accent2", "accent3", "neutral1", "neutral2" };
+    private static final int[] TONES = { 0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000 };
+
+    @PluginMethod
+    public void phoneColours(PluginCall call) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            call.reject("unavailable");
+            return;
+        }
+        Context context = getContext();
+        JSObject out = new JSObject();
+        for (String palette : PALETTES) {
+            JSObject tones = new JSObject();
+            for (int tone : TONES) {
+                @SuppressLint("DiscouragedApi")
+                int id = context.getResources().getIdentifier("system_" + palette + "_" + tone, "color", "android");
+                if (id == 0) continue;
+                tones.put(String.valueOf(tone), String.format("#%06x", context.getColor(id) & 0xffffff));
+            }
+            out.put(palette, tones);
+        }
         call.resolve(out);
     }
 

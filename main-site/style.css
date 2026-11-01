@@ -499,7 +499,6 @@ body.modal-open { overflow: hidden; }
     align-items: center;
     gap: 12px;
     padding: 6px 0 18px;
-    cursor: pointer;
     min-width: 0;
     transition: padding-left var(--tray-time) var(--tray-ease), padding-right var(--tray-time) var(--tray-ease);
 }
@@ -613,6 +612,7 @@ body.modal-open { overflow: hidden; }
 :root[data-tray-hide~="telegram"] [data-tray-extra="telegram"],
 :root[data-tray-hide~="coffee"] [data-tray-extra="coffee"],
 :root[data-tray-hide~="guide"] [data-tray-extra="guide"],
+:root[data-tray-hide~="coins"] [data-tray-extra="coins"],
 :root[data-tray-hide~="nearstops"] [data-tray-extra="nearstops"],
 :root[data-tray-hide~="routines"] [data-tray-extra="routines"],
 :root[data-tray-hide~="card"] [data-tray-extra="card"],
@@ -3939,22 +3939,52 @@ body.touring { overflow: hidden; }
 .mapSpot { display: none; position: absolute; left: 50%; top: 50%; width: 200px; height: 200px; transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none; }
 .mapPanel.exploring .mapSpot { display: block; }
 
-/* ===== Your colours, in Theme (js/colours.js) ===== */
+/* ===== Your colours, Your phone's colours and the Easter eggs, in Theme (js/colours.js) ===== */
 .customColours { margin-top: 6px; }
-.colourRows { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 8px; margin: 6px 0 10px; }
-.colourRow {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-    padding: 6px 10px; border-radius: 12px; border: 1px solid var(--surface-border); background: var(--surface-strong);
-    font-size: 0.85rem; color: var(--ink); cursor: pointer;
+/* The wheel, as the Color Guess Game has it (js/wheel.js), and the brightness and the preview
+   beside it. The wheel and the slider's track show colours for what they are. */
+.colourPick { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px; margin: 8px 0 4px; }
+.wheel-wrap {
+    position: relative; width: min(200px, 60vw); aspect-ratio: 1; border-radius: 50%;
+    border: 1px solid var(--surface-border); box-shadow: var(--shadow); cursor: crosshair;
+    /* A finger on the wheel picks a colour rather than scrolling. */
+    touch-action: none;
 }
-.colourRow input[type="color"] { width: 44px; height: 32px; border: 0; padding: 0; background: none; cursor: pointer; }
+.wheel-wrap:focus-visible { outline: 3px solid var(--brand-ink); outline-offset: 3px; }
+.wheel-canvas { display: block; width: 100%; height: 100%; border-radius: 50%; }
+.wheel-dot {
+    position: absolute; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+    border: 3px solid #ffffff; box-shadow: 0 0 0 1px #121815, 0 2px 6px rgba(0, 0, 0, 0.3); pointer-events: none;
+}
+.wheel-side { display: flex; flex-direction: column; align-items: stretch; gap: 8px; width: min(220px, 80vw); }
+.colourBrightLabel { font-size: 0.85rem; color: var(--muted-strong); }
+.brightness {
+    width: 100%; height: 22px; appearance: none; -webkit-appearance: none; border-radius: 999px;
+    border: 1px solid var(--surface-border);
+    background: linear-gradient(to right, #000000, var(--wheel-top, #ffffff));
+}
+.brightness::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: #ffffff; border: 2px solid #121815; }
+.brightness::-moz-range-thumb { width: 22px; height: 22px; border-radius: 50%; background: #ffffff; border: 2px solid #121815; }
 .colourPreview {
-    display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px; border-radius: 14px;
-    border: 1px solid var(--surface-border); font-size: 0.9rem;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 10px; border-radius: 14px;
+    border: 1px solid var(--surface-border); font-size: 0.85rem;
 }
 .colourCard { padding: 6px 10px; border-radius: 10px; }
 .colourButton { padding: 6px 12px; border-radius: 10px; font-weight: 700; }
-.colourWarn { margin: 8px 2px 0; font-size: 0.85rem; color: var(--error); }
+.colourPresetsLabel { margin-top: 10px; }
+.colourPresets { display: flex; flex-wrap: wrap; gap: 8px; }
+.colourPreset {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--surface-border); background: var(--surface-strong); color: var(--ink); font: inherit; font-size: 0.85rem; cursor: pointer;
+}
+.colourPreset[aria-pressed="true"] { border-color: var(--ink); font-weight: 700; }
+.colourPresetDot { width: 14px; height: 14px; border-radius: 50%; border: 1px solid rgba(0, 0, 0, 0.25); }
+.colourWarn { margin: 8px 2px 0; }
+.phoneSwatches { display: flex; gap: 6px; margin: 6px 0 10px; }
+.phoneSwatch { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--surface-border); }
+.eggsFoundList { margin: 4px 0 0; padding-left: 1.2rem; font-size: 0.9rem; color: var(--ink); }
+.eggName { margin: 4px 0; font-size: 1.1rem; font-weight: 800; color: var(--ink); }
+.eggCount { font-weight: 700; }
 /* Your colours on: the brand swatches step aside, and a note says how to have them back. */
 .brandAway { display: none; }
 :root[data-custom-colours] .brandAway { display: block; }
@@ -4028,3 +4058,51 @@ body.touring { overflow: hidden; }
 .bugStatus a { color: var(--brand-ink); }
 #bugSend [data-icon] { display: inline-flex; }
 #bugSend svg { width: 16px; height: 16px; }
+
+/* ===== uwuCoins (js/coins.js): the Edge Tray's button, the wheel in Settings, and coins in ===== */
+.coinsBtn { position: relative; }
+/* Settings' Achievements (js/eggs.js): each feat with a bar for how far along it is. */
+.achievements { list-style: none; margin: 6px 0 12px; padding: 0; display: grid; gap: 8px; }
+.achievement { padding: 10px 12px; border-radius: 14px; border: 1px solid var(--surface-border); background: var(--surface-strong); }
+.achievementHead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; color: var(--ink); }
+.achievementState { font-size: 0.85rem; color: var(--muted-strong); white-space: nowrap; }
+.achievement.done .achievementState { color: var(--brand-ink); font-weight: 700; }
+.achievementHow { margin: 4px 0 8px; font-size: 0.85rem; color: var(--muted-strong); }
+.achievementBar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
+.achievementBar span { display: block; height: 100%; border-radius: inherit; background: var(--brand-ink); }
+.achievementEgg { margin: 6px 0 0; font-size: 0.8rem; font-weight: 700; color: var(--brand-ink); }
+/* A shuttle bus's leg in Navigate (js/nav.js, legChip): its route's colour. */
+.busChip.shuttleChip { background: var(--route); color: var(--route-ink); }
+/* A campus route's window (script.js, openCampusRoute): its badge as the route's colour. */
+.campusRouteHead { display: flex; align-items: center; gap: 8px; }
+.campusRouteHead .campusNo { text-align: center; }
+.coinsBadge {
+    position: absolute; right: -4px; bottom: -4px; min-width: 18px; padding: 0 4px; border-radius: 999px;
+    background: #f5c542; color: #3d2900; font-size: 0.62rem; font-weight: 800; line-height: 16px; text-align: center;
+    border: 1px solid #b8860b; pointer-events: none;
+}
+.coinBalance { margin: 2px 0 8px; font-size: 1.3rem; font-weight: 800; color: var(--ink); }
+.coinWheelWrap { position: relative; width: min(240px, 70vw); margin: 8px auto 12px; }
+.coinWheel { width: 100%; aspect-ratio: 1; }
+.coinWheelSvg { width: 100%; height: 100%; display: block; }
+/* The wheel's slices are the coin's golds and the page's card, labels in dark brown: fixed
+   colours, as the coin is, each label at least 4.5:1 on its slice. */
+.coinSlice.even { fill: #ffe9a8; stroke: #b8860b; stroke-width: 0.8; }
+.coinSlice.odd { fill: #f5c542; stroke: #b8860b; stroke-width: 0.8; }
+.coinSlice.egg { fill: #fff6dc; stroke: #b8860b; stroke-width: 0.8; }
+.coinSliceText { font: 800 14px system-ui, sans-serif; fill: #3d2900; text-anchor: middle; dominant-baseline: middle; }
+.coinHub { fill: #b8860b; }
+.coinPointer {
+    position: absolute; left: 50%; top: -6px; z-index: 1; width: 0; height: 0; transform: translateX(-50%);
+    border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 20px solid var(--ink);
+}
+.coinResult { font-size: 0.95rem; color: var(--ink); }
+.coinToast {
+    position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 90; transform: translateX(-50%);
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
+    background: #fff6dc; color: #3d2900; border: 1px solid #b8860b; font-weight: 800; box-shadow: var(--shadow);
+    animation: coinUp 3.2s ease forwards; pointer-events: none;
+}
+.coinToast [data-icon] svg { width: 20px; height: 20px; }
+@keyframes coinUp { 0% { opacity: 0; transform: translate(-50%, 12px); } 12%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -8px); } }
+@media (prefers-reduced-motion: reduce) { .coinToast { animation: none; } }

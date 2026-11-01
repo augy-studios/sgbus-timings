@@ -1,4 +1,4 @@
-// Rides really taken (help desk #6), for the secret colours (js/theme.js, Your colours): each
+// Rides really taken (help desk #6), for the Easter eggs and their secrets (js/eggs.js): each
 // bus or train ride on a trip (js/trip.js) counts once it's shown to be real, by the phone's
 // location and the time it took, and is kept by line and by bus.
 //
@@ -18,8 +18,9 @@
 // Circle Line's extension (CE) the Circle Line's, and the LRT loops' halves their line's. Not synced, so it's the rides taken with
 // this phone.
 //
-// The unlock is one rule (UNLOCK): every MRT and LRT line ridden at least once. Unlocked once,
-// it stays (UNLOCKED_KEY), and "rides:unlocked" fires on window.
+// Every MRT and LRT line ridden at least once (UNLOCK) is a feat, worth uwuCoins, and so are the
+// buses js/eggs.js asks for: each ride kept is handed to Eggs.rides, and Eggs.feat('lines') once
+// every line's been ridden.
 //
 // Window.RideCheck = { see(trip, i, here, accuracy), done(trip, i), verdict(leg, seen),
 // record(), unlocked(), progress(), LINES }. Plain script: exports go on window.
@@ -50,7 +51,8 @@
     const code = String(leg.route || leg.label || '').toUpperCase().match(/^[A-Z]{2}/)?.[0] || '';
     return SAME_LINE[code] || code;
   };
-  const busOf = (leg) => String(leg.service || leg.route || String(leg.label || '').replace(/^\D+/, '')).toUpperCase();
+  // A shuttle bus (js/nav.js, `shuttle`) is no public bus number, so it's kept by none.
+  const busOf = (leg) => (leg.shuttle ? '' : String(leg.service || leg.route || String(leg.label || '').replace(/^\D+/, '')).toUpperCase());
 
   // A fix on ride `i` of the trip, as js/trip.js gets one.
   function see(trip, i, here, accuracy) {
@@ -105,14 +107,15 @@
   // trips. Each trip's lines and buses are kept too (trips), should another rule be wanted.
   const UNLOCK = (rec) => LINES.every((l) => rec.lines[l]?.n >= 1);
 
+  // Whether Your colours is unlocked, by whichever egg (js/eggs.js).
   const unlocked = () => {
     try { return !!localStorage.getItem(UNLOCKED_KEY); } catch { return false; }
   };
+  const linesFound = () => !!window.Eggs?.feats().includes('lines');
 
   function checkUnlock(rec) {
-    if (unlocked() || !UNLOCK(rec)) return;
-    try { localStorage.setItem(UNLOCKED_KEY, String(Date.now())); } catch { /* asked again next ride */ }
-    window.dispatchEvent(new Event('rides:unlocked'));
+    window.Eggs?.rides(rec);
+    if (!linesFound() && UNLOCK(rec)) window.Eggs?.feat('lines');
   }
 
   // Ride `i` of the trip is over (js/trip.js, endLegTime): judged once, and kept if it was real.
@@ -154,7 +157,7 @@
     keep(rec);
     checkUnlock(rec);
     // Nearly there: the celebration's three.js fetched ahead, in case the last line's offline.
-    if (!unlocked() && LINES.filter((l) => !(rec.lines[l]?.n >= 1)).length <= 2) window.Celebrate?.prefetch();
+    if (!linesFound() && LINES.filter((l) => !(rec.lines[l]?.n >= 1)).length <= 2) window.Celebrate?.prefetch();
     return true;
   }
 

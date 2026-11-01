@@ -17,6 +17,8 @@ import { readWhen } from "./when.js";
 
 const ROUTES_URL = "/api/bus-routes";
 const RAIL_URL = "/data/rail.json";
+// The shuttle buses (campus.js), precached with the app as Bus timings has them.
+const CAMPUS_URLS = ["nus", "ntu", "config", "shuttles"].map((f) => `/data/campus/${f}.json`);
 
 let stops = null; // the stops index's stops, as /api/bus-stops sends them
 let payloads = null; // { rail, routes }, once both are in
@@ -41,9 +43,10 @@ async function getJson(url) {
 
 // Shared by every caller; a failed load is tried again next time.
 function load() {
-  loading ??= Promise.all([getJson(RAIL_URL), getJson(ROUTES_URL)])
-    .then(([rail, routes]) => {
-      payloads = { rail, routes };
+  loading ??= Promise.all([getJson(RAIL_URL), getJson(ROUTES_URL), Promise.all(CAMPUS_URLS.map((u) => getJson(u))).catch(() => null)])
+    .then(([rail, routes, campus]) => {
+      const [nus, ntu, config, shuttles] = campus || [];
+      payloads = { rail, routes, campus: campus ? { nus, ntu, config, shuttles } : null };
       graphs = {};
     })
     .catch((err) => {
@@ -57,7 +60,7 @@ function graphFor(open) {
   const key = open ? "open" : "public";
   if (!graphs[key]) {
     const t0 = performance.now();
-    graphs[key] = buildGraph(payloads.rail, stops, payloads.routes, { open });
+    graphs[key] = buildGraph(payloads.rail, stops, payloads.routes, { open, campus: payloads.campus });
     lastBuildMs = Math.round(performance.now() - t0);
   }
   return graphs[key];
@@ -75,7 +78,7 @@ export async function warm({ open = false } = {}) {
 // answers them. `open` is Settings' Restricted areas and `customs` its Immigration time in
 // minutes (null for by the time of day), and `now` the page's clock. Throws with a message to
 // show when it can't.
-export async function planOffline({ from, to, via = null, when = null, open = false, customs = null, now = Date.now() }) {
+export async function planOffline({ from, to, via = null, when = null, open = false, customs = null, shuttles = {}, now = Date.now() }) {
   if (!stops?.length) throw new Error("The bus stops aren't saved on this phone yet. Open the app once with a connection.");
   try {
     await load();
@@ -89,10 +92,10 @@ export async function planOffline({ from, to, via = null, when = null, open = fa
   const t0 = performance.now();
   let options;
   if (via) {
-    const { first, second, fits } = planViaFor(graph, from, via, to, at, own);
+    const { first, second, fits } = planViaFor(graph, from, via, to, at, own, shuttles);
     options = joinWays(first.options, second.options, via, { fits });
   } else {
-    options = planFor(graph, from, to, at, own).options;
+    options = planFor(graph, from, to, at, own, shuttles).options;
   }
   for (const o of options) o.offline = true;
   return {

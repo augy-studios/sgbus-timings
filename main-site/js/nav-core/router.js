@@ -61,10 +61,16 @@ function access(graph, lat, lng) {
 // `open(run, i, t)`, when given, says whether a run is running at its i-th node t minutes
 // after setting off (when.js); a run that isn't is never boarded there.
 //
+// `wait(run, i, t)`, when given, is the minutes to wait to board a campus shuttle (a run with
+// `campus`, campus.js) at its i-th node t minutes after setting off, or null when it isn't
+// running; without it, a shuttle's wait is a bus's.
+//
 // `customs(way, t)` is the minutes to clear immigration on a bus crossing the Causeway ("out"
 // to Johor Bahru or "in"), reaching the checkpoint t minutes after setting off (api/nav.js):
 // added on top of the ride at each crossing (network.js, `cross`).
-export function plan(graph, from, to, { open = null, customs = null } = {}) {
+// `ride(run)`, when given, says whether a run may be ridden at all on this way (campus.js,
+// rideable: the shuttles' fares and who may ride them); one that may not is never boarded.
+export function plan(graph, from, to, { open = null, customs = null, wait = null, ride = null } = {}) {
   // The crossings a ride from the run's `from`-th node to its i-th passes, each with its time.
   const held = (run, fromIndex, i, base) => {
     if (!customs || !run.cross?.length) return null;
@@ -125,7 +131,7 @@ export function plan(graph, from, to, { open = null, customs = null } = {}) {
           const crossed = held(run, on.from, i, on.base);
           const t = on.base + run.cum[i] + heldMin(crossed);
           if (!worthIt(t)) continue;
-          const label = { t, mix: mix + run.mode, node, prev: { kind: "ride", run: r, from: on.from, to: i, label: on.label, crossed } };
+          const label = { t, mix: mix + run.mode, node, prev: { kind: "ride", run: r, from: on.from, to: i, label: on.label, crossed, waited: on.waited } };
           let byMix = reached.get(node);
           if (!byMix) reached.set(node, (byMix = new Map()));
           const old = byMix.get(label.mix);
@@ -137,13 +143,16 @@ export function plan(graph, from, to, { open = null, customs = null } = {}) {
           // Never the same bus or train service twice in one journey: getting back on a line
           // you left is a detour, not a choice.
           if (ridden(graph, label).has(run.key)) continue;
+          if (ride && !ride(run)) continue;
           const last = lastRide(graph, label);
-          let t = label.t + WAIT_MIN[run.mode];
+          const waited = run.campus && wait ? wait(run, i, label.t) : WAIT_MIN[run.mode];
+          if (waited == null) continue;
+          let t = label.t + waited;
           if (last && last.mode === "T" && run.mode === "T") t += INTERCHANGE_MIN;
           if (open && !open(run, i, t)) continue;
           const base = t - run.cum[i];
           const on = onboard.get(label.mix);
-          if (!on || base < on.base) onboard.set(label.mix, { base, from: i, label });
+          if (!on || base < on.base) onboard.set(label.mix, { base, from: i, label, waited });
         }
       }
     }
@@ -245,7 +254,7 @@ function toOption(graph, { total, label, end }) {
         to: nodeRef(graph.nodes[run.nodes[to]]),
         stops: to - from,
         minutes,
-        wait: WAIT_MIN[run.mode],
+        wait: Math.round(l.prev.waited ?? WAIT_MIN[run.mode]),
         // Minutes after setting off that it's boarded, the wait to board counted in.
         board: l.t - minutes,
         // Each crossing of the Causeway on the way, where you get off for immigration and on
@@ -260,6 +269,8 @@ function toOption(graph, { total, label, end }) {
       };
       // A bus leg's stop codes too, so the trip's timeline can open each stop's timings.
       if (run.mode === "B") Object.assign(leg, { dir: run.dir, codes: run.nodes.slice(from, to + 1).map((n) => graph.nodes[n].code) });
+      // A campus shuttle: its university and colour, for saying so (js/nav.js); no live times.
+      if (run.campus) Object.assign(leg, { campus: run.campus });
       else Object.assign(leg, { name: run.name, color: run.color, lrt: run.lrt });
       legs.push(leg);
       rides.push([run, from, leg.board]);

@@ -1957,6 +1957,10 @@
         endLegTime();
         save();
         record();
+        // Its uwuCoins (js/coins.js), and its feats: back where it started, over three hours,
+        // the old railway (js/eggs.js).
+        try { window.Coins?.tripDone(trip); } catch (err) { console.warn("couldn't count the coins:", err); }
+        try { window.Eggs?.tripDone(trip); } catch (err) { console.warn("couldn't look for feats:", err); }
       }
       render("You've arrived.");
       arrivedTimer ??= setTimeout(() => {

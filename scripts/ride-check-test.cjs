@@ -1,5 +1,5 @@
-// Tests that only rides really taken count towards the secret colours (help desk #6,
-// main-site/js/rides.js): the page runs in Chrome under Playwright, from this checkout, with the
+// Tests that only rides really taken count towards the every-line feat (help desk #6,
+// main-site/js/rides.js, js/eggs.js): the page runs in Chrome under Playwright, from this checkout, with the
 // phone's location and the clock moved along by hand, as a trip would.
 //
 //   node scripts/ride-check-test.cjs
@@ -16,16 +16,18 @@
 //   3. A ride gone through too fast (at the end a few seconds after the start) doesn't.
 //   4. A bus ride seen only at its ends, never along the way, doesn't.
 //   5. A ride with no location at all doesn't.
-//   6. Your colours unlock only once every MRT and LRT line has a genuine ride, and the
-//      celebration (js/celebrate.js) shows; eight lines, or a ninth gone through too fast,
-//      don't unlock it. Pick my colours opens Theme, and it can be watched again from there.
-//   7. Without WebGL, the unlock shows the plain window instead of the celebration.
+//   6. The every-line feat is done only once every MRT and LRT line has a genuine ride, worth
+//      100 uwuCoins (js/coins.js), and the celebration (js/celebrate.js) shows; eight lines, or
+//      a ninth gone through too fast, don't do it. Spin the wheel opens Settings at uwuCoins;
+//      with Your colours unlocked (an egg from the wheel), it can be watched again from there,
+//      and Your colours' themes are all readable.
+//   7. Without WebGL, the feat shows the plain window instead of the celebration.
 //   8. On a phone with little memory (deviceMemory 2), the flat celebration: an SVG trophy and
 //      2D confetti, no three.js fetched; with reduced motion, no confetti.
 //   9. The console's simulateAllLines() (help desk #13): a preview by default, each variant
-//      forced ('3d', 'flat', 'plain'), saving nothing; { unlock: true } unlocks Your colours
-//      with no rides saved, and 'undo' locks them again (and takes away colours picked since),
-//      but never a real unlock; without WebGL, '3d' gives the plain window.
+//      forced ('3d', 'flat', 'plain'), saving nothing; { unlock: true } does the feat with no
+//      rides saved and no coins given, and 'undo' takes it away again (and colours picked
+//      since), but never a real one; without WebGL, '3d' gives the plain window.
 // SHOTS=<folder> saves a screenshot of the celebration there, and of each simulated one.
 const path = require('path');
 const fs = require('fs');
@@ -221,7 +223,7 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     await context.close();
   }
 
-  // ---- 6. the unlock ----
+  // ---- 6. the feat ----
   {
     const lines = ['NS', 'EW', 'NE', 'CC', 'DT', 'TE', 'BP', 'SK', 'PG'];
     // The Sengkang and Punggol LRTs' stations go by their loops' codes.
@@ -231,7 +233,7 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     const context = await newContext(legs.NS.points[0]);
     const page = await fresh(context);
     for (const l of lines.slice(0, 8)) await rideGenuinely(page, context, legs[l]);
-    ok('eight lines: not unlocked', !(await page.evaluate(() => RideCheck.unlocked())), JSON.stringify(await page.evaluate(() => RideCheck.progress().left)));
+    ok('eight lines: not done', !(await page.evaluate(() => Eggs.feats().includes('lines'))), JSON.stringify(await page.evaluate(() => RideCheck.progress().left)));
     // The ninth, gone through too fast.
     const last = legs.PG;
     await page.evaluate((l) => Trip.start({ title: 'Test', legs: [l] }), last);
@@ -240,30 +242,35 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
       await wait(page, 3000);
     }
     await page.evaluate(() => Trip.active() && Trip.stop());
-    ok('ninth too fast: not unlocked', !(await page.evaluate(() => RideCheck.unlocked())));
+    ok('ninth too fast: not done', !(await page.evaluate(() => Eggs.feats().includes('lines'))));
     ok('colours still hidden', await page.evaluate(() => document.getElementById('customColours').hidden));
     await rideGenuinely(page, context, last);
-    ok('ninth genuine: unlocked', await page.evaluate(() => RideCheck.unlocked()));
+    // 100 for the feat, on top of what each trip earned.
+    const coins = await page.evaluate(() => ({ feat: JSON.parse(localStorage.getItem('sgbus_coins')).log.filter((e) => e.why === 'feat' && e.feat === 'lines').map((e) => e.n), trips: JSON.parse(localStorage.getItem('sgbus_coins')).log.filter((e) => e.why === 'trip').length }));
+    ok('ninth genuine: done, 100 uwuCoins for it', await page.evaluate(() => Eggs.feats().includes('lines')) && JSON.stringify(coins.feat) === '[100]', JSON.stringify(coins));
+    ok('each trip with a real ride earned coins', coins.trips === 9, JSON.stringify(coins));
     await wait(page, 2000);
     // The celebration: its 3D scene drawn, the plain window not.
     await page.waitForFunction(() => !document.getElementById('celebrateModal').classList.contains('hidden'), null, { timeout: 15000 }).catch(() => {});
     ok('celebration shown', await page.evaluate(() => !document.getElementById('celebrateModal').classList.contains('hidden') && window.Celebrate.running() && !!document.querySelector('#celebrateScene canvas')));
     ok('plain window not shown with the scene', await page.evaluate(() => document.getElementById('unlockModal').classList.contains('hidden')));
     if (process.env.SHOTS) await page.screenshot({ path: path.join(process.env.SHOTS, 'celebration.png') });
-    // Close stops it, and Pick my colours opens Theme at Your colours.
+    // Spin the wheel stops it and opens Settings at uwuCoins.
     await page.evaluate(() => document.getElementById('celebrateGo').click());
     await wait(page, 500);
-    ok('pick my colours opens Theme', await page.evaluate(() => document.getElementById('celebrateModal').classList.contains('hidden') && !window.Celebrate.running() && !document.getElementById('themeModal').classList.contains('hidden')));
-    // Watched again from Your colours.
+    ok('spin the wheel opens Settings', await page.evaluate(() => document.getElementById('celebrateModal').classList.contains('hidden') && !window.Celebrate.running() && !document.getElementById('settingsModal').classList.contains('hidden') && !!document.querySelector('#coinWheel svg')));
+    // An egg from the wheel unlocks Your colours, where it can be watched again.
+    await page.evaluate(() => { document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)); Eggs.found('up'); Colours.open(); });
+    await wait(page, 500);
     await page.evaluate(() => document.getElementById('colourReplay').click());
     await page.waitForFunction(() => window.Celebrate.running(), null, { timeout: 15000 }).catch(() => {});
     ok('watch the celebration again', await page.evaluate(() => window.Celebrate.running()));
     await page.evaluate(() => document.getElementById('celebrateClose').click());
     ok('colours offered', await page.evaluate(() => !document.getElementById('customColours').hidden));
-    // Unreadable colours are refused; readable ones are kept.
-    const refused = await page.evaluate(() => Colours.problems({ bg: '#ffffff', text: '#dddddd', button: '#ccffcc', card: '#ffffff' }).length > 0);
-    const fine = await page.evaluate(() => Colours.problems({ bg: '#101820', text: '#f5f5f5', button: '#ffcc00', card: '#1c2833' }).length === 0);
-    ok('low contrast refused, good contrast allowed', refused && fine);
+    // Unreadable colours are said to be; every theme made from one colour reads.
+    const refused = await page.evaluate(() => Colours.problems({ ...Colours.derive('#ffcc00', 'light'), '--ink': '#dddddd' }).length > 0);
+    const fine = await page.evaluate(() => ['#ffcc00', '#000000', '#ffffff', '#2f5fd0', '#808080'].every((c) => ['light', 'dark'].every((m) => Colours.problems(Colours.derive(c, m)).length === 0)));
+    ok('low contrast found, every theme made readable', refused && fine);
     await context.close();
   }
 
@@ -279,7 +286,7 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     }, lines);
     await rideGenuinely(page, context, last);
     await wait(page, 2000);
-    ok('no WebGL: unlocked', await page.evaluate(() => RideCheck.unlocked()));
+    ok('no WebGL: done', await page.evaluate(() => Eggs.feats().includes('lines')));
     ok('no WebGL: the plain window, no scene', await page.evaluate(() => !document.getElementById('unlockModal').classList.contains('hidden') && document.getElementById('celebrateModal').classList.contains('hidden')));
     await context.close();
   }
@@ -301,7 +308,7 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     await rideGenuinely(page, context, last);
     await wait(page, 500);
     const got = await page.evaluate(() => ({
-      unlocked: RideCheck.unlocked(),
+      unlocked: Eggs.feats().includes('lines'),
       shown: !document.getElementById('celebrateModal').classList.contains('hidden'),
       flat: document.getElementById('celebrateModal').classList.contains('flat') && !!document.querySelector('#celebrateScene .flatTrophy'),
       mode: Celebrate.mode(),
@@ -325,14 +332,14 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     const page = await fresh(context);
     const logs = [];
     page.on('console', (m) => logs.push(m.text()));
-    const keys = () => page.evaluate(() => Object.fromEntries(['sgbus_rides', 'sgbus_colours_unlocked', 'sgbus_colours_told', 'sgbus_colours', 'sgbus_colours_simulated'].map((k) => [k, localStorage.getItem(k)])));
+    const keys = () => page.evaluate(() => Object.fromEntries(['sgbus_rides', 'sgbus_feats', 'sgbus_eggs', 'sgbus_eggs_told', 'sgbus_coins', 'sgbus_colours_unlocked', 'sgbus_colours', 'sgbus_colours_simulated'].map((k) => [k, localStorage.getItem(k)])));
     const state = () => page.evaluate(() => ({
       celebrate: !document.getElementById('celebrateModal').classList.contains('hidden'),
       plain: !document.getElementById('unlockModal').classList.contains('hidden'),
       mode: Celebrate.mode(),
       canvas: !!document.querySelector('#celebrateScene canvas'),
       flat: !!document.querySelector('#celebrateScene .flatTrophy'),
-      unlocked: RideCheck.unlocked(),
+      unlocked: Eggs.feats().includes('lines'),
     }));
     const before = await keys();
 
@@ -353,7 +360,7 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
       // The windows fade on the real clock, not the page's.
       if (process.env.SHOTS) { await page.waitForTimeout(1000); await page.screenshot({ path: path.join(process.env.SHOTS, `simulate-${as}.png`) }); }
     }
-    ok('simulate: preview saves nothing', JSON.stringify(await keys()) === JSON.stringify(before) && !(await page.evaluate(() => RideCheck.unlocked())), JSON.stringify(await keys()));
+    ok('simulate: preview saves nothing', JSON.stringify(await keys()) === JSON.stringify(before) && !(await page.evaluate(() => Eggs.feats().includes('lines'))), JSON.stringify(await keys()));
     ok('simulate: preview leaves Your colours hidden', await page.evaluate(() => { document.getElementById('celebrateGo')?.click(); return document.getElementById('customColours').hidden; }));
     await page.evaluate(() => document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)));
     ok('simulate: unknown variant only helps', (await page.evaluate(() => simulateAllLines('sparkly'))) === 'help' && !(await state()).celebrate);
@@ -364,25 +371,27 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     await wait(page, 2000);
     const s1 = await state();
     const k1 = await keys();
-    ok('simulate: unlock unlocks and plays it once', unlockedAs === 'flat' && s1.unlocked && s1.celebrate && s1.mode === 'flat' && !s1.plain && !!k1.sgbus_colours_simulated && k1.sgbus_rides === before.sgbus_rides, JSON.stringify({ s1, k1 }));
+    ok('simulate: unlock does the feat and plays it once', unlockedAs === 'flat' && s1.unlocked && s1.celebrate && s1.mode === 'flat' && !s1.plain && !!k1.sgbus_colours_simulated && k1.sgbus_rides === before.sgbus_rides, JSON.stringify({ s1, k1 }));
     await page.evaluate(() => document.getElementById('celebrateGo').click());
     await wait(page, 500);
-    ok('simulate: unlocked, Your colours offered', await page.evaluate(() => !document.getElementById('customColours').hidden));
-    // Colours picked while it was unlocked go with the undo.
-    await page.evaluate(() => { const box = document.getElementById('customColours'); for (const [k, v] of Object.entries({ bg: '#101820', text: '#f5f5f5', button: '#ffcc00', card: '#1c2833' })) { const i = box.querySelector(`[data-colour="${k}"]`); i.value = v; i.dispatchEvent(new Event('input', { bubbles: true })); } document.getElementById('colourKeep').click(); });
-    ok('simulate: colours kept while unlocked', !!(await keys()).sgbus_colours && (await page.evaluate(() => document.documentElement.hasAttribute('data-custom-colours'))));
+    ok('simulate: done, no coins given', await page.evaluate(() => Coins.balance() === 0 && !document.getElementById('settingsModal').classList.contains('hidden')));
+    // An egg and colours picked meanwhile go with the undo.
+    await page.evaluate(() => { document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)); Eggs.found('up'); Colours.open(); });
+    await wait(page, 400);
+    await page.evaluate(() => { document.querySelector('#colourPresets [data-colour-preset="rising"]').click(); document.getElementById('colourKeep').click(); });
+    ok('simulate: colours kept meanwhile', !!(await keys()).sgbus_colours && (await page.evaluate(() => document.documentElement.hasAttribute('data-custom-colours'))));
     const undone = await page.evaluate(() => simulateAllLines('undo'));
-    ok('simulate: undo locks again and takes the colours away', undone === 'undone' && JSON.stringify(await keys()) === JSON.stringify(before) && !(await page.evaluate(() => RideCheck.unlocked() || document.documentElement.hasAttribute('data-custom-colours'))), JSON.stringify(await keys()));
+    ok('simulate: undo takes the feat and the colours away', undone === 'undone' && JSON.stringify(await keys()) === JSON.stringify(before) && !(await page.evaluate(() => Eggs.feats().includes('lines') || document.documentElement.hasAttribute('data-custom-colours'))), JSON.stringify(await keys()));
     // A reload after the undo: no celebration comes back.
     await page.reload();
     await page.waitForFunction(() => window.RideCheck && window.Celebrate);
     await wait(page, 3000);
-    ok('simulate: nothing after a reload', !(await state()).celebrate && !(await state()).plain && !(await page.evaluate(() => RideCheck.unlocked())));
+    ok('simulate: nothing after a reload', !(await state()).celebrate && !(await state()).plain && !(await page.evaluate(() => Eggs.feats().includes('lines'))));
 
-    // Colours unlocked by riding: unlock doesn't touch them and undo doesn't lock them.
-    await page.evaluate(() => localStorage.setItem('sgbus_colours_unlocked', '1'));
+    // The feat done by riding: unlock doesn't touch it and undo doesn't take it away.
+    await page.evaluate(() => localStorage.setItem('sgbus_feats', JSON.stringify({ lines: 1 })));
     await page.evaluate(() => simulateAllLines({ unlock: true }));
-    ok('simulate: undo leaves a real unlock alone', (await page.evaluate(() => simulateAllLines('undo'))) === 'nothing' && (await page.evaluate(() => RideCheck.unlocked())));
+    ok('simulate: undo leaves a real feat alone', (await page.evaluate(() => simulateAllLines('undo'))) === 'nothing' && (await page.evaluate(() => Eggs.feats().includes('lines'))));
     await context.close();
   }
 

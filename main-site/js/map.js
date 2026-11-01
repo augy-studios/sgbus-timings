@@ -919,8 +919,8 @@
     for (const [code, s] of Object.entries(index || {})) {
       if (s.lat != null && s.lng != null) dots.push({ kind: 'stop', lat: s.lat, lng: s.lng, pick: { kind: 'stop', code } });
     }
-    // The campus stops LTA hasn't got; those it has are its stops' dots already.
-    for (const c of window.Campus?.dots() || []) dots.push({ kind: 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } });
+    // The shuttles' stops LTA hasn't got; those it has are its stops' dots already.
+    dots.push(...shuttleDots());
     for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), colors: stationColours(s.codes), pick: stationPick(s) });
     exploreDots = dots;
     drawDots();
@@ -945,8 +945,22 @@
   // view. Offline, the road from before if sw.js has it, or the straight lines.
   const shuttleRoads = new Map(); // route key -> its road, [[lat, lng], ...]
   let shuttlesDrawn = []; // [{ uni, color, points }]
+  // Settings' Shuttle buses: paid ones (Mandai's, the TS1) only with Free and paid.
+  const keepShuttle = (route) => route.fare !== 'paid' || (typeof LS !== 'undefined' && LS.getShuttlesPaid());
+  const shuttleDots = () => (window.Campus?.dots(keepShuttle) || []).map((c) => ({ kind: 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } }));
+
+  // Shuttle buses changed in Settings: Explorer's shuttles drawn again for it.
+  window.addEventListener('shuttleschange', () => {
+    if (mode !== 'explore' || !window.Campus?.isReady()) return;
+    exploreDots = [...exploreDots.filter((d) => d.kind !== 'campus'), ...shuttleDots()];
+    drawDots();
+    shuttlesDrawn = [];
+    ink.shuttles([]);
+    drawShuttles();
+  });
+
   function drawShuttles() {
-    const list = window.Campus?.lines() || [];
+    const list = window.Campus?.lines(keepShuttle) || [];
     if (!list.length) return;
     const draw = () => {
       if (mode !== 'explore' || layersOff().has('shuttles')) return;

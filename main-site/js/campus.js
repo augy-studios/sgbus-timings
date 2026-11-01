@@ -32,7 +32,9 @@
 //
 // Campus.load() fetches the three files and builds the shuttles against LTA's stops; then
 // Campus.at(code), Campus.listHtml(code), Campus.lines(), Campus.dots() and Campus.credits(view,
-// list), for Bus timings (script.js), the map's cards (js/map-card.js) and Explorer (js/map.js).
+// list), for Bus timings (script.js), the map's cards (js/map-card.js) and Explorer (js/map.js);
+// Campus.search(q) and Campus.route(key) for Bus timings' search, a route's own window and a
+// campus stop's timings.
 // sw.js keeps the files.
 //
 // In Node (scripts/campus-test.mjs), module.exports is the same, for its pure parts: build,
@@ -152,6 +154,10 @@
         } else if (DAY_KEYS[k]) {
           if (ctx.day) problems.push(`${here}: a day inside a day`);
           else walk(v, { ...ctx, day: DAY_KEYS[k] }, here);
+        } else if (k === 'daily') {
+          // The same every day: each of the three.
+          if (ctx.day) problems.push(`${here}: a day inside a day`);
+          else for (const day of ['weekday', 'sat', 'sun_ph']) walk(v, { ...ctx, day }, here);
         } else if (routeStops.includes(k)) {
           if (ctx.terminal) problems.push(`${here}: a stop inside a stop`);
           else walk(v, { ...ctx, terminal: k }, here);
@@ -192,10 +198,13 @@
       return null;
     };
 
-    for (const uni of ['nus', 'ntu']) {
-      const data = raw?.[uni];
+    // The two universities' files, then each group of the island's other shuttles
+    // (shuttles.json's `groups`), which is its own file and config in one.
+    const groups = Object.entries(raw?.shuttles?.groups || {});
+    const sources = [...['nus', 'ntu'].map((uni) => [uni, raw?.[uni], raw?.config?.[uni]]), ...groups.map(([k, g]) => [k, g, g])];
+    for (const [uni, data, conf0] of sources) {
       if (!data) continue;
-      const conf = raw.config?.[uni] || {};
+      const conf = conf0 || {};
       const own = new Map((data.stops || []).map((s) => [String(s.id), s]));
       const keyOf = new Map(); // a stop id in this university's file -> its key, or null
 
@@ -229,8 +238,10 @@
       };
 
       for (const r of data.routes || []) {
-        const code = String(r.id ?? r.name ?? '');
-        const where = `${uni} ${code}`;
+        // `id` tells routes apart; `badge`, when given, is what's shown (TS1 each way).
+        const id = String(r.id ?? r.name ?? '');
+        const code = String(r.badge || id);
+        const where = `${uni} ${id}`;
         const ids = (r.stops || []).map(String);
         if (!code || ids.length < 2) {
           problems.push(`${where}: a route needs a name and two stops or more`);
@@ -242,15 +253,28 @@
         if (r.timetable === true && kinds.has('bands')) notes.push(`${where}: says it's a timetable, but has frequencies`);
         if (r.timetable === false && kinds.has('departs')) notes.push(`${where}: says it isn't a timetable, but has departure times`);
         const route = {
-          key: `${uni}:${code}`,
+          key: `${uni}:${id}`,
           uni,
           code,
-          colour: conf.routes?.[code] || conf.colour || '#7a4fd6',
+          colour: r.colour || conf.routes?.[code] || conf.colour || '#7a4fd6',
           ids,
           keys,
           loop: ids[0] === ids[ids.length - 1],
           timings,
           seasonal: !!(timings.term || timings.vacation),
+          // What it's called in full, what it costs and who may ride it: "free" or "paid" (with
+          // `fareText`, "S$2.50"), and "public", "guests" (a hotel's) or "residents" (a condo's),
+          // the last two only from or to `place`, its own stops' keys (Navigate, nav-core).
+          name: r.label || '',
+          fare: r.fare || conf.fare || 'free',
+          fareText: r.fareText || conf.fareText || '',
+          access: r.access || conf.access || 'public',
+          place: (r.place || conf.place || []).map((id) => resolve(String(id), where)).filter(Boolean),
+          // Between stops, km/h (nav-core's 15 unless said): a coach on the expressway is quicker.
+          kmh: Number(r.kmh) || null,
+          // Where its buses can be seen live (api/shuttle-live.js): { provider, stops: { id: param } }.
+          live: r.live || null,
+          source: r.source || conf.source || '',
         };
         routes.push(route);
         keys.forEach((key, i) => {
@@ -262,7 +286,9 @@
       // A stop no route calls at isn't drawn.
       for (const id of own.keys()) if (!keyOf.has(id)) notes.push(`${uni} stop ${id} (${own.get(id).name}) isn't on any route, so isn't shown`);
     }
-    return { stops, routes, problems, notes, config: raw?.config || {} };
+    const config = { ...(raw?.config || {}) };
+    for (const [k, g] of groups) config[k] = { name: g.name || k, colour: g.colour, routes: g.routes, credit: g.credit, creditUrl: g.creditUrl, fare: g.fare, access: g.access };
+    return { stops, routes, problems, notes, config };
   }
 
   // ---------- what the timetable says now ----------
@@ -443,9 +469,9 @@
   let builtFor = undefined;
 
   function fetchFiles() {
-    fetching ??= Promise.all(['nus', 'ntu', 'config'].map((f) => fetch(`/data/campus/${f}.json`)
+    fetching ??= Promise.all(['nus', 'ntu', 'config', 'shuttles'].map((f) => fetch(`/data/campus/${f}.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`campus ${f}: ${r.status}`))))))
-      .then(([nus, ntu, config]) => { files = { nus, ntu, config }; })
+      .then(([nus, ntu, config, shuttles]) => { files = { nus, ntu, config, shuttles }; })
       .catch((err) => {
         fetching = null; // asked again next time
         throw err;
@@ -496,9 +522,15 @@
       const { main, sub } = describe(st, nameIn(route));
       const uni = model.config?.[route.uni]?.name || route.uni.toUpperCase();
       const off = st.state === 'done' || st.state === 'notToday';
-      return `<div class="campusRow${off ? ' off' : ''}" style="--route:${esc(route.colour)};--route-ink:${inkOn(route.colour)}">` +
-        `<span class="campusNo" title="${esc(tr('campus.routeTitle', '{uni} shuttle {route}', { uni, route: route.code }))}">${esc(route.code)}</span>` +
-        `<span class="campusWhen"><strong>${esc(main)}</strong><span>${esc(`${uni} · ${sub}`)}</span></span></div>`;
+      // What it costs and who may ride it, when it's not free to all.
+      const terms = [route.fare === 'paid' ? route.fareText || tr('nav.shuttle.paid', 'Paid') : '',
+        route.access === 'guests' ? tr('nav.shuttle.guests', 'Hotel guests only') : route.access === 'residents' ? tr('nav.shuttle.residents', 'Residents only') : ''].filter(Boolean);
+      // Seen live (api/shuttle-live.js): the next bus filled in by live() once it's in.
+      const live = route.live?.stops?.[stop.id] || route.live?.stops?.[key] ? ` data-live-route="${esc(route.key)}" data-live-stop="${esc(key)}"` : '';
+      return `<div class="campusRow${off ? ' off' : ''}"${live} style="--route:${esc(route.colour)};--route-ink:${inkOn(route.colour)}">` +
+        `<span class="campusNo" title="${esc(route.name || tr('campus.routeTitle', '{uni} shuttle {route}', { uni, route: route.code }))}">${esc(route.code)}</span>` +
+        `<span class="campusWhen"><strong>${esc(main)}</strong><span>${esc([uni, sub, ...terms].join(' · '))}</span>` +
+        (live ? `<span class="campusLive" hidden></span>` : '') + `</span></div>`;
     }).join('');
     const notes = [...seasons].map((s) => {
       const [uni, which] = s.split(':');
@@ -506,29 +538,84 @@
       return which === 'term' ? tr('campus.termTimes', '{uni} term timings', { uni: name }) : tr('campus.vacationTimes', '{uni} vacation timings', { uni: name });
     });
     const icon = typeof root.ico === 'function' ? root.ico('clock') : '';
-    return `<div class="campusList" role="group" aria-label="${esc(tr('campus.title', 'Campus shuttles'))}">` +
-      `<p class="campusHead">${icon}<span><strong>${esc(tr('campus.title', 'Campus shuttles'))}</strong> · ${esc(tr('campus.scheduled', 'scheduled times, not live'))}</span></p>` +
+    return `<div class="campusList" role="group" aria-label="${esc(tr('campus.shuttles', 'Shuttle buses'))}">` +
+      `<p class="campusHead">${icon}<span><strong>${esc(tr('campus.shuttles', 'Shuttle buses'))}</strong> · ${esc(tr('campus.scheduled', 'scheduled times, not live'))}</span></p>` +
       rows +
       (notes.length ? `<p class="campusFoot">${esc(notes.join(' · '))}</p>` : '') +
       `</div>`;
   }
 
-  // Each route as a line through its stops, for Explorer: [{ key, uni, color, points }].
-  function lines() {
+  // The live times in `box` (listHtml's, on the page): each shuttle seen live there
+  // (api/shuttle-live.js) has its next bus filled in, "Live: 4 min", or nothing when the tracker
+  // has none coming. Asked once a call; Bus timings and the map's cards call it as they draw.
+  function live(box) {
+    for (const row of box?.querySelectorAll('[data-live-route]') || []) {
+      const out = row.querySelector('.campusLive');
+      fetch(`/api/shuttle-live?route=${encodeURIComponent(row.dataset.liveRoute)}&stop=${encodeURIComponent(row.dataset.liveStop)}`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((got) => {
+          if (!out || !got || got.eta == null) return;
+          out.textContent = got.eta <= 0 ? tr('campus.liveNow', 'Live: arriving') : tr('campus.liveMin', 'Live: {n} min', { n: got.eta });
+          out.hidden = false;
+        })
+        .catch(() => {});
+    }
+  }
+
+  // Each route as a line through its stops, for Explorer: [{ key, uni, color, fare, points }].
+  // `keep(route)`, when given, says which routes to draw (Settings' Shuttle buses, js/map.js).
+  function lines(keep = null) {
     if (!model) return [];
-    return model.routes.map((r) => ({
+    return model.routes.filter((r) => !keep || keep(r)).map((r) => ({
       key: r.key,
       uni: r.uni,
       color: r.colour,
+      fare: r.fare,
       points: r.keys.filter(Boolean).map((k) => model.stops.get(k)).map((s) => [s.lat, s.lng]),
     })).filter((l) => l.points.length >= 2);
   }
 
   // The campus stops LTA hasn't got, for Explorer's dots: [{ key, lat, lng, color }]. Those LTA
-  // has are its stop dots already.
-  function dots() {
+  // has are its stop dots already. With `keep`, only those with a route it keeps.
+  function dots(keep = null) {
     if (!model) return [];
-    return [...model.stops.values()].filter((s) => !s.lta).map((s) => ({ key: s.key, lat: s.lat, lng: s.lng, color: model.config?.[s.uni]?.colour || '#7a4fd6' }));
+    return [...model.stops.values()].filter((s) => !s.lta && (!keep || s.routes.some(({ route }) => keep(route)))).map((s) => ({ key: s.key, lat: s.lat, lng: s.lng, color: model.config?.[s.uni]?.colour || '#7a4fd6' }));
+  }
+
+  // ---------- search (Bus timings' box, script.js) ----------
+
+  const fold = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // The routes and the campus stops LTA hasn't got that match what's typed: a route by its code
+  // ("A1", "cl-b", "CLB"), a stop by its name ("PGP", "kent vale"). Exact first. { routes, stops }.
+  function search(q, limit = 4) {
+    const f = fold(q);
+    if (!model || !f) return { routes: [], stops: [] };
+    const routes = model.routes.filter((r) => fold(r.code) === f || (f.length >= 2 && fold(r.code).startsWith(f)))
+      .sort((a, b) => (fold(b.code) === f) - (fold(a.code) === f)).slice(0, limit);
+    const own = [...model.stops.values()].filter((st) => !st.lta);
+    const score = (st) => (fold(st.name) === f ? 0 : fold(st.name).startsWith(f) ? 1 : fold(st.name).includes(f) ? 2 : 3);
+    const stops = f.length < 2 ? [] : own.map((st) => [score(st), st]).filter(([sc]) => sc < 3).sort((a, b) => a[0] - b[0] || a[1].name.localeCompare(b[1].name)).map(([, st]) => st).slice(0, limit);
+    return { routes, stops };
+  }
+
+  // A route by its key ("nus:A1"), as Bus timings' route window wants it: its university, colour,
+  // stops in order, and what its timetable says now from where it starts. Null if there's none.
+  function route(key, ms = Date.now()) {
+    const r = model?.routes.find((x) => x.key === key);
+    if (!r) return null;
+    const { main, sub } = describe(status(r, 0, ms, opts()), nameIn(r));
+    return {
+      key: r.key,
+      code: r.code,
+      uni: r.uni,
+      uniName: model.config?.[r.uni]?.name || r.uni.toUpperCase(),
+      colour: r.colour,
+      ink: inkOn(r.colour),
+      loop: r.loop,
+      now: { main, sub },
+      stops: r.keys.map((k, i) => (k && model.stops.get(k)) || { key: null, name: r.ids[i], lta: false }),
+    };
   }
 
   // The credits for the map's attribution: those of the universities with a line of `list`
@@ -538,7 +625,7 @@
 
   const api = {
     MERGE_M, hhmm, clock, parseLoc, readTimings, build, season, status, describe, inkOn, sgDay, creditsIn,
-    load, at, listHtml, lines, dots, credits, isReady: () => !!model,
+    load, at, listHtml, live, lines, uniName: (uni) => model?.config?.[uni]?.name || String(uni || '').toUpperCase(), dots, credits, search, route, isReady: () => !!model,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.Campus = api;

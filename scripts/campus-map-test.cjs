@@ -237,9 +237,14 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
       campus: window.__map.getSource('sg-poi')._data.features.filter((f) => f.properties.kind === 'campus').length,
       stops: window.__map.getSource('sg-poi')._data.features.filter((f) => f.properties.kind === 'stop').length,
       layers: window.__map.getStyle().layers.map((l) => l.id).filter((id) => id.startsWith('sg-')),
+      // The free shuttles (Settings' Shuttle buses, Free only): NUS's and NTU's 12, and the
+      // island's others that this test's stops place.
+      free: Campus.lines((r) => r.fare !== 'paid').length,
+      unis: Campus.lines((r) => r.fare !== 'paid').filter((l) => l.uni === 'nus' || l.uni === 'ntu').length,
+      freeDots: Campus.dots((r) => r.fare !== 'paid').length,
     }));
-    ok('Explorer draws the 12 NUS and NTU routes', drawn.lines === 12, JSON.stringify(drawn.lines));
-    ok('…and 33 campus stops LTA hasn\'t got as dots of their own', drawn.campus === 33, String(drawn.campus));
+    ok('Explorer draws the free shuttles, NUS\'s and NTU\'s 12 among them', drawn.lines === drawn.free && drawn.unis === 12, JSON.stringify(drawn));
+    ok('…and their stops LTA hasn\'t got as dots of their own', drawn.campus === drawn.freeDots && drawn.freeDots >= 33, String(drawn.campus));
     ok('…with LTA\'s stops each drawn once (34, no campus copy)', drawn.stops === STOPS.length, String(drawn.stops));
     const order = drawn.layers;
     ok('…the shuttles over the MRT lines and under the stops', order.indexOf('sg-rail') < order.indexOf('sg-shuttle') && order.indexOf('sg-shuttle') < order.indexOf('sg-poi-stop') && order.indexOf('sg-poi-campus') > -1, order.join(' '));
@@ -255,7 +260,7 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
   ok('…with K, R1, R2 and P', (c?.rows || []).map((r) => r.split(':')[0]).join() === 'K,R1,R2,P', JSON.stringify(c?.rows));
   ok('…K leaves here', (c?.rows || []).some((r) => r === 'K: 08:40 · 09:20 · 10:00 NUS · Leaves here'), JSON.stringify(c?.rows));
   ok('…R2 ends here, from PGP', (c?.rows || []).some((r) => /^R2: .* NUS · Leaves PGP · ends here$/.test(r)), JSON.stringify(c?.rows));
-  ok('…and says they\'re not live', /scheduled times, not live/.test(c?.text || '') && /No live times for campus shuttles/.test(c?.text || ''));
+  ok('…and says they\'re from the timetable', /scheduled times, not live/.test(c?.text || '') && /from the timetable, and live where the operator shares them/.test(c?.text || ''));
   ok('…no Show bus timings on a campus stop, but Directions', await page.evaluate(() => !document.querySelector('#mapPanel .mapCard [data-mc-timings]') && !!document.querySelector('#mapPanel .mapCard [data-mc-go]')));
   await shot('4-explorer-kent-vale-card');
   await closeExplorer();
@@ -319,7 +324,7 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
     await glTo([103.82, 1.35], 9);
     cr = await credits();
     ok('zoomed out over Singapore, both', cr.unis === 'nus,ntu', JSON.stringify(cr));
-    ok('…and the shuttles\' lines weren\'t made again for it', await page.evaluate(() => window.__map.getSource('sg-shuttle') === window.__shuttleSource && window.__map.getSource('sg-shuttle')._data.features.length === 12));
+    ok('…and the shuttles\' lines weren\'t made again for it', await page.evaluate(() => window.__map.getSource('sg-shuttle') === window.__shuttleSource && window.__map.getSource('sg-shuttle')._data.features.length === Campus.lines((r) => r.fare !== 'paid').length));
   }
   await closeExplorer();
   if (gl) ok('Explorer closed: no credit left', (await credits()).unis === '');
@@ -331,7 +336,7 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
   await page.waitForFunction(() => window.MainScreen && document.documentElement.hasAttribute('data-view'));
   await timings('16009');
   rows = await campusRows();
-  ok('in 中文: 校园巴士, 每 4–6 分钟一班', /校园巴士/.test(await page.$eval('#campusSvc .campusHead', (e) => e.textContent)) && /每 4–6 分钟一班/.test(rowText(rows, 'A1')), JSON.stringify(rows));
+  ok('in 中文: 穿梭巴士, 每 4–6 分钟一班', /穿梭巴士/.test(await page.$eval('#campusSvc .campusHead', (e) => e.textContent)) && /每 4–6 分钟一班/.test(rowText(rows, 'A1')), JSON.stringify(rows));
   await page.evaluate(() => localStorage.setItem('sgbus_lang', 'en'));
 
   // Without WebGL, Leaflet draws it: the lines, the campus dots, and a campus stop's card.

@@ -1,11 +1,40 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 1 November 2026**
+**Latest update: 2 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 2 November 2026: Apps 2.3.0, shuttle buses everywhere, uwuCoins, and Your colours from one colour
+
+### Web app
+
+- **Shuttle buses in Navigate** - Bus and train rides NUS's and NTU's campus shuttles, and the island's others anyone can ride: IKEA Tampines', Changi Airport's, KKH's, Mandai's, Clarke Quay's late-night shuttles home, Orchid Country Club's and the TS1 to Johor Bahru. A shuttle's wait is its timetable's average wait then, and one that isn't running isn't used. The Novotel and Mercure on Stevens' shuttle, for hotel guests, is only used to or from the hotel.
+- **Free or paid shuttles** - Settings' new Shuttle buses, under Navigate: Free only (the default), or Free and paid for Mandai's, the Tanah Merah Ferry Terminal shuttle and the TS1 too. Explorer's shuttle layers follow it.
+- **Search shuttle buses** - Type a shuttle's route, such as A1, CL-B or M2, for its stops and what its timetable says now, or a stop only shuttles use, such as PGP or IKEA Tampines, for its shuttle times.
+- **Shuttles live** - IKEA's and the Stevens hotels' shuttles show their next bus live, Live: 4 min, from the operator's tracker.
+- **uwuCoins** - Trips taken with the Get Off Alert to the end earn uwuCoins: more for longer trips, changes, and each bus and train operator and line. Spend them on the wheel in Settings' Help and extras, like gacha: every spin wins an Easter egg or more coins. The coin in the Edge Tray shows how many you have.
+- **Achievements** - A new group in Settings lists the feats, each with how far along you are, such as 6 of 9 lines ridden, and the Easter eggs you've found.
+- **Your colours from one colour** - Your colours, a secret an Easter egg unlocks, now takes one colour, on the Color Guess Game's colour wheel or from presets, and makes the whole theme from it, light and dark, with all the text easy to read.
+- **Glance and Favourites in step** - Pick a list on Glance and Favourites opens on it, and the other way round.
+- **The greeting** - Tapping the greeting at the top no longer opens Settings.
+
+### Android app 2.3.0
+
+- The web app's changes above, and those from 1 November.
+- Something new for Android 12 and later, for whoever finds it.
+
+### Desktop app 2.3.0
+
+- The web app's changes above, and those from 1 November.
+
+### Linux command line 2.3.0
+
+- The same version number as the apps.
 
 ---
 

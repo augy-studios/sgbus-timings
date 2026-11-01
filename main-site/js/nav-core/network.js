@@ -13,8 +13,12 @@
 // board and the walk from an exit to the platform. Good for comparing options; OneMap's
 // timetable-based router checks the best of them (see router.js).
 //
+// The campus shuttles ride on it too, from data/campus/ (campus.js), when they're given.
+//
 // An ES module, unlike the rest of js/: served as it is to the browser's nav worker
 // (js/nav-worker.js) and imported by the server's functions.
+
+import { campusRuns } from "./campus.js";
 
 // Straight-line metres per minute.
 export const WALK_M_PER_MIN = 60;
@@ -215,8 +219,8 @@ function busRuns(nodes, busNode, payload, open) {
 const CELL_DEG = 0.003;
 const cellOf = (lat, lng) => `${Math.floor(lat / CELL_DEG)},${Math.floor(lng / CELL_DEG)}`;
 
-// `rail` is rail.json's content.
-export function buildGraph(rail, stopsPayload, routesPayload, { open = false } = {}) {
+// `rail` is rail.json's content; `campus`, data/campus/'s files as { nus, ntu, config, shuttles }.
+export function buildGraph(rail, stopsPayload, routesPayload, { open = false, campus = null } = {}) {
   const nodes = [];
   const busNode = new Map();
   for (const s of stopsPayload) {
@@ -229,7 +233,8 @@ export function buildGraph(rail, stopsPayload, routesPayload, { open = false } =
     return nodes.length - 1;
   });
 
-  const runs = [...railRuns(rail, nodes, stationNode), ...busRuns(nodes, busNode, routesPayload, open)];
+  const shuttles = campusRuns(campus, nodes, busNode, CROSSINGS);
+  const runs = [...railRuns(rail, nodes, stationNode), ...busRuns(nodes, busNode, routesPayload, open), ...shuttles];
   const at = nodes.map(() => []);
   runs.forEach((run, r) => run.nodes.forEach((n, i) => at[n].push([r, i])));
 
@@ -284,7 +289,7 @@ export function buildGraph(rail, stopsPayload, routesPayload, { open = false } =
     }
   }
 
-  return { nodes, runs, at, walks, grid, busNode, stationNode };
+  return { nodes, runs, at, walks, grid, busNode, stationNode, campusConfig: shuttles.config || null };
 }
 
 // Every node within `metres` of a point, nearest first, as [node, metres].

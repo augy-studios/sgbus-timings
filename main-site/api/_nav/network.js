@@ -5,7 +5,7 @@
 // - Bus routes and stops come from this site's own /api/bus-routes and /api/bus-stops,
 //   which the edge caches for a day, so building this costs two cached requests.
 // - Rail comes from data/rail.json, a vendored sgraildata snapshot (scripts/vendor-rail.mjs),
-//   served as it is to the browser too.
+//   served as it is to the browser too, and the campus shuttles from data/campus/.
 
 import { readFileSync } from "node:fs";
 import { buildGraph as buildNetwork } from "../../js/nav-core/network.js";
@@ -13,9 +13,12 @@ import { buildGraph as buildNetwork } from "../../js/nav-core/network.js";
 export { LRT_LINES, STATION_ACCESS_MIN, WALK_M_PER_MIN, haversine, metresTo, nodesNear } from "../../js/nav-core/network.js";
 
 const rail = JSON.parse(readFileSync(new URL("../../data/rail.json", import.meta.url), "utf8"));
+// The campus shuttles (data/campus/, js/nav-core/campus.js).
+const campusFile = (f) => JSON.parse(readFileSync(new URL(`../../data/campus/${f}.json`, import.meta.url), "utf8"));
+const campus = { nus: campusFile("nus"), ntu: campusFile("ntu"), config: campusFile("config"), shuttles: campusFile("shuttles") };
 
-// The graph from the two payloads, with rail.json's stations and lines.
-const buildGraph = (stopsPayload, routesPayload, options) => buildNetwork(rail, stopsPayload, routesPayload, options);
+// The graph from the two payloads, with rail.json's stations and lines, and the shuttles.
+const buildGraph = (stopsPayload, routesPayload, options) => buildNetwork(rail, stopsPayload, routesPayload, { ...options, campus });
 
 // ---------- loading, cached for the life of the instance ----------
 

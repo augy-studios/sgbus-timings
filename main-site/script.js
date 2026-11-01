@@ -25,6 +25,7 @@ const LS = {
     restrictedKey: 'sgbus_restricted',
     customsKey:    'sgbus_customs',
     bikeKey:       'sgbus_bike',
+    shuttlesKey:   'sgbus_shuttles',
     timesKey:      'sgbus_times',
     homeKey:       'sgbus_home',
     workKey:       'sgbus_work',
@@ -125,6 +126,17 @@ const LS = {
         try {
             if (on) localStorage.setItem(this.bikeKey, 'on');
             else localStorage.removeItem(this.bikeKey);
+        } catch { /* this visit only */ }
+    },
+    // Shuttle buses, in Settings: free ones only (the default), or paid ones too, for Navigate
+    // (js/nav.js, &shuttles=paid) and what Explorer draws (js/map.js).
+    getShuttlesPaid() {
+        try { return localStorage.getItem(this.shuttlesKey) === 'paid'; } catch { return false; }
+    },
+    setShuttlesPaid(on) {
+        try {
+            if (on) localStorage.setItem(this.shuttlesKey, 'paid');
+            else localStorage.removeItem(this.shuttlesKey);
         } catch { /* this visit only */ }
     },
     // Bus times, in Settings: each bus as the time it comes ("14:32") rather than how long till
@@ -266,6 +278,15 @@ function syncCustomsButtons() {
 function syncBikeButtons() {
     $$('[data-bike]').forEach(btn => {
         const on = (btn.dataset.bike === 'on') === LS.getBike();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
+
+// Shuttle buses, in Settings: free only or paid too.
+function syncShuttleButtons() {
+    $$('[data-shuttles]').forEach(btn => {
+        const on = (btn.dataset.shuttles === 'paid') === LS.getShuttlesPaid();
         btn.classList.toggle('active', on);
         btn.setAttribute('aria-pressed', String(on));
     });
@@ -511,8 +532,12 @@ const isPostalCode = v => /^\d{6}$/.test(v.trim());
 
 // `direct` (stop code to bus numbers) marks the stops with a bus straight to the other end of
 // a planned route; `note` says so above them.
-function renderAcList(box, stops, services = [], postal = null, direct = null, note = '') {
-    if (!stops.length && !services.length && !postal) { box.hidden = true; box.innerHTML = ''; return; }
+// `campus` ({ routes, stops }, Campus.search) adds the campus shuttles' routes and the campus
+// stops LTA hasn't got (js/campus.js), after the buses.
+function renderAcList(box, stops, services = [], postal = null, direct = null, note = '', campus = null) {
+    const campusRoutes = campus?.routes || [];
+    const campusStops = campus?.stops || [];
+    if (!stops.length && !services.length && !postal && !campusRoutes.length && !campusStops.length) { box.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML =
         (note ? `<div class="acNote">${escapeHtml(note)}</div>` : '') +
         (postal
@@ -525,6 +550,18 @@ function renderAcList(box, stops, services = [], postal = null, direct = null, n
             `<div class="acItem acService" data-svc="${escapeHtml(no)}">` +
             `<span class="code">${ico('bus')} Bus ${escapeHtml(no)}</span>` +
             `<span class="name">${escapeHtml(serviceEndsText(no))}</span>` +
+            `</div>`
+        ).join('') +
+        campusRoutes.map(r =>
+            `<div class="acItem acService" data-campus-route="${escapeHtml(r.key)}">` +
+            `<span class="code">${ico('bus')} ${escapeHtml(r.code)}</span>` +
+            `<span class="name">${escapeHtml(tr('campus.routeTitle', '{uni} shuttle {route}', { uni: campusUni(r.uni), route: r.code }))}</span>` +
+            `</div>`
+        ).join('') +
+        campusStops.map(s =>
+            `<div class="acItem" data-campus-stop="${escapeHtml(s.key)}">` +
+            `<span class="code">${escapeHtml(campusUni(s.uni))}</span>` +
+            `<span class="name">${escapeHtml(s.name)}<span class="road"> · ${escapeHtml(tr('campus.shuttleStop', 'Shuttle buses only'))}</span></span>` +
             `</div>`
         ).join('') +
         stops.map(it => {
@@ -547,7 +584,7 @@ function renderAcList(box, stops, services = [], postal = null, direct = null, n
 // near it to pick one from. With `directFor` (a stop code to the buses running straight to
 // where the route planner is going, or null), those stops go first and are marked, and
 // `directNote` (given how many) says so above them.
-function attachAutocomplete(input, box, { withServices = false, onStop, onService, onEnter, onPostal, directFor, directNote }) {
+function attachAutocomplete(input, box, { withServices = false, withCampus = false, onStop, onService, onEnter, onPostal, directFor, directNote }) {
     window.wireCombobox?.(input, box);
     onPostal ??= code => postalStops(code)
         .then(({ title, stops }) => openStopList(title, stops, { pin: false, onPick: onStop }))
@@ -567,8 +604,10 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
     const render = () => {
         const v = input.value;
         const { stops, direct, note } = suggest(v);
+        // The campus shuttles, fetched the first time they're wanted (js/campus.js).
+        if (withCampus && window.Campus && !Campus.isReady()) Campus.load().then(() => { if (document.activeElement === input) render(); }).catch(() => {});
         renderAcList(box, stops, withServices && BusNet.isReady() ? BusNet.matchServices(v, 4) : [],
-            isPostalCode(v) ? v.trim() : null, direct, note);
+            isPostalCode(v) ? v.trim() : null, direct, note, withCampus && window.Campus?.isReady() ? Campus.search(v) : null);
     };
     input.addEventListener('input', render);
     input.addEventListener('focus', render);
@@ -590,6 +629,10 @@ function attachAutocomplete(input, box, { withServices = false, onStop, onServic
         if (postal) { box.hidden = true; onPostal(postal.getAttribute('data-postal')); return; }
         const svc = e.target.closest('[data-svc]');
         if (svc) { box.hidden = true; onService?.(svc.getAttribute('data-svc')); return; }
+        const campusRoute = e.target.closest('[data-campus-route]');
+        if (campusRoute) { box.hidden = true; openCampusRoute(campusRoute.dataset.campusRoute); return; }
+        const campusStop = e.target.closest('[data-campus-stop]');
+        if (campusStop) { box.hidden = true; loadStop(campusStop.dataset.campusStop); return; }
         const item = e.target.closest('[data-code]');
         if (!item) return;
         box.hidden = true;
@@ -1061,6 +1104,7 @@ async function fetchArrivals(code, service) {
 
 function renderStopHeader() {
     const { code } = current;
+    $('#stopFavBtn').hidden = false;
     $('#stopCode').textContent = code;
     $('#stopName').textContent = nameOf(code) || 'Bus Stop';
     $('#stopRoad').textContent = stopsIndex?.[code]?.road || '';
@@ -1309,9 +1353,61 @@ function renderCampus() {
     const html = code && !narrowed ? Campus.listHtml(code) : '';
     box.innerHTML = html;
     box.hidden = !html;
+    Campus.live(box);
     if (code && !Campus.isReady()) {
         Campus.load().then(() => { if (current?.code === code && Campus.at(code)) renderCampus(); }).catch(() => {});
     }
+}
+
+// A university's short name, as config.json has it ("NUS").
+const campusUni = uni => window.Campus?.uniName(uni) || String(uni || '').toUpperCase();
+
+// A campus stop LTA hasn't got ("PGP", js/campus.js), in Bus timings as a stop is: its name and
+// university, and its shuttles' scheduled times. No live buses stop there, so there's nothing to
+// fetch, save or pick; Refresh works the times out again.
+function loadCampusStop(key, { ctx = null, scroll = false } = {}) {
+    const stop = Campus.at(key);
+    if (!stop) return;
+    loadSeq++;
+    current = { code: key, campus: true, service: null, expanded: false, ctx, dir: null };
+    navOpen = false;
+    MainScreen.open('timings');
+    $('#q').value = stop.name;
+    $('#acList').hidden = true;
+    $('#stopCode').textContent = campusUni(stop.uni);
+    $('#stopName').textContent = stop.name;
+    $('#stopRoad').textContent = stop.road || '';
+    $('#stopFavBtn').hidden = true;
+    $('#stopTools').innerHTML = '';
+    renderStopContext();
+    $('#stopAside').hidden = true;
+    $('#makeIt').hidden = true;
+    $('#incomingBar').hidden = true;
+    $('#services').innerHTML = '';
+    $('#emptySvc').textContent = tr('campus.shuttleStopNote', 'Only shuttle buses stop here, so there are no public buses.');
+    $('#emptySvc').hidden = false;
+    renderCampus();
+    $('#resultCard').hidden = false;
+    $('#nearStops').hidden = true;
+    history.replaceState(null, '', location.pathname);
+    if (scroll) $('#resultCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// A campus shuttle's route ("nus:A1", js/campus.js) in a window of its own: what its timetable
+// says now from where it starts, and its stops in order, each opening its times.
+function openCampusRoute(key) {
+    const r = Campus.route(key);
+    if (!r) return;
+    $('#campusRouteTitle').textContent = tr('campus.routeTitle', '{uni} shuttle {route}', { uni: r.uniName, route: r.code });
+    $('#campusRouteBadge').textContent = r.code;
+    $('#campusRouteBadge').style.setProperty('--route', r.colour);
+    $('#campusRouteBadge').style.setProperty('--route-ink', r.ink);
+    $('#campusRouteNow').innerHTML = `<strong>${escapeHtml(r.now.main)}</strong> · ${escapeHtml(r.now.sub)}`;
+    $('#campusRouteStops').innerHTML = r.stops.map((s, i) => (s.key
+        ? `<button type="button" class="routeStop" data-campus-open="${escapeHtml(s.key)}"><span class="name">${escapeHtml(s.name)}${s.road ? `<span class="road">${escapeHtml(s.road)}</span>` : ''}</span>${s.lta ? `<span class="pill">${escapeHtml(s.key)}</span>` : ''}</button>`
+        : `<div class="routeStop"><span class="name">${escapeHtml(s.name)}</span></div>`)).join('');
+    $('#campusRouteNote').hidden = !r.loop;
+    openModal('campusRouteModal');
 }
 
 // Puts a stop's timings away, back to Bus timings' search box. Back goes back to the page the
@@ -1334,7 +1430,12 @@ function backToNearStops() {
 }
 
 async function loadStop(code, { service = null, expanded = false, ctx = null, dir = null, pushHistory = true, scroll = false } = {}) {
-    if (!/^\d{5}$/.test(code)) { alert('Please enter a valid 5-digit bus stop code.'); return; }
+    if (!/^\d{5}$/.test(code)) {
+        // A campus stop of its own, by its id (js/campus.js): its shuttles, with no live buses.
+        if (window.Campus?.at(code) && !Campus.at(code).lta) { loadCampusStop(code, { ctx, scroll }); return; }
+        alert('Please enter a valid 5-digit bus stop code.');
+        return;
+    }
     // Offline, Bus timings is gone till it's back (js/offline.js): a stop tapped anywhere, a
     // link to one or Refresh brings the offline bar back to say so, and what's on show stays.
     if (window.Offline?.blocked()) return;
@@ -1908,6 +2009,7 @@ function openSettings(group) {
     syncRestrictedButtons();
     syncCustomsButtons();
     syncBikeButtons();
+    syncShuttleButtons();
     syncTimesButtons();
     syncMainButtons();
     prepareSync();
@@ -2079,6 +2181,16 @@ async function runSearch() {
         if (BusNet.hasService(svc)) { searchBus(svc); return; }
     }
 
+    // A campus shuttle's route ("A1", "CL-B"), or a campus stop LTA hasn't got ("PGP") by its
+    // whole name (js/campus.js).
+    if (window.Campus) {
+        try { await Campus.load(); } catch { /* the stops alone */ }
+        const campus = Campus.search(v, 1);
+        const fold = x => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (campus.routes[0] && fold(campus.routes[0].code) === fold(v)) { openCampusRoute(campus.routes[0].key); return; }
+        if (campus.stops[0] && fold(campus.stops[0].name) === fold(v)) { loadStop(campus.stops[0].key); return; }
+    }
+
     const { stops, note } = matchStops(v);
     // A station ("Bedok MRT") lists its stops to pick from, as a postal code does.
     if (stops[0]?.distance != null) { openNearbyList(stops, note); return; }
@@ -2087,11 +2199,11 @@ async function runSearch() {
         Recents.add(Recents.stopItem(first.code));
         loadStop(first.code);
     }
+    else if (window.Campus?.search(v, 1).stops[0]) loadStop(Campus.search(v, 1).stops[0].key);
     else alert('Type a bus stop name, 5-digit stop code, 6-digit postal code, or bus number.');
 }
 
 // ----------- Events -----------
-$('#titleBtn').addEventListener('click', openSettings);
 $('#settingsBtn').addEventListener('click', openSettings);
 $('#settingsPlaces').addEventListener('click', () => { closeModal('settingsModal'); Places.open(); });
 $('#settingsCalendar').addEventListener('click', () => { closeModal('settingsModal'); Calendar.openSettings(); });
@@ -2120,6 +2232,12 @@ $$('[data-customs]').forEach(btn => btn.addEventListener('click', () => {
 $$('[data-bike]').forEach(btn => btn.addEventListener('click', () => {
     LS.setBike(btn.dataset.bike === 'on');
     syncBikeButtons();
+}));
+// Explorer redraws its shuttles for it (js/map.js, shuttleschange).
+$$('[data-shuttles]').forEach(btn => btn.addEventListener('click', () => {
+    LS.setShuttlesPaid(btn.dataset.shuttles === 'paid');
+    syncShuttleButtons();
+    window.dispatchEvent(new Event('shuttleschange'));
 }));
 // The timings on show change over at once; Glance hears it too (timeschange).
 $$('[data-times]').forEach(btn => btn.addEventListener('click', () => {
@@ -2157,6 +2275,7 @@ const searchBus = svc => { Recents.add(Recents.busItem(svc)); openService(svc); 
 const searchPostal = code => { Recents.add(Recents.postalItem(code)); openPostalList(code); };
 attachAutocomplete($('#q'), $('#acList'), {
     withServices: true,
+    withCampus: true,
     onStop: searchStop,
     onService: searchBus,
     onEnter: runSearch,
@@ -2190,6 +2309,13 @@ $('#stopFavBtn').addEventListener('click', () => {
 });
 $('#stopBackBtn').addEventListener('click', () => { if (current?.ctx) goBack(current.ctx); });
 $('#stopCloseBtn').addEventListener('click', closeStop);
+// A campus route's stop (openCampusRoute): its times in Bus timings.
+$('#campusRouteStops').addEventListener('click', e => {
+    const btn = e.target.closest('[data-campus-open]');
+    if (!btn) return;
+    closeModal('campusRouteModal');
+    loadStop(btn.dataset.campusOpen, { scroll: true });
+});
 $('#settingsTour').addEventListener('click', e => {
     const btn = e.target.closest('[data-tour]');
     if (!btn) return;
@@ -2361,6 +2487,8 @@ function favListAction(t) {
     if (d.favList) {
         setFavListOn(d.favList);
         favListForm = null;
+        // Glance shows the same list (js/glance.js).
+        window.Glance?.follow(d.favList === 'favourites' ? null : d.favList);
     } else if ('favListNew' in d) {
         favListForm = { kind: 'new' };
     } else if ('favListRename' in d && mine) {

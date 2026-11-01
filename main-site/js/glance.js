@@ -2,7 +2,8 @@
 // at the top, the next bus from a few stops, and under it those stops as short cards, each bus on
 // one line with where it's going and its next three times: only your favourite buses, once you
 // have any, so a busy interchange isn't a dozen lines. A chip over it picks the stops:
-// your saved stops, the ones nearby, or the ones near Home, Work or another place. Tapping a
+// your saved stops, a list of them, the ones nearby, or the ones near Home, Work or another
+// place, in step with the list Favourites is on (pick, follow). Tapping a
 // bus or a stop opens its full timings, as a search does. On unless Settings turns it off.
 //
 // Nearby only looks for where you are once you've asked, or the browser already allows it.
@@ -297,13 +298,29 @@
       `<button class="glanceMenuItem${s.key === now ? ' active' : ''}" type="button" role="menuitemradio" aria-checked="${s.key === now}" data-source="${esc(s.key)}">${ico(s.icon)} ${esc(s.name)}</button>`).join('');
   }
 
+  // Glance and Favourites show the same list (Augy, 1 November 2026): a list picked here is
+  // the one Favourites opens on, and Saved stops, Nearby or a place puts Favourites back on
+  // Favourites itself. Favourites' tabs do the same back (follow).
   function pick(key) {
     source = key;
     store.set(KEY, key);
     openMenu(false);
     fetchedAt = 0;
     stops = [];
+    window.setFavListOn?.(key.startsWith('list:') ? key.slice(5) : null);
     refresh({ ask: key === 'near' });
+  }
+
+  // Favourites' tab picked (script.js): its list here too, if it has stops to show, or Saved
+  // stops for Favourites itself. A list of buses only has nothing for Glance, so it stays.
+  function follow(listId) {
+    const key = listId ? `list:${listId}` : 'saved';
+    if (chosen()?.key === key || !sources().some((s) => s.key === key)) return;
+    source = key;
+    store.set(KEY, key);
+    fetchedAt = 0;
+    stops = [];
+    if (showing()) refresh();
   }
 
   function open(code, svc) {
@@ -375,5 +392,5 @@
     else render();
   }
 
-  window.Glance = { init, refresh, enabled, setEnabled, favsChanged };
+  window.Glance = { init, refresh, enabled, setEnabled, favsChanged, follow };
 })();

@@ -99,20 +99,26 @@ Under the stop's name, a few stops carry a note:
   **Immigration checkpoint**, and the stops in Johor Bahru, at its checkpoint,
   JB Sentral and Larkin Terminal, say **In Malaysia**: you'll need your
   passport to go on. Search results and route lists mark them too.
-- **Campus shuttles.** At a stop NUS's or NTU's campus shuttles call at, a
-  **Campus shuttles** list under the buses gives each route's timetable:
-  how often it runs now, or its next departures. Scheduled, not live: see
-  [Campus shuttles](#campus-shuttles).
+- **Shuttle buses.** At a stop a shuttle bus calls at, such as NUS's, NTU's or
+  IKEA's, a **Shuttle buses** list under the buses gives each route's
+  timetable: how often it runs now, or its next departures. See
+  [Shuttle buses](#shuttle-buses).
 
-## Campus shuttles
+## Shuttle buses
 
 <figure>
 <img src="/screenshots/web/timings-campus.png" alt="Ctrl Lib (16181) on Kent Ridge Crescent: its live buses 95 and 151, each with its next three, then Campus shuttles, scheduled times, not live: A1 every 4–6 min till 23:00, D1 every 6–8 min till 23:00, K at 09:04, 09:44 and 10:24 from PGP, and R1 at 08:40, 09:00 and 09:20 from Kent Vale, each in its route's colour, and NUS term timings under them." width="342" height="1344" loading="lazy">
 <figcaption>Ctrl Lib at NUS on a Friday morning in term: its public buses, live, then the shuttles' timetable.</figcaption>
 </figure>
 
-At a stop NUS's or NTU's campus shuttles call at, **Campus shuttles** comes
-under the live buses, each route in its colour:
+At a stop a shuttle bus calls at, **Shuttle buses** comes under the live buses,
+each route in its colour. The shuttles are NUS's and NTU's campus buses and the
+island's others anyone can ride: IKEA Tampines' from Tampines and Serangoon
+MRT, Changi Airport's between the terminals and to Tanah Merah Ferry Terminal,
+KK Women's and Children's Hospital's from Novena and Bugis, Mandai's from
+Khatib, Clarke Quay's late-night shuttles home, Orchid Country Club's from
+Yishun, and the TS1 coach from Changi Airport to Johor Bahru. The Novotel and
+Mercure on Stevens' shuttle is there too, marked **Hotel guests only**.
 
 - **Every 4–6 min** while it runs at a frequency, with when it stops for the day.
 - Its **next three departures** from where it starts, for a route that keeps
@@ -120,12 +126,23 @@ under the live buses, each route in its colour:
 - **No bus till 14:16**, **First bus 09:07**, **No more buses today** or **Not
   running today**, with when the next one is, when it isn't running now.
 
-These are the universities' timetables, not live times: the shuttles have none
-the app can show. NUS's change in the vacation, and the line under the list
-says whether it's **NUS term timings** or **NUS vacation timings**. Public
-holidays run to Sunday's times. Narrowed to one bus, the list steps aside.
-On [Explorer](explorer.md#campus-shuttles), the shuttles' routes and their own
-stops are on the map.
+These are the operators' timetables. Where an operator shows its buses live,
+as IKEA's and the Stevens hotels' do, the row also says **Live: 4 min**, the
+next bus by its tracker. A paid one says its fare, such as **S$2.50**. NUS's
+change in the vacation, and the line under the list says whether it's **NUS
+term timings** or **NUS vacation timings**. Public holidays run to Sunday's
+times. Narrowed to one bus, the list steps aside. On
+[Explorer](explorer.md#shuttle-buses), the shuttles' routes and their own stops
+are on the map.
+
+<figure>
+<img src="/screenshots/web/timings-shuttle-stop.png" alt="IKEA Tampines, a stop only shuttle buses use: a note that only shuttle buses stop here, then Shuttle buses, scheduled times, not live: IKEA T at 12:25, 13:05 and 13:45, leaving here, and IKEA S at 13:40, 14:40 and 15:40, leaving here, each saying Live: 6 min." width="342" height="391" loading="lazy">
+<figcaption>IKEA Tampines: its shuttles' next departures, and the next bus live.</figcaption>
+</figure>
+
+A stop only shuttles use, such as PGP or IKEA Tampines, opens the same way,
+from [the search](search.md#shuttle-buses) or from Explorer: its shuttles, and
+a line saying no public buses stop there.
 
 ## Arriving from a list
 

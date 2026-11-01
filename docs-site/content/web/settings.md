@@ -26,6 +26,8 @@ straight to one.
 | **Calendar** | **Calendar settings** links your calendar: see [Calendar](calendar.md). |
 | **sgbus terminal** | **Open the sgbus terminal** opens the Linux app's `sgbus>` prompt, full screen: see [The sgbus terminal](terminal.md). |
 | **Report a bug** | In **Help and extras**: tell Augy what went wrong, and it reaches him on Telegram. See [Report a bug](#report-a-bug). |
+| **uwuCoins** | In **Help and extras**: your coins and the wheel to spin them on. See [uwuCoins](uwucoins.md). |
+| **Achievements** | The feats, each with how far along you are, and the Easter eggs found. See [uwuCoins](uwucoins.md#achievements). |
 | **Show me around** | A button for each page's [tour](main-screen.md#the-tours), to see it again as it shows the first time that page opens. |
 | **Next bus at a glance** | **On** (the default) or **Off**: the Glance page, with the next bus in big letters and your stops' buses. Off takes it out of the Edge Tray, and the app opens on Bus timings. See [Your main screen](main-screen.md#glance). |
 | **Custom home** | The page the app opens on, first in the Edge Tray: **Glance** (the default), **Bus timings**, **Favourites**, **Navigate**, **Service alerts**, **Your trips** or **Places**. See [Your main screen](main-screen.md#custom-home). |
@@ -35,10 +37,11 @@ straight to one.
 | **Restricted areas** | **Keep out** (the default) or **I have a pass**: for people who work inside Changi Airport's cargo area or at MINDEF's stops on Gombak Drive. With a pass, [Navigate](nav.md) and the [route planner](route-planner.md) get on and off at those stops, and ride through the cargo area, as at any other. |
 | **Immigration time** | How long a journey across the Causeway counts for getting off, clearing both checkpoints and getting on again. **By the time** (the default): about 15 minutes when it's quiet, up to an hour at the rush. Or your own: **15 min**, **30 min**, **45 min** or **1 hr**. See [Navigate](nav.md#across-the-causeway). |
 | **Cycling** | **No bike** (the default) or **I have a bike**. With a bike, [Navigate](nav.md#traffic-walking-and-cycling) also says how long cycling there takes, and a [trip](get-off-alert.md#a-faster-way) tells you when cycling the rest of the way is quicker. |
+| **Shuttle buses** | **Free only** (the default) or **Free and paid**: which [shuttle buses](timings.md#shuttle-buses) Navigate rides and Explorer shows. A hotel's or a condo's shuttle is only used to or from it. |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Picture-in-picture** | The [Android app](android-app.md#picture-in-picture) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
-| **Edge Tray buttons** | Turn off any of **[Explorer](explorer.md)**, **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee** and **Guide** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
+| **Edge Tray buttons** | Turn off any of **[Explorer](explorer.md)**, **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee**, **Guide** and **[uwuCoins](uwucoins.md)** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
 | **Sync with another device** | See [Sync between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.
@@ -56,6 +59,11 @@ Changes save as you make them. There is no Save button.
 <figure>
 <img src="/screenshots/web/settings-cycling.png" alt="Settings' Cycling, with No bike and I have a bike, I have a bike picked, and a note that with a bike Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker." width="396" height="161" loading="lazy">
 <figcaption>Cycling, for Navigate and trips to weigh a bike too.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/settings-shuttles.png" alt="Settings' Shuttle buses, with Free only and Free and paid, Free only picked, and a note that shuttle buses such as NUS's and NTU's, IKEA's and Changi Airport's are in Navigate and on Explorer's map, paid ones such as Mandai's and the TS1 to Johor Bahru only with Free and paid, and a hotel's shuttle only to or from that hotel." width="396" height="195" loading="lazy">
+<figcaption>Shuttle buses: free ones only, or paid ones too.</figcaption>
 </figure>
 
 <figure>
@@ -176,16 +184,10 @@ contrast or "increase contrast" setting. **On** turns it on whatever that says,
 and **Off** keeps it off. High contrast makes text black or white, cards solid
 rather than see-through, and their edges clear.
 
-### A secret
+### Secrets
 
-There's one more thing in the theme picker, but only once you've earned it. Ride
-every MRT and LRT line at least once on a trip with the
-[Get Off Alert](get-off-alert.md): the North-South, East-West (its Changi Airport
-branch counts), North East, Circle, Downtown and Thomson-East Coast lines, and the
-Bukit Panjang, Sengkang and Punggol LRTs, on as many trips as you like. Then see
-what happens. Only rides you really take count: the app has to see your
-phone where the ride starts and where it ends, taking about as long as the
-ride does.
+There's more in the theme picker, but only once you've earned it: spin the
+[uwuCoins](uwucoins.md) wheel for an Easter egg, and see what it brings.
 
 > [!TIP]
 > This guide has the same theme picker, at the top right of every page. Its

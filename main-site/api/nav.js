@@ -43,8 +43,8 @@ const LIVE_MIN = 30;
 
 // The ways with a stop on the way: OneMap checks each half from when it sets off, three calls
 // a half, and the best of each are joined.
-async function viaWays(graph, from, via, to, when, own) {
-  const { first, second, fits } = planViaFor(graph, from, via, to, when, own);
+async function viaWays(graph, from, via, to, when, own, shuttles) {
+  const { first, second, fits } = planViaFor(graph, from, via, to, when, own, shuttles);
   const [one, two] = await Promise.all([
     checkWithOneMap(first.options, from, via, new Date(first.setOff)),
     checkWithOneMap(second.options, via, to, new Date(second.setOff)),
@@ -104,14 +104,17 @@ export default async function handler(req, res) {
       live ? getTraffic() : null,
     ]);
     const own = ["15", "30", "45", "60"].includes(req.query.customs) ? Number(req.query.customs) : null;
+    // &shuttles=paid: Settings' Shuttle buses on Free and paid; otherwise free ones only
+    // (js/nav-core/campus.js, rideable).
+    const shuttles = { paid: req.query.shuttles === "paid" };
     const planned = traffic ? withTraffic(graph, traffic) : graph;
     let options, checked, others, setOff;
     if (via) {
       // Walking, cycling or driving the whole way would skip the stop, so none is offered.
-      ({ options, checked, setOff } = await viaWays(planned, from, via, to, when, own));
+      ({ options, checked, setOff } = await viaWays(planned, from, via, to, when, own, shuttles));
       others = {};
     } else {
-      const ours = planFor(planned, from, to, when, own);
+      const ours = planFor(planned, from, to, when, own, shuttles);
       const best = ours.options.find((o) => !o.walkOnly)?.minutes ?? GUESS_MIN;
       setOff = ours.setOff;
       [{ options, checked }, others] = await Promise.all([

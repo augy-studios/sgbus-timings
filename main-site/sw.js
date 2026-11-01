@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v138";
+const VERSION = "v139";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -16,8 +16,12 @@ const ASSETS = [
   "/i18n/zh-SG.json",
   "/i18n/ms.json",
   "/i18n/ta.json",
-  // Rides really taken, and the secret colours they unlock (js/rides.js, js/colours.js).
+  // Rides really taken, the Easter eggs, and the secret colours they unlock (js/rides.js,
+  // js/eggs.js, js/colours.js, with the colour wheel, js/wheel.js).
   "/js/rides.js",
+  "/js/eggs.js",
+  "/js/coins.js",
+  "/js/wheel.js",
   "/js/colours.js",
   // The celebration for every line ridden; three.js itself is kept as MapLibre is, once fetched.
   "/js/celebrate.js",
@@ -73,6 +77,8 @@ const ASSETS = [
   "/data/campus/nus.json",
   "/data/campus/ntu.json",
   "/data/campus/config.json",
+  // The island's other shuttle buses (IKEA's, Changi Airport's, KKH's...), read the same way.
+  "/data/campus/shuttles.json",
   "/js/card.js",
   "/js/offline-share.js",
   "/js/reminders.js",
@@ -108,6 +114,7 @@ const ASSETS = [
   "/js/nav-core/plan.js",
   "/js/nav-core/via.js",
   "/js/nav-core/when.js",
+  "/js/nav-core/campus.js",
   "/data/rail.json",
   "/js/share.js",
   "/js/sw-update.js",

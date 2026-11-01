@@ -24,6 +24,8 @@ suggestion, and the stop's timings open underneath.
 | A bus number | `22`, `NR7`, `971E` | Opens [that bus's route](bus-routes.md) |
 | A 6-digit postal code | `519599` | Lists the 8 stops nearest that address |
 | An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists the stops at its exits |
+| A shuttle bus route | `A1`, `CL-B`, `M2` | Opens [that shuttle's route](#shuttle-buses) |
+| A shuttle bus stop | `PGP`, `IKEA` | Opens its shuttle times |
 
 As you type, a list drops down with matching buses first, then up to 20
 matching stops. Tap one to open it, or press **Enter** or tap **Get Timings** to
@@ -59,6 +61,25 @@ within about 250 m of its exits, nearest first, with how far each one is.
 > The stop code is printed on the pole at every bus stop, and never changes.
 > Once you know the code of a stop you use often, typing it is the quickest way
 > in. Better still, [save it as a favourite](favourites.md).
+
+### Shuttle buses
+
+<figure>
+<img src="/screenshots/web/search-shuttles.png" alt="The search box with ikea typed in, and under it IKEA's three shuttle stops: IKEA Tampines, Tampines Stn Exit B and Serangoon Stn Exit E, each marked IKEA and Shuttle buses only." width="342" height="302" loading="lazy">
+<figcaption>Shuttle stops come up by name as you type.</figcaption>
+</figure>
+
+Shuttle buses come up as you type too: a route by its code, such as `A1` for
+NUS's or `CL-B` for NTU's, and a stop only shuttles use by its name, such as
+`PGP` or `IKEA Tampines`. A stop opens with its
+[shuttle times](timings.md#shuttle-buses). A route opens in a window of its
+own: what its timetable says now, and its stops in order. Tap a stop for its
+times.
+
+<figure>
+<img src="/screenshots/web/shuttle-route.png" alt="NUS shuttle A1 in a window of its own: every 4–6 min till 23:00, a note that shuttle times are from the timetable and live where the operator shares them, then its stops in order from Kent Ridge Ter, through LT 13, AS 5, BIZ 2 and PGP to Kent Ridge Stn Exit A/NUH and on to Ctrl Lib, and a note that it is a loop." width="396" height="808" loading="lazy">
+<figcaption>A shuttle's route: its timetable now, and its stops in order.</figcaption>
+</figure>
 
 ## Say it, or scan it
 

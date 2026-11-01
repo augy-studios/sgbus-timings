@@ -596,10 +596,12 @@ async function askNav(from, to, when, via) {
   const customs = LS.getCustoms() === 'auto' ? '' : `&customs=${LS.getCustoms()}`;
   // Settings' Cycling: ways by bike weighed too (`others.cycle`).
   const bike = LS.getBike() ? '&bike=1' : '';
+  // Settings' Shuttle buses: paid ones too (js/nav-core/campus.js, rideable).
+  const shuttles = LS.getShuttlesPaid() ? '&shuttles=paid' : '';
   const stop = via ? `&via=${coord(via)}` : '';
   let r;
   try {
-    r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${stop}${at}${open}${customs}${bike}`, { cache: 'no-store' });
+    r = await fetch(`/api/nav?from=${coord(from)}&to=${coord(to)}${stop}${at}${open}${customs}${bike}${shuttles}`, { cache: 'no-store' });
   } catch (e) {
     // Not reached at all (a network error is a TypeError): planned on the phone.
     if (e instanceof TypeError) return planOnPhone(from, to, when, via);
@@ -622,7 +624,7 @@ const navWorker = { worker: null, failed: false, seq: 0, waiting: new Map(), sto
 async function planOnPhone(from, to, when = null, via = null) {
   const point = (p) => ({ lat: p.lat, lng: p.lng });
   const customs = LS.getCustoms() === 'auto' ? null : Number(LS.getCustoms());
-  const ask = { from: point(from), to: point(to), via: via ? point(via) : null, when: when ? { mode: when.mode, at: when.at } : null, open: BusNet.openAccess(), customs, now: Date.now() };
+  const ask = { from: point(from), to: point(to), via: via ? point(via) : null, when: when ? { mode: when.mode, at: when.at } : null, open: BusNet.openAccess(), customs, shuttles: { paid: LS.getShuttlesPaid() }, now: Date.now() };
   return phoneCall({ ask });
 }
 
@@ -851,10 +853,21 @@ function doorsPanel(p, text, color) {
     `</div>`;
 }
 
+// A shuttle bus (js/nav-core/campus.js) in its route's colour, with whose it is: "NUS A1".
 function legChip(leg) {
+  if (leg.campus) return `<span class="busChip shuttleChip" style="--route:${escapeHtml(leg.campus.colour || '#7a4fd6')};--route-ink:${shuttleInk(leg.campus.colour)}">${ico('bus')} ${escapeHtml(`${leg.campus.name} ${leg.route}`)}</span>`;
   if (leg.mode === 'bus') return `<span class="busChip">${ico('bus')} ${escapeHtml(leg.route)}</span>`;
   const dot = leg.color ? `<span class="lineDot" style="--line:${escapeHtml(leg.color)}"></span>` : '';
   return `<span class="busChip lineChip">${dot}${escapeHtml(leg.route)}</span>`;
+}
+
+const shuttleInk = (hex) => (window.Campus?.inkOn ? Campus.inkOn(hex) : '#fff');
+
+// What a shuttle costs and who may ride it, in words: "Free", "S$2.50", "Hotel guests only".
+function shuttleTerms(c) {
+  const fare = c.fare === 'paid' ? (c.fareText || I18n.t('nav.shuttle.paid', 'Paid')) : I18n.t('nav.shuttle.free', 'Free');
+  const who = c.access === 'guests' ? I18n.t('nav.shuttle.guests', 'Hotel guests only') : c.access === 'residents' ? I18n.t('nav.shuttle.residents', 'Residents only') : '';
+  return [fare, who].filter(Boolean).join(' · ');
 }
 
 function walkMetres(o) {
@@ -975,6 +988,18 @@ async function renderNavOption(o) {
         (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disrupted', 'LTA reports a disruption on this line. Check Service alerts.'))}</div>` : '') +
         `</li>`;
     }
+    // A shuttle: its timetable's average wait, and what it costs; no LTA timings. The stop's
+    // button opens its shuttle times (script.js, loadStop).
+    if (leg.campus) {
+      return `<li class="step stepLeg">` +
+        `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.stops === 1 ? I18n.t('nav.oneStopMin', '1 stop · ~{min} min', { min: Math.round(leg.minutes) }) : I18n.t('nav.stopsMin', '{n} stops · ~{min} min', { n: leg.stops, min: Math.round(leg.minutes) }))}</span></div>` +
+        `<div class="legRide">${escapeHtml(I18n.t('nav.busRideTowards', 'From {from} to {to}, towards {towards}', { from: placeName(leg.from), to: placeName(leg.to), towards: leg.towards }))}</div>` +
+        (leg.board != null ? `<div class="legNote">${escapeHtml(I18n.t('nav.shuttle.board', 'Board around {time}, after the timetable’s average wait.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>` : '') +
+        `<div class="legNote">${escapeHtml([leg.campus.label || I18n.t('campus.routeTitle', '{uni} shuttle {route}', { uni: leg.campus.name, route: leg.route }), shuttleTerms(leg.campus)].filter(Boolean).join(' · '))}</div>` +
+        (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}">${ico('clock')} ${escapeHtml(I18n.t('nav.shuttle.times', 'Shuttle times at {stop}', { stop: leg.from.name }))}</button>` : '') +
+        `</li>` +
+        navCrossingSteps(leg);
+    }
     const t = timings[k];
     const board = (nav.when || o.offline) && leg.board != null
       ? `<div class="legNote">${escapeHtml(I18n.t('nav.boardAroundWait', 'Board around {time}, after an average wait.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>`
@@ -1014,7 +1039,7 @@ async function renderNavOption(o) {
   }
   if (!live) return;
 
-  const busLegs = o.legs.map((l, k) => [l, k]).filter(([l]) => l.mode === 'bus' && l.from?.code);
+  const busLegs = o.legs.map((l, k) => [l, k]).filter(([l]) => l.mode === 'bus' && !l.campus && l.from?.code);
   const results = await Promise.allSettled(busLegs.map(([l]) => fetchArrivals(l.from.code, l.route)));
   if (token !== nav.token || nav.option !== o) return;
   const timings = {};
@@ -1156,7 +1181,8 @@ function tripFromNav(o, to, from = nav.from) {
     if (!(l.path?.length >= 2)) return;
     legs.push({
       kind: l.mode,
-      label: l.mode === 'bus' ? I18n.t('trip.bus', 'Bus {no}', { no: l.route }) : l.lrt ? I18n.t('trip.lrt', '{line} LRT', { line: l.route }) : I18n.t('trip.line', '{line} Line', { line: l.route }),
+      label: l.campus ? I18n.t('trip.shuttle', '{name} shuttle {no}', { name: l.campus.name, no: l.route })
+        : l.mode === 'bus' ? I18n.t('trip.bus', 'Bus {no}', { no: l.route }) : l.lrt ? I18n.t('trip.lrt', '{line} LRT', { line: l.route }) : I18n.t('trip.line', '{line} Line', { line: l.route }),
       to: placeName(l.to),
       points: l.path,
       names: l.mode === 'train' ? (l.names || []).map(stationName) : l.names,
@@ -1166,7 +1192,10 @@ function tripFromNav(o, to, from = nav.from) {
       // For the server to find the bus while the app is in the background.
       // `codes`, each stop's, so the timeline's stops open their timings.
       // `usual`, its minutes without traffic (api/_nav/live.js), for timing it by the traffic.
-      ...(l.mode === 'bus' && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l), usual: l.usual }),
+      ...(l.mode === 'bus' && !l.campus && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l), usual: l.usual }),
+      // A shuttle bus: no LTA timings to follow it by (js/trip.js, which needs `service` for
+      // them), only the plan's; its stops still open their shuttle times.
+      ...(l.campus && { shuttle: { name: l.campus.name, colour: l.campus.colour, route: l.route }, codes: busCodes(l) }),
       // The line, for Your trips' chips and Trip Modes.
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
     });

@@ -15,7 +15,7 @@ stays in that browser.
 </figure>
 
 - **The greeting** at the top greets you by the time of day, and by name once you have set
-  one. Tap the title for [Settings](settings.md).
+  one in [Settings](settings.md).
 - **The Edge Tray** is the column of buttons at the top right of
   the screen. First come the app's [pages](main-screen.md#pages-in-the-edge-tray):
   [**Glance**](main-screen.md#glance) (the eye), **Bus timings** (the bus),

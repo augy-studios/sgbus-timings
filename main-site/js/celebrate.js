@@ -1,8 +1,9 @@
 // The celebration for riding every MRT and LRT line (help desk #6): a 3D scene, drawn with
 // three.js, of the whole MRT and LRT network raised off a dark slab in the lines' colours,
 // tilted and turning slowly, with a gold trophy spinning above it and confetti falling, then
-// Pick my colours (js/colours.js) and Close. Shown once as Your colours unlock, and again from
-// Theme, Your colours, Watch the celebration.
+// Spin the wheel (js/coins.js) and Close. Shown once as the every-line feat is done
+// (js/eggs.js, which puts in its words the coins it's worth), and again from Theme, Your
+// colours, Watch the celebration.
 //
 // three.js 0.169.0 (MIT) is vendored in /vendor/three-0.169.0/, fetched only the first time this
 // runs and kept by sw.js as MapLibre is, so it runs offline once it's been fetched; js/rides.js
@@ -341,7 +342,7 @@
     $('celebrateClose').addEventListener('click', () => window.closeModal(ID));
     $('celebrateGo').addEventListener('click', () => {
       window.closeModal(ID);
-      setTimeout(() => window.Colours?.open(), 50);
+      setTimeout(() => window.Coins?.open(), 50);
     });
   }
 
@@ -354,25 +355,24 @@
   //
   // The celebration, as riding the last line plays it, to see how it looks: typed in the
   // browser's console, or in chrome://inspect's for the Android app. A preview unless asked:
-  // no rides are saved and Your colours stays locked, so what's been ridden stays true.
+  // no rides are saved and no feat is done, so what's been ridden stays true.
   //
   //   simulateAllLines()                     this phone's own (3D, flat or plain), and the help
   //   simulateAllLines('3d' | 'flat' | 'plain')   that one, whatever this phone is
-  //   simulateAllLines({ unlock: true })     Your colours unlocked too, as riding them does
-  //   simulateAllLines('undo')               locked again, if this unlocked them
+  //   simulateAllLines({ unlock: true })     the feat done too (no coins)
+  //   simulateAllLines('undo')               undone again, if this did it
   //   simulateAllLines('help')               the help only
   //
-  // Unlocking saves no rides: it sets what js/rides.js sets (UNLOCKED_KEY) and fires
-  // "rides:unlocked" for js/colours.js, and notes what was there before under SIM_KEY, which
-  // undo puts back. Undo never locks colours that rides unlocked. It's this browser's own
+  // Unlocking saves no rides and gives no coins: it marks the feat done as js/eggs.js does
+  // (sgbus_feats), and notes what was there before under SIM_KEY, which undo puts back. Undo
+  // never takes away what riding every line did. It's this browser's own
   // storage and nothing else, as anything typed in its console is; no link, message or sync
   // can call it, and nothing on the page shows it.
-  const UNLOCKED_KEY = 'sgbus_colours_unlocked'; // js/rides.js
-  const TOLD_KEY = 'sgbus_colours_told'; // js/colours.js
-  const COLOURS_KEY = 'sgbus_colours'; // js/colours.js
+  // js/eggs.js's and js/colours.js's: all put back by undo.
+  const KEYS = ['sgbus_feats', 'sgbus_eggs', 'sgbus_colours_unlocked', 'sgbus_phone_colours_unlocked', 'sgbus_eggs_told', 'sgbus_colours'];
   const SIM_KEY = 'sgbus_colours_simulated';
   const AS = { '3d': 'scene', scene: 'scene', flat: 'flat', low: 'flat', plain: 'plain', nowebgl: 'plain' };
-  const HELP = "simulateAllLines() plays the every-line celebration as a preview (nothing saved). Options: '3d', 'flat' (low-memory phones) or 'plain' (no WebGL); { unlock: true, as: 'flat' } unlocks Your colours too; 'undo' locks them again; 'help' shows this.";
+  const HELP = "simulateAllLines() plays the every-line celebration as a preview (nothing saved). Options: '3d', 'flat' (low-memory phones) or 'plain' (no WebGL); { unlock: true, as: 'flat' } marks the feat done too; 'undo' takes it away again; 'help' shows this.";
   const store = {
     get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
     put: (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* this visit only */ } },
@@ -383,7 +383,7 @@
     let was;
     try { was = JSON.parse(store.get(SIM_KEY) || 'null'); } catch { was = null; }
     if (!was) {
-      console.log(window.RideCheck?.unlocked() ? 'Nothing to undo: Your colours were unlocked by riding every line, so they stay.' : 'Nothing to undo: Your colours are locked.');
+      console.log('Nothing to undo: simulateAllLines() hasn\'t done the feat.');
       return 'nothing';
     }
     store.put(SIM_KEY, null);
@@ -391,17 +391,16 @@
     window.Confetti?.stop?.();
     // Ridden for real since: unlocked, as it would have been anyway.
     if (!window.RideCheck?.progress().left.length) {
-      console.log('Every line has been ridden since, so Your colours stay unlocked.');
+      console.log('Every line has been ridden since, so the feat stays done.');
       return 'kept';
     }
-    store.put(UNLOCKED_KEY, was.unlocked ?? null);
-    store.put(TOLD_KEY, was.told ?? null);
-    store.put(COLOURS_KEY, was.colours ?? null);
+    for (const k of KEYS) store.put(k, was[k] ?? null);
     let back = null;
-    try { back = was.colours ? JSON.parse(was.colours) : null; } catch { /* the usual colours */ }
+    try { back = was.sgbus_colours ? JSON.parse(was.sgbus_colours) : null; } catch { /* the usual colours */ }
     window.Colours?.paint(back);
     window.closeModal?.('themeModal');
-    console.log('Undone: Your colours are locked again, and the usual colours are back.');
+    window.dispatchEvent(new Event('eggs:unlocked'));
+    console.log('Undone: the feat is undone again.');
     return 'undone';
   }
 
@@ -421,18 +420,21 @@
     if (opts === undefined) console.log(HELP);
     if (as === 'scene' && !webgl()) console.warn('No WebGL in this browser, so the 3D celebration can\'t be drawn: the plain window instead.');
     if (o.unlock) {
-      if (window.RideCheck?.unlocked()) {
-        console.log(store.get(SIM_KEY) ? 'Already unlocked by simulateAllLines(); simulateAllLines(\'undo\') locks them again.' : 'Already unlocked by riding every line.');
+      if (window.Eggs?.feats().includes('lines')) {
+        console.log(store.get(SIM_KEY) ? 'Already done by simulateAllLines(); simulateAllLines("undo") takes it away again.' : 'Already done by riding every line.');
       } else {
-        store.put(SIM_KEY, JSON.stringify({ at: Date.now(), unlocked: store.get(UNLOCKED_KEY), told: store.get(TOLD_KEY), colours: store.get(COLOURS_KEY) }));
-        store.put(UNLOCKED_KEY, String(Date.now()));
-        // Said here, so js/colours.js doesn't play it a second time.
-        store.put(TOLD_KEY, String(Date.now()));
-        window.dispatchEvent(new Event('rides:unlocked'));
-        console.log('Your colours are unlocked (no rides saved). simulateAllLines(\'undo\') locks them again.');
+        store.put(SIM_KEY, JSON.stringify({ at: Date.now(), ...Object.fromEntries(KEYS.map((k) => [k, store.get(k)])) }));
+        // Done as js/eggs.js does it, but said here, so it doesn't play a second time.
+        let feats = {};
+        try { feats = JSON.parse(store.get('sgbus_feats') || '{}') || {}; } catch { /* none yet */ }
+        store.put('sgbus_feats', JSON.stringify({ ...feats, lines: Date.now() }));
+        let told = [];
+        try { told = JSON.parse(store.get('sgbus_eggs_told') || '[]') || []; } catch { /* none yet */ }
+        store.put('sgbus_eggs_told', JSON.stringify([...told, 'feat:lines']));
+        console.log('The feat is done (no rides saved, and no coins given). simulateAllLines("undo") takes it away again.');
       }
     } else {
-      console.log('Preview: nothing saved, so Pick my colours opens Theme with Your colours still locked.');
+      console.log('Preview: nothing saved.');
     }
     closeAll();
     stop();

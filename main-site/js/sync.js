@@ -88,7 +88,7 @@ const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}
 
 const tap = (selector) => document.querySelector(selector)?.click();
 const onOff = (v) => (v === 'on' ? 'On' : 'Off');
-const TRAY_EXTRAS = ['explorer', 'simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines', 'card', 'receive'];
+const TRAY_EXTRAS = ['explorer', 'simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines', 'card', 'receive', 'coins'];
 // The pages "pages.off" keeps (js/main-screen.js): Glance's is "glance", as it was before.
 const PAGES_OFF = () => MainScreen.CAN_HIDE.filter((n) => n !== 'glance');
 

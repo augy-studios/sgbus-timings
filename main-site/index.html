@@ -47,18 +47,14 @@
             // Keep the keys in step with OFF_KEY in js/main-screen.js and js/glance.js.
             var pagesOff = (localStorage.getItem("sgbus_glance_off") === "1" ? "glance " : "") + (localStorage.getItem("sgbus_pages_off") || "");
             if (pagesOff.trim()) document.documentElement.setAttribute("data-pages-off", pagesOff.trim());
-            // High contrast and Your colours (js/colours.js), before first paint.
+            // High contrast, and Your colours or Your phone's colours (js/colours.js), before
+            // first paint: the tokens kept for the mode the page is in.
             var contrast = localStorage.getItem("sgbus_contrast");
             if (contrast === "on" || (contrast !== "off" && window.matchMedia && matchMedia("(prefers-contrast: more)").matches)) document.documentElement.setAttribute("data-contrast", "more");
             var colours = JSON.parse(localStorage.getItem("sgbus_colours") || "null");
-            if (colours && colours.bg) {
-                var st = document.documentElement.style;
-                st.setProperty("--bg", colours.bg);
-                st.setProperty("--ink", colours.text);
-                st.setProperty("--brand", colours.button);
-                st.setProperty("--surface", colours.card);
-                st.setProperty("--surface-strong", colours.card);
-                st.setProperty("--brand-ink", colours.text);
+            var tokens = colours && colours[document.documentElement.getAttribute("data-mode") === "dark" ? "dark" : "light"];
+            if (tokens) {
+                for (var t in tokens) document.documentElement.style.setProperty(t, tokens[t]);
                 document.documentElement.setAttribute("data-custom-colours", "");
             }
             // Singapore's map saved for offline (js/map-save.js, META_KEY): Explorer stays offline.
@@ -170,6 +166,8 @@
                 <span class="tray-rule" aria-hidden="true"></span>
                 <!-- The Android app's Timings near a stop (2.1.0) and Routines (2.2.0), where it has
                      them (js/reminders.js). Either can be turned off in Settings, Edge Tray buttons -->
+                <!-- uwuCoins (js/coins.js): the balance, and a tap for the wheel in Settings' Help and extras -->
+                <button id="coinsBtn" data-tray-extra="coins" class="glass-btn coinsBtn" type="button" data-i18n-aria-label="tray.coins" aria-label="uwuCoins" data-i18n-title="tray.coins.title" title="uwuCoins: earned on trips, for a spin of the wheel"><span data-icon="coin"></span><span class="coinsBadge" data-coins-balance>0</span></button>
                 <button id="nearStopsTrayBtn" data-tray-extra="nearstops" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.nearStops" aria-label="Timings near a stop" data-i18n-title="tray.nearStops.title" title="Timings near a stop: a stop's next buses as you walk up to it" hidden><span data-icon="clock"></span></button>
                 <button id="routinesTrayBtn" data-tray-extra="routines" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.routines" aria-label="Routines" data-i18n-title="tray.routines.title" title="Routines: a stop's next buses at a time you set" hidden><span data-icon="alarm"></span></button>
                 <!-- A card's value over NFC: the Android app on a phone with NFC only (js/card.js).
@@ -206,7 +204,7 @@
 
     <div class="container" role="main">
         <!-- The greeting, at the top of the page and scrolling with it, as sg-psi's brand line -->
-        <div class="brand" id="titleBtn" title="Tap for settings: your name, birthday and favourites">
+        <div class="brand" id="titleBtn">
             <img class="logo" src="/sgbusicon1.png" alt="" aria-hidden="true" width="44" height="44">
             <div class="brand-text">
                 <h1 id="greeting">Singapore Bus Timings</h1>
@@ -576,6 +574,22 @@
     </div>
 
     <!-- A list of stops to pick from: the stops near a postal code, or an end of the route planner -->
+    <!-- A campus shuttle's route, from Bus timings' search (script.js, openCampusRoute; js/campus.js) -->
+    <div id="campusRouteModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="campusRouteTitle">
+            <div class="modal-head">
+                <h2 class="campusRouteHead"><span id="campusRouteBadge" class="campusNo"></span> <span id="campusRouteTitle"></span></h2>
+                <button class="icon-btn small" type="button" data-close-modal="campusRouteModal" data-i18n-aria-label="common.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <p id="campusRouteNow" class="svcNote"></p>
+            <p class="mode-note" data-i18n="campus.timetableNote">Shuttle times are from the timetable, and live where the operator shares them.</p>
+            <div id="campusRouteStops" class="routeList"></div>
+            <p id="campusRouteNote" class="mode-note" data-i18n="campus.loopNote" hidden>A loop: it ends where it starts.</p>
+        </div>
+    </div>
+
     <div id="stopListModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="stopListTitle">
             <div class="modal-head">
@@ -663,8 +677,9 @@
                     <button class="shareMenuItem" type="button" data-settings-open="you"><span class="ico" data-icon="home" aria-hidden="true"></span><span><strong data-i18n="settings.you">You</strong><span class="sub" data-i18n="settings.name_birthday_confetti_places_calendar">Language · Name · Birthday · Confetti · Places · Calendar</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
                     <button class="shareMenuItem" type="button" data-settings-open="pages"><span class="ico" data-icon="more" aria-hidden="true"></span><span><strong data-i18n="settings.pages_and_edge_tray">Pages and Edge Tray</strong><span class="sub" data-i18n="settings.custom_home_edge_tray_side">Custom home · Edge Tray side · Edge Tray buttons · Favourites first or last</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
                     <button class="shareMenuItem" type="button" data-settings-open="trips"><span class="ico" data-icon="bell" aria-hidden="true"></span><span><strong data-i18n="settings.trips_and_alerts">Trips and alerts</strong><span class="sub" data-i18n="settings.get_off_alert">Get Off Alert</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
-                    <button class="shareMenuItem" type="button" data-settings-open="navigate"><span class="ico" data-icon="navigate" aria-hidden="true"></span><span><strong data-i18n="settings.navigate">Navigate</strong><span class="sub" data-i18n="settings.restricted_areas_immigration_time_cycling">Restricted areas · Immigration time · Cycling</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
-                    <button class="shareMenuItem" type="button" data-settings-open="help"><span class="ico" data-icon="help" aria-hidden="true"></span><span><strong data-i18n="settings.help_and_extras">Help and extras</strong><span class="sub" data-i18n="settings.show_me_around_sgbus_terminal">Show me around · sgbus terminal</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="navigate"><span class="ico" data-icon="navigate" aria-hidden="true"></span><span><strong data-i18n="settings.navigate">Navigate</strong><span class="sub" data-i18n="settings.restricted_areas_immigration_time_cycling_shuttles">Restricted areas · Immigration time · Cycling · Shuttle buses</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="help"><span class="ico" data-icon="help" aria-hidden="true"></span><span><strong data-i18n="settings.help_and_extras">Help and extras</strong><span class="sub" data-i18n="settings.show_me_around_sgbus_terminal_coins">Show me around · sgbus terminal · uwuCoins</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
+                    <button class="shareMenuItem" type="button" data-settings-open="achievements"><span class="ico" data-icon="star" aria-hidden="true"></span><span><strong data-i18n="settings.achievements">Achievements</strong><span class="sub" data-i18n="settings.feats_and_eggs">Feats · Easter eggs</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
                     <button class="shareMenuItem" type="button" data-settings-open="sync"><span class="ico" data-icon="sync" aria-hidden="true"></span><span><strong data-i18n="settings.sync">Sync</strong><span class="sub" data-i18n="settings.with_another_device_or_the">With another device or the Telegram bot</span></span><span class="settingsGo" data-icon="chevron" aria-hidden="true"></span></button>
                 </div>
             </div>
@@ -732,6 +747,7 @@
                     <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true" data-i18n="settings.telegram_bot">Telegram bot</button>
                     <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true" data-i18n="settings.buy_augy_a_coffee">Buy Augy a Coffee</button>
                     <button class="mode-btn" type="button" data-tray-show="guide" aria-pressed="true" data-i18n="settings.guide">Guide</button>
+                    <button class="mode-btn" type="button" data-tray-show="coins" aria-pressed="true" data-i18n="settings.coins">uwuCoins</button>
                     <!-- Only where the app has them (js/reminders.js) -->
                     <button class="mode-btn" type="button" data-tray-show="nearstops" aria-pressed="true" hidden data-i18n="settings.timings_near_a_stop">Timings near a stop</button>
                     <button class="mode-btn" type="button" data-tray-show="routines" aria-pressed="true" hidden data-i18n="settings.routines">Routines</button>
@@ -842,6 +858,13 @@
                     <button class="mode-btn" type="button" data-bike="on" aria-pressed="false" data-i18n="settings.i_have_a_bike">I have a bike</button>
                 </div>
                 <p class="mode-note" data-i18n="settings.with_a_bike_navigate_also">With a bike, Navigate also says how long cycling there takes, and a trip tells you when cycling the rest of the way is quicker.</p>
+                <!-- Shuttle buses, free only or paid too, in Navigate and Explorer (script.js, js/nav.js, js/map.js) -->
+                <p class="modal-section-label" data-find="shuttle shuttles campus ikea mandai fare" data-i18n="settings.shuttle_buses">Shuttle buses</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-shuttles="free" aria-pressed="false" data-i18n="settings.shuttles_free">Free only</button>
+                    <button class="mode-btn" type="button" data-shuttles="paid" aria-pressed="false" data-i18n="settings.shuttles_paid">Free and paid</button>
+                </div>
+                <p class="mode-note" data-i18n="settings.shuttles_note">Shuttle buses, such as NUS's and NTU's, IKEA's and Changi Airport's, in Navigate and on Explorer's map. Paid ones, such as Mandai's and the TS1 to Johor Bahru, only with Free and paid. A hotel's shuttle is only used to or from that hotel.</p>
             </section>
 
             <section class="settingsView" data-settings-group="help" data-i18n-data-title="settings.help_and_extras" data-title="Help and extras" hidden>
@@ -853,10 +876,35 @@
                 <p class="modal-section-label" data-find="command line linux" data-i18n="settings.sgbus_terminal">sgbus terminal</p>
                 <button id="settingsTerminal" class="iconBtn settingsWide" type="button"><span data-icon="terminal"></span> <span data-i18n="settings.open_the_sgbus_terminal">Open the sgbus terminal</span></button>
                 <p class="mode-note" data-i18n="settings.the_linux_apps_commands_typed">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
+                <!-- uwuCoins and the wheel (js/coins.js): coins from trips and feats, a spin for an Easter egg or more coins -->
+                <section id="coinsBox" class="coinsBox" aria-labelledby="coinsTitle">
+                    <p class="modal-section-label" id="coinsTitle" data-find="coins uwucoins wheel spin easter eggs feats"><span data-icon="coin"></span> <span data-i18n="coins.title">uwuCoins</span></p>
+                    <p class="coinBalance"><span data-coins-balance>0</span> <span data-i18n="coins.unit">uwuCoins</span></p>
+                    <div class="coinWheelWrap">
+                        <span class="coinPointer" aria-hidden="true"></span>
+                        <div id="coinWheel" class="coinWheel"></div>
+                    </div>
+                    <button id="coinSpin" class="btn settingsWide" type="button"><span data-icon="sync"></span> <span class="lbl">Spin for 100</span></button>
+                    <p id="coinNeed" class="mode-note" hidden></p>
+                    <p id="coinResult" class="mode-note coinResult" role="status" hidden></p>
+                    <p class="mode-note" data-i18n="coins.how">Every spin wins something: an Easter egg you haven&rsquo;t found, with a secret or a colour preset, or more coins. Coins come from trips taken with the Get Off Alert to the end: more for longer trips, changes, and each bus and train operator and line you ride with. Each feat gives 100 more.</p>
+                    <p id="coinFeats" class="mode-note"></p>
+                    <button id="coinAchievements" class="iconBtn settingsWide" type="button"><span data-icon="star"></span> <span data-i18n="achievements.see">See your achievements</span></button>
+                </section>
                 <!-- What went wrong, sent to Augy on Telegram (js/bug-report.js, api/bug-report.js) -->
                 <p class="modal-section-label" data-find="bug problem broken feedback wrong error" data-i18n="settings.report_a_bug">Report a bug</p>
                 <button id="settingsBug" class="iconBtn settingsWide" type="button"><span data-icon="alert"></span> <span data-i18n="settings.report_a_bug2">Report a bug</span></button>
                 <p class="mode-note" data-i18n="settings.something_not_working_tell_augy">Something not working? Tell Augy what happened, and it reaches him on Telegram.</p>
+            </section>
+
+            <!-- Achievements (js/eggs.js, renderAchievements): each feat's progress and its egg -->
+            <section class="settingsView" data-settings-group="achievements" data-i18n-data-title="settings.achievements" data-title="Achievements" hidden>
+                <p class="modal-section-label" data-find="achievements feats progress trophy" data-i18n="achievements.feats">Feats</p>
+                <p id="achievementsSummary" class="mode-note"></p>
+                <ul id="achievementsList" class="achievements"></ul>
+                <p class="modal-section-label" data-find="easter eggs secrets wheel" data-i18n="eggs.title">Easter eggs</p>
+                <p class="mode-note" data-i18n="achievements.eggsNote">Each feat is worth 100 uwuCoins once. Its Easter egg comes from the uwuCoins wheel, in Help and extras.</p>
+                <p id="achievementsEggs" class="mode-note"></p>
             </section>
 
             <!-- Sync with another device or the Telegram bot: js/sync.js -->
@@ -1305,27 +1353,51 @@
                 <button class="mode-btn" type="button" data-contrast-pick="off" aria-pressed="false" data-i18n="theme.contrast.off">Off</button>
             </div>
             <p class="mode-note" data-i18n="theme.contrast.note">Darker text, solid cards and clear edges, for reading in bright light or with low vision.</p>
-            <!-- Your colours: a secret, unlocked by riding every MRT and LRT line (js/colours.js, js/rides.js) -->
+            <!-- Your colours: a secret, unlocked by an Easter egg (js/colours.js, js/eggs.js). One
+                 colour, on the Color Guess Game's wheel (js/wheel.js) or a preset, and the rest made from it -->
             <section id="customColours" class="customColours" aria-labelledby="customColoursTitle" hidden>
                 <p class="modal-section-label" id="customColoursTitle" data-i18n="colours.title">Your colours</p>
-                <p class="mode-note" data-i18n="colours.note">Unlocked for riding every MRT and LRT line. Pick your own, and the text has to stay easy to read.</p>
-                <div class="colourRows">
-                    <label class="colourRow"><span data-i18n="colours.bg">Background</span><input type="color" data-colour="bg" /></label>
-                    <label class="colourRow"><span data-i18n="colours.text">Text</span><input type="color" data-colour="text" /></label>
-                    <label class="colourRow"><span data-i18n="colours.button">Buttons</span><input type="color" data-colour="button" /></label>
-                    <label class="colourRow"><span data-i18n="colours.card">Cards</span><input type="color" data-colour="card" /></label>
+                <p class="mode-note" data-i18n="colours.noteOne">Pick one colour on the wheel, or a preset. The app makes the background, text, buttons and cards from it, light and dark, and keeps the text easy to read.</p>
+                <div class="colourPick">
+                    <div class="wheel-wrap" id="colourWheel" role="slider" aria-valuemin="0" aria-valuemax="100" data-i18n-aria-label="colours.wheel" aria-label="Colour wheel. Left and right arrows turn the hue, up and down change the saturation.">
+                        <canvas id="colourWheelCanvas" class="wheel-canvas"></canvas>
+                        <span class="wheel-dot" id="colourWheelMarker" aria-hidden="true"></span>
+                    </div>
+                    <div class="wheel-side">
+                        <label class="colourBrightLabel" for="colourBrightness" data-i18n="colours.brightness">Brightness</label>
+                        <input id="colourBrightness" class="brightness" type="range" min="0" max="100" value="100" />
+                        <div id="colourPreview" class="colourPreview" aria-hidden="true">
+                            <span data-i18n="colours.sample">Sample text</span>
+                            <span class="colourCard"><span data-i18n="colours.sampleCard">A card</span> <span class="colourSoft" data-i18n="colours.sampleSoft">and its softer text</span></span>
+                            <span class="colourButton" data-i18n="colours.sampleButton">A button</span>
+                        </div>
+                    </div>
                 </div>
-                <div id="colourPreview" class="colourPreview" aria-hidden="true">
-                    <span data-i18n="colours.sample">Sample text</span>
-                    <span class="colourCard" data-i18n="colours.sampleCard">A card</span>
-                    <span class="colourButton" data-i18n="colours.sampleButton">A button</span>
-                </div>
-                <p id="colourWarn" class="colourWarn" role="alert" hidden></p>
+                <p class="modal-section-label colourPresetsLabel" data-i18n="colours.presets">Presets</p>
+                <div id="colourPresets" class="colourPresets" role="group" data-i18n-aria-label="colours.presets" aria-label="Presets"></div>
+                <p id="colourWarn" class="mode-note colourWarn" role="status" hidden></p>
                 <div class="tripActions">
-                    <button id="colourKeep" class="btn" type="button" data-i18n="colours.keep">Use these colours</button>
+                    <button id="colourKeep" class="btn" type="button" data-i18n="colours.keepOne">Use this colour</button>
                     <button id="colourReset" class="iconBtn" type="button" data-i18n="colours.reset" hidden>Back to the usual colours</button>
-                    <button id="colourReplay" class="iconBtn" type="button" data-i18n="colours.replay">Watch the celebration again</button>
+                    <button id="colourReplay" class="iconBtn" type="button" data-i18n="colours.replay" hidden>Watch the celebration again</button>
                 </div>
+            </section>
+            <!-- Your phone's colours: a secret too, in the Android app on Android 12 and later
+                 (js/colours.js, SgBusPlugin.phoneColours): Material You's, for the whole app -->
+            <section id="phoneColours" class="customColours" aria-labelledby="phoneColoursTitle" hidden>
+                <p class="modal-section-label" id="phoneColoursTitle" data-i18n="phoneColours.title">Your phone&rsquo;s colours</p>
+                <p class="mode-note" data-i18n="phoneColours.note">The whole app in your phone&rsquo;s own colours, from its wallpaper, as Android&rsquo;s apps have them. They change when your wallpaper does.</p>
+                <div id="phoneSwatches" class="phoneSwatches" aria-hidden="true"></div>
+                <div class="tripActions">
+                    <button id="phoneColoursOn" class="btn" type="button" data-i18n="phoneColours.on">Use my phone&rsquo;s colours</button>
+                    <button id="phoneColoursOff" class="iconBtn" type="button" data-i18n="colours.reset" hidden>Back to the usual colours</button>
+                </div>
+            </section>
+            <!-- The Easter eggs found (js/eggs.js), once there's one -->
+            <section id="eggsFound" class="customColours" aria-labelledby="eggsFoundTitle" hidden>
+                <p class="modal-section-label" id="eggsFoundTitle" data-i18n="eggs.title">Easter eggs</p>
+                <p id="eggsFoundCount" class="mode-note"></p>
+                <ul id="eggsFoundList" class="eggsFoundList"></ul>
             </section>
         </div>
     </div>
@@ -1346,16 +1418,16 @@
             <div id="celebrateScene" class="celebrateScene" aria-hidden="true"></div>
             <div class="celebrateText">
                 <h2 id="celebrateTitle" data-i18n="unlock.title">Every line ridden!</h2>
-                <p id="celebrateText" data-i18n="unlock.text">You&rsquo;ve ridden every MRT and LRT line, so you&rsquo;ve unlocked a secret: your own colours for the app. Pick them in Theme.</p>
+                <p id="celebrateText" data-i18n="eggs.lines.text">You&rsquo;ve ridden every MRT and LRT line.</p>
                 <div class="tripActions">
-                    <button id="celebrateGo" class="btn" type="button" data-i18n="unlock.go">Pick my colours</button>
+                    <button id="celebrateGo" class="btn" type="button" data-i18n="coins.spinGo">Spin the wheel</button>
                     <button id="celebrateClose" class="iconBtn" type="button" data-i18n="common.close">Close</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Your colours unlocked (js/colours.js): said once -->
+    <!-- Every line ridden, where the celebration can't run (js/celebrate.js): said once -->
     <div id="unlockModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="unlockTitle" aria-describedby="unlockText">
             <div class="modal-head">
@@ -1364,10 +1436,30 @@
                     <span data-icon="close"></span>
                 </button>
             </div>
-            <p id="unlockText" class="mode-note" data-i18n="unlock.text">You&rsquo;ve ridden every MRT and LRT line, so you&rsquo;ve unlocked a secret: your own colours for the app. Pick them in Theme.</p>
+            <p id="unlockText" class="mode-note" data-i18n="eggs.lines.text">You&rsquo;ve ridden every MRT and LRT line.</p>
             <div class="tripActions">
-                <button id="unlockGo" class="btn" type="button" data-i18n="unlock.go">Pick my colours</button>
+                <button id="unlockGo" class="btn" type="button" data-i18n="coins.spinGo">Spin the wheel</button>
                 <button id="unlockLater" class="iconBtn" type="button" data-i18n="unlock.later">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- A feat done, or a secret unlocked (js/eggs.js): said once -->
+    <div id="eggModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="eggTitle" aria-describedby="eggHow">
+            <div class="modal-head">
+                <h2 id="eggTitle" data-i18n="eggs.foundOne">You found an Easter egg!</h2>
+                <button class="icon-btn small" type="button" data-close-modal="eggModal" data-i18n-aria-label="common.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <p id="eggName" class="eggName"></p>
+            <p id="eggHow" class="mode-note"></p>
+            <p id="eggGot" class="mode-note"></p>
+            <p id="eggCount" class="mode-note eggCount"></p>
+            <div class="tripActions">
+                <button id="eggGo" class="btn" type="button" data-i18n="eggs.go">Open Theme</button>
+                <button id="eggLater" class="iconBtn" type="button" data-i18n="unlock.later">Later</button>
             </div>
         </div>
     </div>
@@ -1483,6 +1575,9 @@
     <script src="/js/sw-update.js"></script>
     <script src="/js/app-update.js"></script>
     <script src="/js/donate.js"></script>
+    <script src="/js/coins.js"></script>
+    <script src="/js/wheel.js"></script>
+    <script src="/js/eggs.js"></script>
     <script src="/js/colours.js"></script>
     <script src="/js/celebrate.js"></script>
     <script src="/js/lang-pick.js"></script>

@@ -74,6 +74,7 @@ Favourites. You can have up to 20 lists.
 
 A list with a stop in it is also a choice on [Glance](main-screen.md#pick-whose-buses):
 pick it from the chip above the next bus to see just that list's stops and buses.
+The two stay in step: the list you pick in one is the one the other opens on.
 
 ## Top or bottom
 

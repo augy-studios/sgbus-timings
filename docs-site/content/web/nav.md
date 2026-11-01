@@ -221,6 +221,26 @@ footpath to the place at all.
 > distance between stations, with an average wait to board. OneMap's time, where
 > shown, comes from timetables.
 
+### Shuttle buses
+
+<figure>
+<img src="/screenshots/web/nav-shuttle.png" alt="Navigate from NUS Business School (BIZ 2) to Woodlands station, about 64 min with 2 changes: walk 21 m to BIZ 2, then NUS A1 in red, 3 stops, about 5 min, to Kent Ridge Stn Exit A/NUH, board around 08:32 after the timetable's average wait, NUS shuttle A1, Free, with Shuttle times at BIZ 2; walk to Kent Ridge station; the Circle Line to Caldecott, with the doors for the change; and the Thomson-East Coast Line to Woodlands." width="342" height="1585" loading="lazy">
+<figcaption>From NUS's BIZ 2 to Woodlands: NUS's A1 to the Circle Line first.</figcaption>
+</figure>
+
+Ways can ride a [shuttle bus](timings.md#shuttle-buses) too, NUS's and NTU's
+and the island's others, so a way can start at PGP or end at IKEA. A shuttle's
+leg is in its route's colour, with whose it is, **NUS A1**, and what it costs.
+Its wait to board is the timetable's average wait then: half the time between
+its buses. A shuttle that isn't running then isn't used. Between stops it's
+timed at about 15 km/h.
+
+- **Free only**, the default for **Shuttle buses** in [Settings](settings.md),
+  uses only the free ones. **Free and paid** adds the rest, such as Mandai's
+  and the TS1 to Johor Bahru.
+- A hotel's or a condo's shuttle is only used on a way that starts or ends
+  there.
+
 ## Open a way
 
 <figure>

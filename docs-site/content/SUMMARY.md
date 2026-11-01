@@ -43,6 +43,7 @@ than about three taps to reach goes under Advanced.
 * [Calendar](web/calendar.md)
 * [Get Off Alert](web/get-off-alert.md)
 * [Your trips and stats](web/trips.md)
+* [uwuCoins](web/uwucoins.md)
 * [Service alerts](web/service-alerts.md)
 * [Sync between devices](web/sync.md)
 * [Shortcuts and widgets](web/shortcuts-and-widgets.md)

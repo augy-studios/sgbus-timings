@@ -69,19 +69,22 @@ the way each line goes.
 A station with no door details yet says so. Its name, codes and Directions are
 still there.
 
-## Campus shuttles
+## Shuttle buses
 
 <figure>
 <img src="/screenshots/web/explorer-campus.png" alt="Explorer over NUS's Kent Ridge campus: the shuttle routes as thin lines in their colours, green, orange, blue, grey, purple and yellow, following the roads round the campus to University Town and Kent Ridge Terminal, the campus stops as white dots edged in orange, the public bus stops in green, and a blue dot for you." width="390" height="844" loading="lazy">
 <figcaption>NUS's shuttle routes along their roads, and its campus stops edged in orange.</figcaption>
 </figure>
 
-NUS's and NTU's campus shuttles are on Explorer too: each route a thin line
-in its colour, along its roads, and each campus stop a white dot edged in orange
-(NUS) or red (NTU). Tap one for its card: every shuttle route there, with what
-its timetable says now, such as **Every 4–6 min**, the next departures from
-where it starts, or when the next bus is. These are scheduled times, not live:
-the universities' shuttles have no live times the app can show.
+Shuttle buses are on Explorer too, NUS's and NTU's and the island's others
+([the list](timings.md#shuttle-buses)): each route a thin line in its colour,
+along its roads, and each stop of their own a white dot edged in the
+operator's colour, orange for NUS and red for NTU. Tap one for its card: every
+shuttle route there, with what its timetable says now, such as **Every 4–6
+min**, the next departures from where it starts, or when the next bus is, and
+the next bus live where the operator shows it. Paid ones, such as Mandai's and
+the TS1, show with **Shuttle buses** on **Free and paid** in
+[Settings](settings.md).
 
 <figure>
 <img src="/screenshots/web/explorer-campus-own.png" alt="Kent Vale's card, a stop of NUS's own: NUS, Kent Vale, Clementi Rd, then Campus shuttles, scheduled times, not live: K at 08:40, 09:20 and 10:00 and R1 at 08:40, 09:00 and 09:20, both leaving here, R2 at 08:40, 09:00 and 09:20 from PGP, ending here, and P at 09:35, 10:35 and 11:35, leaving here; then NUS term timings, a note that there are no live times for campus shuttles, and Directions.\" width="390" height="844" loading="lazy">
@@ -135,8 +138,8 @@ on:
 - **Bus stops**
 - **MRT and LRT stations**
 - **MRT and LRT lines**
-- **Shuttle bus routes**, the [campus shuttles](#campus-shuttles)' routes
-- **Shuttle bus stops**, the campus stops that aren't LTA bus stops
+- **Shuttle bus routes**, the [shuttle buses](#shuttle-buses)' routes
+- **Shuttle bus stops**, the shuttles' stops that aren't LTA bus stops
 
 The map changes as you tap. Your choice is kept on this device for next time.
 

@@ -67,6 +67,12 @@ and it says when to leave: **Leave in 3 min for**, or **Leave now for**. The
 walk is a guess, the straight line with a quarter more for corners, as
 [Will I make it?](timings.md#will-i-make-it) works it out.
 
+Glance and [Favourites](favourites.md#lists) show the same list: pick a list on
+the chip and Favourites opens on it too, and a list's tab in Favourites puts
+Glance on it, if it has a stop. **Saved stops**, **Nearby** or a place puts
+Favourites back on **Favourites**, and Favourites' own tab puts Glance on
+**Saved stops**.
+
 The chip remembers what you picked. Turn Glance off in
 [Settings](settings.md), **Next bus at a glance**: its button leaves the Edge
 Tray, and the app opens on Bus timings instead.

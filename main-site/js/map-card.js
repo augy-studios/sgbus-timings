@@ -159,9 +159,10 @@
         head(`<span class="mcCode">${esc(code)}</span><div class="mcTitle"><strong>${esc(s.n || 'Bus stop')}</strong><span>${esc(s.road || '')}</span></div>`) +
         `<div class="mcPills">${pills}</div>` +
         (buses.length ? '<p class="mcKey"><span class="mcKeyDot on"></span>Running<span class="mcKeyDot last"></span>Last 3 buses<span class="mcKeyDot off"></span>Not running now</p>' : '') +
-        // NUS's or NTU's shuttles here too (js/campus.js).
+        // Shuttle buses here too (js/campus.js), live where they're seen.
         (window.Campus?.listHtml(code) || '') +
         timingsBtn(code) + foot();
+      window.Campus?.live(body);
       place();
     };
     draw(null);
@@ -188,7 +189,7 @@
   function campusCard(key) {
     const s = window.Campus?.at(key);
     if (!s) return;
-    const uni = { nus: 'NUS', ntu: 'NTU' }[s.uni] || s.uni.toUpperCase();
+    const uni = Campus.uniName(s.uni);
     const body = frame(I18n.t('campus.card', '{uni} shuttle stop {name}', { uni, name: s.name }));
     at = [s.lat, s.lng];
     dest = { label: s.name, lat: s.lat, lng: s.lng };
@@ -197,8 +198,9 @@
     body.innerHTML =
       head(`<span class="mcCode">${esc(uni)}</span><div class="mcTitle"><strong>${esc(s.name)}</strong><span>${esc(s.road || '')}${esc(code)}</span></div>`) +
       Campus.listHtml(key) +
-      `<p class="mcNote">${esc(I18n.t('campus.noLive', 'No live times for campus shuttles: these are from the timetable.'))}</p>` +
+      `<p class="mcNote">${esc(I18n.t('campus.timetableNote', 'Shuttle times are from the timetable, and live where the operator shares them.'))}</p>` +
       foot();
+    Campus.live(body);
     place();
   }
 

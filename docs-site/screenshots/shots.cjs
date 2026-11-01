@@ -11,7 +11,8 @@
 //
 // STILL=1 takes any group still: the page's clock stopped at STILL_AT, and each stop's bus
 // timings made up (stillArrivals) for the buses its routes have running then, so a shot comes
-// out the same whenever it's taken. The groups after "help desk #13" are always taken still.
+// out the same whenever it's taken. The groups after "help desk #13" are always taken still, as
+// are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -1223,6 +1224,123 @@ async function el(page, sel, name) {
     await page.waitForTimeout(400);
     await page.screenshot({ path: OUT + 'trip-back-nav.png' });
     console.log('wrote trip-back-nav.png 390 1500');
+    await ctx.close();
+  }
+  // uwuCoins (main-site/js/coins.js): the Edge Tray's coin with its balance, and the wheel in
+  // Settings' Help and extras, a feat done and an egg found. Always still.
+  if (want('coins')) {
+    const coins = {
+      sgbus_coins: JSON.stringify({ balance: 230, log: [], spins: 1 }),
+      sgbus_feats: JSON.stringify({ ktm: Date.now() }),
+      sgbus_eggs: JSON.stringify({ up: Date.now() }),
+      sgbus_colours_unlocked: String(Date.now()),
+      sgbus_eggs_told: JSON.stringify(['feat:ktm', 'colours']),
+    };
+    const { ctx, page } = await open(browser, { width: 420, height: 1800, extra: coins, still: true });
+    await el(page, '#coinsBtn', 'tray-coins.png');
+    await settingsGroup(page, 'help');
+    await page.waitForTimeout(500);
+    await el(page, '#coinsBox', 'settings-coins.png');
+    // Achievements: each feat and how far along it is, some lines and buses ridden.
+    await page.evaluate(() => {
+      const now = Date.now();
+      localStorage.setItem('sgbus_rides', JSON.stringify({ lines: Object.fromEntries(['NS', 'EW', 'NE', 'CC', 'DT', 'TE'].map((l) => [l, { n: 1, first: now, last: now }])), buses: Object.fromEntries(['12', '34', '56', '87', '65'].map((b) => [b, { n: 1, first: now, last: now }])), trips: [] }));
+      document.getElementById('coinAchievements').click();
+    });
+    await page.waitForTimeout(600);
+    await el(page, '[data-settings-group="achievements"]', 'settings-achievements.png');
+    await ctx.close();
+  }
+  // Your colours (main-site/js/colours.js, js/wheel.js): the wheel, presets and preview in Theme,
+  // then the app in a colour picked, light and dark. Always still.
+  if (want('colours')) {
+    const unlocked = {
+      sgbus_eggs: JSON.stringify({ up: Date.now(), down: Date.now() }),
+      sgbus_colours_unlocked: String(Date.now()),
+      sgbus_eggs_told: JSON.stringify(['colours']),
+    };
+    let { ctx, page } = await open(browser, { width: 420, height: 2400, extra: unlocked, still: true });
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await page.evaluate(() => document.querySelector('#colourPresets [data-colour-preset="sunset"]')?.click());
+    await page.waitForTimeout(400);
+    await el(page, '#customColours', 'theme-your-colours.png');
+    await ctx.close();
+    for (const mode of ['light', 'dark']) {
+      const picked = { ...unlocked, 'sgbus.mode': mode };
+      ({ ctx, page } = await open(browser, { width: 420, height: 1100, hash: '#84009', extra: picked, still: true }));
+      await page.evaluate(() => { Colours.open(); });
+      await page.waitForTimeout(400);
+      await page.evaluate(() => { document.querySelector('#colourPresets [data-colour-preset="sunset"]').click(); document.getElementById('colourKeep').click(); });
+      await page.evaluate(() => document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)));
+      await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no buses'));
+      await page.waitForTimeout(1200);
+      await blur(page);
+      await page.screenshot({ path: OUT + `your-colours-${mode}.png` });
+      console.log(`wrote your-colours-${mode}.png 420 1100`);
+      await ctx.close();
+    }
+  }
+  // Shuttle buses in Bus timings (main-site/js/campus.js, script.js): IKEA's and the others
+  // suggested as you type, a shuttle's stop with its times live (made up here), and a route's
+  // window. Always still.
+  if (want('shuttles')) {
+    let { ctx, page } = await open(browser, { width: 420, height: 1200, still: true });
+    await ctx.route(/\/api\/shuttle-live\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ eta: 6, buses: [], at: Date.now() }) }));
+    await page.evaluate(() => MainScreen.open('timings'));
+    await page.fill('#q', 'ikea');
+    await page.waitForSelector('#acList:not([hidden]) [data-campus-stop]', { timeout: 20000 }).catch(() => console.log('no shuttle stops'));
+    await page.waitForTimeout(600);
+    await cardDown(page, '.searchWrap', '#acList', 'search-shuttles.png');
+    await page.click('#acList [data-campus-stop="ikea-tampines"]');
+    await page.waitForSelector('#campusSvc .campusLive:not([hidden])', { timeout: 20000 }).catch(() => console.log('no live'));
+    await page.waitForTimeout(800);
+    await blur(page);
+    await cardDown(page, '#resultCard', '#campusSvc', 'timings-shuttle-stop.png');
+    await page.fill('#q', 'A1');
+    await page.press('#q', 'Enter');
+    await page.waitForSelector('#campusRouteModal:not(.hidden)', { timeout: 20000 }).catch(() => console.log('no route'));
+    await page.waitForTimeout(600);
+    await el(page, '#campusRouteModal .modal', 'shuttle-route.png');
+    await ctx.close();
+  }
+  // Navigate with a shuttle on the way (main-site/js/nav-core/campus.js): from NUS's BIZ 2 to
+  // Woodlands, NUS's A1 to the Circle Line first. /api/nav answered with this checkout's own
+  // router, as the live site may not have the shuttles yet. Always still.
+  if (want('nav-shuttle')) {
+    const { pathToFileURL } = require('url');
+    const fs = require('fs');
+    const site = path.resolve(__dirname, '../../main-site');
+    const core = (f) => import(pathToFileURL(path.join(site, 'js/nav-core', f)).href);
+    const [{ buildGraph }, { planFor }] = await Promise.all([core('network.js'), core('plan.js')]);
+    const j = (f) => JSON.parse(fs.readFileSync(path.join(site, f), 'utf8'));
+    const [stops, routes] = await Promise.all(['bus-stops', 'bus-routes'].map((p) => fetch(`https://sgbus.uwuapps.org/api/${p}`).then((r) => r.json())));
+    const graph = buildGraph(j('data/rail.json'), stops, routes, { campus: { nus: j('data/campus/nus.json'), ntu: j('data/campus/ntu.json'), config: j('data/campus/config.json'), shuttles: j('data/campus/shuttles.json') } });
+    const biz2 = { label: 'NUS Business School (BIZ 2)', lat: 1.29337, lng: 103.77516 };
+    const woodlands = { label: 'Woodlands station', lat: 1.43718, lng: 103.78696 };
+    const { options } = planFor(graph, biz2, woodlands, { mode: 'leave', ms: STILL_AT.getTime() }, null, {});
+    const { ctx, page } = await open(browser, { width: 420, height: 1700, still: true });
+    await ctx.route(/\/api\/nav\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ options, onemap: false, alerts: { lines: [] }, when: { mode: 'now', ms: STILL_AT.getTime() }, traffic: null, others: {} }) }));
+    await page.evaluate(([a, b]) => { location.hash = `#nav/${a}/${b}`; }, [enc(biz2), enc(woodlands)]);
+    await idle(page, '#navBody');
+    await blur(page);
+    await cardDown(page, N, '#navBody', 'nav-shuttle-list.png');
+    const first = await page.$('[data-nav-option="0"]');
+    if (first) await first.click();
+    await page.waitForTimeout(1500);
+    await blur(page);
+    await cardDown(page, N, '#navBody', 'nav-shuttle.png');
+    await ctx.close();
+  }
+  // Settings' Shuttle buses (main-site/script.js): Free only, or Free and paid. Always still.
+  if (want('shuttle-setting')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 2400, still: true });
+    await settingsGroup(page, 'navigate');
+    const a = await page.locator('#settingsModal .modal-section-label', { hasText: 'Shuttle buses' }).boundingBox();
+    const b = await page.locator('[data-shuttles="paid"]').locator('xpath=../following-sibling::p[1]').boundingBox();
+    const m = await page.locator('#settingsModal .modal').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-shuttles.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-shuttles.png');
     await ctx.close();
   }
   await browser.close();

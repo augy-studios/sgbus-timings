@@ -1,0 +1,293 @@
+{
+  "_about": "The island's shuttle buses beyond NUS's and NTU's (js/campus.js reads them as it reads nus.json and ntu.json; js/nav-core/campus.js routes on them). Found from ShuttleBusFinder's Singapore directory as a list of services only, then each taken from its operator's own page, cited in `source` and checked on `checked`. Each group is a file and its config in one: `name`, `colour`, `fare` (\"free\" or \"paid\", with `fareText`), `access` (\"public\", \"guests\" for a hotel's, \"residents\" for a condo's, ridden in Navigate only from or to `place`), and its `stops` and `routes` as nus.json has them. Timings: \"daily\" or weekday/sat/sun_ph, as bands or departure times from a stop. A stop with a five-digit id is LTA's stop of that code. `kmh` is a route's speed between stops where it isn't ~15 km/h. `live` is where its buses can be seen live (api/shuttle-live.js). Left out, as no current timetable could be found from the operator: Sembawang Shopping Centre's (last published March 2023), Marina Square's lunchtime shuttle (ran to 31 December 2025), and the condos' (Lilydale, Skies Miltonia, The Shaughnessy, The Miltonia Residences, The Canopy, Seletaris, Treetops Executive Residences).",
+  "groups": {
+    "ikea": {
+      "name": "IKEA",
+      "colour": "#0058a3",
+      "fare": "free",
+      "access": "public",
+      "source": "https://www.ikea.com/sg/en/files/pdf/4c/89/4c89d120/ikea-tampines-shuttle-bus-schedule_15-jul-2026.pdf",
+      "checked": "2026-11-02",
+      "stops": [
+        { "id": "ikea-tampines", "name": "IKEA Tampines", "road": "Tampines North Dr 2", "loc": "1.374015, 103.932576" },
+        { "id": "ikea-tampines-mrt", "name": "Tampines Stn Exit B", "road": "Tampines Central 4", "loc": "1.353289, 103.945161" },
+        { "id": "ikea-serangoon-mrt", "name": "Serangoon Stn Exit E", "road": "Serangoon Central", "loc": "1.351257, 103.872718" }
+      ],
+      "routes": [
+        {
+          "id": "IKEA T",
+          "label": "IKEA Tampines shuttle, Tampines MRT",
+          "stops": ["ikea-tampines-mrt", "ikea-tampines", "ikea-tampines-mrt"],
+          "timings": {
+            "ikea-tampines-mrt": {
+              "weekdays": ["1200", "1240", "1320", "1400", "1500", "1600", "1645", "1715", "1745", "1815", "1845", "1915", "1945", "2015"],
+              "sat": ["1200", "1235", "1305", "1335", "1405", "1435", "1505", "1535", "1615", "1645", "1715", "1745", "1815", "1845", "1915", "1945", "2015"],
+              "sun_ph": ["1200", "1235", "1305", "1335", "1405", "1435", "1505", "1535", "1615", "1645", "1715", "1745", "1815", "1845", "1915", "1945", "2015"]
+            },
+            "ikea-tampines": {
+              "weekdays": ["1225", "1305", "1345", "1445", "1545", "1630", "1700", "1730", "1800", "1830", "1900", "1930", "2000", "2030"],
+              "sat": ["1220", "1250", "1320", "1350", "1420", "1450", "1520", "1600", "1630", "1700", "1730", "1800", "1830", "1900", "1930", "2000", "2030"],
+              "sun_ph": ["1220", "1250", "1320", "1350", "1420", "1450", "1520", "1600", "1630", "1700", "1730", "1800", "1830", "1900", "1930", "2000", "2030"]
+            }
+          },
+          "live": {
+            "provider": "leisurefrontier",
+            "stops": {
+              "ikea-tampines": "Aa6tPHhCtJwouzdI2IFnTejtNZzuMjMwAElLRUEgVEFNQEVCVVMAMzkyNjMz",
+              "ikea-tampines-mrt": "AXqnL3stwXDdxRm0V4SG6cUgGM34MjMwAElLRUEgVEFNQEVCVVMAMzkyNjM0"
+            }
+          }
+        },
+        {
+          "id": "IKEA S",
+          "label": "IKEA Tampines shuttle, Serangoon MRT",
+          "stops": ["ikea-serangoon-mrt", "ikea-tampines", "ikea-serangoon-mrt"],
+          "timings": {
+            "ikea-serangoon-mrt": {
+              "weekdays": ["1300", "1400", "1500", "1600", "1705", "1810", "1910", "2005"],
+              "sat": ["1200", "1300", "1400", "1500", "1600", "1700", "1805", "1905", "2000"],
+              "sun_ph": ["1200", "1300", "1400", "1500", "1600", "1700", "1805", "1905", "2000"]
+            },
+            "ikea-tampines": {
+              "weekdays": ["1340", "1440", "1540", "1645", "1745", "1845", "1945", "2030"],
+              "sat": ["1240", "1340", "1440", "1540", "1640", "1745", "1845", "1940", "2030"],
+              "sun_ph": ["1240", "1340", "1440", "1540", "1640", "1745", "1845", "1940", "2030"]
+            }
+          },
+          "live": {
+            "provider": "leisurefrontier",
+            "stops": {
+              "ikea-tampines": "AZN4KQQoLXmnkH0vqs6Q-0v33sauMjMwAElLRUEgVEFNQEVCVVMANDY5NTcy",
+              "ikea-serangoon-mrt": "AUPpSFeoeDJKNJDZEMTzSxlME0_dMjMwAElLRUEgVEFNQEVCVVMANDY5NTcz"
+            }
+          }
+        }
+      ]
+    },
+    "changi": {
+      "name": "Changi Airport",
+      "colour": "#7c2d8e",
+      "fare": "free",
+      "access": "public",
+      "source": "https://www.changiairport.com/en/airport-guide/transport/transfer-between-terminals-and-jewel.html",
+      "checked": "2026-11-02",
+      "_stops": "Each terminal's LTA bus stop stands in for where the shuttle picks up (T1 Departure Central Kerbside, T2 Arrival Pick-up Door 1, T3 Departure Door 8, T4 Departure Door 4 and Arrival Bus Lounge), a short walk inside the same terminal.",
+      "stops": [],
+      "routes": [
+        {
+          "id": "T4-T1",
+          "label": "Terminal 4 shuttle, T1 and Jewel",
+          "colour": "#7c2d8e",
+          "stops": ["95029", "95209", "95029"],
+          "timings": { "daily": [{ "start": "0600", "end": "2400", "min": 7, "max": 9 }] }
+        },
+        {
+          "id": "T4-T2",
+          "label": "Terminal 4 shuttle, T2 and MRT",
+          "colour": "#9b4fb0",
+          "stops": ["95129", "95209", "95129"],
+          "timings": { "daily": [{ "start": "0600", "end": "2400", "min": 5, "max": 5 }] }
+        },
+        {
+          "id": "T4 Night",
+          "label": "Terminal 4 shuttle, overnight loop",
+          "colour": "#4a1a57",
+          "stops": ["95129", "95109", "95029", "95209", "95129"],
+          "timings": { "daily": [{ "start": "0000", "end": "0600", "min": 19, "max": 19 }] }
+        },
+        {
+          "id": "TMFT",
+          "label": "Tanah Merah Ferry Terminal shuttle",
+          "colour": "#1f6fb5",
+          "fare": "paid",
+          "fareText": "S$5",
+          "source": "https://changiairport.com/en/at-changi/transport-and-directions/shuttle-bus-schedule.html",
+          "stops": ["96219", "95029", "95129", "95209", "96219"],
+          "timings": {
+            "96219": { "daily": ["0900", "0945", "1045", "1130", "1215", "1300", "1345", "1645", "1730", "1815", "1900"] },
+            "95029": { "daily": ["0915", "1000", "1100", "1145", "1230", "1315", "1400", "1700", "1745", "1830", "1915"] }
+          }
+        }
+      ]
+    },
+    "transtar": {
+      "name": "Transtar",
+      "colour": "#c8102e",
+      "fare": "paid",
+      "fareText": "S$3 to S$11",
+      "access": "public",
+      "source": "https://www.transtar.travel/wp-content/uploads/2026/01/TS1-Schedule_2026.pdf",
+      "checked": "2026-11-02",
+      "stops": [
+        { "id": "larkin", "name": "Larkin Terminal", "road": "Johor Bahru", "loc": "1.496350, 103.743400" }
+      ],
+      "routes": [
+        {
+          "id": "TS1-JB",
+          "badge": "TS1",
+          "label": "TS1, Changi Airport to Johor Bahru",
+          "kmh": 40,
+          "stops": ["95029", "95209", "95159", "96301", "96049", "96061", "46329", "46529", "46101", "46211", "larkin"],
+          "timings": { "95029": { "daily": ["0815", "1015", "1415", "1715", "1915", "2115"] } }
+        },
+        {
+          "id": "TS1-SG",
+          "badge": "TS1",
+          "label": "TS1, Johor Bahru to Changi Airport",
+          "kmh": 40,
+          "stops": ["larkin", "46219", "46109", "46521", "46321", "96069", "96041", "96309", "95151", "95209", "95109", "95029"],
+          "timings": { "larkin": { "daily": ["0430", "0645", "1045", "1345", "1645", "1845"] } }
+        }
+      ]
+    },
+    "kkh": {
+      "name": "KKH",
+      "colour": "#e4007c",
+      "fare": "free",
+      "access": "public",
+      "source": "https://www.kkh.com.sg/patient-services/visitor-info/getting-to-kkh/shuttle-bus",
+      "checked": "2026-11-02",
+      "stops": [
+        { "id": "kkh-square2", "name": "Novena Square 2", "road": "Irrawaddy Rd", "loc": "1.320705, 103.844161" },
+        { "id": "kkh-main", "name": "KK Women's and Children's Hospital", "road": "Bukit Timah Rd", "loc": "1.310490, 103.846813" },
+        { "id": "kkh-halifax", "name": "KKH@Halifax Shuttle Bay", "road": "Halifax Rd", "loc": "1.312306, 103.846082" },
+        { "id": "kkh-rochor", "name": "Rochor Stn Exit B", "road": "Perak Rd", "loc": "1.304167, 103.853031" }
+      ],
+      "routes": [
+        {
+          "id": "Novena",
+          "label": "KKH shuttle, Novena route",
+          "colour": "#e4007c",
+          "stops": ["kkh-square2", "kkh-main", "kkh-halifax", "kkh-square2"],
+          "timings": {
+            "weekdays": [{ "start": "0630", "end": "2135", "min": 25, "max": 25 }],
+            "sat": [{ "start": "0800", "end": "1510", "min": 25, "max": 25 }]
+          }
+        },
+        {
+          "id": "Bugis",
+          "label": "KKH shuttle, Bugis route",
+          "colour": "#a8005b",
+          "stops": ["kkh-rochor", "07551", "kkh-main", "kkh-halifax", "kkh-rochor"],
+          "timings": {
+            "weekdays": [{ "start": "0630", "end": "2015", "min": 25, "max": 25 }],
+            "sat": [{ "start": "0800", "end": "1510", "min": 25, "max": 25 }]
+          }
+        }
+      ]
+    },
+    "mandai": {
+      "name": "Mandai",
+      "colour": "#00805a",
+      "fare": "free",
+      "access": "public",
+      "source": "https://www.mandai.com/en/plan-your-visit/getting-to-and-around/leaving-mandai-wildlife-reserve.html",
+      "checked": "2026-11-02",
+      "_stops": "The S'pore Zoo stop (48131) stands in for Mandai Wildlife East's coach bay, where M2 turns. Stops from Land Transport Guru's M1 and M2 pages; the fare and first and last buses from Mandai's own.",
+      "stops": [
+        { "id": "mandai-khatib", "name": "Khatib Stn Exit A", "road": "Yishun Ave 2", "loc": "1.417036, 103.832953" }
+      ],
+      "routes": [
+        {
+          "id": "M2",
+          "label": "Mandai Khatib Bus",
+          "colour": "#00805a",
+          "fare": "paid",
+          "fareText": "S$2.50",
+          "stops": ["mandai-khatib", "48111", "48131", "48119", "mandai-khatib"],
+          "timings": { "daily": [{ "start": "0830", "end": "2300", "min": 15, "max": 15 }, { "start": "2300", "end": "2400", "min": 20, "max": 20 }] }
+        },
+        {
+          "id": "M1",
+          "label": "Mandai Shuttle Bus",
+          "colour": "#6aa84f",
+          "source": "https://landtransportguru.net/mandai-bus-m1/",
+          "stops": ["48131", "48119", "48111", "48131"],
+          "timings": { "daily": [{ "start": "1030", "end": "1730", "min": 15, "max": 15 }] }
+        }
+      ]
+    },
+    "clarkequay": {
+      "name": "CQ @ Clarke Quay",
+      "colour": "#f15a29",
+      "fare": "free",
+      "access": "public",
+      "source": "https://www.capitaland.com/sg/malls/clarkequay/en/CQNightShuttle.html",
+      "checked": "2026-11-02",
+      "stops": [
+        { "id": "cq-c01", "name": "Clarke Quay, C01 taxi stand", "road": "River Valley Rd", "loc": "1.290314, 103.846728" },
+        { "id": "cq-tampines", "name": "Tampines Stn Exit B", "road": "Tampines Central 4", "loc": "1.353539, 103.945090" },
+        { "id": "cq-westgate", "name": "Westgate", "road": "Gateway Dr", "loc": "1.334158, 103.742766" }
+      ],
+      "routes": [
+        {
+          "id": "CQ East",
+          "label": "CQ 4AM Home Shuttle, Tampines",
+          "kmh": 40,
+          "stops": ["cq-c01", "cq-tampines"],
+          "timings": { "cq-c01": { "sat": ["0400"], "sun": ["0400"] } }
+        },
+        {
+          "id": "CQ West",
+          "label": "CQ 4AM Home Shuttle, Jurong",
+          "kmh": 40,
+          "stops": ["cq-c01", "cq-westgate"],
+          "timings": { "cq-c01": { "sat": ["0400"], "sun": ["0400"] } }
+        }
+      ]
+    },
+    "orchidclub": {
+      "name": "Orchid Country Club",
+      "colour": "#6a1b9a",
+      "fare": "free",
+      "access": "public",
+      "source": "https://orchidclub.com/",
+      "checked": "2026-11-02",
+      "stops": [
+        { "id": "occ", "name": "Orchid Country Club, below Orchid Bowl", "road": "Orchid Club Rd", "loc": "1.411055, 103.844186" },
+        { "id": "occ-yishun", "name": "Yishun Stn Exit B", "road": "Yishun Ave 2", "loc": "1.429646, 103.834867" }
+      ],
+      "routes": [
+        {
+          "id": "OCC",
+          "label": "Orchid Country Club shuttle",
+          "stops": ["occ-yishun", "occ", "occ-yishun"],
+          "timings": {
+            "occ-yishun": { "daily": ["0810", "0840", "0910", "0940", "1010", "1140", "1210", "1240", "1310", "1340", "1510", "1540", "1610", "1640", "1710", "1740", "1810", "1840", "1910", "2010", "2040", "2110", "2140", "2210", "2240", "2310"] },
+            "occ": { "daily": ["0825", "0855", "0925", "0955", "1025", "1125", "1155", "1225", "1255", "1325", "1355", "1525", "1555", "1625", "1655", "1725", "1755", "1825", "1855", "2025", "2055", "2125", "2155", "2225", "2255", "2325"] }
+          }
+        }
+      ]
+    },
+    "stevens": {
+      "name": "Novotel and Mercure on Stevens",
+      "colour": "#1f2a5c",
+      "fare": "free",
+      "access": "guests",
+      "place": ["stevens-hotel"],
+      "source": "The shuttle's sign at the hotel's driveway, as Augy sent it on 2026-11-02: \"for Novotel Singapore on Stevens and Mercure Singapore on Stevens guests only\".",
+      "checked": "2026-11-02",
+      "stops": [
+        { "id": "stevens-hotel", "name": "Novotel and Mercure on Stevens, driveway", "road": "Stevens Rd", "loc": "1.313869, 103.828606" },
+        { "id": "stevens-liat", "name": "Liat Towers", "road": "Orchard Rd", "loc": "1.305101, 103.830778" },
+        { "id": "stevens-mrt", "name": "Stevens Stn", "road": "Stevens Rd", "loc": "1.319553, 103.825822" }
+      ],
+      "routes": [
+        {
+          "id": "Stevens",
+          "label": "Novotel and Mercure on Stevens shuttle",
+          "stops": ["stevens-hotel", "stevens-liat", "stevens-mrt", "stevens-hotel"],
+          "timings": { "stevens-hotel": { "daily": ["1000", "1045", "1130", "1215", "1300", "1345", "1600", "1645", "1730", "1815", "1910", "1950"] } },
+          "live": {
+            "provider": "leisurefrontier",
+            "stops": {
+              "stevens-hotel": "AbkdnbdbWnDysmCesTjimo3YdQ-PMjMwAE5PVk9URUxATEYAMzAxOTUw",
+              "stevens-liat": "Ab-4DUMzlDUbQ12XZrJqSxDH3HKYMjMwAE5PVk9URUxATEYAMzAxOTUx",
+              "stevens-mrt": "ASVtxy0wRMRoqARkuep0LpuGimb6MjMwAE5PVk9URUxATEYAMzAxOTU2"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
