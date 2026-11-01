@@ -22,6 +22,11 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Your colours from one colour** - Your colours, a secret an Easter egg unlocks, now takes one colour, on the Color Guess Game's colour wheel or from presets, and makes the whole theme from it, light and dark, with all the text easy to read.
 - **Glance and Favourites in step** - Pick a list on Glance and Favourites opens on it, and the other way round.
 - **The greeting** - Tapping the greeting at the top no longer opens Settings.
+- **For the curious** - Something new in the browser's console, for whoever looks.
+
+### Guide
+
+- Something hidden in the sidebar, for whoever finds it.
 
 ### Android app 2.3.0
 

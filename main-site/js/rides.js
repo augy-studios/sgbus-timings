@@ -23,7 +23,8 @@
 // every line's been ridden.
 //
 // Window.RideCheck = { see(trip, i, here, accuracy), done(trip, i), verdict(leg, seen),
-// record(), unlocked(), progress(), LINES }. Plain script: exports go on window.
+// record(), unlocked(), progress(), LINES }. The console's simulateRide('12') counts a ride for a
+// look (below). Plain script: exports go on window.
 (function () {
   const KEY = 'sgbus_rides';
   const UNLOCKED_KEY = 'sgbus_colours_unlocked';
@@ -166,6 +167,53 @@
     const rec = record();
     return { done: LINES.filter((l) => rec.lines[l]?.n >= 1), left: LINES.filter((l) => !(rec.lines[l]?.n >= 1)) };
   }
+
+  // In the browser's console (or chrome://inspect's, for the Android app), for a look at
+  // Achievements without the rides:
+  //   simulateRide('12', 'NE', 'BP')   a ride on bus 12, the NE Line and the Bukit Panjang LRT,
+  //                                    kept as a real one is, so the bars move and the bus and
+  //                                    line feats are done as they would be
+  //   simulateRide('undo')             the rides it added taken back (a feat done stays done)
+  //   simulateRide('help')             this, in words
+  // What it added is noted under SIM_KEY, for undo. This browser's own storage and nothing else.
+  const SIM_KEY = 'sgbus_rides_simulated';
+  const RIDE_HELP = `simulateRide('12', 'NE', ...) counts a real ride on each bus or MRT and LRT line given (lines: ${LINES.join(', ')}), for Achievements; simulateRide('undo') takes back the rides it added; simulateRide('help') shows this.`;
+  window.simulateRide = (...what) => {
+    let added;
+    try { added = JSON.parse(localStorage.getItem(SIM_KEY) || '[]'); } catch { added = []; }
+    if (!Array.isArray(added)) added = [];
+    if (what[0] === 'undo') {
+      if (!added.length) return 'nothing to undo';
+      const rec = record();
+      for (const { kind, key } of added) {
+        const map = rec[kind];
+        if (map?.[key]) map[key].n -= 1;
+        if (map?.[key] && map[key].n < 1) delete map[key];
+      }
+      keep(rec);
+      try { localStorage.removeItem(SIM_KEY); } catch { /* kept */ }
+      return `${added.length} ride${added.length === 1 ? '' : 's'} taken back`;
+    }
+    const rides = what.map((w) => {
+      const v = String(w ?? '').trim().toUpperCase();
+      const line = SAME_LINE[v] || v;
+      if (LINES.includes(line)) return { kind: 'lines', key: line };
+      if (/^\d{1,3}[A-Z]{0,2}$/.test(v)) return { kind: 'buses', key: v };
+      return null;
+    });
+    if (!rides.length || rides.includes(null)) return RIDE_HELP;
+    const rec = record();
+    const now = Date.now();
+    for (const { kind, key } of rides) {
+      const was = rec[kind][key];
+      rec[kind][key] = { n: (was?.n || 0) + 1, first: was?.first || now, last: now };
+    }
+    keep(rec);
+    try { localStorage.setItem(SIM_KEY, JSON.stringify([...added, ...rides])); } catch { /* no undo */ }
+    checkUnlock(rec);
+    const p = progress();
+    return `ridden: ${rides.map((r) => (r.kind === 'lines' ? `${r.key} Line` : `bus ${r.key}`)).join(', ')}. ${p.done.length} of ${LINES.length} lines ridden.`;
+  };
 
   window.RideCheck = { see, done, verdict, record, unlocked, progress, LINES };
 })();

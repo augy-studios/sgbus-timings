@@ -34,6 +34,12 @@ const APP_KEY = "sgbusguide";
 // The same Analytics property as the main site.
 const GA_ID = "G-FMCYFTFPEL";
 
+// Pages with `secret: true` in their front matter are hidden until this sidebar heading is
+// clicked three times in a row, and hidden again by three more (public/js/site.js). Hidden, a
+// secret page opened by its link says it isn't in the guide, as the 404 does. They are paged
+// among themselves, left out of the sitemap, and marked in the search index for site.js to skip.
+const SECRETS_TOGGLE = "Web app: advanced";
+
 // ---------- helpers ----------
 
 const posix = path.posix;
@@ -216,6 +222,8 @@ const PREPAINT = `<script>
       }
 
       var c = localStorage.getItem(k + ".colorTheme") || "classic";
+      // The secret pages, shown or not (SECRETS_TOGGLE). Keep the key in sync with js/site.js.
+      if (localStorage.getItem(k + ".secrets") === "on") document.documentElement.setAttribute("data-secrets", "on");
       document.documentElement.setAttribute("data-mode", m);
       document.documentElement.setAttribute("data-color-theme", c);
     })();
@@ -223,12 +231,14 @@ const PREPAINT = `<script>
 
 function sidebarHtml(groups, activeFile) {
   return groups.map((g) => {
+    const secret = g.pages.length && g.pages.every((p) => p.secret);
     const links = g.pages.map((p) => {
       const active = p.file === activeFile;
       return `<li><a class="nav-link${active ? " active" : ""}" href="${urlFor(p.file)}"${active ? ' aria-current="page"' : ""}>${escapeHtml(p.navTitle)}</a></li>`;
     }).join("");
-    const title = g.title ? `<p class="nav-group-title">${escapeHtml(g.title)}</p>` : "";
-    return `<div class="nav-group">${title}<ul>${links}</ul></div>`;
+    const toggle = g.title === SECRETS_TOGGLE ? " data-secrets-toggle" : "";
+    const title = g.title ? `<p class="nav-group-title"${toggle}>${escapeHtml(g.title)}</p>` : "";
+    return `<div class="nav-group${secret ? " nav-group-secret" : ""}">${title}<ul>${links}</ul></div>`;
   }).join("");
 }
 
@@ -312,7 +322,7 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
   <meta name="description" content="${escapeHtml(description)}">
   <meta name="theme-color" content="#ccffcc" />
   <meta name="build" content="${buildId}">
-  ${noindex ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${canonical}">`}
+  ${noindex || page.secret ? '<meta name="robots" content="noindex">' : `<link rel="canonical" href="${canonical}">`}
 
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="UwU Apps" />
@@ -332,7 +342,7 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
   <link rel="apple-touch-icon" href="/sgbusicon1.png">
 </head>
 
-<body>
+<body${page.secret ? ' class="secret-page"' : ""}>
   <a class="skip-link" href="#content">Skip to content</a>
 
   <header class="topbar">
@@ -401,7 +411,25 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
 `;
 }
 
+// What a secret page says while the secret pages are hidden: the 404's words.
+const NOT_IN_GUIDE = `<header class="doc-head">
+          <p class="eyebrow">404</p>
+          <h1>This page is not in the guide</h1>
+          <p class="lead">It may have moved. Search for what you were after, or start from the beginning.</p>
+        </header>
+        <div class="prose">
+          <p><a class="btn" href="/">Back to the guide</a> <button type="button" class="iconBtn" data-open-search><span data-icon="search"></span>Search</button></p>
+        </div>`;
+
 function articleHtml(page, prev, next) {
+  const html = openArticleHtml(page, prev, next);
+  return page.secret
+    ? `<div class="secret-locked">${NOT_IN_GUIDE}</div>
+        <div class="secret-open">${html}</div>`
+    : html;
+}
+
+function openArticleHtml(page, prev, next) {
   const updated = page.updated
     ? `<p class="doc-updated"><span data-icon="clock"></span>Last updated ${dateFormat.format(page.updated)}</p>`
     : "";
@@ -468,7 +496,7 @@ function searchRecords(page) {
     if (!m && !text) continue;
     records.push({ a: m ? m[1] : "", h: m ? stripTags(m[2]) : "", x: text });
   }
-  return { u: page.url, t: page.title, g: page.group, d: page.description || "", s: records };
+  return { u: page.url, t: page.title, g: page.group, d: page.description || "", s: records, ...(page.secret && { h: 1 }) };
 }
 
 async function build() {
@@ -489,6 +517,7 @@ async function build() {
         title: meta.title || p.navTitle,
         description: meta.description || "",
         group: g.title,
+        secret: meta.secret === "true",
         url: urlFor(p.file),
         html,
         ids,
@@ -508,18 +537,29 @@ async function build() {
   const pagesByFile = new Map(pages.map((p) => [p.file, p]));
   const problems = orphans.map((f) => `${f} is not listed in SUMMARY.md`);
   for (const p of pages) p.html = finishHtml(p.html, p.file, pagesByFile, problems);
+  if (pages.some((p) => p.secret) && !groups.some((g) => g.title === SECRETS_TOGGLE)) {
+    problems.push(`there are secret pages but no "${SECRETS_TOGGLE}" group to show them from`);
+  }
+  for (const g of groups) {
+    const n = g.pages.filter((p) => p.secret).length;
+    if (n && n !== g.pages.length) problems.push(`"${g.title}" mixes secret pages with others; give the secret ones a group of their own`);
+  }
   if (problems.length) throw new Error("Broken guide:\n  " + problems.join("\n  "));
 
   await rm(DIST, { recursive: true, force: true });
   await mkdir(DIST, { recursive: true });
   await cp(PUBLIC, DIST, { recursive: true });
 
-  for (const [i, page] of pages.entries()) {
+  // Previous and next stay among pages of the same kind, so no open page leads to a secret one.
+  const chains = new Map([[false, pages.filter((p) => !p.secret)], [true, pages.filter((p) => p.secret)]]);
+  for (const page of pages) {
+    const chain = chains.get(page.secret);
+    const i = chain.indexOf(page);
     const html = layout({
       page,
       groups,
       buildId,
-      bodyHtml: articleHtml(page, pages[i - 1], pages[i + 1]),
+      bodyHtml: articleHtml(page, chain[i - 1], chain[i + 1]),
       toc: tocHtml(page.headings),
     });
     const out = outPathFor(page.url);
@@ -535,21 +575,14 @@ async function build() {
     buildId,
     noindex: true,
     toc: "",
-    bodyHtml: `<header class="doc-head">
-          <p class="eyebrow">404</p>
-          <h1>This page is not in the guide</h1>
-          <p class="lead">It may have moved. Search for what you were after, or start from the beginning.</p>
-        </header>
-        <div class="prose">
-          <p><a class="btn" href="/">Back to the guide</a> <button type="button" class="iconBtn" data-open-search><span data-icon="search"></span>Search</button></p>
-        </div>`,
+    bodyHtml: NOT_IN_GUIDE,
   }));
 
   await writeFile(path.join(DIST, "search-index.json"), JSON.stringify(pages.map(searchRecords)));
   await writeFile(path.join(DIST, "version.json"), JSON.stringify({ version: buildId }));
 
   const today = new Date().toISOString().slice(0, 10);
-  const urls = pages.map((p) =>
+  const urls = pages.filter((p) => !p.secret).map((p) =>
     `  <url><loc>${SITE.origin}${p.url === "/" ? "/" : p.url}</loc><lastmod>${p.updated ? p.updated.toISOString().slice(0, 10) : today}</lastmod></url>`
   ).join("\n");
   await writeFile(path.join(DIST, "sitemap.xml"),

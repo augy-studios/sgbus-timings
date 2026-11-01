@@ -24,6 +24,12 @@ dark and time-based modes, Jua, glass surfaces, no emoji, no em dashes.
   `[sync](../web/sync.md#if-it-will-not-connect)`. The build turns them into
   clean URLs, and fails on a link to a missing page or heading.
 - Hints use GitHub's alert syntax: `> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`.
+- `secret: true` in the front matter makes a page secret. Secret pages need a
+  group of their own in `SUMMARY.md` (Web app: secrets), hidden until the
+  **Web app: advanced** heading in the sidebar is clicked three times in a row;
+  three more hide it again. Hidden, a secret page opened by its link shows the
+  404's words, search skips it, and it's never in the sitemap. Secret pages are
+  paged among themselves, so no other page's Next leads to one.
 - A top level numbered list is drawn as steps.
 - Images go in `public/images/` and are linked as `/images/name.png`.
 
@@ -45,7 +51,8 @@ buses run. Behind a proxy, start `serve.cjs` with `NODE_USE_ENV_PROXY=1`.
 (`STILL_AT`) and every stop's timings made up from its real routes, so a shot comes out the
 same whenever it's taken. The help desk #13 groups (`near-me`, `bug-report`, `explorer-back`,
 `campus`, `campus-ntu`, `campus-timings`, `map-save`), `bus-times` and 2.3.0's (`coins`,
-`colours`, `shuttles`, `nav-shuttle`, `shuttle-setting`) are always still; `nav-shuttle` plans
+`colours`, `shuttles`, `nav-shuttle`, `shuttle-setting`) and the secret pages' (`eggs`,
+`secrets`, `console`) are always still; `nav-shuttle` plans
 with this checkout's own router, as the live site may not have the shuttles yet; the campus ones draw
 the shuttles along their roads from the live site's `/api/road`. Explorer's offline 3D shot
 (`explorer-offline-3d.png`) is the light zoom 16 view from

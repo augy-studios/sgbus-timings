@@ -12,7 +12,8 @@
 // STILL=1 takes any group still: the page's clock stopped at STILL_AT, and each stop's bus
 // timings made up (stillArrivals) for the buses its routes have running then, so a shot comes
 // out the same whenever it's taken. The groups after "help desk #13" are always taken still, as
-// are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting.
+// are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, and the secret pages':
+// eggs, secrets and console.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -137,8 +138,9 @@ async function stillArrivals(stop) {
 }
 
 // `ua`: a browser to be, such as Chrome on Android for the app's download bar. `still`: see the
-// top. `mapHook`: the live map's MapLibre map kept as window.__map, to move by hand.
-async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, ua = null, still = !!process.env.STILL, mapHook = false } = {}) {
+// top. `mapHook`: the live map's MapLibre map kept as window.__map, to move by hand. `answers`:
+// what the fake app says, APP_ANSWERS unless given.
+async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, answers = APP_ANSWERS, ua = null, still = !!process.env.STILL, mapHook = false } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: 3, isMobile: touch, hasTouch: touch, colorScheme: 'light', locale: 'en-SG', timezoneId: 'Asia/Singapore',
     ...(ua && { userAgent: ua }),
@@ -173,7 +175,7 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
       });
     });
   }
-  if (app) await ctx.addInitScript(fakeApp, APP_ANSWERS);
+  if (app) await ctx.addInitScript(fakeApp, answers);
   await ctx.addInitScript((s) => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
@@ -1341,6 +1343,217 @@ async function el(page, sel, name) {
     const m = await page.locator('#settingsModal .modal').boundingBox();
     await page.screenshot({ path: OUT + 'settings-shuttles.png', clip: { x: m.x, y: a.y - 12, width: m.width, height: b.y + b.height + 12 - (a.y - 12) } });
     console.log('wrote settings-shuttles.png');
+    await ctx.close();
+  }
+  // The guide's secret pages (web/easter-eggs.md, web/secret-features.md, web/console.md), shown
+  // by triple clicking Web app: advanced in its sidebar. Always still.
+  // eggs: the feat windows, the every-line celebration, the wheel landing on an egg, and
+  // Navigate set for the loop and old railway feats, planned with this checkout's own router.
+  if (want('eggs')) {
+    const told = { sgbus_eggs_told: JSON.stringify(['colours', 'phone']) };
+    let { ctx, page } = await open(browser, { width: 420, height: 900, extra: told, still: true });
+    for (const id of ['up', 'down', 'long', 'ktm', 'loop']) {
+      await page.evaluate((f) => Eggs.feat(f), id);
+      // Its confetti stopped, and its coins' chip gone, so the words read.
+      await page.waitForTimeout(600);
+      await page.evaluate(() => window.Confetti?.stop?.());
+      await page.waitForTimeout(3200);
+      await el(page, '#eggModal .modal', `secret-feat-${id}.png`);
+      await page.evaluate(() => window.closeModal('eggModal'));
+      await page.waitForTimeout(400);
+    }
+    await ctx.close();
+
+    // The celebration, in 3D where it can be, a moment in so the network's up and turning.
+    ({ ctx, page } = await open(browser, { width: 420, height: 900, extra: told, still: true }));
+    await page.evaluate(() => simulateAllLines('3d'));
+    await page.waitForTimeout(6000);
+    await page.screenshot({ path: OUT + 'secret-celebration.png' });
+    console.log('wrote secret-celebration.png 420 900');
+    await ctx.close();
+
+    // The wheel on its egg: the first spin lands on the egg slice (0), and the egg it gives is
+    // Down the old railway, the last of the six.
+    ({ ctx, page } = await open(browser, { width: 420, height: 1800, extra: { ...told, sgbus_coins: JSON.stringify({ balance: 340, log: [], spins: 3 }), sgbus_feats: JSON.stringify({ ktm: Date.now() }) }, still: true }));
+    await settingsGroup(page, 'help');
+    await page.evaluate(() => {
+      const picks = [0, 0.99];
+      const real = Math.random;
+      Math.random = () => (picks.length ? picks.shift() : real());
+      document.getElementById('coinsBox').scrollIntoView({ block: 'start' });
+      document.getElementById('coinSpin').click();
+    });
+    await page.waitForTimeout(4500);
+    await page.evaluate(() => window.Confetti?.stop?.());
+    await page.waitForTimeout(800);
+    await el(page, '#coinsBox', 'secret-wheel-egg.png');
+    await ctx.close();
+
+    // Navigate set for a feat: back where it started by way of a stop, and between two of the old
+    // railway's places. The ways are this checkout's router's, at STILL_AT.
+    const { pathToFileURL } = require('url');
+    const fs = require('fs');
+    const site = path.resolve(__dirname, '../../main-site');
+    const core = (f) => import(pathToFileURL(path.join(site, 'js/nav-core', f)).href);
+    const [{ buildGraph }, { planFor, planViaFor }, { joinWays }] = await Promise.all([core('network.js'), core('plan.js'), core('via.js')]);
+    const j = (f) => JSON.parse(fs.readFileSync(path.join(site, f), 'utf8'));
+    const [stops, routes] = await Promise.all(['bus-stops', 'bus-routes'].map((a) => liveJson(a)));
+    const graph = buildGraph(j('data/rail.json'), stops, routes, { campus: { nus: j('data/campus/nus.json'), ntu: j('data/campus/ntu.json'), config: j('data/campus/config.json'), shuttles: j('data/campus/shuttles.json') } });
+    const when = { mode: 'leave', ms: STILL_AT.getTime() };
+    const shoot = async (from, to, via, name) => {
+      let options;
+      if (via) {
+        const { first, second, fits } = planViaFor(graph, from, via, to, when, null, {});
+        options = joinWays(first.options, second.options, via, { fits });
+      } else {
+        ({ options } = planFor(graph, from, to, when, null, {}));
+      }
+      const { ctx, page } = await open(browser, { width: 420, height: 1700, still: true });
+      await ctx.route(/\/api\/nav\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ options, onemap: false, alerts: { lines: [] }, when: { mode: 'now', ms: STILL_AT.getTime() }, traffic: null, others: {}, ...(via && { via: { lat: via.lat, lng: via.lng } }) }) }));
+      await page.evaluate((h) => { location.hash = h; }, `#nav/${enc(from)}/${enc(to)}${via ? `/via/${enc(via)}` : ''}`);
+      await idle(page, '#navBody');
+      await blur(page);
+      const ways = page.locator('#navBody [data-nav-option]');
+      const last = (await ways.count()) > 1 ? ways.nth(1) : ways.first();
+      const c = await page.locator(N).boundingBox();
+      const b = await last.boundingBox();
+      await page.screenshot({ path: OUT + name, clip: { x: c.x, y: c.y, width: c.width, height: b.y + b.height + 16 - c.y } });
+      console.log('wrote', name, Math.round(c.width), Math.round(b.y + b.height + 16 - c.y));
+      await ctx.close();
+    };
+    await shoot(P.bedokMall, P.bedokMall, { label: 'Tampines Mall', lat: 1.352448, lng: 103.944832 }, 'secret-loop-nav.png');
+    await shoot({ label: 'Cantonment station', lat: 1.273115, lng: 103.837028 }, { label: 'King Albert Park station', lat: 1.33566, lng: 103.78416 }, null, 'secret-ktm-nav.png');
+  }
+  // secrets: the shortcut's two places and its window, Your colours with every preset, the eggs
+  // found in Theme, and Your phone's colours in the Android app (a made-up wallpaper's palette).
+  if (want('secrets')) {
+    const allEggs = Object.fromEntries(['lines', 'up', 'down', 'loop', 'long', 'ktm'].map((id) => [id, Date.now()]));
+    let { ctx, page } = await open(browser, { width: 420, height: 1100, still: true });
+    await el(page, '#titleBtn', 'secret-greeting.png');
+    // The shortcut, done for real: the greeting three times, then Settings' title three times.
+    for (let i = 0; i < 3; i++) { await page.click('#greeting'); await page.waitForTimeout(120); }
+    await page.click('#settingsBtn');
+    await page.waitForTimeout(600);
+    await el(page, '#settingsModal .settingsHead', 'secret-settings-title.png');
+    for (let i = 0; i < 3; i++) { await page.click('#settingsTitle'); await page.waitForTimeout(120); }
+    await page.waitForSelector('#eggModal:not(.hidden)', { timeout: 5000 }).catch(() => console.log('no trick window'));
+    await page.waitForTimeout(600);
+    await el(page, '#eggModal .modal', 'secret-trick.png');
+    await ctx.close();
+
+    const found = { sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs), sgbus_colours_unlocked: String(Date.now()), sgbus_eggs_told: JSON.stringify(['colours', 'phone', ...Object.keys(allEggs).map((id) => `feat:${id}`)]) };
+    ({ ctx, page } = await open(browser, { width: 420, height: 2600, extra: found, still: true }));
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await page.evaluate(() => document.querySelector('#colourPresets [data-colour-preset="ktm"]')?.click());
+    await page.waitForTimeout(400);
+    await el(page, '#customColours', 'secret-your-colours.png');
+    await el(page, '#eggsFound', 'secret-eggs-found.png');
+    await ctx.close();
+
+    // A warm wallpaper's Material You palettes, tone by tone, as SgBusPlugin.phoneColours reads them.
+    const hex = (h, s, l) => {
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) => { const k = (n + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+    const tones = (h, s) => Object.fromEntries([0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((t) => [String(t), hex(h, t === 0 || t === 1000 ? 0 : s, 1 - t / 1000)]));
+    const palettes = { accent1: tones(18, 0.62), accent2: tones(18, 0.25), accent3: tones(48, 0.45), neutral1: tones(18, 0.08), neutral2: tones(18, 0.14) };
+    const answers = { ...APP_ANSWERS, 'SgBus.info': { ...APP_ANSWERS['SgBus.info'], version: '2.3.0', features: [...APP_FEATURES, 'phonecolours'] }, 'SgBus.phoneColours': palettes };
+    const phone = { ...found, sgbus_phone_colours_unlocked: String(Date.now()) };
+    ({ ctx, page } = await open(browser, { width: 420, height: 2600, extra: phone, app: true, answers, still: true }));
+    await page.click('#themeBtn');
+    await page.waitForTimeout(1200);
+    await el(page, '#phoneColours', 'secret-phone-colours.png');
+    await ctx.close();
+    ({ ctx, page } = await open(browser, { width: 420, height: 1100, hash: '#84009', extra: phone, app: true, answers, still: true }));
+    await page.evaluate(() => Colours.usePhone());
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no buses'));
+    await page.waitForTimeout(1200);
+    await blur(page);
+    await page.screenshot({ path: OUT + 'secret-phone-app.png' });
+    console.log('wrote secret-phone-app.png 420 1100');
+    await ctx.close();
+  }
+  // console: each simulate command typed in the browser's console, with what it really answers
+  // and logs, drawn as Chrome's console draws it; then what it does in the app.
+  if (want('console')) {
+    const told = { sgbus_eggs_told: JSON.stringify(['colours', 'phone']), sgbus_coins: JSON.stringify({ balance: 230, log: [], spins: 1 }) };
+    let { ctx, page } = await open(browser, { width: 420, height: 900, extra: told, still: true });
+    const logs = [];
+    page.on('console', (m) => { if (m.type() === 'log') logs.push(m.text()); });
+    // Each command run as the console would, and what came of it: its logs, then its value.
+    const typed = async (cmds) => {
+      const out = [];
+      for (const cmd of cmds) {
+        logs.length = 0;
+        const v = await page.evaluate(async (c) => {
+          const r = (0, eval)(c);
+          if (r && typeof r.then === 'function') return { p: 1, v: await r };
+          return r === undefined ? { u: 1 } : { v: r };
+        }, cmd);
+        await page.waitForTimeout(200);
+        out.push({ cmd, logs: [...logs], value: v.u ? undefined : v.v, promise: !!v.p });
+        await page.evaluate(() => { window.Confetti?.stop?.(); document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)); });
+        await page.waitForTimeout(300);
+      }
+      return out;
+    };
+    const shots = {
+      'console-help.png': await typed(['simulateHelp()']),
+      'console-coins.png': await typed(['simulateCoins()', 'simulateCoins(500)', 'simulateCoins(-30)', "simulateCoins('set', 1000)"]),
+      'console-rides.png': await typed(["simulateRide('12', '34', '56', 'NE')", "simulateRide('undo')"]),
+      'console-eggs.png': await typed(["simulateEgg('ktm')", "simulateEgg('ktm', 'egg')", "simulateEgg('all')", "simulateEgg('all', 'egg')", "simulateEgg('undo')"]),
+      'console-lines.png': await typed(["simulateAllLines('help')"]),
+    };
+    await ctx.close();
+
+    // Drawn as Chrome's console, dark: a > before what's typed, its logs, then <· and its value.
+    const draw = await browser.newPage({ viewport: { width: 900, height: 600 }, deviceScaleFactor: 3 });
+    const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+    // A value as Chrome shows it: a string quoted, a promise with what it came to.
+    const value = (v) => (v === undefined ? '<span class="undef">undefined</span>' : typeof v === 'string' ? `<span class="str">'${esc(v)}'</span>` : `<span class="num">${esc(JSON.stringify(v))}</span>`);
+    const shown = (r) => (r.promise ? `<span>Promise {<span class="undef">&lt;fulfilled&gt;</span>: ${value(r.value)}}</span>` : value(r.value));
+    for (const [name, runs] of Object.entries(shots)) {
+      const rows = runs.map((r) => `<div class="row in"><span class="mark">&gt;</span><span class="code">${esc(r.cmd)}</span></div>` +
+        r.logs.map((l) => `<div class="row log"><span class="mark"></span><span>${esc(l)}</span></div>`).join('') +
+        `<div class="row out"><span class="mark">&lt;&middot;</span>${shown(r)}</div>`).join('');
+      await draw.setContent(`<!doctype html><meta charset="utf-8"><style>
+        body { margin: 0; background: transparent; }
+        .con { width: 720px; border-radius: 12px; overflow: hidden; background: #282828; color: #e3e3e3; font: 13px/1.5 Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace; }
+        .tabs { display: flex; gap: 18px; padding: 8px 14px; background: #3c3c3c; color: #9aa0a6; font: 12px system-ui, sans-serif; }
+        .tabs b { color: #a8c7fa; font-weight: 500; border-bottom: 2px solid #a8c7fa; padding-bottom: 6px; margin-bottom: -8px; }
+        .row { display: flex; gap: 10px; padding: 4px 14px; border-bottom: 1px solid #3a3a3a; white-space: pre-wrap; word-break: break-word; }
+        .mark { flex: 0 0 18px; color: #9aa0a6; }
+        .in .mark { color: #a8c7fa; }
+        .code { color: #e3e3e3; }
+        .str { color: #f28b82; }
+        .num { color: #b3a1f9; }
+        .undef { color: #9aa0a6; }
+        .prompt { padding: 6px 14px 10px; color: #a8c7fa; }
+      </style><div class="con"><div class="tabs"><span>Elements</span><b>Console</b><span>Sources</span><span>Network</span></div>${rows}<div class="prompt">&gt;</div></div>`);
+      await draw.locator('.con').screenshot({ path: OUT + name, omitBackground: true });
+      const b = await draw.locator('.con').boundingBox();
+      console.log('wrote', name, Math.round(b.width), Math.round(b.height));
+    }
+    await draw.close();
+
+    // What they do: 1000 uwuCoins and the coin floating up over the wheel, and Achievements after
+    // three of the five buses.
+    ({ ctx, page } = await open(browser, { width: 420, height: 900, extra: told, still: true }));
+    await settingsGroup(page, 'help');
+    await page.evaluate(() => document.getElementById('coinsBox').scrollIntoView({ block: 'start' }));
+    await page.waitForTimeout(400);
+    await page.evaluate(() => simulateCoins('set', 1000));
+    await page.waitForTimeout(700);
+    await page.screenshot({ path: OUT + 'console-coins-app.png' });
+    console.log('wrote console-coins-app.png 420 900');
+    await page.waitForTimeout(3000);
+    await page.evaluate(() => simulateRide('12', '34', '56', 'NS', 'EW', 'NE'));
+    await page.waitForTimeout(300);
+    await page.evaluate(() => document.getElementById('coinAchievements').click());
+    await page.waitForTimeout(700);
+    await el(page, '[data-settings-group="achievements"]', 'console-rides-app.png');
     await ctx.close();
   }
   await browser.close();

@@ -49,6 +49,12 @@ than about three taps to reach goes under Advanced.
 * [Shortcuts and widgets](web/shortcuts-and-widgets.md)
 * [The sgbus terminal](web/terminal.md)
 
+## Web app: secrets
+
+* [Easter eggs](web/easter-eggs.md)
+* [Secret features](web/secret-features.md)
+* [Console commands](web/console.md)
+
 ## Telegram bot: basics
 
 * [Start the bot](bot/start.md)

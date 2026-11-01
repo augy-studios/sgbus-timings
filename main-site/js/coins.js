@@ -20,7 +20,8 @@
 // (#coinsBtn, data-tray-extra="coins") says the balance and opens the wheel.
 //
 // Window.Coins = { balance(), add(n, { why }), tripDone(trip), forTrip(trip), spin(), open() }.
-// Plain script: exports go on window.
+// The console's simulateCoins(n) gives coins for a look (below). Plain script: exports go on
+// window.
 (function () {
   const KEY = 'sgbus_coins';
   const LOG_MAX = 100;
@@ -241,6 +242,30 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
+
+  // In the browser's console (or chrome://inspect's, for the Android app), for a look at the
+  // wheel without the trips:
+  //   simulateCoins(500)            500 more, with the coin that floats up; a minus takes away
+  //   simulateCoins('set', 1000)    exactly that many
+  //   simulateCoins()               how many there are; 'help' says the rest
+  // Kept in the log as why: 'simulated'. This browser's own storage and nothing else.
+  const COIN_HELP = "simulateCoins(n) gives n uwuCoins, simulateCoins(-n) takes n away, simulateCoins('set', n) makes it exactly n, simulateCoins() says how many there are, simulateCoins('help') shows this.";
+  window.simulateCoins = (n, to) => {
+    const v = read();
+    if (n === undefined) return `${v.balance} uwuCoins. ${COIN_HELP}`;
+    const want = n === 'set' ? Number(to) : v.balance + Number(n);
+    if ((n !== 'set' && typeof n !== 'number') || !Number.isFinite(want)) return COIN_HELP;
+    const next = Math.max(0, Math.round(want));
+    const diff = next - v.balance;
+    if (diff > 0) add(diff, { why: 'simulated' });
+    else if (diff < 0) {
+      v.balance = next;
+      v.log.unshift({ at: Date.now(), n: diff, why: 'simulated' });
+      write(v);
+    }
+    if (!spinning) render();
+    return `${next} uwuCoins`;
+  };
 
   window.Coins = { balance, add, tripDone, forTrip, spin, open, SPIN_COST };
 })();

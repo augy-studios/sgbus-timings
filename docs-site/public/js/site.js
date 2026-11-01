@@ -6,6 +6,17 @@
   const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
   const BUILD = $('meta[name="build"]')?.content || "";
 
+  // Whether the secret pages are shown (see "secret pages" below). Keep the key in sync with
+  // PREPAINT in build.mjs.
+  const SECRETS_KEY = "sgbusguide.secrets";
+  function secretsOn() {
+    try {
+      return localStorage.getItem(SECRETS_KEY) === "on";
+    } catch {
+      return false;
+    }
+  }
+
   function escapeHtml(s) {
     return String(s ?? "").replace(/[&<>"']/g, (c) => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
@@ -161,6 +172,7 @@
     if (!words.length) return [];
     const hits = [];
     for (const page of index) {
+      if (page.h && !secretsOn()) continue;
       const title = page.t.toLowerCase();
       for (const s of page.s) {
         const head = s.h.toLowerCase();
@@ -353,6 +365,42 @@
         window.hydrateIcons(btn);
       }, 1500);
     }
+  });
+
+  // ---------- secret pages ----------
+  // The pages with `secret: true` (SECRETS_TOGGLE in build.mjs) show once the sidebar's
+  // "Web app: advanced" heading is clicked or tapped three times in a row, and hide again with
+  // three more. Kept in this browser, and put on <html> as data-secrets="on" before first paint
+  // (PREPAINT in build.mjs); style.css does the hiding. Hidden, a secret page's title is the 404's.
+
+  const TAPS_MS = 500;
+  const pageTitle = document.title;
+
+  function showSecrets(on) {
+    if (on) document.documentElement.setAttribute("data-secrets", "on");
+    else document.documentElement.removeAttribute("data-secrets");
+    if (document.body.classList.contains("secret-page")) {
+      document.title = on ? pageTitle : "Page not found | SG Bus Timings Guide";
+    }
+  }
+  showSecrets(secretsOn());
+
+  let taps = 0;
+  let lastTap = 0;
+  $("[data-secrets-toggle]")?.addEventListener("click", () => {
+    const now = Date.now();
+    taps = now - lastTap <= TAPS_MS ? taps + 1 : 1;
+    lastTap = now;
+    if (taps < 3) return;
+    taps = 0;
+    const on = !secretsOn();
+    try {
+      if (on) localStorage.setItem(SECRETS_KEY, "on");
+      else localStorage.removeItem(SECRETS_KEY);
+    } catch {}
+    showSecrets(on);
+    showToast(on ? "Secret pages shown" : "Secret pages hidden");
+    if (on) $(".nav-group-secret")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   });
 
   // ---------- screenshots open full size ----------

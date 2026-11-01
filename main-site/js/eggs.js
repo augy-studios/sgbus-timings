@@ -39,7 +39,9 @@
 //
 // Window.Eggs = { feat(id), found(id), progress(), rides(record), tripDone(trip), feats(), list(),
 // has(secret), presets(), name(id), all }. The console's simulateEgg(id) does a feat, and
-// simulateEgg(id, 'egg') finds an egg, for a look. Plain script: exports go on window.
+// simulateEgg(id, 'egg') finds an egg, for a look; simulateHelp() lists every simulate command
+// (these, simulateCoins in js/coins.js, simulateRide in js/rides.js, simulateAllLines in
+// js/celebrate.js). Plain script: exports go on window.
 (function () {
   const FEATS_KEY = 'sgbus_feats';
   const EGGS_KEY = 'sgbus_eggs';
@@ -163,11 +165,13 @@
 
   // ---------- a feat done ----------
 
-  function feat(id) {
+  // `quiet`: not said (simulateEgg('all')), and never said later either.
+  function feat(id, { quiet = false } = {}) {
     if (!EGGS[id] || read(FEATS_KEY)[id]) return false;
     const all = read(FEATS_KEY);
     all[id] = Date.now();
     put(FEATS_KEY, JSON.stringify(all));
+    if (quiet) tell(`feat:${id}`);
     window.Coins?.add(FEAT_COINS, { why: 'feat', feat: id });
     window.dispatchEvent(new CustomEvent('eggs:feat', { detail: { id } }));
     announce(id);
@@ -357,9 +361,15 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 
-  // In the browser's console: simulateEgg('ktm') does that feat, as if it had been, to see the
-  // window and get its coins; simulateEgg('ktm', 'egg') finds its egg as the wheel would;
-  // simulateEgg('undo') takes every feat, egg and secret away again (not the coins).
+  // In the browser's console (or chrome://inspect's, for the Android app), for a look:
+  //   simulateEgg('ktm')          that feat done, as if it had been: its window and its coins
+  //   simulateEgg('ktm', 'egg')   its egg found, as the wheel would, with what it unlocks
+  //   simulateEgg('all')          every feat not done yet, done, without a window each
+  //   simulateEgg('all', 'egg')   every egg not found yet, found
+  //   simulateEgg('undo')         every feat, egg and secret taken away again (not the coins)
+  //   simulateEgg('help')         this, in words
+  // This browser's own storage and nothing else, as anything typed in its console is.
+  const EGG_HELP = `simulateEgg(id) does a feat, with its window and ${FEAT_COINS} uwuCoins; simulateEgg(id, 'egg') finds its Easter egg, as the wheel would. ids: ${IDS.join(', ')}. simulateEgg('all') does every feat, simulateEgg('all', 'egg') finds every egg, simulateEgg('undo') takes every feat, egg and secret away again (not the coins), simulateEgg('help') shows this.`;
   window.simulateEgg = (id, what) => {
     if (id === 'undo') {
       for (const k of [FEATS_KEY, EGGS_KEY, UNLOCKED_KEY, PHONE_KEY, TOLD_KEY]) put(k, null);
@@ -367,13 +377,35 @@
       window.dispatchEvent(new Event('eggs:unlocked'));
       return 'undone';
     }
-    if (!EGGS[id]) return `Feats and eggs: ${IDS.join(', ')}, or 'undo'.`;
+    if (id === 'all') {
+      if (what === 'egg') {
+        const got = IDS.filter((e) => found(e));
+        return got.length ? `found: ${got.map((e) => EGGS[e].name()).join('; ')}. ${list().length} of ${IDS.length} Easter eggs found.` : 'every egg found already';
+      }
+      const done = IDS.filter((f) => feat(f, { quiet: true }));
+      return done.length ? `done: ${done.map((f) => EGGS[f].name()).join('; ')}, +${done.length * FEAT_COINS} uwuCoins. ${feats().length} of ${IDS.length} feats done.` : 'every feat done already';
+    }
+    if (!EGGS[id]) return EGG_HELP;
     if (what === 'egg') {
       const got = found(id);
       return got ? `found: ${prizeText(id, got)}` : 'already found';
     }
     return feat(id) ? 'done' : 'already done';
   };
+
+  // Every simulate command, in one place, as lines in the console.
+  window.simulateHelp = () => console.log([
+    "simulateEgg('ktm')            a feat done: its window and 100 uwuCoins",
+    "simulateEgg('ktm', 'egg')     its Easter egg found, as the wheel would",
+    "simulateEgg('all')            every feat done (or 'all', 'egg': every egg found)",
+    "simulateEgg('undo')           feats, eggs and secrets taken away (not the coins)",
+    "simulateCoins(500)            500 uwuCoins more (a minus takes them away)",
+    "simulateCoins('set', 1000)    exactly 1000 uwuCoins",
+    "simulateRide('12', 'NE')      a real ride on bus 12 and the NE Line, for Achievements",
+    "simulateRide('undo')          the rides it added taken back",
+    "simulateAllLines()            the every-line celebration, as a preview",
+    "Each says more with 'help', such as simulateCoins('help').",
+  ].join('\n'));
 
   window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, tripDone, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, all: IDS, KTM, FEAT_COINS };
 })();
