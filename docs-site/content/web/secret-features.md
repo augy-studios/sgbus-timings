@@ -58,8 +58,9 @@ each:
 | The long way round | Long haul | Blue |
 | Down the old railway | KTM | Green |
 
-**Every line ridden** brings no preset. Instead, **Watch the celebration
-again** under Your colours plays its 3D celebration whenever you like.
+**Every line ridden** brings no preset. Instead, once you've found its egg and
+ridden every line too, **Watch the celebration again** under Your colours plays
+its 3D celebration whenever you like.
 
 An egg found before Your colours is unlocked keeps its preset for when it is.
 

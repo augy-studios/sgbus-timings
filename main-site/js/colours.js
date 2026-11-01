@@ -324,7 +324,9 @@
     $('colourWarn').textContent = moved ? tr('colours.adjusted', 'The buttons are a little {way} than the colour picked, so their text is easy to read.', { way: luminance(t['--brand']) > luminance(draft.base) ? tr('colours.lighter', 'lighter') : tr('colours.darker', 'darker') }) : '';
     $('colourKeep').disabled = kept?.kind === 'base' && kept.base === draft.base;
     $('colourReset').hidden = !kept;
-    $('colourReplay').hidden = !window.Eggs?.list().includes('lines');
+    // Only once every line's really been ridden, not for the egg alone (the wheel can give it
+    // first): there's no celebration to see again before that.
+    $('colourReplay').hidden = !(window.Eggs?.list().includes('lines') && window.Eggs.feats().includes('lines'));
   }
 
   const escape = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);

@@ -4082,6 +4082,10 @@ body.touring { overflow: hidden; }
     border: 1px solid #b8860b; pointer-events: none;
 }
 .coinBalance { margin: 2px 0 8px; font-size: 1.3rem; font-weight: 800; color: var(--ink); }
+/* Counting up as coins come in (js/coins.js, showBalance): a little bigger until it gets there.
+   Digits all the same width, so the number doesn't jiggle as it counts. */
+[data-coins-balance] { display: inline-block; font-variant-numeric: tabular-nums; transition: transform 0.25s ease; }
+[data-coins-balance].coinsCounting { transform: scale(1.18); }
 .coinWheelWrap { position: relative; width: min(240px, 70vw); margin: 8px auto 12px; }
 .coinWheel { width: 100%; aspect-ratio: 1; }
 .coinWheelSvg { width: 100%; height: 100%; display: block; }

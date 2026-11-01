@@ -97,6 +97,7 @@
         { el: '#mapSpot', text: 'Stops are white dots ringed in green, stations dots in their line’s colour, interchanges pills in all of theirs. Zoom in for the stops.' },
         { el: '#mapSpot', text: 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.' },
         { el: '#mapHeading', text: 'The compass turns the map with you, the way your phone points up.' },
+        { el: '#mapLayers', text: 'Layers picks what the map shows: bus stops, MRT and LRT stations and lines, and shuttle buses’ routes and stops. Tap one to turn it off or on.' },
         { el: '#mapClose', text: 'Back closes Explorer. Its button in the Edge Tray can be turned off in Settings.' },
       ],
     },

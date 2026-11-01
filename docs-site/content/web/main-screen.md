@@ -162,7 +162,7 @@ with no trips just says how to start one.
 
 [Explorer](explorer.md) and the [sgbus terminal](terminal.md) have one each too,
 the first time you open them: Explorer's lights up the dots round you, the
-compass and Back, and the terminal's the prompt, where the answers show, and
+compass, Layers and Back, and the terminal's the prompt, where the answers show, and
 how to close it.
 
 <figure>

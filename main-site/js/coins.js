@@ -121,6 +121,10 @@
 
   let spinning = false;
   let turned = 0;
+  // A spin's winnings, kept off the balance shown until the wheel stops on them (doSpin), so the
+  // count doesn't give the prize away while it turns.
+  let holding = false;
+  let held = 0;
 
   // A spin: the coins taken, a slot picked, and what it won given. Returns { slot, egg, got } or
   // null without enough coins.
@@ -141,6 +145,7 @@
       got = Eggs.found(egg);
     } else {
       const w = read();
+      if (holding) held = slot.coins;
       w.balance += slot.coins;
       w.log.unshift({ at: Date.now(), n: slot.coins, why: 'wheel' });
       write(w);
@@ -168,7 +173,7 @@
 
   function render() {
     const v = read();
-    for (const el of document.querySelectorAll('[data-coins-balance]')) el.textContent = String(v.balance);
+    showBalance(v.balance - held);
     const box = $('coinsBox');
     if (!box) return;
     if (!spinning) $('coinWheel').innerHTML = wheelSvg();
@@ -180,6 +185,35 @@
     const feats = window.Eggs?.feats() || [];
     const eggs = window.Eggs?.list() || [];
     $('coinFeats').textContent = `${tr('eggs.featCount', '{n} of {all} feats done', { n: feats.length, all: window.Eggs?.all.length || 6 })} · ${tr('eggs.count', '{n} of {all} Easter eggs found', { n: eggs.length, all: window.Eggs?.all.length || 6 })}`;
+  }
+
+  // The balance, in the Edge Tray's coin and above the wheel: counting up to `n` when coins come
+  // in, quick at first and slowing as it reaches it; straight to `n` when they go out (a spin
+  // paid for), and as the page opens.
+  const COUNT_MS = 1000;
+  function showBalance(n) {
+    const still = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    for (const el of document.querySelectorAll('[data-coins-balance]')) {
+      const first = el.dataset.shown == null;
+      const from = Number(el.textContent) || 0;
+      if (el.dataset.shown === String(n)) continue;
+      el.dataset.shown = String(n);
+      cancelAnimationFrame(Number(el.dataset.raf) || 0);
+      if (first || still || n <= from) {
+        el.textContent = String(n);
+        el.classList.remove('coinsCounting');
+        continue;
+      }
+      const start = performance.now();
+      el.classList.add('coinsCounting');
+      const step = (now) => {
+        const t = Math.min(1, (now - start) / COUNT_MS);
+        el.textContent = String(Math.round(from + (n - from) * (1 - (1 - t) ** 3)));
+        if (t < 1) el.dataset.raf = String(requestAnimationFrame(step));
+        else el.classList.remove('coinsCounting');
+      };
+      el.dataset.raf = String(requestAnimationFrame(step));
+    }
   }
 
   function result(r) {
@@ -194,8 +228,10 @@
   }
 
   function doSpin() {
+    holding = true;
     const r = spin();
-    if (!r) return;
+    holding = false;
+    if (!r) { held = 0; return; }
     spinning = true;
     $('coinResult').hidden = true;
     render();
@@ -217,6 +253,7 @@
     svg.style.transform = `rotate(${turned}deg)`;
     setTimeout(() => {
       spinning = false;
+      held = 0;
       result(r);
       render();
       $('coinWheel').querySelector('svg').style.transform = `rotate(${turned}deg)`;

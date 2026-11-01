@@ -24,6 +24,9 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **The greeting** - Tapping the greeting at the top no longer opens Settings.
 - **For the curious** - Something new in the browser's console, for whoever looks.
 - **The wheel spins** - Spinning the uwuCoins wheel turns it for a few seconds and slows it gradually to a stop on what you won, instead of jumping straight there.
+- **Coins count up** - Coins coming in count up to the new total, on the Edge Tray's coin and above the wheel. A spin's winnings are counted once the wheel stops.
+- **Watch the celebration again** - Shows under Your colours only once you've ridden every line, not for the Every line ridden egg alone.
+- **Explorer's tour** - Explorer's tour shows its Layers button too, for what the map shows.
 
 ### Guide
 
