@@ -1,6 +1,6 @@
 ---
 title: Secret features
-description: What the Easter eggs unlock, the colour presets they bring, the Material You look, and a shortcut to Your phone's colours.
+description: What the Easter eggs unlock, the colour presets they bring, the Material You look, and a shortcut to Your phone's colours and Material You.
 secret: true
 ---
 
@@ -125,9 +125,9 @@ Your phone's colours.
 <figcaption>A window, as a sheet from the bottom.</figcaption>
 </figure>
 
-## The shortcut to Your phone's colours
+## The shortcut to Your phone's colours and Material You
 
-There's a way to Your phone's colours without an egg:
+There's a way to Your phone's colours and Material You without an egg:
 
 1. Tap the greeting at the top of the page three times, quickly.
 2. Open Settings and tap its title, **Settings**, three times, quickly.
@@ -145,16 +145,17 @@ other.
 <figcaption>Then Settings' title, three times.</figcaption>
 </figure>
 
-In the Android app on Android 12 and later, the app turns your phone's colours
-on straight away. Anywhere else, a window says where it works.
+In the Android app, the app turns Material You on straight away, and on
+Android 12 and later your phone's colours too. Anywhere else, a window says
+where they work.
 
 <figure>
-<img src="/screenshots/web/secret-trick.png" alt="A window: A secret, unlocked. Your phone's colours. It works in the SG Bus Timings Android app, on Android 12 and later: the whole app in your phone's own colours. Open Theme, Later." width="396" height="268" loading="lazy">
+<img src="/screenshots/web/secret-trick.png" alt="A window: A secret, unlocked. Your phone's colours and Material You. They work in the SG Bus Timings Android app: the whole app redrawn the way Android's own apps are, and on Android 12 and later, in your phone's own colours. Open Theme, Later." width="396" height="288" loading="lazy">
 <figcaption>The shortcut in a browser.</figcaption>
 </figure>
 
-Do it again to turn your phone's colours off. If the shortcut is what unlocked
-them, that locks them again too. The shortcut doesn't use up an egg: your next
+Do it again to turn your phone's colours and Material You off. Whichever of
+them the shortcut unlocked, it locks again too. The shortcut doesn't use up an egg: your next
 egg still unlocks a secret.
 
 ## Your eggs in the theme picker

@@ -1441,7 +1441,7 @@ async function el(page, sel, name) {
     await el(page, '#eggModal .modal', 'secret-trick.png');
     await ctx.close();
 
-    const found = { sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs), sgbus_colours_unlocked: String(Date.now()), sgbus_eggs_told: JSON.stringify(['colours', 'phone', ...Object.keys(allEggs).map((id) => `feat:${id}`)]) };
+    const found = { sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs), sgbus_colours_unlocked: String(Date.now()), sgbus_eggs_told: JSON.stringify(['colours', 'phone', 'material', ...Object.keys(allEggs).map((id) => `feat:${id}`)]) };
     ({ ctx, page } = await open(browser, { width: 420, height: 2600, extra: found, still: true }));
     await page.click('#themeBtn');
     await page.waitForTimeout(600);

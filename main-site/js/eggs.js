@@ -31,11 +31,11 @@
 // (TOLD_KEY) in #eggModal, or for `lines` the celebration (js/celebrate.js). Not synced: they're
 // this phone's.
 //
-// A shortcut to Your phone's colours (Augy, 1 November 2026): the greeting tapped three times and
-// Settings' title tapped three times, within TRICK_MS of each other in either order, unlocks it
-// and puts it on at once (trick). Kept as "trick:<when>", so it isn't counted as an egg's secret
-// and the next egg still unlocks one. Done again, it's off, and locked again if the trick
-// unlocked it.
+// A shortcut to Your phone's colours and the Material You look (Augy, 1 and 2 November 2026): the
+// greeting tapped three times and Settings' title tapped three times, within TRICK_MS of each
+// other in either order, unlocks both and puts on each that can be had here at once (trick). Kept
+// as "trick:<when>", so neither is counted as an egg's secret and the next egg still unlocks
+// one. Done again, both are off, and locked again where the trick unlocked them.
 //
 // Settings' Achievements lists each feat with how far along it is (progress, renderAchievements).
 //
@@ -303,32 +303,38 @@
     }
   }
 
+  // The secrets the trick unlocks and puts on.
+  const TRICKED = ['phone', 'material'];
+
   function trick() {
-    // Done again: off, and locked again if the trick was what unlocked it.
-    const byTrick = String(get(PHONE_KEY) || '').startsWith('trick');
-    if (byTrick || window.Colours?.phoneOn?.()) {
+    const byTrick = (secret) => String(get(SECRETS[secret]) || '').startsWith('trick');
+    // Done again: both off, and locked again where the trick was what unlocked them.
+    if (TRICKED.some(byTrick) || window.Colours?.phoneOn?.() || window.Material?.on?.()) {
       if (window.Colours?.phoneOn?.()) window.Colours.stopPhone();
-      if (byTrick) {
-        put(PHONE_KEY, null);
-        put(TOLD_KEY, JSON.stringify(told().filter((x) => x !== 'phone')));
+      if (window.Material?.on?.()) window.Material.stop();
+      const relock = TRICKED.filter(byTrick);
+      if (relock.length) {
+        for (const secret of relock) put(SECRETS[secret], null);
+        put(TOLD_KEY, JSON.stringify(told().filter((x) => !relock.includes(x))));
         window.dispatchEvent(new CustomEvent('eggs:unlocked', { detail: { secrets: [] } }));
       }
       return;
     }
-    if (!has('phone')) {
-      put(PHONE_KEY, `trick:${Date.now()}`);
-      tell('phone');
-      window.dispatchEvent(new CustomEvent('eggs:unlocked', { detail: { secrets: ['phone'] } }));
+    const fresh = TRICKED.filter((secret) => !has(secret));
+    for (const secret of fresh) {
+      put(SECRETS[secret], `trick:${Date.now()}`);
+      tell(secret);
     }
-    // Where it can be had, it's on now; anywhere else, it says where it works.
-    if (phoneCan() && window.Colours?.usePhone) {
-      window.Colours.usePhone();
-      return;
-    }
-    if (!document.getElementById('eggModal')) return;
+    if (fresh.length) window.dispatchEvent(new CustomEvent('eggs:unlocked', { detail: { secrets: fresh } }));
+    // Where they can be had, they're on now: the look in the Android app, and the colours there
+    // on Android 12 and later. Anywhere else, it says where they work.
+    let on = false;
+    if (materialCan() && window.Material) { window.Material.use(); on = true; }
+    if (phoneCan() && window.Colours?.usePhone) { window.Colours.usePhone(); on = true; }
+    if (on || !document.getElementById('eggModal')) return;
     document.getElementById('eggTitle').textContent = tr('eggs.trick.title', 'A secret, unlocked');
-    document.getElementById('eggName').textContent = tr('phoneColours.title', 'Your phone’s colours');
-    document.getElementById('eggHow').textContent = tr('eggs.trick.elsewhere', 'It works in the SG Bus Timings Android app, on Android 12 and later: the whole app in your phone’s own colours.');
+    document.getElementById('eggName').textContent = tr('eggs.trick.what', 'Your phone’s colours and Material You');
+    document.getElementById('eggHow').textContent = tr('eggs.trick.where', 'They work in the SG Bus Timings Android app: the whole app redrawn the way Android’s own apps are, and on Android 12 and later, in your phone’s own colours.');
     document.getElementById('eggGot').textContent = '';
     document.getElementById('eggCount').textContent = '';
     const go = document.getElementById('eggGo');
