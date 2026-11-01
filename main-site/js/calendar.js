@@ -1,6 +1,6 @@
 // Calendar, as Citymapper's: your events with a location, today and the next two weeks, on
-// the Calendar tab of Navigate's From and To (js/recents.js). Picking one plans the way there
-// to arrive by its start (navToEvent in js/nav.js).
+// the Calendar tab of Navigate's From, To and Add a stop (js/recents.js). Picking one in To plans
+// the way there to arrive by its start (navToEvent in js/nav.js).
 //
 // A website can't read the phone's calendar, so the events come from one of three places:
 //
@@ -25,6 +25,11 @@
 // Repeating events are expanded here (RRULE: daily, weekly, monthly, yearly, with INTERVAL,
 // COUNT, UNTIL, BYDAY, BYMONTHDAY and BYMONTH; EXDATE; RECURRENCE-ID changes and
 // cancellations), in the time zone each event was set in.
+//
+// An event is listed until it ends, not only until it starts, so one under way can still be
+// picked: its end from DTEND or DURATION (the phone's from an app after 2.2.8), or a whole
+// day for an all-day event. A timed event with neither ends as it starts, as iCal has it, and
+// so does the phone's from an older app, which gives no end.
 // Plain script: exports go on window.
 (function () {
   const KEY = 'sgbus_calendar';
@@ -149,7 +154,25 @@
     return second;
   }
 
-  // Every VEVENT with a location, as { uid, title, location, start, rrule, exdates, recurrenceId, cancelled }.
+  // An iCal DURATION, "PT1H30M" or "P1D", in milliseconds; null if it isn't one.
+  function parseDuration(value) {
+    const m = /^([+-])?P(?:(\d+)W)?(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?)?$/.exec(value.trim());
+    if (!m || m[1] === '-') return null;
+    const [w, d, h, mi, sec] = m.slice(2).map((x) => Number(x) || 0);
+    return ((((w * 7 + d) * 24 + h) * 60 + mi) * 60 + sec) * 1000;
+  }
+
+  // How long an event lasts, in milliseconds: DTEND less DTSTART, or DURATION, or a whole day
+  // for an all-day event; nothing for a timed one with neither.
+  function lengthOf(ev) {
+    const start = toMs(ev.start.c, ev.start.tz);
+    const end = ev.end ? toMs(ev.end.c, ev.end.tz ?? ev.start.tz) - start : null;
+    const len = end ?? ev.duration ?? (ev.start.allDay ? DAY_MS : 0);
+    return Math.max(0, len);
+  }
+
+  // Every VEVENT with a location, as { uid, title, location, start, end, duration, rrule,
+  // exdates, recurrenceId, cancelled }.
   function parseIcs(text) {
     const events = [];
     let ev = null;
@@ -173,6 +196,8 @@
         else if (name === 'SUMMARY') ev.title = unescapeText(value);
         else if (name === 'LOCATION') ev.location = unescapeText(value);
         else if (name === 'DTSTART') ev.start = parseDate(value, params);
+        else if (name === 'DTEND') ev.end = parseDate(value, params);
+        else if (name === 'DURATION') ev.duration = parseDuration(value);
         else if (name === 'RRULE') ev.rrule = Object.fromEntries(value.split(';').map((kv) => kv.split('=')).map(([k, v]) => [k.toUpperCase(), v]));
         else if (name === 'EXDATE') {
           for (const v of value.split(',')) {
@@ -275,8 +300,8 @@
     return out;
   }
 
-  // Every event starting from now (or today, for a whole day) to DAYS ahead, soonest first, as
-  // { key, title, location, start, allDay }, without the ones hidden.
+  // Every event not yet over, under way or starting in the next DAYS, soonest first, as
+  // { key, title, location, start, end, allDay }, without the ones hidden.
   function upcoming(events) {
     const now = Date.now();
     const to = now + DAYS * DAY_MS;
@@ -287,11 +312,13 @@
     for (const ev of events) {
       if (ev.cancelled) continue;
       const skip = ev.recurrenceId == null ? changed.get(ev.uid) : null;
-      for (const start of occurrences(ev, now, to)) {
+      const len = lengthOf(ev);
+      // From as far back as one that's still going could have started.
+      for (const start of occurrences(ev, now - len, to)) {
         if (skip?.has(start)) continue;
-        if (ev.start.allDay ? start + DAY_MS <= now : start < now) continue;
+        if (len ? start + len <= now : start < now) continue;
         const key = `${ev.uid || ev.title}|${start}`;
-        if (!hidden.has(key)) out.push({ key, title: ev.title || 'Event', location: ev.location, start, allDay: ev.start.allDay });
+        if (!hidden.has(key)) out.push({ key, title: ev.title || 'Event', location: ev.location, start, end: start + len, allDay: ev.start.allDay });
       }
     }
     return out.sort((a, b) => a.start - b.start).slice(0, 100);
@@ -300,7 +327,7 @@
   // Only what could still come round, for keeping an imported file.
   function stillAhead(ev) {
     const first = toMs(ev.start.c, ev.start.tz);
-    if (!ev.rrule) return first > Date.now() - DAY_MS;
+    if (!ev.rrule) return first + Math.max(lengthOf(ev), DAY_MS) > Date.now();
     const until = ev.rrule.UNTIL && parseDate(ev.rrule.UNTIL);
     return !until || toMs(until.c, until.tz) > Date.now();
   }
@@ -396,8 +423,10 @@
     const hidden = new Set(settings().hidden);
     return reply.events
       .filter((ev) => ev && typeof ev.location === 'string' && ev.location.trim() && Number.isFinite(ev.start) && !ONLINE_RE.test(ev.location))
-      .filter((ev) => (ev.allDay ? ev.start + DAY_MS > now : ev.start >= now) && ev.start < now + DAYS * DAY_MS)
-      .map((ev) => ({ key: String(ev.key), title: String(ev.title || 'Event').slice(0, 120), location: ev.location.trim().slice(0, 200), start: ev.start, allDay: !!ev.allDay }))
+      // Its end, from the app (after 2.2.8); from an older one, a whole day, or none.
+      .map((ev) => ({ ...ev, end: Number.isFinite(ev.end) && ev.end >= ev.start ? ev.end : ev.start + (ev.allDay ? DAY_MS : 0) }))
+      .filter((ev) => (ev.end > ev.start ? ev.end > now : ev.start >= now) && ev.start < now + DAYS * DAY_MS)
+      .map((ev) => ({ key: String(ev.key), title: String(ev.title || 'Event').slice(0, 120), location: ev.location.trim().slice(0, 200), start: ev.start, end: ev.end, allDay: !!ev.allDay }))
       .filter((ev) => !hidden.has(ev.key))
       .sort((a, b) => a.start - b.start)
       .slice(0, 100);
@@ -421,6 +450,10 @@
     const d = sgDay(ev.start);
     const tomorrow = sgDay(Date.now() + DAY_MS);
     const dayText = d === today ? 'Today' : d === tomorrow ? 'Tomorrow' : dayFmt.format(ev.start);
+    // Under way: till when, rather than when to arrive.
+    if (!ev.allDay && ev.start <= Date.now() && ev.end > Date.now()) {
+      return `On now: until ${sgDay(ev.end) === today ? '' : `${dayFmt.format(ev.end)}, `}${When.clock(ev.end)}`;
+    }
     return ev.allDay ? `All day: ${dayText}` : `Arrive: ${dayText}, ${When.clock(ev.start)}`;
   }
 
@@ -454,8 +487,11 @@
           `</div></div></div>` +
           `</div>`;
       };
-      const todays = list.filter((ev) => sgDay(ev.start) === today);
-      const later = list.filter((ev) => sgDay(ev.start) !== today);
+      // Under way counts as today, even one that began on an earlier day.
+      const now = Date.now();
+      const isToday = (ev) => sgDay(ev.start) === today || ev.start <= now;
+      const todays = list.filter(isToday);
+      const later = list.filter((ev) => !isToday(ev));
       box.innerHTML =
         (list.length
           ? (todays.length ? `<p class="recentHead">Today</p>${todays.map((ev) => row(ev, list.indexOf(ev))).join('')}` : '') +
@@ -578,7 +614,7 @@
     renderSettings("Reading your phone's calendar…");
     try {
       const list = await phoneEvents();
-      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From or To.`);
+      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From, To or Add a stop.`);
     } catch (err) {
       renderSettings(err.message, err.reason === 'permission' ? 'allow' : 'error');
     }
@@ -601,7 +637,7 @@
     try {
       saveSettings({ hidden: s.hidden, url });
       const list = upcoming(await events({ fresh: true }));
-      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From or To.`);
+      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From, To or Add a stop.`);
     } catch (err) {
       saveSettings(s);
       renderSettings(err.message, 'error');

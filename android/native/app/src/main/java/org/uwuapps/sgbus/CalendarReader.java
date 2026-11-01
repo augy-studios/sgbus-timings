@@ -47,7 +47,7 @@ final class CalendarReader {
         ContentUris.appendId(uri, now + days * DAY_MS);
         String[] columns = {
                 Instances.EVENT_ID, Instances.TITLE, Instances.EVENT_LOCATION, Instances.BEGIN,
-                Instances.ALL_DAY, Instances.STATUS, Instances.SELF_ATTENDEE_STATUS,
+                Instances.ALL_DAY, Instances.STATUS, Instances.SELF_ATTENDEE_STATUS, Instances.END,
         };
         String where = Instances.EVENT_LOCATION + " IS NOT NULL AND " + Instances.EVENT_LOCATION + " != ''";
 
@@ -63,11 +63,16 @@ final class CalendarReader {
                 // A whole-day event starts at midnight UTC on its date; the page wants
                 // Singapore's midnight on that date.
                 long start = allDay ? begin - SG_OFFSET_MS : begin;
+                // When it ends, so one under way is still listed till then (after 2.2.8). Every
+                // instance that overlaps the range comes back, one that began before it too.
+                long end = c.isNull(7) ? begin : c.getLong(7);
+                if (allDay) end -= SG_OFFSET_MS;
                 events.put(new JSONObject()
                         .put("key", "phone:" + c.getLong(0) + "|" + begin)
                         .put("title", c.isNull(1) ? "Event" : c.getString(1))
                         .put("location", c.getString(2).replaceAll("\\s+", " ").trim())
                         .put("start", start)
+                        .put("end", Math.max(start, end))
                         .put("allDay", allDay));
             }
         }

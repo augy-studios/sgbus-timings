@@ -1,5 +1,5 @@
-// Explorer's Layers (js/map.js, #layersModal): a button by Explorer's in the Edge Tray, and one
-// with Explorer's own, open a window to turn each of what Explorer's map shows off or on.
+// Explorer's Layers (js/map.js, #layersModal): a button with Explorer's own opens a window to
+// turn each of what Explorer's map shows off or on. It's in Explorer only, not the Edge Tray.
 //
 //   node scripts/layers-test.cjs
 //
@@ -9,11 +9,10 @@
 // The map's engine is a stand-in that keeps what it's asked to draw, so no WebGL is needed.
 //
 // What it checks:
-//   1. Layers is in the Edge Tray, straight after Explorer, and goes with Explorer's switch in
-//      Settings.
-//   2. From the tray: the window lists the layers, all on; Open Explorer opens Explorer.
-//   3. In Explorer: its own Layers button, the window over the map, and closing it leaves
-//      Explorer open.
+//   1. No Layers in the Edge Tray.
+//   2. In Explorer: its stops, stations and lines drawn; its Layers button opens the window,
+//      listing the layers, all on.
+//   3. The window over the map, and closing it leaves Explorer open; Back still closes it.
 //   4. Bus stops off: no stop dots, the stations still there; MRT and LRT lines off: none drawn;
 //      back on, they're back. Kept after a reload.
 //   5. Outside Explorer, its button isn't shown.
@@ -109,36 +108,25 @@ const explorerReady = (page) => page.waitForFunction(() => window.LiveMap.mode()
 
   {
     const { context, page, errors } = await site(browser);
-    // 1. In the tray, after Explorer, and off with it.
-    ok('1. Layers straight after Explorer', await page.evaluate(() => document.getElementById('explorerBtn').nextElementSibling?.id === 'layersBtn'));
-    ok('1. shown', await visible(page, '#layersBtn'));
-    await page.evaluate(() => setTrayExtra('explorer', false));
-    ok('1. off with Explorer', !(await visible(page, '#layersBtn')) && !(await visible(page, '#explorerBtn')));
-    await page.evaluate(() => setTrayExtra('explorer', true));
-    ok('1. back with it', await visible(page, '#layersBtn'));
+    // 1. Not in the Edge Tray.
+    ok('1. no Layers in the Edge Tray', await page.evaluate(() => !document.querySelector('#trayButtons [data-icon="layers"]') && !document.getElementById('layersBtn')));
+    ok('5. Explorer\'s button not shown outside it', !(await visible(page, '#mapLayers')));
 
-    // 2. From the tray.
-    await page.click('#layersBtn');
-    ok('2. the window opens', await shown(page, 'layersModal'));
-    const layers = await page.$$eval('#layersPick [data-layer]', (els) => els.map((el) => `${el.textContent.trim()}=${el.getAttribute('aria-pressed')}`));
-    ok('2. every layer, on', layers.join(' | ') === 'Bus stops=true | MRT and LRT stations=true | MRT and LRT lines=true | Shuttle bus routes=true | Shuttle bus stops=true', layers.join(' | '));
-    ok('2. Open Explorer offered', await visible(page, '#layersExplore'));
-    await page.click('#layersExplore');
+    // 2. In Explorer.
+    await page.click('#explorerBtn');
     await explorerReady(page);
-    ok('2. Open Explorer opens it', !(await shown(page, 'layersModal')) && await page.evaluate(() => !document.getElementById('mapPanel').hidden));
     ok('2. its stops and stations', (await kinds(page)).includes('station') && (await kinds(page)).includes('stop'), await kinds(page));
     await page.waitForFunction(() => (window.__drawn.rails || []).length > 0, null, { timeout: 15000 }).catch(() => {});
     ok('2. its lines', await page.evaluate(() => (window.__drawn.rails || []).length > 0));
-
-    // 3. Explorer's own button, the window over the map, closed leaving Explorer.
-    ok('3. Explorer has its own Layers button', await visible(page, '#mapLayers'));
+    ok('2. its Layers button', await visible(page, '#mapLayers'));
     await page.click('#mapLayers');
-    ok('3. the window opens', await shown(page, 'layersModal'));
+    ok('2. the window opens', await shown(page, 'layersModal'));
+    const layers = await page.$$eval('#layersPick [data-layer]', (els) => els.map((el) => `${el.textContent.trim()}=${el.getAttribute('aria-pressed')}`));
+    ok('2. every layer, on', layers.join(' | ') === 'Bus stops=true | MRT and LRT stations=true | MRT and LRT lines=true | Shuttle bus routes=true | Shuttle bus stops=true', layers.join(' | '));
     ok('3. over the map', await page.evaluate(() => {
       const r = document.querySelector('#layersModal .modal').getBoundingClientRect();
       return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('#layersModal');
     }));
-    ok('3. no Open Explorer, in it', !(await visible(page, '#layersExplore')));
 
     // 4. Off and on.
     await page.click('#layersPick [data-layer="stops"]');
@@ -174,7 +162,9 @@ const explorerReady = (page) => page.waitForFunction(() => window.LiveMap.mode()
   // 6. In Malay.
   {
     const { context, page, errors } = await site(browser, 'ms');
-    await page.click('#layersBtn');
+    await page.click('#explorerBtn');
+    await explorerReady(page);
+    await page.click('#mapLayers');
     ok('6. title in Malay', (await page.textContent('#layersTitle')).trim() === MS['layers.title']);
     ok('6. layers in Malay', (await page.textContent('#layersPick [data-layer="shuttles"]')).trim() === MS['layers.shuttles']);
     ok('7. no page errors (Malay)', errors.length === 0, errors.join(' | '));

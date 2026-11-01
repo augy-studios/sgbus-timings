@@ -2,7 +2,7 @@
 // drops down your recent searches (the last 24 hours, then earlier), with tabs for your saved
 // places and, in Navigate, your calendar's events (js/calendar.js).
 //
-// One list for every box: the main stop search, Navigate's From and To, the planner's Start
+// One list for every box: the main stop search, Navigate's From, To and stop, the planner's Start
 // and End, and Places' search. A box records what's picked in it, and shows only what it can
 // use: the main search stops, buses and postal codes; Navigate and Places anything with a
 // place on the map; the planner stops and postal codes. Picking Your location, a saved place

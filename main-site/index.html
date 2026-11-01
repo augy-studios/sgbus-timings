@@ -163,9 +163,6 @@
                 <!-- Explorer: the live map with every stop and station to tap (js/map.js); can be
                      turned off in Settings, Edge Tray buttons -->
                 <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" data-i18n-aria-label="tray.explorer" aria-label="Explorer" data-i18n-title="tray.explorer.title" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
-                <!-- Explorer's Layers: what it shows (js/map.js, #layersModal). Goes with Explorer's
-                     own switch in Settings, Edge Tray buttons -->
-                <button id="layersBtn" data-tray-extra="explorer" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.layers" aria-label="Layers" data-i18n-title="tray.layers.title" title="Layers: what Explorer shows on its map"><span data-icon="layers"></span></button>
                 <button id="navBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.navigate" aria-label="Navigate" data-i18n-title="tray.navigate.title" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.alerts" aria-label="Service alerts" data-i18n-title="tray.alerts.title" title="Service alerts"><span data-icon="bell"></span></button>
                 <button id="tripsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.trips" aria-label="Your trips and stats" data-i18n-title="tray.trips.title" title="Your trips and stats"><span data-icon="chart"></span></button>
@@ -702,7 +699,7 @@
                 <button id="settingsPlaces" class="iconBtn settingsWide" type="button"><span data-icon="bookmark"></span> <span data-i18n="settings.open_places">Open Places</span></button>
                 <p class="modal-section-label" data-find="ical ics events" data-i18n="settings.calendar">Calendar</p>
                 <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> <span data-i18n="settings.calendar_settings">Calendar settings</span></button>
-                <p class="mode-note" data-i18n="settings.your_events_with_a_location">Your events with a location show under Calendar in Navigate's From and To.</p>
+                <p class="mode-note" data-i18n="settings.your_events_with_a_location">Your events with a location show under Calendar in Navigate's From, To and Add a stop.</p>
             </section>
 
             <section class="settingsView" data-settings-group="pages" data-i18n-data-title="settings.pages_and_edge_tray" data-title="Pages and Edge Tray" hidden>
@@ -916,7 +913,7 @@
                     <span data-icon="close"></span>
                 </button>
             </div>
-            <p class="mode-note">Your events with a location, for the next two weeks, show under Calendar when you tap into Navigate's From or To. Tap one for the way there, arriving by its start.</p>
+            <p class="mode-note">Your events with a location, for the next two weeks, show under Calendar when you tap into Navigate's From, To or Add a stop. Tap one in To for the way there, arriving by its start.</p>
             <p id="calSource" class="syncStatus"></p>
             <!-- Only in the Android app, which can read the phone's calendar: js/app-bridge.js -->
             <div id="calPhoneBlock" hidden>
@@ -1058,7 +1055,7 @@
             <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
             <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
             <!-- Explorer only (style.css): Singapore's map saved for offline, js/map-save.js -->
-            <!-- Explorer only (style.css): its Layers, as the Edge Tray's button (js/map.js) -->
+            <!-- Explorer only (style.css): its Layers, what its map shows (js/map.js, #layersModal) -->
             <button id="mapLayers" class="glass-btn mapFab" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.layers" aria-label="Layers" data-i18n-title="tray.layers.title" title="Layers: what Explorer shows on its map"><span data-icon="layers"></span></button>
             <button id="mapSave" class="glass-btn mapFab" type="button" aria-expanded="false" aria-controls="mapSaveSheet" aria-label="Save the map for offline" title="Save Singapore's map for offline"><span data-icon="download"></span></button>
         </div>
@@ -1375,8 +1372,8 @@
         </div>
     </div>
 
-    <!-- Explorer's Layers, from the Edge Tray or Explorer's own button (js/map.js): what its map
-         shows, each switched on or off, kept in this browser. Over the map (style.css) -->
+    <!-- Explorer's Layers, from its own button (js/map.js): what its map shows, each switched on
+         or off, kept in this browser. Over the map (style.css) -->
     <div id="layersModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="layersTitle">
             <div class="modal-head">
@@ -1392,9 +1389,6 @@
                 <button class="mode-btn" type="button" data-layer="rails" aria-pressed="true" data-i18n="layers.rails">MRT and LRT lines</button>
                 <button class="mode-btn" type="button" data-layer="shuttles" aria-pressed="true" data-i18n="layers.shuttles">Shuttle bus routes</button>
                 <button class="mode-btn" type="button" data-layer="campus" aria-pressed="true" data-i18n="layers.campus">Shuttle bus stops</button>
-            </div>
-            <div class="tripActions">
-                <button id="layersExplore" class="btn" type="button" data-i18n="layers.open">Open Explorer</button>
             </div>
         </div>
     </div>

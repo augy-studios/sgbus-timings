@@ -18,8 +18,8 @@
 //                           LRT lines in their colours. A tap on a dot opens its card
 //                           (js/map-card.js): a stop's buses, a station's doors. Its Save the
 //                           map button keeps Singapore's map for offline (js/map-save.js).
-//                           Its Layers (the button by Explorer's in the Edge Tray, and one with
-//                           its own) turns each of those off or on (#layersModal, LAYERS_KEY).
+//                           Its Layers button turns each of those off or on (#layersModal,
+//                           LAYERS_KEY).
 //                           NUS's and NTU's campus shuttles too (js/campus.js): each route a
 //                           thin line in its colour, and the campus stops LTA hasn't got as
 //                           dots of their own, whose card has the routes' timetables.
@@ -1007,7 +1007,7 @@
     if (off.has('shuttles')) clearShuttles();
     else drawShuttles();
   }
-  // The modal's switches as the layers are; Open Explorer only where it isn't open.
+  // The modal's switches as the layers are.
   function syncLayers() {
     const off = layersOff();
     document.querySelectorAll('#layersPick [data-layer]').forEach((btn) => {
@@ -1015,25 +1015,15 @@
       btn.classList.toggle('active', on);
       btn.setAttribute('aria-pressed', String(on));
     });
-    $('#layersExplore').hidden = mode === 'explore';
   }
   function openLayers() {
     syncLayers();
     window.openModal('layersModal');
   }
-  $('#layersBtn').addEventListener('click', openLayers);
   $('#mapLayers').addEventListener('click', openLayers);
   $('#layersPick').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-layer]');
     if (btn) setLayer(btn.dataset.layer, btn.getAttribute('aria-pressed') !== 'true');
-  });
-  // Explorer once the modal's step back in the page's history is done, so its own step comes
-  // after it (as afterClose).
-  $('#layersExplore').addEventListener('click', () => {
-    const stepsBack = history.state?.sg && history.state.modal === 'layersModal';
-    if (stepsBack) window.addEventListener('popstate', () => setTimeout(explore, 0), { once: true });
-    window.closeModal('layersModal');
-    if (!stepsBack) explore();
   });
 
   function clearShuttles() {

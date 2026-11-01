@@ -27,10 +27,11 @@ function initNav() {
       onSaved: (item) => (item.kind === 'event' ? navToEvent(field, item) : setNavEnd(field, { label: item.place.name, lat: item.place.lat, lng: item.place.lng })),
     });
   }
-  // A stop on the way (Add a stop): searched as the ends are, without the calendar.
+  // A stop on the way (Add a stop): searched as the ends are, calendar events too.
   attachPlaceSearch($('#navVia'), $('#navViaAc'), (place) => setNavEnd('via', place), {
     recents: true,
-    onSaved: (item) => setNavEnd('via', { label: item.place.name, lat: item.place.lat, lng: item.place.lng }),
+    calendar: true,
+    onSaved: (item) => (item.kind === 'event' ? navToEvent('via', item) : setNavEnd('via', { label: item.place.name, lat: item.place.lat, lng: item.place.lng })),
   });
   $('#navAddStop').addEventListener('click', () => {
     nav.viaOpen = true;
@@ -352,20 +353,21 @@ function setNavEnd(field, place) {
   runNav();
 }
 
-// A calendar event (js/calendar.js) picked in From or To. In To, it's the way there from
-// wherever From is, or from where you are, set to Arrive by the event's start when that's a
-// time Navigate can plan for. An event whose location matched no place puts that location in
-// the box, to pick the right place from the suggestions.
+// A calendar event (js/calendar.js) picked in From, To or Add a stop. In To, it's the way there
+// from wherever From is, or from where you are, set to Arrive by the event's start when that's
+// a time Navigate can plan for; in Add a stop, the stop on the way, the time left as it is, as
+// it's when you arrive at the end. An event whose location matched no place puts that location
+// in the box, to pick the right place from the suggestions.
 function navToEvent(field, ev) {
   if (!ev.place) {
-    const input = $(field === 'from' ? '#navFrom' : '#navTo');
+    const input = $(field === 'from' ? '#navFrom' : field === 'via' ? '#navVia' : '#navTo');
     input.value = ev.location;
     input.focus({ preventScroll: true });
     input.dispatchEvent(new Event('input'));
     return;
   }
   const end = { label: ev.place.label, lat: ev.place.lat, lng: ev.place.lng };
-  if (field === 'from') return setNavEnd('from', end);
+  if (field === 'from' || field === 'via') return setNavEnd(field, end);
   const when = !ev.allDay && ev.start > Date.now() ? { mode: 'arrive', at: When.msToAt(ev.start) } : null;
   openNavAt(nav.from || 'here', end, when && When.problem(when) == null ? when : null);
 }

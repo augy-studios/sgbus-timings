@@ -81,6 +81,11 @@ Tap one, and Navigate plans the way there from where you are, set to **Arrive by
 the event's start. An all-day event, or one more than a week away, plans for
 **Leave now** instead.
 
+An event stays listed until it ends, not just until it starts, so you can still
+plan the way to one you're late for. It's under **Today**, saying **On now** and
+when it ends, and tapping it plans for **Leave now**. An event with no end time
+in the calendar drops off once it starts.
+
 <figure>
 <img src="/screenshots/web/calendar-nav.png" alt="Navigate from Your location to Punggol Coast Mall, with Arrive by picked for tomorrow at 7:00 pm, and the ways there counted below." width="392" height="560" loading="lazy">
 <figcaption>Henry Dinner, tapped: the way there, arriving by 19:00.</figcaption>
@@ -93,6 +98,14 @@ you to pick the right place from the suggestions. Online meetings, with a link f
 a location, and events with no location aren't listed.
 
 Repeating events show each time they come round in the two weeks.
+
+### A stop on the way
+
+Your events are under **Add a stop** in Navigate too. Tap into it, then the
+calendar tab, and tap an event to make its place the stop on the way. Navigate's
+time stays as it was: **Arrive by** is for where you're going, not the stop. An
+event whose location matched nothing puts its location in the box, to pick the
+right place.
 
 ### An event's menu
 
