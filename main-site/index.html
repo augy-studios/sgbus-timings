@@ -57,6 +57,8 @@
                 for (var t in tokens) document.documentElement.style.setProperty(t, tokens[t]);
                 document.documentElement.setAttribute("data-custom-colours", "");
             }
+            // The Material You look (js/material.js), unlocked and on, in the Android app.
+            if (localStorage.getItem("sgbus_look") === "material" && localStorage.getItem("sgbus_material_unlocked") && window.Capacitor) document.documentElement.setAttribute("data-look", "material");
             // Singapore's map saved for offline (js/map-save.js, META_KEY): Explorer stays offline.
             if (localStorage.getItem("sgbus_map_saved")) document.documentElement.setAttribute("data-map-saved", "");
         } catch (e) { /* the tray opens on the right */ }
@@ -1393,6 +1395,16 @@
                     <button id="phoneColoursOff" class="iconBtn" type="button" data-i18n="colours.reset" hidden>Back to the usual colours</button>
                 </div>
             </section>
+            <!-- The Material You look: a secret too, in the Android app (js/material.js): the whole
+                 app redrawn the way Android's own apps are, in whichever colours are on -->
+            <section id="materialLook" class="customColours" aria-labelledby="materialLookTitle" hidden>
+                <p class="modal-section-label" id="materialLookTitle" data-i18n="material.title">Material You</p>
+                <p class="mode-note" data-i18n="material.note">The whole app redrawn the way Android&rsquo;s own apps are: your phone&rsquo;s font, solid cards, rounder corners, pill-shaped buttons, windows that come up from the bottom, and a ripple where you tap. It goes with any colours, and best with Your phone&rsquo;s colours.</p>
+                <div class="tripActions">
+                    <button id="materialOn" class="btn" type="button" data-i18n="material.on">Use the Material You look</button>
+                    <button id="materialOff" class="iconBtn" type="button" data-i18n="material.off" hidden>Back to the usual look</button>
+                </div>
+            </section>
             <!-- The Easter eggs found (js/eggs.js), once there's one -->
             <section id="eggsFound" class="customColours" aria-labelledby="eggsFoundTitle" hidden>
                 <p class="modal-section-label" id="eggsFoundTitle" data-i18n="eggs.title">Easter eggs</p>
@@ -1579,6 +1591,7 @@
     <script src="/js/wheel.js"></script>
     <script src="/js/eggs.js"></script>
     <script src="/js/colours.js"></script>
+    <script src="/js/material.js"></script>
     <script src="/js/celebrate.js"></script>
     <script src="/js/lang-pick.js"></script>
     <script src="/js/bug-report.js"></script>

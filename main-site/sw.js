@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v143";
+const VERSION = "v144";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -16,13 +16,14 @@ const ASSETS = [
   "/i18n/zh-SG.json",
   "/i18n/ms.json",
   "/i18n/ta.json",
-  // Rides really taken, the Easter eggs, and the secret colours they unlock (js/rides.js,
-  // js/eggs.js, js/colours.js, with the colour wheel, js/wheel.js).
+  // Rides really taken, the Easter eggs, and the secrets they unlock (js/rides.js, js/eggs.js,
+  // js/colours.js, with the colour wheel, js/wheel.js, and the Material You look, js/material.js).
   "/js/rides.js",
   "/js/eggs.js",
   "/js/coins.js",
   "/js/wheel.js",
   "/js/colours.js",
+  "/js/material.js",
   // The celebration for every line ridden; three.js itself is kept as MapLibre is, once fetched.
   "/js/celebrate.js",
   "/js/lang-pick.js",

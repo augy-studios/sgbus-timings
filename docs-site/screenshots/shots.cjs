@@ -13,7 +13,7 @@
 // timings made up (stillArrivals) for the buses its routes have running then, so a shot comes
 // out the same whenever it's taken. The groups after "help desk #13" are always taken still, as
 // are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, and the secret pages':
-// eggs, secrets and console.
+// eggs, secrets, material and console.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -1473,6 +1473,52 @@ async function el(page, sel, name) {
     await blur(page);
     await page.screenshot({ path: OUT + 'secret-phone-app.png' });
     console.log('wrote secret-phone-app.png 420 1100');
+    await ctx.close();
+  }
+  // material: the Material You look in the Android app, in Theme, then the app in it, in a warm
+  // wallpaper's colours (as secrets' phone shots), with Bedok Int's timings and Theme as a sheet.
+  if (want('material')) {
+    const allEggs = Object.fromEntries(['lines', 'up', 'down', 'loop', 'long', 'ktm'].map((id) => [id, Date.now()]));
+    const hex = (h, s, l) => {
+      const a = s * Math.min(l, 1 - l);
+      const f = (n) => { const k = (n + h / 30) % 12; return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); };
+      return `#${f(0)}${f(8)}${f(4)}`;
+    };
+    const tones = (h, s) => Object.fromEntries([0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((t) => [String(t), hex(h, t === 0 || t === 1000 ? 0 : s, 1 - t / 1000)]));
+    const palettes = { accent1: tones(18, 0.62), accent2: tones(18, 0.25), accent3: tones(48, 0.45), neutral1: tones(18, 0.08), neutral2: tones(18, 0.14) };
+    const answers = { ...APP_ANSWERS, 'SgBus.info': { ...APP_ANSWERS['SgBus.info'], version: '2.3.0', features: [...APP_FEATURES, 'phonecolours'] }, 'SgBus.phoneColours': palettes };
+    const now = String(Date.now());
+    const material = {
+      sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs),
+      sgbus_colours_unlocked: now, sgbus_phone_colours_unlocked: now, sgbus_material_unlocked: now,
+      sgbus_eggs_told: JSON.stringify(['colours', 'phone', 'material', ...Object.keys(allEggs).map((id) => `feat:${id}`)]),
+    };
+    let { ctx, page } = await open(browser, { width: 420, height: 2600, extra: material, app: true, answers, still: true });
+    await page.click('#themeBtn');
+    await page.waitForTimeout(1200);
+    await el(page, '#materialLook', 'secret-material.png');
+    await ctx.close();
+    const look = { ...material, sgbus_look: 'material' };
+    ({ ctx, page } = await open(browser, { width: 420, height: 1100, hash: '#84009', extra: look, app: true, answers, still: true }));
+    await page.evaluate(() => Colours.usePhone());
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no buses'));
+    await page.waitForTimeout(1200);
+    await blur(page);
+    await page.screenshot({ path: OUT + 'secret-material-app.png' });
+    console.log('wrote secret-material-app.png 420 1100');
+    await page.click('#themeBtn');
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: OUT + 'secret-material-sheet.png' });
+    console.log('wrote secret-material-sheet.png 420 1100');
+    await ctx.close();
+    // The usual look beside it, the same stop and colours, for comparing.
+    ({ ctx, page } = await open(browser, { width: 420, height: 1100, hash: '#84009', extra: material, app: true, answers, still: true }));
+    await page.evaluate(() => Colours.usePhone());
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no buses'));
+    await page.waitForTimeout(1200);
+    await blur(page);
+    await page.screenshot({ path: OUT + 'secret-material-usual.png' });
+    console.log('wrote secret-material-usual.png 420 1100');
     await ctx.close();
   }
   // console: each simulate command typed in the browser's console, with what it really answers

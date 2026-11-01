@@ -4110,3 +4110,131 @@ body.touring { overflow: hidden; }
 .coinToast [data-icon] svg { width: 20px; height: 20px; }
 @keyframes coinUp { 0% { opacity: 0; transform: translate(-50%, 12px); } 12%, 80% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -8px); } }
 @media (prefers-reduced-motion: reduce) { .coinToast { animation: none; } }
+
+/* ===== The Material You look (js/material.js) ===== */
+/* A secret, in the Android app: the app redrawn the way Android's own apps are, in whichever
+   colours are on. The phone's own font; solid tonal surfaces in place of the glass; Material 3's
+   shapes (28px windows, 24px cards, 16px rows and tray buttons, 8px chips, pill buttons); flat
+   buttons that don't lift, with a ripple (.mdRipple) where they're pressed; and on a phone,
+   windows as bottom sheets. High contrast keeps its own surfaces, and Your colours and Your
+   phone's colours their own, which are solid already (js/colours.js, set on <html> itself, so
+   they win over these). */
+:where(:root[data-look="material"]) * {
+    font-family: system-ui, sans-serif;
+    letter-spacing: 0.01em;
+}
+:root[data-look="material"]:not([data-contrast]) {
+    --surface: color-mix(in srgb, var(--brand) 12%, #ffffff);
+    --surface-strong: color-mix(in srgb, var(--brand) 20%, #fbfcfa);
+    --surface-border: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+:root[data-look="material"][data-mode="dark"]:not([data-contrast]) {
+    --surface: color-mix(in srgb, var(--brand) 6%, #1b201d);
+    --surface-strong: color-mix(in srgb, var(--brand) 9%, #252b27);
+}
+:root[data-look="material"] {
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.18), 0 2px 6px 2px rgba(0, 0, 0, 0.1);
+}
+:root[data-look="material"][data-mode="dark"] {
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 8px 3px rgba(0, 0, 0, 0.3);
+}
+/* Every surface is solid, so there's nothing for a blur to show. */
+:root[data-look="material"] * { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+/* Shapes. */
+:root[data-look="material"] :is(.glass, .card) { border-radius: 24px; }
+:root[data-look="material"] .card.glass { box-shadow: none; }
+:root[data-look="material"] .modal { border-radius: 28px; }
+:root[data-look="material"] :is(.svc, .acList, .swatch, .shareMenuItem, .noticeItem, .navOther) { border-radius: 16px; }
+:root[data-look="material"] .acItem:first-child { border-radius: 16px 16px 0 0; }
+:root[data-look="material"] .acItem:last-child { border-radius: 0 0 16px 16px; }
+:root[data-look="material"] .acItem:only-child { border-radius: 16px; }
+:root[data-look="material"] :is(.svcNo, .logo) { border-radius: 12px; }
+:root[data-look="material"] .svcNo { border: none; font-weight: 500; }
+:root[data-look="material"] :is(.eta, .chip .remove) { border-radius: 8px; }
+:root[data-look="material"] :is(.chip, .tab) { border-radius: 8px; }
+:root[data-look="material"] :is(.glass-btn, .icon-btn) { border-radius: 16px; }
+:root[data-look="material"] .tray-tab { border-radius: 16px; }
+:root[data-look="material"][data-tray-closed] .tray-tab { border-radius: 16px 0 0 16px; }
+:root[data-look="material"][data-tray-closed][data-tray-side="left"] .tray-tab { border-radius: 0 16px 16px 0; }
+
+/* The Edge Tray: solid buttons, the page on show in a pill of the brand fill. */
+:root[data-look="material"] :is(.glass-btn, .tray-tab) {
+    background: linear-gradient(var(--surface-strong), var(--surface-strong)), color-mix(in srgb, var(--brand) 10%, var(--bg));
+    border-color: transparent;
+}
+:root[data-look="material"] .glass-btn.appIconBtn { background: none; }
+:root[data-look="material"] .glass-btn[role="tab"][aria-selected="true"] { background: var(--brand-fill); }
+
+/* Buttons: filled pills, and the others outlined pills. Pressed, a darker layer and the ripple,
+   never a lift. */
+:root[data-look="material"] .btn {
+    border-radius: 999px;
+    border-color: transparent;
+    background: var(--brand);
+    font-weight: 500;
+    padding: 12px 24px;
+}
+:root[data-look="material"] .btn:hover { background: var(--brand); box-shadow: var(--shadow); }
+:root[data-look="material"] :is(.iconBtn, .viewRouteBtn) { border-radius: 999px; }
+/* Outlined: no fill, and pressed or hovered a light layer of the text's own colour, so the text
+   stays --ink. One that's on (.iconBtn.on) keeps its brand fill. */
+:root[data-look="material"] :is(.iconBtn:not(.on), .viewRouteBtn) { background: transparent; }
+:root[data-look="material"] :is(.iconBtn:not(.on), .viewRouteBtn):hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+:root[data-look="material"] .iconBtn { padding: 8px 14px; }
+:root[data-look="material"] :is(.btn, .iconBtn, .icon-btn, .glass-btn, .chip, .tab, .viewRouteBtn, .swatch):is(:hover, :active) { transform: none; }
+:root[data-look="material"] .icon-btn { border-color: transparent; }
+
+/* Choices side by side: pill segments, the picked one filled. */
+:root[data-look="material"] .mode-toggle { border-radius: 24px; border: 1px solid var(--surface-border); background: transparent; }
+:root[data-look="material"] .mode-btn { border-radius: 999px; font-weight: 500; }
+
+/* Text fields: outlined, the outline the brand's ink and twice as thick while typing; the search
+   for a stop a pill-shaped search bar. */
+:root[data-look="material"] .input {
+    border-radius: 4px;
+    border-color: color-mix(in srgb, var(--ink) 45%, transparent);
+    background: var(--surface-strong);
+}
+:root[data-look="material"] .input:focus { border-color: var(--brand-ink); box-shadow: inset 0 0 0 1px var(--brand-ink); }
+:root[data-look="material"] #q { border-radius: 999px; border-color: transparent; padding: 16px 20px; }
+:root[data-look="material"] #q:focus { border-color: var(--brand-ink); }
+
+/* Type: Material 3's weights, lighter than the app's own. */
+:root[data-look="material"] .brand h1 { font-size: 1.5rem; font-weight: 400; }
+:root[data-look="material"] :is(.cardTitle, .modalTitle, .chip .code, .chip .buses, .eta strong) { font-weight: 500; }
+:root[data-look="material"] .modal-head h2 { font-size: 1.5rem; font-weight: 400; color: var(--ink); }
+:root[data-look="material"] .modal-section-label { color: var(--brand-ink); font-weight: 500; font-size: 0.875rem; margin-top: 10px; }
+
+/* On a phone, a window is a bottom sheet: the screen's width, flat on its bottom edge. */
+@media (max-width: 639px) {
+    :root[data-look="material"] .modal-backdrop:not(.docked):not(.celebrateBackdrop) { padding: 0; }
+    :root[data-look="material"] .modal-backdrop:not(.docked):not(.celebrateBackdrop) > .modal {
+        max-width: none;
+        border-radius: 28px 28px 0 0;
+        border-bottom: 0;
+        padding-bottom: max(18px, calc(env(safe-area-inset-bottom) + 12px));
+    }
+    :root[data-look="material"] .modal-backdrop:not(.docked):not(.celebrateBackdrop) > .modal.flush { padding-bottom: 0; }
+    :root[data-look="material"] .modal-backdrop:not(.docked):not(.celebrateBackdrop).hidden > .modal { transform: translateY(40px); }
+}
+
+/* The ripple: a layer cut to the button's shape, its wave spreading from the finger. */
+.mdRipple {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.mdRipple > span {
+    position: absolute;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.14;
+    transform: scale(0);
+    animation: md-ripple 0.45s cubic-bezier(0.2, 0, 0, 1) forwards;
+}
+.mdRipple.done { opacity: 0; }
+@keyframes md-ripple { to { transform: scale(1); } }
