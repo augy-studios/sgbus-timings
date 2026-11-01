@@ -18,6 +18,8 @@
 //                           LRT lines in their colours. A tap on a dot opens its card
 //                           (js/map-card.js): a stop's buses, a station's doors. Its Save the
 //                           map button keeps Singapore's map for offline (js/map-save.js).
+//                           Its Layers (the button by Explorer's in the Edge Tray, and one with
+//                           its own) turns each of those off or on (#layersModal, LAYERS_KEY).
 //                           NUS's and NTU's campus shuttles too (js/campus.js): each route a
 //                           thin line in its colour, and the campus stops LTA hasn't got as
 //                           dots of their own, whose card has the routes' timetables.
@@ -26,7 +28,8 @@
 //                           its road, orange where it's slow and red where it's jammed, by LTA's
 //                           live speeds (/api/traffic), its incidents, and why, in words.
 //
-// LiveMap.walkTo(place, { cycle: true }) is the way by bike instead, for Navigate's Cycle it.
+// LiveMap.walkTo(place, { cycle: true }) is the way by bike instead, for Navigate's Cycle it, and
+// { drive: true } the way by car, for its Drive it.
 //
 // The stops and stations on a trip or a walk open the same card when tapped.
 //
@@ -66,7 +69,7 @@
   // A train ride's dot is the station within this of it.
   const STATION_M = 300;
 
-  const COLOURS = { walk: '#2f7dff', cycle: '#0b8f8a', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
+  const COLOURS = { walk: '#2f7dff', cycle: '#0b8f8a', drive: '#5c6b7a', bus: '#1f9d55', train: '#7a4fd6', me: '#2f7dff', them: '#e8590c', done: '#9aa7a0' };
   // The traffic on a road, by how freely it flows (/api/traffic's flows): below SLOW_FLOW is slow,
   // below JAM_FLOW jammed. Keep in step with the trip's and Navigate's words for it.
   const JAM_FLOW = 0.4;
@@ -104,6 +107,7 @@
 
   const routes = new Map(); // walks already asked for, this page view
   let walkCycle = false; // the walk being followed is by bike
+  let walkDrive = false; // or by car
 
   // ---------- geometry ----------
 
@@ -494,22 +498,25 @@
 
   const key = (p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
 
-  async function fetchWalk(from, to, { cycle = false } = {}) {
-    const k = `${key(from)}>${key(to)}${cycle ? '>cycle' : ''}`;
+  // By bike with `cycle`, or by car with `drive` (a trip switched to driving, js/trip.js).
+  async function fetchWalk(from, to, { cycle = false, drive = false } = {}) {
+    const by = drive ? 'drive' : cycle ? 'cycle' : '';
+    const k = `${key(from)}>${key(to)}${by ? `>${by}` : ''}`;
     if (routes.has(k)) return routes.get(k);
-    const r = await fetch(`/api/walk?from=${key(from)}&to=${key(to)}${cycle ? '&mode=cycle' : ''}`);
+    const r = await fetch(`/api/walk?from=${key(from)}&to=${key(to)}${by ? `&mode=${by}` : ''}`);
     if (!r.ok) throw new Error((await r.json().catch(() => null))?.error || "Couldn't find a way to walk there.");
     const route = await r.json();
     routes.set(k, route);
     return route;
   }
 
-  async function walkTo(to, { from = null, title = null, cycle = false } = {}) {
+  async function walkTo(to, { from = null, title = null, cycle = false, drive = false } = {}) {
     if (to?.lat == null || to?.lng == null) return;
     $('#mapHeading').hidden = false;
     mode = 'walk';
-    walkCycle = cycle;
-    await show(title || `${cycle ? 'Cycle' : 'Walk'} to ${to.label || 'here'}`, '');
+    walkCycle = cycle && !drive;
+    walkDrive = drive;
+    await show(title || `${drive ? 'Drive' : cycle ? 'Cycle' : 'Walk'} to ${to.label || 'here'}`, '');
     mode = 'walk';
     place = { lat: Number(to.lat), lng: Number(to.lng), label: to.label || 'Your destination' };
     walk = null;
@@ -530,7 +537,7 @@
     walkAsked = Date.now();
     const asked = place;
     try {
-      const got = await fetchWalk(from, place, { cycle: walkCycle });
+      const got = await fetchWalk(from, place, { cycle: walkCycle, drive: walkDrive });
       if (mode !== 'walk' || place !== asked) return;
       walk = { ...got, total: lengthOf(got.path) };
       drawWalk();
@@ -544,8 +551,8 @@
     ink.clear('lines');
     if (!walk) return;
     ink.line('lines', walk.path, { color: '#fff', weight: 9, opacity: 0.9 });
-    ink.line('lines', walk.path, { color: walkCycle ? COLOURS.cycle : COLOURS.walk, weight: 5, dash: walk.source === 'line' });
-    note(walk.source === 'line' ? `Couldn't find the streets for this ${walkCycle ? 'ride' : 'walk'}, so this is the straight line there.`
+    ink.line('lines', walk.path, { color: walkDrive ? COLOURS.drive : walkCycle ? COLOURS.cycle : COLOURS.walk, weight: 5, dash: walk.source === 'line' });
+    note(walk.source === 'line' ? `Couldn't find the ${walkDrive ? 'roads for this drive' : `streets for this ${walkCycle ? 'ride' : 'walk'}`}, so this is the straight line there.`
       : walk.expressway ? 'It ends on an expressway, where no one may walk, so the walk stops at the nearest footpath.'
       : walk.roadside >= 20 ? `About ${Math.round(walk.roadside / 10) * 10} m of this walk is along the road, with no footpath. Keep to the side and watch for traffic.`
       : '');
@@ -659,9 +666,10 @@
       ink.clear('marks');
       legs.forEach((leg, i) => {
         const done = i < p.legIndex;
-        const colour = done ? COLOURS.done : leg.kind === 'walk' ? COLOURS.walk
+        // A walk by bike or car (js/trip.js's footLeg) in its own colour, and a car's not dashed.
+        const colour = done ? COLOURS.done : leg.kind === 'walk' ? (leg.drive ? COLOURS.drive : leg.cycle ? COLOURS.cycle : COLOURS.walk)
           : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
-        const line = ink.line('lines', leg.points, { color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95, dash: leg.kind === 'walk' });
+        const line = ink.line('lines', leg.points, { color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95, dash: leg.kind === 'walk' && !leg.drive });
         // A train ride along its line's track (js/rail-tracks.js), once that's in; straight from
         // station to station till then.
         if (leg.kind === 'train' && window.RailTracks) {
@@ -676,7 +684,7 @@
         if (leg.kind === 'walk') {
           const end = leg.points[leg.points.length - 1];
           const from = i === p.legIndex && here ? here : { lat: leg.points[0][0], lng: leg.points[0][1] };
-          fetchWalk(from, { lat: end[0], lng: end[1] }, { cycle: !!leg.cycle })
+          fetchWalk(from, { lat: end[0], lng: end[1] }, { cycle: !!leg.cycle, drive: !!leg.drive })
             .then((r) => {
               if (mode !== 'trip' || builtTripLeg !== p.legIndex || !line.alive || !(r.path?.length >= 2)) return;
               line.set(r.path);
@@ -693,7 +701,7 @@
         if (!done) {
           const end = leg.points[leg.points.length - 1];
           const last = i === legs.length - 1;
-          flag(end, last ? leg.to : `${leg.kind === 'walk' ? 'Walk to' : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
+          flag(end, last ? leg.to : `${leg.kind === 'walk' ? `${leg.drive ? 'Drive' : leg.cycle ? 'Cycle' : 'Walk'} to` : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
         }
       });
       if (fit && !here) ink.setView(p.at, STREET_ZOOM);
@@ -900,7 +908,10 @@
     // The lines under the dots, as soon as their tracks are in (js/rail-tracks.js), without
     // waiting on the stops. None, offline before they were ever fetched.
     RailTracks.lines()
-      .then((lines) => { if (mode === 'explore') ink.rails(lines.map((l) => ({ color: lineColour(l.line), points: l.points }))); })
+      .then((lines) => {
+        exploreRails = lines.map((l) => ({ color: lineColour(l.line), points: l.points }));
+        drawRails();
+      })
       .catch(() => {});
     const [index] = await Promise.all([ensureStopsIndex(), loadStations().catch(() => {}), window.Campus?.load().catch(() => {})]);
     if (mode !== 'explore') return;
@@ -911,7 +922,8 @@
     // The campus stops LTA hasn't got; those it has are its stops' dots already.
     for (const c of window.Campus?.dots() || []) dots.push({ kind: 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } });
     for (const s of stations || []) dots.push({ kind: 'station', lat: s.lat, lng: s.lng, color: lineColour(s.codes[0]), colors: stationColours(s.codes), pick: stationPick(s) });
-    ink.pois(dots);
+    exploreDots = dots;
+    drawDots();
     drawShuttles();
     // Back from Bus timings or Navigate: on the stop or station it was left from, card open.
     const back = leftFrom;
@@ -937,7 +949,7 @@
     const list = window.Campus?.lines() || [];
     if (!list.length) return;
     const draw = () => {
-      if (mode !== 'explore') return;
+      if (mode !== 'explore' || layersOff().has('shuttles')) return;
       shuttlesDrawn = list.map((l) => ({ uni: l.uni, color: l.color, points: shuttleRoads.get(l.key) || l.points }));
       ink.shuttles(shuttlesDrawn);
       creditShuttles();
@@ -956,6 +968,73 @@
         .catch(() => {});
     }
   }
+
+  // ---------- Explorer's layers ----------
+
+  // The layers turned off in Layers (#layersModal), by name, kept in this browser. Each is some
+  // of what explore() draws, kept here to draw again without it: the dots by their kind, the
+  // MRT and LRT lines, and the campus shuttles' routes.
+  const LAYERS_KEY = 'sgbus_explorer_layers';
+  const DOT_LAYERS = { stop: 'stops', station: 'stations', campus: 'campus' };
+  let exploreRails = [];
+  let exploreDots = [];
+  function layersOff() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(LAYERS_KEY) || '[]'));
+    } catch {
+      return new Set();
+    }
+  }
+  function drawRails() {
+    if (mode === 'explore') ink.rails(layersOff().has('rails') ? [] : exploreRails);
+  }
+  function drawDots() {
+    if (mode !== 'explore') return;
+    const off = layersOff();
+    ink.pois(exploreDots.filter((d) => !off.has(DOT_LAYERS[d.kind])));
+  }
+  function setLayer(name, on) {
+    const off = layersOff();
+    if (on) off.delete(name);
+    else off.add(name);
+    try {
+      localStorage.setItem(LAYERS_KEY, JSON.stringify([...off]));
+    } catch {}
+    syncLayers();
+    if (mode !== 'explore') return;
+    drawRails();
+    drawDots();
+    if (off.has('shuttles')) clearShuttles();
+    else drawShuttles();
+  }
+  // The modal's switches as the layers are; Open Explorer only where it isn't open.
+  function syncLayers() {
+    const off = layersOff();
+    document.querySelectorAll('#layersPick [data-layer]').forEach((btn) => {
+      const on = !off.has(btn.dataset.layer);
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+    $('#layersExplore').hidden = mode === 'explore';
+  }
+  function openLayers() {
+    syncLayers();
+    window.openModal('layersModal');
+  }
+  $('#layersBtn').addEventListener('click', openLayers);
+  $('#mapLayers').addEventListener('click', openLayers);
+  $('#layersPick').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-layer]');
+    if (btn) setLayer(btn.dataset.layer, btn.getAttribute('aria-pressed') !== 'true');
+  });
+  // Explorer once the modal's step back in the page's history is done, so its own step comes
+  // after it (as afterClose).
+  $('#layersExplore').addEventListener('click', () => {
+    const stepsBack = history.state?.sg && history.state.modal === 'layersModal';
+    if (stepsBack) window.addEventListener('popstate', () => setTimeout(explore, 0), { once: true });
+    window.closeModal('layersModal');
+    if (!stepsBack) explore();
+  });
 
   function clearShuttles() {
     shuttlesDrawn = [];
@@ -1069,8 +1148,9 @@
     $('#mapRecentre').addEventListener('click', () => setFollowing(true));
     $('#mapOverview').addEventListener('click', showOverview);
     $('#mapHeading').addEventListener('click', () => setTurning(!turning));
+    // Not a step back to the map's own, from a window opened over it (Explorer's Layers).
     window.addEventListener('popstate', () => {
-      if (!$('#mapPanel').hidden) close({ fromHistory: true });
+      if (!$('#mapPanel').hidden && !history.state?.liveMap) close({ fromHistory: true });
     });
     window.addEventListener('trip:end', () => {
       if (mode === 'trip') drawTrip(false);

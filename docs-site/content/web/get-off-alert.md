@@ -83,6 +83,38 @@ within a few steps, so:
 On an iPhone, the site asks to use motion and orientation when you start a trip.
 Without the sensor, or if you say no, the trip works as it did before.
 
+### Cycling or driving instead
+
+If a walk on your trip goes faster than anyone walks, about 8 km/h or more for
+a minute, and the motion sensor feels no steps, the site asks **Are you
+walking?** It doesn't ask while you're running for a bus (your steps give that
+away), or once you're on the next bus or train.
+
+- **I'm cycling** or **I'm driving**: the button that fits your speed is
+  highlighted. From about 25 km/h, the cycling speed limit on park connectors,
+  that's driving.
+- Close it to keep walking. It asks once a trip.
+
+Pick one and it reminds you to **cycle safely** or **drive safely**. Cycling,
+keep to 10 km/h on footpaths and 25 km/h on park connectors and shared paths,
+and give way to people walking. Driving, keep your eyes on the road and your
+phone down. Pull over first, or have a passenger check the trip.
+
+Then it asks whether to change where you're going next, to get on a bus or
+train on your way. It lists each bus or train still ahead on your trip, such as
+**Cycle to Blk 1, then Bus 99**:
+
+- Pick one, and the trip becomes cycling or driving to that ride's stop or
+  station, then the trip as it was from that ride on, alerts and all.
+- **Cycle all the way there** or **Drive all the way there** switches the rest
+  of the trip to cycling or driving directions to where you're going.
+
+Either way, the live map opens on the way there, and the bar says what changed,
+with **Undo**. Closing it instead leaves the trip as it was.
+
+The site has to be open on screen to ask. In the [Android app](android-app.md)
+with the screen off, it asks when you next open the app.
+
 There's no alert on a walk. The trip ends when you reach where you're going.
 
 ## The alert

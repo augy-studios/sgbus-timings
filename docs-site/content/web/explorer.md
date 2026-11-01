@@ -126,6 +126,21 @@ The stops and stations drawn on [your trip](live-map.md#your-trip-on-a-map),
 and the stop a [walk](live-map.md#walk-to-a-stop-or-place) goes to, open the
 same cards when you tap them.
 
+## Layers
+
+Choose what Explorer shows with **Layers**, the stacked-sheets button. It's in
+the Edge Tray straight after Explorer's, and with Explorer's other buttons at
+the bottom right once it's open. Tap a layer to turn it off or back on:
+
+- **Bus stops**
+- **MRT and LRT stations**
+- **MRT and LRT lines**
+- **Shuttle bus routes**, the [campus shuttles](#campus-shuttles)' routes
+- **Shuttle bus stops**, the campus stops that aren't LTA bus stops
+
+The map changes as you tap. Your choice is kept on this device for next time.
+From the Edge Tray, **Open Explorer** opens it with your layers.
+
 ## Save the map for offline
 
 <figure>
@@ -154,7 +169,7 @@ and the one saved keeps working offline meanwhile.
 ## Turn it off
 
 Don't use Explorer? Turn it off in Settings, under **Edge Tray buttons**, and
-its button leaves the Edge Tray. Tap it again there to bring it back.
+its button and Layers leave the Edge Tray. Tap it again there to bring it back.
 
 <figure>
 <img src="/screenshots/web/explorer-settings.png" alt="Settings' Edge Tray buttons: Explorer, SimplyGo, Telegram bot, Buy Augy a Coffee and Guide, each on." width="358" height="120" loading="lazy">

@@ -1,10 +1,11 @@
-// A route on foot or by bike, from OneMap's router (api/_lib/onemap.js), or, if that's down
-// or not set up, the one OpenStreetMap Germany runs on OSRM (routing.openstreetmap.de, free for
-// light use with attribution). With neither, a straight line, source "line".
+// A route on foot, by bike or by car, from OneMap's router (api/_lib/onemap.js), or, if that's
+// down or not set up, the one OpenStreetMap Germany runs on OSRM (routing.openstreetmap.de, free
+// for light use with attribution). With neither, a straight line, source "line".
 //
-// footRoute(from, to, { mode }) with `mode` "walk" or "cycle" answers { distance (metres),
-// minutes, path: [[lat, lng], ...], steps: [{ text, at: [lat, lng], distance }], source }.
-// For the live map's walks (api/walk.js) and Navigate's walking and cycling (api/nav.js).
+// footRoute(from, to, { mode }) with `mode` "walk", "cycle" or "drive" answers { distance
+// (metres), minutes, path: [[lat, lng], ...], steps: [{ text, at: [lat, lng], distance }],
+// source }. For the live map's walks (api/walk.js), Navigate's walking and cycling (api/nav.js),
+// and a trip switched to cycling or driving once it's seen you're not walking (js/trip.js).
 //
 // A walk isn't kept to the roads: both routers walk the footpath network, so it cuts through
 // estates, void decks and covered linkways wherever they're mapped, as people do. Only the
@@ -21,14 +22,16 @@
 
 import { walkRoute } from "./onemap.js";
 
-// Straight-line pace, metres a minute: walking at 4.8 km/h, cycling at 15, and how much longer
-// than the straight line the way is.
-const PACE_M_PER_MIN = { walk: 80, cycle: 250 };
+// Straight-line pace, metres a minute: walking at 4.8 km/h, cycling at 15, driving at 30 (about
+// what Singapore's arterial roads average at peak hours, LTA), and how much longer than the
+// straight line the way is.
+const PACE_M_PER_MIN = { walk: 80, cycle: 250, drive: 500 };
 const DETOUR = 1.2;
 const OSRM = {
   walk: "https://routing.openstreetmap.de/routed-foot/route/v1/driving",
   cycle: "https://routing.openstreetmap.de/routed-bike/route/v1/driving",
   road: "https://routing.openstreetmap.de/routed-car/route/v1/driving",
+  drive: "https://routing.openstreetmap.de/routed-car/route/v1/driving",
 };
 // Short of the place by more than this, and the footpaths don't reach it.
 const GAP_M = 40;
@@ -112,8 +115,8 @@ function fromOsrm(data, mode) {
   }).filter((s) => s.at.every(Number.isFinite));
   return {
     distance: Math.round(route.distance || 0),
-    // At our own pace rather than OSRM's: a little slower on foot allows for crossings, and
-    // its bike profile is quicker than a shared bike in town.
+    // At our own pace rather than OSRM's: a little slower on foot allows for crossings, its
+    // bike profile is quicker than a shared bike in town, and its car one is a clear road's.
     minutes: Math.max(1, Math.round((route.distance || 0) / PACE_M_PER_MIN[mode])),
     path: coords.map(([lng, lat]) => [lat, lng]),
     steps,

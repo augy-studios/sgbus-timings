@@ -6,10 +6,11 @@
 //
 // Setting off now (or within LIVE_MIN), buses are timed by the traffic right now, each bus leg
 // says if it's near its last bus or slowed by traffic (and why), and walking and cycling the
-// whole way are given where they might compete, cycling only with &bike=1 (_nav/live.js).
+// whole way are given where they might compete, cycling only with &bike=1, and driving it
+// always (_nav/live.js).
 //
 // Answers { options: [...], alerts: { lines }, when: { mode, ms }, traffic: { at } | null,
-// others: { walk?, cycle? } }, each option { minutes, mix, routes, legs, onemapMinutes?,
+// others: { walk?, cycle?, drive? } }, each option { minutes, mix, routes, legs, onemapMinutes?,
 // source? }, quickest first. The router is
 // _nav/router.js, riding only what's running at the time (_nav/when.js), planned for the time
 // by js/nav-core/plan.js, which the phone plans offline with too; OneMap checks its
@@ -36,8 +37,8 @@ const RATE_LIMIT = 30; // navs per IP per minute
 // two behind, for one picked just before the clock ticked over.
 const AHEAD_MS = 8 * 86400000;
 const BEHIND_MS = 2 * 60000;
-// Setting off within this many minutes counts as now, for the live traffic and walking or
-// cycling instead.
+// Setting off within this many minutes counts as now, for the live traffic and walking,
+// cycling or driving instead.
 const LIVE_MIN = 30;
 
 // The ways with a stop on the way: OneMap checks each half from when it sets off, three calls
@@ -106,7 +107,7 @@ export default async function handler(req, res) {
     const planned = traffic ? withTraffic(graph, traffic) : graph;
     let options, checked, others, setOff;
     if (via) {
-      // Walking or cycling the whole way would skip the stop, so neither is offered.
+      // Walking, cycling or driving the whole way would skip the stop, so none is offered.
       ({ options, checked, setOff } = await viaWays(planned, from, via, to, when, own));
       others = {};
     } else {

@@ -163,6 +163,9 @@
                 <!-- Explorer: the live map with every stop and station to tap (js/map.js); can be
                      turned off in Settings, Edge Tray buttons -->
                 <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" data-i18n-aria-label="tray.explorer" aria-label="Explorer" data-i18n-title="tray.explorer.title" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
+                <!-- Explorer's Layers: what it shows (js/map.js, #layersModal). Goes with Explorer's
+                     own switch in Settings, Edge Tray buttons -->
+                <button id="layersBtn" data-tray-extra="explorer" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.layers" aria-label="Layers" data-i18n-title="tray.layers.title" title="Layers: what Explorer shows on its map"><span data-icon="layers"></span></button>
                 <button id="navBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.navigate" aria-label="Navigate" data-i18n-title="tray.navigate.title" title="Navigate: by bus and train, or bus only"><span data-icon="navigate"></span></button>
                 <button id="alertsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.alerts" aria-label="Service alerts" data-i18n-title="tray.alerts.title" title="Service alerts"><span data-icon="bell"></span></button>
                 <button id="tripsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.trips" aria-label="Your trips and stats" data-i18n-title="tray.trips.title" title="Your trips and stats"><span data-icon="chart"></span></button>
@@ -1055,6 +1058,8 @@
             <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
             <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
             <!-- Explorer only (style.css): Singapore's map saved for offline, js/map-save.js -->
+            <!-- Explorer only (style.css): its Layers, as the Edge Tray's button (js/map.js) -->
+            <button id="mapLayers" class="glass-btn mapFab" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.layers" aria-label="Layers" data-i18n-title="tray.layers.title" title="Layers: what Explorer shows on its map"><span data-icon="layers"></span></button>
             <button id="mapSave" class="glass-btn mapFab" type="button" aria-expanded="false" aria-controls="mapSaveSheet" aria-label="Save the map for offline" title="Save Singapore's map for offline"><span data-icon="download"></span></button>
         </div>
         <div class="mapSheet glass">
@@ -1366,6 +1371,60 @@
             <div class="tripActions">
                 <button id="unlockGo" class="btn" type="button" data-i18n="unlock.go">Pick my colours</button>
                 <button id="unlockLater" class="iconBtn" type="button" data-i18n="unlock.later">Later</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Explorer's Layers, from the Edge Tray or Explorer's own button (js/map.js): what its map
+         shows, each switched on or off, kept in this browser. Over the map (style.css) -->
+    <div id="layersModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="layersTitle">
+            <div class="modal-head">
+                <h2 id="layersTitle" data-i18n="layers.title">Layers</h2>
+                <button class="icon-btn small" type="button" data-close-modal="layersModal" data-i18n-aria-label="common.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <p class="mode-note" data-i18n="layers.text">What Explorer shows on its map. Tap one to turn it off or on.</p>
+            <div id="layersPick" class="mode-toggle trayExtrasPick">
+                <button class="mode-btn" type="button" data-layer="stops" aria-pressed="true" data-i18n="layers.stops">Bus stops</button>
+                <button class="mode-btn" type="button" data-layer="stations" aria-pressed="true" data-i18n="layers.stations">MRT and LRT stations</button>
+                <button class="mode-btn" type="button" data-layer="rails" aria-pressed="true" data-i18n="layers.rails">MRT and LRT lines</button>
+                <button class="mode-btn" type="button" data-layer="shuttles" aria-pressed="true" data-i18n="layers.shuttles">Shuttle bus routes</button>
+                <button class="mode-btn" type="button" data-layer="campus" aria-pressed="true" data-i18n="layers.campus">Shuttle bus stops</button>
+            </div>
+            <div class="tripActions">
+                <button id="layersExplore" class="btn" type="button" data-i18n="layers.open">Open Explorer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Are you walking?, on a trip's walk at a pace no walk keeps up (js/trip.js, watchPace):
+         by bike or by car (the likelier button is the .btn); then, to ride safely, and whether
+         to go on to a bus or train still ahead on the trip (#paceRides) or all the way there.
+         Closed at either step, the trip stays as it is -->
+    <div id="paceModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="paceTitle" aria-describedby="paceText">
+            <div class="modal-head">
+                <h2 id="paceTitle"><span id="paceAskTitle" data-i18n="pace.title">Are you walking?</span><span id="paceSafeTitle" hidden></span></h2>
+                <button class="icon-btn small" type="button" data-close-modal="paceModal" data-i18n-aria-label="common.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="paceAsk">
+                <p id="paceText" class="mode-note" data-i18n="pace.text">You&rsquo;re going faster than walking pace. Pick how you&rsquo;re getting there for directions the rest of the way.</p>
+                <div class="tripActions">
+                    <button id="paceCycle" class="btn" type="button" data-i18n="pace.cycling">I&rsquo;m cycling</button>
+                    <button id="paceDrive" class="iconBtn" type="button" data-i18n="pace.driving">I&rsquo;m driving</button>
+                </div>
+            </div>
+            <div id="paceNext" hidden>
+                <p id="paceSafe" class="mode-note"></p>
+                <p id="paceNextAsk" class="modal-section-label" data-i18n="pace.nextAsk">Change where you&rsquo;re going next, to get on a bus or train on your way?</p>
+                <div id="paceRides" class="paceRides"></div>
+                <div class="tripActions">
+                    <button id="paceAllWay" class="btn" type="button"></button>
+                </div>
             </div>
         </div>
     </div>

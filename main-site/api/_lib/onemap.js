@@ -92,8 +92,8 @@ export async function route(from, to, { mode = "TRANSIT", when = new Date(), cou
     return (await r.json())?.plan?.itineraries || [];
 }
 
-// A walking route from OneMap's router (api/_lib/foot.js), or a cycling one with `type`
-// "cycle": its line, encoded as Google's polylines are, and its turn-by-turn instructions.
+// A walking route from OneMap's router (api/_lib/foot.js), or a cycling or driving one with
+// `type` "cycle" or "drive": its line, encoded as Google's polylines are, and its turn-by-turn instructions.
 // Needs a token.
 export async function walkRoute(from, to, type = "walk") {
     const url = new URL(ROUTE_URL);

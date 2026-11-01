@@ -20,7 +20,7 @@ station to tap, from its own button in the Edge Tray.
 - From the [Telegram bot](../bot/more-from-a-stop.md#directions-to-the-stop): a
   stop's **Directions** > **Live map** opens it here.
 - In [Navigate](nav.md#traffic-walking-and-cycling), **Walk it** under the ways,
-  or **Cycle it**, which shows the way by bike.
+  or **Cycle it** or **Drive it**, which show the way by bike or by car.
 
 The map draws the walk there from where you are, along the streets, and the bar
 along the bottom says the next turn ("In 80 m: Turn left onto Bedok North Road").

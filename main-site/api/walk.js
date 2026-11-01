@@ -1,5 +1,6 @@
 // A walking route, for the live map (js/map.js): GET /api/walk?from=lat,lng&to=lat,lng, or a
-// cycling one with &mode=cycle.
+// cycling one with &mode=cycle, or a driving one with &mode=drive (a trip switched to it,
+// js/trip.js).
 //
 // Answers { distance (metres), minutes, path: [[lat, lng], ...], steps: [{ text, at: [lat,
 // lng], distance }], source, roadside?, expressway? }, from OneMap's router, or OSRM's, or a
@@ -36,7 +37,8 @@ export default async function handler(req, res) {
     } catch { /* the limit's a nicety; the route still goes */ }
   }
 
-  const out = await footRoute(from, to, { mode: req.query.mode === "cycle" ? "cycle" : "walk" });
+  const mode = ["cycle", "drive"].includes(req.query.mode) ? req.query.mode : "walk";
+  const out = await footRoute(from, to, { mode });
   // A real route is the same tomorrow; a straight line is only kept a minute, to try again.
   res.setHeader("Cache-Control", out.source === "line" ? "public, s-maxage=60" : "public, s-maxage=86400, stale-while-revalidate=604800");
   return res.status(200).json(out);

@@ -125,10 +125,10 @@ function initNav() {
       } catch { /* a button of this page's own making: always JSON */ }
       return;
     }
-    // Walk it and Cycle it: the way on the live map, from the start.
+    // Walk it, Cycle it and Drive it: the way on the live map, from the start.
     const other = e.target.closest('[data-nav-other]');
     if (other && nav.to) {
-      LiveMap.walkTo(nav.to, { from: nav.from, cycle: other.dataset.navOther === 'cycle' });
+      LiveMap.walkTo(nav.to, { from: nav.from, cycle: other.dataset.navOther === 'cycle', drive: other.dataset.navOther === 'drive' });
       return;
     }
     // A bus leg's traffic: its road on the live map, coloured by how jammed it is.
@@ -614,7 +614,7 @@ async function askNav(from, to, when, via) {
 // the bus routes and stops the phone keeps and the rail network precached with the app, in
 // js/nav-worker.js so building its graph doesn't hold the page still. Where a module worker
 // can't start, the same module runs in the page. No OneMap, live traffic, last bus warnings,
-// walking or cycling the whole way, or train disruptions: times are the router's estimates.
+// walking, cycling or driving the whole way, or train disruptions: times are the router's estimates.
 const navWorker = { worker: null, failed: false, seq: 0, waiting: new Map(), stopsSent: null };
 
 async function planOnPhone(from, to, when = null, via = null) {
@@ -711,7 +711,7 @@ async function runNav() {
     nav.onemap = !!data.onemap;
     // Planned on the phone (planOnPhone): estimates, with nothing live.
     nav.offline = !!data.offline;
-    // Bus times by the traffic right now, and walking or cycling the whole way (api/_nav/live.js).
+    // Bus times by the traffic right now, and walking, cycling or driving the whole way (api/_nav/live.js).
     nav.traffic = data.traffic || null;
     nav.others = data.others || {};
     // A shared way (openNavAt) opens once, if it's still one of the ways.
@@ -750,17 +750,23 @@ function renderNav() {
     customsNote(nav.options);
 }
 
-// Walking or cycling the whole way (/api/nav's `others`), under the ways, each with a button to
-// follow it on the live map. Said to be quicker when it beats every way by bus and train.
+// Walking, cycling or driving the whole way (/api/nav's `others`), under the ways in that order,
+// each with a button to follow it on the live map. Said to be quicker when it beats every way
+// by bus and train.
+const NAV_OTHERS = {
+  walk: { icon: 'walk', what: () => I18n.t('nav.walkThere', 'Walk there'), go: () => I18n.t('nav.walkIt', 'Walk it') },
+  cycle: { icon: 'route', what: () => I18n.t('nav.cycleThere', 'Cycle there'), go: () => I18n.t('nav.cycleIt', 'Cycle it') },
+  drive: { icon: 'route', what: () => I18n.t('nav.driveThere', 'Drive there'), go: () => I18n.t('nav.driveIt', 'Drive it') },
+};
 function navOthers() {
   const best = nav.options.find((o) => !o.walkOnly)?.minutes ?? Infinity;
   const row = (kind, o) => {
-    const quicker = o.minutes < best ? ', quicker than any bus or train' : '';
-    const what = kind === 'cycle' ? 'Cycle there' : 'Walk there';
-    return `<div class="navOther">${ico(kind === 'cycle' ? 'route' : 'walk')}<span><b>${what}</b>: ~${o.minutes} min, ${escapeHtml(formatDistance(o.distance))}${quicker}</span>` +
-      `<button type="button" class="iconBtn" data-nav-other="${kind}">${kind === 'cycle' ? 'Cycle it' : 'Walk it'}</button></div>`;
+    const k = NAV_OTHERS[kind];
+    const quicker = o.minutes < best ? `, ${I18n.t('nav.quickerThanAny', 'quicker than any bus or train')}` : '';
+    return `<div class="navOther">${ico(k.icon)}<span><b>${escapeHtml(k.what())}</b>: ~${o.minutes} min, ${escapeHtml(formatDistance(o.distance))}${quicker}</span>` +
+      `<button type="button" class="iconBtn" data-nav-other="${kind}">${escapeHtml(k.go())}</button></div>`;
   };
-  const rows = ['walk', 'cycle'].filter((k) => nav.others?.[k]).map((k) => row(k, nav.others[k]));
+  const rows = Object.keys(NAV_OTHERS).filter((k) => nav.others?.[k]).map((k) => row(k, nav.others[k]));
   return rows.length ? `<div class="navOthers">${rows.join('')}</div>` : '';
 }
 

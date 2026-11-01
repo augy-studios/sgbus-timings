@@ -9,7 +9,8 @@
 //   way: the minutes added, the slow roads by name, and the incidents, to say why. And
 //   `usual`, its minutes without traffic, for a trip to time it by the traffic as it goes.
 // - othersFor(from, to, ...): walking and, for someone with a bike, cycling the whole way,
-//   { walk: { minutes, distance }, cycle: { ... } }, each only where it might compete.
+//   each only where it might compete, and driving it, always (Navigate's Drive there),
+//   { walk: { minutes, distance }, cycle: { ... }, drive: { ... } }.
 
 import { footRoute, metres } from "../_lib/foot.js";
 import { incidentsNear, segmentFactor, slowRoads } from "../_lib/traffic.js";
@@ -119,6 +120,7 @@ export async function othersFor(from, to, best, { bike = false } = {}) {
   await Promise.all([
     worth("walk", WALK_MAX_M) ? ask("walk") : null,
     bike && worth("cycle", CYCLE_MAX_M) ? ask("cycle") : null,
+    ask("drive"),
   ].map((p) => p?.catch(() => {})));
   return out;
 }

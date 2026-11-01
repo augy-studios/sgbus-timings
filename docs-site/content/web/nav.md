@@ -209,9 +209,10 @@ out quicker, and the list says why.
 
 Under the ways, **Walk there** says how long walking the whole way takes, where
 it might compete, and **Cycle there** how long cycling takes, with **Cycling**
-set to **I have a bike** in [Settings](settings.md). Either says when it's
-quicker than any bus or train. **Walk it** and **Cycle it** show the way on the
-[live map](live-map.md). Walks go along footpaths too, through estates, void
+set to **I have a bike** in [Settings](settings.md). Below them, **Drive there**
+says how long driving takes, by Singapore's roads. Each says when it's quicker
+than any bus or train. **Walk it**, **Cycle it** and **Drive it** show the way on
+the [live map](live-map.md). Walks go along footpaths too, through estates, void
 decks and linkways, not only along roads, and along a road where there's no
 footpath to the place at all.
 

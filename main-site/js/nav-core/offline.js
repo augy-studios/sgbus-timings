@@ -5,7 +5,7 @@
 // data/rail.json, precached with the app.
 //
 // What the server adds and this can't is left out: OneMap's timetable-based check, the traffic
-// right now, last bus warnings, walking or cycling the whole way, and LTA's train disruptions.
+// right now, last bus warnings, walking, cycling or driving the whole way, and LTA's train disruptions.
 // Every way is marked `offline`, and its times are the router's estimates.
 //
 // Runs in js/nav-worker.js, or in the page where a module worker can't start.

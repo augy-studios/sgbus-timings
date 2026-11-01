@@ -78,6 +78,14 @@
 // and why: traffic, or a long wait for your bus. Walking the rest, or cycling with Settings'
 // Cycling on, counts too. Reroute takes it; Keep my way puts it away for a while.
 //
+// Are you walking?: on a walk, a pace no walk keeps up (over NOT_WALKING_KMH for a minute or
+// so of good fixes), with no steps to go with it (Motion) and not along the next ride, asks
+// once a trip (#paceModal). I'm cycling or I'm driving says to ride safely, and offers each bus
+// or train ride still ahead on the trip: one picked makes the trip a ride by bike or car to its
+// stop or station, then the trip as it was from that ride on; or all the way there, to where
+// the trip ends. Either is timed by the route there (/api/walk) and opens the live map on it;
+// the bar says so, with Undo. Closing it keeps the walk.
+//
 // Change here: Change my way, at the top of the timeline, puts a Change here by every stop still
 // ahead on a ride (hidden otherwise, so a stray tap on the timeline changes nothing). One plans
 // the way on from there to where the trip ends, for getting off somewhere else and changing to
@@ -235,6 +243,8 @@
   }
 
   const isWalk = (leg) => leg?.kind === "walk";
+  // A walk taken on foot, not by bike or car (footLeg).
+  const onFoot = (leg) => isWalk(leg) && !leg.cycle && !leg.drive;
   // On a walk, this near its end and you're there.
   const WALK_ARRIVE_M = 40;
   const inApp = () => Boolean(window.AppBridge?.native && AppBridge.has("trip"));
@@ -729,6 +739,7 @@
       trip.at = 1;
       trip.pos = 1;
     }
+    watchPace(here, accuracy, leg);
     check();
   }
 
@@ -895,7 +906,7 @@
     const from = trip.anchor || { pos: 0, t: trip.legStartedAt + (leg.wait || 0) * 60000 };
     // On a walk, with the accelerometer: by the steps taken since, so waiting at a crossing
     // doesn't walk you on. The way's taken as WALK_DETOUR times the straight line.
-    if (isWalk(leg) && !leg.cycle && Motion.reading() && Motion.since() <= from.t) {
+    if (onFoot(leg) && Motion.reading() && Motion.since() <= from.t) {
       const way = Math.max(1, metres(leg.points[0], leg.points[last]) * WALK_DETOUR);
       return Math.min(last, from.pos + (Motion.stepsSince(from.t) * STRIDE_M) / way);
     }
@@ -1563,10 +1574,12 @@
     return `Faster: ${ridesText(f.way)}, ~${f.minutes} min${by}. Saves ${f.saves} min${why}. ${off}${off ? step[0].toLowerCase() + step.slice(1) : step}.`;
   }
 
-  // On foot or by bike from one place to another, as a trip's leg.
-  const footLeg = (from, to, minutes, cycle) => ({
-    kind: "walk", label: cycle ? "Cycle" : "Walk", to: to.label, points: [[from.lat, from.lng], [to.lat, to.lng]],
-    names: [from.label, to.label], minutes: Math.max(1, Math.round(minutes)), wait: 0, walkAfter: 0, ...(cycle && { cycle: true }),
+  // On foot, by bike or by car from one place to another, as a trip's leg: `mode` "walk",
+  // "cycle" (marked `cycle`) or "drive" (marked `drive`).
+  const FOOT_LABELS = { walk: "Walk", cycle: "Cycle", drive: "Drive" };
+  const footLeg = (from, to, minutes, mode = "walk") => ({
+    kind: "walk", label: FOOT_LABELS[mode], to: to.label, points: [[from.lat, from.lng], [to.lat, to.lng]],
+    names: [from.label, to.label], minutes: Math.max(1, Math.round(minutes)), wait: 0, walkAfter: 0, ...(mode !== "walk" && { [mode]: true }),
   });
 
   function takeFaster() {
@@ -1577,11 +1590,122 @@
       if (typeof tripFromNav !== "function") return;
       legs = tripFromNav(f.way, f.to, f.from).legs;
     } else {
-      legs = [footLeg(f.from, f.to, f.minutes - f.reach, f.kind === "cycle")];
+      legs = [footLeg(f.from, f.to, f.minutes - f.reach, f.kind)];
     }
     if (!legs.length) return;
     const now = f.kind === "way" ? `${firstStep(f.way)}.` : `${f.kind === "cycle" ? "Cycle" : "Walk"} the rest of the way, ~${f.minutes - Math.round(f.reach)} min.`;
     replan(f.j, f.k, legs, { title: f.k != null ? `Changed at ${f.from.label} for a faster way.` : "Rerouted to a faster way.", reason: "", now });
+  }
+
+  // ---------- are you walking? ----------
+
+  // Average speeds in Singapore, km/h: walking about 5 (4.4 in a 1986 study of its pedestrians,
+  // and 6.2 in 2007's, when they were the world's fastest), cycling 10 to 20 (25 the limit on
+  // park connectors), and driving 29 on arterial roads and 60 on expressways at peak hours
+  // (LTA, MOT). Faster than NOT_WALKING_KMH on a walk, past even the fastest walkers with room
+  // for the GPS, isn't walking; from CAR_KMH, the park connectors' limit, a car's likelier than
+  // a bike. PACE_KMH times a ride when there's no route for it, as api/_lib/foot.js does.
+  const NOT_WALKING_KMH = 8;
+  const CAR_KMH = 25;
+  const PACE_KMH = { cycle: 15, drive: 30 };
+  const PACE_DETOUR = 1.2;
+  // Your pace from fixes this good, one kept every PACE_SAMPLE_MS for PACE_KEEP_MS, over at
+  // least PACE_SPAN_MS of them, so a single wobbling fix can't make a walk a ride.
+  const PACE_FIX_M = 50;
+  const PACE_SAMPLE_MS = 3 * 1000;
+  const PACE_SPAN_MS = 45 * 1000;
+  const PACE_KEEP_MS = 90 * 1000;
+  // Not asked this near the walk's end, with next to nothing of it left to switch.
+  const PACE_NEAR_END_M = 200;
+  let paceLeg = null; // the walk the fixes below are on
+  let paceFixes = []; // { p: [lat, lng], acc, t }
+
+  // On each fix on a walk: your pace over the last minute or so, and the question once it's no
+  // walk's. Not with steps at that pace (a run for the bus, Motion), nor along the next ride
+  // (on it already: rideAhead moves you on), nor with the page hidden, where it'd go unseen.
+  function watchPace(here, accuracy, leg) {
+    if (paceLeg !== leg) {
+      paceLeg = leg;
+      paceFixes = [];
+    }
+    if (trip.paceAsked || !onFoot(leg) || accuracy > PACE_FIX_M) return;
+    const now = Date.now();
+    const lastT = paceFixes.length ? paceFixes[paceFixes.length - 1].t : 0;
+    if (now - lastT >= PACE_SAMPLE_MS) paceFixes = [...paceFixes.filter((f) => now - f.t <= PACE_KEEP_MS), { p: here, acc: accuracy, t: now }];
+    const first = paceFixes[0];
+    if (now - first.t < PACE_SPAN_MS) return;
+    // The way covered for sure, less the two fixes' own wobble, over the time between.
+    const kmh = (Math.max(0, metres(first.p, here) - (first.acc + accuracy) / 2) / ((now - first.t) / 1000)) * 3.6;
+    if (kmh <= NOT_WALKING_KMH || Motion.state() === "walking") return;
+    const ride = trip.legs.find((l, i) => i > trip.leg && !isWalk(l));
+    if (ride && alongLeg(here, ride, 0) != null) return;
+    if (metres(here, leg.points[leg.points.length - 1]) <= PACE_NEAR_END_M) return;
+    if (document.visibilityState !== "visible" || typeof window.openModal !== "function") return;
+    trip.paceAsked = true;
+    save();
+    // The likelier of the two, by your pace, is the main button.
+    const car = kmh >= CAR_KMH;
+    $("#paceCycle").className = car ? "iconBtn" : "btn";
+    $("#paceDrive").className = car ? "btn" : "iconBtn";
+    paceStep(null);
+    window.openModal("paceModal");
+  }
+
+  // Where leg k is boarded, by name: its own first stop's, or where the part before it ends,
+  // which is there; "Where you got on" (stopName) for neither.
+  const boardName = (k) => trip.legs[k].names?.[0] || trip.legs[k - 1]?.to || stopName(trip.legs[k], 0);
+
+  // The modal's step: the question (mode null), or, by bike or car, to ride safely and where to.
+  function paceStep(mode) {
+    $("#paceAsk").hidden = !!mode;
+    $("#paceNext").hidden = !mode;
+    $("#paceAskTitle").hidden = !!mode;
+    $("#paceSafeTitle").hidden = !mode;
+    if (!mode) return;
+    const drive = mode === "drive";
+    $("#paceSafeTitle").textContent = drive ? I18n.t("pace.driveSafe", "Drive safely") : I18n.t("pace.cycleSafe", "Cycle safely");
+    $("#paceSafe").textContent = drive
+      ? I18n.t("pace.driveSafeText", "Keep your eyes on the road and your phone down while you drive. Pull over first, or have a passenger check the trip.")
+      : I18n.t("pace.cycleSafeText", "Keep to 10 km/h on footpaths and 25 km/h on park connectors and shared paths, give way to people walking, and keep your phone down while you ride.");
+    // The rides still ahead on the trip, each to go on to from its stop or station.
+    const rides = trip ? trip.legs.map((l, i) => ({ l, i })).filter(({ l, i }) => i >= trip.leg && !isWalk(l) && !(i === trip.leg && trip.boarded)) : [];
+    $("#paceNextAsk").hidden = !rides.length;
+    $("#paceRides").innerHTML = rides.map(({ l, i }) => `<button type="button" class="tripChangeWay" data-pace-ride="${i}">` +
+      `<b>${esc(drive ? I18n.t("pace.driveToRide", "Drive to {stop}, then {ride}", { stop: boardName(i), ride: l.label }) : I18n.t("pace.cycleToRide", "Cycle to {stop}, then {ride}", { stop: boardName(i), ride: l.label }))}</b>` +
+      `<span>${esc(I18n.t("pace.rideTo", "{ride} to {to}", { ride: l.label, to: l.to }))}</span></button>`).join("");
+    $("#paceAllWay").textContent = drive ? I18n.t("pace.driveAllWay", "Drive all the way there") : I18n.t("pace.cycleAllWay", "Cycle all the way there");
+    $("#paceAllWay").dataset.mode = mode;
+  }
+
+  // I'm cycling or I'm driving: the rest of the trip that way, from where you are to where it
+  // ends, or with `k` to leg k's stop or station and the trip as it was from that ride on.
+  // Timed by the route there, or by the straight line at PACE_KMH without one.
+  async function goBy(mode, k = null) {
+    window.closeModal("paceModal");
+    if (!trip) return;
+    const asked = trip;
+    const legs = trip.legs;
+    const ride = k == null ? null : legs[k];
+    const from = whereNow();
+    const to = ride ? { label: boardName(k), lat: ride.points[0][0], lng: ride.points[0][1] } : tripEnd();
+    const at = (p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
+    let minutes = null;
+    try {
+      const r = await fetch(`/api/walk?from=${at(from)}&to=${at(to)}&mode=${mode}`);
+      if (r.ok) minutes = (await r.json()).minutes ?? null;
+    } catch {}
+    if (trip !== asked || trip.legs !== legs) return;
+    minutes ??= (metres([from.lat, from.lng], [to.lat, to.lng]) * PACE_DETOUR) / ((PACE_KMH[mode] * 1000) / 60);
+    const m = Math.max(1, Math.round(minutes));
+    const drive = mode === "drive";
+    const now = ride
+      ? (drive ? I18n.t("trip.driveToRide", "Drive to {to}, ~{m} min, then {ride}.", { to: to.label, m, ride: ride.label })
+        : I18n.t("trip.cycleToRide", "Cycle to {to}, ~{m} min, then {ride}.", { to: to.label, m, ride: ride.label }))
+      : drive ? I18n.t("trip.driveRest", "Drive the rest of the way, ~{m} min.", { m }) : I18n.t("trip.cycleRest", "Cycle the rest of the way, ~{m} min.", { m });
+    const title = drive ? I18n.t("trip.switchedDrive", "Switched to driving.") : I18n.t("trip.switchedCycle", "Switched to cycling.");
+    replan(trip.leg, null, [footLeg(from, to, minutes, mode), ...(ride ? legs.slice(k) : [])], { title, reason: "", now });
+    // Its way there, from where you are.
+    window.LiveMap?.trip();
   }
 
   // ---------- changing the trip from a stop on ----------
@@ -2240,11 +2364,14 @@
     // Get ready to board stands while you're still waiting for the bus.
     if (!message && trip.boardText && trip.readied?.[trip.leg] && leg.kind === "bus" && !trip.boarded && target() < 0.5) message = trip.boardText;
     if (message) return message + togo;
+    const m = Math.max(1, Math.round((leg.minutes || 1) * (1 - target())));
     const where = isWalk(leg)
       ? (left === 0
-        ? (leg.cycle ? I18n.t("trip.cycleThere", "Cycle to {to}: there", { to: leg.to }) : I18n.t("trip.walkThere", "Walk to {to}: there", { to: leg.to }))
-        : (leg.cycle ? I18n.t("trip.cycleAbout", "Cycle to {to}, about {m} min", { to: leg.to, m: Math.max(1, Math.round((leg.minutes || 1) * (1 - target()))) })
-          : I18n.t("trip.walkAbout", "Walk to {to}, about {m} min", { to: leg.to, m: Math.max(1, Math.round((leg.minutes || 1) * (1 - target()))) })))
+        ? (leg.drive ? I18n.t("trip.driveThere", "Drive to {to}: there", { to: leg.to })
+          : leg.cycle ? I18n.t("trip.cycleThere", "Cycle to {to}: there", { to: leg.to }) : I18n.t("trip.walkThere", "Walk to {to}: there", { to: leg.to }))
+        : (leg.drive ? I18n.t("trip.driveAbout", "Drive to {to}, about {m} min", { to: leg.to, m })
+          : leg.cycle ? I18n.t("trip.cycleAbout", "Cycle to {to}, about {m} min", { to: leg.to, m })
+          : I18n.t("trip.walkAbout", "Walk to {to}, about {m} min", { to: leg.to, m })))
       : left === 0 ? I18n.t("trip.atStop", "{ride}: at {to}", { ride: leg.label, to: leg.to })
       : left === 1 ? I18n.t("trip.oneStop", "{ride}: 1 stop to {to}", { ride: leg.label, to: leg.to })
       : I18n.t("trip.stops", "{ride}: {n} stops to {to}", { ride: leg.label, n: left, to: leg.to });
@@ -2368,7 +2495,7 @@
     $("#tripNext").hidden = trip.leg >= trip.legs.length - 1;
     renderIca();
     const icon = $("#tripBar [data-icon]");
-    icon.setAttribute("data-icon", leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus");
+    icon.setAttribute("data-icon", legIcon(leg));
     window.hydrateIcons($("#tripBar"));
     $("#tripBar").classList.remove("hidden");
     document.body.classList.add("on-trip");
@@ -2377,6 +2504,9 @@
   }
 
   // ---------- the timeline ----------
+
+  // A ride by bike or car has Navigate's Cycle there icon, the way's, not a walker.
+  const legIcon = (leg) => (leg.kind === "train" ? "train" : !isWalk(leg) ? "bus" : onFoot(leg) ? "walk" : "route");
 
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
@@ -2444,7 +2574,7 @@
           .join("");
         return (
           `<section class="tlLeg${k === 0 ? " current" : ""}">` +
-          `<p class="tlHead">${window.icon(leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus")} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
+          `<p class="tlHead">${window.icon(legIcon(leg))} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
           (also.length ? `<p class="tlAlso">${esc(I18n.t("nav.alternate_buses", "Also direct:"))} ${also.map(esc).join(", ")}</p>` : "") +
           `<ol class="tlStops"><span class="tlTrack"><span class="tlDone"></span></span>${stops}` +
           (k === 0 ? `<span class="tlDot" aria-hidden="true"></span>` : "") +
@@ -2646,6 +2776,15 @@
       window.loadStop(go.dataset.tlStop, { service: go.dataset.tlBus || null, scroll: true });
     });
     $("#tripMap").addEventListener("click", () => window.LiveMap?.trip());
+    // Are you walking? (watchPace): no, by bike or by car; then to ride safely, and on to a bus
+    // or train still ahead, or all the way there.
+    $("#paceCycle").addEventListener("click", () => paceStep("cycle"));
+    $("#paceDrive").addEventListener("click", () => paceStep("drive"));
+    $("#paceRides").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-pace-ride]");
+      if (btn) goBy($("#paceAllWay").dataset.mode, Number(btn.dataset.paceRide));
+    });
+    $("#paceAllWay").addEventListener("click", () => goBy($("#paceAllWay").dataset.mode));
     $("#tripWarn").addEventListener("click", (e) => {
       const what = e.target.closest("[data-trip-another]")?.dataset.tripAnother;
       if (what === "switch") switchToAnother();

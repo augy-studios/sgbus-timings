@@ -9,10 +9,13 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 1 November 2026: More in your language
+## 1 November 2026: Are you walking?, Explorer's layers, and more in your language
 
 ### Web app
 
+- **Are you walking?** - On a trip, if a walk goes faster than anyone walks and your phone feels no steps, the site asks whether you're walking. Pick **I'm cycling** or **I'm driving** and it reminds you to ride safely, then offers each bus or train still ahead on your trip to cycle or drive to instead, or all the way there. The live map shows the way, and Undo puts the trip back.
+- **Drive there** - Navigate's Bus and train lists how long driving the whole way takes, under Walk there and Cycle there, and **Drive it** shows the way by car on the live map.
+- **Explorer's layers** - A Layers button next to Explorer's in the Edge Tray, and on Explorer itself, turns bus stops, MRT and LRT stations, MRT and LRT lines, and the campus shuttles' routes and stops off or on.
 - **More in your language** - Routines' days, the line under the greeting, Navigate's Leave now, Leave at and Arrive by, a trip's Also direct and Change my way, the train door tips, the Wheelchair badge, and Settings' Last bus reminders and Sync show in Chinese, Malay and Tamil.
 
 ---

@@ -88,6 +88,11 @@
       if (!taken) return;
       // A walk (to the first ride, between two, or to the end) is walking time, not a ride:
       // as long as it took, once it's done and that's believable, or else as planned.
+      // A way gone by bike or car instead (js/trip.js's footLeg) isn't walking, nor a ride here.
+      if (leg.kind === 'walk' && (leg.cycle || leg.drive)) {
+        endedAt = Math.max(endedAt, t.end || 0, t.start || 0);
+        return;
+      }
       if (leg.kind === 'walk') {
         const plan = leg.minutes || 0;
         const took = done && t.start && t.end ? minutes(t.end - t.start) : null;
