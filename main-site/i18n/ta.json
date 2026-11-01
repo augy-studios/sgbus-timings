@@ -679,5 +679,12 @@
   "tray.header3": "{creator} ❤️ உடன் உருவாக்கியது",
   "tray.layers": "அடுக்குகள்",
   "tray.layers.title": "அடுக்குகள்: Explorer தன் வரைபடத்தில் காட்டுபவை",
-  "trip.shuttle": "{name} ஷட்டில் {no}"
+  "trip.shuttle": "{name} ஷட்டில் {no}",
+  "retrofit.feat": "செய்த சாதனை: {names}, +{n} uwuCoins.",
+  "retrofit.feats": "செய்த சாதனைகள்: {names}, ஒவ்வொன்றுக்கும் +{n} uwuCoins.",
+  "retrofit.ridesOnly": "uwuCoins வருவதற்கு முந்தைய உங்கள் பயணங்கள் சாதனைகளுக்குக் கணக்கிடப்படும்.",
+  "retrofit.spin": "மொத்தம் {n} uwuCoins, அமைப்புகளில் சக்கரத்தைச் சுழற்ற.",
+  "retrofit.title": "உங்கள் கடந்த பயணங்களுக்கான நாணயங்கள்",
+  "retrofit.trip": "uwuCoins வருவதற்கு முந்தைய உங்கள் பயணம் அதன் நாணயங்களைப் பெற்றது: +{coins} uwuCoins.",
+  "retrofit.trips": "uwuCoins வருவதற்கு முந்தைய உங்கள் {n} பயணங்கள் அவற்றின் நாணயங்களைப் பெற்றன: +{coins} uwuCoins."
 }

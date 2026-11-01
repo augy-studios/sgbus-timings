@@ -39,11 +39,13 @@
 //
 // Settings' Achievements lists each feat with how far along it is (progress, renderAchievements).
 //
-// Window.Eggs = { feat(id), found(id), progress(), rides(record), tripDone(trip), feats(), list(),
-// has(secret), presets(), name(id), all }. The console's simulateEgg(id) does a feat, and
-// simulateEgg(id, 'egg') finds an egg, for a look; simulateHelp() lists every simulate command
-// (these, simulateCoins in js/coins.js, simulateRide in js/rides.js, simulateAllLines in
-// js/celebrate.js). Plain script: exports go on window.
+// Window.Eggs = { feat(id), found(id), progress(), rides(record), tripDone(trip), pastTrip(trip),
+// gather(fn), feats(), list(), has(secret), presets(), name(id), all }. Past trips, from before
+// uwuCoins, do their feats once (js/retrofit.js: pastTrip, inside gather). The console's
+// simulateEgg(id) does a feat, and simulateEgg(id, 'egg') finds an egg, for a look;
+// simulateHelp() lists every simulate command (these, simulateCoins in js/coins.js, simulateRide
+// in js/rides.js, simulatePastTrips in js/retrofit.js, simulateAllLines in js/celebrate.js).
+// Plain script: exports go on window.
 (function () {
   const FEATS_KEY = 'sgbus_feats';
   const EGGS_KEY = 'sgbus_eggs';
@@ -180,11 +182,30 @@
     const all = read(FEATS_KEY);
     all[id] = Date.now();
     put(FEATS_KEY, JSON.stringify(all));
+    // Done by past trips (gather): kept for js/retrofit.js to say all at once, with no coin
+    // floating up for each.
+    if (gathered) {
+      gathered.push(id);
+      tell(`feat:${id}`);
+      window.Coins?.add(FEAT_COINS, { why: 'feat', feat: id, past: true }, { quiet: true });
+      window.dispatchEvent(new CustomEvent('eggs:feat', { detail: { id } }));
+      return true;
+    }
     if (quiet) tell(`feat:${id}`);
     window.Coins?.add(FEAT_COINS, { why: 'feat', feat: id });
     window.dispatchEvent(new CustomEvent('eggs:feat', { detail: { id } }));
     announce(id);
     return true;
+  }
+
+  // The feats `fn` does, done without a window or a coin each, for js/retrofit.js to say
+  // together: their ids.
+  let gathered = null;
+  function gather(fn) {
+    const got = [];
+    gathered = got;
+    try { fn(); } finally { gathered = null; }
+    return got;
   }
 
   // Said once: the feat window, or for every line ridden, the celebration.
@@ -271,17 +292,37 @@
     const lastLeg = legs[legs.length - 1];
     const end = lastLeg.points?.[lastLeg.points.length - 1];
     if (!start || !end) return;
-    // Over three hours, start to arriving.
-    if (Date.now() - trip.startedAt >= LONG_MS) feat('long');
-    // Back where it started, by way of somewhere well away.
     const via = trip.origin?.via;
     const viaAt = via && Number.isFinite(via.lat) ? [via.lat, via.lng] : null;
-    if (viaAt && metres(start, end) <= LOOP_M && metres(start, viaAt) >= LOOP_AWAY_M) feat('loop');
+    tripFeats(start, end, Date.now() - trip.startedAt, viaAt && metres(start, viaAt) >= LOOP_AWAY_M);
+  }
+
+  // A trip's feats, by where it started and ended, how long it took, and whether it went by way
+  // of somewhere well away.
+  function tripFeats(start, end, ms, away) {
+    // Over three hours, start to arriving.
+    if (ms >= LONG_MS) feat('long');
+    // Back where it started, by way of somewhere well away.
+    if (away && metres(start, end) <= LOOP_M) feat('loop');
     // From one of the old railway's places to another.
     const near = (p) => Object.keys(KTM).find((k) => metres(p, KTM[k]) <= KTM_M);
     const a = near(start);
     const b = near(end);
     if (a && b && a !== b) feat('ktm');
+  }
+
+  // A trip from before uwuCoins, as Your trips keeps it (js/history.js, js/retrofit.js), that
+  // got there with a ride on it: the trip feats too. Its stop on the way isn't kept, so a trip
+  // back to where it started counts as by way of somewhere when it took two rides or more to
+  // get there, there and back.
+  function pastTrip(trip) {
+    const at = (p) => (p && Number.isFinite(p.lat) && Number.isFinite(p.lng) ? [p.lat, p.lng] : null);
+    const start = at(trip?.from);
+    const end = at(trip?.to);
+    const rides = (trip?.legs || []).filter((l) => l?.done && (l.kind === 'bus' || l.kind === 'train'));
+    if (!trip?.arrived || !rides.length || !start || !end) return;
+    const ms = (Number(trip.endedAt) || 0) - (Number(trip.startedAt) || 0);
+    tripFeats(start, end, ms, rides.length >= 2);
   }
 
   // ---------- the trick ----------
@@ -417,11 +458,12 @@
     "simulateEgg('undo')           feats, eggs and secrets taken away (not the coins)",
     "simulateCoins(500)            500 uwuCoins more (a minus takes them away)",
     "simulateCoins('set', 1000)    exactly 1000 uwuCoins",
+    "simulatePastTrips()           what your trips from before uwuCoins earned",
     "simulateRide('12', 'NE')      a real ride on bus 12 and the NE Line, for Achievements",
     "simulateRide('undo')          the rides it added taken back",
     "simulateAllLines()            the every-line celebration, as a preview",
     "Each says more with 'help', such as simulateCoins('help').",
   ].join('\n'));
 
-  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, tripDone, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, all: IDS, KTM, FEAT_COINS };
+  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, all: IDS, KTM, FEAT_COINS };
 })();

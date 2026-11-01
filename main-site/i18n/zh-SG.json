@@ -679,5 +679,12 @@
   "tray.header3": "由 {creator} 用❤️制作",
   "tray.layers": "图层",
   "tray.layers.title": "图层：Explorer 地图上显示的内容",
-  "trip.shuttle": "{name} 穿梭巴士 {no}"
+  "trip.shuttle": "{name} 穿梭巴士 {no}",
+  "retrofit.feat": "完成的成就：{names}，+{n} 个 uwuCoins。",
+  "retrofit.feats": "完成的成就：{names}，每项 +{n} 个 uwuCoins。",
+  "retrofit.ridesOnly": "你在 uwuCoins 推出前的行程也计入成就。",
+  "retrofit.spin": "共 {n} 个 uwuCoins，可在设置里转动转盘。",
+  "retrofit.title": "过去行程的金币",
+  "retrofit.trip": "你在 uwuCoins 推出前的行程已赚得金币：+{coins} 个 uwuCoins。",
+  "retrofit.trips": "你在 uwuCoins 推出前的 {n} 趟行程已赚得金币：+{coins} 个 uwuCoins。"
 }

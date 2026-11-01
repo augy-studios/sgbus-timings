@@ -679,5 +679,12 @@
   "tray.header3": "Dibuat dengan ❤️ oleh {creator}",
   "tray.layers": "Lapisan",
   "tray.layers.title": "Lapisan: apa yang ditunjukkan oleh Explorer pada petanya",
-  "trip.shuttle": "Bas ulang-alik {name} {no}"
+  "trip.shuttle": "Bas ulang-alik {name} {no}",
+  "retrofit.feat": "Pencapaian dicapai: {names}, +{n} uwuCoins.",
+  "retrofit.feats": "Pencapaian dicapai: {names}, +{n} uwuCoins setiap satu.",
+  "retrofit.ridesOnly": "Perjalanan anda dari sebelum uwuCoins dikira untuk pencapaian.",
+  "retrofit.spin": "{n} uwuCoins semuanya, untuk memutar roda dalam Tetapan.",
+  "retrofit.title": "Syiling untuk perjalanan lepas anda",
+  "retrofit.trip": "Perjalanan anda dari sebelum uwuCoins telah mendapat syilingnya: +{coins} uwuCoins.",
+  "retrofit.trips": "{n} perjalanan anda dari sebelum uwuCoins telah mendapat syilingnya: +{coins} uwuCoins."
 }

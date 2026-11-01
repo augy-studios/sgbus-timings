@@ -22,9 +22,12 @@
 // buses js/eggs.js asks for: each ride kept is handed to Eggs.rides, and Eggs.feat('lines') once
 // every line's been ridden.
 //
+// Rides on trips from before these checks (27 October 2026) are kept from Your trips, once
+// (addPast, js/retrofit.js).
+//
 // Window.RideCheck = { see(trip, i, here, accuracy), done(trip, i), verdict(leg, seen),
-// record(), unlocked(), progress(), LINES }. The console's simulateRide('12') counts a ride for a
-// look (below). Plain script: exports go on window.
+// record(), addPast(trips), unlocked(), progress(), LINES }. The console's simulateRide('12')
+// counts a ride for a look (below). Plain script: exports go on window.
 (function () {
   const KEY = 'sgbus_rides';
   const UNLOCKED_KEY = 'sgbus_colours_unlocked';
@@ -162,6 +165,51 @@
     return true;
   }
 
+  // Trips from before the rides were checked (js/retrofit.js), as Your trips keeps them
+  // (js/history.js): each ride they got through (done) kept by line or bus, as if it had been
+  // judged real, on trips not kept here already. There's nothing left to judge them by, so the
+  // ride being got through stands in. Then the feats, as after any ride.
+  function addPast(trips) {
+    const rec = record();
+    const have = new Set(rec.trips.map((t) => t.id));
+    let added = 0;
+    const bump = (map, key, at) => {
+      const was = map[key];
+      map[key] = { n: (was?.n || 0) + 1, first: Math.min(was?.first || at, at), last: Math.max(was?.last || at, at) };
+    };
+    for (const trip of trips || []) {
+      if (!trip?.id || have.has(trip.id)) continue;
+      const at = Number(trip.startedAt) || Date.now();
+      const entry = { id: trip.id, at, lines: [], buses: [], past: true };
+      for (const leg of trip.legs || []) {
+        if (!leg?.done) continue;
+        if (leg.kind === 'train') {
+          const line = lineOf(leg);
+          if (!LINES.includes(line)) continue;
+          bump(rec.lines, line, at);
+          if (!entry.lines.includes(line)) entry.lines.push(line);
+          added++;
+        } else if (leg.kind === 'bus') {
+          const bus = String(leg.route || '').trim().toUpperCase();
+          // A public bus's number (a shuttle's route, such as A1, isn't one).
+          if (!/^\d{1,3}[A-Z]{0,2}$/.test(bus)) continue;
+          bump(rec.buses, bus, at);
+          if (!entry.buses.includes(bus)) entry.buses.push(bus);
+          added++;
+        }
+      }
+      if (entry.lines.length || entry.buses.length) {
+        rec.trips.push(entry);
+        have.add(trip.id);
+      }
+    }
+    if (!added) return 0;
+    rec.trips = rec.trips.sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, MAX_TRIPS);
+    keep(rec);
+    checkUnlock(rec);
+    return added;
+  }
+
   // The lines ridden and still to ride, for saying how far along it is.
   function progress() {
     const rec = record();
@@ -215,5 +263,5 @@
     return `ridden: ${rides.map((r) => (r.kind === 'lines' ? `${r.key} Line` : `bus ${r.key}`)).join(', ')}. ${p.done.length} of ${LINES.length} lines ridden.`;
   };
 
-  window.RideCheck = { see, done, verdict, record, unlocked, progress, LINES };
+  window.RideCheck = { see, done, verdict, record, addPast, unlocked, progress, LINES };
 })();

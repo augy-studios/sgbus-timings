@@ -47,6 +47,7 @@ Each command also explains itself when given `'help'`, such as
 | `simulateCoins(500)` | Gives you 500 more, any number you like |
 | `simulateCoins(-30)` | Takes 30 away, never below 0 |
 | `simulateCoins('set', 1000)` | Makes it exactly 1000 |
+| `simulatePastTrips()` | Says what your trips from before uwuCoins earned, or would earn |
 
 <figure>
 <img src="/screenshots/web/console-coins.png" alt="The console: simulateCoins() answers 230 uwuCoins and how it works; simulateCoins(500) answers 730 uwuCoins; simulateCoins(-30), 700 uwuCoins; simulateCoins('set', 1000), 1000 uwuCoins." width="720" height="335" loading="lazy">

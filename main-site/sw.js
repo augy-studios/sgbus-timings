@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v145";
+const VERSION = "v146";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -21,6 +21,8 @@ const ASSETS = [
   "/js/rides.js",
   "/js/eggs.js",
   "/js/coins.js",
+  // Past trips' coins and feats, once (js/retrofit.js).
+  "/js/retrofit.js",
   "/js/wheel.js",
   "/js/colours.js",
   "/js/material.js",

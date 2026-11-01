@@ -19,7 +19,9 @@
 // this phone's, not synced, as the rides they're for are. The Edge Tray's coin button
 // (#coinsBtn, data-tray-extra="coins") says the balance and opens the wheel.
 //
-// Window.Coins = { balance(), add(n, { why }), tripDone(trip), forTrip(trip), spin(), open() }.
+// Window.Coins = { balance(), add(n, { why }, { quiet }), tripDone(trip), forTrip(trip),
+// forPast(trip), tripsPaid(), spin(), open() }. Trips from before uwuCoins get theirs once, by
+// js/retrofit.js (forPast).
 // The console's simulateCoins(n) gives coins for a look (below). Plain script: exports go on
 // window.
 (function () {
@@ -61,13 +63,14 @@
   }
   const balance = () => read().balance;
 
-  function add(n, info = {}) {
+  // `quiet`: no coin floating up, for coins said another way (js/retrofit.js's window).
+  function add(n, info = {}, { quiet = false } = {}) {
     if (!(n > 0)) return;
     const v = read();
     v.balance += n;
     v.log.unshift({ at: Date.now(), n, ...info });
     write(v);
-    toast(n);
+    if (!quiet) toast(n);
   }
 
   // ---------- a trip's coins ----------
@@ -106,6 +109,35 @@
     };
     return { n: Object.values(parts).reduce((a, b) => a + b, 0), parts };
   }
+
+  // A trip from before uwuCoins, as Your trips keeps it (js/history.js, js/retrofit.js): the
+  // same sums, from what's kept. Its rides' kilometres aren't kept, so they're from the time
+  // each took at PAST_KMH, a little under a bus's and a train's average, so a past trip never
+  // gets more than it would have then. Only the rides it got through (done) count, and only on
+  // a trip that got there: { n, parts } as forTrip's, or null.
+  const PAST_KMH = { bus: 15, train: 35 };
+  function forPast(trip) {
+    const rides = (trip?.legs || []).filter((l) => l && l.done && (l.kind === 'bus' || l.kind === 'train'));
+    if (!trip?.arrived || !rides.length) return null;
+    const km = rides.reduce((sum, l) => sum + ((Number(l.rideMin) || 0) / 60) * PAST_KMH[l.kind], 0);
+    // A line by its code (EW), never a name's first letters.
+    const known = window.RideCheck?.LINES || [];
+    const lines = new Set(rides.filter((l) => l.kind === 'train').map(lineOf).filter((l) => known.includes(l)));
+    const trainOps = new Set([...lines].map((l) => (SBS_LINES.includes(l) ? 'SBS' : 'SMRT')));
+    const busOps = new Set(rides.filter((l) => l.kind === 'bus').map((l) => l.op || busOperator({ route: l.route })).filter(Boolean));
+    const parts = {
+      finish: FINISH,
+      km: Math.min(KM_COINS_MAX, Math.floor(km / KM_PER_COIN)),
+      changes: PER_CHANGE * (rides.length - 1),
+      busOps: PER_OPERATOR * busOps.size,
+      trainOps: PER_OPERATOR * trainOps.size,
+      lines: PER_LINE * lines.size,
+    };
+    return { n: Object.values(parts).reduce((a, b) => a + b, 0), parts };
+  }
+
+  // The trips already given their coins, by the log (which keeps only its last LOG_MAX).
+  const tripsPaid = () => new Set(read().log.map((e) => e.trip).filter(Boolean));
 
   // A trip arrived at (js/trip.js): its coins, once.
   function tripDone(trip) {
@@ -315,5 +347,5 @@
     return `${next} uwuCoins`;
   };
 
-  window.Coins = { balance, add, tripDone, forTrip, spin, open, SPIN_COST };
+  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, SPIN_COST };
 })();

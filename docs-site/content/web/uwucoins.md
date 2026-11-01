@@ -32,6 +32,25 @@ in the [Edge Tray](main-screen.md#pages-in-the-edge-tray) shows how many you
 have. Tap it for the wheel. **uwuCoins** in Settings' **Edge Tray buttons** takes
 it away.
 
+## Trips from before uwuCoins
+
+If you took trips before uwuCoins came, they earn their coins too, once. The
+first time you open the app after this update, it looks through
+[Your trips](trips.md) and gives each trip from before uwuCoins what it
+would have earned, if you got there with the Get Off Alert and got through at
+least one of its rides. Your trips doesn't keep how far each ride went, so the
+distance is worked out from how long you rode.
+
+Those trips count towards the feats too: the buses and lines you rode on them
+fill the bars in [Achievements](#achievements), and a trip of over three hours,
+one back to where it started, or one down the old railway does that feat, each
+worth 100 more. A window says how many trips counted, the coins they earned
+and the feats done, or the celebration plays if you'd already ridden every MRT
+and LRT line.
+
+Trips taken since uwuCoins came earned theirs as you took them, so they're
+never counted twice, and nor are trips another device syncs to this one later.
+
 ## Spin the wheel
 
 <figure>
