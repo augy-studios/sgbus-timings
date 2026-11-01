@@ -37,7 +37,9 @@
   const SLOTS = [{ egg: true }, { coins: 20 }, { coins: 50 }, { coins: 30 }, { coins: 70 }, { coins: 40 }, { coins: 150 }, { coins: 60 }];
   // The egg slot once every egg's found.
   const EGG_GONE_COINS = 80;
-  const SPIN_MS = 3600;
+  // A spin: SPIN_TURNS whole turns, quick to start and slowing gradually over SPIN_MS.
+  const SPIN_MS = 5000;
+  const SPIN_TURNS = 6;
   // The LRT loops' halves and the branches go by their line; SBS Transit runs these, SMRT the rest.
   const SAME_LINE = { CG: 'EW', CE: 'CC', SE: 'SK', SW: 'SK', PE: 'PG', PW: 'PG' };
   const SBS_LINES = ['NE', 'DT', 'SK', 'PG'];
@@ -197,12 +199,21 @@
     spinning = true;
     $('coinResult').hidden = true;
     render();
+    // spin()'s coins:change has just put a new wheel in (render, before `spinning`), drawn at no
+    // angle yet: it's set where the last spin stopped and that's drawn (the layout read) before
+    // the spin's transition starts, or the browser has no angle to turn from and it jumps
+    // straight to the end.
     const svg = $('coinWheel').querySelector('svg');
     const still = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    // A few turns, then slot `index` under the pointer at the top.
+    svg.style.transition = 'none';
+    svg.style.transform = `rotate(${turned}deg)`;
+    svg.getBoundingClientRect();
+    // A few turns, then slot `index` under the pointer at the top, somewhere inside it rather
+    // than dead on its middle, as a real wheel stops.
     const slice = 360 / SLOTS.length;
-    turned += (still ? 0 : 5 * 360) + ((360 - ((turned % 360) + r.index * slice) % 360) % 360);
-    svg.style.transition = still ? 'none' : `transform ${SPIN_MS}ms cubic-bezier(0.15, 0.85, 0.25, 1)`;
+    const at = r.index * slice + (Math.random() - 0.5) * slice * 0.7;
+    turned += (still ? 0 : SPIN_TURNS * 360) + ((((-turned - at) % 360) + 360) % 360);
+    svg.style.transition = still ? 'none' : `transform ${SPIN_MS}ms cubic-bezier(0.2, 0.7, 0.1, 1)`;
     svg.style.transform = `rotate(${turned}deg)`;
     setTimeout(() => {
       spinning = false;
