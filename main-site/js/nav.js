@@ -803,7 +803,11 @@ const navTooLate = (o) => nav.when?.mode === 'arrive' && When.span(nav.when, o.m
 // way off the platform with its icon and its doors, each drawn as a little platform door in
 // the line's colour with its number, as the number is shown on the real one. `text` says it all
 // in words for a screen reader.
-const DOOR_TYPE = { escalator: 'Escalator', lift: 'Lift', stairs: 'Stairs' };
+const DOOR_TYPE = {
+  get escalator() { return I18n.t('nav.transfer_method.escalator', 'Escalator'); },
+  get lift() { return I18n.t('nav.transfer_method.lift', 'Lift'); },
+  get stairs() { return I18n.t('nav.transfer_method.stairs', 'Stairs'); },
+};
 // Where to look for the door's number on the platform (js/mrt-doors.js, numberAt): a little
 // drawing of that kind of platform door, the spot ringed, and the words. Full-height doors have
 // a panel over them, in the line's colour; half-height ones stand between posts.
@@ -820,7 +824,11 @@ function doorNumberAt(at) {
 }
 function doorsPanel(p, text, color) {
   if (!p) return '';
-  const head = p.cross ? `At ${p.station}` : p.change != null ? `Changing at ${p.station}` : `Getting off at ${p.station}`;
+  const stn = escapeHtml(p.station);
+  const head = p.cross ? `At ${stn}`
+    : p.change ? I18n.t('nav.transfer_train.description', 'Changing at {transferStn} for the {transferLine}', { transferStn: stn, transferLine: escapeHtml(p.change) })
+    : p.change != null ? I18n.t('nav.transfer_train.changing', 'Changing at {transferStn}', { transferStn: stn })
+    : `Getting off at ${stn}`;
   const rows = p.cross
     ? `<li class="doorRow">${ico('swap')}<span class="doorWhere">Change across the platform to the <b>${escapeHtml(p.cross)}</b></span></li>`
     : p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
@@ -828,11 +836,10 @@ function doorsPanel(p, text, color) {
         `<span class="doorWhere">${escapeHtml(DOOR_TYPE[r.t] || r.t)}${r.places.length ? ` to ${escapeHtml(r.places.join(', '))}` : ''}</span></li>`).join('');
   const line = color ? ` style="--line:${escapeHtml(color)}"` : '';
   return `<div class="legDoors" role="note" aria-label="${escapeHtml(text || '')}"${line}>` +
-    `<div class="doorHead" aria-hidden="true">${ico('train')}<span>${escapeHtml(head)}${p.change ? ` <span class="doorFor">for the ${escapeHtml(p.change)}</span>` : ''}</span></div>` +
+    `<div class="doorHead" aria-hidden="true">${ico('train')}<span>${head}</span></div>` +
     `<ul class="doorRows" aria-hidden="true">${rows}</ul>` +
-    (p.cross ? '' : `<div class="doorFoot" aria-hidden="true">${p.numberAt
-      ? `${doorNumberAt(p.numberAt)}<span><b>Door number:</b> ${MrtDoors.NUMBER_AT[p.numberAt]}</span>`
-      : '<span>Look for the number on each platform door</span>'}</div>`) +
+    (p.cross ? '' : `<div class="doorFoot" aria-hidden="true">${p.numberAt ? doorNumberAt(p.numberAt) : ''}` +
+      `<span>${MrtDoors.numberAtHtml(p.numberAt)}</span></div>`) +
     `</div>`;
 }
 
@@ -987,7 +994,7 @@ async function renderNavOption(o) {
     shown = timings;
     body.innerHTML = head + `<ol class="journeySteps">${steps(timings)}</ol>` +
       `<p class="estimateNote">${live
-        ? 'Train times are estimates from distance. Bus timings are live from LTA.'
+        ? I18n.t('nav.estimated_times.description', 'Train times are estimates from distance. Bus timings are live from LTA.')
         : o.offline
           ? 'Times are estimates from distance, with an average wait to board. Live bus timings show here when you reconnect.'
           : 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.'}</p>`;

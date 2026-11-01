@@ -2206,8 +2206,10 @@
       .filter(({ ms }) => ms == null || ms > BOARD_GONE_MS)
       .sort((a, b) => (a.ms ?? Infinity) - (b.ms ?? Infinity));
     if (!buses.length) return "";
-    const when = (ms) => (ms == null ? "" : ms <= 60 * 1000 ? " arriving" : ` in ${Math.round(ms / 60000)} min`);
-    return `Also direct: ${buses.map(({ no, ms }) => no + when(ms)).join(", ")}`;
+    const one = ({ no, ms }) => (ms == null ? no
+      : ms <= 60 * 1000 ? I18n.t("nav.alternate_buses.arriving", "{busList} arriving", { busList: no })
+      : I18n.t("nav.alternate_buses.in_minutes", "{busList} in {busTime} min", { busList: no, busTime: Math.round(ms / 60000) }));
+    return `${I18n.t("nav.alternate_buses", "Also direct:")} ${buses.map(one).join(", ")}`;
   }
 
   // The route list, for the stops' codes on the timeline and the direct buses; asked for
@@ -2405,7 +2407,7 @@
     // Change my way, where there's a ride still ahead to change from, and beside it Back to
     // Navigate, for a trip started there.
     const canChange = trip.legs.some((l, i) => i >= trip.leg && !isWalk(l));
-    const change = canChange ? `<button type="button" class="iconBtn" data-tl-change-mode="on">${window.icon("swap")} Change my way</button>` : "";
+    const change = canChange ? `<button type="button" class="iconBtn" data-tl-change-mode="on">${window.icon("swap")} ${esc(I18n.t("nav.change_current_route", "Change my way"))}</button>` : "";
     const back = trip.origin ? `<button type="button" class="iconBtn" data-tl-origin>${window.icon("navigate")} ${esc(I18n.t("stop.back.nav", "Back to Navigate"))}</button>` : "";
     const mode = canChange && choosingChange
       ? `<p class="tlChangeMode"><span>Tap Change here by the stop to get off at.</span><button type="button" class="iconBtn" data-tl-change-mode="off">Cancel</button></p>`
@@ -2443,7 +2445,7 @@
         return (
           `<section class="tlLeg${k === 0 ? " current" : ""}">` +
           `<p class="tlHead">${window.icon(leg.kind === "train" ? "train" : isWalk(leg) ? "walk" : "bus")} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
-          (also.length ? `<p class="tlAlso">Also direct: ${also.map(esc).join(", ")}</p>` : "") +
+          (also.length ? `<p class="tlAlso">${esc(I18n.t("nav.alternate_buses", "Also direct:"))} ${also.map(esc).join(", ")}</p>` : "") +
           `<ol class="tlStops"><span class="tlTrack"><span class="tlDone"></span></span>${stops}` +
           (k === 0 ? `<span class="tlDot" aria-hidden="true"></span>` : "") +
           `</ol></section>`

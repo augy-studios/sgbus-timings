@@ -180,9 +180,9 @@
     el.classList.add('whenRow');
     el.innerHTML =
       `<div class="mode-toggle whenModes" role="group" aria-label="When">` +
-      `<button type="button" class="mode-btn" data-when-mode="now">Leave now</button>` +
-      `<button type="button" class="mode-btn" data-when-mode="leave">Leave at</button>` +
-      `<button type="button" class="mode-btn" data-when-mode="arrive">Arrive by</button>` +
+      `<button type="button" class="mode-btn" data-when-mode="now">${I18n.t('nav.leave_now', 'Leave now')}</button>` +
+      `<button type="button" class="mode-btn" data-when-mode="leave">${I18n.t('nav.leave_at', 'Leave at')}</button>` +
+      `<button type="button" class="mode-btn" data-when-mode="arrive">${I18n.t('nav.arrive_by', 'Arrive by')}</button>` +
       `</div>` +
       `<div class="whenPick" hidden>` +
       `<select class="input" aria-label="Day"></select>` +

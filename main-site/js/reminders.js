@@ -207,7 +207,7 @@
     $('#lastBusList').innerHTML = list.length
       ? list.map((r, i) => `<div class="lastBusRow"><span><strong>${esc(r.service)}</strong> at ${esc(r.name)} <span class="sub">${esc(r.code)}</span></span>` +
         `<button type="button" class="icon-btn small" data-lastbus-remove="${i}" aria-label="Remove">${ico('close')}</button></div>`).join('')
-      : '<p class="mode-note">None yet.</p>';
+      : `<p class="mode-note">${esc(I18n.t('settings.last_bus_reminders.no_buses', 'None yet.'))}</p>`;
   }
 
   async function removeLast(i) {
@@ -226,16 +226,18 @@
 
   const ROUTINE_KEY = 'sgbus_routines';
   const MAX_ROUTINES = 20;
-  const DAY_NAMES = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const DAY_NAMES = () => ['', I18n.t('campus.dow.mon', 'Mon'), I18n.t('campus.dow.tue', 'Tue'), I18n.t('campus.dow.wed', 'Wed'),
+    I18n.t('campus.dow.thu', 'Thu'), I18n.t('campus.dow.fri', 'Fri'), I18n.t('campus.dow.sat', 'Sat'), I18n.t('campus.dow.sun', 'Sun')];
   const routines = () => read(ROUTINE_KEY, []);
 
   // "Weekdays", "Every day", "Weekends" or the days themselves.
   function daysText(days) {
     const set = [...days].sort((a, b) => a - b).join(',');
-    if (set === '1,2,3,4,5,6,7') return 'Every day';
-    if (set === '1,2,3,4,5') return 'Weekdays';
-    if (set === '6,7') return 'Weekends';
-    return days.map((d) => DAY_NAMES[d]).join(', ');
+    if (set === '1,2,3,4,5,6,7') return I18n.t('routine.days.every_day', 'Every day');
+    if (set === '1,2,3,4,5') return I18n.t('routine.days.weekdays', 'Weekdays');
+    if (set === '6,7') return I18n.t('routine.days.weekends', 'Weekends');
+    const names = DAY_NAMES();
+    return days.map((d) => names[d]).join(', ');
   }
 
   // LTA's midnight, "2400", as 00:00.
@@ -251,7 +253,7 @@
         `${esc(r.name)} <span class="sub">${esc(r.code)}${r.buses.length ? ` · ${esc(r.buses.join(', '))}` : ''}</span></span>` +
         `<button type="button" class="icon-btn small" data-routine-edit="${i}" aria-label="Edit" title="Edit">${ico('edit')}</button>` +
         `<button type="button" class="icon-btn small" data-routine-remove="${i}" aria-label="Remove" title="Remove">${ico('close')}</button></div>`).join('')
-      : '<p class="mode-note">None yet.</p>';
+      : `<p class="mode-note">${esc(I18n.t('settings.last_bus_reminders.no_buses', 'None yet.'))}</p>`;
     $('#routineForm').hidden = list.length >= MAX_ROUTINES && !editing;
   }
 

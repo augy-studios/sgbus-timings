@@ -25,7 +25,11 @@
 (function () {
   const LAST_MIN = 30;
   const SG_OFFSET_MS = 8 * 3600 * 1000;
-  const DOOR_TYPE = { escalator: 'Escalator', lift: 'Lift', stairs: 'Stairs' };
+  const DOOR_TYPE = {
+    get escalator() { return I18n.t('nav.transfer_method.escalator', 'Escalator'); },
+    get lift() { return I18n.t('nav.transfer_method.lift', 'Lift'); },
+    get stairs() { return I18n.t('nav.transfer_method.stairs', 'Stairs'); },
+  };
   // Each line's colour, as js/map.js has them; LRT lines and anything else grey.
   const LINE_COLOURS = { EW: '#009645', CG: '#009645', NS: '#d42e12', NE: '#9900aa', CC: '#fa9e0d', CE: '#fa9e0d', DT: '#005ec4', TE: '#9d5b25', JS: '#0099aa', JE: '#0099aa', JW: '#0099aa', CR: '#97c616', CP: '#97c616' };
   const LRT = '#748477';
@@ -212,7 +216,7 @@
       `<span class="mcDirText"><b>${p.last ? 'Trains end here' : `Towards ${esc(p.towards)}`}</b>${p.next ? `<span>Next: ${esc(p.next)}</span>` : ''}</span></div>` +
       (rows
         ? `<div class="legDoors" style="--line:${colour}"><ul class="doorRows">${rows}</ul>` +
-          `<div class="doorFoot">${p.numberAt ? `${doorNumberAt(p.numberAt)}<span><b>Door number:</b> ${MrtDoors.NUMBER_AT[p.numberAt]}</span>` : '<span>Look for the number on each platform door</span>'}</div></div>`
+          `<div class="doorFoot">${p.numberAt ? doorNumberAt(p.numberAt) : ''}<span>${MrtDoors.numberAtHtml(p.numberAt)}</span></div></div>`
         : '<p class="mcNote">No door details for this platform yet.</p>') +
       (p.cross.length ? `<p class="mcNote">${ico('swap')} Across the platform: ${esc(listText(p.cross))}</p>` : '');
   }

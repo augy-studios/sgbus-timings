@@ -16,6 +16,8 @@
 //   5. Location not found: Glance's Nearby says to check Location is on.
 //   6. The phone's Location off, in the app: it says to turn it on.
 //   7. No {name} left unfilled, and no page errors.
+//   8. The routines listed with their days: Weekdays, or the days themselves; the form's day
+//      buttons; and the line under the greeting, Made with ♥ by Augy.
 const path = require('path');
 const fs = require('fs');
 
@@ -36,6 +38,7 @@ const STOPS = [
   { c: '16009', n: 'Kent Ridge Ter', r: 'Kent Ridge Cres', la: 1.29452, lo: 103.76918 },
 ];
 const ROUTINE = { id: 'r1', code: '17179', name: 'Clementi Stn Exit B', buses: ['96'], time: '0745', days: [1, 2, 3, 4, 5] };
+const ROUTINE2 = { id: 'r2', code: '17179', name: 'Clementi Stn Exit B', buses: ['183'], time: '0936', days: [1, 3, 4] };
 const EN = JSON.parse(fs.readFileSync(path.join(SITE, 'i18n/en.json'), 'utf8'));
 
 let fails = 0;
@@ -148,7 +151,7 @@ const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.text
 
     // ---- 3. changing a routine ----
     {
-      const { context, page, errors } = await site(browser, lang, { routines: [ROUTINE], app: { locationOn: true } });
+      const { context, page, errors } = await site(browser, lang, { routines: [ROUTINE, ROUTINE2], app: { locationOn: true } });
       await page.evaluate(() => document.getElementById('routinesTrayBtn').click());
       await page.waitForFunction(() => !document.getElementById('routineModal').classList.contains('hidden'));
       await page.waitForSelector('[data-routine-edit="0"]', { timeout: 5000 }).catch(() => {});
@@ -160,6 +163,18 @@ const text = (page, sel) => page.evaluate((s) => document.querySelector(s)?.text
         await page.click('#routineCancel');
         ok(`${tag} 3. Cancel puts Add a routine back`, await text(page, '.routineFormHead') === say('routine.add'), await text(page, '.routineFormHead'));
       }
+      // 8. The days, in the list and on the form's buttons, and the line under the greeting.
+      const rows = await page.$$eval('#routineList .lastBusRow', (els) => els.map((el) => el.textContent.replace(/\s+/g, ' ').trim()));
+      ok(`${tag} 8. weekdays as one word`, rows[0]?.includes(` ${say('routine.days.weekdays')} · `), rows[0]);
+      const days = ['mon', 'wed', 'thu'].map((d) => say(`campus.dow.${d}`)).join(', ');
+      ok(`${tag} 8. other days by name`, rows[1]?.includes(` ${days} · `), rows[1]);
+      const buttons = await page.$$eval('#routineDays [data-day]', (els) => els.map((el) => el.textContent.trim()));
+      const want = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((d) => say(`campus.dow.${d}`));
+      ok(`${tag} 8. day buttons`, buttons.join() === want.join(), buttons.join(' '));
+      const made = await page.evaluate(() => document.getElementById('madeWith').textContent.replace(/\s+/g, ' ').trim());
+      const madeSvg = await page.evaluate(() => !!document.querySelector('#madeWith > svg'));
+      ok(`${tag} 8. made with, heart drawn`, made === say('tray.header3', { creator: 'Augy' }).replace('❤️', '').replace(/\s+/g, ' ').trim() && madeSvg, made);
+      ok(`${tag} 8. live bus arrivals`, (await text(page, '[data-i18n="tray.header1"]')) === say('tray.header1'));
       ok(`${tag} 3. no page errors`, errors.length === 0, errors.join(' | '));
       await context.close();
     }

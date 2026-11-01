@@ -170,6 +170,16 @@ function getGreeting(now = new Date()) {
     return tr('greeting.evening', 'Good Evening');
 }
 
+// "Made with ♥ by Augy" under the greeting, in the language picked: the heart is the drawing
+// already in the page, put where the words have ❤️.
+(function madeWith() {
+    const el = $('#madeWith');
+    const heart = el?.querySelector('svg');
+    if (!heart) return;
+    const [before, after = ''] = tr('tray.header3', 'Made with ❤️ by {creator}', { creator: 'Augy' }).split('❤️');
+    el.replaceChildren(before, heart, after);
+})();
+
 function isBirthday(now = new Date()) {
     const b = LS.getBirthday();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(b)) return false;
@@ -1174,7 +1184,7 @@ function goBack(ctx) {
 // The icon is drawn once, in a hidden <symbol> on the page, and each badge points at it:
 // a stop shows up to three buses per service, and copying the whole drawing into every
 // badge made a busy stop's timings several times heavier to parse.
-const wheelchairBadge = `<span class="badge"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#i-wheelchair"/></svg> Wheelchair</span>`;
+const wheelchairBadge = `<span class="badge"><svg class="icon" viewBox="0 0 512 512" aria-hidden="true" focusable="false"><use href="#i-wheelchair"/></svg> ${escapeHtml(tr('stop.wheelchair', 'Wheelchair'))}</span>`;
 
 (function addWheelchairSymbol() {
     const sprite = document.createElementNS('http://www.w3.org/2000/svg', 'svg');

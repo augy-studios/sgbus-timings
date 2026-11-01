@@ -238,5 +238,17 @@
       });
   }
 
-  window.MrtDoors = { load, plan, tip, station, NUMBER_AT, ready: () => platforms != null };
+  // The door number's spot for the door panels (js/nav.js, js/map-card.js), in the language
+  // picked, as HTML: "<b>Door number:</b> at the top right of each door", the words up to the
+  // colon in bold; or, where `at` is unknown, to look for it.
+  function numberAtHtml(at) {
+    const words = at === 'above' ? I18n.t('nav.transfer_train.platform_doors_above', 'Door number: on the panel above the doors')
+      : at === 'corner' ? I18n.t('nav.transfer_train.platform_doors_top_right', 'Door number: at the top right of each door')
+      : at === 'post' ? I18n.t('nav.transfer_train.platform_doors_post', 'Door number: near the top of the post beside each door')
+      : I18n.t('nav.transfer_train.platform_doors', 'Look for the number on each platform door');
+    const html = words.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+    return NUMBER_AT[at] ? html.replace(/^([^:：]+[:：])\s*/, '<b>$1</b> ') : html;
+  }
+
+  window.MrtDoors = { load, plan, tip, station, NUMBER_AT, numberAtHtml, ready: () => platforms != null };
 })();

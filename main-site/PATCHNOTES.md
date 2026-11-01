@@ -1,11 +1,19 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 31 October 2026**
+**Latest update: 1 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 1 November 2026: More in your language
+
+### Web app
+
+- **More in your language** - Routines' days, the line under the greeting, Navigate's Leave now, Leave at and Arrive by, a trip's Also direct and Change my way, the train door tips, the Wheelchair badge, and Settings' Last bus reminders and Sync show in Chinese, Malay and Tamil.
 
 ---
 

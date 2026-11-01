@@ -2029,7 +2029,6 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 .doorHead { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 700; }
 .doorHead .ico { color: var(--muted-strong); }
-.doorFor { font-weight: 400; color: var(--muted-strong); }
 .doorRows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 /* On one line: the icon, its doors, then what it is and where to. */
 .doorRow {
