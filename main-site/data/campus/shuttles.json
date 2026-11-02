@@ -176,6 +176,59 @@
         }
       ]
     },
+    "sgh": {
+      "name": "SGH",
+      "colour": "#f47920",
+      "fare": "free",
+      "access": "public",
+      "source": "https://www.sgh.com.sg/patient-care/visitor-information/shuttle-services",
+      "checked": "2026-11-02",
+      "_stops": "The SGH Campus shuttles' stops as SGH's shuttle page lists them, in its order. Outram Park's two are LTA's: 10018 (Outram Pk Stn Exit 6/SGH, Eu Tong Sen St) and 06011 (Outram Pk Stn Exit 7, Outram Rd, where SGH's page says \"opposite the Outram Park MRT (East-West Line & Thomson-East Coast Line) station (Exit 7)\"). The campus ones' positions are placed by each building on the campus map, not surveyed: check them against SGH's campus map or OneMap. The page gives no departure times, only a bus about every 20 minutes; live times are in ComfortDelGro's Comfort Connect app (SingHealth Shuttle Service, SGH Campus), not read here. The Orange and Blue routes also run 8am to 2pm on eves of public holidays, which the timings here can't say: such a day counts as a weekday.",
+      "stops": [
+        { "id": "sgh-nccs", "name": "NCCS New Building", "road": "Hospital Blvd", "loc": "1.280050, 103.837650" },
+        { "id": "sgh-dmc", "name": "Diabetes & Metabolism Centre", "road": "Third Hospital Ave", "loc": "1.281300, 103.835300" },
+        { "id": "sgh-snec", "name": "Singapore National Eye Centre", "road": "Third Hospital Ave", "loc": "1.282248, 103.835785" },
+        { "id": "sgh-blk3", "name": "SGH Block 3", "road": "Hospital Blvd", "loc": "1.280500, 103.835800" },
+        { "id": "sgh-och", "name": "Outram Community Hospital / SingHealth Tower", "road": "Hospital Blvd", "loc": "1.280800, 103.836800" },
+        { "id": "sgh-nni", "name": "SGH Emergency / NNI", "road": "Outram Rd", "loc": "1.281000, 103.833500" },
+        { "id": "sgh-nhcs", "name": "National Heart Centre Singapore", "road": "Hospital Dr", "loc": "1.279000, 103.836500" },
+        { "id": "sgh-cph-stop", "name": "Car Park H Shuttle Bus Stop (Opp SGH Blk 7)", "road": "Macalister Rd", "loc": "1.277200, 103.834300" },
+        { "id": "sgh-cph-mscp", "name": "Multi-storey Car Park H", "road": "Macalister Rd", "loc": "1.276500, 103.835000" },
+        { "id": "sgh-cph-open", "name": "Open Air Car Park H", "road": "Macalister Rd", "loc": "1.276800, 103.835800" }
+      ],
+      "routes": [
+        {
+          "id": "SGH Orange",
+          "label": "SGH Campus shuttle, Orange route",
+          "colour": "#f47920",
+          "stops": ["10018", "06011", "sgh-nccs", "sgh-dmc", "sgh-snec", "sgh-blk3", "10018"],
+          "timings": {
+            "weekdays": [{ "start": "0800", "end": "1900", "min": 20, "max": 20 }],
+            "sat": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }]
+          }
+        },
+        {
+          "id": "SGH Blue",
+          "label": "SGH Campus shuttle, Blue route",
+          "colour": "#1f63b5",
+          "stops": ["10018", "06011", "sgh-och", "sgh-nni", "sgh-nhcs", "10018"],
+          "timings": {
+            "weekdays": [{ "start": "0800", "end": "1900", "min": 20, "max": 20 }],
+            "sat": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }]
+          }
+        },
+        {
+          "id": "SGH Car Park H",
+          "label": "SGH Car Park H shuttle (Green route)",
+          "colour": "#2e9e44",
+          "stops": ["sgh-och", "sgh-cph-stop", "sgh-cph-mscp", "sgh-cph-open", "sgh-och"],
+          "timings": {
+            "weekdays": [{ "start": "0600", "end": "2220", "min": 20, "max": 20 }],
+            "sat": [{ "start": "0600", "end": "1350", "min": 20, "max": 20 }]
+          }
+        }
+      ]
+    },
     "mandai": {
       "name": "Mandai",
       "colour": "#00805a",

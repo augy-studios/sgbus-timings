@@ -13,7 +13,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Web app
 
-- **Shuttle buses in Navigate** - Bus and train rides NUS's and NTU's campus shuttles, and the island's others anyone can ride: IKEA Tampines', Changi Airport's, KKH's, Mandai's, Clarke Quay's late-night shuttles home, Orchid Country Club's and the TS1 to Johor Bahru. A shuttle's wait is its timetable's average wait then, and one that isn't running isn't used. The Novotel and Mercure on Stevens' shuttle, for hotel guests, is only used to or from the hotel.
+- **Shuttle buses in Navigate** - Bus and train rides NUS's and NTU's campus shuttles, and the island's others anyone can ride: IKEA Tampines', Changi Airport's, KKH's, SGH Campus' Orange, Blue and Car Park H routes, Mandai's, Clarke Quay's late-night shuttles home, Orchid Country Club's and the TS1 to Johor Bahru. A shuttle's wait is its timetable's average wait then, and one that isn't running isn't used. The Novotel and Mercure on Stevens' shuttle, for hotel guests, is only used to or from the hotel.
 - **Free or paid shuttles** - Settings' new Shuttle buses, under Navigate: Free only (the default), or Free and paid for Mandai's, the Tanah Merah Ferry Terminal shuttle and the TS1 too. Explorer's shuttle layers follow it.
 - **Search shuttle buses** - Type a shuttle's route, such as A1, CL-B or M2, for its stops and what its timetable says now, or a stop only shuttles use, such as PGP or IKEA Tampines, for its shuttle times.
 - **Shuttles live** - IKEA's and the Stevens hotels' shuttles show their next bus live, Live: 4 min, from the operator's tracker.
