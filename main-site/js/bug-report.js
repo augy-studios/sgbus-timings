@@ -11,6 +11,12 @@
 // the connection. If the site can't send it (not set up, or Telegram's down), it offers email
 // instead, with the same words filled in.
 //
+// Pictures, up to MAX_SHOTS: picked from the phone (any image), or Screenshot this page, which
+// draws the app as it is under its windows, this one and Settings (vendor/html-to-image, loaded
+// the first time it's used; a map's canvas can come out blank). Each is made a JPEG of at most
+// SHOT_SIDE pixels a side and about SHOT_BYTES here, before it's sent, and kept with what's
+// typed until it's sent.
+//
 // Window.BugReport = { open() }. Plain script: exports go on window.
 (function () {
   const $ = (sel) => document.querySelector(sel);
@@ -22,6 +28,12 @@
   let siteVersion = null;
   let details = null;
   let sending = false;
+  // The pictures to send, as JPEG data URLs.
+  let shots = [];
+  const MAX_SHOTS = 3;
+  const SHOT_SIDE = 1600;
+  const SHOT_BYTES = 900 * 1024;
+  const CAPTURE_LIB = '/vendor/html-to-image-1.11.13/html-to-image.js';
 
   // The site's version, from the service worker serving it ("v127"), or null without one.
   function askVersion() {
@@ -121,6 +133,107 @@
     }
   }
 
+  // ---------- pictures ----------
+
+  // An image (a File, or a data URL) as a JPEG data URL, at most SHOT_SIDE a side and about
+  // SHOT_BYTES, smaller and rougher till it is.
+  async function shrink(src) {
+    const url = typeof src === 'string' ? src : URL.createObjectURL(src);
+    try {
+      const img = await new Promise((resolve, reject) => {
+        const i = new Image();
+        i.onload = () => resolve(i);
+        i.onerror = () => reject(new Error('not an image'));
+        i.src = url;
+      });
+      let side = SHOT_SIDE;
+      for (let tries = 0; tries < 6; tries++) {
+        const k = Math.min(1, side / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(img.naturalWidth * k));
+        canvas.height = Math.max(1, Math.round(img.naturalHeight * k));
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const out = canvas.toDataURL('image/jpeg', tries < 2 ? 0.82 : 0.7);
+        if (out.length * 0.75 <= SHOT_BYTES || tries === 5) return out;
+        side = Math.round(side * 0.8);
+      }
+    } finally {
+      if (typeof src !== 'string') URL.revokeObjectURL(url);
+    }
+    return null;
+  }
+
+  function renderShots() {
+    const box = $('#bugShots');
+    box.innerHTML = shots.map((s, i) => `<span class="bugShot"><img src="${s}" alt="${I18n.t('bug.picture_n', 'Picture {n}', { n: i + 1 })}"><button type="button" class="bugShotX" data-bug-shot="${i}" aria-label="${I18n.t('bug.remove_picture', 'Remove picture {n}', { n: i + 1 })}">×</button></span>`).join('');
+    box.hidden = !shots.length;
+    const full = shots.length >= MAX_SHOTS;
+    $('#bugAddPic').disabled = full;
+    $('#bugScreenshot').disabled = full;
+  }
+
+  async function addShot(src) {
+    if (shots.length >= MAX_SHOTS) return;
+    try {
+      const jpeg = await shrink(src);
+      if (jpeg) shots.push(jpeg);
+    } catch {
+      say(I18n.t('bug.picture_failed', "Couldn't add that picture."));
+    }
+    renderShots();
+  }
+
+  // The script that draws the page, the first time it's wanted.
+  let lib = null;
+  function captureLib() {
+    if (window.htmlToImage) return Promise.resolve(window.htmlToImage);
+    lib ??= new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = CAPTURE_LIB;
+      s.onload = () => (window.htmlToImage ? resolve(window.htmlToImage) : reject(new Error('no htmlToImage')));
+      s.onerror = () => { lib = null; reject(new Error('could not load')); };
+      document.head.appendChild(s);
+    });
+    return lib;
+  }
+
+  // The app as it is under its windows (this one, and Settings it was opened from), drawn.
+  async function screenshot() {
+    if (shots.length >= MAX_SHOTS) return;
+    const btn = $('#bugScreenshot');
+    btn.disabled = true;
+    say(I18n.t('bug.taking_screenshot', 'Taking a screenshot…'));
+    try {
+      const h2i = await captureLib();
+      const bg = getComputedStyle(document.body).backgroundColor;
+      const url = await h2i.toJpeg(document.body, {
+        quality: 0.85,
+        pixelRatio: Math.min(2, window.devicePixelRatio || 1),
+        width: window.innerWidth,
+        height: window.innerHeight,
+        backgroundColor: bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#ffffff',
+        cacheBust: false,
+        imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
+        // The app under its windows: Settings and this one left out, as they're over it. And
+        // what can't be drawn, which would spoil the whole picture: the camera's video (Scan),
+        // and an image with nothing in it yet.
+        filter: (node) => !(node.classList && (node.classList.contains('modal-backdrop') || node.classList.contains('coinToast')))
+          && node.tagName !== 'VIDEO'
+          && !(node.tagName === 'IMG' && (!node.currentSrc || !node.complete || !node.naturalWidth)),
+      });
+      await addShot(url);
+      say('');
+    } catch (err) {
+      console.warn("couldn't take the screenshot:", err);
+      say(I18n.t('bug.screenshot_failed', "Couldn't take a screenshot here. Take one with your phone and add it instead."));
+    } finally {
+      renderShots();
+    }
+  }
+
   async function send(e) {
     e.preventDefault();
     if (sending) return;
@@ -142,11 +255,13 @@
       const r = await fetch('/api/bug-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...sent, text, contact: $('#bugContact').value.trim(), website: $('#bugWebsite').value }),
+        body: JSON.stringify({ ...sent, text, contact: $('#bugContact').value.trim(), website: $('#bugWebsite').value, images: shots }),
       });
       if (r.ok) {
         $('#bugText').value = '';
         $('#bugContact').value = '';
+        shots = [];
+        renderShots();
         say(I18n.t('bug.sent', 'Sent. Thank you! Augy will look into it.'));
         return;
       }
@@ -165,6 +280,20 @@
   function init() {
     if (!document.getElementById(ID)) return;
     $('#bugForm').addEventListener('submit', send);
+    $('#bugAddPic').addEventListener('click', () => $('#bugPicFile').click());
+    $('#bugPicFile').addEventListener('change', async (e) => {
+      const files = [...(e.target.files || [])].slice(0, MAX_SHOTS - shots.length);
+      e.target.value = '';
+      for (const f of files) await addShot(f);
+    });
+    $('#bugScreenshot').addEventListener('click', screenshot);
+    $('#bugShots').addEventListener('click', (e) => {
+      const x = e.target.closest('[data-bug-shot]');
+      if (!x) return;
+      shots.splice(Number(x.dataset.bugShot), 1);
+      renderShots();
+    });
+    renderShots();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });

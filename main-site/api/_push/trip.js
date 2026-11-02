@@ -57,21 +57,39 @@ export function alongLeg(here, pts) {
 // Whether there's another ride after this leg, to change to: walks don't count.
 const ridesAfter = (trip) => trip.legs.slice(trip.leg + 1).some((l) => l.kind !== 'walk');
 
+// The English, for an app that sends no words of its own (trip.words, js/trip.js serverWords).
+const ENGLISH = {
+  alertTitle: 'Get Off Alert',
+  boardTitle: 'Get ready to board',
+  getOffNow: 'Get off now at {stop}.',
+  getOffOne: 'Get off in 1 stop, at {stop}.',
+  getOffOneChange: 'Get off in 1 stop, at {stop}, to change.',
+  getOffMany: 'Get off in {n} stops, at {stop}.',
+  getOffManyChange: 'Get off in {n} stops, at {stop}, to change.',
+  boardArriving: '{ride} is arriving at {stop}. Get ready to board.',
+  boardOneMin: '{ride} is 1 min away from {stop}. Get ready to board.',
+};
+
+// The trip's words for `key`, in the app's language, filled in.
+export function say(trip, key, vars = {}) {
+  const text = trip?.words?.[key] || ENGLISH[key];
+  return String(text).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? vars[k] : m));
+}
+
 export function alertText(trip, left) {
   const leg = trip.legs[trip.leg];
   const last = !ridesAfter(trip);
-  return left === 0
-    ? `Get off now at ${leg.to}.`
-    : `Get off in ${left} stop${left === 1 ? '' : 's'}, at ${leg.to}${last ? '' : ', to change'}.`;
+  const stop = leg.to;
+  if (left === 0) return say(trip, 'getOffNow', { stop });
+  if (left === 1) return say(trip, last ? 'getOffOne' : 'getOffOneChange', { stop });
+  return say(trip, last ? 'getOffMany' : 'getOffManyChange', { stop, n: left });
 }
 
 // The same as boardText in js/trip.js.
-export function boardText(leg, eta) {
-  const label = leg.label || `Bus ${leg.service}`;
-  const where = leg.boardName || 'your stop';
-  return eta <= 20 * 1000
-    ? `${label} is arriving at ${where}. Get ready to board.`
-    : `${label} is 1 min away from ${where}. Get ready to board.`;
+export function boardText(leg, eta, trip = null) {
+  const ride = leg.label || `Bus ${leg.service}`;
+  const stop = leg.boardName || 'your stop';
+  return say(trip, eta <= 20 * 1000 ? 'boardArriving' : 'boardOneMin', { ride, stop });
 }
 
 // Whether to ask how far the bus is from the stop you wait at: a bus leg with one, its ping
@@ -90,7 +108,7 @@ export function waitingToBoard(trip) {
 export function boardStep(trip, eta) {
   if (eta == null || !waitingToBoard(trip) || eta > BOARD_MS || eta <= BOARD_GONE_MS) return null;
   (trip.readied ??= trip.legs.map(() => false))[trip.leg] = true;
-  return { text: boardText(trip.legs[trip.leg], eta), leg: trip.leg };
+  return { text: boardText(trip.legs[trip.leg], eta, trip), leg: trip.leg };
 }
 
 function closest(list, expect) {
@@ -139,6 +157,13 @@ function whereNow(trip, leg, buses, now) {
   const pos = Math.min(last, Math.max(track?.pos ?? 0, pick));
   return { pos, track: { pos, t: now } };
 }
+
+// While the app's last good fix (fixAt) is this recent, it's following the trip itself, with
+// your location: the server neither moves it on nor alerts by its own clock (api/push/
+// trip-poll.js), and the app's place stands over its own (api/push/trips/[id].js). The app
+// says so every minute while it has fixes (js/trip.js, LIVE_SYNC_MS).
+export const LIVE_MS = 150 * 1000;
+export const live = (trip, now) => now - (trip.fixAt || 0) <= LIVE_MS;
 
 // One minute of a trip. Updates it in place, and says what to send: the alert's text, if
 // it's time, and whether the trip is over.

@@ -21,7 +21,12 @@
 //   9. Several chats: each gets it (a topic's ID too), one taking it is enough, all failing is
 //      a 502, and what isn't a chat is left out.
 //   8. The form: Settings, Help and extras, Report a bug; it shows what it adds, sends it, and
-//      says it's sent; not set up, it offers email instead with the words filled in.
+//      says it's sent; not set up, it offers email instead with the words filled in. Pictures:
+//      one from the phone and Screenshot this page, each shown with a way to take it off, sent
+//      as JPEGs and on to Telegram as an album, and cleared once sent.
+//  10. Pictures: up to three images, each sent after the message and replying to it, one as a
+//      photo and more as an album; four, a non-image or one too big is refused, sending
+//      nothing; the pictures failing still leaves the report sent.
 const path = require('path');
 const fs = require('fs');
 
@@ -34,7 +39,7 @@ const ok = (name, cond, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'} 
 // Telegram and Redis, as fetch sees them: every call kept in `sent`, Redis counted in `counts`.
 const sent = [];
 const counts = new Map();
-let telegram = () => ({ status: 200, body: { ok: true } });
+let telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
 global.fetch = async (url, opts = {}) => {
   url = String(url);
   if (url === REDIS) {
@@ -44,7 +49,11 @@ global.fetch = async (url, opts = {}) => {
     return new Response(JSON.stringify({ result }), { status: 200 });
   }
   if (url.startsWith('https://api.telegram.org/')) {
-    sent.push({ url, body: JSON.parse(opts.body) });
+    // A picture goes as a form: its files kept as what they are, not their bytes.
+    const body = opts.body instanceof FormData
+      ? Object.fromEntries([...opts.body.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : { file: true, size: v.size, type: v.type }]))
+      : JSON.parse(opts.body);
+    sent.push({ url, body });
     const r = await telegram(opts);
     return new Response(JSON.stringify(r.body), { status: r.status });
   }
@@ -183,7 +192,7 @@ async function api() {
     && sent[2]?.body.chat_id === '@sgbus_reports' && sent.every((x) => x.body.text === sent[0].body.text));
   logs.length = 0;
   console.error = (...a) => logs.push(a.join(' '));
-  telegram = (opts) => JSON.parse(opts.body).chat_id === CHAT ? { status: 200, body: { ok: true } } : { status: 403, body: { ok: false, description: 'Forbidden: bot is not a member of the channel chat' } };
+  telegram = (opts) => (opts.body instanceof FormData ? opts.body.get('chat_id') : JSON.parse(opts.body).chat_id) === CHAT ? { status: 200, body: { ok: true } } : { status: 403, body: { ok: false, description: 'Forbidden: bot is not a member of the channel chat' } };
   r = await call(handler, { body: REPORT });
   ok('9. one took it, two didn\'t: still 204', r.statusCode === 204);
   ok('9. the two that didn\'t are logged by place, with the reason', logs.some((l) => l.includes('chat 2:') && l.includes('not a member')) && logs.some((l) => l.includes('chat 3:')) && !logs.some((l) => l.includes(TOKEN)), logs.join(' | '));
@@ -191,8 +200,33 @@ async function api() {
   r = await call(handler, { body: REPORT });
   ok('9. none took it: 502', r.statusCode === 502);
   console.error = error;
-  telegram = () => ({ status: 200, body: { ok: true } });
+  telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
   process.env.BUG_REPORT_CHAT_ID = CHAT;
+
+  // 10. Pictures: after the message, replying to it.
+  const jpeg = (kb) => `data:image/jpeg;base64,${Buffer.alloc(kb * 1024, 7).toString('base64')}`;
+  sent.length = 0;
+  r = await call(handler, { body: { ...REPORT, images: [jpeg(50)] } });
+  ok('10. one picture: 204', r.statusCode === 204, `${r.statusCode} ${JSON.stringify(r.payload)}`);
+  ok('10. the message says there are pictures', /Pictures: 1, below/.test(sent[0]?.body.text || ''), sent[0]?.body.text);
+  ok('10. then sendPhoto, to the chat, replying to the message', sent[1]?.url.endsWith('/sendPhoto') && sent[1].body.chat_id === CHAT && JSON.parse(sent[1].body.reply_parameters).message_id === 77 && sent[1].body.photo?.file && sent[1].body.photo.type === 'image/jpeg', JSON.stringify(sent[1]?.body));
+  sent.length = 0;
+  r = await call(handler, { body: { ...REPORT, images: [jpeg(40), jpeg(40), `data:image/png;base64,${Buffer.alloc(2048, 1).toString('base64')}`] } });
+  const album = sent[1];
+  ok('10. three: an album of three, the first with a caption', r.statusCode === 204 && album?.url.endsWith('/sendMediaGroup') && JSON.parse(album.body.media).length === 3 && /3 pictures/.test(JSON.parse(album.body.media)[0].caption) && album.body.p2?.type === 'image/png', JSON.stringify(album?.body));
+  sent.length = 0;
+  for (const [label, imgs] of [['four', [jpeg(1), jpeg(1), jpeg(1), jpeg(1)]], ['not an image', ['data:text/html;base64,PGI+']], ['too big', [jpeg(1300)]], ['not a list', 'x']]) {
+    r = await call(handler, { body: { ...REPORT, images: imgs } });
+    ok(`10. ${label}: 400`, r.statusCode === 400, `${r.statusCode} ${r.payload?.error || ''}`);
+  }
+  ok('10. nothing sent for any of them', sent.length === 0);
+  const error2 = console.error;
+  console.error = () => {};
+  telegram = (o) => (o.body instanceof FormData ? { status: 400, body: { ok: false, description: 'Bad Request: photo too big' } } : { status: 200, body: { ok: true, result: { message_id: 78 } } });
+  r = await call(handler, { body: { ...REPORT, images: [jpeg(10)] } });
+  ok('10. the pictures failing: the report still sent, 204', r.statusCode === 204);
+  console.error = error2;
+  telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
   return handler;
 }
 
@@ -241,6 +275,7 @@ async function form(handler) {
   await context.route(/^(?!https:\/\/sgbus\.test\/)/, (route) => route.fulfill({ status: 404, body: '' }));
   const page = await context.newPage();
   const errors = [];
+  page.on('console', (m) => { if (process.env.DEBUG && m.type() !== 'log') console.log('console:', m.text()); });
   page.on('pageerror', (e) => errors.push(String(e.message)));
   await page.goto(`${ORIGIN}/#84009`);
   await page.waitForFunction(() => window.MainScreen && window.BugReport && !document.getElementById('resultCard').hidden);
@@ -267,9 +302,29 @@ async function form(handler) {
   await page.waitForFunction(() => /Sent/.test(document.getElementById('bugStatus').textContent));
   const p = posted.at(-1) || {};
   ok('8. sends the words, the contact and what it showed', p.text === 'The map is blank <i>here</i>.' && p.contact === 'me@example.com' && p.platform === 'web' && p.page === 'Bus timings, stop 84009' && /Chrome/.test(p.device) && p.lang === 'en', JSON.stringify(p));
-  ok('8. nothing more: no location, favourites or address', Object.keys(p).sort().join() === 'contact,device,lang,page,platform,text,version,website', Object.keys(p).join());
+  ok('8. nothing more: no location, favourites or address', Object.keys(p).sort().join() === 'contact,device,images,lang,page,platform,text,version,website', Object.keys(p).join());
+  ok('8. no pictures unless added', Array.isArray(p.images) && p.images.length === 0);
+
+
   ok('8. it reached Telegram (the stand-in)', sent.length === 1 && sent[0].body.text.includes('The map is blank <i>here</i>.'));
   ok('8. the form is cleared once sent', (await page.inputValue('#bugText')) === '' && (await page.inputValue('#bugContact')) === '');
+
+  // Pictures: one from the phone, and a screenshot of the app under Settings.
+  sent.length = 0;
+  await page.fill('#bugText', 'With pictures, please.');
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+  await page.setInputFiles('#bugPicFile', { name: 'shot.png', mimeType: 'image/png', buffer: png });
+  await page.waitForFunction(() => document.querySelectorAll('#bugShots .bugShot').length === 1);
+  ok('8. a picture from the phone shows, with a way to take it off', await page.$('#bugShots .bugShotX') !== null);
+  await page.click('#bugScreenshot');
+  await page.waitForFunction(() => document.querySelectorAll('#bugShots .bugShot').length === 2 || /Couldn't take/.test(document.getElementById('bugStatus').textContent), null, { timeout: 20000 });
+  ok('8. Screenshot this page adds the app as it is', (await page.$$('#bugShots .bugShot')).length === 2, await page.textContent('#bugStatus'));
+  await page.click('#bugSend');
+  await page.waitForFunction(() => /Sent/.test(document.getElementById('bugStatus').textContent));
+  const withPics = posted.at(-1) || {};
+  ok('8. both sent, as JPEGs', withPics.images?.length === 2 && withPics.images.every((x) => x.startsWith('data:image/jpeg;base64,')), String(withPics.images?.length));
+  ok('8. and on to Telegram as an album', sent.some((x) => x.url.endsWith('/sendMediaGroup')));
+  ok('8. the pictures cleared once sent', (await page.$$('#bugShots .bugShot')).length === 0);
 
   // Not set up: email instead, with the words in it.
   delete process.env.BUG_REPORT_CHAT_ID;

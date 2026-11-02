@@ -301,9 +301,9 @@ final class LeaveTime {
             if (System.currentTimeMillis() > leave + 5 * 60000L) return;
             String clock = TimingsWidget.clock(leave);
             NotificationCompat.Builder n = Notifications.builder(context, Notifications.LEAVE, "leave:" + key,
-                            "Time to leave for " + p.optString("title"),
-                            "Leave by " + clock + " to get to " + p.optString("place") + " for " + TimingsWidget.clock(p.optLong("at"))
-                                    + ": about " + p.optInt("minutes") + " min " + p.optString("how") + ".",
+                            context.getString(R.string.leave_title, p.optString("title")),
+                            context.getString(R.string.leave_text, clock, p.optString("place"), TimingsWidget.clock(p.optLong("at")),
+                                    p.optInt("minutes"), p.optString("how")),
                             p.optString("url"))
                     .setCategory(NotificationCompat.CATEGORY_REMINDER)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)

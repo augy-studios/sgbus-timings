@@ -8,7 +8,7 @@
 // board sent while it was away.
 
 import { trips, rateLimited, storeConfigured } from '../../_push/store.js';
-import { ttlSeconds } from '../../_push/trip.js';
+import { live, ttlSeconds } from '../../_push/trip.js';
 import { ValidationError, isId, parseTrip } from '../../_push/validate.js';
 
 const RATE_LIMIT = 60; // requests per IP per minute
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     if (req.method === 'PUT') {
       const now = Date.now();
       const sent = parseTrip(req.body, now);
-      const trip = merge(await trips.get(id), sent);
+      const trip = merge(await trips.get(id), sent, now);
       await trips.set(id, trip, ttlSeconds(trip, now));
       return res.status(200).json({ tripId: trip.tripId, leg: trip.leg, legStartedAt: trip.legStartedAt, alerted: trip.alerted, readied: trip.readied });
     }
@@ -56,11 +56,19 @@ export default async function handler(req, res) {
 //
 // And when you've moved the trip by hand since (Back or Next): you know which part you're on,
 // so the app's place, alerts and Get ready to board stand outright, back a part or not.
-function merge(old, sent) {
+//
+// And while the app has a recent good fix (live, fixAt): it's following you with your location,
+// so its place stands over a part the server's clock moved on to, and that part's alert and
+// any after it are the app's, not the server's.
+export function merge(old, sent, now = Date.now()) {
   if (!old || old.tripId !== sent.tripId) return { ...sent, track: null };
   if (sent.movedAt > (old.movedAt || 0)) return { ...sent, track: null };
   // Get ready to board, once given by either, stays given, realigned or not.
   const readied = sent.readied.map((r, i) => r || Boolean(old.readied?.[i]));
+  if (live(sent, now) && old.leg > sent.leg) {
+    const before = (xs, mine) => mine.map((x, i) => (i < sent.leg ? x || Boolean(xs?.[i]) : x));
+    return { ...sent, alerted: before(old.alerted, sent.alerted), readied: before(old.readied, sent.readied), track: null };
+  }
   if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, readied, track: null };
   const alerted = sent.alerted.map((a, i) => a || Boolean(old.alerted[i]));
   // The share link always as the app has it: started, or stopped, since it last sent.

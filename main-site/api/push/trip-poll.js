@@ -8,7 +8,7 @@ import webpush from 'web-push';
 import { sendPush } from '../_push/send.js';
 import { fetchBusPositions, fetchNextArrival } from '../_push/lta.js';
 import { storeConfigured, takeLock, trips } from '../_push/store.js';
-import { boardStep, step, ttlSeconds, waitingToBoard } from '../_push/trip.js';
+import { boardStep, live, say, step, ttlSeconds, waitingToBoard } from '../_push/trip.js';
 import { etaFromTrip, updateEta } from '../_lib/share-links.js';
 import { supabaseConfigured } from '../_lib/supabase.js';
 
@@ -70,16 +70,21 @@ async function poll(accountKey) {
   let sent = 0;
   await Promise.all(all.map(async ([id, trip]) => {
     try {
+      // The app's following it itself, with your location: nothing to do but keep it.
+      if (live(trip, now)) {
+        await trips.update(id, trip, ttlSeconds(trip, now));
+        return;
+      }
       const leg = trip.legs[trip.leg];
       const buses = leg.kind === 'bus' && leg.service && leg.alight ? await positions(leg.alight, leg.service) : null;
       const { alert, done } = step(trip, buses?.length ? buses : null, now);
 
-      if (alert && (await send(id, trip, { type: 'get-off', tripId: trip.tripId, leg: alert.leg, body: alert.text, quiet: trip.quiet || undefined }))) sent++;
+      if (alert && (await send(id, trip, { type: 'get-off', title: say(trip, 'alertTitle'), tripId: trip.tripId, leg: alert.leg, body: alert.text, quiet: trip.quiet || undefined }))) sent++;
       // Still waiting for the bus, after this minute's step: is it a minute away?
       if (!done && waitingToBoard(trip)) {
         const l = trip.legs[trip.leg];
         const board = boardStep(trip, await nextArrival(l.board, l.service));
-        if (board && (await send(id, trip, { type: 'board', title: 'Get ready to board', tripId: trip.tripId, leg: board.leg, body: board.text }))) sent++;
+        if (board && (await send(id, trip, { type: 'board', title: say(trip, 'boardTitle'), tripId: trip.tripId, leg: board.leg, body: board.text }))) sent++;
       }
       if (trip.share) await shareProgress(trip, done, now);
       if (done) await trips.delete(id);

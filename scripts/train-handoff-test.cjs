@@ -24,6 +24,10 @@
 //   5. A faster way, with a stop on the way still ahead, is looked for to the stop, not the end;
 //      tripFromNav marks the leg after the stop with it.
 //   6. No page errors.
+//   7. On a bus, with good fixes that miss the line between its stops for ten minutes, the
+//      clock takes it no more than a stop past where the trip was last sure of.
+//   8. On a route that comes back along the other side of the road, a fix nearer a stop on the
+//      way back doesn't send the trip there: nothing could have got that far yet.
 const path = require('path');
 const fs = require('fs');
 
@@ -168,6 +172,49 @@ const settle = (page) => page.waitForTimeout(700);
     s = await state(page);
     ok('2. standing at the stop: waiting again', !s.boarded && s.stopsLeft === 5, JSON.stringify(s));
     ok('6. no page errors (2)', errors.length === 0, errors.join(' | '));
+    await context.close();
+  }
+
+  // ---- 7. good fixes off the route's line, on board ----
+  {
+    const { context, page, errors } = await site(browser);
+    const legs = [
+      { kind: 'bus', label: 'Bus 183', to: 'Coll of Design', service: '183', points: [0, -400, -800, -1200, -1600, -2000].map((m) => [1.3005, lngAt(m)]), minutes: 12, wait: 0 },
+      { kind: 'walk', label: 'Walk', to: 'LT7A', points: [[1.3005, lngAt(-2000)], [1.302, lngAt(-2000)]], minutes: 3, wait: 0 },
+    ];
+    await page.evaluate((legs) => Trip.start({ title: 'To LT7A', legs }), legs);
+    await fixes(page, [0, 0, 0, -100, -200, -300, -450]);
+    await settle(page);
+    let s = await state(page);
+    ok('7. on board', s.boarded && s.stopsLeft === 4, JSON.stringify(s));
+    // Ten minutes of good fixes 600 m off the line between the stops (a road the line misses).
+    await fixes(page, Array(40).fill(-600), 15, 1.3005 + 0.0055);
+    await page.waitForTimeout(16000);
+    s = await state(page);
+    ok('7. the clock no further than a stop past where it was sure', s.leg === 0 && !s.arrived && s.stopsLeft >= 3, JSON.stringify(s));
+    ok('6. no page errors (7)', errors.length === 0, errors.join(' | '));
+    await context.close();
+  }
+
+  // ---- 8. a route that comes back along the other side of the road ----
+  {
+    const { context, page, errors } = await site(browser);
+    const out = [0, -400, -800, -1200].map((m) => [1.3005, lngAt(m)]);
+    const back = [-1200, -800, -400, 0].map((m) => [1.3010, lngAt(m)]);
+    const legs = [
+      { kind: 'bus', label: 'Bus 225G', to: 'Opp Start', service: '225G', points: [...out, ...back], minutes: 16, wait: 0 },
+    ];
+    await page.evaluate((legs) => Trip.start({ title: 'Round', legs }), legs);
+    await fixes(page, [0, 0, 0, -100, -200, -300, -400]);
+    await settle(page);
+    let s = await state(page);
+    ok('8. on board, outbound', s.boarded && s.stopsLeft >= 5, JSON.stringify(s));
+    // A fix nearer the stop on the way back, across the road.
+    await fixes(page, [-420], 3, 1.3009);
+    await settle(page);
+    s = await state(page);
+    ok('8. not sent ahead to the way back', s.stopsLeft >= 5, JSON.stringify(s));
+    ok('6. no page errors (8)', errors.length === 0, errors.join(' | '));
     await context.close();
   }
 

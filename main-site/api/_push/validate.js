@@ -19,6 +19,9 @@ const ID_RE = /^[A-Za-z0-9-]{8,64}$/;
 const FCM_RE = /^[A-Za-z0-9_:\-]{100,400}$/;
 const B64URL_RE = /^[A-Za-z0-9_-]+=*$/;
 
+// The words an app may send for its alerts (js/trip.js, serverWords; api/_push/trip.js, say).
+export const WORD_KEYS = ['lang', 'alertTitle', 'boardTitle', 'getOffNow', 'getOffOne', 'getOffOneChange', 'getOffMany', 'getOffManyChange', 'boardArriving', 'boardOneMin'];
+
 export class ValidationError extends Error {}
 
 function fail(message) {
@@ -111,6 +114,16 @@ export function parseTrip(body, now = Date.now()) {
   }
   if (body.realignedAt != null && !isNum(body.realignedAt, 0, now + DAY_MS)) fail('bad realignedAt');
   if (body.movedAt != null && !isNum(body.movedAt, 0, now + DAY_MS)) fail('bad movedAt');
+  if (body.fixAt != null && !isNum(body.fixAt, 0, now + DAY_MS)) fail('bad fixAt');
+  // The alerts' words in the app's language (js/trip.js, serverWords): each a short string, or
+  // left out, and the English below used. An older app doesn't send them.
+  const words = {};
+  if (body.words && typeof body.words === 'object') {
+    for (const key of WORD_KEYS) {
+      const v = body.words[key];
+      if (typeof v === 'string' && v.trim() && v.length <= 200) words[key] = v;
+    }
+  }
 
   return {
     tripId: body.tripId,
@@ -125,6 +138,10 @@ export function parseTrip(body, now = Date.now()) {
     realignedAt: Math.min(now, body.realignedAt || 0),
     // When the trip was last moved on or back by hand (Back or Next); an older app doesn't say.
     movedAt: Math.min(now, body.movedAt || 0),
+    // When the app last had a good fix of you: while it's recent (LIVE_MS, api/_push/trip.js),
+    // the app's following the trip itself. An older app doesn't say.
+    fixAt: Math.min(now, body.fixAt || 0),
+    words,
     // False while the app waits to be sure you're on the bus; an older app doesn't say.
     clockRuns: body.clockRuns !== false,
     alerted: body.alerted.map(Boolean),

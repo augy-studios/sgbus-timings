@@ -184,9 +184,9 @@ final class Routines {
             for (int i = 0; b != null && i < b.length(); i++) buses.add(b.optString(i).toUpperCase(Locale.ROOT));
             String body;
             try {
-                body = NearStops.timingLines(code, buses);
+                body = NearStops.timingLines(c, code, buses);
             } catch (Exception e) {
-                body = "Couldn't get the timings just now. Tap for them.";
+                body = c.getString(R.string.routine_failed);
             }
             // Opens on just the routine's buses: "#84009,174,175" (2.2.2; the site took only one
             // before, so 2.2.1 and older linked a routine of several to the whole stop).

@@ -1,11 +1,13 @@
-// The first open's choice (help desk #3): Minimal, the essentials only, or Full, everything on,
-// as the app has always opened. Asked once, in a window before the welcome (js/tour.js), so the
-// welcome then shows only what's on.
+// The first open's choice (help desk #3): Minimal, the essentials only; Standard, most of it; or
+// Full, everything on, as the app has always opened. Asked once, in a window before the welcome
+// (js/tour.js), so the welcome then shows only what's on.
 //
 // - Minimal turns off Glance, Service alerts and Your trips (js/main-screen.js, setShown) and
 //   every optional Edge Tray button (script.js, setTrayExtra): the same switches as Settings,
 //   Edge Tray buttons, so Settings shows them and js/sync.js syncs them. Bus timings, Favourites,
-//   Navigate and Places stay.
+//   Navigate and Places stay. Coin pop-ups off (js/coins.js, setPops).
+// - Standard (Augy, 2 November 2026) is Full less the Edge Tray's uwuCoins, Buy Augy a Coffee,
+//   Receive nearby, Telegram bot and Card value buttons (STANDARD_OFF), with coin pop-ups off.
 // - Full changes nothing. The window put away without Start (Back, a tap around it, Esc) is Full.
 // - Only someone new is asked: nothing of the app's in storage as the page loads ("sgbus" keys),
 //   checked here before anything writes. They're kept as "ask" under KEY until asked, and asked
@@ -39,6 +41,14 @@
   function minimal() {
     for (const id of MainScreen.CAN_HIDE) MainScreen.setShown(id, false);
     document.querySelectorAll('#trayExtrasPick [data-tray-show]').forEach((btn) => window.setTrayExtra(btn.dataset.trayShow, false));
+    window.Coins?.setPops(false);
+  }
+
+  // Standard: everything but these Edge Tray buttons, and no coin pop-ups.
+  const STANDARD_OFF = ['coins', 'coffee', 'receive', 'telegram', 'card'];
+  function standard() {
+    for (const id of STANDARD_OFF) window.setTrayExtra(id, false);
+    window.Coins?.setPops(false);
   }
 
   let after = null;
@@ -60,6 +70,7 @@
   function closed() {
     if (state !== 'ask') return;
     if (picked === 'minimal') minimal();
+    else if (picked === 'standard') standard();
     done();
     const then = after;
     after = null;

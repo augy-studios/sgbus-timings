@@ -64,13 +64,13 @@ final class Notifications {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager manager = context.getSystemService(NotificationManager.class);
 
-        NotificationChannel alerts = new NotificationChannel(ALERTS, "Service alerts",
+        NotificationChannel alerts = new NotificationChannel(ALERTS, context.getString(R.string.ch_alerts),
                 NotificationManager.IMPORTANCE_DEFAULT);
-        alerts.setDescription("Train disruptions and traffic incidents, as you chose in Service Alerts");
+        alerts.setDescription(context.getString(R.string.ch_alerts_about));
 
-        NotificationChannel getOff = new NotificationChannel(GET_OFF, "Get Off Alert",
+        NotificationChannel getOff = new NotificationChannel(GET_OFF, context.getString(R.string.ch_get_off),
                 NotificationManager.IMPORTANCE_HIGH);
-        getOff.setDescription("Two stops before you get off, on a trip");
+        getOff.setDescription(context.getString(R.string.ch_get_off_about));
         getOff.enableVibration(true);
         getOff.setVibrationPattern(OFF);
         getOff.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
@@ -80,51 +80,51 @@ final class Notifications {
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build());
 
-        NotificationChannel board = new NotificationChannel(BOARD, "Get ready to board",
+        NotificationChannel board = new NotificationChannel(BOARD, context.getString(R.string.ch_board),
                 NotificationManager.IMPORTANCE_HIGH);
-        board.setDescription("On a trip, when the bus you're waiting for is a minute away");
+        board.setDescription(context.getString(R.string.ch_board_about));
         board.enableVibration(true);
         board.setVibrationPattern(BOARD_BUZZ);
         board.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
-        NotificationChannel trip = new NotificationChannel(TRIP, "Trip in progress",
+        NotificationChannel trip = new NotificationChannel(TRIP, context.getString(R.string.ch_trip),
                 NotificationManager.IMPORTANCE_LOW);
-        trip.setDescription("Shown while a trip follows where you are, for the Get Off Alert");
+        trip.setDescription(context.getString(R.string.ch_trip_about));
         trip.setShowBadge(false);
 
-        NotificationChannel getOffQuiet = new NotificationChannel(GET_OFF_QUIET, "Get Off Alert, earphones only",
+        NotificationChannel getOffQuiet = new NotificationChannel(GET_OFF_QUIET, context.getString(R.string.ch_get_off_quiet),
                 NotificationManager.IMPORTANCE_HIGH);
-        getOffQuiet.setDescription("The Get Off Alert when Settings has its sound in earphones only: it buzzes here");
+        getOffQuiet.setDescription(context.getString(R.string.ch_get_off_quiet_about));
         getOffQuiet.enableVibration(true);
         getOffQuiet.setVibrationPattern(OFF);
         getOffQuiet.setSound(null, null);
         getOffQuiet.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
-        NotificationChannel near = new NotificationChannel(NEAR, "Near a stop",
+        NotificationChannel near = new NotificationChannel(NEAR, context.getString(R.string.ch_near),
                 NotificationManager.IMPORTANCE_LOW);
-        near.setDescription("The next buses at a stop you picked, as you walk up to it");
+        near.setDescription(context.getString(R.string.ch_near_about));
         near.setShowBadge(false);
 
-        NotificationChannel lastBus = new NotificationChannel(LAST_BUS, "Last bus",
+        NotificationChannel lastBus = new NotificationChannel(LAST_BUS, context.getString(R.string.ch_last_bus),
                 NotificationManager.IMPORTANCE_HIGH);
-        lastBus.setDescription("Before the last bus you asked to be reminded of");
+        lastBus.setDescription(context.getString(R.string.ch_last_bus_about));
 
-        NotificationChannel leave = new NotificationChannel(LEAVE, "Time to leave",
+        NotificationChannel leave = new NotificationChannel(LEAVE, context.getString(R.string.ch_leave),
                 NotificationManager.IMPORTANCE_HIGH);
-        leave.setDescription("When to set off for an event in your phone's calendar");
+        leave.setDescription(context.getString(R.string.ch_leave_about));
 
-        NotificationChannel onABus = new NotificationChannel(ON_A_BUS, "On a bus?",
+        NotificationChannel onABus = new NotificationChannel(ON_A_BUS, context.getString(R.string.ch_on_a_bus),
                 NotificationManager.IMPORTANCE_LOW);
-        onABus.setDescription("When you seem to be riding with no trip running, offers to start one");
+        onABus.setDescription(context.getString(R.string.ch_on_a_bus_about));
         onABus.setShowBadge(false);
 
-        NotificationChannel releases = new NotificationChannel(RELEASES, "New versions",
+        NotificationChannel releases = new NotificationChannel(RELEASES, context.getString(R.string.ch_releases),
                 NotificationManager.IMPORTANCE_DEFAULT);
-        releases.setDescription("When a new version of the app is out, if you turned it on in Service alerts");
+        releases.setDescription(context.getString(R.string.ch_releases_about));
 
-        NotificationChannel routine = new NotificationChannel(ROUTINE, "Routines",
+        NotificationChannel routine = new NotificationChannel(ROUTINE, context.getString(R.string.ch_routine),
                 NotificationManager.IMPORTANCE_DEFAULT);
-        routine.setDescription("A stop's next buses at the times you set in Settings, Routines");
+        routine.setDescription(context.getString(R.string.ch_routine_about));
 
         manager.createNotificationChannel(alerts);
         manager.createNotificationChannel(routine);

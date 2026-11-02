@@ -159,6 +159,8 @@
       }
     }
     keep(rec);
+    // Towards First to last and Ends of the island (js/eggs.js).
+    window.Eggs?.rideDone?.(leg);
     checkUnlock(rec);
     // Nearly there: the celebration's three.js fetched ahead, in case the last line's offline.
     if (!linesFound() && LINES.filter((l) => !(rec.lines[l]?.n >= 1)).length <= 2) window.Celebrate?.prefetch();

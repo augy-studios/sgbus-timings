@@ -124,6 +124,9 @@ export const FEATS = {
   loop: { name: 'There and back again', did: 'Went somewhere and came back to where they started.', colour: '#fa9e0d' },
   long: { name: 'The long way round', did: 'Took a trip of over three hours.', colour: '#2f5fd0' },
   ktm: { name: 'Down the old railway', did: 'Travelled between two places on the old KTM railway line.', colour: '#2e7d32' },
+  first: { name: 'First to last', did: 'Took buses at stop 01012 and at stop 99189, the first and last stop codes.', colour: '#c2185b' },
+  hundred: { name: '100 rides', did: 'Took 100 rides on buses and trains.', colour: '#c99a06' },
+  ends: { name: 'Ends of the island', did: 'Got off a train at Tuas Link, Woodlands North, Punggol Coast and Changi Airport.', colour: '#00897b' },
 };
 const FEAT_IDS = Object.keys(FEATS);
 

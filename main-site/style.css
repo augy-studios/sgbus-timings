@@ -4244,3 +4244,18 @@ body.touring { overflow: hidden; }
 }
 .mdRipple.done { opacity: 0; }
 @keyframes md-ripple { to { transform: scale(1); } }
+
+/* Help and extras' Show uwuCoins off (js/coins.js): the coins put away, still counted */
+body.coins-hidden .coinsOnly,
+body.coins-hidden #coinsBtn { display: none !important; }
+
+/* Which way round a Circle Line ride goes, in the trip's timeline (js/trip.js, loopChip) */
+.loopWay { display: inline-flex; align-items: center; gap: 2px; margin-left: 6px; padding: 1px 7px 1px 4px; border-radius: 999px; font-size: 0.78em; font-weight: 700; letter-spacing: 0.02em; vertical-align: middle; background: color-mix(in srgb, #fa9e0d 22%, transparent); color: inherit; }
+.loopWay svg { width: 14px; height: 14px; }
+
+/* Report a bug's pictures (js/bug-report.js) */
+.bugShots { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
+.bugShot { position: relative; width: 72px; height: 96px; border-radius: 10px; overflow: hidden; border: 1px solid var(--glass-border, rgba(0,0,0,.15)); }
+.bugShot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bugShotX { position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; line-height: 24px; padding: 0; cursor: pointer; }
+.bugShotBtns { flex-wrap: wrap; gap: 8px; }

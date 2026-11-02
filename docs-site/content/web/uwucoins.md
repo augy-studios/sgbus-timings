@@ -32,6 +32,25 @@ in the [Edge Tray](main-screen.md#pages-in-the-edge-tray) shows how many you
 have. Tap it for the wheel. **uwuCoins** in Settings' **Edge Tray buttons** takes
 it away.
 
+## Hide them
+
+<figure>
+<img src="/screenshots/web/settings-coins-switches.png" alt="Settings, Help and extras: Show uwuCoins, On and Off, and what Off does; then Coin pop-ups, On and Off, and what it covers." width="396" height="275" loading="lazy">
+<figcaption>Show uwuCoins and Coin pop-ups, in Help and extras.</figcaption>
+</figure>
+
+Two switches in Settings' **Help and extras**:
+
+- **Show uwuCoins** off hides them everywhere: the wheel, the coin in the Edge
+  Tray and its switch, the coins in a feat's window and Achievements, and every
+  pop-up. Trips and feats still earn them while they're hidden, so they're all
+  there when you turn it back on. Feats are still said and listed, without the
+  coins. The wheel's hidden too, so no eggs are found meanwhile.
+- **Coin pop-ups** off stops the coin floating up after a trip, and the window
+  for coins from past trips. The coins still come in.
+
+Minimal and Standard, the first time the app opens, start with the pop-ups off.
+
 ## Trips from before uwuCoins
 
 If you took trips before uwuCoins came, they earn their coins too, once. The
@@ -70,7 +89,7 @@ never counted twice, and nor are trips another device syncs to this one later.
 ## Spin the wheel
 
 <figure>
-<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 100, then how it works, 1 of 6 feats done with five still hidden, and 1 of 6 Easter eggs found." width="358" height="520" loading="lazy">
+<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 100, then how it works, 1 of 9 feats done and 1 of 9 Easter eggs found, and See your achievements." width="358" height="515" loading="lazy">
 <figcaption>The wheel, in Settings' Help and extras.</figcaption>
 </figure>
 
@@ -83,20 +102,25 @@ too. Under the wheel, how many feats you've done and eggs you've found, and
 ## Achievements
 
 <figure>
-<img src="/screenshots/web/settings-achievements.png" alt="Settings' Achievements: 1 of 6 feats done, then each feat as a card with a bar: Every line ridden, Ride every MRT and LRT line, 6 of 9; 12, 34, 56, 78, 90, 3 of 5, its Easter egg found; 9, 87, 65, 43, 21, 2 of 5; There and back again and The long way round, Not yet; and Down the old railway, Done. Under them, 1 of 6 Easter eggs found." width="358" height="772" loading="lazy">
+<img src="/screenshots/web/settings-achievements.png" alt="Settings&#39; Achievements: 1 of 9 feats done, then each feat as a card with a bar: Every line ridden, 6 of 9; 12, 34, 56, 78, 90, 3 of 5, its Easter egg found; 9, 87, 65, 43, 21, 2 of 5; There and back again and The long way round, Not yet; Down the old railway, Done; First to last, 100 rides and Ends of the island. Under them, 1 of 9 Easter eggs found." width="358" height="1161" loading="lazy">
 <figcaption>Achievements: each feat, and how far along it is.</figcaption>
 </figure>
 
-**Achievements** in [Settings](settings.md) lists the six feats: what each asks,
+**Achievements** in [Settings](settings.md) lists the nine feats: what each asks,
 how far along you are, such as **6 of 9** lines ridden, and **Done** once it's
 done. A feat's Easter egg comes from the wheel, not the feat, and says so once
 you've found it.
+
+<figure>
+<img src="/screenshots/web/achievements-new-feats.png" alt="Achievements: 1 of 9 feats done, the first six feats, then First to last, 1 of 2; 100 rides, 87 of 100; and Ends of the island, 3 of 4, each with a bar." width="358" height="1139" loading="lazy">
+<figcaption>The three newest feats: First to last, 100 rides and Ends of the island.</figcaption>
+</figure>
 
 ### Share a feat
 
 Each feat you've done has a **Share** button, and **Share your achievements**,
 under how many you've done, shares them all. Either opens a card, a picture of
-the feat with your name from Settings and the day you did it, or of all six feats
+the feat with your name from Settings and the day you did it, or of all nine feats
 with yours filled in, and a short link to it.
 
 - **Telegram** and **WhatsApp** send the link, which shows the card in the chat.

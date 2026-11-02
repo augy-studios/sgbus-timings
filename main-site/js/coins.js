@@ -20,7 +20,7 @@
 // (#coinsBtn, data-tray-extra="coins") says the balance and opens the wheel.
 //
 // Window.Coins = { balance(), add(n, { why }, { quiet }), tripDone(trip), forTrip(trip),
-// forPast(trip), tripsPaid(), spin(), open() }. Trips from before uwuCoins get theirs once, by
+// forPast(trip), tripsPaid(), spin(), open(), shown(), pops(), setShown(on), setPops(on) }. Trips from before uwuCoins get theirs once, by
 // js/retrofit.js (forPast).
 // The console's simulateCoins(n) gives coins for a look (below). Plain script: exports go on
 // window.
@@ -63,14 +63,39 @@
   }
   const balance = () => read().balance;
 
-  // `quiet`: no coin floating up, for coins said another way (js/retrofit.js's window).
+  // `quiet`: no coin floating up, for coins said another way (js/retrofit.js's window). Nor
+  // with uwuCoins hidden or its pop-ups off (shown, pops): the coins still come in.
   function add(n, info = {}, { quiet = false } = {}) {
     if (!(n > 0)) return;
     const v = read();
     v.balance += n;
     v.log.unshift({ at: Date.now(), n, ...info });
     write(v);
-    if (!quiet) toast(n);
+    if (!quiet && shown() && pops()) toast(n);
+  }
+
+  // ---------- shown or hidden, and the pop-ups ----------
+
+  // Help and extras' Show uwuCoins (SHOWN_KEY) and Coin pop-ups (POPS_KEY), "off" or not set.
+  // Hidden, body.coins-hidden puts away everything marked .coinsOnly (the wheel, the Edge Tray's
+  // coin and its switch, Achievements' word on coins) and the coin itself, and nothing pops up,
+  // but trips and feats still earn their coins. Not synced, as the coins aren't. The first open's
+  // Minimal and Standard start with the pop-ups off (js/first-run.js).
+  const SHOWN_KEY = 'sgbus_coins_shown';
+  const POPS_KEY = 'sgbus_coins_pops';
+  const getFlag = (key) => { try { return localStorage.getItem(key) !== 'off'; } catch { return true; } };
+  const setFlag = (key, on) => { try { if (on) localStorage.removeItem(key); else localStorage.setItem(key, 'off'); } catch { /* this visit only */ } };
+  const shown = () => getFlag(SHOWN_KEY);
+  const pops = () => getFlag(POPS_KEY);
+  function setShown(on) { setFlag(SHOWN_KEY, on); applyShown(); }
+  function setPops(on) { setFlag(POPS_KEY, on); applyShown(); }
+  function applyShown() {
+    document.body?.classList.toggle('coins-hidden', !shown());
+    const mark = (b, on) => { b.classList.toggle('active', on); b.setAttribute('aria-pressed', String(on)); };
+    document.querySelectorAll('[data-coins-show]').forEach((b) => mark(b, (b.dataset.coinsShow === 'on') === shown()));
+    document.querySelectorAll('[data-coins-pops]').forEach((b) => mark(b, (b.dataset.coinsPops === 'on') === pops()));
+    const row = $('coinsPopsSetting');
+    if (row) row.hidden = !shown();
   }
 
   // ---------- a trip's coins ----------
@@ -316,6 +341,9 @@
     // Achievements, Settings' group of their own (js/eggs.js).
     $('coinAchievements')?.addEventListener('click', () => window.openSettingsGroup?.('achievements'));
     $('coinsBtn')?.addEventListener('click', open);
+    document.querySelectorAll('[data-coins-show]').forEach((b) => b.addEventListener('click', () => setShown(b.dataset.coinsShow === 'on')));
+    document.querySelectorAll('[data-coins-pops]').forEach((b) => b.addEventListener('click', () => setPops(b.dataset.coinsPops === 'on')));
+    applyShown();
     for (const ev of ['coins:change', 'eggs:found', 'eggs:feat']) window.addEventListener(ev, () => { if (!spinning) render(); });
     render();
   }
@@ -347,5 +375,5 @@
     return `${next} uwuCoins`;
   };
 
-  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, SPIN_COST };
+  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, shown, pops, setShown, setPops, SPIN_COST };
 })();

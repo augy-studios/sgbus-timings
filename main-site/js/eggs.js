@@ -1,6 +1,6 @@
 // Feats, Easter eggs, and the secrets the eggs unlock (Augy, 1 November 2026).
 //
-// Six feats, each done once, and each worth FEAT_COINS uwuCoins (js/coins.js):
+// Nine feats, each done once, and each worth FEAT_COINS uwuCoins (js/coins.js):
 //
 //   lines  every MRT and LRT line ridden (js/rides.js, UNLOCK)
 //   up     buses 12, 34, 56, 78 and 90 all ridden, ever, in any order (js/rides.js's record)
@@ -11,6 +11,13 @@
 //   ktm    a trip between two of the old KTM railway's places, the same: Woodlands Train
 //          Checkpoint's bus stop, Cantonment MRT (by the old Tanjong Pagar station) and King
 //          Albert Park MRT (by the old Bukit Timah station), each within KTM_M
+//   first  First to last (Augy, 2 November 2026): on or off a bus at stop 01012 and at stop
+//          99189 (FIRST_LAST), the first and last codes, over any trips, in either order
+//   hundred  100 rides (HUNDRED), buses and trains together, as js/rides.js counts them
+//   ends   Ends of the island: off a train at Tuas Link, Woodlands North, Punggol Coast and
+//          Changi Airport (ENDS, within ENDS_M), over any trips
+// first and ends are kept as they're done (MARKS_KEY, { first: { code: when }, ends: { code:
+// when } }) from each real ride (rideDone, from js/rides.js).
 //
 // A ride counts only once it's shown to be real (js/rides.js, verdict), and a trip feat needs at
 // least one such ride on it.
@@ -56,6 +63,17 @@
   const PHONE_KEY = 'sgbus_phone_colours_unlocked';
   const MATERIAL_KEY = 'sgbus_material_unlocked'; // index.html's head
   const TOLD_KEY = 'sgbus_eggs_told';
+  const MARKS_KEY = 'sgbus_feat_marks';
+  const FIRST_LAST = ['01012', '99189'];
+  const HUNDRED = 100;
+  // The island's four ends, by their stations (data/rail.json).
+  const ENDS_M = 400;
+  const ENDS = {
+    EW33: [1.340429, 103.636961], // Tuas Link
+    TE1: [1.448646, 103.785519], // Woodlands North
+    NE18: [1.415018, 103.910329], // Punggol Coast
+    CG2: [1.357338, 103.988565], // Changi Airport
+  };
   const FEAT_COINS = 100;
   const TRICK_MS = 30 * 1000;
   // Three taps this close together are a triple tap.
@@ -81,6 +99,9 @@
     loop: { goal: () => tr('eggs.loop.goal', 'Go somewhere by way of a stop, and come back to where you started.'), name: () => tr('eggs.loop', 'There and back again'), how: () => tr('eggs.loop.how', 'You went somewhere and came back to where you started.'), preset: { id: 'loop', base: '#fa9e0d', name: () => tr('colours.preset.loop', 'Loop') } },
     long: { goal: () => tr('eggs.long.goal', 'Take a trip of over three hours.'), name: () => tr('eggs.long', 'The long way round'), how: () => tr('eggs.long.how', 'You took a trip of over three hours.'), preset: { id: 'longhaul', base: '#2f5fd0', name: () => tr('colours.preset.longhaul', 'Long haul') } },
     ktm: { goal: () => tr('eggs.ktm.goal', 'Travel between two places on the old KTM railway line.'), name: () => tr('eggs.ktm', 'Down the old railway'), how: () => tr('eggs.ktm.how', 'You travelled between two places on the old KTM railway line.'), preset: { id: 'ktm', base: '#2e7d32', name: () => tr('colours.preset.ktm', 'KTM') } },
+    first: { goal: () => tr('eggs.first.goal', 'Get on or off a bus at stop 01012 and at stop 99189, the first and last stop codes.'), name: () => tr('eggs.first', 'First to last'), how: () => tr('eggs.first.how', 'You took buses at stop 01012 and at stop 99189, the first and last stop codes.'), preset: { id: 'firstlast', base: '#c2185b', name: () => tr('colours.preset.firstlast', 'End to end') } },
+    hundred: { goal: () => tr('eggs.hundred.goal', 'Take 100 rides on buses and trains.'), name: () => tr('eggs.hundred', '100 rides'), how: () => tr('eggs.hundred.how', 'You took 100 rides on buses and trains.'), preset: { id: 'century', base: '#c99a06', name: () => tr('colours.preset.century', 'Century') } },
+    ends: { goal: () => tr('eggs.ends.goal', 'Get off a train at Tuas Link, Woodlands North, Punggol Coast and Changi Airport.'), name: () => tr('eggs.ends', 'Ends of the island'), how: () => tr('eggs.ends.how', 'You got off a train at Tuas Link, Woodlands North, Punggol Coast and Changi Airport.'), preset: { id: 'compass', base: '#00897b', name: () => tr('colours.preset.compass', 'Compass') } },
   };
   const IDS = Object.keys(EGGS);
 
@@ -221,7 +242,9 @@
   function announce(id) {
     if (told().includes(`feat:${id}`)) return;
     tell(`feat:${id}`);
-    const coins = tr('eggs.featCoins', '+{n} uwuCoins, for a spin of the wheel in Settings.', { n: FEAT_COINS });
+    // With uwuCoins hidden (js/coins.js), the feat without its coins, or the wheel to spin.
+    const coinsOn = window.Coins?.shown?.() !== false;
+    const coins = coinsOn ? tr('eggs.featCoins', '+{n} uwuCoins, for a spin of the wheel in Settings.', { n: FEAT_COINS }) : '';
     if (id === 'lines' && window.Celebrate) {
       const text = `${tr('eggs.lines.text', 'You’ve ridden every MRT and LRT line.')} ${coins}`;
       for (const el of ['celebrateText', 'unlockText']) { const n = document.getElementById(el); if (n) n.textContent = text; }
@@ -235,7 +258,7 @@
     document.getElementById('eggGot').textContent = coins;
     document.getElementById('eggCount').textContent = tr('eggs.featCount', '{n} of {all} feats done', { n: feats().length, all: IDS.length });
     const go = document.getElementById('eggGo');
-    if (go) { go.dataset.go = 'coins'; go.textContent = tr('coins.spinGo', 'Spin the wheel'); }
+    if (go) { go.hidden = false; go.dataset.go = 'coins'; go.textContent = tr('coins.spinGo', 'Spin the wheel'); go.hidden = !coinsOn; }
     window.openModal('eggModal');
     window.Confetti?.burst?.();
   }
@@ -257,6 +280,15 @@
       } else if (e.buses) {
         need = e.buses.length;
         have = done[id] ? need : e.buses.filter((b) => rec.buses?.[b]?.n >= 1).length;
+      } else if (id === 'hundred') {
+        need = HUNDRED;
+        have = done[id] ? need : Math.min(need, rideCount(rec));
+      } else if (id === 'first') {
+        need = FIRST_LAST.length;
+        have = done[id] ? need : FIRST_LAST.filter((c) => marks().first[c]).length;
+      } else if (id === 'ends') {
+        need = Object.keys(ENDS).length;
+        have = done[id] ? need : Object.keys(ENDS).filter((c) => marks().ends[c]).length;
       }
       return { id, name: e.name(), how: done[id] ? e.how() : e.goal(), done: !!done[id], have, need, egg: !!eggs[id] };
     });
@@ -306,18 +338,43 @@
     document.getElementById('eggGot').textContent = '';
     document.getElementById('eggCount').textContent = tr('eggs.shared.you', 'You: {n} of {all} feats done', { n: feats().length, all: IDS.length });
     const go = document.getElementById('eggGo');
-    if (go) { go.dataset.go = 'achievements'; go.textContent = tr('achievements.see', 'See your achievements'); }
+    if (go) { go.hidden = false; go.dataset.go = 'achievements'; go.textContent = tr('achievements.see', 'See your achievements'); }
     window.openModal('eggModal');
     if (one) window.Confetti?.burst?.();
   }
 
   // ---------- the feats ----------
 
-  // Rides really taken, as js/rides.js keeps them: the bus feats.
+  // Rides really taken, as js/rides.js keeps them: the bus feats, and 100 rides.
+  const rideCount = (rec) => [...Object.values(rec?.lines || {}), ...Object.values(rec?.buses || {})].reduce((sum, x) => sum + (Number(x?.n) || 0), 0);
   function rides(rec) {
     for (const id of ['up', 'down']) {
       if (EGGS[id].buses.every((b) => rec?.buses?.[b]?.n >= 1)) feat(id);
     }
+    if (rideCount(rec) >= HUNDRED) feat('hundred');
+  }
+
+  // A ride judged real (js/rides.js, done): a bus on or off at 01012 or 99189, and a train off
+  // at one of the island's ends, kept towards First to last and Ends of the island.
+  const marks = () => {
+    const v = readJson(MARKS_KEY, {});
+    return { first: v?.first || {}, ends: v?.ends || {} };
+  };
+  function rideDone(leg) {
+    if (!leg || !Array.isArray(leg.points) || leg.points.length < 2) return;
+    const m = marks();
+    const now = Date.now();
+    let changed = false;
+    if (leg.kind === 'bus') {
+      const codes = [leg.board, leg.alight, leg.codes?.[0], leg.codes?.[leg.codes.length - 1]].filter(Boolean).map(String);
+      for (const code of FIRST_LAST) if (codes.includes(code) && !m.first[code]) { m.first[code] = now; changed = true; }
+    } else if (leg.kind === 'train') {
+      const end = leg.points[leg.points.length - 1];
+      for (const [code, at] of Object.entries(ENDS)) if (!m.ends[code] && metres(end, at) <= ENDS_M) { m.ends[code] = now; changed = true; }
+    }
+    if (changed) put(MARKS_KEY, JSON.stringify(m));
+    if (FIRST_LAST.every((c) => m.first[c])) feat('first');
+    if (Object.keys(ENDS).every((c) => m.ends[c])) feat('ends');
   }
 
   // A trip arrived at (js/trip.js): the trip feats.
@@ -416,7 +473,7 @@
     document.getElementById('eggGot').textContent = '';
     document.getElementById('eggCount').textContent = '';
     const go = document.getElementById('eggGo');
-    if (go) { go.dataset.go = 'theme'; go.textContent = tr('eggs.go', 'Open Theme'); }
+    if (go) { go.hidden = false; go.dataset.go = 'theme'; go.textContent = tr('eggs.go', 'Open Theme'); }
     window.openModal('eggModal');
   }
 
@@ -445,7 +502,7 @@
       document.getElementById('eggGot').textContent = tr('eggs.unlockedSecret', 'You’ve unlocked a secret: {what}', { what: unlockedText(fresh) });
       document.getElementById('eggCount').textContent = tr('eggs.count', '{n} of {all} Easter eggs found', { n: list().length, all: IDS.length });
       const go = document.getElementById('eggGo');
-      if (go) { go.dataset.go = 'theme'; go.textContent = tr('eggs.go', 'Open Theme'); }
+      if (go) { go.hidden = false; go.dataset.go = 'theme'; go.textContent = tr('eggs.go', 'Open Theme'); }
       window.openModal('eggModal');
     };
     window.AppBridge?.ready?.(4000).then(() => setTimeout(catchUp, 1500));
@@ -508,5 +565,5 @@
     "Each says more with 'help', such as simulateCoins('help').",
   ].join('\n'));
 
-  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, doneOn, showShared, all: IDS, KTM, FEAT_COINS };
+  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, rideDone, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, doneOn, showShared, all: IDS, KTM, FEAT_COINS };
 })();

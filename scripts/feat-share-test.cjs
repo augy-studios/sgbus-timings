@@ -137,7 +137,7 @@ function ok(name, cond, extra = '') {
     await them.waitForSelector('#eggModal:not(.hidden)');
     const shown = await them.evaluate(() => ['eggTitle', 'eggName', 'eggHow', 'eggCount', 'eggGo'].map((id) => document.getElementById(id).textContent));
     ok('4. who did which feat', shown[0] === 'Augy did a feat!' && shown[1] === 'Down the old railway', `${shown[0]} / ${shown[1]}`);
-    ok('4. their turn, and how far along they are', shown[2] === 'Your turn: Travel between two places on the old KTM railway line.' && shown[3] === 'You: 0 of 6 feats done', `${shown[2]} / ${shown[3]}`);
+    ok('4. their turn, and how far along they are', shown[2] === 'Your turn: Travel between two places on the old KTM railway line.' && shown[3] === 'You: 0 of 9 feats done', `${shown[2]} / ${shown[3]}`);
     await them.click('#eggGo');
     await them.waitForFunction(() => !document.querySelector('[data-settings-group="achievements"]').hidden, null, { timeout: 5000 }).catch(() => {});
     ok('4. its button opens their Achievements', await them.evaluate(() => !document.querySelector('[data-settings-group="achievements"]').hidden));

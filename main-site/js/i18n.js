@@ -13,8 +13,11 @@
 // The words are in before anything else draws: this runs at the end of the page, before the
 // other scripts, and puts the page's marked words in at once, from the copy kept in storage
 // (WORDS_KEY), or with no copy yet, from the file, fetched there and then. The file is fetched
-// again behind the page each time, and a newer one is used from the next open. Settings'
-// Language (set) keeps the choice and opens the page again in it.
+// again behind the page soon after, and again whenever the app comes back to the screen (at most
+// every REFRESH_MS): a newer one is kept and used straight away, the page's marked words put in
+// again and everything drawn after in the new words, so words added in an update don't stay
+// English till the app's next opened (an app left open for days never was). Settings' Language
+// (set) keeps the choice and opens the page again in it.
 //
 // The language is Settings' (LANG_KEY), else the phone's if it's one of these, else English.
 //
@@ -109,12 +112,24 @@
     return null;
   }
 
-  // A newer file, for the next open.
+  // A newer file: kept, and used from now on. Says so with "i18n:updated" on window when its
+  // words differ, for anything drawn already that wants drawing again.
+  var REFRESH_MS = 30 * 60 * 1000;
+  var refreshedAt = 0;
   function refresh(code) {
     if (code === "en" || !window.fetch) return;
+    refreshedAt = Date.now();
     fetch("/i18n/" + code + ".json", { cache: "no-cache" })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (map) { if (map && lang === code) store(WORDS_KEY, JSON.stringify({ lang: code, words: map })); })
+      .then(function (map) {
+        if (!map || lang !== code) return;
+        var fresh = JSON.stringify(map);
+        if (words && JSON.stringify(words) === fresh) return;
+        store(WORDS_KEY, JSON.stringify({ lang: code, words: map }));
+        words = map;
+        apply(document);
+        try { window.dispatchEvent(new CustomEvent("i18n:updated")); } catch (e) { /* nothing listening */ }
+      })
       .catch(function () { /* the copy kept does */ });
   }
 
@@ -129,7 +144,10 @@
   words = load(lang);
   document.documentElement.lang = lang === "zh-SG" ? "zh-Hans-SG" : lang;
   apply(document);
-  setTimeout(function () { refresh(lang); }, 5000);
+  setTimeout(function () { refresh(lang); }, 2000);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible" && Date.now() - refreshedAt >= REFRESH_MS) refresh(lang);
+  });
 
   window.I18n = { lang: function () { return lang; }, languages: LANGUAGES, t: t, apply: apply, set: set };
 })();

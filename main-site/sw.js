@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v149";
+const VERSION = "v150";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -256,7 +256,7 @@ const VIBRATION = [
 async function getOff(data) {
   const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
   clients.forEach((c) => c.postMessage({ type: "get-off", tripId: data.tripId, leg: data.leg, text: data.body }));
-  await self.registration.showNotification("Get Off Alert", {
+  await self.registration.showNotification(data.title || "Get Off Alert", {
     body: data.body || "",
     tag: "get-off",
     renotify: true,

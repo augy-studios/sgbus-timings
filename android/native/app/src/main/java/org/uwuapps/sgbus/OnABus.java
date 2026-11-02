@@ -98,8 +98,8 @@ final class OnABus {
             if (!riding || TripService.running() || now - prefs(context).getLong(SHOWN, 0) < QUIET_MS) return;
             prefs(context).edit().putLong(SHOWN, now).apply();
             NotificationCompat.Builder n = Notifications.builder(context, Notifications.ON_A_BUS, TAG,
-                            "On a bus or train?",
-                            "Start a trip for the Get Off Alert: tap, and pick where you're going.",
+                            context.getString(R.string.on_a_bus_title),
+                            context.getString(R.string.on_a_bus_text),
                             MainActivity.SITE + "/#nav")
                     .setSilent(true)
                     .setTimeoutAfter(SHOW_FOR_MS)

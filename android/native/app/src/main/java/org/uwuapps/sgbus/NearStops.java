@@ -218,7 +218,7 @@ final class NearStops {
     // A stop's next buses, a line each ("22  3 min, 14 min"), soonest first, at most MAX_LINES:
     // just `buses` when it names any. For this and a routine's notification (Routines). Throws
     // when the timings can't be had.
-    static String timingLines(String code, java.util.Set<String> buses) throws Exception {
+    static String timingLines(Context c, String code, java.util.Set<String> buses) throws Exception {
         List<long[]> soonest = new ArrayList<>();
         List<String> services = new ArrayList<>();
         JSONObject res = new JSONObject(WidgetStore.get(MainActivity.SITE + "/api/bus-arrivals?stop=" + URLEncoder.encode(code, "UTF-8")));
@@ -242,7 +242,7 @@ final class NearStops {
             if (i > 0) lines.append('\n');
             lines.append(services.get((int) soonest.get(i)[1]));
         }
-        return lines.length() == 0 ? "No buses due right now." : lines.toString();
+        return lines.length() == 0 ? c.getString(R.string.near_none) : lines.toString();
     }
 
     private static void show(Context c, String code) {
@@ -254,7 +254,7 @@ final class NearStops {
         }
         String body;
         try {
-            body = timingLines(code, java.util.Collections.emptySet());
+            body = timingLines(c, code, java.util.Collections.emptySet());
         } catch (Exception e) {
             body = "Couldn't get the timings just now.";
         }

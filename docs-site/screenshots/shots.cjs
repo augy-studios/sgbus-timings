@@ -13,7 +13,8 @@
 // timings made up (stillArrivals) for the buses its routes have running then, so a shot comes
 // out the same whenever it's taken. The groups after "help desk #13" are always taken still, as
 // are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, past-trips, and the
-// secret pages': eggs, secrets, material and console.
+// secret pages': eggs, secrets, material and console. 2 November 2026's (coins-switch, first-run,
+// feats-new, bug-pictures, trip-ccl) need no live data at all.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -1683,6 +1684,84 @@ async function drawConsole(browser, shots) {
     await page.evaluate(() => document.getElementById('coinAchievements').click());
     await page.waitForTimeout(700);
     await el(page, '[data-settings-group="achievements"]', 'console-rides-app.png');
+    await ctx.close();
+  }
+  // 2 November 2026's (Augy's list): Help and extras' uwuCoins switches, the first open's three
+  // ways to start, the three new feats in Achievements and one's window, Report a bug with
+  // pictures, and a Circle Line ride's way round on a trip. None needs live data.
+  if (want('coins-switch')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 1600 });
+    await settingsGroup(page, 'help');
+    const box = await page.evaluate(() => {
+      const top = document.querySelector('[data-i18n="coins.showTitle"]');
+      top.scrollIntoView({ block: 'start' });
+      const a = top.getBoundingClientRect();
+      const b = document.getElementById('coinsPopsSetting').getBoundingClientRect();
+      const card = top.closest('.modal').getBoundingClientRect();
+      return { x: card.x, y: a.y - 12, width: card.width, height: b.bottom + 12 - (a.y - 12) };
+    });
+    await page.screenshot({ path: OUT + 'settings-coins-switches.png', clip: box });
+    console.log('wrote settings-coins-switches.png', Math.round(box.width), Math.round(box.height));
+    await ctx.close();
+  }
+  if (want('first-run')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 900, extra: { sgbus_first_run: 'ask' } });
+    await page.waitForFunction(() => !document.getElementById('firstRunModal').classList.contains('hidden'), null, { timeout: 15000 });
+    await page.click('#firstRunForm label:has(input[value="standard"])');
+    await blur(page);
+    await page.waitForTimeout(300);
+    await el(page, '#firstRunForm', 'first-run-modes.png');
+    await ctx.close();
+  }
+  if (want('feats-new')) {
+    const now = Date.now();
+    const extra = {
+      sgbus_feats: JSON.stringify({ ktm: now - 86400000 }),
+      sgbus_feat_marks: JSON.stringify({ first: { '01012': now }, ends: { EW33: now, TE1: now, CG2: now } }),
+      sgbus_rides: JSON.stringify({ lines: Object.fromEntries(['NS', 'EW', 'NE', 'CC', 'DT', 'TE'].map((l, i) => [l, { n: 4 + i, first: now, last: now }])), buses: Object.fromEntries(['12', '34', '56', '60', '14', '222'].map((b, i) => [b, { n: 3 + i * 2, first: now, last: now }])), trips: [] }),
+      sgbus_eggs_told: JSON.stringify(['feat:ktm']),
+    };
+    let { ctx, page } = await open(browser, { width: 420, height: 2600, extra });
+    await settingsGroup(page, 'help');
+    await page.evaluate(() => document.getElementById('coinAchievements').click());
+    await page.waitForTimeout(700);
+    await el(page, '[data-settings-group="achievements"]', 'achievements-new-feats.png');
+    await ctx.close();
+    ({ ctx, page } = await open(browser, { width: 420, height: 900, extra: { ...extra, sgbus_feat_marks: JSON.stringify({ first: {}, ends: { EW33: now, TE1: now, NE18: now } }) } }));
+    await page.evaluate(() => Eggs.rideDone({ kind: 'train', route: 'EW', points: [[1.3343, 103.9632], [1.357338, 103.988565]] }));
+    await page.waitForFunction(() => !document.getElementById('eggModal').classList.contains('hidden'));
+    // After the coin's floated away.
+    await page.waitForTimeout(3600);
+    await el(page, '#eggModal .modal', 'feat-ends.png');
+    await ctx.close();
+  }
+  if (want('bug-pictures')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, hash: '#nav' });
+    await ctx.route(/\/api\/bug-report$/, (r) => r.fulfill({ status: 204, body: '' }));
+    await settingsGroup(page, 'help');
+    await page.click('#settingsBug');
+    await page.waitForTimeout(800);
+    await page.fill('#bugText', 'The trip bar said "You’ve arrived" while I was still waiting for bus 183 at Clementi.');
+    await page.fill('#bugContact', '@sam_tan');
+    await page.setInputFiles('#bugPicFile', path.resolve(__dirname, '../public/screenshots/web/trip-faster.png'));
+    await page.waitForFunction(() => document.querySelectorAll('#bugShots .bugShot').length === 1);
+    await page.click('#bugScreenshot');
+    await page.waitForFunction(() => document.querySelectorAll('#bugShots .bugShot').length === 2, null, { timeout: 30000 }).catch(() => console.log('no screenshot'));
+    await blur(page);
+    await page.waitForTimeout(400);
+    await el(page, '#bugModal .modal', 'bug-report-pictures.png');
+    await ctx.close();
+  }
+  if (want('trip-ccl')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 900 });
+    await page.evaluate(() => {
+      const st = [['Dhoby Ghaut', 1.299169, 103.845799], ['Bras Basah', 1.296978, 103.850715], ['Esplanade', 1.293995, 103.855396], ['Promenade', 1.293444, 103.861076], ['Nicoll Highway', 1.300292, 103.863449], ['Stadium', 1.302847, 103.875417], ['Mountbatten', 1.306106, 103.883175], ['Dakota', 1.307638, 103.888818], ['Paya Lebar', 1.317767, 103.892381]];
+      Trip.start({ title: 'To Paya Lebar Square', legs: [{ kind: 'train', label: 'CC Line', route: 'CC', color: '#fa9e0d', to: 'Paya Lebar', points: st.map((x) => [x[1], x[2]]), names: st.map((x) => x[0]), minutes: 14, wait: 3 }], to: { label: 'Paya Lebar Square', lat: 1.3181, lng: 103.8926 } });
+    });
+    await page.waitForTimeout(800);
+    await page.click('#tripToggle');
+    await page.waitForTimeout(1200);
+    await el(page, '#tripBar', 'trip-ccl.png');
     await ctx.close();
   }
   await browser.close();

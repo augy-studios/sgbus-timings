@@ -1,11 +1,11 @@
 ---
 title: Easter eggs
-description: How to do each of the six feats, and how the uwuCoins wheel turns them into Easter eggs.
+description: How to do each of the nine feats, and how the uwuCoins wheel turns them into Easter eggs.
 secret: true
 ---
 
-There are six **feats** to do, each worth 100 [uwuCoins](uwucoins.md) once,
-and six **Easter eggs** to find, one named after each feat. The eggs come from
+There are nine **feats** to do, each worth 100 [uwuCoins](uwucoins.md) once,
+and nine **Easter eggs** to find, one named after each feat. The eggs come from
 the uwuCoins wheel, never from the feat itself: the wheel's egg slice gives you
 an egg you haven't found yet, picked at random. So any spin can find any egg,
 and the feats are the quickest way to the coins for spinning.
@@ -134,6 +134,30 @@ it to the end.
 <figcaption>Down the old railway, done.</figcaption>
 </figure>
 
+## First to last
+
+Take a bus at stop `01012` (Hotel Grand Pacific, on Victoria Street), the
+lowest stop code, and at stop `99189`, the highest: get on or off at each, in
+any order, on any trips. A stop on the way is fine, and so are separate trips
+days apart. Each counts once a ride there is shown to be real.
+
+## 100 rides
+
+Take 100 rides, buses and trains together, each shown to be real. Rides on trips
+from before uwuCoins count too, where the location saw you board.
+
+## Ends of the island
+
+Get off a train at each of the island's four ends: **Tuas Link** (EW33) in the
+west, **Woodlands North** (TE1) in the north, **Punggol Coast** (NE18) in the
+north-east and **Changi Airport** (CG2) in the east. Any trips, in any order;
+each counts once a ride that ends there is shown to be real.
+
+<figure>
+<img src="/screenshots/web/feat-ends.png" alt="A window with confetti: You did something special! Ends of the island. You got off a train at Tuas Link, Woodlands North, Punggol Coast and Changi Airport. +100 uwuCoins, for a spin of the wheel in Settings. 2 of 9 feats done. Spin the wheel, Later." width="396" height="296" loading="lazy">
+<figcaption>Ends of the island, done.</figcaption>
+</figure>
+
 ## Spin for the eggs
 
 Each feat's window has **Spin the wheel**, and the wheel is in Settings, **Help
@@ -146,8 +170,8 @@ The other seven give back 20 to 150 coins.
 <figcaption>The wheel on its egg.</figcaption>
 </figure>
 
-Finding all six takes about 48 spins on average. The coin slices pay back about
-half a spin each time, so that's around 2,300 uwuCoins in all. Once every egg is
+Finding all nine takes about 72 spins on average. The coin slices pay back about
+half a spin each time, so that's around 3,500 uwuCoins in all. Once every egg is
 found, the egg slice gives 80 coins instead.
 
 What each egg unlocks is in [Secret features](secret-features.md). To try it

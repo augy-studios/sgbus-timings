@@ -41,4 +41,33 @@
     <string name="widget_setup_save">Save</string>
     <string name="widget_setup_bad_code">Pick a favourite, or type a 5-digit stop code.</string>
     <string name="widget_setup_bad_buses">Bus numbers are like 21 or NR7, separated by commas.</string>
+    <!-- Notification channels (Notifications.java), On a bus? (OnABus.java), Time to leave (LeaveTime.java) and Near a stop (NearStops.java). -->
+    <string name="ch_alerts">Service alerts</string>
+    <string name="ch_alerts_about">Train disruptions and traffic incidents, as you chose in Service Alerts</string>
+    <string name="ch_get_off">Get Off Alert</string>
+    <string name="ch_get_off_about">Two stops before you get off, on a trip</string>
+    <string name="ch_board">Get ready to board</string>
+    <string name="ch_board_about">On a trip, when the bus you\'re waiting for is a minute away</string>
+    <string name="ch_trip">Trip in progress</string>
+    <string name="ch_trip_about">Shown while a trip follows where you are, for the Get Off Alert</string>
+    <string name="ch_get_off_quiet">Get Off Alert, earphones only</string>
+    <string name="ch_get_off_quiet_about">The Get Off Alert when Settings has its sound in earphones only: it buzzes here</string>
+    <string name="ch_near">Near a stop</string>
+    <string name="ch_near_about">The next buses at a stop you picked, as you walk up to it</string>
+    <string name="ch_last_bus">Last bus</string>
+    <string name="ch_last_bus_about">Before the last bus you asked to be reminded of</string>
+    <string name="ch_leave">Time to leave</string>
+    <string name="ch_leave_about">When to set off for an event in your phone\'s calendar</string>
+    <string name="ch_on_a_bus">On a bus?</string>
+    <string name="ch_on_a_bus_about">When you seem to be riding with no trip running, offers to start one</string>
+    <string name="ch_releases">New versions</string>
+    <string name="ch_releases_about">When a new version of the app is out, if you turned it on in Service alerts</string>
+    <string name="ch_routine">Routines</string>
+    <string name="ch_routine_about">A stop\'s next buses at the times you set in Settings, Routines</string>
+    <string name="on_a_bus_title">On a bus or train?</string>
+    <string name="on_a_bus_text">Start a trip for the Get Off Alert: tap, and pick where you\'re going.</string>
+    <string name="leave_title">Time to leave for %1$s</string>
+    <string name="leave_text">Leave by %1$s to get to %2$s for %3$s: about %4$d min %5$s.</string>
+    <string name="near_none">No buses due right now.</string>
+    <string name="routine_failed">Couldn\'t get the timings just now. Tap for them.</string>
 </resources>

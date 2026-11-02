@@ -661,6 +661,33 @@
 
   // ---------- where you are ----------
 
+  // As far along a ride as anything could have gone since the last place the trip was sure of
+  // (its anchor): at MAX_KMH, plus REACH_SLACK_M for the fixes' wobble. A fix further on than
+  // that, near a later stop the route comes back past or a stray, doesn't move you on there,
+  // and nor does realign; the anchor's time is kept, so a real jump is taken once time allows.
+  const MAX_KMH_ON = { bus: 80, train: 100 };
+  const REACH_SLACK_M = 400;
+  function reach(leg) {
+    const a = trip.anchor;
+    const kmh = MAX_KMH_ON[leg.kind];
+    if (!a || !kmh) return Infinity;
+    const last = leg.points.length - 1;
+    const m = metresAlong(leg, Math.min(last, a.pos)) + (Math.max(0, Date.now() - a.t) / 1000) * (kmh / 3.6) + REACH_SLACK_M;
+    return posAtMetres(leg, m);
+  }
+
+  // Where along a leg, as a stop index with a fraction, `m` metres down it is.
+  function posAtMetres(leg, m) {
+    const last = leg.points.length - 1;
+    let prev = 0;
+    for (let i = 1; i <= last; i++) {
+      const at = metresAlong(leg, i);
+      if (at >= m) return i - 1 + (at > prev ? (m - prev) / (at - prev) : 1);
+      prev = at;
+    }
+    return last;
+  }
+
   // Good fixes of the last few minutes on this trip, one every MOVE_SAMPLE_MS, as { p, acc, t }:
   // for how fast you're going (speedKmh) and which way along a ride (headingAlong), so a train
   // running beside a bus's route, or coming in to the station it starts at, isn't taken for
@@ -748,23 +775,31 @@
     }
 
     const road = roadOf(leg);
+    const far = reach(leg);
     // The nearest stop on this leg at or past the last one, so a fix that wobbles behind
-    // can't send you back; realign deals with one that's really somewhere else.
+    // can't send you back; realign deals with one that's really somewhere else. Not past
+    // where you could have got to by now (reach).
     let best = -1;
     let bestM = Infinity;
     for (let i = Math.max(0, trip.at - 1); i < leg.points.length; i++) {
       const m = metres(here, leg.points[i]);
       if (m < bestM) [best, bestM] = [i, m];
     }
-    if (best !== -1 && bestM <= (road ? ON_ROAD_M : ON_ROUTE_M)) trip.at = Math.max(trip.at, best);
+    const tooFar = best !== -1 && bestM <= (road ? ON_ROAD_M : ON_ROUTE_M) && best > far;
+    if (best !== -1 && bestM <= (road ? ON_ROAD_M : ON_ROUTE_M) && !tooFar) trip.at = Math.max(trip.at, best);
     // How far between stops, for the timeline's dot; and every stop behind that, passed. On
     // the road that's sure enough to go by, so a stop passed at speed, between fixes, or one
     // after a long stretch that the fixes never came near counts all the same.
     const along = alongLeg(here, leg, trip.at);
-    if (along != null) {
+    if (along != null && along <= far) {
       trip.pos = Math.max(trip.pos || 0, along);
       trip.at = Math.max(trip.at, Math.floor(along + 0.001));
       trip.onLegAt = Date.now();
+    }
+    // Ahead of anywhere you could be: no move, and the clock's anchor kept as it was.
+    if (tooFar || (along != null && along > far)) {
+      soon();
+      return;
     }
     // The clock goes on from here if the fixes stop.
     trip.anchor = { pos: Math.max(trip.pos || 0, trip.at), t: Date.now() };
@@ -871,6 +906,9 @@
     const leg = trip.legs[trip.leg];
     trip.boarded = true;
     trip.moves = [];
+    trip.pos = Math.max(trip.pos || 0, along);
+    trip.at = Math.max(trip.at, Math.floor(along + 0.001));
+    trip.anchor = { pos: trip.pos, t: now };
     const t = trip.times[trip.leg];
     if (t) {
       const perStopMs = ((leg.minutes || 0) / Math.max(1, leg.points.length - 1)) * 60000;
@@ -930,8 +968,9 @@
       if (m < bestM) [best, bestM] = [k, m];
     });
     if (best === -1 || bestM > accuracy + ON_ROUTE_M) return false;
-    // Ahead only once you're on board for sure; before that only back to the first stop.
-    if (best > believed && !underWay(leg)) return false;
+    // Ahead only once you're on board for sure, and not past where you could be by now;
+    // before that only back to the first stop.
+    if (best > believed && (!underWay(leg) || best > reach(leg))) return false;
 
     const now = Date.now();
     const along = accuracy <= GOOD_FIX_M ? alongLeg(here, leg, 0) : null;
@@ -1010,11 +1049,31 @@
     // doesn't walk you on. The way's taken as WALK_DETOUR times the straight line.
     if (onFoot(leg) && Motion.reading() && Motion.since() <= from.t) {
       const way = Math.max(1, metres(leg.points[0], leg.points[last]) * WALK_DETOUR);
-      return Math.min(last, from.pos + (Motion.stepsSince(from.t) * STRIDE_M) / way);
+      return Math.min(last, seenCap(leg), from.pos + (Motion.stepsSince(from.t) * STRIDE_M) / way);
     }
     if (!leg.minutes) return null;
     const perStop = leg.minutes / Math.max(1, last);
-    return Math.min(last, from.pos + Math.max(0, Date.now() - from.t) / 60000 / perStop);
+    return Math.min(last, seenCap(leg), from.pos + Math.max(0, Date.now() - from.t) / 60000 / perStop);
+  }
+
+  // With a fresh good fix (trip.me), however it fits the leg, the clock goes no further than
+  // it shows: on a walk, not to the end till you're near it; on a ride, half a stop past
+  // where it is along it, or a stop past where the trip was last sure of, if it's off the leg
+  // (a road the route's line misses, a rough patch). Infinity with no fresh fix: underground,
+  // the clock's all there is.
+  function seenCap(leg) {
+    const me = trip.me;
+    if (!me || Date.now() - me.t > FIX_STALE_MS) return Infinity;
+    const here = [me.lat, me.lng];
+    const last = leg.points.length - 1;
+    if (isWalk(leg)) {
+      const left = metres(here, leg.points[last]);
+      if (left <= WALK_ARRIVE_M + Math.min(me.accuracy || 0, 40)) return last;
+      return Math.min(0.95, Math.max(trip.pos || 0, 1 - left / Math.max(1, metres(leg.points[0], leg.points[last]))) + 0.1);
+    }
+    const from = Math.max(0, Math.floor((trip.anchor?.pos ?? trip.at) || 0));
+    const along = alongLeg(here, leg, from);
+    return along != null ? along + 0.5 : Math.max(trip.pos || 0, trip.at, trip.anchor?.pos || 0) + 1;
   }
 
   // No good fix lately that put you on the leg: the clock moves you on. A fix that comes but
@@ -1038,6 +1097,7 @@
     watchLastBus();
     watchTraffic();
     watchFaster();
+    if (following() && Date.now() - syncedAt >= LIVE_SYNC_MS) sync();
     render();
   }
 
@@ -2214,6 +2274,28 @@
 
   const TRIPS_API = "/api/push/trips";
   let pushTo = null; // { deviceId, subscription }, from js/alerts.js
+  let syncedAt = 0;
+  // While the app has good fixes, the server hears so this often (fixAt), so it leaves the
+  // trip to the app and doesn't move it on, or alert, by its clock.
+  const LIVE_SYNC_MS = 60 * 1000;
+  const following = () => Boolean(trip?.lastFixAt) && Date.now() - trip.lastFixAt <= FIX_STALE_MS;
+
+  // The server's notifications in the app's language: the same words as the app's own.
+  function serverWords() {
+    const t = (key, en) => I18n.t(key, en);
+    return {
+      lang: I18n.lang(),
+      alertTitle: t("route.get_off_alert", "Get Off Alert"),
+      boardTitle: t("trip.getReady", "Get ready to board"),
+      getOffNow: t("trip.getOffNow", "Get off now at {stop}."),
+      getOffOne: t("trip.getOffOne", "Get off in 1 stop, at {stop}."),
+      getOffOneChange: t("trip.getOffOneChange", "Get off in 1 stop, at {stop}, to change."),
+      getOffMany: t("trip.getOffMany", "Get off in {n} stops, at {stop}."),
+      getOffManyChange: t("trip.getOffManyChange", "Get off in {n} stops, at {stop}, to change."),
+      boardArriving: t("trip.boardArriving", "{ride} is arriving at {stop}. Get ready to board."),
+      boardOneMin: t("trip.boardOneMin", "{ride} is 1 min away from {stop}. Get ready to board."),
+    };
+  }
 
   async function sync() {
     if (!trip || !enabled()) return;
@@ -2247,13 +2329,20 @@
       movedAt: trip.movedAt || 0,
       // Whether the clock may move you on: not on a bus until you're on board for sure.
       clockRuns: underWay(trip.legs[trip.leg]),
+      // When the app last had a good fix: while that's recent, it's following you itself, and
+      // its place stands over the server's clock (api/push/trips/[id].js, api/push/trip-poll.js).
+      fixAt: trip.lastFixAt || 0,
       alerted: trip.alerted,
       readied: trip.readied,
       // Settings' earphones only, in the app: the server's Get Off Alert goes on the app's
       // quiet channel, which buzzes and never sounds out loud (api/_push/fcm.js).
       quiet: Boolean(window.Reminders?.earphonesOnly()),
+      // The alerts' words in the app's language, for the server to fill in (api/_push/trip.js,
+      // say): {stop}, {n} and {ride} as here.
+      words: serverWords(),
     });
     const moves = handMoves;
+    syncedAt = Date.now();
     try {
       const res = await fetch(`${TRIPS_API}/${pushTo.deviceId}`, {
         method: "PUT",
@@ -2277,13 +2366,18 @@
     // An alert the server sent for this part while a fresh fix has you well short of it: turned
     // down, rather than taken as given, which would keep the app's own from going off.
     const wrong = state.leg === trip.leg && state.alerted[trip.leg] && wellShort();
+    const ahead = state.leg > trip.leg && following();
     state.alerted.forEach((a, i) => {
-      if (a && !(wrong && i === trip.leg)) trip.alerted[i] = true;
+      if (a && !(wrong && i === trip.leg) && !(ahead && i >= trip.leg)) trip.alerted[i] = true;
     });
     state.readied?.forEach((r, i) => {
       if (r) trip.readied[i] = true;
     });
-    const moved = state.leg > trip.leg && state.leg < trip.legs.length;
+    // Moved on by the server's clock while a fresh fix has the app following you itself: the
+    // app's place stands, and the server's told so (realignedAt).
+    const overruled = ahead;
+    if (overruled) trip.realignedAt = Date.now();
+    const moved = !overruled && state.leg > trip.leg && state.leg < trip.legs.length;
     if (moved) {
       // The server moved the trip on while the app was away: the leg it left ended about when
       // the next one began, and any it skipped over are taken but untimed.
@@ -2298,6 +2392,7 @@
     render();
     if (moved) record();
     if (wrong) overrule();
+    else if (overruled) sync();
   }
 
   function unsync() {
@@ -2507,6 +2602,37 @@
       .catch(() => {});
   }
 
+  // Which way a Circle Line ride goes round the loop (Augy, 2 November 2026): "cw" clockwise or
+  // "acw" anticlockwise, as the map has it, north up, by how its stations turn about the loop's
+  // middle (CCL_MIDDLE, the average of its stations, data/rail.json); null for any other ride,
+  // or one too short to tell.
+  const CCL_MIDDLE = [1.3047, 103.8411];
+  function loopWay(leg) {
+    if (leg?.kind !== "train" || !/^C[CE]/i.test(String(leg.route || leg.label || ""))) return null;
+    let turn = 0;
+    for (let i = 1; i < leg.points.length; i++) {
+      const [y1, x1] = [leg.points[i - 1][0] - CCL_MIDDLE[0], leg.points[i - 1][1] - CCL_MIDDLE[1]];
+      const [y2, x2] = [leg.points[i][0] - CCL_MIDDLE[0], leg.points[i][1] - CCL_MIDDLE[1]];
+      turn += x1 * y2 - x2 * y1;
+    }
+    if (Math.abs(turn) < 1e-6) return null;
+    return turn > 0 ? "acw" : "cw";
+  }
+  // A ride's name, with which way round on the Circle Line: "CC Line (clockwise)".
+  function rideName(leg) {
+    const way = loopWay(leg);
+    if (!way) return leg.label;
+    return way === "cw" ? I18n.t("trip.rideCw", "{ride} (clockwise)", { ride: leg.label }) : I18n.t("trip.rideAcw", "{ride} (anticlockwise)", { ride: leg.label });
+  }
+  // The same as a chip, CW or ACW, for the timeline.
+  function loopChip(leg) {
+    const way = loopWay(leg);
+    if (!way) return "";
+    const full = way === "cw" ? I18n.t("trip.clockwise", "Clockwise") : I18n.t("trip.anticlockwise", "Anticlockwise");
+    const short = way === "cw" ? I18n.t("trip.cwShort", "CW") : I18n.t("trip.acwShort", "ACW");
+    return ` <span class="loopWay ${way}" title="${esc(full)}" aria-label="${esc(full)}">${window.icon(way)}${esc(short)}</span>`;
+  }
+
   // What the trip bar and the app's notification say: where you are on this part, and the
   // minutes to the end of the whole trip, which an alert or Get ready to board keeps too.
   function statusText(message) {
@@ -2527,9 +2653,9 @@
         : (leg.drive ? I18n.t("trip.driveAbout", "Drive to {to}, about {m} min", { to: leg.to, m })
           : leg.cycle ? I18n.t("trip.cycleAbout", "Cycle to {to}, about {m} min", { to: leg.to, m })
           : I18n.t("trip.walkAbout", "Walk to {to}, about {m} min", { to: leg.to, m })))
-      : left === 0 ? I18n.t("trip.atStop", "{ride}: at {to}", { ride: leg.label, to: leg.to })
-      : left === 1 ? I18n.t("trip.oneStop", "{ride}: 1 stop to {to}", { ride: leg.label, to: leg.to })
-      : I18n.t("trip.stops", "{ride}: {n} stops to {to}", { ride: leg.label, n: left, to: leg.to });
+      : left === 0 ? I18n.t("trip.atStop", "{ride}: at {to}", { ride: rideName(leg), to: leg.to })
+      : left === 1 ? I18n.t("trip.oneStop", "{ride}: 1 stop to {to}", { ride: rideName(leg), to: leg.to })
+      : I18n.t("trip.stops", "{ride}: {n} stops to {to}", { ride: rideName(leg), n: left, to: leg.to });
     return where + (trip.legs.length > 1 ? ` · ${I18n.t("trip.part", "part {n} of {of}", { n: trip.leg + 1, of: trip.legs.length })}` : "") + togo;
   }
 
@@ -2729,7 +2855,7 @@
           .join("");
         return (
           `<section class="tlLeg${k === 0 ? " current" : ""}">` +
-          `<p class="tlHead">${window.icon(legIcon(leg))} ${esc(leg.label)} <span>to ${esc(leg.to)}</span></p>` +
+          `<p class="tlHead">${window.icon(legIcon(leg))} ${esc(leg.label)}${loopChip(leg)} <span>${esc(I18n.t("trip.legTo", "to {to}", { to: leg.to }))}</span></p>` +
           (also.length ? `<p class="tlAlso">${esc(I18n.t("nav.alternate_buses", "Also direct:"))} ${also.map(esc).join(", ")}</p>` : "") +
           `<ol class="tlStops"><span class="tlTrack"><span class="tlDone"></span></span>${stops}` +
           (k === 0 ? `<span class="tlDot" aria-hidden="true"></span>` : "") +
@@ -2957,7 +3083,7 @@
     });
     $("#tripTraffic").addEventListener("click", () => {
       const leg = trip?.legs[Number($("#tripTraffic").dataset.leg)];
-      if (leg) window.LiveMap?.traffic({ points: leg.points, names: leg.names, title: `${leg.label} to ${leg.to}` });
+      if (leg) window.LiveMap?.traffic({ points: leg.points, names: leg.names, title: I18n.t("trip.rideTo", "{ride} to {to}", { ride: leg.label, to: leg.to }) });
     });
     $("#tripFaster").addEventListener("click", (e) => {
       const what = e.target.closest("[data-trip-faster]")?.dataset.tripFaster;
@@ -3009,6 +3135,12 @@
         onTick();
       }
       sync();
+    });
+    // Newer words in (js/i18n.js): the bar and timeline drawn again in them.
+    window.addEventListener("i18n:updated", () => {
+      if (!trip) return;
+      builtLeg = null;
+      render();
     });
     navigator.serviceWorker?.addEventListener("message", (event) => {
       if (event.data?.type === "get-off") alertedElsewhere(event.data);

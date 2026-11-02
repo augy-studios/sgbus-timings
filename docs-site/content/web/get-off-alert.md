@@ -57,6 +57,37 @@ Any of them gets you there without a change. The timeline lists them under each
 bus ride too, and a stop tapped on it shows their timings there with your bus's,
 for those that call at it. The trip still shows the stops of the bus you planned.
 
+### Trains
+
+Underground, where there's no location, a train ride goes by how long it should
+take, and so does a change from one line to another at an interchange. Above
+ground, your location keeps it in step: the trip only takes you off a train near
+the next bus's stop once the train has stopped, and only counts the bus as
+boarded once you're going its way, so a train running beside the bus's road, or
+coming into the station the other way, never ends the train early. If the trip
+thinks you've boarded but sees you standing at the stop, it goes back to waiting
+for the bus.
+
+With your location on, the trip goes by it: the clock can't take you past where
+your location shows you, and no ride moves you further than a bus or train could
+have gone since. The server that sends the alert while the app's in the
+background leaves the trip to the app while the app has your location, so it
+doesn't move you on by its own clock either. Its notifications are in the app's
+language.
+
+#### Which way round on the Circle Line
+
+<figure>
+<img src="/screenshots/web/trip-ccl.png" alt="The trip's timeline on the CC Line from Dhoby Ghaut to Paya Lebar: CC Line, an ACW chip, to Paya Lebar, the stations from Dhoby Ghaut to Paya Lebar, and the bar: CC Line (anticlockwise): 8 stops to Paya Lebar." width="396" height="497" loading="lazy">
+<figcaption>Dhoby Ghaut to Paya Lebar goes anticlockwise.</figcaption>
+</figure>
+
+A ride on the Circle Line says which way round the loop it goes, as the map
+shows it with north at the top: **CW** for clockwise or **ACW** for
+anticlockwise on the timeline, and **(clockwise)** or **(anticlockwise)** on the
+bar. Platforms are signed by where the trains go, so it's a quick check you're
+on the right one.
+
 ## Walks
 
 A trip from [Navigate](nav.md) starts with the walk to your first stop, has the

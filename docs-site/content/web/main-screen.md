@@ -138,6 +138,26 @@ moves to the top of the Edge Tray. Someone who mostly plans journeys can make
 
 A link to a stop, a bus or a journey still opens that.
 
+## Minimal, Standard or Full
+
+<figure>
+<img src="/screenshots/web/first-run-modes.png" alt="Welcome to SG Bus Timings: Start with everything, most of it, or just the essentials? Minimal, just Bus timings, Favourites, Navigate and Places; Standard, picked, everything but a few extras; Full, everything on. Then Start." width="396" height="484" loading="lazy">
+<figcaption>The first time the app opens.</figcaption>
+</figure>
+
+The first time the app opens, it asks how much to start with:
+
+- **Minimal**: just Bus timings, Favourites, Navigate and Places. Glance,
+  Service alerts, Your trips and every extra Edge Tray button are off, and so
+  are the coin pop-ups.
+- **Standard**: everything but a few extras. The Edge Tray has no uwuCoins, Buy
+  Augy a Coffee, Receive nearby, Telegram bot or Card value buttons, and the
+  [coin pop-ups](uwucoins.md#hide-them) are off.
+- **Full**: everything on, as the app always was. Closing the window is Full.
+
+Any of it can be changed later in Settings' **Edge Tray buttons**, and uwuCoins
+in **Help and extras**.
+
 ## The tours
 
 <figure>

@@ -91,6 +91,8 @@
   function tell({ trips, coins, feats }) {
     const all = coins + feats.length * (window.Eggs?.FEAT_COINS || 100);
     if (!all) return;
+    // uwuCoins hidden, or its pop-ups off (js/coins.js): given quietly, not said.
+    if (window.Coins?.shown?.() === false || window.Coins?.pops?.() === false) return;
     const names = feats.map((id) => window.Eggs.name(id)).join('; ');
     const head = trips === 1
       ? tr('retrofit.trip', 'Your trip from before uwuCoins has earned its coins: +{coins} uwuCoins.', { coins })
@@ -115,7 +117,7 @@
     $('eggGot').textContent = [featText, spin].filter(Boolean).join(' ');
     $('eggCount').textContent = tr('eggs.featCount', '{n} of {all} feats done', { n: window.Eggs.feats().length, all: window.Eggs.all.length });
     const go = $('eggGo');
-    if (go) { go.dataset.go = 'coins'; go.textContent = tr('coins.spinGo', 'Spin the wheel'); }
+    if (go) { go.dataset.go = 'coins'; go.textContent = tr('coins.spinGo', 'Spin the wheel'); go.hidden = false; }
     window.openModal('eggModal');
     window.Confetti?.burst?.();
   }

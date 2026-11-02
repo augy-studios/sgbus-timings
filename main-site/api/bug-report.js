@@ -1,7 +1,11 @@
 // Report a bug (help desk #13): Settings' form (js/bug-report.js) sends what went wrong here, and
 // it reaches Augy as a message from the Telegram bot.
 //
-//   POST { text, contact?, version?, platform?, device?, page?, lang?, website? }  → 204
+//   POST { text, contact?, version?, platform?, device?, page?, lang?, website?, images? }  → 204
+//
+// `images` (optional) is up to MAX_IMAGES pictures as JPEG, PNG or WebP data URLs, each at most
+// MAX_IMAGE_BYTES (js/bug-report.js makes them JPEGs of about 900 KB at most): sent after the
+// message, to each chat that took it, as a photo or an album replying to it.
 //
 // What's sent on is what the person typed (`text`, and `contact` if they gave one), with what
 // the form adds and shows them first: the app's version, which app (web, Android, desktop, the
@@ -30,6 +34,9 @@ import { rateLimited, redis, storeConfigured } from "./_push/store.js";
 const MAX_TEXT = 2000;
 const MAX_CONTACT = 200;
 const MAX_BODY = 8 * 1024;
+const MAX_IMAGES = 3;
+const MAX_IMAGE_BYTES = 1200 * 1024;
+const IMAGE_RE = /^data:image\/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)$/;
 const PER_MINUTE = 2;
 const PER_HOUR = 6;
 const ALL_PER_HOUR = 60;
@@ -59,6 +66,46 @@ function clean(v, max, { lines = false } = {}) {
   return s.length > max ? s.slice(0, max) : s;
 }
 
+// The pictures sent, as [{ type, bytes }], or null if any isn't one (a bad data URL, too big,
+// too many).
+export function images(list) {
+  if (list == null) return [];
+  if (!Array.isArray(list) || list.length > MAX_IMAGES) return null;
+  const out = [];
+  for (const item of list) {
+    const m = typeof item === "string" ? IMAGE_RE.exec(item) : null;
+    if (!m) return null;
+    const bytes = Buffer.from(m[2], "base64");
+    if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) return null;
+    out.push({ type: m[1], bytes });
+  }
+  return out;
+}
+
+// The pictures to one chat, replying to the report (`replyTo`): one as a photo, more as an album.
+async function sendImages(chat, pics, replyTo) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(chat)) form.append(k, String(v));
+  if (replyTo) form.append("reply_parameters", JSON.stringify({ message_id: replyTo, allow_sending_without_reply: true }));
+  const caption = pics.length === 1 ? "Picture for the report above" : `${pics.length} pictures for the report above`;
+  const file = (p, i) => new Blob([p.bytes], { type: `image/${p.type}` });
+  let method;
+  if (pics.length === 1) {
+    method = "sendPhoto";
+    form.append("photo", file(pics[0]), `picture.${pics[0].type === "jpeg" ? "jpg" : pics[0].type}`);
+    form.append("caption", caption);
+  } else {
+    method = "sendMediaGroup";
+    pics.forEach((p, i) => form.append(`p${i}`, file(p, i), `picture${i + 1}.${p.type === "jpeg" ? "jpg" : p.type}`));
+    form.append("media", JSON.stringify(pics.map((p, i) => ({ type: "photo", media: `attach://p${i}`, ...(i === 0 && { caption }) }))));
+  }
+  const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/${method}`, { method: "POST", body: form, signal: AbortSignal.timeout(TELEGRAM_MS * 2) });
+  if (!r.ok) {
+    const reason = await r.json().then((d) => d?.description).catch(() => null);
+    throw new Error(`Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);
+  }
+}
+
 // The message Augy gets: what the form added, then what was typed.
 export function message(body) {
   const platform = PLATFORMS[body.platform] || "Unknown";
@@ -71,6 +118,7 @@ export function message(body) {
     `Page: ${clean(body.page, 100) || "not given"}`,
     `Language: ${clean(body.lang, 10) || "not given"}`,
     `Contact: ${clean(body.contact, MAX_CONTACT) || "none given"}`,
+    ...(Array.isArray(body.images) && body.images.length ? [`Pictures: ${body.images.length}, below`] : []),
     "",
     clean(body.text, MAX_TEXT, { lines: true }),
   ];
@@ -112,7 +160,9 @@ export default async function handler(req, res) {
 
   const body = req.body && typeof req.body === "object" ? req.body : null;
   if (!body) return res.status(400).json({ error: "Nothing was sent." });
-  if (JSON.stringify(body).length > MAX_BODY) return res.status(413).json({ error: "That's too long to send." });
+  const pics = images(body.images);
+  if (!pics) return res.status(400).json({ error: `Pictures must be images, at most ${MAX_IMAGES}, each under ${Math.round(MAX_IMAGE_BYTES / 1024 / 1024 * 10) / 10} MB.` });
+  if (JSON.stringify({ ...body, images: undefined }).length > MAX_BODY) return res.status(413).json({ error: "That's too long to send." });
   if (typeof body.text !== "string" || clean(body.text, MAX_TEXT + 1, { lines: true }).length < 5) return res.status(400).json({ error: "Please say what went wrong." });
   if (body.text.trim().length > MAX_TEXT) return res.status(400).json({ error: `Please keep it under ${MAX_TEXT} characters.` });
 
@@ -132,7 +182,14 @@ export default async function handler(req, res) {
         body: JSON.stringify({ ...chat, text, link_preview_options: { is_disabled: true } }),
         signal: AbortSignal.timeout(TELEGRAM_MS),
       });
-      if (r.ok) return true;
+      if (r.ok) {
+        // Then its pictures, replying to it. The report counts as sent even if they don't go.
+        if (pics.length) {
+          const id = await r.json().then((d) => d?.result?.message_id).catch(() => null);
+          await sendImages(chat, pics, id).catch((err) => console.error(`bug-report: chat ${i + 1}: pictures: ${err.message}`));
+        }
+        return true;
+      }
       // Telegram's reason, for the logs: never the token, which is only in the address.
       const reason = await r.json().then((d) => d?.description).catch(() => null);
       console.error(`bug-report: chat ${i + 1}: Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);

@@ -116,9 +116,13 @@ Something not working? Open [Settings](#settings), **Help and extras**, and tap
    expected.
 2. Under **How to reach you**, add your Telegram @name or your email if you'd
    like an answer. It's optional.
-3. Read the line under it, **Sent with it, to help find the bug**: that's
+3. To show what happened, add up to three **pictures**: **Add pictures** picks
+   them from your phone, and **Screenshot this page** takes the app as it is
+   under Settings and the window. A map may come out blank in a screenshot taken
+   this way; take one with your phone instead if it matters.
+4. Read the line under it, **Sent with it, to help find the bug**: that's
    everything else that goes with your words.
-4. Tap **Send**. It reaches Augy on Telegram, and the window says **Sent. Thank
+5. Tap **Send**. It reaches Augy on Telegram, and the window says **Sent. Thank
    you! Augy will look into it.**
 
 <figure>
@@ -136,8 +140,16 @@ and your language. Never where you are, your places or your saved stops.
 <figcaption>Sent: the boxes clear, ready for the next one.</figcaption>
 </figure>
 
-- What you've typed stays while the app's open, even if you close the window,
-  until it's sent.
+<figure>
+<img src="/screenshots/web/bug-report-pictures.png" alt="The Report a bug window with two pictures under Pictures, each with an x to take it off: one from the phone and a screenshot of Navigate, then Add pictures and Screenshot this page, and a note: Up to 3." width="366" height="718" loading="lazy">
+<figcaption>Two pictures: one from the phone, and a screenshot of the app.</figcaption>
+</figure>
+
+Pictures are made smaller on your phone before they're sent, and reach Augy with
+your report.
+
+- What you've typed, and the pictures, stay while the app's open, even if you
+  close the window, until it's sent.
 - Offline, it says so and keeps it: send it once you're back online.
 - If it can't be sent from the app, it says so and offers **Email it instead**,
   with your words filled in.

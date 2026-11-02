@@ -749,7 +749,7 @@
                     <button class="mode-btn" type="button" data-tray-show="telegram" aria-pressed="true" data-i18n="settings.telegram_bot">Telegram bot</button>
                     <button class="mode-btn" type="button" data-tray-show="coffee" aria-pressed="true" data-i18n="settings.buy_augy_a_coffee">Buy Augy a Coffee</button>
                     <button class="mode-btn" type="button" data-tray-show="guide" aria-pressed="true" data-i18n="settings.guide">Guide</button>
-                    <button class="mode-btn" type="button" data-tray-show="coins" aria-pressed="true" data-i18n="settings.coins">uwuCoins</button>
+                    <button class="mode-btn coinsOnly" type="button" data-tray-show="coins" aria-pressed="true" data-i18n="settings.coins">uwuCoins</button>
                     <!-- Only where the app has them (js/reminders.js) -->
                     <button class="mode-btn" type="button" data-tray-show="nearstops" aria-pressed="true" hidden data-i18n="settings.timings_near_a_stop">Timings near a stop</button>
                     <button class="mode-btn" type="button" data-tray-show="routines" aria-pressed="true" hidden data-i18n="settings.routines">Routines</button>
@@ -878,8 +878,23 @@
                 <p class="modal-section-label" data-find="command line linux" data-i18n="settings.sgbus_terminal">sgbus terminal</p>
                 <button id="settingsTerminal" class="iconBtn settingsWide" type="button"><span data-icon="terminal"></span> <span data-i18n="settings.open_the_sgbus_terminal">Open the sgbus terminal</span></button>
                 <p class="mode-note" data-i18n="settings.the_linux_apps_commands_typed">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
+                <!-- uwuCoins shown or hidden, and its pop-ups (js/coins.js): hidden, they're still counted -->
+                <p class="modal-section-label" data-short="uwuCoins" data-i18n-data-short="coins.title" data-find="coins uwucoins hide show turn off pop-ups popups" data-i18n="coins.showTitle">Show uwuCoins</p>
+                <div class="mode-toggle">
+                    <button class="mode-btn" type="button" data-coins-show="on" aria-pressed="true" data-i18n="settings.on">On</button>
+                    <button class="mode-btn" type="button" data-coins-show="off" aria-pressed="false" data-i18n="settings.off">Off</button>
+                </div>
+                <p class="mode-note" data-i18n="coins.showNote">Off hides uwuCoins everywhere: the wheel, the Edge Tray's coin and the pop-ups. Trips and feats still earn them meanwhile, so they're all there if you turn it back on.</p>
+                <div id="coinsPopsSetting">
+                    <p class="modal-section-label" data-short="Coin pop-ups" data-i18n-data-short="coins.popsTitle" data-find="coins uwucoins pop-ups popups toast" data-i18n="coins.popsTitle">Coin pop-ups</p>
+                    <div class="mode-toggle">
+                        <button class="mode-btn" type="button" data-coins-pops="on" aria-pressed="true" data-i18n="settings.on">On</button>
+                        <button class="mode-btn" type="button" data-coins-pops="off" aria-pressed="false" data-i18n="settings.off">Off</button>
+                    </div>
+                    <p class="mode-note" data-i18n="coins.popsNote">The +uwuCoins that floats up after a trip, and the window for coins from past trips. Off, the coins still come in quietly.</p>
+                </div>
                 <!-- uwuCoins and the wheel (js/coins.js): coins from trips and feats, a spin for an Easter egg or more coins -->
-                <section id="coinsBox" class="coinsBox" aria-labelledby="coinsTitle">
+                <section id="coinsBox" class="coinsBox coinsOnly" aria-labelledby="coinsTitle">
                     <p class="modal-section-label" id="coinsTitle" data-short="uwuCoins" data-i18n-data-short="coins.title" data-find="coins uwucoins wheel spin easter eggs feats"><span data-icon="coin"></span> <span data-i18n="coins.title">uwuCoins</span></p>
                     <p class="coinBalance"><span data-coins-balance>0</span> <span data-i18n="coins.unit">uwuCoins</span></p>
                     <div class="coinWheelWrap">
@@ -907,7 +922,7 @@
                 <!-- A card for socials, with a link (js/share.js, Share.feat) -->
                 <button id="achievementsShare" class="iconBtn settingsWide" type="button" hidden><span data-icon="share"></span> <span data-i18n="achievements.shareAll">Share your achievements</span></button>
                 <p class="modal-section-label" data-find="easter eggs secrets wheel" data-i18n="eggs.title">Easter eggs</p>
-                <p class="mode-note" data-i18n="achievements.eggsNote">Each feat is worth 100 uwuCoins once. Its Easter egg comes from the uwuCoins wheel, in Help and extras.</p>
+                <p class="mode-note coinsOnly" data-i18n="achievements.eggsNote">Each feat is worth 100 uwuCoins once. Its Easter egg comes from the uwuCoins wheel, in Help and extras.</p>
                 <p id="achievementsEggs" class="mode-note"></p>
             </section>
 
@@ -1297,6 +1312,15 @@
             <textarea id="bugText" class="input bugText" rows="5" maxlength="2000" required data-i18n-placeholder="bug.what_you_did_what_happened" placeholder="What you did, what happened, and what you expected"></textarea>
             <label class="modal-section-label" for="bugContact" data-i18n="bug.how_to_reach_you_optional">How to reach you (optional)</label>
             <input id="bugContact" class="input" type="text" maxlength="200" autocomplete="off" spellcheck="false" data-i18n-placeholder="bug.telegram_or_email_for_an" placeholder="Telegram @name or email, for an answer" />
+            <!-- Pictures, up to three: from the phone, or the page under this window (js/bug-report.js) -->
+            <p class="modal-section-label" data-i18n="bug.pictures">Pictures (optional)</p>
+            <div id="bugShots" class="bugShots"></div>
+            <div class="settingsRow bugShotBtns">
+                <button id="bugAddPic" class="iconBtn" type="button"><span data-icon="plus"></span> <span data-i18n="bug.add_pictures">Add pictures</span></button>
+                <button id="bugScreenshot" class="iconBtn" type="button"><span data-icon="camera"></span> <span data-i18n="bug.screenshot_page">Screenshot this page</span></button>
+            </div>
+            <input id="bugPicFile" type="file" accept="image/*" multiple hidden />
+            <p id="bugShotNote" class="mode-note" data-i18n="bug.pictures_note">Up to 3. Screenshot this page takes the app as it is under Settings and this window; a map may come out blank.</p>
             <!-- Never seen or filled in by a person: a bot that fills it in is ignored -->
             <div class="bugTrap" aria-hidden="true"><label>Website <input id="bugWebsite" type="text" name="website" tabindex="-1" autocomplete="off" /></label></div>
             <p class="mode-note"><span data-i18n="bug.sent_with_it">Sent with it, to help find the bug:</span> <span id="bugDetails"></span></p>
@@ -1315,11 +1339,16 @@
                 <h2 data-i18n="html.welcome_to_sg_bus_timings" id="firstRunTitle">Welcome to SG Bus Timings</h2>
             </div>
             <fieldset class="firstRunPick">
-                <legend data-i18n="html.start_with_everything_or_just" class="modal-section-label">Start with everything, or just the essentials?</legend>
+                <legend data-i18n="html.start_with_how_much" class="modal-section-label">Start with everything, most of it, or just the essentials?</legend>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="minimal" />
                     <span data-i18n="html.minimal" class="firstRunName">Minimal</span>
                     <span data-i18n="html.just_bus_timings_favourites_navigate" class="firstRunWhat">Just Bus timings, Favourites, Navigate and Places. The rest is switched off.</span>
+                </label>
+                <label class="firstRunOption">
+                    <input type="radio" name="firstRun" value="standard" />
+                    <span data-i18n="html.standard" class="firstRunName">Standard</span>
+                    <span data-i18n="html.standard_what" class="firstRunWhat">Everything but a few extras: no uwuCoins, Buy Augy a Coffee, Receive nearby, Telegram bot or Card value buttons in the Edge Tray.</span>
                 </label>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="full" checked />
