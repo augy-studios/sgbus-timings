@@ -26,6 +26,10 @@
 (function () {
   var LANG_KEY = "sgbus_lang";
   var WORDS_KEY = "sgbus_lang_words";
+  // The words' revision, set by scripts/i18n-check.mjs --write from every language's file: a
+  // copy kept from another revision is old, and the file's fetched there and then instead, so
+  // words added or changed in an update are never shown in English, or as they were, first.
+  var WORDS_REV = "c87789847709";
   // { code: its name in itself }. Add a language here and its i18n/<code>.json.
   var LANGUAGES = { en: "English", "zh-SG": "中文", ms: "Bahasa Melayu", ta: "தமிழ்" };
   // data-title is a Settings group's heading (script.js).
@@ -97,7 +101,7 @@
     if (code === "en") return null;
     try {
       var kept = JSON.parse(stored(WORDS_KEY) || "null");
-      if (kept && kept.lang === code && kept.words) return kept.words;
+      if (kept && kept.lang === code && kept.words && kept.rev === WORDS_REV) return kept.words;
     } catch (e) { /* fetched below */ }
     try {
       var xhr = new XMLHttpRequest();
@@ -105,7 +109,7 @@
       xhr.send();
       if (xhr.status >= 200 && xhr.status < 300) {
         var map = JSON.parse(xhr.responseText);
-        store(WORDS_KEY, JSON.stringify({ lang: code, words: map }));
+        store(WORDS_KEY, JSON.stringify({ lang: code, words: map, rev: WORDS_REV }));
         return map;
       }
     } catch (e) { console.warn("No words for " + code + ", so English:", e); }
@@ -125,7 +129,7 @@
         if (!map || lang !== code) return;
         var fresh = JSON.stringify(map);
         if (words && JSON.stringify(words) === fresh) return;
-        store(WORDS_KEY, JSON.stringify({ lang: code, words: map }));
+        store(WORDS_KEY, JSON.stringify({ lang: code, words: map, rev: WORDS_REV }));
         words = map;
         apply(document);
         try { window.dispatchEvent(new CustomEvent("i18n:updated")); } catch (e) { /* nothing listening */ }

@@ -2,7 +2,7 @@
 // says what each other language is missing.
 //
 //   node scripts/i18n-check.mjs           check: exits 1 if en.json and the site disagree
-//   node scripts/i18n-check.mjs --write   write en.json from the site
+//   node scripts/i18n-check.mjs --write   write en.json from the site, and js/i18n.js's WORDS_REV
 //
 // The English is read from where the site says it: in index.html, an element's text where it
 // has data-i18n="key", and an attribute's value where it has data-i18n-title (or
@@ -10,6 +10,7 @@
 // I18n.t("key", "English"), quoted with ', " or `. One key, one English, everywhere it's used.
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const site = join(dirname(fileURLToPath(import.meta.url)), "..", "main-site");
@@ -85,6 +86,20 @@ for (const f of readdirSync(dir).filter((n) => n.endsWith(".json") && n !== "en.
     const need = [...want[k].matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
     for (const v of need) if (typeof map[k] === "string" && !map[k].includes(`{${v}}`)) problems.push(`${f} ${k}: has no {${v}}`);
   }
+}
+
+// The words' revision (js/i18n.js, WORDS_REV): a hash of every language's file, so a phone's
+// kept copy of the words from before a change is never used once the site has moved on.
+const rev = createHash("sha1").update(readdirSync(dir).filter((n) => n.endsWith(".json")).sort().map((n) => readFileSync(join(dir, n), "utf8")).join("\n")).digest("hex").slice(0, 12);
+const i18nJs = join(site, "js", "i18n.js");
+const js = readFileSync(i18nJs, "utf8");
+const revRe = /var WORDS_REV = "([0-9a-f]*)";/;
+if (!revRe.test(js)) problems.push("js/i18n.js has no WORDS_REV");
+else if (js.match(revRe)[1] !== rev) {
+  if (write) {
+    writeFileSync(i18nJs, js.replace(revRe, `var WORDS_REV = "${rev}";`));
+    console.log(`Set WORDS_REV in js/i18n.js to ${rev}.`);
+  } else problems.push(`js/i18n.js's WORDS_REV is ${js.match(revRe)[1]}, the words' ${rev} (run with --write)`);
 }
 
 if (problems.length) {

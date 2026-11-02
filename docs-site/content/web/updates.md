@@ -7,7 +7,7 @@ description: How the app updates itself, and what still works without a connecti
 
 <figure>
 <img src="/screenshots/web/updates-new-version.png" alt="A bar across the top of the app saying A new version of SG Bus Timings is ready, with Reload and Not now buttons." width="1280" height="118" loading="lazy">
-<figcaption>The bar a new version brings. Nothing reloads until you tap Reload.</figcaption>
+<figcaption>The bar a new version brings: Reload for it now.</figcaption>
 </figure>
 
 The app downloads new versions in the background. When one is ready, a slim bar
@@ -16,11 +16,17 @@ appears at the very top of the page:
 > A new version of SG Bus Timings is ready. **Reload** **Not now**
 
 - **Reload** switches to the new version straight away. The page reloads once.
-- **Not now** hides the bar for now. It comes back the next time you open the
-  app, until you reload.
+- **Not now** hides the bar for now.
 
-Nothing reloads on its own, so the app never changes under you halfway through
-something.
+If you don't tap either, the new version goes in by itself at a moment nothing's
+lost: when you come back to the app after switching to another app or tab, or
+when you pick a page in the Edge Tray, which opens again once it's reloaded. It
+waits while a trip is running, a window or tour is open, you're typing, a bug
+report is waiting to be sent, or you're offline, so the app never changes under
+you halfway through something.
+
+Words in your language come with each new version too, never an older copy, so
+something new doesn't show up in English first.
 
 > [!NOTE]
 > This guide has the same bar, and says "A new version of the SG Bus Timings
