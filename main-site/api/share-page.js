@@ -1,7 +1,8 @@
-// What a share link opens: /go/<id>, /trip/<id> and /eta/<id> come here (vercel.json). A
-// chat app reading it for a preview gets the link's title, a line about it and its map; a
-// person is sent straight on to the app, at #share/<id>, which shows the place, the
-// directions or the live progress (js/share.js).
+// What a share link opens: /go/<id>, /trip/<id>, /eta/<id> and /feat/<id> come here
+// (vercel.json). A chat app reading it for a preview gets the link's title, a line about it
+// and its map, or for a feat its card (api/feat-card.js); a person is sent straight on to the
+// app, at #share/<id>, which shows the place, the directions, the live progress or the feat
+// (js/share.js).
 //
 // The page also carries the link's details in an <article>, for Telegram's Instant View
 // (telegram-instant-view.txt, TELEGRAM_IV_SETUP.md). Nothing reads it but crawlers: people are
@@ -9,7 +10,7 @@
 // would follow it to the app, which has nothing for it to read.
 
 import { supabaseConfigured } from './_lib/supabase.js';
-import { IV_KINDS, PATHS, describeLink, getLink, isLinkId, sgDateTime, whenText } from './_lib/share-links.js';
+import { CARD_H, CARD_W, IV_KINDS, PATHS, describeLink, getLink, isLinkId, sgDateTime, whenText } from './_lib/share-links.js';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
@@ -105,7 +106,11 @@ export default async function handler(req, res) {
     ? describeLink(link)
     : { title: 'SG Bus Timings', description: 'Live bus arrivals, routes and directions by bus and train in Singapore.' };
   const { title, description } = about;
-  const image = link ? `${origin}/api/share-map?id=${id}${link.kind === 'eta' ? `&v=${link.updatedAt}` : ''}` : `${origin}/sgbusicon1.png`;
+  const feat = link?.kind === 'feat';
+  const image = !link ? `${origin}/sgbusicon1.png`
+    : feat ? `${origin}/api/feat-card?id=${id}`
+    : `${origin}/api/share-map?id=${id}${link.kind === 'eta' ? `&v=${link.updatedAt}` : ''}`;
+  const [imageW, imageH] = feat ? [CARD_W, CARD_H] : [512, 256];
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', link?.kind === 'eta' || !link ? 'no-store' : 'public, max-age=300, s-maxage=86400');
@@ -123,7 +128,7 @@ export default async function handler(req, res) {
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(link ? `${origin}/${PATHS[link.kind]}/${id}` : origin)}">
 <meta property="og:image" content="${esc(image)}">
-${link ? '<meta property="og:image:width" content="512">\n<meta property="og:image:height" content="256">\n<meta name="twitter:card" content="summary_large_image">' : '<meta name="twitter:card" content="summary">'}
+${link ? `<meta property="og:image:width" content="${imageW}">\n<meta property="og:image:height" content="${imageH}">\n<meta name="twitter:card" content="summary_large_image">` : '<meta name="twitter:card" content="summary">'}
 <script>location.replace(${JSON.stringify(target)});</script>
 </head>
 <body>

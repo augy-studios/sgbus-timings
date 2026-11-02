@@ -1673,5 +1673,18 @@
   "when.today": "今天",
   "when.tomorrow": "明天",
   "when.tooFar": "请选择一周内的时间。",
-  "when.when": "时间"
+  "when.when": "时间",
+  "achievements.share": "分享",
+  "achievements.shareAll": "分享你的成就",
+  "eggs.shared.someone": "有人",
+  "eggs.shared.title": "{who}完成了一项成就！",
+  "eggs.shared.titleAll": "{who}的成就",
+  "eggs.shared.you": "你：已完成 {n}/{all} 项成就",
+  "eggs.shared.yourTurn": "轮到你了：{goal}",
+  "eggs.shared.youToo": "这项你也完成了。",
+  "html.save_image": "保存图片",
+  "share.feat.heading": "分享这项成就",
+  "share.feat.text": "我在 SG Bus Timings 完成了一项成就：{name}！",
+  "share.feats.heading": "分享你的成就",
+  "share.feats.text": "我在 SG Bus Timings 已完成 {n}/{all} 项成就！"
 }

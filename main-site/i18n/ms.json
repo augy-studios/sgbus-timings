@@ -1673,5 +1673,18 @@
   "when.today": "hari ini",
   "when.tomorrow": "esok",
   "when.tooFar": "Pilih masa dalam minggu depan.",
-  "when.when": "Bila"
+  "when.when": "Bila",
+  "achievements.share": "Kongsi",
+  "achievements.shareAll": "Kongsi pencapaian anda",
+  "eggs.shared.someone": "Seseorang",
+  "eggs.shared.title": "{who} mencapai sesuatu!",
+  "eggs.shared.titleAll": "Pencapaian {who}",
+  "eggs.shared.you": "Anda: {n} daripada {all} pencapaian selesai",
+  "eggs.shared.yourTurn": "Giliran anda: {goal}",
+  "eggs.shared.youToo": "Anda juga sudah melakukannya.",
+  "html.save_image": "Simpan gambar",
+  "share.feat.heading": "Kongsi pencapaian ini",
+  "share.feat.text": "Saya mencapai sesuatu di SG Bus Timings: {name}!",
+  "share.feats.heading": "Kongsi pencapaian anda",
+  "share.feats.text": "Saya sudah menyelesaikan {n} daripada {all} pencapaian di SG Bus Timings!"
 }

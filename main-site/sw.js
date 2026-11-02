@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v147";
+const VERSION = "v148";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -558,7 +558,7 @@ self.addEventListener("fetch", (event) => {
     // keeps the ones asked for before (api/walk.js).
     if (url.pathname === "/api/walk") return;
     // Share links: live progress moves, and a link just made has to be read fresh.
-    if (url.pathname === "/api/share" || url.pathname === "/api/share-map") return;
+    if (url.pathname === "/api/share" || url.pathname === "/api/share-map" || url.pathname === "/api/feat-card") return;
     // The Android app's newest version: an old answer offers an update already installed.
     if (url.pathname === "/api/app-release") return;
     // Syncing with the Telegram bot: what it's said is only ever news.
@@ -575,7 +575,7 @@ self.addEventListener("fetch", (event) => {
 
   // A short share link (api/share-page.js) is never kept: the server sends it on into the
   // app. Offline, the app itself, which reads the link from its path (script.js).
-  if (request.mode === "navigate" && /^\/(go|trip|eta)\/[a-z0-9]{10}$/.test(url.pathname)) {
+  if (request.mode === "navigate" && /^\/(go|trip|eta|feat)\/[a-z0-9]{10}$/.test(url.pathname)) {
     event.respondWith(fetch(request).catch(async () => (await caches.match("/")) || Response.error()));
     return;
   }

@@ -17,6 +17,10 @@
 // a past search (js/recents.js) or a calendar event (js/calendar.js), and for a trip from Your
 // trips (js/history.js), without the menu.
 //
+// Share.feat opens it for a feat done, or Achievements as a whole, from Settings (js/eggs.js):
+// /feat/<id>, with a card for socials (api/feat-card.js) in place of the map, sent as a picture
+// with the link by More where the browser can, and saved by Save image.
+//
 // The links are made and read by api/share.js; opening one goes through api/share-page.js to
 // #share/<id> here (Share.open). Uses nav.js's state and script.js's helpers, so nothing
 // here runs until script.js calls Share.init().
@@ -129,6 +133,7 @@
     }
     if (pick?.kind === 'place') return sharePlaceCard(pick.place, pick.note);
     if (pick?.kind === 'directions') return shareDirectionsCard(pick);
+    if (pick?.kind === 'feat') return shareFeatCard(pick.id);
     sharePlaceCard(placeOf(pick === 'start' ? nav.from : nav.to));
   }
 
@@ -148,6 +153,31 @@
       data: { from: placeOf(from), to: placeOf(to), when: null, way: null, summary, path: null },
       text: I18n.t('share.byBusTrain', '{ends}, by bus and train', { ends }),
     });
+  }
+
+  // A feat done, or with no id, Achievements as a whole: which feats, your name as Share my ETA
+  // sends it, and the day the feat was done.
+  function shareFeatCard(id) {
+    const done = Eggs.feats();
+    if (!done.length || (id && !done.includes(id))) return;
+    const n = done.length;
+    const all = Eggs.all.length;
+    const count = I18n.t('eggs.featCount', '{n} of {all} feats done', { n, all });
+    showCard({
+      heading: id ? I18n.t('share.feat.heading', 'Share this feat') : I18n.t('share.feats.heading', 'Share your achievements'),
+      name: id ? Eggs.name(id) : count,
+      sub: id ? count : done.map(Eggs.name).join(' · '),
+      kind: 'feat',
+      data: { feat: id || null, done, name: LS.getName(), on: id ? Eggs.doneOn(id) : null },
+      text: id
+        ? I18n.t('share.feat.text', 'I did a feat on SG Bus Timings: {name}!', { name: Eggs.name(id) })
+        : I18n.t('share.feats.text', 'I’ve done {n} of {all} feats on SG Bus Timings!', { n, all }),
+    });
+  }
+
+  function feat(id) {
+    lastPick = { kind: 'feat', id };
+    openCard(lastPick);
   }
 
   // `note` goes under the name, such as a word on what the link gives away.
@@ -170,12 +200,16 @@
     $('#shareCardSub').hidden = !sub;
     setLink(null);
     $('#shareMapImg').hidden = true;
+    $('#shareMapImg').alt = kind === 'feat' ? name : I18n.t('html.map', 'Map');
+    $('#shareMap').classList.toggle('card', kind === 'feat');
+    // Saving a picture needs a browser: the apps' WebViews don't download.
+    $('#shareTargets [data-share-to="image"]').hidden = kind !== 'feat' || !!window.AppBridge?.native;
     $('#shareStopEta').hidden = kind !== 'eta';
     openModal('shareCardModal');
     // Offline, no short link can be made: said at once, rather than after the fetch fails.
     // Offline Sharing's own link (offlineUrl) still goes, phone to phone.
     if (!made && window.Offline?.on()) {
-      setLink(null, window.OfflineShare?.canSend() && kind !== 'eta' ? I18n.t("share.offlineNearby", "You're offline, so there's no short link to send. Offline Sharing still sends it to a phone nearby. Try again when you reconnect.") : I18n.t("share.offline", "You're offline, so there's no short link to send. Try again when you reconnect."));
+      setLink(null, window.OfflineShare?.canSend() && kind !== 'eta' && kind !== 'feat' ? I18n.t("share.offlineNearby", "You're offline, so there's no short link to send. Offline Sharing still sends it to a phone nearby. Try again when you reconnect.") : I18n.t("share.offline", "You're offline, so there's no short link to send. Try again when you reconnect."));
       return null;
     }
     try {
@@ -184,8 +218,12 @@
       card.url = link.url;
       setLink(link.url);
       const img = $('#shareMapImg');
-      img.onload = () => { img.hidden = false; };
-      img.src = `/api/share-map?id=${link.id}${kind === 'eta' ? `&v=${Date.now()}` : ''}`;
+      const forCard = card;
+      img.onload = () => {
+        img.hidden = false;
+        if (kind === 'feat') keepCard(img.src, forCard);
+      };
+      img.src = kind === 'feat' ? `/api/feat-card?id=${link.id}` : `/api/share-map?id=${link.id}${kind === 'eta' ? `&v=${Date.now()}` : ''}`;
       return link;
     } catch (e) {
       setLink(null, e.message);
@@ -204,13 +242,22 @@
     }
   }
 
+  // A feat's card as a file, fetched once it's shown (from the browser's cache), so More can
+  // send it straight from the tap: a share that waits on a fetch first can lose the tap.
+  async function keepCard(src, forCard) {
+    try {
+      const blob = await (await fetch(src)).blob();
+      if (card === forCard) card.file = new File([blob], 'sgbus-feat.png', { type: blob.type || 'image/png' });
+    } catch { /* the link still goes */ }
+  }
+
   // Offline Sharing's link (js/offline-share.js): Navigate's own link for a place or directions,
   // which opens with no server to look it up, so it goes across with no internet; the short
-  // link for live progress, which needs the internet to follow anyway. The way picked isn't
+  // link for live progress or a feat, which needs the internet to open anyway. The way picked isn't
   // in Navigate's link, so they get every way from the ends and the time.
   function offlineUrl() {
     if (!card) return null;
-    if (card.kind === 'eta') return card.url;
+    if (card.kind === 'eta' || card.kind === 'feat') return card.url;
     const d = card.data;
     const hash = card.kind === 'place' ? navHashFor('here', d) : navHashFor(d.from, d.to, d.when, d.via);
     return `${location.origin}/${hash}`;
@@ -234,7 +281,16 @@
     if (target === 'telegram') window.open(`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     else if (target === 'whatsapp') window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
     else if (target === 'more') {
-      try { await navigator.share({ title, text, url }); } catch { /* closed */ }
+      // A feat's card goes as a picture, where the browser can send one, with the link in the
+      // words: apps that take a picture tend to drop a link sent beside it.
+      const files = card.file && navigator.canShare?.({ files: [card.file] }) ? [card.file] : null;
+      try { await navigator.share(files ? { title, text: `${text} ${url}`, files } : { title, text, url }); } catch { /* closed */ }
+    } else if (target === 'image') {
+      const a = document.createElement('a');
+      a.href = card.file ? URL.createObjectURL(card.file) : $('#shareMapImg').src;
+      a.download = 'sgbus-feat.png';
+      a.click();
+      if (card.file) setTimeout(() => URL.revokeObjectURL(a.href), 10000);
     } else if (target === 'copy') {
       try {
         await navigator.clipboard.writeText(url);
@@ -459,6 +515,10 @@
     if (kind === 'place') openNavAt('here', data);
     else if (kind === 'directions') openNavAt(data.from, data.to, data.when, data.way, data.via || null);
     else if (kind === 'eta') openEtaView(id, { data, updatedAt: got.updatedAt });
+    else if (kind === 'feat') {
+      window.Eggs?.showShared(data);
+      if (location.hash.startsWith('#share/')) history.replaceState(null, '', location.pathname);
+    }
   }
 
   // ---------- wiring ----------
@@ -535,5 +595,5 @@
     }
   }
 
-  window.Share = { init, open, openMenu, place, directions };
+  window.Share = { init, open, openMenu, place, directions, feat };
 })();

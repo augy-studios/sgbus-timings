@@ -1,13 +1,15 @@
 # Share links setup
 
 Navigate's **Share** makes short links (`/go/…`, `/trip/…`, `/eta/…`) kept in
-Supabase. Without it, Share still works with nothing set (the plain `#nav` link),
+Supabase, and so does Achievements' **Share** (`/feat/…`). Without it, Share still works with nothing set (the plain `#nav` link),
 but every short link answers "Sharing is not set up yet."
 
 1. Create a Supabase project, or use an existing one.
 2. In its **SQL Editor**, run [`migrations/0001_share_links.sql`](../migrations/0001_share_links.sql)
    from the repo root. That makes the `share_links` table, with row level security on
-   and no policies, so only the service key reaches it.
+   and no policies, so only the service key reaches it. Then run
+   [`migrations/0002_share_links_feat.sql`](../migrations/0002_share_links_feat.sql),
+   which lets the table keep feat links too.
 3. In **Project Settings → API**, copy the project URL and the `service_role` key
    (or a newer `sb_secret_…` key).
 4. In the Vercel project's **Settings → Environment Variables**, set:
@@ -31,6 +33,8 @@ but every short link answers "Sharing is not set up yet."
   to have allowed notifications. Without it, the link updates only while the app
   is open.
 - **Maps**: OneMap's static map, which needs no key.
+- **Feat cards**: drawn by `api/feat-card.js` with `@vercel/og`, in the app's font
+  (Jua) from Google Fonts. No key; without Google Fonts, the card is in a plain font.
 - **Telegram Instant View**: for `/go/…`, `/trip/…` and `/eta/…` links, once Telegram approves its
   template; see [TELEGRAM_IV_SETUP.md](TELEGRAM_IV_SETUP.md). Share always sends the
   plain link.

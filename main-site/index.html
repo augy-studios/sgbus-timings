@@ -904,6 +904,8 @@
                 <p class="modal-section-label" data-find="achievements feats progress trophy" data-i18n="achievements.feats">Feats</p>
                 <p id="achievementsSummary" class="mode-note"></p>
                 <ul id="achievementsList" class="achievements"></ul>
+                <!-- A card for socials, with a link (js/share.js, Share.feat) -->
+                <button id="achievementsShare" class="iconBtn settingsWide" type="button" hidden><span data-icon="share"></span> <span data-i18n="achievements.shareAll">Share your achievements</span></button>
                 <p class="modal-section-label" data-find="easter eggs secrets wheel" data-i18n="eggs.title">Easter eggs</p>
                 <p class="mode-note" data-i18n="achievements.eggsNote">Each feat is worth 100 uwuCoins once. Its Easter egg comes from the uwuCoins wheel, in Help and extras.</p>
                 <p id="achievementsEggs" class="mode-note"></p>
@@ -1030,7 +1032,8 @@
                 </button>
             </div>
             <div class="shareBubble">
-                <div class="shareMap"><img id="shareMapImg" data-i18n-alt="html.map" alt="Map" hidden /></div>
+                <!-- A map, or for a feat its card (api/feat-card.js) -->
+                <div id="shareMap" class="shareMap"><img id="shareMapImg" data-i18n-alt="html.map" alt="Map" hidden /></div>
                 <div class="shareBand">
                     <p id="shareCardName" class="shareName"></p>
                     <p id="shareCardSub" class="shareSub" hidden></p>
@@ -1043,6 +1046,8 @@
                 <button class="shareTarget" type="button" data-share-to="whatsapp" disabled><span data-icon="chat"></span><span class="lbl">WhatsApp</span></button>
                 <button class="shareTarget" type="button" data-share-to="copy" disabled><span data-icon="copy"></span><span data-i18n="html.copy_link" class="lbl">Copy link</span></button>
                 <button class="shareTarget" type="button" data-share-to="more" disabled><span data-icon="share"></span><span data-i18n="html.more" class="lbl">More</span></button>
+                <!-- A feat's card as a picture, for socials that take only pictures: not in the apps, which can't save it -->
+                <button class="shareTarget" type="button" data-share-to="image" disabled hidden><span data-icon="download"></span><span data-i18n="html.save_image" class="lbl">Save image</span></button>
                 <!-- The Android app from 2.1.0 only: a tap or Nearby, no internet (js/offline-share.js) -->
                 <button class="shareTarget" type="button" data-share-to="offline" disabled hidden><span data-icon="nearby"></span><span data-i18n="html.offline_sharing" class="lbl">Offline Sharing</span></button>
             </div>

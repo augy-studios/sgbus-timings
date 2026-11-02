@@ -38,9 +38,12 @@
 // one. Done again, both are off, and locked again where the trick unlocked them.
 //
 // Settings' Achievements lists each feat with how far along it is (progress, renderAchievements).
+// Each feat done has its Share, and Achievements as a whole has one too: a card for socials with
+// a short /feat/<id> link (js/share.js, Share.feat). Opened, the link says what was done, here
+// in #eggModal, with how far along the person opening it is (showShared).
 //
 // Window.Eggs = { feat(id), found(id), progress(), rides(record), tripDone(trip), pastTrip(trip),
-// gather(fn), feats(), list(), has(secret), presets(), name(id), all }. Past trips, from before
+// gather(fn), feats(), list(), has(secret), presets(), name(id), doneOn(id), showShared(data), all }. Past trips, from before
 // uwuCoins, do their feats once (js/retrofit.js: pastTrip, inside gather). The console's
 // simulateEgg(id) does a feat, and simulateEgg(id, 'egg') finds an egg, for a look;
 // simulateHelp() lists every simulate command (these, simulateCoins in js/coins.js, simulateRide
@@ -69,7 +72,8 @@
   };
   const tr = (k, en, v) => (window.I18n ? I18n.t(k, en, v) : en);
 
-  // Each feat and its egg: what it's called, how it was done, and the egg's preset.
+  // Each feat and its egg: what it's called, how it was done, and the egg's preset. Their share
+  // cards have them in English: keep FEATS in api/_lib/share-links.js in step.
   const EGGS = {
     lines: { goal: () => tr('eggs.lines.goal', 'Ride every MRT and LRT line.'), name: () => tr('eggs.lines', 'Every line ridden'), how: () => tr('eggs.lines.how', 'You rode every MRT and LRT line.') },
     up: { goal: () => tr('eggs.up.goal', 'Ride buses 12, 34, 56, 78 and 90.'), buses: ['12', '34', '56', '78', '90'], name: () => tr('eggs.up', '12, 34, 56, 78, 90'), how: () => tr('eggs.up.how', 'You rode buses 12, 34, 56, 78 and 90.'), preset: { id: 'rising', base: '#ff9e40', name: () => tr('colours.preset.rising', 'Rising') } },
@@ -100,6 +104,11 @@
     return out;
   }
   const feats = () => IDS.filter((id) => read(FEATS_KEY)[id]);
+  // The day a feat was done, Singapore's, as "2026-11-01": for its share card. Null if it isn't.
+  const doneOn = (id) => {
+    const at = Number(read(FEATS_KEY)[id]);
+    return at > 0 ? new Date(at).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' }) : null;
+  };
   const list = () => IDS.filter((id) => read(EGGS_KEY)[id]);
 
   // ---------- the secrets ----------
@@ -254,13 +263,16 @@
   }
 
   // Settings' Achievements (#achievementsList): each feat, how it's done, how far along it is,
-  // and its egg once the wheel's given it.
+  // its egg once the wheel's given it, and its Share once it's done.
   function renderAchievements() {
     const box = document.getElementById('achievementsList');
     if (!box) return;
     const all = progress();
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
-    document.getElementById('achievementsSummary').textContent = tr('eggs.featCount', '{n} of {all} feats done', { n: all.filter((a) => a.done).length, all: all.length });
+    const done = all.filter((a) => a.done).length;
+    document.getElementById('achievementsSummary').textContent = tr('eggs.featCount', '{n} of {all} feats done', { n: done, all: all.length });
+    const shareAll = document.getElementById('achievementsShare');
+    if (shareAll) shareAll.hidden = !done;
     box.innerHTML = all.map((a) => {
       const pct = Math.round((a.have / a.need) * 100);
       const state = a.done ? tr('achievements.done', 'Done') : a.need > 1 ? tr('achievements.of', '{have} of {need}', { have: a.have, need: a.need }) : tr('achievements.notYet', 'Not yet');
@@ -269,9 +281,34 @@
         `<p class="achievementHow">${esc(a.how)}</p>` +
         `<div class="achievementBar" role="progressbar" aria-valuemin="0" aria-valuemax="${a.need}" aria-valuenow="${a.have}" aria-label="${esc(a.name)}"><span style="width:${pct}%"></span></div>` +
         (a.egg ? `<p class="achievementEgg">${esc(tr('achievements.eggFound', 'Its Easter egg: found'))}</p>` : '') +
+        (a.done ? `<button type="button" class="iconBtn achievementShare" data-feat-share="${a.id}">${window.icon ? `<span class="ico" aria-hidden="true">${window.icon('share')}</span>` : ''}<span>${esc(tr('achievements.share', 'Share'))}</span></button>` : '') +
         `</li>`;
     }).join('');
     document.getElementById('achievementsEggs').textContent = tr('eggs.count', '{n} of {all} Easter eggs found', { n: list().length, all: IDS.length });
+  }
+
+  // ---------- a feat shared with you ----------
+
+  // A /feat/<id> link opened (js/share.js): { feat, done, name } as the sharer's app sent them,
+  // feat null for their Achievements as a whole. What they did, and how far along you are.
+  function showShared(data) {
+    if (!document.getElementById('eggModal')) return;
+    const who = data?.name || tr('eggs.shared.someone', 'Someone');
+    const theirs = (data?.done || []).filter((id) => EGGS[id]);
+    const one = EGGS[data?.feat] ? data.feat : null;
+    document.getElementById('eggTitle').textContent = one
+      ? tr('eggs.shared.title', '{who} did a feat!', { who })
+      : tr('eggs.shared.titleAll', '{who}’s achievements', { who });
+    document.getElementById('eggName').textContent = one ? EGGS[one].name() : tr('eggs.featCount', '{n} of {all} feats done', { n: theirs.length, all: IDS.length });
+    document.getElementById('eggHow').textContent = one
+      ? (feats().includes(one) ? tr('eggs.shared.youToo', 'You’ve done this one too.') : tr('eggs.shared.yourTurn', 'Your turn: {goal}', { goal: EGGS[one].goal() }))
+      : theirs.map((id) => EGGS[id].name()).join(' · ');
+    document.getElementById('eggGot').textContent = '';
+    document.getElementById('eggCount').textContent = tr('eggs.shared.you', 'You: {n} of {all} feats done', { n: feats().length, all: IDS.length });
+    const go = document.getElementById('eggGo');
+    if (go) { go.dataset.go = 'achievements'; go.textContent = tr('achievements.see', 'See your achievements'); }
+    window.openModal('eggModal');
+    if (one) window.Confetti?.burst?.();
   }
 
   // ---------- the feats ----------
@@ -389,6 +426,12 @@
     // Opened: brought up to date, rides counted since included.
     document.querySelector('[data-settings-open="achievements"]')?.addEventListener('click', renderAchievements);
     document.getElementById('coinAchievements')?.addEventListener('click', renderAchievements);
+    // Share: a feat's card, or Achievements' as a whole (js/share.js).
+    document.getElementById('achievementsList')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-feat-share]');
+      if (btn) window.Share?.feat(btn.dataset.featShare);
+    });
+    document.getElementById('achievementsShare')?.addEventListener('click', () => window.Share?.feat(null));
     document.getElementById('greeting')?.addEventListener('click', () => tapped('greeting'));
     document.getElementById('settingsTitle')?.addEventListener('click', () => tapped('settings'));
     // Back in the app with eggs found elsewhere: the secrets catch up, said in the window.
@@ -409,7 +452,7 @@
     document.getElementById('eggGo')?.addEventListener('click', () => {
       window.closeModal('eggModal');
       const to = document.getElementById('eggGo').dataset.go;
-      setTimeout(() => (to === 'coins' ? window.Coins?.open() : window.Colours?.open()), 50);
+      setTimeout(() => (to === 'coins' ? window.Coins?.open() : to === 'achievements' ? window.openSettings?.('achievements') : window.Colours?.open()), 50);
     });
     document.getElementById('eggLater')?.addEventListener('click', () => window.closeModal('eggModal'));
   }
@@ -465,5 +508,5 @@
     "Each says more with 'help', such as simulateCoins('help').",
   ].join('\n'));
 
-  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, all: IDS, KTM, FEAT_COINS };
+  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, doneOn, showShared, all: IDS, KTM, FEAT_COINS };
 })();

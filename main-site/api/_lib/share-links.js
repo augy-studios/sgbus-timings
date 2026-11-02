@@ -1,5 +1,5 @@
 // Navigate's short share links, kept in Supabase's share_links table (SHARE-LINKS-SETUP.md).
-// Three kinds, each with its own path, as Citymapper has them:
+// Four kinds, each with its own path, the first three as Citymapper has them:
 //
 //   place       /go/<id>    "How to get to" one place: opened, it's Navigate's To, from
 //                           wherever the person opening it is.
@@ -7,19 +7,22 @@
 //                           the way that was open.
 //   eta         /eta/<id>   Live progress on a trip (js/trip.js): when you'll arrive and how
 //                           far along you are, updated by the sharer's app as it goes.
+//   feat        /feat/<id>  A feat done, or Achievements as a whole (js/eggs.js): a card for
+//                           socials (api/feat-card.js) of which feats, by whom, and when.
 //
 // The id is ten letters and digits. A place or directions link is the same link every time
 // the same thing is shared (dedupe_key); an ETA link is new each time, and only the app that
 // made it can update it, with the secret it was given (kept here only as a hash).
 //
 // Used by api/share.js (make, read, update), api/share-page.js (the page a link opens, with
-// its preview for chat apps) and api/share-map.js (the map in that preview and the app).
+// its preview for chat apps), api/share-map.js (the map in that preview and the app) and
+// api/feat-card.js (a feat link's card, in place of a map).
 
 import { createHash, randomBytes } from 'node:crypto';
 import { rest } from './supabase.js';
 
 const TABLE = 'share_links';
-export const PATHS = { place: 'go', directions: 'trip', eta: 'eta' };
+export const PATHS = { place: 'go', directions: 'trip', eta: 'eta', feat: 'feat' };
 const ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 const ID_RE = /^[a-z0-9]{10}$/;
 
@@ -106,7 +109,45 @@ export function parseLink(kind, data, now = Date.now()) {
     return out;
   }
   if (kind === 'eta') return parseEta(data, now);
+  if (kind === 'feat') return parseFeat(data, now);
   throw new ValidationError('bad kind');
+}
+
+// ---------- a feat ----------
+// The feats as js/eggs.js has them, in its order, in English for the card and the preview:
+// what each is called, what was done, and its colour (its egg's preset, in Your colours).
+// Keep in step with EGGS in js/eggs.js.
+export const FEATS = {
+  lines: { name: 'Every line ridden', did: 'Rode every MRT and LRT line.', colour: '#00838f' },
+  up: { name: '12, 34, 56, 78, 90', did: 'Rode buses 12, 34, 56, 78 and 90.', colour: '#ff9e40' },
+  down: { name: '9, 87, 65, 43, 21', did: 'Rode buses 9, 87, 65, 43 and 21.', colour: '#8e5bd0' },
+  loop: { name: 'There and back again', did: 'Went somewhere and came back to where they started.', colour: '#fa9e0d' },
+  long: { name: 'The long way round', did: 'Took a trip of over three hours.', colour: '#2f5fd0' },
+  ktm: { name: 'Down the old railway', did: 'Travelled between two places on the old KTM railway line.', colour: '#2e7d32' },
+};
+const FEAT_IDS = Object.keys(FEATS);
+
+// A feat link's card (api/_lib/feat-card.js): the size socials show in full.
+export const CARD_W = 1200;
+export const CARD_H = 630;
+
+// { feat, done, name, on }: the feat shared, or null for Achievements as a whole; every feat
+// done, in FEATS' order; the sharer's name, if they've given one; and the day the feat was
+// done, Singapore's date. Nothing checks they did them: feats are kept on the phone alone.
+function parseFeat(data, now) {
+  if (!Array.isArray(data.done)) throw new ValidationError('bad feats');
+  const done = FEAT_IDS.filter((id) => data.done.includes(id));
+  if (!done.length) throw new ValidationError('no feats done');
+  const feat = data.feat == null ? null : data.feat;
+  if (feat !== null && !done.includes(feat)) throw new ValidationError('bad feat');
+  let on = null;
+  if (data.on != null) {
+    if (typeof data.on !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(data.on)) throw new ValidationError('bad date');
+    const t = Date.parse(`${data.on}T00:00:00+08:00`);
+    if (!Number.isFinite(t) || t > now + 24 * 60 * 60 * 1000 || t < Date.UTC(2026, 0, 1)) throw new ValidationError('bad date');
+    on = data.on;
+  }
+  return { feat, done, name: text(data.name, 40), on };
 }
 
 const LEG_KINDS = ['bus', 'train', 'walk'];
@@ -307,11 +348,29 @@ export function describeLink(link) {
       description: data.summary || 'Directions by bus and train, on SG Bus Timings.',
     };
   }
+  if (kind === 'feat') return describeFeat(data);
   const who = data.name || 'Someone';
   if (data.stopped) return { title: `${who} stopped sharing their trip to ${data.to.label}`, description: 'Live progress on SG Bus Timings.' };
   return {
     title: data.ended ? `${who} has arrived at ${data.to.label}` : `${who} is on the way to ${data.to.label}`,
     description: data.ended ? 'Live progress on SG Bus Timings.' : `Arriving around ${sgClock(data.arriveAt)}. Follow along live on SG Bus Timings.`,
+  };
+}
+
+// "4 of 6 feats done", and a feat link's title and line.
+export const featCount = (data) => `${data.done.length} of ${FEAT_IDS.length} feats done`;
+
+function describeFeat(data) {
+  const f = data.feat && FEATS[data.feat];
+  if (f) {
+    return {
+      title: data.name ? `${data.name} did a feat: ${f.name}` : `A feat done: ${f.name}`,
+      description: `${f.did} ${featCount(data)} on SG Bus Timings.`,
+    };
+  }
+  return {
+    title: data.name ? `${data.name}’s achievements: ${featCount(data)}` : `Achievements: ${featCount(data)}`,
+    description: `${data.done.map((id) => FEATS[id].name).join(' · ')}. On SG Bus Timings.`,
   };
 }
 
@@ -326,6 +385,12 @@ export function whenText(when) {
   const dow = DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
   return `${when.mode === 'arrive' ? 'Arrive by' : 'Leave at'} ${when.at.slice(11)} on ${dow} ${d} ${MONTHS[m - 1]}`;
 }
+
+// "1 Nov 2026", a feat's day.
+export const featDay = (on) => {
+  const [y, m, d] = on.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+};
 
 // "08:41 on Mon 12 Oct", Singapore time: an ETA link's times, for its Instant View page.
 export const sgDateTime = (ms) =>

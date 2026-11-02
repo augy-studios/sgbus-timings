@@ -92,6 +92,22 @@ how far along you are, such as **6 of 9** lines ridden, and **Done** once it's
 done. A feat's Easter egg comes from the wheel, not the feat, and says so once
 you've found it.
 
+### Share a feat
+
+Each feat you've done has a **Share** button, and **Share your achievements**,
+under how many you've done, shares them all. Either opens a card, a picture of
+the feat with your name from Settings and the day you did it, or of all six feats
+with yours filled in, and a short link to it.
+
+- **Telegram** and **WhatsApp** send the link, which shows the card in the chat.
+- **Copy link** copies it, for anywhere else.
+- **More** opens your phone's share sheet with the card as a picture and the
+  link with it, for Instagram, X and other apps that take pictures.
+- **Save image** saves the card as a picture, in a browser.
+
+Whoever opens the link sees the feat, what it takes to do it, and how many feats
+they've done themselves, with a button to their own Achievements.
+
 ## What an egg brings
 
 Each egg unlocks a secret you haven't got yet, picked at random, and most also

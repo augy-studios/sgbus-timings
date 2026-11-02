@@ -2635,7 +2635,7 @@ const NAV_HASH_RE = new RegExp(`^nav\\/${NAV_END}\\/${NAV_END}${NAV_VIA}${WHEN_H
 function routeFromHash() {
     // The short link itself, when the app was served for it offline (sw.js) rather than
     // api/share-page.js sending it on.
-    const short = location.pathname.match(/^\/(?:go|trip|eta)\/([a-z0-9]{10})$/);
+    const short = location.pathname.match(/^\/(?:go|trip|eta|feat)\/([a-z0-9]{10})$/);
     if (short) history.replaceState(null, '', `/#share/${short[1]}`);
     const raw = location.hash.replace('#', '');
     const hash = decodeURIComponent(raw);

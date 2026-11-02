@@ -1673,5 +1673,18 @@
   "when.today": "இன்று",
   "when.tomorrow": "நாளை",
   "when.tooFar": "அடுத்த ஒரு வாரத்துக்குள் ஒரு நேரத்தைத் தேர்ந்தெடுங்கள்.",
-  "when.when": "எப்போது"
+  "when.when": "எப்போது",
+  "achievements.share": "பகிர்",
+  "achievements.shareAll": "உங்கள் சாதனைகளைப் பகிருங்கள்",
+  "eggs.shared.someone": "ஒருவர்",
+  "eggs.shared.title": "{who} ஒரு சாதனை செய்தார்!",
+  "eggs.shared.titleAll": "{who} அவர்களின் சாதனைகள்",
+  "eggs.shared.you": "நீங்கள்: {all} சாதனைகளில் {n} முடிந்தன",
+  "eggs.shared.yourTurn": "உங்கள் முறை: {goal}",
+  "eggs.shared.youToo": "இதை நீங்களும் செய்துவிட்டீர்கள்.",
+  "html.save_image": "படத்தைச் சேமி",
+  "share.feat.heading": "இந்தச் சாதனையைப் பகிருங்கள்",
+  "share.feat.text": "SG Bus Timings-இல் ஒரு சாதனை செய்தேன்: {name}!",
+  "share.feats.heading": "உங்கள் சாதனைகளைப் பகிருங்கள்",
+  "share.feats.text": "SG Bus Timings-இல் {all} சாதனைகளில் {n} முடித்துவிட்டேன்!"
 }
