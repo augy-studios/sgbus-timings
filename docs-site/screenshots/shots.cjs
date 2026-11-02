@@ -1585,7 +1585,7 @@ async function drawConsole(browser, shots) {
   // secrets: the shortcut's two places and its window, Your colours with every preset, the eggs
   // found in Theme, and Your phone's colours in the Android app (a made-up wallpaper's palette).
   if (want('secrets')) {
-    const allEggs = Object.fromEntries(['lines', 'up', 'down', 'loop', 'long', 'ktm'].map((id) => [id, Date.now()]));
+    const allEggs = Object.fromEntries(['lines', 'up', 'down', 'loop', 'long', 'ktm', 'first', 'hundred', 'ends'].map((id) => [id, Date.now()]));
     let { ctx, page } = await open(browser, { width: 420, height: 1100, still: true });
     await el(page, '#titleBtn', 'secret-greeting.png');
     // The shortcut, done for real: the greeting three times, then Settings' title three times.

@@ -123,12 +123,12 @@ names:
 | `simulateEgg('undo')` | Takes away every feat, egg and secret, but not the coins |
 
 <figure>
-<img src="/screenshots/web/console-eggs.png" alt="The console: simulateEgg('ktm') answers done; simulateEgg('ktm', 'egg') answers that it unlocked Your colours, with the new preset KTM; simulateEgg('all') lists the other five feats done, +500 uwuCoins, 6 of 6 feats done; simulateEgg('all', 'egg') lists the other five eggs found, 6 of 6 Easter eggs found; simulateEgg('undo') answers undone." width="720" height="411" loading="lazy">
+<img src="/screenshots/web/console-eggs.png" alt="The console: simulateEgg('ktm') answers done; simulateEgg('ktm', 'egg') answers that it unlocked Your colours, with the new preset KTM; simulateEgg('all') lists the other eight feats done, among them First to last, 100 rides and Ends of the island, +800 uwuCoins, 9 of 9 feats done; simulateEgg('all', 'egg') lists the other eight eggs found, 9 of 9 Easter eggs found; simulateEgg('undo') answers undone." width="720" height="430" loading="lazy">
 <figcaption>One feat and egg, then all of them, then undone.</figcaption>
 </figure>
 
 <figure>
-<img src="/screenshots/web/secret-feat-ktm.png" alt="A window: You did something special! Down the old railway. You travelled between two places on the old KTM railway line. +100 uwuCoins, for a spin of the wheel in Settings. 4 of 6 feats done. Spin the wheel, Later." width="396" height="296" loading="lazy">
+<img src="/screenshots/web/secret-feat-ktm.png" alt="A window: You did something special! Down the old railway. You travelled between two places on the old KTM railway line. +100 uwuCoins, for a spin of the wheel in Settings. 4 of 9 feats done. Spin the wheel, Later." width="396" height="296" loading="lazy">
 <figcaption>The window simulateEgg('ktm') opens.</figcaption>
 </figure>
 

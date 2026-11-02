@@ -26,7 +26,7 @@ eggs**, says what's just been unlocked.
 ## Your colours
 
 <figure>
-<img src="/screenshots/web/secret-your-colours.png" alt="Your colours in the theme picker: a colour wheel with its marker on a deep green, a brightness slider, a preview of sample text, a card and a button in green, then Presets: Classic, Rising, Sunset, Loop, Long haul and KTM, KTM picked. A note: The buttons are a little lighter than the colour picked, so their text is easy to read. Use this colour, and Watch the celebration again." width="358" height="661" loading="lazy">
+<img src="/screenshots/web/secret-your-colours.png" alt="Your colours in the theme picker: a colour wheel with its marker on a deep green, a brightness slider, a preview of sample text, a card and a button in green, then Presets: Classic, Rising, Sunset, Loop, Long haul, KTM, End to end, Century and Compass, KTM picked. A note: The buttons are a little lighter than the colour picked, so their text is easy to read. Use this colour, and Watch the celebration again." width="358" height="700" loading="lazy">
 <figcaption>Your colours, with every egg's preset.</figcaption>
 </figure>
 
@@ -49,7 +49,7 @@ takes it away again.
 
 ### The presets
 
-**Classic**, the app's own green, is always there. Five eggs bring one more
+**Classic**, the app's own green, is always there. Eight eggs bring one more
 each:
 
 | Easter egg | Preset | Colour |
@@ -59,6 +59,9 @@ each:
 | There and back again | Loop | Amber, the Circle Line's |
 | The long way round | Long haul | Blue |
 | Down the old railway | KTM | Green |
+| First to last | End to end | Deep pink |
+| 100 rides | Century | Gold |
+| Ends of the island | Compass | Teal |
 
 **Every line ridden** brings no preset. Instead, once you've found its egg and
 ridden every line too, **Watch the celebration again** under Your colours plays
@@ -164,7 +167,7 @@ Once you've found an egg, the bottom of the theme picker lists the ones you've
 found.
 
 <figure>
-<img src="/screenshots/web/secret-eggs-found.png" alt="Easter eggs in the theme picker: 6 of 6 Easter eggs found, then Every line ridden; 12, 34, 56, 78, 90; 9, 87, 65, 43, 21; There and back again; The long way round; and Down the old railway." width="358" height="164" loading="lazy">
+<img src="/screenshots/web/secret-eggs-found.png" alt="Easter eggs in the theme picker: 9 of 9 Easter eggs found, then Every line ridden; 12, 34, 56, 78, 90; 9, 87, 65, 43, 21; There and back again; The long way round; Down the old railway; First to last; 100 rides; and Ends of the island." width="358" height="221" loading="lazy">
 <figcaption>Every egg found.</figcaption>
 </figure>
 

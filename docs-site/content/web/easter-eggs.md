@@ -64,7 +64,7 @@ that uses the bus, and ride it to its stop. Search a bus's number for
 [its route](bus-routes.md), to see where it goes.
 
 <figure>
-<img src="/screenshots/web/secret-feat-up.png" alt="A window: You did something special! 12, 34, 56, 78, 90. You rode buses 12, 34, 56, 78 and 90. +100 uwuCoins, for a spin of the wheel in Settings. 1 of 6 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
+<img src="/screenshots/web/secret-feat-up.png" alt="A window: You did something special! 12, 34, 56, 78, 90. You rode buses 12, 34, 56, 78 and 90. +100 uwuCoins, for a spin of the wheel in Settings. 1 of 9 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
 <figcaption>The window once the fifth bus counts.</figcaption>
 </figure>
 
@@ -74,7 +74,7 @@ The same, counting down: buses **9**, **87**, **65**, **43** and **21**, in
 any order.
 
 <figure>
-<img src="/screenshots/web/secret-feat-down.png" alt="A window: You did something special! 9, 87, 65, 43, 21. You rode buses 9, 87, 65, 43 and 21. +100 uwuCoins, for a spin of the wheel in Settings. 2 of 6 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
+<img src="/screenshots/web/secret-feat-down.png" alt="A window: You did something special! 9, 87, 65, 43, 21. You rode buses 9, 87, 65, 43 and 21. +100 uwuCoins, for a spin of the wheel in Settings. 2 of 9 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
 <figcaption>Done counting down.</figcaption>
 </figure>
 
@@ -94,7 +94,7 @@ trip.
 </figure>
 
 <figure>
-<img src="/screenshots/web/secret-feat-loop.png" alt="A window: You did something special! There and back again. You went somewhere and came back to where you started. +100 uwuCoins, for a spin of the wheel in Settings. 5 of 6 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
+<img src="/screenshots/web/secret-feat-loop.png" alt="A window: You did something special! There and back again. You went somewhere and came back to where you started. +100 uwuCoins, for a spin of the wheel in Settings. 5 of 9 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
 <figcaption>Back where you started.</figcaption>
 </figure>
 
@@ -105,7 +105,7 @@ runs the whole time the trip does, so time spent at a stop on the way counts
 too: [Add a stop](nav.md) somewhere, and take your time there before going on.
 
 <figure>
-<img src="/screenshots/web/secret-feat-long.png" alt="A window: You did something special! The long way round. You took a trip of over three hours. +100 uwuCoins, for a spin of the wheel in Settings. 3 of 6 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
+<img src="/screenshots/web/secret-feat-long.png" alt="A window: You did something special! The long way round. You took a trip of over three hours. +100 uwuCoins, for a spin of the wheel in Settings. 3 of 9 feats done. Spin the wheel, Later." width="396" height="279" loading="lazy">
 <figcaption>Over three hours, start to end.</figcaption>
 </figure>
 
@@ -130,7 +130,7 @@ it to the end.
 </figure>
 
 <figure>
-<img src="/screenshots/web/secret-feat-ktm.png" alt="A window: You did something special! Down the old railway. You travelled between two places on the old KTM railway line. +100 uwuCoins, for a spin of the wheel in Settings. 4 of 6 feats done. Spin the wheel, Later." width="396" height="296" loading="lazy">
+<img src="/screenshots/web/secret-feat-ktm.png" alt="A window: You did something special! Down the old railway. You travelled between two places on the old KTM railway line. +100 uwuCoins, for a spin of the wheel in Settings. 4 of 9 feats done. Spin the wheel, Later." width="396" height="296" loading="lazy">
 <figcaption>Down the old railway, done.</figcaption>
 </figure>
 

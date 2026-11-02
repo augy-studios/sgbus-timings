@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v152";
+const VERSION = "v153";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -82,6 +82,8 @@ const ASSETS = [
   "/data/campus/config.json",
   // The island's other shuttle buses (IKEA's, Changi Airport's, KKH's, SGH's...), read the same way.
   "/data/campus/shuttles.json",
+  // Their roads, for Explorer to draw them along (scripts/shuttle-roads.mjs).
+  "/data/campus/roads.json",
   "/js/card.js",
   "/js/offline-share.js",
   "/js/reminders.js",

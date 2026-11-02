@@ -30,6 +30,8 @@ try {
 
 const SITE = path.resolve(process.env.SITE || path.join(__dirname, '../main-site'));
 const SHOTS = process.env.SHOTS ? path.resolve(process.env.SHOTS) : null;
+// /api/road's questions, by their points: a route with a kept road (roads.json) never asks.
+const roadAsks = [];
 const ROADS = process.env.ROADS ? JSON.parse(fs.readFileSync(process.env.ROADS, 'utf8')) : null;
 const ORIGIN = 'https://sgbus.test';
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
@@ -126,6 +128,7 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
     if (url.pathname === '/api/bus-stops') return json(STOPS);
     if (url.pathname === '/api/bus-arrivals') return json(arrivals(url.searchParams.get('stop')));
     if (url.pathname === '/api/bus-routes') return json(ROUTES);
+    if (url.pathname === '/api/road') roadAsks.push(url.searchParams.get('points'));
     if (url.pathname === '/api/road' && ROADS?.[url.searchParams.get('points')]) return json({ path: ROADS[url.searchParams.get('points')], source: 'osm' });
     if (url.pathname.startsWith('/api/')) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
     const file = path.join(SITE, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname));
@@ -244,6 +247,19 @@ const sgTime = (at) => new Date(`${at}:00+08:00`);
       freeDots: Campus.dots((r) => r.fare !== 'paid').length,
     }));
     ok('Explorer draws the free shuttles, NUS\'s and NTU\'s 12 among them', drawn.lines === drawn.free && drawn.unis === 12, JSON.stringify(drawn));
+    // Along their roads from data/campus/roads.json, not asked of /api/road: each route the file
+    // has for these stops drawn as its road, many points, not stop to stop.
+    const along = await page.evaluate(() => {
+      const list = Campus.lines((r) => r.fare !== 'paid');
+      const feats = window.__map.getSource('sg-shuttle')._data.features;
+      const kept = list.filter((l) => Campus.road(l.key, l.points));
+      const drawnAlong = kept.filter((l, i) => feats.some((f) => f.geometry.coordinates.length === Campus.road(l.key, l.points).length));
+      return { kept: kept.map((l) => l.key), drawnAlong: drawnAlong.length, nusNtu: kept.filter((l) => /^(nus|ntu):/.test(l.key)).length };
+    });
+    // (This test's stops for some NUS routes are a little off LTA's, so those keep to /api/road.)
+    ok('…each route roads.json has for these stops drawn along it, NTU\'s four among them', along.kept.length >= 10 && along.drawnAlong === along.kept.length && ['ntu:CL-B', 'ntu:CL-R', 'ntu:CR', 'ntu:CR-W'].every((k) => along.kept.includes(k)), JSON.stringify(along));
+    const keptAsks = await page.evaluate(() => Campus.lines((r) => r.fare !== 'paid').filter((l) => Campus.road(l.key, l.points)).map((l) => l.points.map(([a, b]) => `${a.toFixed(5)},${b.toFixed(5)}`).join(';')));
+    ok('…and /api/road not asked for any of them', !roadAsks.some((q) => keptAsks.includes(q)), `${roadAsks.length} asked`);
     ok('…and their stops LTA hasn\'t got as dots of their own', drawn.campus === drawn.freeDots && drawn.freeDots >= 33, String(drawn.campus));
     ok('…with LTA\'s stops each drawn once (34, no campus copy)', drawn.stops === STOPS.length, String(drawn.stops));
     const order = drawn.layers;

@@ -467,9 +467,23 @@
       .map((u) => ({ uni: u, text: String(config[u].credit), url: config[u].creditUrl ? String(config[u].creditUrl) : '' }));
   }
 
+  // ---------- roads ----------
+
+  // A route's stops as a short key (FNV-1a of their places to 5 decimals), so a road kept in
+  // data/campus/roads.json (scripts/shuttle-roads.mjs) is used only while the stops it was made
+  // for are the route's.
+  function roadKey(points) {
+    const text = points.map(([a, b]) => `${Number(a).toFixed(5)},${Number(b).toFixed(5)}`).join(';');
+    let h = 0x811c9dc5;
+    for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 0x01000193) >>> 0;
+    return h.toString(16).padStart(8, '0');
+  }
+
   // ---------- in the page ----------
 
   let files = null;
+  let roads = null; // roads.json's routes, once fetched; {} if it couldn't be
+  let roadsFetching = null;
   let fetching = null;
   let model = null;
   let builtFor = undefined;
@@ -483,6 +497,21 @@
         throw err;
       });
     return fetching;
+  }
+
+  // The roads kept for the routes (roads.json), fetched once. Without it, {}: Explorer asks
+  // /api/road as before.
+  function loadRoads() {
+    roadsFetching ??= fetch('/data/campus/roads.json')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { roads = d?.routes || {}; })
+      .catch(() => { roads = {}; roadsFetching = null; });
+    return roadsFetching;
+  }
+  // A route's kept road, [[lat, lng], ...], or null: none kept, or kept for other stops.
+  function road(key, points) {
+    const got = roads?.[key];
+    return got && Array.isArray(got.path) && got.path.length >= 2 && got.at === roadKey(points) ? got.path : null;
   }
 
   // The shuttles, built once against LTA's stops (again if they've been fetched since).
@@ -631,7 +660,7 @@
 
   const api = {
     MERGE_M, hhmm, clock, parseLoc, readTimings, build, season, status, describe, inkOn, sgDay, creditsIn,
-    load, at, listHtml, live, lines, uniName: (uni) => model?.config?.[uni]?.name || String(uni || '').toUpperCase(), dots, credits, search, route, isReady: () => !!model,
+    load, at, listHtml, live, lines, roadKey, loadRoads, road, uniName: (uni) => model?.config?.[uni]?.name || String(uni || '').toUpperCase(), dots, credits, search, route, isReady: () => !!model,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.Campus = api;

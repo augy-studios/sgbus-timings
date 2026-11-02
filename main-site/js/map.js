@@ -940,9 +940,10 @@
     window.Tour?.first('explorer');
   }
 
-  // Explorer's campus shuttles (js/campus.js): each route straight from stop to stop at once,
-  // then along its road once /api/road has it (as a trip's bus rides are), kept for the page
-  // view. Offline, the road from before if sw.js has it, or the straight lines.
+  // Explorer's campus shuttles (js/campus.js): each route along its road from
+  // data/campus/roads.json (scripts/shuttle-roads.mjs), drawn at once and offline. A route the
+  // file hasn't got for its stops is drawn straight from stop to stop, then along its road once
+  // /api/road has it (as a trip's bus rides are), kept for the page view.
   const shuttleRoads = new Map(); // route key -> its road, [[lat, lng], ...]
   let shuttlesDrawn = []; // [{ uni, color, points }]
   // Settings' Shuttle buses: paid ones (Mandai's, the TS1) only with Free and paid.
@@ -959,9 +960,14 @@
     drawShuttles();
   });
 
-  function drawShuttles() {
+  async function drawShuttles() {
     const list = window.Campus?.lines(keepShuttle) || [];
     if (!list.length) return;
+    await window.Campus.loadRoads?.();
+    for (const l of list) {
+      const kept = window.Campus.road?.(l.key, l.points);
+      if (kept) shuttleRoads.set(l.key, kept);
+    }
     const draw = () => {
       if (mode !== 'explore' || layersOff().has('shuttles')) return;
       shuttlesDrawn = list.map((l) => ({ uni: l.uni, color: l.color, points: shuttleRoads.get(l.key) || l.points }));

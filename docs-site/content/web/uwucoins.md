@@ -62,7 +62,7 @@ earns nothing. Your trips doesn't keep how far each ride went, so the distance
 is worked out from how long you rode, at a bus's and a train's usual speed.
 
 <figure>
-<img src="/screenshots/web/past-trips.png" alt="Coins for your past trips: 457 uwuCoins! Your 13 trips from before uwuCoins have earned theirs: +257 uwuCoins. Feats done: Down the old railway; The long way round, +100 uwuCoins each. 457 uwuCoins in all, for a spin of the wheel in Settings. 2 of 6 feats done, then Spin the wheel and Later." width="396" height="330" loading="lazy">
+<img src="/screenshots/web/past-trips.png" alt="Coins for your past trips: 457 uwuCoins! Your 13 trips from before uwuCoins have earned theirs: +257 uwuCoins. Feats done: Down the old railway; The long way round, +100 uwuCoins each. 457 uwuCoins in all, for a spin of the wheel in Settings. 2 of 9 feats done, then Spin the wheel and Later." width="396" height="330" loading="lazy">
 <figcaption>What two weeks of trips to work, and two longer ones, earned.</figcaption>
 </figure>
 
@@ -74,7 +74,7 @@ and the feats done, or the celebration plays if you'd already ridden every MRT
 and LRT line.
 
 <figure>
-<img src="/screenshots/web/past-trips-achievements.png" alt="Achievements after those trips: 2 of 6 feats done. Every line ridden, 2 of 9, from the East-West and Thomson-East Coast Lines; the two sets of buses 0 of 5; There and back again, Not yet; The long way round and Down the old railway, Done. 0 of 6 Easter eggs found." width="358" height="750" loading="lazy">
+<img src="/screenshots/web/past-trips-achievements.png" alt="Achievements after those trips: 2 of 9 feats done. Every line ridden, 2 of 9, from the East-West and Thomson-East Coast Lines; the two sets of buses 0 of 5; There and back again, Not yet; The long way round and Down the old railway, Done, each with Share; First to last, 0 of 2; 100 rides, 13 of 100; Ends of the island, 0 of 4; Share your achievements; 0 of 9 Easter eggs found." width="358" height="1177" loading="lazy">
 <figcaption>Achievements after them: the lines ridden, and two feats done.</figcaption>
 </figure>
 
