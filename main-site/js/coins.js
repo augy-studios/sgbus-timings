@@ -112,10 +112,10 @@
 
   // A trip from before uwuCoins, as Your trips keeps it (js/history.js, js/retrofit.js): the
   // same sums, from what's kept. Its rides' kilometres aren't kept, so they're from the time
-  // each took at PAST_KMH, a little under a bus's and a train's average, so a past trip never
-  // gets more than it would have then. Only the rides it got through (done) count, and only on
-  // a trip that got there: { n, parts } as forTrip's, or null.
-  const PAST_KMH = { bus: 15, train: 35 };
+  // each took at PAST_KMH, about a bus's and a train's average speed here, stops and all
+  // (Augy's pick, 2 November 2026). Only the rides it got through (done) count, and only on a
+  // trip that got there: { n, parts } as forTrip's, or null.
+  const PAST_KMH = { bus: 19, train: 40 };
   function forPast(trip) {
     const rides = (trip?.legs || []).filter((l) => l && l.done && (l.kind === 'bus' || l.kind === 'train'));
     if (!trip?.arrived || !rides.length) return null;

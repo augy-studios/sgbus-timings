@@ -37,9 +37,10 @@ it away.
 If you took trips before uwuCoins came, they earn their coins too, once. The
 first time you open the app after this update, it looks through
 [Your trips](trips.md) and gives each trip from before uwuCoins what it
-would have earned, if you got there with the Get Off Alert and got through at
-least one of its rides. Your trips doesn't keep how far each ride went, so the
-distance is worked out from how long you rode.
+would have earned, if you got there with the Get Off Alert and your location
+saw you get on at least one of its rides. A trip taken with your location off
+earns nothing. Your trips doesn't keep how far each ride went, so the distance
+is worked out from how long you rode, at a bus's and a train's usual speed.
 
 Those trips count towards the feats too: the buses and lines you rode on them
 fill the bars in [Achievements](#achievements), and a trip of over three hours,

@@ -166,9 +166,9 @@
   }
 
   // Trips from before the rides were checked (js/retrofit.js), as Your trips keeps them
-  // (js/history.js): each ride they got through (done) kept by line or bus, as if it had been
-  // judged real, on trips not kept here already. There's nothing left to judge them by, so the
-  // ride being got through stands in. Then the feats, as after any ride.
+  // (js/history.js), each where the location saw you board: each ride they got through (done)
+  // kept by line or bus, as if it had been judged real, on trips not kept here already. Then
+  // the feats, as after any ride.
   function addPast(trips) {
     const rec = record();
     const have = new Set(rec.trips.map((t) => t.id));

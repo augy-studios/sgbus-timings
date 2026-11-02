@@ -8,11 +8,12 @@
 //     coins now, and not already given its coins (js/coins.js's log);
 //   - started from RIDES_SINCE, when rides were first judged real (js/rides.js), only one with a
 //     ride judged real then (kept in RideCheck.record()'s trips), as coins need now;
-//   - started before then, nothing's left to judge its rides by, so getting through one is
-//     taken for it.
+//   - started before then, only one where the phone's location saw you board a ride (boarded:
+//     its wait measured, or a bus ride's time; a train's time is measured without it), as
+//     Augy asked (2 November 2026). A trip taken without location gets nothing.
 // Each is worth Coins.forPast (the same sums as a trip now, the km from the time ridden), and
 // does any trip feats it would have (Eggs.pastTrip: the long way round, there and back again,
-// the old railway). Rides on trips from before RIDES_SINCE are kept by line and bus
+// the old railway). Rides on those trips from before RIDES_SINCE are kept by line and bus
 // (RideCheck.addPast), so every line ridden and the bus feats count them too. A trip after
 // COINS_SINCE was counted as it was taken, so never here.
 //
@@ -40,6 +41,11 @@
 
   const isRide = (l) => l && (l.kind === 'bus' || l.kind === 'train');
   const past = () => (window.TripHistory?.list() || []).filter((t) => t && Number(t.startedAt) < COINS_SINCE);
+  // The location saw you board one of its rides (js/history.js: waitMeasured needs a fix at
+  // boarding; a bus's rideMeasured does too, a train's doesn't).
+  const boarded = (t) => (t.legs || []).some((l) => isRide(l) && l.done && (l.waitMeasured || (l.kind === 'bus' && l.rideMeasured)));
+  // Trips from before rides were judged, with that to go by.
+  const unjudged = () => past().filter((t) => t.startedAt < RIDES_SINCE && boarded(t));
 
   // The trips owed coins, each with them: [{ trip, coins }].
   function owed() {
@@ -47,7 +53,7 @@
     const judged = new Set((window.RideCheck?.record().trips || []).map((t) => t.id));
     return past().filter((t) => {
       if (!t.arrived || paid.has(t.id) || !(t.legs || []).some((l) => isRide(l) && l.done)) return false;
-      return t.startedAt < RIDES_SINCE || judged.has(t.id);
+      return t.startedAt < RIDES_SINCE ? boarded(t) : judged.has(t.id);
     }).map((trip) => ({ trip, coins: window.Coins?.forPast(trip)?.n || 0 })).filter((x) => x.coins > 0);
   }
 
@@ -59,7 +65,7 @@
     return {
       trips: due.length,
       coins: due.reduce((sum, x) => sum + x.coins, 0),
-      rideTrips: past().filter((t) => t.startedAt < RIDES_SINCE && !have.has(t.id) && (t.legs || []).some((l) => isRide(l) && l.done)).length,
+      rideTrips: unjudged().filter((t) => !have.has(t.id)).length,
     };
   }
 
@@ -73,7 +79,7 @@
     // Marked done first, so a reload partway can't give it twice.
     if (!put(DONE_KEY, JSON.stringify({ at: Date.now(), trips: due.length, coins, feats: [] }))) return null;
     const feats = window.Eggs.gather(() => {
-      window.RideCheck?.addPast(past().filter((t) => t.startedAt < RIDES_SINCE));
+      window.RideCheck?.addPast(unjudged());
       for (const { trip } of due) window.Eggs.pastTrip(trip);
     });
     if (coins) window.Coins.add(coins, { why: 'past', trips: due.length }, { quiet: true });

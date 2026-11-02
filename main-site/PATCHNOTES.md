@@ -27,7 +27,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Coins count up** - Coins coming in count up to the new total, on the Edge Tray's coin and above the wheel. A spin's winnings are counted once the wheel stops.
 - **Watch the celebration again** - Shows under Your colours only once you've ridden every line, not for the Every line ridden egg alone.
 - **Explorer's tour** - Explorer's tour shows its Layers button too, for what the map shows.
-- **Coins for your past trips** - Trips you took before uwuCoins earn their coins too, once, the first time you open the app after this update: each one in Your trips that you finished with the Get Off Alert. They count towards Achievements as well, with the buses and lines you rode on them, and any trip feats they did. A window says how many trips counted and what they earned.
+- **Coins for your past trips** - Trips you took before uwuCoins earn their coins too, once, the first time you open the app after this update: each one in Your trips that you finished with the Get Off Alert, where your location saw you get on. They count towards Achievements as well, with the buses and lines you rode on them, and any trip feats they did. A window says how many trips counted and what they earned.
 - **Another secret, for Android** - The Android app has a new secret for an Easter egg to unlock, the way Android's own apps look. The shortcut that turns on your phone's colours turns it on too.
 
 ### Guide

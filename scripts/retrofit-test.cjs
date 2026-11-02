@@ -9,14 +9,17 @@
 // server: the page is served from main-site/ by Playwright itself, and /api/* answers "not found".
 //
 // What it checks:
-//   1. A past trip's coins are the same sums as a trip now: bus 12 for 20 minutes then the EW
-//      Line for 15 is 5 + 6 (km) + 3 (a change) + 4 + 4 (an operator each) + 2 (a line) = 24.
-//   2. Only trips that got there with a ride got through earn coins; one ended partway, one
-//      after uwuCoins came, one already paid, and one from the week rides were judged whose
-//      ride wasn't judged real don't. One from that week whose ride was does.
-//   3. Rides on trips from before rides were judged count towards the bus feats (12, 34, 56,
-//      78, 90, even on a trip ended partway), and the trip feats are done: over three hours, back
-//      where it started on two rides, the old railway. Each is worth 100 more.
+//   1. A past trip's coins are the same sums as a trip now: bus 12 for 20 minutes (19 km/h) then
+//      the EW Line for 15 (40 km/h), 16.3 km, is 5 + 8 (km) + 3 (a change) + 4 + 4 (an operator
+//      each) + 2 (a line) = 26.
+//   2. Only trips that got there, with the location seeing a boarding, earn coins; one ended
+//      partway, one taken without location, one with only a train's time (measured without
+//      it), one after uwuCoins came, one already paid, and one from the week rides were judged
+//      whose ride wasn't judged real don't. One from that week whose ride was does.
+//   3. Rides on trips from before rides were judged, where the location saw a boarding, count
+//      towards the bus feats (12, 34, 56, 78, 90, even on a trip ended partway); the rides on the
+//      trips without it don't. The trip feats are done: over three hours, back where it started
+//      on two rides, the old railway. Each is worth 100 more.
 //   4. It's said once, in the feat window, with no coin floating up for each; opened again,
 //      nothing's given or said.
 //   5. Every line ridden on past trips does that feat too, with the celebration.
@@ -52,8 +55,9 @@ const WORK = { label: 'Work', lat: 1.2966, lng: 103.8520 };
 const WOODLANDS = { label: 'Woodlands Train Checkpoint', lat: 1.442783, lng: 103.769356 };
 const CANTONMENT = { label: 'Cantonment', lat: 1.273115, lng: 103.837028 };
 
-const bus = (route, rideMin, done = true) => ({ kind: 'bus', route, op: 'SBST', from: 'A', to: 'B', waitMin: 5, rideMin, waitMeasured: false, rideMeasured: false, done });
-const train = (route, rideMin, done = true) => ({ kind: 'train', route, color: '', lrt: ['BP', 'SK', 'PG'].includes(route), from: 'A', to: 'B', waitMin: 3, rideMin, waitMeasured: false, rideMeasured: false, done });
+// Seen boarding by the location (`seen`): a measured wait, as js/history.js keeps it.
+const bus = (route, rideMin, done = true, seen = true) => ({ kind: 'bus', route, op: 'SBST', from: 'A', to: 'B', waitMin: 5, rideMin, waitMeasured: seen, rideMeasured: seen, done });
+const train = (route, rideMin, done = true, seen = true) => ({ kind: 'train', route, color: '', lrt: ['BP', 'SK', 'PG'].includes(route), from: 'A', to: 'B', waitMin: 3, rideMin, waitMeasured: seen, rideMeasured: seen, done });
 let n = 0;
 const trip = (startedAt, legs, { from = HOME, to = WORK, arrived = true, hours = 1, id } = {}) =>
   ({ id: id || `past-trip-${++n}`, startedAt, endedAt: startedAt + hours * HOUR, title: '', from, to, arrived, walkMin: 5, legs });
@@ -132,6 +136,8 @@ const trip = (startedAt, legs, { from = HOME, to = WORK, arrived = true, hours =
       trip(OLD + 9 * HOUR, [bus('9', 30), bus('9', 30)], { from: HOME, to: { ...HOME, label: 'Home again' } }), // the loop feat
       trip(OLD + 10 * HOUR, [bus('170', 40)], { from: WOODLANDS, to: CANTONMENT }), // the ktm feat
       trip(OLD + 11 * HOUR, [bus('2', 20)], { id: 'already-paid' }), // in the coins log
+      trip(OLD + 12 * HOUR, [bus('87', 20, true, false)], { id: 'no-location' }), // never seen boarding
+      trip(OLD + 13 * HOUR, [{ ...train('DT', 20, true, false), rideMeasured: true }], { id: 'train-timed' }), // a train's time, no fix
       trip(WEEK, [bus('14', 20)], { id: 'judged-real' }), // in the rides record: coins
       trip(WEEK + HOUR, [bus('15', 20)], { id: 'judged-not' }), // not: no coins
       trip(NEW, [bus('16', 20)], { id: 'after-coins' }), // counted as it was taken: none
@@ -147,13 +153,13 @@ const trip = (startedAt, legs, { from = HOME, to = WORK, arrived = true, hours =
       const of = (id) => Coins.forPast(all.find((t) => t.id === id))?.n || 0;
       return { formula: Coins.forPast(all.find((t) => t.id === 'formula-trip')), each: Object.fromEntries(ids.map((id) => [id, of(id)])) };
     }, trips.map((t) => t.id));
-    ok('1. a past trip is the same sums as one now', want.formula?.n === 24, JSON.stringify(want.formula));
+    ok('1. a past trip is the same sums as one now', want.formula?.n === 26, JSON.stringify(want.formula));
     const paid = ['formula-trip', 'past-trip-2', 'past-trip-3', 'past-trip-4', 'past-trip-5', 'past-trip-6', 'judged-real'];
     const tripCoins = paid.reduce((s, id) => s + want.each[id], 0);
     const s = await state(page);
     ok('2. only the trips owed get coins', s.done?.trips === paid.length && s.done?.coins === tripCoins, JSON.stringify(s.done));
     ok('3. the feats from past trips are done', ['up', 'long', 'loop', 'ktm'].every((f) => s.feats.includes(f)) && !s.feats.includes('down') && !s.feats.includes('lines'), s.feats.join(','));
-    ok('3. past rides kept by bus', ['12', '34', '56', '78', '90', '170'].every((b) => s.buses.includes(b)) && !s.buses.includes('15') && !s.buses.includes('16'), s.buses.join(','));
+    ok('3. past rides kept by bus', ['12', '34', '56', '78', '90', '170'].every((b) => s.buses.includes(b)) && !['15', '16', '87'].some((b) => s.buses.includes(b)), s.buses.join(','));
     ok('3. past rides kept by line', s.lines.join(',') === 'EW,NS', s.lines.join(','));
     ok('2-3. the balance: what was there, the trips, and 100 a feat', s.balance === 7 + tripCoins + 4 * 100, `${s.balance} vs ${7 + tripCoins + 400}`);
     ok('4. said once, in the feat window', s.modal && s.title === 'Coins for your past trips' && s.how.includes(`${paid.length} trips`) && s.got.includes('The long way round'), `${s.title} | ${s.name} | ${s.how} | ${s.got}`);

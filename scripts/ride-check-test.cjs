@@ -19,8 +19,9 @@
 //   6. The every-line feat is done only once every MRT and LRT line has a genuine ride, worth
 //      100 uwuCoins (js/coins.js), and the celebration (js/celebrate.js) shows; eight lines, or
 //      a ninth gone through too fast, don't do it. Spin the wheel opens Settings at uwuCoins;
-//      with Your colours unlocked (an egg from the wheel), it can be watched again from there,
-//      and Your colours' themes are all readable.
+//      with Your colours unlocked (an egg from the wheel), it can be watched again from there
+//      once its own egg's found too, not for another's, and Your colours' themes are all
+//      readable.
 //   7. Without WebGL, the feat shows the plain window instead of the celebration.
 //   8. On a phone with little memory (deviceMemory 2), the flat celebration: an SVG trophy and
 //      2D confetti, no three.js fetched; with reduced motion, no confetti.
@@ -259,10 +260,17 @@ const trainLeg = (line, stops, minutesPerStop = 2.5) => ({
     await page.evaluate(() => document.getElementById('celebrateGo').click());
     await wait(page, 500);
     ok('spin the wheel opens Settings', await page.evaluate(() => document.getElementById('celebrateModal').classList.contains('hidden') && !window.Celebrate.running() && !document.getElementById('settingsModal').classList.contains('hidden') && !!document.querySelector('#coinWheel svg')));
-    // An egg from the wheel unlocks Your colours, where it can be watched again.
+    // An egg from the wheel unlocks Your colours. Another feat's egg isn't enough to watch it
+    // again; with its own egg (Every line ridden) too, it can be (js/colours.js).
     await page.evaluate(() => { document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)); Eggs.found('up'); Colours.open(); });
     await wait(page, 500);
+    ok('another egg: no watching it again', await page.evaluate(() => document.getElementById('colourReplay').hidden));
+    await page.evaluate(() => { window.closeModal('themeModal'); Eggs.found('lines'); Colours.open(); });
+    await wait(page, 500);
+    ok('its own egg: watch it again offered', await page.evaluate(() => !document.getElementById('colourReplay').hidden));
     await page.evaluate(() => document.getElementById('colourReplay').click());
+    // It waits for Theme to close first (js/colours.js), on the page's clock.
+    await wait(page, 500);
     await page.waitForFunction(() => window.Celebrate.running(), null, { timeout: 15000 }).catch(() => {});
     ok('watch the celebration again', await page.evaluate(() => window.Celebrate.running()));
     await page.evaluate(() => document.getElementById('celebrateClose').click());
