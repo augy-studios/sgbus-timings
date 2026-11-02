@@ -62,8 +62,8 @@
     if (!canSticker()) return;
     reset('sticker');
     sending = { url, title };
-    $('#offlineTitle').textContent = 'NFC sticker';
-    $('#offlineNote').textContent = 'Any blank NFC sticker (NTAG213 or bigger) will do. Writing over one replaces what was on it.';
+    $('#offlineTitle').textContent = I18n.t('offline.sticker', 'NFC sticker');
+    $('#offlineNote').textContent = I18n.t('offline.stickerNote', 'Any blank NFC sticker (NTAG213 or bigger) will do. Writing over one replaces what was on it.');
     openModal('offlineModal');
     write();
   }
@@ -76,25 +76,25 @@
       writing = 'done';
       navigator.vibrate?.(60);
     } catch (e) {
-      writing = e?.code === 'cancelled' ? null : e?.code === 'off' ? 'off' : (e?.message || 'Couldn’t write it. Try again.');
+      writing = e?.code === 'cancelled' ? null : e?.code === 'off' ? 'off' : (e?.message || I18n.t('offline.writeFailed', 'Couldn’t write it. Try again.'));
     }
     if (mode) render();
   }
 
   function renderSticker() {
     if (writing === 'waiting') {
-      return `<div class="cardWait">${ico('nearby')}<p><strong>Hold a blank NFC sticker to the back of the phone</strong></p>` +
-        `<p class="sub">Near the camera on most phones. Keep it still until it's written.</p></div>`;
+      return `<div class="cardWait">${ico('nearby')}<p><strong>${esc(I18n.t('offline.holdSticker', 'Hold a blank NFC sticker to the back of the phone'))}</strong></p>` +
+        `<p class="sub">${esc(I18n.t("offline.nearCamera", "Near the camera on most phones. Keep it still until it's written."))}</p></div>`;
     }
     if (writing === 'done') {
-      return `<p class="offlineSent">${ico('check')} Written.</p><p class="sub">Tap the sticker with a phone to open it: in SG Bus Timings, or the browser.</p>` +
-        `<button type="button" class="btn" data-offline="write">${ico('nearby')} Write another</button>`;
+      return `<p class="offlineSent">${ico('check')} ${esc(I18n.t('offline.written', 'Written.'))}</p><p class="sub">${esc(I18n.t('offline.tapSticker', 'Tap the sticker with a phone to open it: in SG Bus Timings, or the browser.'))}</p>` +
+        `<button type="button" class="btn" data-offline="write">${ico('nearby')} ${esc(I18n.t('offline.writeAnother', 'Write another'))}</button>`;
     }
     if (writing === 'off') {
-      return `<p>NFC is off. Turn it on, then come back here.</p>` +
-        `<button type="button" class="btn" data-offline="nfc">${ico('settings')} Turn on NFC</button>`;
+      return `<p>${esc(I18n.t('offline.nfcOff', 'NFC is off. Turn it on, then come back here.'))}</p>` +
+        `<button type="button" class="btn" data-offline="nfc">${ico('settings')} ${esc(I18n.t('offline.turnOnNfc', 'Turn on NFC'))}</button>`;
     }
-    return `${writing ? `<p>${esc(writing)}</p>` : ''}<button type="button" class="btn" data-offline="write">${ico('nearby')} Write it</button>`;
+    return `${writing ? `<p>${esc(writing)}</p>` : ''}<button type="button" class="btn" data-offline="write">${ico('nearby')} ${esc(I18n.t('offline.writeIt', 'Write it'))}</button>`;
   }
 
   // ---------- sending ----------
@@ -103,8 +103,8 @@
     if (!canSend()) return;
     reset('send');
     sending = { url, title };
-    $('#offlineTitle').textContent = 'Offline Sharing';
-    $('#offlineNote').textContent = 'No internet needed to send it. They need the internet to plan the way there.';
+    $('#offlineTitle').textContent = I18n.t('offline.title', 'Offline Sharing');
+    $('#offlineNote').textContent = I18n.t('offline.sendNote', 'No internet needed to send it. They need the internet to plan the way there.');
     render();
     openModal('offlineModal');
     startSending();
@@ -138,48 +138,48 @@
     render();
     call('send', { id, name: peer.name, from: LS.getName() }).catch(() => {
       peer.state = 'failed';
-      peer.message = "Couldn't reach that phone. Try again, closer to it.";
+      peer.message = I18n.t("offline.peerFailed", "Couldn't reach that phone. Try again, closer to it.");
       render();
     });
   }
 
   function renderSend() {
     let html = `<p class="offlineWhat">${esc(sending.title)}</p>`;
-    if (!status) return `${html}<p class="sub">Getting ready…</p>`;
+    if (!status) return `${html}<p class="sub">${esc(I18n.t('offline.gettingReady', 'Getting ready…'))}</p>`;
 
     if (status.tap && status.nfc === 'on') {
-      html += `<div class="cardWait">${ico('nearby')}<p><strong>Hold the backs of your phones together</strong></p>` +
-        `<p class="sub">It opens on theirs in SG Bus Timings, or in their browser. Their phone needs NFC on, and to be unlocked.</p></div>`;
-      if (tapped) html += `<p class="offlineSent">${ico('check')} Sent${tapped > 1 ? ` to ${tapped} phones` : ''}. Hold another phone to send it again.</p>`;
+      html += `<div class="cardWait">${ico('nearby')}<p><strong>${esc(I18n.t('offline.holdPhones', 'Hold the backs of your phones together'))}</strong></p>` +
+        `<p class="sub">${esc(I18n.t('offline.opensOnTheirs', 'It opens on theirs in SG Bus Timings, or in their browser. Their phone needs NFC on, and to be unlocked.'))}</p></div>`;
+      if (tapped) html += `<p class="offlineSent">${ico('check')} ${esc(tapped > 1 ? I18n.t('offline.sentMany', 'Sent to {n} phones. Hold another phone to send it again.', { n: tapped }) : I18n.t('offline.sentOne', 'Sent. Hold another phone to send it again.'))}</p>`;
     } else if (status.tap && status.nfc === 'off') {
-      html += `<p>Turn on NFC to share by holding your phones together.</p>` +
-        `<button type="button" class="btn" data-offline="nfc">${ico('settings')} Turn on NFC</button>`;
+      html += `<p>${esc(I18n.t('offline.turnOnToShare', 'Turn on NFC to share by holding your phones together.'))}</p>` +
+        `<button type="button" class="btn" data-offline="nfc">${ico('settings')} ${esc(I18n.t('offline.turnOnNfc', 'Turn on NFC'))}</button>`;
     }
 
     if (status.nearby) {
-      html += `<p class="modal-section-label">Phones nearby</p>`;
+      html += `<p class="modal-section-label">${esc(I18n.t('offline.phonesNearby', 'Phones nearby'))}</p>`;
       if (problem === 'permission') {
-        html += `<p class="sub">To find phones nearby, allow SG Bus Timings to use Nearby devices.</p>` +
-          `<button type="button" class="btn" data-offline="settings">${ico('settings')} Open settings</button>`;
+        html += `<p class="sub">${esc(I18n.t('offline.allowFind', 'To find phones nearby, allow SG Bus Timings to use Nearby devices.'))}</p>` +
+          `<button type="button" class="btn" data-offline="settings">${ico('settings')} ${esc(I18n.t('offline.openSettings', 'Open settings'))}</button>`;
       } else if (problem === 'failed') {
-        html += `<p class="sub">Couldn't look for phones nearby. Check Bluetooth is on.</p>` +
-          `<button type="button" class="btn" data-offline="find">${ico('sync')} Try again</button>`;
+        html += `<p class="sub">${esc(I18n.t("offline.findFailed", "Couldn't look for phones nearby. Check Bluetooth is on."))}</p>` +
+          `<button type="button" class="btn" data-offline="find">${ico('sync')} ${esc(I18n.t('common.tryAgain', 'Try again'))}</button>`;
       } else if (!finding) {
-        html += `<p class="sub">Or send it to a phone with SG Bus Timings, over Bluetooth, without touching.</p>` +
-          `<button type="button" class="btn" data-offline="find">${ico('nearby')} Find phones nearby</button>`;
+        html += `<p class="sub">${esc(I18n.t('offline.orBluetooth', 'Or send it to a phone with SG Bus Timings, over Bluetooth, without touching.'))}</p>` +
+          `<button type="button" class="btn" data-offline="find">${ico('nearby')} ${esc(I18n.t('offline.findPhones', 'Find phones nearby'))}</button>`;
       } else {
         const rows = [...peers].map(([id, p]) => {
-          const sub = { found: 'Tap to send', sending: 'Sending…', sent: 'Sent', failed: p.message || 'Didn’t send. Tap to try again.' }[p.state];
+          const sub = { found: I18n.t('offline.tapToSend', 'Tap to send'), sending: I18n.t('offline.sending', 'Sending…'), sent: I18n.t('offline.sent', 'Sent'), failed: p.message || I18n.t('offline.didntSend', 'Didn’t send. Tap to try again.') }[p.state];
           return `<button type="button" class="shareMenuItem offlinePeer ${p.state}" data-offline-peer="${esc(id)}"${p.state === 'sending' ? ' disabled' : ''}>` +
-            `${ico(p.state === 'sent' ? 'check' : 'phone')}<span><strong>${esc(p.name || 'A phone')}</strong><span class="sub">${esc(sub)}</span></span></button>`;
+            `${ico(p.state === 'sent' ? 'check' : 'phone')}<span><strong>${esc(p.name || I18n.t('offline.aPhone', 'A phone'))}</strong><span class="sub">${esc(sub)}</span></span></button>`;
         }).join('');
         html += rows ? `<div class="offlinePeers">${rows}</div>` : '';
-        html += `<p class="sub">${rows ? 'Not there? ' : 'Looking… '}On their phone, open SG Bus Timings and tap Receive nearby in the Edge Tray (Settings, Edge Tray buttons, if it's off).</p>`;
+        html += `<p class="sub">${esc(rows ? I18n.t("offline.notThere", "Not there? On their phone, open SG Bus Timings and tap Receive nearby in the Edge Tray (Settings, Edge Tray buttons, if it's off).") : I18n.t("offline.looking", "Looking… On their phone, open SG Bus Timings and tap Receive nearby in the Edge Tray (Settings, Edge Tray buttons, if it's off)."))}</p>`;
       }
     }
     if (canSticker()) {
-      html += `<p class="modal-section-label">NFC sticker</p>` +
-        `<button type="button" class="btn" data-offline="sticker">${ico('nearby')} Write it to an NFC sticker</button>`;
+      html += `<p class="modal-section-label">${esc(I18n.t('offline.sticker', 'NFC sticker'))}</p>` +
+        `<button type="button" class="btn" data-offline="sticker">${ico('nearby')} ${esc(I18n.t('offline.writeToSticker', 'Write it to an NFC sticker'))}</button>`;
     }
     return html;
   }
@@ -190,8 +190,8 @@
     if (!canNearby()) return;
     reset('receive');
     sending = null;
-    $('#offlineTitle').textContent = 'Receive nearby';
-    $('#offlineNote').textContent = 'Only links to SG Bus Timings are taken. Nothing is sent from this phone but its name.';
+    $('#offlineTitle').textContent = I18n.t('offline.receive', 'Receive nearby');
+    $('#offlineNote').textContent = I18n.t('offline.receiveNote', 'Only links to SG Bus Timings are taken. Nothing is sent from this phone but its name.');
     render();
     openModal('offlineModal');
     status = await call('status').catch(() => null);
@@ -208,19 +208,19 @@
     const name = LS.getName().trim();
     let html = '';
     if (problem === 'permission') {
-      html += `<p>To receive from phones nearby, allow SG Bus Timings to use Nearby devices.</p>` +
-        `<button type="button" class="btn" data-offline="settings">${ico('settings')} Open settings</button>`;
+      html += `<p>${esc(I18n.t('offline.allowReceive', 'To receive from phones nearby, allow SG Bus Timings to use Nearby devices.'))}</p>` +
+        `<button type="button" class="btn" data-offline="settings">${ico('settings')} ${esc(I18n.t('offline.openSettings', 'Open settings'))}</button>`;
     } else if (problem === 'failed') {
-      html += `<p>Couldn't get ready to receive. Check Bluetooth is on.</p>` +
-        `<button type="button" class="btn" data-offline="receive">${ico('sync')} Try again</button>`;
+      html += `<p>${esc(I18n.t("offline.receiveFailed", "Couldn't get ready to receive. Check Bluetooth is on."))}</p>` +
+        `<button type="button" class="btn" data-offline="receive">${ico('sync')} ${esc(I18n.t('common.tryAgain', 'Try again'))}</button>`;
     } else if (incoming) {
-      html += `<div class="cardWait">${ico('nearby')}<p><strong>Receiving from ${esc(incoming)}…</strong></p></div>`;
+      html += `<div class="cardWait">${ico('nearby')}<p><strong>${esc(I18n.t('offline.receivingFrom', 'Receiving from {name}…', { name: incoming }))}</strong></p></div>`;
     } else {
-      html += `<div class="cardWait">${ico('nearby')}<p><strong>${listening ? 'Ready to receive' : 'Getting ready…'}</strong></p>` +
-        `<p class="sub">On their phone: Share, then Offline Sharing, and pick ${name ? `<strong>${esc(name)}</strong>` : 'this phone (it shows by its model; set your name in Settings to show that instead)'}.</p></div>`;
+      html += `<div class="cardWait">${ico('nearby')}<p><strong>${esc(listening ? I18n.t('offline.ready', 'Ready to receive') : I18n.t('offline.gettingReady', 'Getting ready…'))}</strong></p>` +
+        `<p class="sub">${esc(name ? I18n.t('offline.pickName', 'On their phone: Share, then Offline Sharing, and pick {name}.', { name }) : I18n.t('offline.pickThis', 'On their phone: Share, then Offline Sharing, and pick this phone (it shows by its model; set your name in Settings to show that instead).'))}</p></div>`;
     }
     if (status?.nfc && status.nfc !== 'none') {
-      html += `<p class="sub">Or hold the backs of the phones together: that works without this open.</p>`;
+      html += `<p class="sub">${esc(I18n.t('offline.orHold', 'Or hold the backs of the phones together: that works without this open.'))}</p>`;
     }
     return html;
   }

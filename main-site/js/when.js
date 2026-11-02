@@ -124,9 +124,9 @@
   function problem(when) {
     if (!when) return null;
     const ms = atToMs(when.at);
-    if (ms == null) return 'Pick a day and a time.';
-    if (ms < Date.now() - BEHIND_MS) return 'That time has already passed. Pick a later one, or Leave now.';
-    if (ms > Date.now() + (DAYS_AHEAD + 1) * 86400000) return 'Pick a time within the next week.';
+    if (ms == null) return I18n.t('when.pick', 'Pick a day and a time.');
+    if (ms < Date.now() - BEHIND_MS) return I18n.t('when.passed', 'That time has already passed. Pick a later one, or Leave now.');
+    if (ms > Date.now() + (DAYS_AHEAD + 1) * 86400000) return I18n.t('when.tooFar', 'Pick a time within the next week.');
     return null;
   }
 
@@ -151,18 +151,19 @@
   // "today", "tomorrow" or "Sat 10 Oct", by Singapore's calendar.
   function dayLabel(ms) {
     const c = sgClock(ms);
-    if (c.ymd === sgClock(Date.now()).ymd) return 'today';
-    if (c.ymd === sgClock(Date.now() + 86400000).ymd) return 'tomorrow';
+    if (c.ymd === sgClock(Date.now()).ymd) return I18n.t('when.today', 'today');
+    if (c.ymd === sgClock(Date.now() + 86400000).ymd) return I18n.t('when.tomorrow', 'tomorrow');
+    if (I18n.lang() !== 'en') return new Date(ms).toLocaleDateString(I18n.lang(), { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short' });
     return `${DOW[c.dow]} ${c.day} ${MONTHS[c.month]}`;
   }
 
   // A clock time with its day, unless that's today: "08:30", "08:30 tomorrow".
-  const clockDay = (ms) => (dayLabel(ms) === 'today' ? clock(ms) : `${clock(ms)} ${dayLabel(ms)}`);
+  const clockDay = (ms) => (sgClock(ms).ymd === sgClock(Date.now()).ymd ? clock(ms) : I18n.t('when.clockDay', '{time} {day}', { time: clock(ms), day: dayLabel(ms) }));
 
   // "Leave at 08:30 tomorrow", "Arrive by 09:00", or "Leave now".
   function describe(when) {
-    if (!when) return 'Leave now';
-    return `${when.mode === 'arrive' ? 'Arrive by' : 'Leave at'} ${clockDay(atToMs(when.at))}`;
+    if (!when) return I18n.t('nav.leave_now', 'Leave now');
+    return when.mode === 'arrive' ? I18n.t('when.arriveBy', 'Arrive by {time}', { time: clockDay(atToMs(when.at)) }) : I18n.t('when.leaveAt', 'Leave at {time}', { time: clockDay(atToMs(when.at)) });
   }
 
   // ---- In the address ----
@@ -179,14 +180,14 @@
   function picker(el, onChange) {
     el.classList.add('whenRow');
     el.innerHTML =
-      `<div class="mode-toggle whenModes" role="group" aria-label="When">` +
+      `<div class="mode-toggle whenModes" role="group" aria-label="${I18n.t('when.when', 'When')}">` +
       `<button type="button" class="mode-btn" data-when-mode="now">${I18n.t('nav.leave_now', 'Leave now')}</button>` +
       `<button type="button" class="mode-btn" data-when-mode="leave">${I18n.t('nav.leave_at', 'Leave at')}</button>` +
       `<button type="button" class="mode-btn" data-when-mode="arrive">${I18n.t('nav.arrive_by', 'Arrive by')}</button>` +
       `</div>` +
       `<div class="whenPick" hidden>` +
-      `<select class="input" aria-label="Day"></select>` +
-      `<input class="input" type="time" step="${STEP_MIN * 60}" aria-label="Time" />` +
+      `<select class="input" aria-label="${I18n.t('when.day', 'Day')}"></select>` +
+      `<input class="input" type="time" step="${STEP_MIN * 60}" aria-label="${I18n.t('when.time', 'Time')}" />` +
       `</div>`;
     const pick = el.querySelector('.whenPick');
     const day = el.querySelector('select');

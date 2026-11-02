@@ -28,13 +28,13 @@
   // runs every time and `first` only the first time, so Navigate keeps what was being planned,
   // on the tab used last: both plan without the network (Bus and train on the phone, js/nav.js).
   const PARTS = [
-    { id: 'glance', label: 'Glance', btn: 'glanceBtn' },
-    { id: 'timings', label: 'Bus timings', btn: 'timingsBtn' },
-    { id: 'favs', label: 'Favourites', btn: 'favsBtn', els: ['favsModal'], modal: true, show: () => renderFavs() },
-    { id: 'nav', label: 'Navigate', btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' ? openPlanner() : openNav()) },
-    { id: 'alerts', label: 'Service alerts', btn: 'alertsBtn', els: ['alertsSection'], show: () => Alerts.open() },
-    { id: 'trips', label: 'Your trips', btn: 'tripsBtn', els: ['tripsSection'], show: () => TripHistory.open() },
-    { id: 'places', label: 'Places', btn: 'placesBtn', els: ['placesSection'], show: () => Places.open() },
+    { id: 'glance', label: I18n.t('tour.page.glance', 'Glance'), btn: 'glanceBtn' },
+    { id: 'timings', label: I18n.t('tray.timings', 'Bus timings'), btn: 'timingsBtn' },
+    { id: 'favs', label: I18n.t('favs.title', 'Favourites'), btn: 'favsBtn', els: ['favsModal'], modal: true, show: () => renderFavs() },
+    { id: 'nav', label: I18n.t('tray.navigate', 'Navigate'), btn: 'navBtn', els: ['navSection', 'plannerSection'], first: () => (lastNavMode() === 'bus' ? openPlanner() : openNav()) },
+    { id: 'alerts', label: I18n.t('tray.alerts', 'Service alerts'), btn: 'alertsBtn', els: ['alertsSection'], show: () => Alerts.open() },
+    { id: 'trips', label: I18n.t('mainScreen.trips', 'Your trips'), btn: 'tripsBtn', els: ['tripsSection'], show: () => TripHistory.open() },
+    { id: 'places', label: I18n.t('tray.places', 'Places'), btn: 'placesBtn', els: ['placesSection'], show: () => Places.open() },
   ];
   const IDS = PARTS.map((p) => p.id);
   const byId = Object.fromEntries(PARTS.map((p) => [p.id, p]));

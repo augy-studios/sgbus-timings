@@ -6,13 +6,13 @@
   const APP_KEY = "sgbus";
 
   const COLOR_THEMES = [
-    { id: "classic", label: "Classic", hex: "#ccffcc" },
-    { id: "not-green-1", label: "Not green 1", hex: "#ffcccc" },
-    { id: "not-green-2", label: "Not green 2", hex: "#ccccff" },
-    { id: "not-green-3", label: "Not green 3", hex: "#ffffcc" },
-    { id: "not-green-4", label: "Not green 4", hex: "#ffccff" },
-    { id: "not-green-5", label: "Not green 5", hex: "#ccffff" },
-    { id: "really-light-green", label: "Really really light green", hex: "#ffffff" },
+    { id: "classic", label: I18n.t('theme.classic', 'Classic'), hex: "#ccffcc" },
+    { id: "not-green-1", label: I18n.t('theme.notGreen', 'Not green {n}', { n: 1 }), hex: "#ffcccc" },
+    { id: "not-green-2", label: I18n.t('theme.notGreen', 'Not green {n}', { n: 2 }), hex: "#ccccff" },
+    { id: "not-green-3", label: I18n.t('theme.notGreen', 'Not green {n}', { n: 3 }), hex: "#ffffcc" },
+    { id: "not-green-4", label: I18n.t('theme.notGreen', 'Not green {n}', { n: 4 }), hex: "#ffccff" },
+    { id: "not-green-5", label: I18n.t('theme.notGreen', 'Not green {n}', { n: 5 }), hex: "#ccffff" },
+    { id: "really-light-green", label: I18n.t('theme.reallyLight', 'Really really light green'), hex: "#ffffff" },
   ];
 
   const STORAGE_KEY_COLOR = `${APP_KEY}.colorTheme`;

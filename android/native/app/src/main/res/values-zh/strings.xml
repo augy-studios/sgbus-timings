@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The phone app's words in Chinese (simplified, for any Chinese phone): values/strings.xml has the English and the notes. The website's wording is in main-site/i18n. -->
+<resources>
+    <string name="exit_hint">再按一次返回键退出</string>
+    <string name="shortcut_near">我附近的巴士站</string>
+    <string name="shortcut_near_short">附近</string>
+    <string name="shortcut_nav">导航</string>
+    <string name="shortcut_nav_short">导航</string>
+    <string name="shortcut_alerts">服务通告</string>
+    <string name="shortcut_alerts_short">通告</string>
+    <string name="shortcut_card">卡内余额</string>
+    <string name="shortcut_card_short">卡内余额</string>
+    <string name="tile_home">搭巴士回家</string>
+    <string name="tile_work">搭巴士去公司</string>
+    <string name="widget_name">巴士时刻</string>
+    <string name="widget_description">你选的巴士站的实时到站时间，可显示那里的每辆巴士，或只显示你选的巴士</string>
+    <string name="widget_pick">巴士时刻</string>
+    <string name="widget_pick_help">点这里选择巴士站</string>
+    <string name="widget_loading">正在获取时刻…</string>
+    <string name="widget_refreshing">正在刷新…</string>
+    <string name="widget_refresh">刷新</string>
+    <string name="widget_offline">无法连接 LTA。点刷新再试一次。</string>
+    <string name="widget_offline_short">离线</string>
+    <string name="widget_none">目前没有巴士即将到站。</string>
+    <string name="widget_none_of_those">这些巴士目前都没有即将到站。</string>
+    <string name="widget_updated">更新于 %1$s</string>
+    <string name="widget_setup_title">巴士时刻小组件</string>
+    <string name="widget_setup_intro">为小组件选择一个巴士站，也可以只选其中几辆巴士。</string>
+    <string name="widget_setup_favourites">你收藏的巴士站</string>
+    <string name="widget_setup_no_favourites">你在应用里保存的巴士站会显示在这里，供你选择。</string>
+    <string name="widget_setup_code">巴士站编号（5 位数）</string>
+    <string name="widget_setup_buses">只显示这些巴士，例如 15, 62（可选）</string>
+    <string name="widget_setup_save">保存</string>
+    <string name="widget_setup_bad_code">请选择一个收藏，或输入 5 位数的巴士站编号。</string>
+    <string name="widget_setup_bad_buses">巴士号码如 21 或 NR7，用逗号隔开。</string>
+</resources>

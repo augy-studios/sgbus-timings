@@ -36,8 +36,11 @@
   const SG_OFFSET_MS = 8 * 3600 * 1000;
   const DAY_MS = 24 * 3600 * 1000;
 
-  const dayFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short' });
-  const shortFmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric' });
+  const LOCALE = I18n.lang() === 'en' ? 'en-GB' : I18n.lang();
+  const dayFmt = new Intl.DateTimeFormat(LOCALE, { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short' });
+  const shortFmt = new Intl.DateTimeFormat(LOCALE, { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric' });
+  const tripsText = (n) => (n === 1 ? I18n.t('history.oneTrip', '1 trip') : I18n.t('history.trips', '{n} trips', { n }));
+  const ridesText = (n) => (n === 1 ? I18n.t('history.oneRide', '1 ride') : I18n.t('history.rides', '{n} rides', { n }));
   const day = (ms) => dayFmt.format(ms).replace(',', '');
 
   // ---------- storage ----------
@@ -148,8 +151,8 @@
     const first = s.legs[0];
     const final = s.legs[s.legs.length - 1];
     // "Your location" means nothing once you've left it: named after the first stop instead.
-    let from = s.from || { label: first.names?.[0] || 'Start', ...point(first.points[0]) };
-    if (from.label === 'Your location') from = { ...from, label: first.names?.[0] ? `Near ${first.names[0]}` : 'Where you started' };
+    let from = s.from || { label: first.names?.[0] || I18n.t('nav.start', 'Start'), ...point(first.points[0]) };
+    if (typeof isHereLabel === 'function' ? isHereLabel(from.label) : from.label === 'Your location') from = { ...from, label: first.names?.[0] ? I18n.t('history.near', 'Near {stop}', { stop: first.names[0] }) : I18n.t('history.whereStarted', 'Where you started') };
     const to = s.to || { label: final.to, ...point(final.points[final.points.length - 1]) };
 
     return {
@@ -210,8 +213,8 @@
       startedAt: raw.startedAt,
       endedAt: Number.isFinite(raw.endedAt) ? raw.endedAt : raw.startedAt,
       title: text(raw.title),
-      from: { label: text(raw.from.label) || 'Start', lat: raw.from.lat, lng: raw.from.lng },
-      to: { label: text(raw.to.label) || 'End', lat: raw.to.lat, lng: raw.to.lng },
+      from: { label: text(raw.from.label) || I18n.t('nav.start', 'Start'), lat: raw.from.lat, lng: raw.from.lng },
+      to: { label: text(raw.to.label) || I18n.t('nav.end', 'End'), lat: raw.to.lat, lng: raw.to.lng },
       arrived: !!raw.arrived,
       walkMin: num(raw.walkMin, 600),
       legs,
@@ -244,29 +247,29 @@
 
   function duration(min) {
     const m = Math.round(min);
-    if (m < 60) return `${m} min`;
+    if (m < 60) return I18n.t('time.min', '{m} min', { m });
     const h = Math.round(m / 60);
-    return `${h} hour${h === 1 ? '' : 's'}`;
+    return h === 1 ? I18n.t('history.oneHour', '1 hour') : I18n.t('history.hours', '{h} hours', { h });
   }
 
-  const planned = (measured) => (measured ? '' : ' <span class="tripPlanned">(planned)</span>');
+  const planned = (measured) => (measured ? '' : ` <span class="tripPlanned">${escapeHtml(I18n.t('history.planned', '(planned)'))}</span>`);
 
   function details(trip) {
     const legs = trip.legs.map((l) =>
       `<li class="tripLeg">${chip(l)}<div>` +
-      `<p>${escapeHtml(l.from ? `${l.from} to ${l.to}` : `To ${l.to}`)}${l.done ? '' : ' <span class="tripPlanned">(ended partway)</span>'}</p>` +
-      `<p class="tripTimes">Waited ${duration(l.waitMin)}${planned(l.waitMeasured)} &middot; Rode ${duration(l.rideMin)}${planned(l.rideMeasured)}</p>` +
+      `<p>${escapeHtml(l.from ? I18n.t('planner.fromTo', '{from} to {to}', { from: l.from, to: l.to }) : I18n.t('trip.to', 'To {to}', { to: l.to }))}${l.done ? '' : ` <span class="tripPlanned">${escapeHtml(I18n.t('history.partway', '(ended partway)'))}</span>`}</p>` +
+      `<p class="tripTimes">${escapeHtml(I18n.t('history.waited', 'Waited {d}', { d: duration(l.waitMin) }))}${planned(l.waitMeasured)} &middot; ${escapeHtml(I18n.t('history.rode', 'Rode {d}', { d: duration(l.rideMin) }))}${planned(l.rideMeasured)}</p>` +
       `</div></li>`
     ).join('');
     const total = trip.walkMin + trip.legs.reduce((sum, l) => sum + l.waitMin + l.rideMin, 0);
     return `<div class="tripDetails">` +
       `<ol class="tripLegs">${legs}</ol>` +
-      (trip.walkMin ? `<p class="tripTimes">${ico('walk')} Walked ${duration(trip.walkMin)} <span class="tripPlanned">(planned)</span></p>` : '') +
-      `<p class="tripTimes">About ${duration(total)} in all, from ${escapeHtml(When.clock(trip.startedAt))}${trip.arrived ? '' : '. Ended before getting there'}.</p>` +
+      (trip.walkMin ? `<p class="tripTimes">${ico('walk')} ${escapeHtml(I18n.t('history.walked', 'Walked {d}', { d: duration(trip.walkMin) }))}${planned(false)}</p>` : '') +
+      `<p class="tripTimes">${escapeHtml(trip.arrived ? I18n.t('history.inAll', 'About {d} in all, from {time}.', { d: duration(total), time: When.clock(trip.startedAt) }) : I18n.t('history.inAllEnded', 'About {d} in all, from {time}. Ended before getting there.', { d: duration(total), time: When.clock(trip.startedAt) }))}</p>` +
       `<div class="tripActions">` +
-      `<button type="button" class="iconBtn" data-trip-act="plan" data-trip="${escapeHtml(trip.id)}">${ico('navigate')} Plan again</button>` +
-      `<button type="button" class="iconBtn" data-trip-act="share" data-trip="${escapeHtml(trip.id)}">${ico('share')} Share</button>` +
-      `<button type="button" class="iconBtn" data-trip-act="delete" data-trip="${escapeHtml(trip.id)}">${ico('trash')} Delete</button>` +
+      `<button type="button" class="iconBtn" data-trip-act="plan" data-trip="${escapeHtml(trip.id)}">${ico('navigate')} ${escapeHtml(I18n.t('history.planAgain', 'Plan again'))}</button>` +
+      `<button type="button" class="iconBtn" data-trip-act="share" data-trip="${escapeHtml(trip.id)}">${ico('share')} ${escapeHtml(I18n.t('history.share', 'Share'))}</button>` +
+      `<button type="button" class="iconBtn" data-trip-act="delete" data-trip="${escapeHtml(trip.id)}">${ico('trash')} ${escapeHtml(I18n.t('history.delete', 'Delete'))}</button>` +
       `</div></div>`;
   }
 
@@ -275,7 +278,7 @@
     return `<div class="tripRow${open ? ' open' : ''}">` +
       `<button type="button" class="tripRowMain" data-trip-open="${escapeHtml(trip.id)}" aria-expanded="${open}">` +
       `<span class="tripWhen">${escapeHtml(day(trip.startedAt))} &middot; ${escapeHtml(When.clock(trip.startedAt))}</span>` +
-      `<span class="tripChips">${chips(trip)}<span class="tripTo">To ${escapeHtml(toName(trip))}</span></span>` +
+      `<span class="tripChips">${chips(trip)}<span class="tripTo">${escapeHtml(I18n.t('trip.to', 'To {to}', { to: toName(trip) }))}</span></span>` +
       `</button>` +
       `<div class="tripMore"><div>${details(trip)}</div></div>` +
       `</div>`;
@@ -308,7 +311,7 @@
   function modeOf(leg) {
     if (leg.kind === 'train') return leg.lrt ? 'LRT' : 'MRT';
     const op = leg.op || operatorOf(leg.route);
-    return OPERATORS[op] || op || 'Bus';
+    return OPERATORS[op] || op || I18n.t('history.bus', 'Bus');
   }
 
   const pct = (part, whole) => `${whole ? Math.round((part / whole) * 100) : 0}%`;
@@ -336,19 +339,19 @@
     const all = walk + wait + ride;
     const since = trips[trips.length - 1].startedAt;
     const byCount = [...modes].sort((a, b) => b[1] - a[1]);
-    return `<h3 class="statsTitle">Stats</h3>` +
-      `<p class="statsSince">${plural(trips.length, 'trip')} and ${plural(rides, 'ride')} since ${escapeHtml(shortFmt.format(since))}, about ${escapeHtml(duration(all))} on the move.</p>` +
-      `<p class="statsHead">Trip Mix</p>` +
+    return `<h3 class="statsTitle">${escapeHtml(I18n.t('history.stats', 'Stats'))}</h3>` +
+      `<p class="statsSince">${escapeHtml(I18n.t('history.since', '{trips} and {rides} since {date}, about {d} on the move.', { trips: tripsText(trips.length), rides: ridesText(rides), date: shortFmt.format(since), d: duration(all) }))}</p>` +
+      `<p class="statsHead">${escapeHtml(I18n.t('history.mix', 'Trip Mix'))}</p>` +
       `<div class="statsCard card">` +
-      statRow('walk', `Walking - ${duration(walk)}`, pct(walk, all)) +
-      statRow('clock', `Waiting - ${duration(wait)}`, pct(wait, all)) +
-      statRow('navigate', `Riding - ${duration(ride)}`, pct(ride, all)) +
+      statRow('walk', I18n.t('history.walking', 'Walking - {d}', { d: duration(walk) }), pct(walk, all)) +
+      statRow('clock', I18n.t('history.waiting', 'Waiting - {d}', { d: duration(wait) }), pct(wait, all)) +
+      statRow('navigate', I18n.t('history.riding', 'Riding - {d}', { d: duration(ride) }), pct(ride, all)) +
       `</div>` +
-      `<p class="statsHead">Trip Modes</p>` +
+      `<p class="statsHead">${escapeHtml(I18n.t('history.modes', 'Trip Modes'))}</p>` +
       `<div class="statsCard card">` +
-      byCount.map(([mode, n]) => statRow('', `${mode} (${plural(n, 'ride')})`, pct(n, rides))).join('') +
+      byCount.map(([mode, n]) => statRow('', `${mode} (${ridesText(n)})`, pct(n, rides))).join('') +
       `</div>` +
-      `<p class="estimateNote">Waiting and riding are measured on the trip where your location showed when you got on; otherwise, and for walking, they're the plan's. Trip Modes counts each bus or train you got on.</p>`;
+      `<p class="estimateNote">${escapeHtml(I18n.t("history.statsNote", "Waiting and riding are measured on the trip where your location showed when you got on; otherwise, and for walking, they're the plan's. Trip Modes counts each bus or train you got on."))}</p>`;
   }
 
   // ---------- the panel ----------
@@ -360,18 +363,18 @@
     const trips = load();
     const body = $('#tripsBody');
     if (!trips.length) {
-      body.innerHTML = `<div class="empty">No trips yet. Start a trip from Navigate (Bus and train or Bus only) or a bus's route (Get Off Alert), and each one you take shows here, with your stats.</div>`;
+      body.innerHTML = `<div class="empty">${escapeHtml(I18n.t("history.empty", "No trips yet. Start a trip from Navigate (Bus and train or Bus only) or a bus's route (Get Off Alert), and each one you take shows here, with your stats."))}</div>`;
       return;
     }
     const shown = showAll ? trips : trips.slice(0, RECENT);
     body.innerHTML =
       weeks(shown) +
       (trips.length > RECENT
-        ? `<button type="button" class="btn tripsAll" data-trips-all>${showAll ? 'Fewer trips' : `All trips (${trips.length})`}</button>`
+        ? `<button type="button" class="btn tripsAll" data-trips-all>${escapeHtml(showAll ? I18n.t('history.fewer', 'Fewer trips') : I18n.t('history.all', 'All trips ({n})', { n: trips.length }))}</button>`
         : '') +
       `<hr class="tripsRule">` +
       stats(trips) +
-      `<button type="button" class="iconBtn tripsClear" data-trips-clear>${ico('trash')} Clear Your trips</button>`;
+      `<button type="button" class="iconBtn tripsClear" data-trips-clear>${ico('trash')} ${escapeHtml(I18n.t('history.clear', 'Clear Your trips'))}</button>`;
   }
 
   function open() {
@@ -386,8 +389,8 @@
   }
 
   function share(trip) {
-    const legs = trip.legs.map((l) => (l.kind === 'bus' ? `Bus ${l.route}` : l.route)).join(', ');
-    window.Share.directions({ from: trip.from, to: trip.to, summary: `${legs}, taken ${day(trip.startedAt)}` });
+    const legs = trip.legs.map((l) => (l.kind === 'bus' ? I18n.t('favs.bus', 'Bus {no}', { no: l.route }) : l.route)).join(', ');
+    window.Share.directions({ from: trip.from, to: trip.to, summary: I18n.t('history.taken', '{legs}, taken {day}', { legs, day: day(trip.startedAt) }) });
   }
 
   function init() {
@@ -413,7 +416,7 @@
         return;
       }
       if (e.target.closest('[data-trips-clear]')) {
-        if (confirm('Clear every trip from Your trips on this device? Your stats go with them.')) store([]);
+        if (confirm(I18n.t('history.clearConfirm', 'Clear every trip from Your trips on this device? Your stats go with them.'))) store([]);
         return;
       }
       const act = e.target.closest('[data-trip-act]');
@@ -425,7 +428,7 @@
         openNav(trip.from, trip.to);
       } else if (act.dataset.tripAct === 'share') {
         share(trip);
-      } else if (act.dataset.tripAct === 'delete' && confirm('Delete this trip from Your trips?')) {
+      } else if (act.dataset.tripAct === 'delete' && confirm(I18n.t('history.deleteConfirm', 'Delete this trip from Your trips?'))) {
         remove(trip.id);
       }
     });

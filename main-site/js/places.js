@@ -17,8 +17,8 @@
 (function () {
   const KEY = 'sgbus_places';
   const MAX_PLACES = 100;
-  const FIXED = { home: { name: 'Home', icon: 'home' }, work: { name: 'Work', icon: 'work' } };
-  const SHARE_NOTE = 'Anyone with this link can see where this place is. Place links don\'t expire.';
+  const FIXED = { home: { name: I18n.t('places.home', 'Home'), icon: 'home' }, work: { name: I18n.t('places.work', 'Work'), icon: 'work' } };
+  const SHARE_NOTE = I18n.t("places.shareNote", "Anyone with this link can see where this place is. Place links don't expire.");
 
   // ---------- storage ----------
 
@@ -163,7 +163,7 @@
   function rowHtml(p) {
     if (p.unset) {
       return `<div class="placeRow unset">` +
-        `<button type="button" class="placeMain" data-place-edit="${p.key}">${ico(p.icon)}<span><strong>${escapeHtml(p.name)}</strong><span class="sub">Not set yet. Tap to set your ${p.name.toLowerCase()}.</span></span></button>` +
+        `<button type="button" class="placeMain" data-place-edit="${p.key}">${ico(p.icon)}<span><strong>${escapeHtml(p.name)}</strong><span class="sub">${escapeHtml(I18n.t('places.notSet', 'Not set yet. Tap to set your {place}.', { place: p.name.toLowerCase() }))}</span></span></button>` +
         `</div>`;
     }
     const open = menuFor === p.key;
@@ -171,13 +171,13 @@
     const key = escapeHtml(p.key);
     // The menu is always there, folded shut until the dots open it (toggleRowMenu in js/ui.js).
     return `<div class="placeRow${open ? ' open' : ''}" data-menu-row="${key}">` +
-      `<button type="button" class="placeMain" data-place-go="${key}" title="Directions there from where you are">${ico(p.icon)}` +
+      `<button type="button" class="placeMain" data-place-go="${key}" title="${escapeHtml(I18n.t('places.directionsTitle', 'Directions there from where you are'))}">${ico(p.icon)}` +
       `<span><strong>${escapeHtml(p.name)}</strong>${p.name !== p.label ? `<span class="sub">${escapeHtml(p.label)}</span>` : ''}</span></button>` +
-      `<button type="button" class="iconBtn placeMore" data-place-menu="${key}" data-menu-toggle aria-expanded="${open}" aria-label="More for ${escapeHtml(p.name)}">${ico('more')}</button>` +
+      `<button type="button" class="iconBtn placeMore" data-place-menu="${key}" data-menu-toggle aria-expanded="${open}" aria-label="${escapeHtml(I18n.t('cal.moreFor', 'More for {title}', { title: p.name }))}">${ico('more')}</button>` +
       `<div class="rowMenu"><div><div class="placeMenu">` +
-      `<button type="button" class="iconBtn" data-place-edit="${key}">${ico('edit')} Edit ${escapeHtml(fixed ? p.name : '')}</button>` +
-      `<button type="button" class="iconBtn" data-place-share="${key}">${ico('share')} Share ${escapeHtml(fixed ? p.name : '')}</button>` +
-      `<button type="button" class="iconBtn" data-place-delete="${key}">${ico('trash')} ${fixed ? 'Clear' : 'Delete'}</button>` +
+      `<button type="button" class="iconBtn" data-place-edit="${key}">${ico('edit')} ${escapeHtml(fixed ? I18n.t('places.editName', 'Edit {place}', { place: p.name }) : I18n.t('places.edit', 'Edit'))}</button>` +
+      `<button type="button" class="iconBtn" data-place-share="${key}">${ico('share')} ${escapeHtml(fixed ? I18n.t('places.shareName', 'Share {place}', { place: p.name }) : I18n.t('history.share', 'Share'))}</button>` +
+      `<button type="button" class="iconBtn" data-place-delete="${key}">${ico('trash')} ${escapeHtml(fixed ? I18n.t('places.clear', 'Clear') : I18n.t('history.delete', 'Delete'))}</button>` +
       `</div></div></div>` +
       `</div>`;
   }
@@ -193,9 +193,9 @@
     $('#placeNewBtn').hidden = !!editing;
     if (!editing) return;
     const fixed = FIXED[editing.key];
-    $('#placeFormTitle').textContent = editing.key ? `Edit ${fixed ? fixed.name : get(editing.key)?.name || 'place'}` : 'Save a new place';
+    $('#placeFormTitle').textContent = editing.key ? I18n.t('places.editName', 'Edit {place}', { place: fixed ? fixed.name : get(editing.key)?.name || I18n.t('places.place', 'place') }) : I18n.t('places.saveNew', 'Save a new place');
     $('#placeNameRow').hidden = !!fixed;
-    $('#placeChosen').textContent = editing.place ? `Saving: ${editing.place.label}` : 'Search for the place, or use where you are.';
+    $('#placeChosen').textContent = editing.place ? I18n.t('places.saving', 'Saving: {place}', { place: editing.place.label }) : I18n.t('places.searchOrHere', 'Search for the place, or use where you are.');
     $('#placeSave').disabled = !editing.place;
   }
 
@@ -206,7 +206,7 @@
     menuFor = null;
     $('#placeSearch').value = editing.place?.label || '';
     $('#placeName').value = place?.name || (saved && !FIXED[key] && saved.name !== saved.label ? saved.name : '');
-    $('#placeName').placeholder = editing.place?.label ? `e.g. ${editing.place.label}` : "e.g. Gym, Mum's place";
+    $('#placeName').placeholder = editing.place?.label ? I18n.t('places.eg', 'e.g. {place}', { place: editing.place.label }) : I18n.t("places.egDefault", "e.g. Gym, Mum's place");
     if (!$('#placesSection').hidden) render();
     else open();
     const input = editing.place ? $('#placeName') : $('#placeSearch');
@@ -220,7 +220,7 @@
     if (!editing) return;
     editing.place = { label: place.label, lat: place.lat, lng: place.lng, ...(place.kind === 'stop' && place.code && { stop: place.code }), ...(place.stop && { stop: place.stop }) };
     $('#placeSearch').value = place.label;
-    $('#placeName').placeholder = `e.g. ${place.label}`;
+    $('#placeName').placeholder = I18n.t('places.eg', 'e.g. {place}', { place: place.label });
     renderForm();
   }
 
@@ -234,14 +234,14 @@
 
   async function useHere() {
     await withLocating($('#placeHere'), () => new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject(new Error("This browser can't share its location."));
+      if (!navigator.geolocation) return reject(new Error(I18n.t("location.cantShare", "This browser can't share its location.")));
       navigator.geolocation.getCurrentPosition(async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords;
-        let label = 'Pinned place';
+        let label = I18n.t('map.pinned', 'Pinned place');
         try {
           await ensureStopsIndex();
           const [near] = stopsNear(lat, lng, 1);
-          if (near) label = `Near ${nameOf(near.code) || near.code}`;
+          if (near) label = I18n.t('history.near', 'Near {stop}', { stop: nameOf(near.code) || near.code });
         } catch { /* named plainly */ }
         choose({ label, lat, lng });
         resolve();
@@ -301,7 +301,7 @@
       const del = e.target.closest('[data-place-delete]');
       if (del) {
         const p = get(del.dataset.placeDelete);
-        if (p && confirm(FIXED[p.key] ? `Clear your ${p.name.toLowerCase()}?` : `Delete ${p.name} from your places?`)) {
+        if (p && confirm(FIXED[p.key] ? I18n.t('places.clearConfirm', 'Clear your {place}?', { place: p.name.toLowerCase() }) : I18n.t('places.deleteConfirm', 'Delete {place} from your places?', { place: p.name }))) {
           menuFor = null;
           remove(p.key);
         }

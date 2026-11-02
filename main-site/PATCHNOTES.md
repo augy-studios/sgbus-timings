@@ -29,6 +29,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Explorer's tour** - Explorer's tour shows its Layers button too, for what the map shows.
 - **Coins for your past trips** - Trips you took before uwuCoins earn their coins too, once, the first time you open the app after this update: each one in Your trips that you finished with the Get Off Alert, where your location saw you get on. They count towards Achievements as well, with the buses and lines you rode on them, and any trip feats they did. A window says how many trips counted and what they earned.
 - **Another secret, for Android** - The Android app has a new secret for an Easter egg to unlock, the way Android's own apps look. The shortcut that turns on your phone's colours turns it on too.
+- **All of it in your language** - Chinese, Malay and Tamil now cover the whole app, not just its buttons and settings: Navigate's ways and steps, the trip bar and its alerts, Service alerts, the weather, Your trips and its stats, Places, past searches, Calendar, Sync, Offline Sharing, Card value, the live map and Explorer's cards, the tours, and Settings' summaries. Dates and times follow the language too.
 
 ### Guide
 
@@ -38,6 +39,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 - The web app's changes above, and those from 1 November.
 - Something new for Android 12 and later, for whoever finds it.
+- The app's own words, outside the web app, in Chinese, Malay and Tamil too: its shortcuts, Quick Settings tiles, the Bus timings widget and its setup, and the watch's tile. The widget's buses can be split with Chinese commas as well.
 
 ### Desktop app 2.3.0
 

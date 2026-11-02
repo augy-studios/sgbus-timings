@@ -256,7 +256,7 @@
   // where `through` is false, none rides through them either. Their timings show a note
   // (script.js). The same as RESTRICTED in the Telegram bot's restricted.py and
   // api/_nav/network.js.
-  const CARGO_AREA = { place: "Changi Airport's cargo area", through: false };
+  const CARGO_AREA = { place: I18n.t("network.cargo", "Changi Airport's cargo area"), through: false };
   const MINDEF = { place: "MINDEF", through: true };
   const RESTRICTED = {
     95141: CARGO_AREA, 95061: CARGO_AREA, 95051: CARGO_AREA, 95041: CARGO_AREA,
@@ -280,9 +280,9 @@
   // in Johor Bahru. Anyone can ride to them with a passport, so unlike the restricted stops
   // they're planned through as usual, but their timings and route lists say so (script.js).
   // The same as CROSS_BORDER in the Telegram bot's restricted.py.
-  const CHECKPOINT = { label: "Immigration checkpoint", note: "Passport needed to go on." };
+  const CHECKPOINT = { label: I18n.t('network.checkpoint', 'Immigration checkpoint'), note: I18n.t('network.checkpointNote', 'Passport needed to go on.') };
   // `abroad`: past Singapore's checkpoint, so a ride to one goes through it (js/trip.js).
-  const MALAYSIA = { label: "In Malaysia", note: "Passport needed.", abroad: true };
+  const MALAYSIA = { label: I18n.t('network.malaysia', 'In Malaysia'), note: I18n.t('network.malaysiaNote', 'Passport needed.'), abroad: true };
   const CROSS_BORDER = {
     46101: CHECKPOINT, 46109: CHECKPOINT,
     46211: MALAYSIA, 46219: MALAYSIA, 46239: MALAYSIA, 47711: MALAYSIA,

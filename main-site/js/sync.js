@@ -46,34 +46,34 @@ const FAV_KINDS = [
   // You: your name and birthday from Settings, as { field, value }. Keyed by value too, so one
   // that differs from the other device's is offered, and taking it replaces this device's;
   // the same one shows as already there. A device from before this ignores them.
-  { kind: 'profile', list: 'profile', label: 'You', key: (p) => `profile:${p.field}=${p.value}` },
-  { kind: 'stop',  list: 'stops',  label: 'Bus stops', key: (s) => `stop:${s.code}` },
-  { kind: 'bus',   list: 'buses',  label: 'Buses',     key: (b) => `bus:${b}` },
-  { kind: 'route', list: 'routes', label: 'Routes',    key: (r) => `route:${r.start}>${r.end}` },
+  { kind: 'profile', list: 'profile', label: I18n.t('settings.you', 'You'), key: (p) => `profile:${p.field}=${p.value}` },
+  { kind: 'stop',  list: 'stops',  label: I18n.t('favs.group.stops', 'Bus stops'), key: (s) => `stop:${s.code}` },
+  { kind: 'bus',   list: 'buses',  label: I18n.t('favs.group.buses', 'Buses'),     key: (b) => `bus:${b}` },
+  { kind: 'route', list: 'routes', label: I18n.t('sync.kind.routes', 'Routes'),    key: (r) => `route:${r.start}>${r.end}` },
   // A bus at one stop, and the lists you've made in Favourites (help desk #6, script.js). A
   // device from before these doesn't say it keeps them, so they aren't offered to it. A list
   // is keyed by its name and what's in it: taking one adds what it has to the list of that name.
-  { kind: 'stopbus', list: 'stopBuses', label: 'Buses at stops', key: (b) => `stopbus:${b.code}/${b.service}` },
-  { kind: 'favlist', list: 'favLists', label: 'Lists', key: (l) => `favlist:${l.name.toLowerCase()}=${[...l.items].sort().join(',')}` },
+  { kind: 'stopbus', list: 'stopBuses', label: I18n.t('favs.group.stopBuses', 'Buses at stops'), key: (b) => `stopbus:${b.code}/${b.service}` },
+  { kind: 'favlist', list: 'favLists', label: I18n.t('sync.kind.lists', 'Lists'), key: (l) => `favlist:${l.name.toLowerCase()}=${[...l.items].sort().join(',')}` },
   // Navs, from Navigate (js/nav.js): two places, keyed by where they are. A device from
   // before navs synced sends none and ignores these, so sync still works between the two.
-  { kind: 'nav',   list: 'navs',   label: 'Navs',      key: (n) => `nav:${navPoint(n.from)}>${navPoint(n.to)}` },
+  { kind: 'nav',   list: 'navs',   label: I18n.t('favs.group.navs', 'Navs'),      key: (n) => `nav:${navPoint(n.from)}>${navPoint(n.to)}` },
   // Places (js/places.js): Home and Work as themselves, so one is only ever filled where it
   // isn't set, never replaced, and the rest by where they are. Trips (js/history.js) by id.
   // A device from before these sends none and ignores them, as with navs.
-  { kind: 'place', list: 'places', label: 'Places',    key: (p) => Places.syncKey(p) },
-  { kind: 'trip',  list: 'trips',  label: 'Trips',     key: (t) => `trip:${t.id}` },
+  { kind: 'place', list: 'places', label: I18n.t('settings.places', 'Places'),    key: (p) => Places.syncKey(p) },
+  { kind: 'trip',  list: 'trips',  label: I18n.t('sync.kind.trips', 'Trips'),     key: (t) => `trip:${t.id}` },
   // Past searches (js/recents.js), merged in by when each was searched.
-  { kind: 'search', list: 'searches', label: 'Past searches', key: (r) => `search:${Recents.syncKey(r)}` },
+  { kind: 'search', list: 'searches', label: I18n.t('sync.kind.searches', 'Past searches'), key: (r) => `search:${Recents.syncKey(r)}` },
   // The Android app's routines and last bus reminders (js/reminders.js), the bot's routines too.
-  { kind: 'routine', list: 'routines', label: 'Routines', key: (r) => `routine:${r.code}@${r.time}/${[...r.days].sort().join('')}/${[...r.buses].sort().join(',')}` },
-  { kind: 'lastbus', list: 'lastbus', label: 'Last bus reminders', key: (r) => `lastbus:${r.code}/${r.service}` },
+  { kind: 'routine', list: 'routines', label: I18n.t('settings.routines', 'Routines'), key: (r) => `routine:${r.code}@${r.time}/${[...r.days].sort().join('')}/${[...r.buses].sort().join(',')}` },
+  { kind: 'lastbus', list: 'lastbus', label: I18n.t('settings.last_bus_reminders', 'Last bus reminders'), key: (r) => `lastbus:${r.code}/${r.service}` },
   // Your calendar's link (js/calendar.js), the bot's /calendar too. One of it, as with your name.
   // webcal:// is https://, as the bot keeps it.
-  { kind: 'calendar', list: 'calendar', label: 'Calendar', key: (c) => `calendar:${c.url.replace(/^webcals?:\/\//i, 'https://')}` },
+  { kind: 'calendar', list: 'calendar', label: I18n.t('settings.calendar', 'Calendar'), key: (c) => `calendar:${c.url.replace(/^webcals?:\/\//i, 'https://')}` },
   // Settings, as { field, value }, each one as your name is (SYNC_SETTINGS below). Only those
   // changed from how they start, so taking another device's never just undoes a choice.
-  { kind: 'setting', list: 'settings', label: 'Settings', key: (s) => `setting:${s.field}=${s.value}` },
+  { kind: 'setting', list: 'settings', label: I18n.t('settings.settings', 'Settings'), key: (s) => `setting:${s.field}=${s.value}` },
 ];
 
 // What a device from before `kinds` keeps.
@@ -87,98 +87,98 @@ const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}
 // `here` is whether this device has it. The bot keeps only the two pins, Cycling and Bus times.
 
 const tap = (selector) => document.querySelector(selector)?.click();
-const onOff = (v) => (v === 'on' ? 'On' : 'Off');
+const onOff = (v) => (v === 'on' ? I18n.t('settings.on', 'On') : I18n.t('settings.off', 'Off'));
 const TRAY_EXTRAS = ['explorer', 'simplygo', 'telegram', 'coffee', 'guide', 'nearstops', 'routines', 'card', 'receive', 'coins'];
 // The pages "pages.off" keeps (js/main-screen.js): Glance's is "glance", as it was before.
 const PAGES_OFF = () => MainScreen.CAN_HIDE.filter((n) => n !== 'glance');
 
 const SYNC_SETTINGS = {
   'pin.stop': {
-    label: 'Pin favourite stops in lists', values: ['top', 'bottom'], start: 'top',
-    text: (v) => (v === 'bottom' ? 'Bottom' : 'Top'),
+    label: I18n.t('settings.pin_favourite_stops_in_lists', 'Pin favourite stops in lists'), values: ['top', 'bottom'], start: 'top',
+    text: (v) => (v === 'bottom' ? I18n.t('settings.bottom', 'Bottom') : I18n.t('settings.top', 'Top')),
     get: () => LS.getPin('stop'), set: (v) => tap(`[data-pin-kind="stop"] [data-pin="${v}"]`),
   },
   'pin.bus': {
-    label: 'Pin favourite buses at a stop', values: ['top', 'bottom'], start: 'top',
-    text: (v) => (v === 'bottom' ? 'Bottom' : 'Top'),
+    label: I18n.t('sync.set.pinBus', 'Pin favourite buses at a stop'), values: ['top', 'bottom'], start: 'top',
+    text: (v) => (v === 'bottom' ? I18n.t('settings.bottom', 'Bottom') : I18n.t('settings.top', 'Top')),
     get: () => LS.getPin('bus'), set: (v) => tap(`[data-pin-kind="bus"] [data-pin="${v}"]`),
   },
   'bus.times': {
-    label: 'Bus times', values: ['mins', 'clock'], start: 'mins',
-    text: (v) => (v === 'clock' ? 'Clock time' : 'Minutes and seconds'),
+    label: I18n.t('settings.bus_times', 'Bus times'), values: ['mins', 'clock'], start: 'mins',
+    text: (v) => (v === 'clock' ? I18n.t('settings.clock_time', 'Clock time') : I18n.t('settings.minutes_and_seconds', 'Minutes and seconds')),
     get: () => (LS.getClockTimes() ? 'clock' : 'mins'), set: (v) => tap(`[data-times="${v}"]`),
   },
   'theme.mode': {
-    label: 'Light or dark', values: () => window.MODE_PREFERENCES || [], start: 'light',
-    text: (v) => ({ light: 'Light', dark: 'Dark', time: 'By the time of day' })[v] || v,
+    label: I18n.t('sync.set.mode', 'Light or dark'), values: () => window.MODE_PREFERENCES || [], start: 'light',
+    text: (v) => ({ light: I18n.t('theme.light', 'Light'), dark: I18n.t('theme.dark', 'Dark'), time: I18n.t('sync.set.modeTime', 'By the time of day') })[v] || v,
     get: () => window.getModePreference?.() || 'light', set: (v) => window.applyMode?.(v),
   },
   'theme.colour': {
-    label: 'Colour', values: () => (window.COLOR_THEMES || []).map((t) => t.id), start: 'classic',
+    label: I18n.t('sync.set.colour', 'Colour'), values: () => (window.COLOR_THEMES || []).map((t) => t.id), start: 'classic',
     text: (v) => (window.COLOR_THEMES || []).find((t) => t.id === v)?.label || v,
     get: () => window.getStoredColorTheme?.() || 'classic', set: (v) => window.applyColorTheme?.(v),
   },
   getoff: {
-    label: 'Get Off Alert on a trip', values: ['on', 'off'], start: 'on', text: onOff,
+    label: I18n.t('settings.get_off_alert_on_a', 'Get Off Alert on a trip'), values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (Trip.enabled() ? 'on' : 'off'), set: (v) => tap(`[data-getoff="${v}"]`),
   },
   earphones: {
-    label: 'Get Off Alert’s sound', values: ['on', 'off'], start: 'off',
-    text: (v) => (v === 'on' ? 'Earphones only' : 'Out loud'),
+    label: I18n.t('settings.get_off_alerts_sound', "Get Off Alert's sound"), values: ['on', 'off'], start: 'off',
+    text: (v) => (v === 'on' ? I18n.t('settings.earphones_only', 'Earphones only') : I18n.t('settings.out_loud', 'Out loud')),
     here: () => Reminders.has('earphones'),
     get: () => (Reminders.earphonesOnly() ? 'on' : 'off'), set: (v) => tap(`[data-earphones="${v}"]`),
   },
   pip: {
-    label: 'Picture-in-picture', values: ['on', 'off'], start: 'on', text: onOff,
+    label: I18n.t('settings.pictureinpicture', 'Picture-in-picture'), values: ['on', 'off'], start: 'on', text: onOff,
     here: () => !!window.Pip?.available(),
     get: () => (Pip.enabled() ? 'on' : 'off'), set: (v) => tap(`[data-pip-pref="${v}"]`),
   },
   shake: {
-    label: 'Shake to refresh', values: ['on', 'off'], start: 'on', text: onOff,
+    label: I18n.t('settings.shake_to_refresh', 'Shake to refresh'), values: ['on', 'off'], start: 'on', text: onOff,
     get: () => { try { return localStorage.getItem('sgbus_shake') === 'off' ? 'off' : 'on'; } catch { return 'on'; } },
     set: (v) => { try { localStorage.setItem('sgbus_shake', v); } catch { /* this visit only */ } tap(`[data-shake="${v}"]`); },
   },
   confetti: {
-    label: 'Birthday confetti', values: ['on', 'off'], start: 'on', text: onOff,
+    label: I18n.t('settings.birthday_confetti', 'Birthday confetti'), values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (LS.getConfetti() ? 'on' : 'off'), set: (v) => tap(`[data-confetti="${v}"]`),
   },
   'tray.side': {
-    label: 'Edge Tray side', values: ['left', 'right'], start: 'right',
-    text: (v) => (v === 'left' ? 'Left' : 'Right'),
+    label: I18n.t('settings.edge_tray_side', 'Edge Tray side'), values: ['left', 'right'], start: 'right',
+    text: (v) => (v === 'left' ? I18n.t('settings.left', 'Left') : I18n.t('settings.right', 'Right')),
     get: () => (page.getAttribute('data-tray-side') === 'left' ? 'left' : 'right'), set: (v) => setTraySide(v),
   },
   // The buttons turned off, as "coffee telegram".
   'tray.hide': {
-    label: 'Edge Tray buttons turned off', start: '',
+    label: I18n.t('sync.set.trayHide', 'Edge Tray buttons turned off'), start: '',
     ok: (v) => v.split(' ').filter(Boolean).every((n) => TRAY_EXTRAS.includes(n)),
-    text: (v) => v.split(' ').filter(Boolean).map((n) => $(`#trayExtrasPick [data-tray-show="${n}"]`)?.textContent || n).join(', ') || 'None',
+    text: (v) => v.split(' ').filter(Boolean).map((n) => $(`#trayExtrasPick [data-tray-show="${n}"]`)?.textContent || n).join(', ') || I18n.t('sync.set.none', 'None'),
     get: () => [...trayHidden()].sort().join(' '),
     set: (v) => { const off = v.split(' '); for (const n of TRAY_EXTRAS) setTrayExtra(n, !off.includes(n)); },
   },
   restricted: {
-    label: 'Restricted areas', values: ['on', 'off'], start: 'off',
-    text: (v) => (v === 'on' ? 'I have a pass' : 'Keep out'),
+    label: I18n.t('settings.restricted_areas', 'Restricted areas'), values: ['on', 'off'], start: 'off',
+    text: (v) => (v === 'on' ? I18n.t('settings.i_have_a_pass', 'I have a pass') : I18n.t('settings.keep_out', 'Keep out')),
     get: () => (LS.getRestricted() ? 'on' : 'off'), set: (v) => tap(`[data-restricted="${v}"]`),
   },
   customs: {
-    label: 'Immigration time', values: ['auto', '15', '30', '45', '60'], start: 'auto',
-    text: (v) => (v === 'auto' ? 'By the time' : v === '60' ? '1 hr' : `${v} min`),
+    label: I18n.t('settings.immigration_time', 'Immigration time'), values: ['auto', '15', '30', '45', '60'], start: 'auto',
+    text: (v) => (v === 'auto' ? I18n.t('settings.by_the_time', 'By the time') : v === '60' ? I18n.t('settings.1_hr', '1 hr') : I18n.t('time.min', '{m} min', { m: v })),
     get: () => LS.getCustoms(), set: (v) => tap(`[data-customs="${v}"]`),
   },
   bike: {
-    label: 'Cycling', values: ['off', 'on'], start: 'off',
-    text: (v) => (v === 'on' ? 'I have a bike' : 'No bike'),
+    label: I18n.t('settings.cycling', 'Cycling'), values: ['off', 'on'], start: 'off',
+    text: (v) => (v === 'on' ? I18n.t('settings.i_have_a_bike', 'I have a bike') : I18n.t('settings.no_bike', 'No bike')),
     get: () => (LS.getBike() ? 'on' : 'off'), set: (v) => tap(`[data-bike="${v}"]`),
   },
   glance: {
-    label: 'Next bus at a glance', values: ['on', 'off'], start: 'on', text: onOff,
+    label: I18n.t('sync.set.glance', 'Next bus at a glance'), values: ['on', 'off'], start: 'on', text: onOff,
     get: () => (Glance.enabled() ? 'on' : 'off'), set: (v) => Glance.setEnabled(v === 'on'),
   },
   // The other pages turned off in Settings' Edge Tray buttons, as "alerts trips".
   'pages.off': {
-    label: 'Pages turned off', start: '',
+    label: I18n.t('sync.set.pagesOff', 'Pages turned off'), start: '',
     ok: (v) => v.split(' ').filter(Boolean).every((n) => PAGES_OFF().includes(n)),
-    text: (v) => v.split(' ').filter(Boolean).map((n) => MainScreen.label(n)).join(', ') || 'None',
+    text: (v) => v.split(' ').filter(Boolean).map((n) => MainScreen.label(n)).join(', ') || I18n.t('sync.set.none', 'None'),
     get: () => MainScreen.hidden().filter((n) => n !== 'glance').sort().join(' '),
     set: (v) => { const off = v.split(' '); for (const n of PAGES_OFF()) MainScreen.setShown(n, !off.includes(n)); },
   },
@@ -186,14 +186,14 @@ const SYNC_SETTINGS = {
   // default was: what a version from before Glance was a page sends for its Bus timings, with
   // the glance at its top. Bus timings on its own is "timings", which such a version leaves be.
   start: {
-    label: 'Custom home', values: () => ['stop', ...MainScreen.IDS.filter((n) => n !== 'glance')], start: 'stop',
+    label: I18n.t('settings.custom_home', 'Custom home'), values: () => ['stop', ...MainScreen.IDS.filter((n) => n !== 'glance')], start: 'stop',
     text: (v) => MainScreen.label(v === 'stop' ? 'glance' : v),
     get: () => (MainScreen.home() === 'glance' ? 'stop' : MainScreen.home()),
     set: (v) => MainScreen.setHome(v === 'stop' ? 'glance' : v),
   },
   'nav.mode': {
-    label: 'Navigate opens on', values: ['all', 'bus'], start: 'all',
-    text: (v) => (v === 'bus' ? 'Bus only' : 'Bus and train'),
+    label: I18n.t('sync.set.navMode', 'Navigate opens on'), values: ['all', 'bus'], start: 'all',
+    text: (v) => (v === 'bus' ? I18n.t('nav.bus_only', 'Bus only') : I18n.t('nav.bus_and_train', 'Bus and train')),
     get: () => { try { return localStorage.getItem('sgbus_nav_mode') === 'bus' ? 'bus' : 'all'; } catch { return 'all'; } },
     set: (v) => { try { localStorage.setItem('sgbus_nav_mode', v); } catch { /* opens on Bus and train */ } },
   },
@@ -249,7 +249,7 @@ function initSync() {
   $('#syncBotBtn').addEventListener('click', startBotSync);
   $('#syncBotCommand').addEventListener('click', () => {
     navigator.clipboard?.writeText($('#syncBotCommand').textContent)
-      .then(() => showSyncNote('Command copied. Paste it to the bot.'))
+      .then(() => showSyncNote(I18n.t('sync.commandCopied', 'Command copied. Paste it to the bot.')))
       .catch(() => {});
   });
   $('#syncJoinBtn').addEventListener('click', () => joinSync($('#syncCodeInput').value));
@@ -327,7 +327,7 @@ function openSyncLink(code) {
   openSettings('sync');
   if (sync.role) return;
   $('#syncCodeInput').value = P2P.normaliseCode(code);
-  showSyncStatus('Tap Connect to sync with the device showing this code.', 'busy');
+  showSyncStatus(I18n.t('sync.tapConnect', 'Tap Connect to sync with the device showing this code.'), 'busy');
   $('#syncJoinBtn').scrollIntoView({ block: 'nearest' });
   $('#syncJoinBtn').focus({ preventScroll: true });
 }
@@ -657,7 +657,7 @@ async function startHosting() {
   try {
     await host.start(code);
   } catch {
-    if (sync.conn === host) endSession({ text: 'Could not load syncing. Check your connection.', tone: 'error' });
+    if (sync.conn === host) endSession({ text: I18n.t('sync.couldNotLoad', 'Could not load syncing. Check your connection.'), tone: 'error' });
   }
 }
 
@@ -709,7 +709,7 @@ async function newHostCode(note = '') {
 async function joinSync(input) {
   const code = P2P.normaliseCode(input);
   if (!P2P.isValidCode(code)) {
-    showSyncStatus(`The code is the ${P2P.CODE_LENGTH} letters and numbers on the other device's screen.`, 'error');
+    showSyncStatus(I18n.t('sync.codeIs', "The code is the {n} letters and numbers on the other device's screen.", { n: P2P.CODE_LENGTH }), 'error');
     return;
   }
   if (sync.role) endSession();
@@ -724,12 +724,11 @@ async function joinSync(input) {
     if (sync.conn !== guest) return;
     const { status } = detail;
     if (status === 'dropped') {
-      endSession({ text: 'Lost the connection to the other device. Tap Connect to try again.', tone: 'warn' });
+      endSession({ text: I18n.t('sync.lost', 'Lost the connection to the other device. Tap Connect to try again.'), tone: 'warn' });
       sync.droppedCode = code;
     } else if (status === 'unreachable') {
       endSession({
-        text: 'Could not reach the other device. Both have to be on the same network: join the same wifi, ' +
-          'or turn on a hotspot on one and join it from the other. Check the code is still the one on screen.',
+        text: I18n.t('sync.unreachable', 'Could not reach the other device. Both have to be on the same network: join the same wifi, or turn on a hotspot on one and join it from the other. Check the code is still the one on screen.'),
         tone: 'error',
       });
     } else if (status === 'error') {
@@ -747,7 +746,7 @@ async function joinSync(input) {
   try {
     await guest.connect(code);
   } catch {
-    if (sync.conn === guest) endSession({ text: 'Could not load syncing. Check your connection.', tone: 'error' });
+    if (sync.conn === guest) endSession({ text: I18n.t('sync.couldNotLoad', 'Could not load syncing. Check your connection.'), tone: 'error' });
   }
 }
 
@@ -774,8 +773,8 @@ function sendFavs() {
 }
 
 // The other side, in the notes.
-const otherSide = () => (sync.role === 'bot' ? 'the Telegram bot' : 'the other device');
-const OtherSide = () => (sync.role === 'bot' ? 'The Telegram bot' : 'The other device');
+const otherSide = () => (sync.role === 'bot' ? I18n.t('sync.theBot', 'the Telegram bot') : I18n.t('sync.theDevice', 'the other device'));
+const OtherSide = () => (sync.role === 'bot' ? I18n.t('sync.TheBot', 'The Telegram bot') : I18n.t('sync.TheDevice', 'The other device'));
 
 // Everything the other device sends goes through here. Unknown types are ignored, never
 // thrown on: the other device may be a version ahead or behind.
@@ -801,8 +800,8 @@ function onSyncMessage(message) {
       sendSync({ type: 'added', id: message.id, count: added });
       if (added) sendFavs();
       showSyncNote(added
-        ? `${OtherSide()} sent ${plural(added, 'thing')}, now saved here.`
-        : `${OtherSide()} sent things this device already has.`);
+        ? (added === 1 ? I18n.t('sync.gotOne', '{who} sent 1 thing, now saved here.', { who: OtherSide() }) : I18n.t('sync.gotMany', '{who} sent {n} things, now saved here.', { who: OtherSide(), n: added }))
+        : I18n.t('sync.gotNone', '{who} sent things this device already has.', { who: OtherSide() }));
       renderSyncList();
       break;
     }
@@ -814,14 +813,14 @@ function onSyncMessage(message) {
       sync.pending.delete(message.id);
       const count = Math.max(0, Math.min(SYNC_MAX_ITEMS * FAV_KINDS.length, Math.floor(Number(message.count)) || 0));
       showSyncNote(count
-        ? `Sent. ${OtherSide()} saved ${plural(count, 'new thing')}.`
-        : `Sent. ${OtherSide()} already had all of those.`);
+        ? (count === 1 ? I18n.t('sync.sentOne', 'Sent. {who} saved 1 new thing.', { who: OtherSide() }) : I18n.t('sync.sentMany', 'Sent. {who} saved {n} new things.', { who: OtherSide(), n: count }))
+        : I18n.t('sync.sentNone', 'Sent. {who} already had all of those.', { who: OtherSide() }));
       break;
     }
 
     // The guest is finished with this code, so nobody else gets to use it.
     case 'bye':
-      if (sync.role === 'host') newHostCode('The other device disconnected. The old code no longer works; this is a new one.');
+      if (sync.role === 'host') newHostCode(I18n.t('sync.guestLeft', 'The other device disconnected. The old code no longer works; this is a new one.'));
       break;
 
     default:
@@ -868,15 +867,15 @@ function copyPicked() {
   if (sync.tab === 'import') {
     const added = mergeFavs(chosen);
     if (added) sendFavs();
-    showSyncNote(`Imported ${plural(added, 'thing')} to this device.`);
+    showSyncNote(added === 1 ? I18n.t('sync.importedOne', 'Imported 1 thing to this device.') : I18n.t('sync.importedMany', 'Imported {n} things to this device.', { n: added }));
   } else {
     const id = ++sync.lastId;
     sendSync({ type: 'add', id, favs: chosen });
     sync.pending.set(id, setTimeout(() => {
       sync.pending.delete(id);
-      showSyncNote(`No answer from ${otherSide()}. Check it still says connected, then try again.`, 'error');
+      showSyncNote(I18n.t('sync.noAnswer', 'No answer from {who}. Check it still says connected, then try again.', { who: otherSide() }), 'error');
     }, sync.role === 'bot' ? SYNC_BOT_ACK_MS : SYNC_ACK_MS));
-    showSyncNote(`Sending ${plural(count, 'thing')}…`);
+    showSyncNote(count === 1 ? I18n.t('sync.sendingOne', 'Sending 1 thing…') : I18n.t('sync.sendingMany', 'Sending {n} things…', { n: count }));
   }
   renderSyncList();
 }
@@ -885,8 +884,8 @@ function copySyncLink() {
   const link = $('#syncLink').textContent;
   if (!link || !navigator.clipboard) return;
   navigator.clipboard.writeText(link)
-    .then(() => showSyncNote('Link copied.'))
-    .catch(() => showSyncNote("Couldn't copy the link. Type the code on the other device instead.", 'error'));
+    .then(() => showSyncNote(I18n.t('sync.linkCopied', 'Link copied.')))
+    .catch(() => showSyncNote(I18n.t('sync.linkNotCopied', "Couldn't copy the link. Type the code on the other device instead."), 'error'));
 }
 
 // ---- Screen wake lock ----
@@ -939,34 +938,34 @@ function renderSync() {
   $('#syncLive').hidden = !connected;
   $('#syncControls').hidden = !role;
   $('#syncNewCode').hidden = role !== 'host';
-  $('#syncEnd').textContent = connected ? 'Disconnect' : hosting ? 'Stop' : 'Cancel';
+  $('#syncEnd').textContent = connected ? I18n.t('sync.disconnect', 'Disconnect') : hosting ? I18n.t('settings.stop', 'Stop') : I18n.t('common.cancel', 'Cancel');
 
   if (role === 'host' && status === 'waiting') {
-    showSyncStatus('Waiting for the other device. In its Settings, Sync, enter this code, or scan the QR code with its camera.', 'warn');
+    showSyncStatus(I18n.t('sync.waitDevice', 'Waiting for the other device. In its Settings, Sync, enter this code, or scan the QR code with its camera.'), 'warn');
   } else if (role === 'bot' && status === 'waiting') {
-    showSyncStatus(`Waiting for the Telegram bot. Tap Open the bot, or send it the command below. On a computer, scan the QR code with your phone.`, 'warn');
+    showSyncStatus(I18n.t('sync.waitBot', 'Waiting for the Telegram bot. Tap Open the bot, or send it the command below. On a computer, scan the QR code with your phone.'), 'warn');
   } else if (role && status === 'connecting') {
-    showSyncStatus(hosting ? 'Getting the code ready…' : 'Connecting to the other device…', 'busy');
+    showSyncStatus(hosting ? I18n.t('sync.gettingCode', 'Getting the code ready…') : I18n.t('sync.connecting', 'Connecting to the other device…'), 'busy');
   } else if (connected) {
-    showSyncStatus(role === 'bot' ? 'Connected to the Telegram bot.' : 'Connected to the other device.', 'ok');
+    showSyncStatus(role === 'bot' ? I18n.t('sync.connectedBot', 'Connected to the Telegram bot.') : I18n.t('sync.connectedDevice', 'Connected to the other device.'), 'ok');
   }
 
   renderSyncList();
 }
 
 function favTitle(kind, item) {
-  if (kind === 'profile') return item.field === 'name' ? 'Your name' : 'Your birthday';
-  if (kind === 'stop') return nameOf(item.code) || item.name || 'Bus stop';
-  if (kind === 'bus') return `Bus ${item}`;
-  if (kind === 'stopbus') return `Bus ${item.service} at ${nameOf(item.code) || item.code}`;
+  if (kind === 'profile') return item.field === 'name' ? I18n.t('sync.yourName', 'Your name') : I18n.t('sync.yourBirthday', 'Your birthday');
+  if (kind === 'stop') return nameOf(item.code) || item.name || I18n.t('favs.stopNoName', 'Bus stop');
+  if (kind === 'bus') return I18n.t('favs.bus', 'Bus {no}', { no: item });
+  if (kind === 'stopbus') return I18n.t('sync.busAt', 'Bus {no} at {stop}', { no: item.service, stop: nameOf(item.code) || item.code });
   if (kind === 'favlist') return item.name;
   if (kind === 'nav') return `${item.from.label} → ${item.to.label}`;
   if (kind === 'place') return Places.FIXED[item.key]?.name || item.name || item.label;
-  if (kind === 'trip') return `To ${item.to.label}`;
+  if (kind === 'trip') return I18n.t('sync.tripTo', 'To {place}', { place: item.to.label });
   if (kind === 'search') return item.label;
-  if (kind === 'routine') return `${item.time.slice(0, 2)}:${item.time.slice(2)} at ${nameOf(item.code) || item.name || item.code}`;
-  if (kind === 'lastbus') return `Last ${item.service} at ${nameOf(item.code) || item.name || item.code}`;
-  if (kind === 'calendar') return 'Your calendar’s link';
+  if (kind === 'routine') return I18n.t('sync.routineAt', '{time} at {stop}', { time: `${item.time.slice(0, 2)}:${item.time.slice(2)}`, stop: nameOf(item.code) || item.name || item.code });
+  if (kind === 'lastbus') return I18n.t('sync.lastAt', 'Last {no} at {stop}', { no: item.service, stop: nameOf(item.code) || item.name || item.code });
+  if (kind === 'calendar') return I18n.t('sync.calendarLink', 'Your calendar’s link');
   if (kind === 'setting') return SYNC_SETTINGS[item.field].label;
   return `${nameOf(item.start) || item.startName || item.start} → ${nameOf(item.end) || item.endName || item.end}`;
 }
@@ -974,30 +973,30 @@ function favTitle(kind, item) {
 // "Weekdays", "Every day", "Weekends" or the days, as the routines in js/reminders.js say.
 function syncDays(days) {
   const set = [...days].sort().join(',');
-  if (set === '1,2,3,4,5,6,7') return 'Every day';
-  if (set === '1,2,3,4,5') return 'Weekdays';
-  if (set === '6,7') return 'Weekends';
-  return days.map((d) => ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][d]).join(', ');
+  if (set === '1,2,3,4,5,6,7') return I18n.t('routine.days.every_day', 'Every day');
+  if (set === '1,2,3,4,5') return I18n.t('routine.days.weekdays', 'Weekdays');
+  if (set === '6,7') return I18n.t('routine.days.weekends', 'Weekends');
+  return days.map((d) => ['', I18n.t('campus.dow.mon', 'Mon'), I18n.t('campus.dow.tue', 'Tue'), I18n.t('campus.dow.wed', 'Wed'), I18n.t('campus.dow.thu', 'Thu'), I18n.t('campus.dow.fri', 'Fri'), I18n.t('campus.dow.sat', 'Sat'), I18n.t('campus.dow.sun', 'Sun')][d]).join(', ');
 }
 
 function favSubtitle(kind, item) {
   if (kind === 'profile') {
     if (item.field === 'name') return item.value;
     const [y, m, d] = item.value.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString('en-GB', { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
+    return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString(I18n.lang() === 'en' ? 'en-GB' : I18n.lang(), { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' });
   }
   if (kind === 'stop') {
     const road = stopsIndex?.[item.code]?.road;
     return road ? `${item.code} · ${road}` : item.code;
   }
   if (kind === 'bus') return serviceEndsText(item);
-  if (kind === 'stopbus') return `Bus stop ${item.code}`;
-  if (kind === 'favlist') return item.items.length ? `${item.items.length} favourite${item.items.length === 1 ? '' : 's'}` : 'Empty';
-  if (kind === 'nav') return 'By bus and train';
+  if (kind === 'stopbus') return I18n.t('favs.stop', 'Bus stop {code}', { code: item.code });
+  if (kind === 'favlist') return item.items.length ? (item.items.length === 1 ? I18n.t('sync.oneFav', '1 favourite') : I18n.t('sync.manyFavs', '{n} favourites', { n: item.items.length })) : I18n.t('sync.empty', 'Empty');
+  if (kind === 'nav') return I18n.t('sync.byBusTrain', 'By bus and train');
   if (kind === 'place') return item.label;
   if (kind === 'search') return item.sub;
-  if (kind === 'trip') return `${TripHistory.day(item.startedAt)} · ${item.legs.map((l) => (l.kind === 'bus' ? `Bus ${l.route}` : l.route)).join(', ')}`;
-  if (kind === 'routine') return `${syncDays(item.days)} · ${item.buses.length ? `Bus ${item.buses.join(', ')}` : 'Every bus'}`;
+  if (kind === 'trip') return `${TripHistory.day(item.startedAt)} · ${item.legs.map((l) => (l.kind === 'bus' ? I18n.t('favs.bus', 'Bus {no}', { no: l.route }) : l.route)).join(', ')}`;
+  if (kind === 'routine') return `${syncDays(item.days)} · ${item.buses.length ? I18n.t('favs.bus', 'Bus {no}', { no: item.buses.join(', ') }) : I18n.t('sync.everyBus', 'Every bus')}`;
   if (kind === 'lastbus') return item.code;
   // Enough of the link to tell which, not the private part.
   if (kind === 'calendar') return item.url.replace(/^(\w+:\/\/[^/]+).*$/, '$1/…');
@@ -1014,14 +1013,14 @@ function renderSyncList() {
     tab.setAttribute('aria-selected', String(on));
   });
   $('#syncListNote').textContent = importing
-    ? `${sync.role === 'bot' ? 'The Telegram bot’s' : 'The other device’s'} favourites, places and more. Tick the ones to add to this device.`
-    : `This device’s favourites, places and more${sync.role === 'bot' ? ' that the bot keeps' : ''}. Tick the ones to add to ${otherSide()}.`;
+    ? (sync.role === 'bot' ? I18n.t('sync.noteImportBot', 'The Telegram bot’s favourites, places and more. Tick the ones to add to this device.') : I18n.t('sync.noteImportDevice', 'The other device’s favourites, places and more. Tick the ones to add to this device.'))
+    : (sync.role === 'bot' ? I18n.t('sync.noteSendBot', 'This device’s favourites, places and more that the bot keeps. Tick the ones to add to the Telegram bot.') : I18n.t('sync.noteSendDevice', 'This device’s favourites, places and more. Tick the ones to add to the other device.'));
 
   const source = syncSource();
   const picked = sync.picked[sync.tab];
   if (!source || !sync.theirs) {
     picked.clear();
-    $('#syncList').innerHTML = `<div class="empty">Waiting for ${otherSide()}…</div>`;
+    $('#syncList').innerHTML = `<div class="empty">${escapeHtml(I18n.t('sync.waitingFor', 'Waiting for {who}…', { who: otherSide() }))}</div>`;
     renderSyncPicks();
     return;
   }
@@ -1044,7 +1043,7 @@ function renderSyncList() {
       `<span class="name">${escapeHtml(favTitle(kind, item))}</span>` +
       (sub ? `<span class="sub">${escapeHtml(sub)}</span>` : '') +
       `</span>` +
-      (done ? `<span class="syncTag">${importing ? 'Already here' : 'Already there'}</span>` : '') +
+      (done ? `<span class="syncTag">${importing ? I18n.t('sync.alreadyHere', 'Already here') : I18n.t('sync.alreadyThere', 'Already there')}</span>` : '') +
       `</label>`;
   };
 
@@ -1052,7 +1051,7 @@ function renderSyncList() {
   $('#syncList').innerHTML = FAV_KINDS.map(({ kind, label }) => {
     const rows = items.filter((f) => f.kind === kind);
     return rows.length ? `${all ? `<div class="favGroupLabel">${label}</div>` : ''}${rows.map(row).join('')}` : '';
-  }).join('') || `<div class="empty">${importing ? `${OtherSide()} has` : 'This device has'} nothing to share yet.</div>`;
+  }).join('') || `<div class="empty">${escapeHtml(importing ? I18n.t('sync.theyHaveNothing', '{who} has nothing to share yet.', { who: OtherSide() }) : I18n.t('sync.weHaveNothing', 'This device has nothing to share yet.'))}</div>`;
 
   renderSyncPicks();
 }
@@ -1073,7 +1072,7 @@ function renderSyncCats() {
     return `<button type="button" class="tab${on ? ' active' : ''}${some ? ' picked' : ''}" data-sync-cat="${cat}" aria-pressed="${on}">` +
       `${escapeHtml(label)}<span class="syncCatCount">${offered.length}</span></button>`;
   };
-  box.innerHTML = button('all', 'All', available) +
+  box.innerHTML = button('all', I18n.t('sync.all', 'All'), available) +
     kinds.map(({ kind, label }) => button(kind, label, available.filter((f) => f.kind === kind))).join('');
 }
 
@@ -1091,13 +1090,13 @@ function renderSyncPicks() {
   all.disabled = !shown.length;
   all.checked = shown.length > 0 && ticked === shown.length;
   all.indeterminate = ticked > 0 && ticked < shown.length;
-  $('#syncAllLabel').textContent = cat ? `Select all: ${cat.label}` : 'Select all';
+  $('#syncAllLabel').textContent = cat ? I18n.t('sync.selectAllOf', 'Select all: {kind}', { kind: cat.label }) : I18n.t('settings.select_all', 'Select all');
 
   const go = $('#syncGo');
   go.disabled = !n;
   go.textContent = !n
-    ? (importing ? 'Tick what to import' : 'Tick what to send')
+    ? (importing ? I18n.t('sync.tickImport', 'Tick what to import') : I18n.t('sync.tickSend', 'Tick what to send'))
     : importing
-      ? `Import ${plural(n, 'thing')} to this device`
-      : `Send ${plural(n, 'thing')} to ${otherSide()}`;
+      ? (n === 1 ? I18n.t('sync.importOne', 'Import 1 thing to this device') : I18n.t('sync.importMany', 'Import {n} things to this device', { n }))
+      : (n === 1 ? I18n.t('sync.sendOne', 'Send 1 thing to {who}', { who: otherSide() }) : I18n.t('sync.sendMany', 'Send {n} things to {who}', { n, who: otherSide() }));
 }

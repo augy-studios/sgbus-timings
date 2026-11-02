@@ -98,7 +98,7 @@ function initNav() {
   // (js/share.js). With nothing set yet, the link to Navigate itself.
   $('#navShare').addEventListener('click', (e) => {
     if (!nav.from && !nav.to && !Trip.active()) {
-      shareLink(e.currentTarget, `${location.origin}/${navHash()}`, 'Navigate by bus and train');
+      shareLink(e.currentTarget, `${location.origin}/${navHash()}`, I18n.t('nav.shareTitle', 'Navigate by bus and train'));
       return;
     }
     Share.openMenu();
@@ -136,7 +136,7 @@ function initNav() {
     const jam = e.target.closest('[data-nav-traffic]');
     if (jam && nav.option) {
       const leg = nav.option.legs[Number(jam.dataset.navTraffic)];
-      if (leg?.path) LiveMap.traffic({ points: leg.path, names: leg.names, title: `Bus ${leg.route} to ${leg.to?.name || 'its stop'}` });
+      if (leg?.path) LiveMap.traffic({ points: leg.path, names: leg.names, title: I18n.t('trip.busTo', 'Bus {no} to {stop}', { no: leg.route, stop: leg.to?.name || I18n.t('nav.itsStop', 'its stop') }) });
       return;
     }
     const walk = e.target.closest('[data-nav-walk]');
@@ -165,7 +165,7 @@ function initNav() {
       // A way with no ride it can follow stop by stop, such as walking all the way, says so
       // rather than closing as if the trip had started.
       if (!trip.legs.length) {
-        alert("This way can't be followed as a trip. Try another way.");
+        alert(I18n.t("nav.cantFollow", "This way can't be followed as a trip. Try another way."));
         return;
       }
       // This screen, for the timeline's Back to Navigate (openTripOrigin).
@@ -227,17 +227,17 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
     // Offline (js/offline.js), only what the phone has: stations and bus stops (placesOnPhone).
     if (window.Offline?.on()) {
       ++token;
-      if (link) return note('Reading a Google Maps link needs a connection. Pick a stop, a station or one of your places.');
+      if (link) return note(I18n.t('nav.gmapsOffline', 'Reading a Google Maps link needs a connection. Pick a stop, a station or one of your places.'));
       return render(placesOnPhone(q));
     }
-    if (link) note('Reading the Google Maps link…');
+    if (link) note(I18n.t('nav.gmapsReading', 'Reading the Google Maps link…'));
     timer = setTimeout(async () => {
       const mine = ++token;
       try {
         const r = await fetch(`/api/places?q=${encodeURIComponent(q)}`);
         const data = await r.json().catch(() => null);
         if (mine !== token) return;
-        if (link && !r.ok) return note(data?.error || "Couldn't read that Google Maps link. Please try again.");
+        if (link && !r.ok) return note(data?.error || I18n.t("nav.gmapsFailed", "Couldn't read that Google Maps link. Please try again."));
         // Coordinates or a plus code outside Singapore: say so rather than show an empty list.
         if (r.status === 422 && data?.error) return note(data.error);
         const places = r.ok && Array.isArray(data) ? data : [];
@@ -249,7 +249,7 @@ function attachPlaceSearch(input, box, pick, { recents = false, calendar = false
         render(places);
       } catch {
         if (mine !== token) return;
-        if (link) note("Couldn't read that Google Maps link. Check your connection and try again.");
+        if (link) note(I18n.t("nav.gmapsOfflineTry", "Couldn't read that Google Maps link. Check your connection and try again."));
         // Not reached: what the phone has, as offline.
         else render(placesOnPhone(q));
       }
@@ -295,7 +295,7 @@ function placesOnPhone(q) {
   const stops = matchStops(q, PHONE_STOPS).stops.flatMap((s) => {
     const at = stopsIndex?.[s.code];
     if (at?.lat == null || at?.lng == null) return [];
-    return [{ kind: 'stop', label: s.name || s.code, sub: `Bus stop ${s.code}${s.road ? ` · ${s.road}` : ''}`, code: s.code, lat: at.lat, lng: at.lng }];
+    return [{ kind: 'stop', label: s.name || s.code, sub: `${I18n.t('favs.stop', 'Bus stop {code}', { code: s.code })}${s.road ? ` · ${s.road}` : ''}`, code: s.code, lat: at.lat, lng: at.lng }];
   });
   const exact = stops.filter((s) => s.code === lower);
   return [...exact, ...stations, ...stops.filter((s) => s.code !== lower)];
@@ -316,7 +316,7 @@ function showSavedPlaces() {
     const field = row.dataset.savedFor;
     row.innerHTML = places.map((p) =>
       `<button class="iconBtn${p.unset ? ' unset' : ''}" type="button" data-saved-place="${escapeHtml(p.key)}" data-saved-for="${field}"` +
-      ` title="${escapeHtml(p.unset ? `Set your ${p.name.toLowerCase()} in Places` : `${p.name}: ${p.label}`)}">` +
+      ` title="${escapeHtml(p.unset ? I18n.t('nav.setInPlaces', 'Set your {place} in Places', { place: p.name.toLowerCase() }) : `${p.name}: ${p.label}`)}">` +
       `${ico(p.icon)} ${escapeHtml(p.name)}</button>`
     ).join('');
   }
@@ -329,13 +329,15 @@ function useSavedPlace(key, use) {
   Places.edit(key);
 }
 
-const HERE_LABEL = 'Your location';
+const HERE_LABEL = I18n.t('nav.yourLocation', 'Your location');
+// Where you are, by its label: this language's, or English, as kept before there were others.
+const isHereLabel = (label) => label === HERE_LABEL || label === 'Your location';
 
 // An end set to where you are, by its pin button, which shows it's working meanwhile.
 function locateNavEnd(field) {
   return withLocating($(`[data-nav-here="${field}"]`), () =>
     new Promise((resolve, reject) => {
-      if (!navigator.geolocation) return reject(new Error("This browser can't share its location."));
+      if (!navigator.geolocation) return reject(new Error(I18n.t("location.cantShare", "This browser can't share its location.")));
       navigator.geolocation.getCurrentPosition(
         (pos) => resolve(setNavEnd(field, { label: HERE_LABEL, lat: pos.coords.latitude, lng: pos.coords.longitude })),
         (err) => reject(new Error(locationMessage(err, I18n.t('location.toStartHere', 'to start from where you are')))),
@@ -531,13 +533,13 @@ function navHash() {
 function navHashFor(from, to, when = null, via = null) {
   const end = (p) => {
     if (!p) return '-';
-    if (p === 'here' || p.label === HERE_LABEL) return 'here';
+    if (p === 'here' || isHereLabel(p.label)) return 'here';
     // The name escaped further than encodeURIComponent goes, so "~" only ever starts it and a
     // closing bracket doesn't end the link where it's pasted.
     return `${coord(p)}~${encodeURIComponent(p.label).replace(/[!'()*~]/g, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)}`;
   };
   // A stop is always a point: Your location as one is where you were.
-  const stop = via && via !== 'here' ? `/via/${end({ ...via, label: via.label === HERE_LABEL ? 'My location' : via.label })}` : '';
+  const stop = via && via !== 'here' ? `/via/${end({ ...via, label: isHereLabel(via.label) ? 'My location' : via.label })}` : '';
   return from || to || when ? `#nav/${end(from)}/${end(to)}${stop}${When.hashPart(when)}` : '#nav';
 }
 
@@ -557,7 +559,7 @@ function openNavHash(fromText, toText, when = null, viaText = null) {
     }
     return { label: label.trim(), lat, lng };
   };
-  openNavAt(fromText === 'here' ? 'here' : point(fromText, 'Start'), toText === 'here' ? 'here' : point(toText, 'End'), when, null, viaText ? point(viaText, 'Stop') : null);
+  openNavAt(fromText === 'here' ? 'here' : point(fromText, I18n.t('nav.start', 'Start')), toText === 'here' ? 'here' : point(toText, I18n.t('nav.end', 'End')), when, null, viaText ? point(viaText, I18n.t('settings.stop', 'Stop')) : null);
 }
 
 // Opens Navigate at two ends, from a link: each a place, null for not set, or "here" for
@@ -608,7 +610,7 @@ async function askNav(from, to, when, via) {
     throw e;
   }
   const data = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(data.error || "Couldn't plan that right now.");
+  if (!r.ok) throw new Error(data.error || I18n.t("nav.planFailed", "Couldn't plan that right now."));
   return data;
 }
 
@@ -684,7 +686,7 @@ async function phoneHere({ ask, warm }, stops) {
   try {
     mod = await phoneModule;
   } catch {
-    throw new Error("Bus and train can't plan offline in this browser. Plan by Bus only, or try again when you reconnect.");
+    throw new Error(I18n.t("nav.offlineNoTrain", "Bus and train can't plan offline in this browser. Plan by Bus only, or try again when you reconnect."));
   }
   if (phoneStops !== stops) {
     mod.setStops(stops);
@@ -750,7 +752,13 @@ function renderNav() {
     plannerStatus((nav.options.length === 1 ? I18n.t('nav.waysOne', '1 way to get there') : I18n.t('nav.waysMany', '{n} ways to get there', { n: nav.options.length })) + (nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : '') + I18n.t('nav.waysTail', ', quickest first. Every mix of bus and train is listed, not just the fastest.')) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
     navOthers() +
-    `<p class="estimateNote">Times include walking and an average wait to board, estimated from distance${nav.traffic ? ', with buses slowed by the traffic on their way right now, from LTA' : ''}. Only buses and trains running at the time are used, going by first and last bus times and train hours.${nav.onemap ? ' OneMap’s timetable-based estimate is shown where it rides the same way.' : ''}${nav.via ? ' No time is counted at your stop: add what you’ll spend there.' : ''}${nav.offline ? ' Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.' : ''}</p>` +
+    `<p class="estimateNote">${escapeHtml([
+      nav.traffic ? I18n.t('nav.note.timesTraffic', 'Times include walking and an average wait to board, estimated from distance, with buses slowed by the traffic on their way right now, from LTA.') : I18n.t('nav.note.times', 'Times include walking and an average wait to board, estimated from distance.'),
+      I18n.t('nav.note.running', 'Only buses and trains running at the time are used, going by first and last bus times and train hours.'),
+      nav.onemap && I18n.t('nav.note.onemap', 'OneMap’s timetable-based estimate is shown where it rides the same way.'),
+      nav.via && I18n.t('nav.note.via', 'No time is counted at your stop: add what you’ll spend there.'),
+      nav.offline && I18n.t('nav.note.offline', 'Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.'),
+    ].filter(Boolean).join(' '))}</p>` +
     customsNote(nav.options);
 }
 
@@ -778,7 +786,7 @@ function navOthers() {
 // usual: heavy traffic on Bedok North Road. Accident on PIE (towards Tuas)."
 function trafficText(t) {
   const parts = [];
-  if (t.extra >= 1) parts.push(`~${t.extra} min slower than usual${t.roads?.length ? `: heavy traffic on ${t.roads.join(' and ')}` : ''}.`);
+  if (t.extra >= 1) parts.push(t.roads?.length ? I18n.t('nav.slowerRoads', '~{m} min slower than usual: heavy traffic on {roads}.', { m: t.extra, roads: t.roads.join(I18n.t('trip.and', ' and ')) }) : I18n.t('nav.slower', '~{m} min slower than usual.', { m: t.extra }));
   for (const i of t.incidents || []) parts.push(incidentText(i));
   return parts.join(' ');
 }
@@ -796,8 +804,7 @@ function customsNote(options) {
   if (!minutes.length) return '';
   const most = Math.max(...minutes);
   const least = Math.min(...minutes);
-  return `<p class="estimateNote">Ways across the Causeway count ~${least === most ? most : `${least} to ${most}`} min to clear immigration at both checkpoints` +
-    `${LS.getCustoms() === 'auto' ? ', by the time of day you’d get there' : ''}. Your own time can be set in Settings.</p>`;
+  return `<p class="estimateNote">${escapeHtml(I18n.t('nav.customsNote', 'Ways across the Causeway count ~{m} min to clear immigration at both checkpoints{byTime}. Your own time can be set in Settings.', { m: least === most ? most : I18n.t('planner.clockRange', '{a} to {b}', { a: least, b: most }), byTime: LS.getCustoms() === 'auto' ? I18n.t('nav.byTimeThere', ', by the time of day you’d get there') : '' }))}</p>`;
 }
 
 // "08:12 → 08:50" for a way, by the time picked.
@@ -835,15 +842,15 @@ function doorNumberAt(at) {
 function doorsPanel(p, text, color) {
   if (!p) return '';
   const stn = escapeHtml(p.station);
-  const head = p.cross ? `At ${stn}`
+  const head = p.cross ? escapeHtml(I18n.t('nav.doors.at', 'At {stn}', { stn: p.station }))
     : p.change ? I18n.t('nav.transfer_train.description', 'Changing at {transferStn} for the {transferLine}', { transferStn: stn, transferLine: escapeHtml(p.change) })
     : p.change != null ? I18n.t('nav.transfer_train.changing', 'Changing at {transferStn}', { transferStn: stn })
-    : `Getting off at ${stn}`;
+    : escapeHtml(I18n.t('nav.doors.off', 'Getting off at {stn}', { stn: p.station }));
   const rows = p.cross
-    ? `<li class="doorRow">${ico('swap')}<span class="doorWhere">Change across the platform to the <b>${escapeHtml(p.cross)}</b></span></li>`
+    ? `<li class="doorRow">${ico('swap')}<span class="doorWhere">${escapeHtml(I18n.t('nav.doors.cross', 'Change across the platform to the {line}', { line: p.cross }))}</span></li>`
     : p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
-        `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">Door</span><b>${n}</b></span>`).join('')}</span>` +
-        `<span class="doorWhere">${escapeHtml(DOOR_TYPE[r.t] || r.t)}${r.places.length ? ` to ${escapeHtml(r.places.join(', '))}` : ''}</span></li>`).join('');
+        `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">${escapeHtml(I18n.t('doors.door', 'Door'))}</span><b>${n}</b></span>`).join('')}</span>` +
+        `<span class="doorWhere">${escapeHtml(r.places.length ? I18n.t('mapCard.typeTo', '{type} to {places}', { type: DOOR_TYPE[r.t] || r.t, places: r.places.join(', ') }) : DOOR_TYPE[r.t] || r.t)}</span></li>`).join('');
   const line = color ? ` style="--line:${escapeHtml(color)}"` : '';
   return `<div class="legDoors" role="note" aria-label="${escapeHtml(text || '')}"${line}>` +
     `<div class="doorHead" aria-hidden="true">${ico('train')}<span>${head}</span></div>` +
@@ -895,24 +902,24 @@ function farNotes(o) {
 
 function navOptionItem(o, i) {
   // The rides in order, with a pin where the stop on the way comes.
-  const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} Walk</span>`
-    : wayHalves(o).map((legs) => legs.filter((l) => l.mode !== 'walk').map(legChip)).reduce((all, half) => [...all, `<span class="busChip viaChip">${ico('pin')} Stop</span>`, ...half]).join(legArrow);
-  const notes = o.via ? [`Stop at ${viaName(o)}`] : [];
-  if (o.onemapMinutes != null) notes.push(`OneMap ~${o.onemapMinutes} min`);
-  if (o.source === 'onemap') notes.push('Found by OneMap');
+  const chips = o.walkOnly ? `<span class="busChip">${ico('walk')} ${escapeHtml(I18n.t('trip.walk', 'Walk'))}</span>`
+    : wayHalves(o).map((legs) => legs.filter((l) => l.mode !== 'walk').map(legChip)).reduce((all, half) => [...all, `<span class="busChip viaChip">${ico('pin')} ${escapeHtml(I18n.t('settings.stop', 'Stop'))}</span>`, ...half]).join(legArrow);
+  const notes = o.via ? [I18n.t('nav.stopAt', 'Stop at {place}', { place: viaName(o) })] : [];
+  if (o.onemapMinutes != null) notes.push(I18n.t('nav.onemapMin', 'OneMap ~{m} min', { m: o.onemapMinutes }));
+  if (o.source === 'onemap') notes.push(I18n.t('nav.foundByOnemap', 'Found by OneMap'));
   // With a time picked, the clock times lead and the minutes go with the rest.
-  const lead = nav.when ? navClocks(o) : `~${o.minutes} min`;
-  const detail = [...(nav.when ? [`~${o.minutes} min`] : []), navMixText(o), ...notes].join(' · ');
+  const lead = nav.when ? navClocks(o) : I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes });
+  const detail = [...(nav.when ? [I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes })] : []), navMixText(o), ...notes].join(' · ');
   return `<button type="button" class="journeyItem${o.disrupted ? ' disrupted' : ''}" data-nav-option="${i}">` +
     `<span class="journeyBuses">${chips}</span>` +
     `<span class="journeyMeta">${escapeHtml(lead)}</span>` +
     `<span class="journeyDetail">${escapeHtml(detail)}</span>` +
-    (o.disrupted ? `<span class="journeyWarn">${ico('alert')} A line on this journey has a disruption</span>` : '') +
+    (o.disrupted ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disruptedLine', 'A line on this journey has a disruption'))}</span>` : '') +
     farNotes(o).map((t) => `<span class="journeyWarn">${ico('walk')} ${escapeHtml(t)}</span>`).join('') +
-    (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} Too late: you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}</span>` : '') +
-    o.legs.filter((l) => l.lastBus).map((l) => `<span class="journeyWarn">${ico('alert')} Last ${escapeHtml(l.route)} from ${escapeHtml(l.from?.name || 'its stop')} at ${escapeHtml(l.lastBus)}</span>`).join('') +
+    (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t("planner.tooLateBy", "Too late: you'd have had to leave by {time}", { time: When.clock(When.span(nav.when, o.minutes).leave) }))}</span>` : '') +
+    o.legs.filter((l) => l.lastBus).map((l) => `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.lastFrom', 'Last {no} from {stop} at {time}', { no: l.route, stop: l.from?.name || I18n.t('nav.itsStop', 'its stop'), time: l.lastBus }))}</span>`).join('') +
     // Why it's slower, in a line; tapped, the way's own page has it on the map.
-    o.legs.filter((l) => l.traffic).map((l) => `<span class="journeyTraffic">${ico('alert')} Bus ${escapeHtml(l.route)}: ${escapeHtml(trafficText(l.traffic))}</span>`).join('') +
+    o.legs.filter((l) => l.traffic).map((l) => `<span class="journeyTraffic">${ico('alert')} ${escapeHtml(I18n.t('stop.svc.way.title', 'Bus {no}: {way}', { no: l.route, way: trafficText(l.traffic) }))}</span>`).join('') +
     `</button>`;
 }
 
@@ -947,12 +954,12 @@ async function renderNavOption(o) {
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} ${escapeHtml(I18n.t('nav.startTrip', 'Start trip'))}</button>` +
     `</div>` +
     (o.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
-    `<p class="journeyHead">~${o.minutes} min · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · OneMap ~${o.onemapMinutes} min` : ''}</p>` +
+    `<p class="journeyHead">${escapeHtml(I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes }))} · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · ${escapeHtml(I18n.t('nav.onemapMin', 'OneMap ~{m} min', { m: o.onemapMinutes }))}` : ''}</p>` +
     farNotes(o).map((t) => `<p class="journeyWarn">${ico('walk')} ${escapeHtml(t)}.</p>`).join('') +
     (nav.when
       ? navTooLate(o)
-        ? `<p class="journeyWarn">${ico('alert')} To arrive by ${escapeHtml(When.clock(When.atToMs(nav.when.at)))} you'd have had to leave by ${escapeHtml(When.clock(When.span(nav.when, o.minutes).leave))}.</p>`
-        : plannerStatus(`Set off around ${When.clockDay(When.span(nav.when, o.minutes).leave)}, arrive around ${When.clock(When.span(nav.when, o.minutes).arrive)}.`)
+        ? `<p class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t("planner.tooLateLeave", "To arrive by {time} you'd have had to leave by {leave}.", { time: When.clock(When.atToMs(nav.when.at)), leave: When.clock(When.span(nav.when, o.minutes).leave) }))}</p>`
+        : plannerStatus(I18n.t('nav.setOffArrive', 'Set off around {leave}, arrive around {arrive}.', { leave: When.clockDay(When.span(nav.when, o.minutes).leave), arrive: When.clock(When.span(nav.when, o.minutes).arrive) }))
       : '');
 
   // Live timings only when setting off soon enough for them to be the buses you'd catch;
@@ -963,11 +970,11 @@ async function renderNavOption(o) {
 
   // The stop on the way, between the walk or ride that reaches it and the one that leaves it.
   const viaStep = o.via
-    ? `<li class="step stepArrive">${ico('pin')}<span>Stop at <strong>${escapeHtml(viaName(o))}</strong>, around ${escapeHtml(When.clock(leaveMs + o.via.minutes * 60000))}</span></li>`
+    ? `<li class="step stepArrive">${ico('pin')}<span>${escapeHtml(I18n.t('nav.stopAround', 'Stop at {place}, around {time}', { place: viaName(o), time: When.clock(leaveMs + o.via.minutes * 60000) }))}</span></li>`
     : '';
   const legStep = (leg, k, timings) => {
     if (leg.mode === 'walk') {
-      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || 'the end') : escapeHtml(wayPlaceName(o, leg.to));
+      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || I18n.t('nav.theEnd', 'the end')) : escapeHtml(wayPlaceName(o, leg.to));
       return `<li class="step stepWalk">${ico('walk')}<div class="walkBody">` +
         `<span>${escapeHtml(I18n.t('nav.walkStep', 'Walk ~{m} m to {to}, ~{min} min', { m: leg.metres, to: '\u0000', min: Math.max(1, Math.round(leg.minutes)) })).replace('\u0000', where)}</span>` +
         walkDirections(o, k) +
@@ -1015,8 +1022,8 @@ async function renderNavOption(o) {
         : I18n.t('nav.busRide', 'From {from} to {to}', { from: placeName(leg.from), to: placeName(leg.to) }))}</div>` +
       etas +
       (leg.lastBus ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.lastBus', 'Last {no} from here today is at {time}. Don’t miss it.', { no: leg.route, time: leg.lastBus }))}</div>` : '') +
-      (leg.traffic ? `<button type="button" class="legTraffic" data-nav-traffic="${k}">${ico('alert')}<span>${escapeHtml(trafficText(leg.traffic))} <u>See it on the map</u></span></button>` : '') +
-      (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(leg.route)} timings at ${escapeHtml(leg.from.name)}</button>` : '') +
+      (leg.traffic ? `<button type="button" class="legTraffic" data-nav-traffic="${k}">${ico('alert')}<span>${escapeHtml(trafficText(leg.traffic))} <u>${escapeHtml(I18n.t('trip.seeOnMap', 'See it on the map'))}</u></span></button>` : '') +
+      (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(I18n.t('planner.timingsAt', '{bus} timings at {stop}', { bus: leg.route, stop: leg.from.name }))}</button>` : '') +
       `</li>` +
       navCrossingSteps(leg);
   };
@@ -1029,8 +1036,8 @@ async function renderNavOption(o) {
       `<p class="estimateNote">${live
         ? I18n.t('nav.estimated_times.description', 'Train times are estimates from distance. Bus timings are live from LTA.')
         : o.offline
-          ? 'Times are estimates from distance, with an average wait to board. Live bus timings show here when you reconnect.'
-          : 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.'}</p>`;
+          ? I18n.t('nav.estOffline', 'Times are estimates from distance, with an average wait to board. Live bus timings show here when you reconnect.')
+          : I18n.t('nav.estLater', 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.')}</p>`;
   };
   draw();
   // The doors for its train rides, drawn in once they're in, if it's still this way on show.
@@ -1055,10 +1062,10 @@ async function renderNavOption(o) {
 // checkpoints, on again, with the minutes the way counts for it.
 function navCrossingSteps(leg) {
   return (leg.customs || []).map((c) => {
-    const [first, second] = c.way === 'out' ? ["Singapore's", "Malaysia's"] : ["Malaysia's", "Singapore's"];
-    return `<li class="step stepWalk">${ico('flag')}<span>Get off at ${escapeHtml(stopText(c.from))} and clear ${first} immigration, ` +
-      `ride any bus across to ${escapeHtml(stopText(c.to))} and clear ${second}, then get on again: ` +
-      `~${c.minutes} min for both${LS.getCustoms() === 'auto' ? ', by the time of day' : ''}.</span></li>`;
+    const v = { from: stopText(c.from), to: stopText(c.to), m: c.minutes, byTime: LS.getCustoms() === 'auto' ? I18n.t('planner.byTimeOfDay', ', by the time of day') : '' };
+    return `<li class="step stepWalk">${ico('flag')}<span>${escapeHtml(c.way === 'out'
+      ? I18n.t("planner.crossOut", "Get off at {from} and clear Singapore's immigration, ride any bus across to {to} and clear Malaysia's, then get on again: ~{m} min for both{byTime}.", { ...v })
+      : I18n.t("planner.crossIn", "Get off at {from} and clear Malaysia's immigration, ride any bus across to {to} and clear Singapore's, then get on again: ~{m} min for both{byTime}.", { ...v }))}</span></li>`;
   }).join('');
 }
 
@@ -1074,10 +1081,10 @@ function walkDirections(o, k) {
   const dest = { lat: to.lat, lng: to.lng, n: to.label || wayPlaceName(o, to) };
   const opts = { from: from?.lat != null && from?.lng != null ? from : null, walk: true };
   if (!nav.walksOpen.has(k)) {
-    return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} Directions</button>`;
+    return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} ${escapeHtml(I18n.t('stop.tool.directions', 'Directions'))}</button>`;
   }
   return `<div class="walkApps">` +
-    `<button type="button" class="iconBtn" data-live-map="${escapeHtml(JSON.stringify(dest))}">${ico('map')} Live map</button>` +
+    `<button type="button" class="iconBtn" data-live-map="${escapeHtml(JSON.stringify(dest))}">${ico('map')} ${escapeHtml(I18n.t('trip.live_map', 'Live map'))}</button>` +
     MAP_APPS.map((app) =>
       `<a class="iconBtn" href="${escapeHtml(directionsUrl(dest, app.id, opts))}" target="_blank" rel="noopener noreferrer">${ico('navigate')} ${escapeHtml(app.label)}</a>`
     ).join('') + `</div>`;
@@ -1110,8 +1117,8 @@ function renderNavFav() {
   const btn = $('#navFavBtn');
   btn.hidden = !(nav.from && nav.to);
   $('#navRefresh').hidden = btn.hidden;
-  if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to), 'Save nav', 'Saved');
-  btn.title = nav.via ? 'Save to favourites: the start and end, not the stop' : 'Save to favourites';
+  if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to), I18n.t('nav.saveNav', 'Save nav'), I18n.t('stop.saved', 'Saved'));
+  btn.title = nav.via ? I18n.t('nav.saveViaTitle', 'Save to favourites: the start and end, not the stop') : I18n.t('nav.save_to_favourites', 'Save to favourites');
 }
 
 // Refresh: the ways planned again, for new disruptions and the time of day, or, with one
@@ -1160,7 +1167,7 @@ function tripFromNav(o, to, from = nav.from) {
       const endPlace = k === o.legs.length - 1 ? to : l.to;
       const end = at(endPlace);
       if (start && end && (l.metres ?? WALK_LEG_MIN_M) >= WALK_LEG_MIN_M) {
-        const startName = k === 0 ? from?.label || 'Where you set off' : wayPlaceName(o, l.from || o.legs[k - 1]?.to);
+        const startName = k === 0 ? from?.label || I18n.t('trip.whereSetOff', 'Where you set off') : wayPlaceName(o, l.from || o.legs[k - 1]?.to);
         legs.push({
           kind: 'walk',
           label: I18n.t('trip.walk', 'Walk'),

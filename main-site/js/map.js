@@ -263,7 +263,7 @@
       setFollowing(true);
       clearTimeout(compassNote);
       compassNote = setTimeout(() => {
-        if (turning && !compassAt) note(here?.heading != null ? 'No compass here, so the map turns the way you move.' : 'No compass here: the map turns once you start moving.');
+        if (turning && !compassAt) note(here?.heading != null ? I18n.t('map.noCompassMoving', 'No compass here, so the map turns the way you move.') : I18n.t('map.noCompass', 'No compass here: the map turns once you start moving.'));
       }, COMPASS_FRESH_MS);
       turnSoon();
     } else {
@@ -333,7 +333,7 @@
     $('#mapOverview').hidden = false;
     const panel = $('#mapPanel');
     panel.classList.toggle('exploring', mode === 'explore');
-    panel.setAttribute('aria-label', mode === 'explore' ? 'Explorer' : 'Live map');
+    panel.setAttribute('aria-label', mode === 'explore' ? I18n.t('tour.explorer', 'Explorer') : I18n.t('trip.live_map', 'Live map'));
     MapCard.close();
     // Explorer's Save the map sheet (js/map-save.js), shut whichever way it opens.
     window.MapSave?.close();
@@ -414,12 +414,12 @@
 
   function startWatching() {
     if (watchId != null || !('geolocation' in navigator)) {
-      if (!('geolocation' in navigator)) note("This browser can't share your location, so the map can't follow you.");
+      if (!('geolocation' in navigator)) note(I18n.t("map.noGeo", "This browser can't share your location, so the map can't follow you."));
       return;
     }
     watchId = navigator.geolocation.watchPosition(onFix, (err) => {
-      if (err.desktopMessage) note(`${err.desktopMessage} Until then, the map can only show the way, not follow you.`);
-      else if (err.code === 1) note('Location is off for this site, so the map can only show the way, not follow you. Allow location to be followed.');
+      if (err.desktopMessage) note(`${err.desktopMessage} ${I18n.t('map.untilThen', 'Until then, the map can only show the way, not follow you.')}`);
+      else if (err.code === 1) note(I18n.t('map.locationOff', 'Location is off for this site, so the map can only show the way, not follow you. Allow location to be followed.'));
     }, { enableHighAccuracy: true, maximumAge: 3000, timeout: 30000 });
     drawTimer = setInterval(drawMe, DRAW_MS);
     // Where you were last, straight away, rather than a timer's wait after it opens.
@@ -504,7 +504,7 @@
     const k = `${key(from)}>${key(to)}${by ? `>${by}` : ''}`;
     if (routes.has(k)) return routes.get(k);
     const r = await fetch(`/api/walk?from=${key(from)}&to=${key(to)}${by ? `&mode=${by}` : ''}`);
-    if (!r.ok) throw new Error((await r.json().catch(() => null))?.error || "Couldn't find a way to walk there.");
+    if (!r.ok) throw new Error((await r.json().catch(() => null))?.error || I18n.t("map.noWalk", "Couldn't find a way to walk there."));
     const route = await r.json();
     routes.set(k, route);
     return route;
@@ -516,9 +516,9 @@
     mode = 'walk';
     walkCycle = cycle && !drive;
     walkDrive = drive;
-    await show(title || `${drive ? 'Drive' : cycle ? 'Cycle' : 'Walk'} to ${to.label || 'here'}`, '');
+    await show(title || (drive ? I18n.t('map.driveTo', 'Drive to {place}', { place: to.label || I18n.t('map.here', 'here') }) : cycle ? I18n.t('map.cycleTo', 'Cycle to {place}', { place: to.label || I18n.t('map.here', 'here') }) : I18n.t('map.walkTo', 'Walk to {place}', { place: to.label || I18n.t('map.here', 'here') })), '');
     mode = 'walk';
-    place = { lat: Number(to.lat), lng: Number(to.lng), label: to.label || 'Your destination' };
+    place = { lat: Number(to.lat), lng: Number(to.lng), label: to.label || I18n.t('map.destination', 'Your destination') };
     walk = null;
     walkFrom = from;
     offRoute = 0;
@@ -526,7 +526,7 @@
     destMark = flag([place.lat, place.lng], place.label, undefined, to.code ? { kind: 'stop', code: to.code } : null);
     // On you already (show() went in on your last fix); until there's one, on where it ends.
     if (!here) ink.setView([place.lat, place.lng], STREET_ZOOM - 2);
-    $('#mapStep').textContent = 'Finding where you are…';
+    $('#mapStep').textContent = I18n.t('map.finding', 'Finding where you are…');
     startWatching();
     // From the given start, or where you are once that's known; the end alone until then.
     if (from) route(from);
@@ -552,9 +552,9 @@
     if (!walk) return;
     ink.line('lines', walk.path, { color: '#fff', weight: 9, opacity: 0.9 });
     ink.line('lines', walk.path, { color: walkDrive ? COLOURS.drive : walkCycle ? COLOURS.cycle : COLOURS.walk, weight: 5, dash: walk.source === 'line' });
-    note(walk.source === 'line' ? `Couldn't find the ${walkDrive ? 'roads for this drive' : `streets for this ${walkCycle ? 'ride' : 'walk'}`}, so this is the straight line there.`
-      : walk.expressway ? 'It ends on an expressway, where no one may walk, so the walk stops at the nearest footpath.'
-      : walk.roadside >= 20 ? `About ${Math.round(walk.roadside / 10) * 10} m of this walk is along the road, with no footpath. Keep to the side and watch for traffic.`
+    note(walk.source === 'line' ? (walkDrive ? I18n.t("map.lineDrive", "Couldn't find the roads for this drive, so this is the straight line there.") : walkCycle ? I18n.t("map.lineRide", "Couldn't find the streets for this ride, so this is the straight line there.") : I18n.t("map.lineWalk", "Couldn't find the streets for this walk, so this is the straight line there."))
+      : walk.expressway ? I18n.t('map.expressway', 'It ends on an expressway, where no one may walk, so the walk stops at the nearest footpath.')
+      : walk.roadside >= 20 ? I18n.t('map.roadside', 'About {m} m of this walk is along the road, with no footpath. Keep to the side and watch for traffic.', { m: Math.round(walk.roadside / 10) * 10 })
       : '');
   }
 
@@ -567,7 +567,7 @@
     }
     const left = metres(me, [place.lat, place.lng]);
     if (left <= ARRIVE_M + Math.min(here.accuracy, 30)) {
-      $('#mapStep').textContent = `You've arrived at ${place.label}.`;
+      $('#mapStep').textContent = I18n.t("map.arrivedAt", "You've arrived at {place}.", { place: place.label });
       $('#mapSub').textContent = '';
       return;
     }
@@ -595,7 +595,7 @@
         break;
       }
     }
-    $('#mapStep').textContent = next ? `In ${distText(next.inM)}: ${next.text}` : `${place.label} is ${distText(left)} ahead`;
+    $('#mapStep').textContent = next ? I18n.t('map.inDist', 'In {d}: {step}', { d: distText(next.inM), step: next.text }) : I18n.t('map.ahead', '{place} is {d} ahead', { place: place.label, d: distText(left) });
   }
 
   // ---------- a trip ----------
@@ -610,7 +610,7 @@
     if (!p) return;
     $('#mapHeading').hidden = false;
     mode = 'trip';
-    await show(window.Trip.title?.() || 'Your trip', '');
+    await show(window.Trip.title?.() || I18n.t('map.yourTrip', 'Your trip'), '');
     // For the stations' cards on a train ride's dots.
     await loadStations().catch(() => {});
     mode = 'trip';
@@ -651,7 +651,7 @@
     const p = window.Trip?.progress();
     const legs = window.Trip?.legs?.();
     if (!p || !legs) {
-      $('#mapStep').textContent = 'The trip has ended.';
+      $('#mapStep').textContent = I18n.t('map.tripEnded', 'The trip has ended.');
       clearInterval(tripTimer);
       tripTimer = null;
       return;
@@ -695,13 +695,13 @@
           leg.points.forEach((pt, k) => {
             if (k === 0 || k === leg.points.length - 1) return;
             const pick = pickAt(leg, k);
-            ink.dot('stops', pt, { radius: 3.5, stroke: colour, weight: 2, fill: '#fff', label: leg.names?.[k] || `Stop ${k + 1}`, ...(pick && { pick }) });
+            ink.dot('stops', pt, { radius: 3.5, stroke: colour, weight: 2, fill: '#fff', label: leg.names?.[k] || I18n.t('trip.stopN', 'Stop {n}', { n: k + 1 }), ...(pick && { pick }) });
           });
         }
         if (!done) {
           const end = leg.points[leg.points.length - 1];
           const last = i === legs.length - 1;
-          flag(end, last ? leg.to : `${leg.kind === 'walk' ? `${leg.drive ? 'Drive' : leg.cycle ? 'Cycle' : 'Walk'} to` : 'Get off at'} ${leg.to}`, last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
+          flag(end, last ? leg.to : leg.kind !== 'walk' ? I18n.t('map.getOffAt', 'Get off at {place}', { place: leg.to }) : leg.drive ? I18n.t('map.driveTo', 'Drive to {place}', { place: leg.to }) : leg.cycle ? I18n.t('map.cycleTo', 'Cycle to {place}', { place: leg.to }) : I18n.t('map.walkTo', 'Walk to {place}', { place: leg.to }), last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
         }
       });
       if (fit && !here) ink.setView(p.at, STREET_ZOOM);
@@ -710,7 +710,7 @@
     const status = window.Trip.status?.() || '';
     $('#mapStep').textContent = status;
     const mins = Math.max(0, Math.round(p.minutesLeft));
-    $('#mapSub').textContent = p.arrived ? 'Arrived' : `${mins} min left · arrive ${clock(Date.now() + mins * 60000)}`;
+    $('#mapSub').textContent = p.arrived ? I18n.t('share.view.arrived', 'Arrived') : I18n.t('map.minsLeft', '{m} min left · arrive {time}', { m: mins, time: clock(Date.now() + mins * 60000) });
     // No fix of your own yet: where the trip has you.
     if (!here) {
       hideMe();
@@ -772,7 +772,7 @@
     setTurning(false);
     $('#mapHeading').hidden = true;
     mode = 'follow';
-    await show(title || (data.name ? `${data.name}'s trip` : 'Shared trip'), '');
+    await show(title || (data.name ? I18n.t("map.theirTrip", "{name}'s trip", { name: data.name }) : I18n.t('map.sharedTrip', 'Shared trip')), '');
     mode = 'follow';
     themDot = themRing = themPath = null;
     hideMe();
@@ -806,7 +806,7 @@
     if (at) {
       if (!themDot) {
         themRing = ink.disc('me', at, ring, { fill: COLOURS.them, opacity: 0.15 });
-        themDot = ink.dot('me', at, { radius: 8, stroke: '#fff', weight: 3, fill: COLOURS.them, label: data.name || 'Them' });
+        themDot = ink.dot('me', at, { radius: 8, stroke: '#fff', weight: 3, fill: COLOURS.them, label: data.name || I18n.t('map.them', 'Them') });
       } else {
         themDot.set(at);
         themRing.set(at, ring);
@@ -819,10 +819,10 @@
     }
     const leg = data.leg;
     const live = !data.ended && !data.stopped;
-    $('#mapStep').textContent = !live ? (data.ended ? 'Arrived' : 'Sharing stopped')
-      : leg?.label ? `${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}` : '';
+    $('#mapStep').textContent = !live ? (data.ended ? I18n.t('share.view.arrived', 'Arrived') : I18n.t('share.view.stopped', 'Sharing stopped'))
+      : !leg?.label ? '' : leg.stopsLeft === 0 ? I18n.t('trip.atStop', '{ride}: at {to}', { ride: leg.label, to: leg.to }) : leg.stopsLeft === 1 ? I18n.t('trip.oneStop', '{ride}: 1 stop to {to}', { ride: leg.label, to: leg.to }) : I18n.t('trip.stops', '{ride}: {n} stops to {to}', { ride: leg.label, n: leg.stopsLeft, to: leg.to });
     const mins = Math.max(0, Math.round((data.arriveAt - Date.now()) / 60000));
-    $('#mapSub').textContent = live ? `Arriving ${mins ? `in ${mins} min, around ${clock(data.arriveAt)}` : 'now'}` : `at ${data.to?.label || ''}`;
+    $('#mapSub').textContent = live ? (mins ? I18n.t('map.arrivingIn', 'Arriving in {m} min, around {time}', { m: mins, time: clock(data.arriveAt) }) : I18n.t('map.arrivingNow', 'Arriving now')) : I18n.t('share.at', 'at {place}', { place: data.to?.label || '' });
   }
 
   // ---------- Explorer and the cards ----------
@@ -900,7 +900,7 @@
   async function explore() {
     $('#mapHeading').hidden = false;
     mode = 'explore';
-    await show('Explorer', 'Tap a bus stop or a station');
+    await show(I18n.t('tour.explorer', 'Explorer'), I18n.t('map.tapStop', 'Tap a bus stop or a station'));
     mode = 'explore';
     $('#mapOverview').hidden = true;
     startWatching();
@@ -1070,17 +1070,17 @@
 
   // `points` are the bus's stops in order, [[lat, lng], ...]; `title` names it, "Bus 21 to
   // Blk 390"; `names` (optional) its stops' names, for their dots.
-  async function traffic({ points, title = 'Traffic', names = null }) {
+  async function traffic({ points, title = I18n.t('map.traffic', 'Traffic'), names = null }) {
     if (!(points?.length >= 2)) return;
     $('#mapHeading').hidden = false;
     mode = 'traffic';
-    await show(`Traffic: ${title}`, '');
+    await show(I18n.t('map.trafficOf', 'Traffic: {title}', { title }), '');
     mode = 'traffic';
     setFollowing(false);
     trafficWay = points;
-    points.forEach((pt, i) => ink.dot('stops', pt, { radius: 3.5, stroke: TRAFFIC_COLOURS.clear, weight: 2, fill: '#fff', label: names?.[i] || `Stop ${i + 1}` }));
+    points.forEach((pt, i) => ink.dot('stops', pt, { radius: 3.5, stroke: TRAFFIC_COLOURS.clear, weight: 2, fill: '#fff', label: names?.[i] || I18n.t('trip.stopN', 'Stop {n}', { n: i + 1 }) }));
     ink.fit(points, { top: 90, left: 30, right: 70, bottom: 150 }, STREET_ZOOM - 1);
-    $('#mapStep').textContent = 'Finding the road and how its traffic is…';
+    $('#mapStep').textContent = I18n.t('map.findingRoad', 'Finding the road and how its traffic is…');
     startWatching();
     // Along the road the bus takes (/api/road), or straight from stop to stop without it.
     let road = points;
@@ -1101,7 +1101,7 @@
     ink.line('lines', way, { color: '#fff', weight: 10, opacity: 0.9 });
     if (!t?.at) {
       ink.line('lines', way, { color: COLOURS.done, weight: 6 });
-      $('#mapStep').textContent = "There's no live traffic from LTA just now, so this is the road without it.";
+      $('#mapStep').textContent = I18n.t("map.noTraffic", "There's no live traffic from LTA just now, so this is the road without it.");
       return;
     }
     // Each run of stretches flowing alike, in its colour.
@@ -1114,13 +1114,14 @@
     const said = (inc) => (typeof incidentText === 'function' ? incidentText(inc) : inc.message);
     for (const inc of t.incidents || []) flag([inc.lat, inc.lng], said(inc), TRAFFIC_COLOURS.jammed);
     const ago = Math.max(0, Math.round((Date.now() - t.at) / 60000));
-    $('#mapSub').textContent = `LTA's live traffic, ${ago < 1 ? 'just now' : `${ago} min ago`}`;
+    $('#mapSub').textContent = ago < 1 ? I18n.t("map.trafficNow", "LTA's live traffic, just now") : I18n.t("map.trafficAgo", "LTA's live traffic, {m} min ago", { m: ago });
     const jammed = t.flows.filter((f) => f < JAM_FLOW).length;
     const slow = t.flows.filter((f) => f < SLOW_FLOW).length;
-    const where = t.roads?.length ? ` on ${t.roads.join(' and ')}` : '';
-    const what = jammed ? `Jammed in places${where}` : slow ? `Slow in places${where}` : 'The roads are clear';
+    const roads = t.roads?.length ? t.roads.join(I18n.t('trip.and', ' and ')) : '';
+    const what = jammed ? (roads ? I18n.t('map.jammedOn', 'Jammed in places on {roads}', { roads }) : I18n.t('map.jammed', 'Jammed in places'))
+      : slow ? (roads ? I18n.t('map.slowOn', 'Slow in places on {roads}', { roads }) : I18n.t('map.slow', 'Slow in places')) : I18n.t('map.clear', 'The roads are clear');
     const incidents = (t.incidents || []).map(said).join(' ');
-    $('#mapStep').textContent = `${what}. Red is jammed, orange slow, green clear.${incidents ? ` ${incidents}` : ''}`;
+    $('#mapStep').textContent = `${I18n.t('map.legend', '{what}. Red is jammed, orange slow, green clear.', { what })}${incidents ? ` ${incidents}` : ''}`;
   }
   let trafficWay = null;
 
@@ -1143,7 +1144,7 @@
     const stop = /^\d{5}$/.test(target) ? stops?.[target] : null;
     if (stop) return walkTo({ lat: stop.lat, lng: stop.lng, label: stop.n || target, code: target }), true;
     const m = /^(-?[\d.]+),(-?[\d.]+)(?:~(.*))?$/.exec(target);
-    if (m) return walkTo({ lat: Number(m[1]), lng: Number(m[2]), label: m[3] || 'Pinned place' }), true;
+    if (m) return walkTo({ lat: Number(m[1]), lng: Number(m[2]), label: m[3] || I18n.t('map.pinned', 'Pinned place') }), true;
     return false;
   }
 

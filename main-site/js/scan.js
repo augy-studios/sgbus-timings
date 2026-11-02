@@ -22,11 +22,11 @@
   async function open() {
     $('#scanScreen').hidden = false;
     document.body.classList.add('modal-open');
-    status('Point the camera at the 5-digit code on the bus stop’s pole');
+    status(I18n.t('scan.point', 'Point the camera at the 5-digit code on the bus stop’s pole'));
     try {
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } }, audio: false });
     } catch {
-      status('The camera isn’t allowed. Allow Camera for SG Bus Timings in Android’s settings, then try again.');
+      status(I18n.t('scan.noCamera', 'The camera isn’t allowed. Allow Camera for SG Bus Timings in Android’s settings, then try again.'));
       return;
     }
     const video = $('#scanVideo');

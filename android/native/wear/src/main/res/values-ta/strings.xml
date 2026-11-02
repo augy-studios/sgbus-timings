@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Wear OS app's words in Tamil: values/strings.xml has the English and the notes. The website's wording is in main-site/i18n. -->
+<resources>
+    <string name="tile_name">பேருந்து நேரங்கள்</string>
+    <string name="tile_description">உங்களுக்கு மிக அருகிலுள்ள பிடித்த நிறுத்தத்தில் அடுத்த பேருந்துகள்</string>
+</resources>

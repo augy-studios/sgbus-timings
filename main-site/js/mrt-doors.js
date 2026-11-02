@@ -23,9 +23,9 @@
   // lines (all underground), and near the top of the post beside each door at an elevated
   // station's half-height doors. Null where it isn't known which.
   const NUMBER_AT = {
-    above: 'on the panel above the doors',
-    corner: 'at the top right of each door',
-    post: 'near the top of the post beside each door',
+    above: I18n.t('doors.at.above', 'on the panel above the doors'),
+    corner: I18n.t('doors.at.corner', 'at the top right of each door'),
+    post: I18n.t('doors.at.post', 'near the top of the post beside each door'),
   };
   function numberAt(p) {
     if (p.e === 1) return 'post';
@@ -54,7 +54,7 @@
   const places = (f) => ways(f).filter((w) => w.toLowerCase() !== 'exit' && !dirs.has(w));
   // Out of the station: "exit", a place, or nothing said.
   const leadsOut = (f) => !ways(f).length || ways(f).some((w) => !dirs.has(w));
-  const andList = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+  const andList = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')}${I18n.t('trip.and', ' and ')}${xs[xs.length - 1]}`);
 
   // "Jurong East", "JURONG EAST MRT STATION" and "Jurong East Station" all as one.
   const norm = (s) => String(s || '').toLowerCase().replace(/\b(mrt|lrt)\b/g, '').replace(/\bstation\b/g, '').replace(/\s+/g, ' ').trim();
@@ -144,10 +144,16 @@
   function tip(leg, next = null) {
     const p = plan(leg, next);
     if (!p) return null;
-    if (p.cross) return `At ${p.station}, change across the platform to the ${p.cross}.`;
-    const parts = p.rows.map((r) => `door ${r.doors.join(' or ')} for the ${PLURAL[r.t] || r.t}${r.places.length ? ` to ${andList(r.places)}` : ''}`);
-    const head = p.change != null ? `Changing at ${p.station}${p.change ? ` for the ${p.change}` : ''}` : `Getting off at ${p.station}`;
-    return `${head}: ${parts.join('; ')}.${p.numberAt ? ` The door number is ${NUMBER_AT[p.numberAt]}.` : ''}`;
+    if (p.cross) return I18n.t('doors.tip.cross', 'At {station}, change across the platform to the {line}.', { station: p.station, line: p.cross });
+    const what = (t) => ({ escalator: I18n.t('doors.escalators', 'escalators'), lift: I18n.t('doors.lift', 'lift'), stairs: I18n.t('doors.stairs', 'stairs') })[t] || PLURAL[t] || t;
+    const parts = p.rows.map((r) => {
+      const v = { doors: r.doors.join(I18n.t('makeIt.or', ' or ')), what: what(r.t), places: andList(r.places) };
+      return r.places.length ? I18n.t('doors.tip.doorTo', 'door {doors} for the {what} to {places}', { ...v }) : I18n.t('doors.tip.door', 'door {doors} for the {what}', { ...v });
+    });
+    const head = p.change ? I18n.t('nav.transfer_train.description', 'Changing at {transferStn} for the {transferLine}', { transferStn: p.station, transferLine: p.change })
+      : p.change != null ? I18n.t('nav.transfer_train.changing', 'Changing at {transferStn}', { transferStn: p.station })
+      : I18n.t('nav.doors.off', 'Getting off at {stn}', { stn: p.station });
+    return `${head}: ${parts.join('; ')}.${p.numberAt ? ` ${I18n.t('doors.tip.numberAt', 'The door number is {where}.', { where: NUMBER_AT[p.numberAt] })}` : ''}`;
   }
 
   // ---------- a station's platforms, for the live map's card (js/map-card.js) ----------

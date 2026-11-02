@@ -5,7 +5,7 @@
 // scripts/i18n-check.mjs. A key a language hasn't got stays English.
 //
 // In the page: data-i18n="key" puts the words in an element's text, and data-i18n-title,
-// data-i18n-aria-label, data-i18n-placeholder, data-i18n-data-title and data-i18n-data-short
+// data-i18n-aria-label, data-i18n-placeholder, data-i18n-alt, data-i18n-data-title and data-i18n-data-short
 // in those attributes. In code:
 // I18n.t("key", "English, {name}", { name }) (tr in script.js) gives the words in the language
 // picked, or the English given; {name} is filled in either way.
@@ -26,7 +26,7 @@
   // { code: its name in itself }. Add a language here and its i18n/<code>.json.
   var LANGUAGES = { en: "English", "zh-SG": "中文", ms: "Bahasa Melayu", ta: "தமிழ்" };
   // data-title is a Settings group's heading (script.js).
-  var ATTRS = ["title", "aria-label", "placeholder", "data-title", "data-short"];
+  var ATTRS = ["title", "aria-label", "placeholder", "alt", "data-title", "data-short"];
 
   function stored(key) {
     try { return localStorage.getItem(key); } catch (e) { return null; }

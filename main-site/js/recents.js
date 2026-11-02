@@ -101,10 +101,10 @@
   // A stop from the stop list (script.js's stopsIndex) as a recent.
   function stopItem(code) {
     const s = stopsIndex?.[code];
-    return { kind: 'stop', label: nameOf(code) || code, sub: `Bus stop ${code}${s?.road ? ` · ${s.road}` : ''}`, code, ...(s?.lat != null && { lat: s.lat, lng: s.lng }) };
+    return { kind: 'stop', label: nameOf(code) || code, sub: `${I18n.t('favs.stop', 'Bus stop {code}', { code })}${s?.road ? ` · ${s.road}` : ''}`, code, ...(s?.lat != null && { lat: s.lat, lng: s.lng }) };
   }
-  const busItem = (no) => ({ kind: 'bus', label: `Bus ${no}`, sub: serviceEndsText(no), code: no });
-  const postalItem = (code) => ({ kind: 'postal', label: code, sub: 'Bus stops near this postal code', code });
+  const busItem = (no) => ({ kind: 'bus', label: I18n.t('favs.bus', 'Bus {no}', { no }), sub: serviceEndsText(no), code: no });
+  const postalItem = (code) => ({ kind: 'postal', label: code, sub: I18n.t('search.nearPostal', 'Bus stops near this postal code'), code });
   // A place from /api/places (Navigate's suggestions) as a recent.
   const placeItem = (p) => ({ kind: p.kind === 'station' || p.kind === 'stop' ? p.kind : 'place', label: p.label, sub: p.sub || '', code: p.code, lat: p.lat, lng: p.lng });
   // And back, for Navigate.
@@ -130,15 +130,15 @@
 
   function recentRow(r, i, menuOpen) {
     const key = keyOf(r);
-    const sub = r.kind === 'station' ? `<span class="sub">Station ${lineDots(r.code)}</span>` : r.sub ? `<span class="sub">${escapeHtml(r.sub)}</span>` : '';
+    const sub = r.kind === 'station' ? `<span class="sub">${escapeHtml(I18n.t('recents.station', 'Station'))} ${lineDots(r.code)}</span>` : r.sub ? `<span class="sub">${escapeHtml(r.sub)}</span>` : '';
     // The menu is always there, folded shut until the dots open it (toggleRowMenu in js/ui.js).
     return `<div class="recentRow${menuOpen ? ' open' : ''}" data-menu-row="${escapeHtml(key)}">` +
       `<button type="button" class="recentMain" data-recent-pick="${i}">${ico(iconOf(r))}<span class="recentText"><span class="name">${escapeHtml(r.label)}</span>${sub}</span></button>` +
-      `<button type="button" class="recentMore" data-recent-menu="${escapeHtml(key)}" data-menu-toggle aria-expanded="${menuOpen}" aria-label="More for ${escapeHtml(r.label)}">${ico('more')}</button>` +
+      `<button type="button" class="recentMore" data-recent-menu="${escapeHtml(key)}" data-menu-toggle aria-expanded="${menuOpen}" aria-label="${escapeHtml(I18n.t('cal.moreFor', 'More for {title}', { title: r.label }))}">${ico('more')}</button>` +
       `<div class="rowMenu"><div><div class="recentMenu">` +
-      (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="save" data-recent="${i}">${ico('pin')} Save as place</button>` : '') +
-      (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="share" data-recent="${i}">${ico('share')} Share</button>` : '') +
-      `<button type="button" class="iconBtn" data-recent-act="remove" data-recent="${i}">${ico('trash')} Remove</button>` +
+      (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="save" data-recent="${i}">${ico('pin')} ${escapeHtml(I18n.t('cal.saveAsPlace', 'Save as place'))}</button>` : '') +
+      (hasPoint(r) ? `<button type="button" class="iconBtn" data-recent-act="share" data-recent="${i}">${ico('share')} ${escapeHtml(I18n.t('history.share', 'Share'))}</button>` : '') +
+      `<button type="button" class="iconBtn" data-recent-act="remove" data-recent="${i}">${ico('trash')} ${escapeHtml(I18n.t('mapSave.remove', 'Remove'))}</button>` +
       `</div></div></div>` +
       `</div>`;
   }
@@ -146,7 +146,7 @@
   function savedRow(p, i) {
     return `<div class="recentRow">` +
       `<button type="button" class="recentMain${p.unset ? ' unset' : ''}" data-saved-pick="${i}">${ico(p.icon)}<span class="recentText"><span class="name">${escapeHtml(p.name)}</span>` +
-      `<span class="sub">${escapeHtml(p.unset ? `Not set yet. Tap to set your ${p.name.toLowerCase()}.` : p.sub ?? (p.name !== p.label ? p.label : ''))}</span></span></button>` +
+      `<span class="sub">${escapeHtml(p.unset ? I18n.t('places.notSet', 'Not set yet. Tap to set your {place}.', { place: p.name.toLowerCase() }) : p.sub ?? (p.name !== p.label ? p.label : ''))}</span></span></button>` +
       `</div>`;
   }
 
@@ -165,42 +165,42 @@
     function savedItems() {
       if (saved === 'favs') {
         return [
-          ...LS.getFavs().map((f) => ({ kind: 'stop', icon: 'star', name: f.name || nameOf(f.code) || f.code, sub: `Bus stop ${f.code}`, code: f.code })),
-          ...LS.getFavBuses().map((no) => ({ kind: 'bus', icon: 'bus', name: `Bus ${no}`, sub: serviceEndsText(no), code: no })),
+          ...LS.getFavs().map((f) => ({ kind: 'stop', icon: 'star', name: f.name || nameOf(f.code) || f.code, sub: I18n.t('favs.stop', 'Bus stop {code}', { code: f.code }), code: f.code })),
+          ...LS.getFavBuses().map((no) => ({ kind: 'bus', icon: 'bus', name: I18n.t('favs.bus', 'Bus {no}', { no }), sub: serviceEndsText(no), code: no })),
         ];
       }
       return Places.all({ unset: true });
     }
 
     function render() {
-      const tabs = [['recent', 'clock', 'Recent'], ['saved', 'star', 'Saved'], ...(calendar ? [['calendar', 'calendar', 'Calendar']] : [])];
+      const tabs = [['recent', 'clock', I18n.t('recents.recent', 'Recent')], ['saved', 'star', I18n.t('stop.saved', 'Saved')], ...(calendar ? [['calendar', 'calendar', I18n.t('settings.calendar', 'Calendar')]] : [])];
       let body = '';
       if (state.tab === 'recent') {
         state.rows = load().filter(accepts);
         if (!state.rows.length) {
-          body = `<p class="recentEmpty">Your searches show here, so you can find them again with a tap.</p>`;
+          body = `<p class="recentEmpty">${escapeHtml(I18n.t('recents.empty', 'Your searches show here, so you can find them again with a tap.'))}</p>`;
         } else {
           const cut = Date.now() - DAY_MS;
           const group = (title, rows) => (rows.length
             ? `<p class="recentHead">${title}</p>` + rows.map((r) => recentRow(r, state.rows.indexOf(r), state.menu === keyOf(r))).join('')
             : '');
-          body = group('24 hours', state.rows.filter((r) => r.at >= cut)) +
-            group('Earlier', state.rows.filter((r) => r.at < cut)) +
-            `<button type="button" class="recentClear" data-recent-clear>Clear all</button>`;
+          body = group(escapeHtml(I18n.t('recents.day', '24 hours')), state.rows.filter((r) => r.at >= cut)) +
+            group(escapeHtml(I18n.t('recents.earlier', 'Earlier')), state.rows.filter((r) => r.at < cut)) +
+            `<button type="button" class="recentClear" data-recent-clear>${escapeHtml(I18n.t('recents.clearAll', 'Clear all'))}</button>`;
         }
       } else if (state.tab === 'saved') {
         state.saved = savedItems();
         body = state.saved.length
           ? state.saved.map(savedRow).join('')
-          : `<p class="recentEmpty">${saved === 'favs' ? 'Star a stop or a bus to see it here.' : 'Save places in Places, in the Edge Tray.'}</p>`;
-        if (saved === 'places') body += `<button type="button" class="recentClear" data-recent-places>Edit places</button>`;
+          : `<p class="recentEmpty">${escapeHtml(saved === 'favs' ? I18n.t('recents.noFavs', 'Star a stop or a bus to see it here.') : I18n.t('recents.noPlaces', 'Save places in Places, in the Edge Tray.'))}</p>`;
+        if (saved === 'places') body += `<button type="button" class="recentClear" data-recent-places>${escapeHtml(I18n.t('recents.editPlaces', 'Edit places'))}</button>`;
       } else {
         body = `<div class="recentCalendar"></div>`;
       }
       box.innerHTML =
         `<div class="recentTabs" role="tablist">` +
         tabs.map(([id, icon, label]) =>
-          `<button type="button" class="recentTab${state.tab === id ? ' active' : ''}" role="tab" aria-selected="${state.tab === id}" data-recent-tab="${id}" aria-label="${label}" title="${label}">${ico(icon)}</button>`
+          `<button type="button" class="recentTab${state.tab === id ? ' active' : ''}" role="tab" aria-selected="${state.tab === id}" data-recent-tab="${id}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">${ico(icon)}</button>`
         ).join('') +
         `</div>` + body;
       box.classList.add('recents');
@@ -262,7 +262,7 @@
         return toggleRowMenu(box, state.menu);
       }
       if (e.target.closest('[data-recent-clear]')) {
-        if (confirm('Clear all your past searches?')) clear();
+        if (confirm(I18n.t('recents.clearConfirm', 'Clear all your past searches?'))) clear();
         return render();
       }
       if (e.target.closest('[data-recent-places]')) {

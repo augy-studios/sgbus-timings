@@ -141,23 +141,23 @@
 
 <body>
     <!-- Only while a train line is disrupted, under the update bar (js/sw-update.js puts that first): js/alerts.js -->
-    <div id="disruptionBar" class="disruption-bar" role="status" aria-label="Train disruption" hidden></div>
+    <div id="disruptionBar" class="disruption-bar" role="status" data-i18n-aria-label="html.train_disruption" aria-label="Train disruption" hidden></div>
     <!-- The Edge Tray, sg-psi's floating tray: favourites and the tools, then the links and
          settings, as glass buttons fixed at the top corner of the screen. Slides off its side,
          leaving the arrow tab; Settings picks the side (script.js, "The Edge Tray"). -->
     <div class="hud">
-        <div id="tray" class="tray" role="navigation" aria-label="Edge Tray">
-            <button id="trayTab" class="tray-tab" type="button" aria-controls="trayButtons" aria-expanded="true" aria-label="Hide the Edge Tray" title="Hide the Edge Tray">
+        <div id="tray" class="tray" role="navigation" data-i18n-aria-label="html.edge_tray" aria-label="Edge Tray">
+            <button id="trayTab" class="tray-tab" type="button" aria-controls="trayButtons" aria-expanded="true" data-i18n-aria-label="html.hide_the_edge_tray" aria-label="Hide the Edge Tray" data-i18n-title="html.hide_the_edge_tray" title="Hide the Edge Tray">
                 <span data-icon="chevron"></span>
             </button>
             <div id="trayButtons" class="tray-buttons">
                 <!-- The app's pages, as tabs, Settings' Custom home first (js/main-screen.js moves
                      the buttons below in) -->
-                <div id="trayViews" class="tray-views" role="tablist" aria-label="Pages" aria-orientation="vertical"></div>
+                <div id="trayViews" class="tray-views" role="tablist" data-i18n-aria-label="html.pages" aria-label="Pages" aria-orientation="vertical"></div>
                 <span class="tray-rule" aria-hidden="true"></span>
                 <button id="glanceBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.glance" aria-label="Glance" data-i18n-title="tray.glance.title" title="Glance: your next bus, and your stops' buses"><span data-icon="eye"></span></button>
                 <button id="timingsBtn" class="glass-btn" type="button" data-i18n-aria-label="tray.timings" aria-label="Bus timings" data-i18n-title="tray.timings.title" title="Bus timings: search for a stop"><span data-icon="bus"></span></button>
-                <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" aria-label="Favourites" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
+                <button id="favsBtn" class="glass-btn" type="button" aria-haspopup="dialog" data-i18n-aria-label="favs.title" aria-label="Favourites" data-i18n-title="favs.title" title="Favourites"><span data-icon="star"></span><span id="favCount" class="tray-badge" aria-hidden="true" hidden></span></button>
                 <!-- Explorer: the live map with every stop and station to tap (js/map.js); can be
                      turned off in Settings, Edge Tray buttons -->
                 <button id="explorerBtn" data-tray-extra="explorer" class="glass-btn" type="button" data-i18n-aria-label="tray.explorer" aria-label="Explorer" data-i18n-title="tray.explorer.title" title="Explorer: every stop and station on the map, its buses or doors on a tap"><span data-icon="map"></span></button>
@@ -182,22 +182,22 @@
                 <a id="appUpdateBtn" href="#" class="glass-btn" data-i18n-aria-label="tray.appUpdate" aria-label="Check for app updates" data-i18n-title="tray.appUpdate.title" title="Check for app updates" hidden><span data-icon="download"></span></a>
                 <!-- SimplyGo, for card balances and top-ups: phones only (script.js, "SimplyGo") -->
                 <!-- These four can each be turned off in Settings, Edge Tray buttons (data-tray-extra) -->
-                <a id="simplyGoBtn" data-tray-extra="simplygo" href="https://apps.apple.com/sg/app/simplygo/id667933103" target="_blank" rel="noopener noreferrer" class="glass-btn appIconBtn" aria-label="Open SimplyGo" title="Open SimplyGo: card balance, top-ups and travel history" hidden>
+                <a id="simplyGoBtn" data-tray-extra="simplygo" href="https://apps.apple.com/sg/app/simplygo/id667933103" target="_blank" rel="noopener noreferrer" class="glass-btn appIconBtn" data-i18n-aria-label="html.open_simplygo" aria-label="Open SimplyGo" data-i18n-title="html.open_simplygo_card_balance_top" title="Open SimplyGo: card balance, top-ups and travel history" hidden>
                     <img src="/images/icons/simplygo.png" alt="" width="512" height="512" decoding="async">
                 </a>
-                <a href="https://t.me/UwUsgbus_bot" data-tray-extra="telegram" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" aria-label="Singapore Bus Timings on Telegram" title="Singapore Bus Timings on Telegram">
+                <a href="https://t.me/UwUsgbus_bot" data-tray-extra="telegram" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" data-i18n-aria-label="html.singapore_bus_timings_on_telegram" aria-label="Singapore Bus Timings on Telegram" data-i18n-title="html.singapore_bus_timings_on_telegram" title="Singapore Bus Timings on Telegram">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M248 8C111 8 0 119 0 256S111 504 248 504 496 393 496 256 385 8 248 8zM365.3 169.6l-40.1 189.7c-3 13.4-11 16.7-22.3 10.4l-61.6-45.5-29.7 28.6c-3.3 3.3-6.1 6.1-12.4 6.1l4.4-63.1 114.9-103.8c5-4.5-1.1-6.9-7.7-2.5l-141.9 89.4-61.1-19.1c-13.3-4.2-13.5-13.3 2.8-19.6l238.9-92.1c11-4.2 20.7 2.6 17.1 19.6z"/></svg>
                 </a>
-                <a href="https://donate.stripe.com/28o2akeAr3hv0DK6oo" data-tray-extra="coffee" target="_blank" rel="noopener noreferrer" class="glass-btn" aria-label="Buy Augy a Coffee" title="Buy Augy a Coffee">
+                <a href="https://donate.stripe.com/28o2akeAr3hv0DK6oo" data-tray-extra="coffee" target="_blank" rel="noopener noreferrer" class="glass-btn" data-i18n-aria-label="settings.buy_augy_a_coffee" aria-label="Buy Augy a Coffee" data-i18n-title="settings.buy_augy_a_coffee" title="Buy Augy a Coffee">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M192 384h192c53 0 96-43 96-96h32c70.6 0 128-57.4 128-128S582.6 32 512 32H120c-13.3 0-24 10.7-24 24v232c0 53 43 96 96 96zM512 96c35.3 0 64 28.7 64 64s-28.7 64-64 64h-32V96h32zm47.7 384H48.3c-47.6 0-61-64-36-64h583.4c25 0 11.8 64-36 64z"/></svg>
                 </a>
-                <a href="https://guide.sgbus.uwuapps.org/" data-tray-extra="guide" target="_blank" rel="noopener noreferrer" class="glass-btn" aria-label="How to use SG Bus Timings" title="How to use SG Bus Timings">
+                <a href="https://guide.sgbus.uwuapps.org/" data-tray-extra="guide" target="_blank" rel="noopener noreferrer" class="glass-btn" data-i18n-aria-label="html.how_to_use_sg_bus" aria-label="How to use SG Bus Timings" data-i18n-title="html.how_to_use_sg_bus" title="How to use SG Bus Timings">
                     <span data-icon="help"></span>
                 </a>
-                <button class="glass-btn" id="settingsBtn" type="button" aria-label="Settings" title="Settings">
+                <button class="glass-btn" id="settingsBtn" type="button" data-i18n-aria-label="settings.settings" aria-label="Settings" data-i18n-title="settings.settings" title="Settings">
                     <span data-icon="settings"></span>
                 </button>
-                <button class="glass-btn" id="themeBtn" type="button" aria-label="Theme" title="Theme">
+                <button class="glass-btn" id="themeBtn" type="button" data-i18n-aria-label="theme.title" aria-label="Theme" data-i18n-title="theme.title" title="Theme">
                     <span data-icon="sun"></span>
                 </button>
             </div>
@@ -336,20 +336,20 @@
                 <div class="cardBody">
                     <p class="alertsIntro" data-i18n="alerts.notify_me_even_with_the">Notify me, even with the app closed:</p>
                     <div id="alertModes">
-                        <p class="modal-section-label" id="alertTrainLabel"><span data-icon="train"></span> Train service alerts (MRT and LRT)</p>
+                        <p class="modal-section-label" id="alertTrainLabel"><span data-icon="train"></span> <span data-i18n="html.train_service_alerts_mrt_and">Train service alerts (MRT and LRT)</span></p>
                         <div class="mode-toggle alertModes" data-alert-kind="train" role="group" aria-labelledby="alertTrainLabel">
                             <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false" data-i18n="alerts.off">Off</button>
                             <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false" data-i18n="alerts.all_updates">All updates</button>
                             <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false" data-i18n="alerts.disruptions_only">Disruptions only</button>
                         </div>
-                        <p class="modal-section-label" id="alertTrafficLabel"><span data-icon="cone"></span> Traffic alerts (roads and buses)</p>
+                        <p class="modal-section-label" id="alertTrafficLabel"><span data-icon="cone"></span> <span data-i18n="html.traffic_alerts_roads_and_buses">Traffic alerts (roads and buses)</span></p>
                         <div class="mode-toggle alertModes" data-alert-kind="traffic" role="group" aria-labelledby="alertTrafficLabel">
                             <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false" data-i18n="alerts.off">Off</button>
                             <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false" data-i18n="alerts.all_updates">All updates</button>
                             <button class="mode-btn" type="button" data-alert-mode="disruptions" aria-pressed="false" data-i18n="alerts.disruptions_only">Disruptions only</button>
                         </div>
                         <!-- LTA's and the operators' notices and news (js/alerts.js, api/notices.js) -->
-                        <p class="modal-section-label" id="alertNewsfeedLabel"><span data-icon="chart"></span> Newsfeed (LTA and the operators)</p>
+                        <p class="modal-section-label" id="alertNewsfeedLabel"><span data-icon="chart"></span> <span data-i18n="html.newsfeed_lta_and_the_operators">Newsfeed (LTA and the operators)</span></p>
                         <div class="mode-toggle alertModes" data-alert-kind="newsfeed" role="group" aria-labelledby="alertNewsfeedLabel">
                             <button class="mode-btn" type="button" data-alert-mode="off" aria-pressed="false" data-i18n="alerts.off">Off</button>
                             <button class="mode-btn" type="button" data-alert-mode="all" aria-pressed="false" data-i18n="alerts.all_news">All news</button>
@@ -360,7 +360,7 @@
                     <!-- New versions of the app: the Android app (with Firebase) and the desktop
                          app, from 2.1.1 only (js/app-update.js) -->
                     <div id="releaseAlerts" hidden>
-                        <p class="modal-section-label" id="alertReleasesLabel"><span data-icon="download"></span> New versions of the app</p>
+                        <p class="modal-section-label" id="alertReleasesLabel"><span data-icon="download"></span> <span data-i18n="html.new_versions_of_the_app">New versions of the app</span></p>
                         <div class="mode-toggle alertModes" role="group" aria-labelledby="alertReleasesLabel">
                             <button class="mode-btn" type="button" data-release-mode="off" aria-pressed="false" data-i18n="alerts.off">Off</button>
                             <button class="mode-btn" type="button" data-release-mode="on" aria-pressed="false" data-i18n="alerts.on">On</button>
@@ -493,7 +493,7 @@
                     <div class="actions">
                         <button id="stopFavBtn" class="iconBtn" type="button" aria-pressed="false" data-i18n-title="stop.save_this_stop_to_favourites" title="Save this stop to favourites"><span data-icon="star"></span><span class="lbl" data-i18n="stop.save">Save</span></button>
                         <button id="refreshBtn" class="iconBtn" data-i18n-title="stop.refresh" title="Refresh">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/></svg> Refresh
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M463.5 224H472c13.3 0 24-10.7 24-24V72c0-9.7-5.8-18.5-14.8-22.2s-19.3-1.7-26.2 5.2L413.4 96.6c-87.6-86.5-228.7-86.2-315.8 1c-87.5 87.5-87.5 229.3 0 316.8s229.3 87.5 316.8 0c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0c-62.5 62.5-163.8 62.5-226.3 0s-62.5-163.8 0-226.3c62.2-62.2 162.7-62.5 225.3-1L327 183c-6.9 6.9-8.9 17.2-5.2 26.2s12.5 14.8 22.2 14.8H463.5z"/></svg> <span data-i18n="alerts.refresh">Refresh</span>
                         </button>
                         <!-- Back to the glance (js/glance.js): shown while that's on -->
                         <button id="stopCloseBtn" class="icon-btn small" type="button" data-i18n-aria-label="stop.close_this_stop" aria-label="Close this stop" data-i18n-title="stop.close_this_stop" title="Close this stop" hidden><span data-icon="close"></span></button>
@@ -565,12 +565,12 @@
     <div id="busPickModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="busPickTitle">
             <div class="modal-head">
-                <h2 id="busPickTitle">Buses at this stop</h2>
-                <button class="icon-btn small" type="button" data-close-modal="busPickModal" aria-label="Close">
+                <h2 data-i18n="html.buses_at_this_stop" id="busPickTitle">Buses at this stop</h2>
+                <button class="icon-btn small" type="button" data-close-modal="busPickModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
-            <p class="modal-section-label">Pick a bus to see just its timings here, whether or not it&rsquo;s running right now.</p>
+            <p data-i18n="html.pick_a_bus_to_see" class="modal-section-label">Pick a bus to see just its timings here, whether or not it&rsquo;s running right now.</p>
             <div id="busPickGrid" class="busGrid"></div>
         </div>
     </div>
@@ -595,8 +595,8 @@
     <div id="stopListModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="stopListTitle">
             <div class="modal-head">
-                <h2 id="stopListTitle">Nearby bus stops</h2>
-                <button class="icon-btn small" type="button" data-close-modal="stopListModal" aria-label="Close">
+                <h2 data-i18n="html.nearby_bus_stops" id="stopListTitle">Nearby bus stops</h2>
+                <button class="icon-btn small" type="button" data-close-modal="stopListModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
@@ -609,7 +609,7 @@
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="favsTitle">
             <div class="modal-head">
                 <h2 id="favsTitle" data-i18n="favs.title">Favourites</h2>
-                <button class="icon-btn small" type="button" data-close-modal="favsModal" aria-label="Close">
+                <button class="icon-btn small" type="button" data-close-modal="favsModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
@@ -623,7 +623,7 @@
             </div>
             <div id="favListTools" class="favListTools" hidden></div>
             <form id="favListForm" class="favListForm" hidden>
-                <label id="favListFormLabel" for="favListName">Name the new list</label>
+                <label data-i18n="favs.lists.name.new" id="favListFormLabel" for="favListName">Name the new list</label>
                 <div class="favListFormRow">
                     <input id="favListName" class="input" type="text" autocomplete="off" enterkeyhint="done" placeholder="Work, School, Weekends…" data-i18n-placeholder="favs.lists.name.placeholder" aria-describedby="favListFormError" />
                     <button class="btn" type="submit" data-i18n="common.save">Save</button>
@@ -653,7 +653,7 @@
                 <div class="favGroupLabel" data-i18n="favs.group.navs">Navs</div>
                 <div id="favNavChips" class="favChips"></div>
             </div>
-            <div id="favEmpty" class="empty">No favourites yet. Star a stop&rsquo;s timings, a bus on its route, or a nav (bus and train, or bus only).</div>
+            <div data-i18n="html.no_favourites_yet_star_a" id="favEmpty" class="empty">No favourites yet. Star a stop&rsquo;s timings, a bus on its route, or a nav (bus and train, or bus only).</div>
         </div>
     </div>
 
@@ -688,7 +688,7 @@
 
             <section class="settingsView" data-settings-group="you" data-i18n-data-title="settings.you" data-title="You" hidden>
                 <!-- Language (js/i18n.js): each in its own words, so it can be found in any -->
-                <p class="modal-section-label" id="langLabel" data-short="Language" data-find="language languages bahasa 语言 中文 மொழி chinese malay tamil english" data-i18n="settings.language">Language</p>
+                <p class="modal-section-label" id="langLabel" data-short="Language" data-i18n-data-short="settings.short.language" data-find="language languages bahasa 语言 中文 மொழி chinese malay tamil english" data-i18n="settings.language">Language</p>
                 <!-- Opens Choose a language (js/lang-pick.js), showing the one in use -->
                 <button id="langOpen" class="shareMenuItem langOpen" type="button" aria-haspopup="dialog" aria-labelledby="langLabel langOpenNow">
                     <span id="langOpenNow" class="langNow"></span>
@@ -697,7 +697,7 @@
                 <p class="mode-note" data-i18n="settings.language_note2">The app opens again in the language picked.</p>
                 <!-- In a language other than English (js/lang-pick.js): an email to Augy, the contact the guide gives -->
                 <p class="mode-note langFeedback" data-lang-feedback hidden><span data-i18n="lang.feedback.ask">Think a translation looks wrong?</span> <a class="langFeedbackLink" href="mailto:augy@augystudios.com" target="_blank" rel="noopener noreferrer" data-i18n="lang.feedback.tell">Tell us.</a></p>
-                <label class="modal-section-label" for="setName" data-short="Name" data-i18n="settings.your_name_for_the_greeting">Your name, for the greeting</label>
+                <label class="modal-section-label" for="setName" data-short="Name" data-i18n-data-short="settings.short.name" data-i18n="settings.your_name_for_the_greeting">Your name, for the greeting</label>
                 <input id="setName" class="input settingsInput" maxlength="64" autocomplete="given-name" data-i18n-placeholder="settings.leave_blank_for_no_name" placeholder="Leave blank for no name" />
                 <label class="modal-section-label" for="setBirthday" data-i18n="settings.birthday">Birthday</label>
                 <div class="settingsRow">
@@ -705,14 +705,14 @@
                     <button id="clearBirthday" class="iconBtn" type="button" data-i18n="settings.clear">Clear</button>
                 </div>
                 <p class="mode-note" data-i18n="settings.on_your_birthday_the_greeting">On your birthday, the greeting wishes you a happy one, with your age if the year's set.</p>
-                <p class="modal-section-label" data-short="Confetti" data-i18n="settings.birthday_confetti">Birthday confetti</p>
+                <p class="modal-section-label" data-short="Confetti" data-i18n-data-short="settings.short.confetti" data-i18n="settings.birthday_confetti">Birthday confetti</p>
                 <div class="mode-toggle">
                     <button class="mode-btn" type="button" data-confetti="on" aria-pressed="false" data-i18n="settings.on">On</button>
                     <button class="mode-btn" type="button" data-confetti="off" aria-pressed="false" data-i18n="settings.off">Off</button>
                 </div>
                 <p class="mode-note" data-i18n="settings.confetti_each_time_you_open">Confetti each time you open the app on your birthday.</p>
                 <!-- Home, Work and other places live in Places (js/places.js); calendar in js/calendar.js -->
-                <p class="modal-section-label" data-short="Places" data-find="home work" data-i18n="settings.home_work_and_your_places">Home, Work and your places</p>
+                <p class="modal-section-label" data-short="Places" data-i18n-data-short="settings.short.places" data-find="home work" data-i18n="settings.home_work_and_your_places">Home, Work and your places</p>
                 <button id="settingsPlaces" class="iconBtn settingsWide" type="button"><span data-icon="bookmark"></span> <span data-i18n="settings.open_places">Open Places</span></button>
                 <p class="modal-section-label" data-find="ical ics events" data-i18n="settings.calendar">Calendar</p>
                 <button id="settingsCalendar" class="iconBtn settingsWide" type="button"><span data-icon="calendar"></span> <span data-i18n="settings.calendar_settings">Calendar settings</span></button>
@@ -758,7 +758,7 @@
                     <button class="mode-btn" type="button" data-tray-show="receive" aria-pressed="true" hidden data-i18n="settings.receive_nearby">Receive nearby</button>
                 </div>
                 <p class="mode-note" data-i18n="settings.turn_off_the_buttons_you">Turn off the buttons you don&rsquo;t use, for a tidier tray. Glance, Service alerts and Your trips are pages: off, each leaves the tray and Custom home too, and if it was home, the app opens on Bus timings. The trips you take are still kept with Your trips off. The guide is also at guide.sgbus.uwuapps.org.</p>
-                <p class="modal-section-label" data-short="Favourites first or last" data-find="top bottom favourites" data-i18n="settings.pin_favourite_stops_in_lists">Pin favourite stops in lists</p>
+                <p class="modal-section-label" data-short="Favourites first or last" data-i18n-data-short="settings.short.favourites_first_or_last" data-find="top bottom favourites" data-i18n="settings.pin_favourite_stops_in_lists">Pin favourite stops in lists</p>
                 <div class="mode-toggle" data-pin-kind="stop">
                     <button class="mode-btn" type="button" data-pin="top" aria-pressed="false" data-i18n="settings.top">Top</button>
                     <button class="mode-btn" type="button" data-pin="bottom" aria-pressed="false" data-i18n="settings.bottom">Bottom</button>
@@ -778,7 +778,7 @@
             </section>
 
             <section class="settingsView" data-settings-group="trips" data-i18n-data-title="settings.trips_and_alerts" data-title="Trips and alerts" hidden>
-                <p class="modal-section-label" data-short="Get Off Alert" data-find="morse beep buzz" data-i18n="settings.get_off_alert_on_a">Get Off Alert on a trip</p>
+                <p class="modal-section-label" data-short="Get Off Alert" data-i18n-data-short="settings.short.get_off_alert" data-find="morse beep buzz" data-i18n="settings.get_off_alert_on_a">Get Off Alert on a trip</p>
                 <div class="mode-toggle">
                     <button class="mode-btn" type="button" data-getoff="on" aria-pressed="false" data-i18n="settings.on">On</button>
                     <button class="mode-btn" type="button" data-getoff="off" aria-pressed="false" data-i18n="settings.off">Off</button>
@@ -786,7 +786,7 @@
                 <p class="mode-note" data-i18n="settings.two_stops_before_you_get">Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification. Keep the site open on a trip.</p>
                 <!-- Where the Get Off Alert's beeps go: the Android app only (js/reminders.js) -->
                 <div id="earphonesSetting" hidden>
-                    <p class="modal-section-label" data-short="Its sound" data-find="earphones out loud" data-i18n="settings.get_off_alerts_sound">Get Off Alert's sound</p>
+                    <p class="modal-section-label" data-short="Its sound" data-i18n-data-short="settings.short.its_sound" data-find="earphones out loud" data-i18n="settings.get_off_alerts_sound">Get Off Alert's sound</p>
                     <div class="mode-toggle">
                         <button class="mode-btn" type="button" data-earphones="off" aria-pressed="false" data-i18n="settings.out_loud">Out loud</button>
                         <button class="mode-btn" type="button" data-earphones="on" aria-pressed="false" data-i18n="settings.earphones_only">Earphones only</button>
@@ -795,7 +795,7 @@
                 </div>
                 <!-- js/shake.js -->
                 <div id="shakeSetting" hidden>
-                    <p class="modal-section-label" data-short="Shake" data-i18n="settings.shake_to_refresh">Shake to refresh</p>
+                    <p class="modal-section-label" data-short="Shake" data-i18n-data-short="settings.short.shake" data-i18n="settings.shake_to_refresh">Shake to refresh</p>
                     <div class="mode-toggle">
                         <button class="mode-btn" type="button" data-shake="on" aria-pressed="false" data-i18n="settings.on">On</button>
                         <button class="mode-btn" type="button" data-shake="off" aria-pressed="false" data-i18n="settings.off">Off</button>
@@ -821,13 +821,13 @@
                         <button class="mode-btn" type="button" data-leavetime="off" aria-pressed="false" data-i18n="settings.off">Off</button>
                     </div>
                     <p class="mode-note" data-i18n="settings.for_events_in_this_phones">For events in this phone's calendar with a place: a notification when it's time to set off by bus and train, from where you are, or from Home.</p>
-                    <p class="modal-section-label" data-need="onabus" data-short="On a bus?" data-find="riding" data-i18n="settings.on_a_bus">&ldquo;On a bus?&rdquo;</p>
+                    <p class="modal-section-label" data-need="onabus" data-short="On a bus?" data-i18n-data-short="settings.short.on_a_bus" data-find="riding" data-i18n="settings.on_a_bus">&ldquo;On a bus?&rdquo;</p>
                     <div class="mode-toggle" data-need="onabus">
                         <button class="mode-btn" type="button" data-onabus="on" aria-pressed="false" data-i18n="settings.on">On</button>
                         <button class="mode-btn" type="button" data-onabus="off" aria-pressed="false" data-i18n="settings.off">Off</button>
                     </div>
                     <p class="mode-note" data-need="onabus" data-i18n="settings.when_you_seem_to_be">When you seem to be riding with no trip running, a quiet notification offers to start one, for the Get Off Alert. Needs Physical activity.</p>
-                    <p class="modal-section-label" data-short="Last bus" data-find="reminder bell" data-i18n="settings.last_bus_reminders">Last bus reminders</p>
+                    <p class="modal-section-label" data-short="Last bus" data-i18n-data-short="settings.short.last_bus" data-find="reminder bell" data-i18n="settings.last_bus_reminders">Last bus reminders</p>
                     <div id="lastBusList" class="lastBusList"></div>
                     <p class="mode-note" data-i18n="settings.last_bus_reminders.description">Tap the bell by a bus's last bus time at a stop: a reminder 20 minutes before it, every day it runs.</p>
                     <p id="remindersNote" class="remindersNote" role="status" hidden></p>
@@ -880,13 +880,13 @@
                 <p class="mode-note" data-i18n="settings.the_linux_apps_commands_typed">The Linux app's commands, typed at an sgbus&gt; prompt: 84009, nav home work, favs. On a computer, Ctrl+` opens it too.</p>
                 <!-- uwuCoins and the wheel (js/coins.js): coins from trips and feats, a spin for an Easter egg or more coins -->
                 <section id="coinsBox" class="coinsBox" aria-labelledby="coinsTitle">
-                    <p class="modal-section-label" id="coinsTitle" data-find="coins uwucoins wheel spin easter eggs feats"><span data-icon="coin"></span> <span data-i18n="coins.title">uwuCoins</span></p>
+                    <p class="modal-section-label" id="coinsTitle" data-short="uwuCoins" data-i18n-data-short="coins.title" data-find="coins uwucoins wheel spin easter eggs feats"><span data-icon="coin"></span> <span data-i18n="coins.title">uwuCoins</span></p>
                     <p class="coinBalance"><span data-coins-balance>0</span> <span data-i18n="coins.unit">uwuCoins</span></p>
                     <div class="coinWheelWrap">
                         <span class="coinPointer" aria-hidden="true"></span>
                         <div id="coinWheel" class="coinWheel"></div>
                     </div>
-                    <button id="coinSpin" class="btn settingsWide" type="button"><span data-icon="sync"></span> <span class="lbl">Spin for 100</span></button>
+                    <button id="coinSpin" class="btn settingsWide" type="button"><span data-icon="sync"></span> <span data-i18n="html.spin_for_100" class="lbl">Spin for 100</span></button>
                     <p id="coinNeed" class="mode-note" hidden></p>
                     <p id="coinResult" class="mode-note coinResult" role="status" hidden></p>
                     <p class="mode-note" data-i18n="coins.how">Every spin wins something: an Easter egg you haven&rsquo;t found, with a secret or a colour preset, or more coins. Coins come from trips taken with the Get Off Alert to the end: more for longer trips, changes, and each bus and train operator and line you ride with. Each feat gives 100 more.</p>
@@ -928,7 +928,7 @@
                     <!-- Syncing with the Telegram bot: its link with the code, and the command to send it -->
                     <div id="syncBot" class="syncBot" hidden>
                         <a id="syncBotOpen" class="btn" href="https://t.me/UwUsgbus_bot" target="_blank" rel="noopener noreferrer"><span data-icon="chat"></span> <span data-i18n="settings.open_the_bot">Open the bot</span></a>
-                        <p class="mode-note">Or send it <button id="syncBotCommand" class="syncBotCommand" type="button" data-i18n-title="settings.tap_to_copy" title="Tap to copy" data-i18n="settings.sync2">/sync</button></p>
+                        <p class="mode-note"><span data-i18n="html.or_send_it">Or send it</span> <button id="syncBotCommand" class="syncBotCommand" type="button" data-i18n-title="settings.tap_to_copy" title="Tap to copy" data-i18n="settings.sync2">/sync</button></p>
                     </div>
                     <div id="syncQr" class="syncQr"></div>
                     <p id="syncLink" class="syncLink"></p>
@@ -958,39 +958,39 @@
     <div id="calendarModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="calendarTitle">
             <div class="modal-head">
-                <h2 id="calendarTitle">Sync with calendar</h2>
-                <button class="icon-btn small" type="button" data-close-modal="calendarModal" aria-label="Close">
+                <h2 data-i18n="html.sync_with_calendar" id="calendarTitle">Sync with calendar</h2>
+                <button class="icon-btn small" type="button" data-close-modal="calendarModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
-            <p class="mode-note">Your events with a location, for the next two weeks, show under Calendar when you tap into Navigate's From, To or Add a stop. Tap one in To for the way there, arriving by its start.</p>
+            <p data-i18n="html.calendar_events_note" class="mode-note">Your events with a location, for the next two weeks, show under Calendar when you tap into Navigate's From, To or Add a stop. Tap one in To for the way there, arriving by its start.</p>
             <p id="calSource" class="syncStatus"></p>
             <!-- Only in the Android app, which can read the phone's calendar: js/app-bridge.js -->
             <div id="calPhoneBlock" hidden>
-                <p class="modal-section-label">This phone's calendar</p>
-                <button id="calPhone" class="btn" type="button"><span data-icon="calendar"></span> Use this phone's calendar</button>
-                <a id="calAllow" class="iconBtn calAllow" hidden><span data-icon="calendar"></span> Allow calendar access</a>
-                <p class="mode-note">Every calendar on this phone (Google, Outlook, Samsung and others), read by the app each time the Calendar tab opens. Nothing leaves the phone except each event's location, looked up to find the place.</p>
+                <p data-i18n="html.this_phone_s_calendar" class="modal-section-label">This phone's calendar</p>
+                <button id="calPhone" class="btn" type="button"><span data-icon="calendar"></span> <span data-i18n="html.use_this_phone_s_calendar">Use this phone's calendar</span></button>
+                <a id="calAllow" class="iconBtn calAllow" hidden><span data-icon="calendar"></span> <span data-i18n="html.allow_calendar_access">Allow calendar access</span></a>
+                <p data-i18n="html.calendar_phone_note" class="mode-note">Every calendar on this phone (Google, Outlook, Samsung and others), read by the app each time the Calendar tab opens. Nothing leaves the phone except each event's location, looked up to find the place.</p>
             </div>
-            <label class="modal-section-label" for="calUrl">Your calendar's private iCal link</label>
+            <label data-i18n="html.your_calendar_s_private_ical" class="modal-section-label" for="calUrl">Your calendar's private iCal link</label>
             <div class="settingsRow">
                 <input id="calUrl" class="input settingsInput" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://… .ics, or webcal://…" />
-                <button id="calSave" class="iconBtn" type="button">Link</button>
+                <button data-i18n="html.link" id="calSave" class="iconBtn" type="button">Link</button>
             </div>
             <details class="calHelp">
-                <summary>Where to find the link</summary>
+                <summary data-i18n="html.where_to_find_the_link">Where to find the link</summary>
                 <ul>
-                    <li><strong>Google Calendar</strong>, on a computer: Settings, then your calendar under "Settings for my calendars", then Integrate calendar. Copy <strong>Secret address in iCal format</strong>.</li>
-                    <li><strong>Outlook</strong>: Settings, Calendar, Shared calendars. Under Publish a calendar, pick the calendar and "Can view all details", Publish, then copy the <strong>ICS</strong> link.</li>
-                    <li><strong>iCloud</strong>: in Calendar, share the calendar and turn on <strong>Public Calendar</strong>, then copy its link. Anyone with that link can see the calendar.</li>
+                    <li><strong data-i18n="html.google_calendar">Google Calendar</strong><span data-i18n="html.on_a_computer_settings_then">, on a computer: Settings, then your calendar under "Settings for my calendars", then Integrate calendar. Copy</span> <strong data-i18n="html.secret_address_in_ical_format">Secret address in iCal format</strong>.</li>
+                    <li><strong data-i18n="html.outlook">Outlook</strong><span data-i18n="html.settings_calendar_shared_calendars_under">: Settings, Calendar, Shared calendars. Under Publish a calendar, pick the calendar and "Can view all details", Publish, then copy the</span> <strong data-i18n="html.ics">ICS</strong> <span data-i18n="html.link_2">link.</span></li>
+                    <li><strong data-i18n="html.icloud">iCloud</strong><span data-i18n="html.in_calendar_share_the_calendar">: in Calendar, share the calendar and turn on</span> <strong data-i18n="html.public_calendar">Public Calendar</strong><span data-i18n="html.then_copy_its_link_anyone">, then copy its link. Anyone with that link can see the calendar.</span></li>
                 </ul>
             </details>
-            <p class="mode-note">The link is kept on this device. Each time the Calendar tab opens, it's read through this site's server, because calendar services don't let a web page read it directly. The server passes the calendar straight back and keeps nothing. Treat the link like a password: anyone who has it can see your calendar.</p>
-            <label class="modal-section-label" for="calFile">Or import an .ics file</label>
+            <p data-i18n="html.calendar_link_note" class="mode-note">The link is kept on this device. Each time the Calendar tab opens, it's read through this site's server, because calendar services don't let a web page read it directly. The server passes the calendar straight back and keeps nothing. Treat the link like a password: anyone who has it can see your calendar.</p>
+            <label data-i18n="html.or_import_an_ics_file" class="modal-section-label" for="calFile">Or import an .ics file</label>
             <input id="calFile" class="calFile" type="file" accept=".ics,text/calendar" />
-            <p class="mode-note">A file is read on this device only and never sent anywhere, but it's a snapshot: import it again for new events.</p>
+            <p data-i18n="html.a_file_is_read_on" class="mode-note">A file is read on this device only and never sent anywhere, but it's a snapshot: import it again for new events.</p>
             <p id="calNote" class="mode-note syncNote" role="status" hidden></p>
-            <button id="calRemove" class="iconBtn" type="button" hidden><span data-icon="trash"></span> Remove calendar</button>
+            <button id="calRemove" class="iconBtn" type="button" hidden><span data-icon="trash"></span> <span data-i18n="html.remove_calendar">Remove calendar</span></button>
         </div>
     </div>
 
@@ -998,8 +998,8 @@
     <div id="weatherModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="weatherTitle">
             <div class="modal-head">
-                <h2 id="weatherTitle">Today's weather</h2>
-                <button class="icon-btn small" type="button" data-close-modal="weatherModal" aria-label="Close">
+                <h2 data-i18n="timings.todays_weather" id="weatherTitle">Today's weather</h2>
+                <button class="icon-btn small" type="button" data-close-modal="weatherModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
@@ -1012,8 +1012,8 @@
     <div id="shareMenuModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="shareMenuTitle">
             <div class="modal-head">
-                <h2 id="shareMenuTitle">Share</h2>
-                <button class="icon-btn small" type="button" data-close-modal="shareMenuModal" aria-label="Close">
+                <h2 data-i18n="nav.share" id="shareMenuTitle">Share</h2>
+                <button class="icon-btn small" type="button" data-close-modal="shareMenuModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
@@ -1024,29 +1024,29 @@
     <div id="shareCardModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="shareCardTitle">
             <div class="modal-head">
-                <h2 id="shareCardTitle">Share</h2>
-                <button class="icon-btn small" type="button" data-close-modal="shareCardModal" aria-label="Close">
+                <h2 data-i18n="nav.share" id="shareCardTitle">Share</h2>
+                <button class="icon-btn small" type="button" data-close-modal="shareCardModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
             <div class="shareBubble">
-                <div class="shareMap"><img id="shareMapImg" alt="Map" hidden /></div>
+                <div class="shareMap"><img id="shareMapImg" data-i18n-alt="html.map" alt="Map" hidden /></div>
                 <div class="shareBand">
                     <p id="shareCardName" class="shareName"></p>
                     <p id="shareCardSub" class="shareSub" hidden></p>
                     <p id="shareCardLink" class="shareUrl" role="status"></p>
                 </div>
             </div>
-            <button id="shareRetry" class="iconBtn" type="button" hidden>Try again</button>
+            <button data-i18n="common.tryAgain" id="shareRetry" class="iconBtn" type="button" hidden>Try again</button>
             <div id="shareTargets" class="shareTargets">
                 <button class="shareTarget" type="button" data-share-to="telegram" disabled><span data-icon="navigate"></span><span class="lbl">Telegram</span></button>
                 <button class="shareTarget" type="button" data-share-to="whatsapp" disabled><span data-icon="chat"></span><span class="lbl">WhatsApp</span></button>
-                <button class="shareTarget" type="button" data-share-to="copy" disabled><span data-icon="copy"></span><span class="lbl">Copy link</span></button>
-                <button class="shareTarget" type="button" data-share-to="more" disabled><span data-icon="share"></span><span class="lbl">More</span></button>
+                <button class="shareTarget" type="button" data-share-to="copy" disabled><span data-icon="copy"></span><span data-i18n="html.copy_link" class="lbl">Copy link</span></button>
+                <button class="shareTarget" type="button" data-share-to="more" disabled><span data-icon="share"></span><span data-i18n="html.more" class="lbl">More</span></button>
                 <!-- The Android app from 2.1.0 only: a tap or Nearby, no internet (js/offline-share.js) -->
-                <button class="shareTarget" type="button" data-share-to="offline" disabled hidden><span data-icon="nearby"></span><span class="lbl">Offline Sharing</span></button>
+                <button class="shareTarget" type="button" data-share-to="offline" disabled hidden><span data-icon="nearby"></span><span data-i18n="html.offline_sharing" class="lbl">Offline Sharing</span></button>
             </div>
-            <button id="shareStopEta" class="iconBtn" type="button" hidden>Stop sharing my ETA</button>
+            <button data-i18n="html.stop_sharing_my_eta" id="shareStopEta" class="iconBtn" type="button" hidden>Stop sharing my ETA</button>
         </div>
     </div>
 
@@ -1055,8 +1055,8 @@
     <div id="offlineModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="offlineTitle">
             <div class="modal-head">
-                <h2 id="offlineTitle">Offline Sharing</h2>
-                <button class="icon-btn small" type="button" data-close-modal="offlineModal" aria-label="Close">
+                <h2 data-i18n="html.offline_sharing" id="offlineTitle">Offline Sharing</h2>
+                <button class="icon-btn small" type="button" data-close-modal="offlineModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
@@ -1068,13 +1068,13 @@
     <div id="etaModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="etaTitle">
             <div class="modal-head">
-                <h2 id="etaTitle">Live progress</h2>
-                <button class="icon-btn small" type="button" data-close-modal="etaModal" aria-label="Close">
+                <h2 data-i18n="html.live_progress" id="etaTitle">Live progress</h2>
+                <button class="icon-btn small" type="button" data-close-modal="etaModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
             <div class="shareBubble">
-                <div class="shareMap"><img id="etaMapImg" alt="Map of the trip" hidden /></div>
+                <div class="shareMap"><img id="etaMapImg" data-i18n-alt="html.map_of_the_trip" alt="Map of the trip" hidden /></div>
                 <div class="shareBand">
                     <p id="etaHead" class="shareName"></p>
                     <p id="etaSub" class="shareSub"></p>
@@ -1085,39 +1085,39 @@
             <div id="etaTimeline" class="tripTimeline etaTimeline" hidden></div>
             <p id="etaUpdated" class="mode-note" role="status"></p>
             <div class="etaButtons">
-                <button id="etaLiveMap" class="btn" type="button"><span data-icon="map"></span> Follow on the map</button>
-                <button id="etaDirections" class="btn" type="button"><span data-icon="navigate"></span> Directions there</button>
+                <button id="etaLiveMap" class="btn" type="button"><span data-icon="map"></span> <span data-i18n="html.follow_on_the_map">Follow on the map</span></button>
+                <button id="etaDirections" class="btn" type="button"><span data-icon="navigate"></span> <span data-i18n="html.directions_there">Directions there</span></button>
             </div>
         </div>
     </div>
 
     <!-- The live map: walking directions, the trip, or someone's shared trip (js/map.js) -->
-    <section id="mapPanel" class="mapPanel" role="dialog" aria-modal="true" aria-label="Live map" hidden>
+    <section id="mapPanel" class="mapPanel" role="dialog" aria-modal="true" data-i18n-aria-label="stop.tool.livemap" aria-label="Live map" hidden>
         <div id="liveMap" class="liveMap"></div>
         <!-- Where you are on Explorer, round the middle: what its tour lights (js/tour.js) -->
         <div id="mapSpot" class="mapSpot" aria-hidden="true"></div>
         <div class="mapTop glass">
-            <button id="mapClose" class="icon-btn small" type="button" aria-label="Close the map"><span data-icon="back"></span></button>
+            <button id="mapClose" class="icon-btn small" type="button" data-i18n-aria-label="html.close_the_map" aria-label="Close the map"><span data-icon="back"></span></button>
             <div class="mapTitle"><strong id="mapTitle"></strong><span id="mapSub"></span></div>
         </div>
         <div class="mapFabs">
-            <button id="mapHeading" class="glass-btn mapFab" type="button" aria-pressed="false" aria-label="Turn the map with the way you face" title="Turn the map with the way you face"><span data-icon="compass"></span></button>
-            <button id="mapOverview" class="glass-btn mapFab" type="button" aria-label="Show the whole route" title="Show the whole route"><span data-icon="route"></span></button>
-            <button id="mapRecentre" class="glass-btn mapFab" type="button" aria-label="Back to street level, following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
+            <button id="mapHeading" class="glass-btn mapFab" type="button" aria-pressed="false" data-i18n-aria-label="html.turn_the_map_with_the" aria-label="Turn the map with the way you face" data-i18n-title="html.turn_the_map_with_the" title="Turn the map with the way you face"><span data-icon="compass"></span></button>
+            <button id="mapOverview" class="glass-btn mapFab" type="button" data-i18n-aria-label="html.show_the_whole_route" aria-label="Show the whole route" data-i18n-title="html.show_the_whole_route" title="Show the whole route"><span data-icon="route"></span></button>
+            <button id="mapRecentre" class="glass-btn mapFab" type="button" data-i18n-aria-label="html.back_to_street_level_following" aria-label="Back to street level, following" data-i18n-title="html.back_to_street_level_following" title="Back to street level, following" hidden><span data-icon="locate"></span></button>
             <!-- Explorer only (style.css): Singapore's map saved for offline, js/map-save.js -->
             <!-- Explorer only (style.css): its Layers, what its map shows (js/map.js, #layersModal) -->
             <button id="mapLayers" class="glass-btn mapFab" type="button" aria-haspopup="dialog" data-i18n-aria-label="tray.layers" aria-label="Layers" data-i18n-title="tray.layers.title" title="Layers: what Explorer shows on its map"><span data-icon="layers"></span></button>
-            <button id="mapSave" class="glass-btn mapFab" type="button" aria-expanded="false" aria-controls="mapSaveSheet" aria-label="Save the map for offline" title="Save Singapore's map for offline"><span data-icon="download"></span></button>
+            <button id="mapSave" class="glass-btn mapFab" type="button" aria-expanded="false" aria-controls="mapSaveSheet" data-i18n-aria-label="html.save_the_map_for_offline" aria-label="Save the map for offline" data-i18n-title="html.save_singapore_s_map_for" title="Save Singapore's map for offline"><span data-icon="download"></span></button>
         </div>
         <div class="mapSheet glass">
             <p id="mapStep" class="mapStep" role="status" aria-live="polite"></p>
             <p id="mapNote" class="mapNote" hidden></p>
             <div id="mapActions" class="mapActions"></div>
         </div>
-        <div id="mapSaveSheet" class="mapSaveSheet glass" role="dialog" aria-label="Singapore's map for offline" hidden>
+        <div id="mapSaveSheet" class="mapSaveSheet glass" role="dialog" data-i18n-aria-label="html.singapore_s_map_for_offline" aria-label="Singapore's map for offline" hidden>
             <div class="mapSaveHead">
-                <strong>Singapore&rsquo;s map, offline</strong>
-                <button id="mapSaveClose" class="icon-btn small" type="button" aria-label="Close"><span data-icon="close"></span></button>
+                <strong data-i18n="html.singapore_s_map_offline">Singapore&rsquo;s map, offline</strong>
+                <button id="mapSaveClose" class="icon-btn small" type="button" data-i18n-aria-label="bug.close" aria-label="Close"><span data-icon="close"></span></button>
             </div>
             <div id="mapSaveBody" class="mapSaveBody" role="status" aria-live="polite"></div>
         </div>
@@ -1127,17 +1127,17 @@
     <div id="cardModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="cardTitle">
             <div class="modal-head">
-                <h2 id="cardTitle">Card value</h2>
-                <button class="icon-btn small" type="button" data-close-modal="cardModal" aria-label="Close">
+                <h2 data-i18n="settings.card_value" id="cardTitle">Card value</h2>
+                <button class="icon-btn small" type="button" data-close-modal="cardModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
             <div id="cardBody" class="cardRead" role="status" aria-live="polite"></div>
             <div class="etaButtons">
-                <button id="cardAgain" class="btn" type="button" hidden><span data-icon="sync"></span> Read another</button>
-                <button id="cardNfc" class="btn" type="button" hidden><span data-icon="settings"></span> Turn on NFC</button>
+                <button id="cardAgain" class="btn" type="button" hidden><span data-icon="sync"></span> <span data-i18n="html.read_another">Read another</span></button>
+                <button id="cardNfc" class="btn" type="button" hidden><span data-icon="settings"></span> <span data-i18n="html.turn_on_nfc">Turn on NFC</span></button>
             </div>
-            <p class="mode-note">EZ-Link and NETS FlashPay cards. Nothing is written to the card, and what it says stays on this phone.</p>
+            <p data-i18n="html.ez_link_and_nets_flashpay" class="mode-note">EZ-Link and NETS FlashPay cards. Nothing is written to the card, and what it says stays on this phone.</p>
         </div>
     </div>
 
@@ -1146,16 +1146,16 @@
     <div id="nearStopsModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="nearStopsTitle">
             <div class="modal-head">
-                <h2 id="nearStopsTitle">Timings near a stop</h2>
-                <button class="icon-btn small" type="button" data-close-modal="nearStopsModal" aria-label="Close">
+                <h2 data-i18n="settings.timings_near_a_stop" id="nearStopsTitle">Timings near a stop</h2>
+                <button class="icon-btn small" type="button" data-close-modal="nearStopsModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
-            <p class="mode-note">As you walk up to a favourite stop you pick, a quiet notification shows its next buses.</p>
+            <p data-i18n="html.as_you_walk_up_to" class="mode-note">As you walk up to a favourite stop you pick, a quiet notification shows its next buses.</p>
             <div id="nearStopsList" class="nearStopsList"></div>
             <p id="nearStopsNote" class="remindersNote" role="status" hidden></p>
-            <button id="nearStopsSave" class="btn" type="button">Save</button>
-            <p class="mode-note">Up to 20. Walk within about 120 m of one and its next buses show in a quiet notification, refreshed every minute until you leave. Android asks for location all the time, as it's watched with the app closed.</p>
+            <button data-i18n="common.save" id="nearStopsSave" class="btn" type="button">Save</button>
+            <p data-i18n="html.near_stops_note" class="mode-note">Up to 20. Walk within about 120 m of one and its next buses show in a quiet notification, refreshed every minute until you leave. Android asks for location all the time, as it's watched with the app closed.</p>
         </div>
     </div>
 
@@ -1164,8 +1164,8 @@
     <div id="routineModal" class="modal-backdrop hidden">
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="routineTitle">
             <div class="modal-head">
-                <h2 id="routineTitle">Routines</h2>
-                <button class="icon-btn small" type="button" data-close-modal="routineModal" aria-label="Close">
+                <h2 data-i18n="settings.routines" id="routineTitle">Routines</h2>
+                <button class="icon-btn small" type="button" data-close-modal="routineModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>
@@ -1174,13 +1174,13 @@
             <p id="routinesNote" class="remindersNote" role="status" hidden></p>
             <div id="routineForm">
             <p class="modal-section-label routineFormHead" data-i18n="routine.add">Add a routine</p>
-            <label class="modal-section-label" for="routineStop">Stop</label>
+            <label data-i18n="settings.stop" class="modal-section-label" for="routineStop">Stop</label>
             <select id="routineStop" class="input settingsInput"></select>
-            <label class="modal-section-label" for="routineBuses">Buses</label>
+            <label data-i18n="favs.group.buses" class="modal-section-label" for="routineBuses">Buses</label>
             <input id="routineBuses" class="input settingsInput" autocomplete="off" autocapitalize="characters" data-i18n-placeholder="routine.new.buses" placeholder="All of them, or some: 22, 222, or 22* for every 22" />
-            <label class="modal-section-label" for="routineTime">Time</label>
+            <label data-i18n="html.time" class="modal-section-label" for="routineTime">Time</label>
             <input id="routineTime" class="input settingsInput" type="time" value="07:45" />
-            <p class="modal-section-label">Days</p>
+            <p data-i18n="html.days" class="modal-section-label">Days</p>
             <div id="routineDays" class="mode-toggle routineDays">
                 <button class="mode-btn" type="button" data-day="1" aria-pressed="false" data-i18n="campus.dow.mon">Mon</button>
                 <button class="mode-btn" type="button" data-day="2" aria-pressed="false" data-i18n="campus.dow.tue">Tue</button>
@@ -1192,8 +1192,8 @@
             </div>
             <p id="routineError" class="remindersNote" role="alert" hidden></p>
             <div class="tripActions">
-                <button id="routineSave" class="btn" type="button">Add</button>
-                <button id="routineCancel" class="iconBtn" type="button" hidden>Cancel</button>
+                <button data-i18n="html.add" id="routineSave" class="btn" type="button">Add</button>
+                <button data-i18n="bug.cancel" id="routineCancel" class="iconBtn" type="button" hidden>Cancel</button>
             </div>
             <p class="mode-note" data-i18n="routine.explain.notification">At that time, on those days, a notification shows the stop&rsquo;s next buses. Tap it for their timings.</p>
             </div>
@@ -1201,11 +1201,11 @@
     </div>
 
     <!-- The flag-down screen: a bus's number as big as it goes (js/flag.js) -->
-    <div id="flagScreen" class="flagScreen" role="dialog" aria-modal="true" aria-label="Flag down a bus" hidden>
+    <div id="flagScreen" class="flagScreen" role="dialog" aria-modal="true" data-i18n-aria-label="html.flag_down_a_bus" aria-label="Flag down a bus" hidden>
         <p id="flagNo" class="flagNo"></p>
         <div class="flagButtons">
-            <button id="flagTorch" class="flagBtn" type="button" aria-pressed="false" hidden><span data-icon="sun"></span> Torch</button>
-            <button id="flagClose" class="flagBtn" type="button"><span data-icon="close"></span> Done</button>
+            <button id="flagTorch" class="flagBtn" type="button" aria-pressed="false" hidden><span data-icon="sun"></span> <span data-i18n="html.torch">Torch</span></button>
+            <button id="flagClose" class="flagBtn" type="button"><span data-icon="close"></span> <span data-i18n="achievements.done">Done</span></button>
         </div>
     </div>
 
@@ -1214,19 +1214,19 @@
         <div class="boardHead">
             <div><h2 id="boardStop" class="boardStop"></h2><span id="boardCode" class="boardCode"></span></div>
             <div class="boardRight"><span id="boardClock" class="boardClock"></span>
-                <button id="boardClose" class="flagBtn" type="button"><span data-icon="close"></span> Close</button></div>
+                <button id="boardClose" class="flagBtn" type="button"><span data-icon="close"></span> <span data-i18n="bug.close">Close</span></button></div>
         </div>
-        <div class="boardRow boardLabels" aria-hidden="true"><span>Bus</span><span>To</span><span>Next</span><span>Then</span><span>Then</span></div>
+        <div class="boardRow boardLabels" aria-hidden="true"><span data-i18n="html.bus">Bus</span><span data-i18n="nav.to">To</span><span data-i18n="trip.next">Next</span><span data-i18n="html.then">Then</span><span data-i18n="html.then">Then</span></div>
         <div id="boardRows" class="boardRows"></div>
-        <div class="boardFoot"><span id="boardNote"></span><span><span id="boardUnit">Minutes</span> · <span class="load-ok">seats</span> · <span class="load-warn">standing</span> · <span class="load-busy">full</span></span><span id="boardPage"></span></div>
+        <div class="boardFoot"><span id="boardNote"></span><span><span data-i18n="board.minutes" id="boardUnit">Minutes</span> · <span data-i18n="html.seats" class="load-ok">seats</span> · <span data-i18n="html.standing" class="load-warn">standing</span> · <span data-i18n="html.full" class="load-busy">full</span></span><span id="boardPage"></span></div>
     </div>
 
     <!-- Scan a stop's code with the camera: the Android app only (js/scan.js) -->
-    <div id="scanScreen" class="scanScreen" role="dialog" aria-modal="true" aria-label="Scan a stop's code" hidden>
+    <div id="scanScreen" class="scanScreen" role="dialog" aria-modal="true" data-i18n-aria-label="timings.scan_a_stops_code" aria-label="Scan a stop's code" hidden>
         <video id="scanVideo" class="scanVideo" playsinline muted></video>
         <div class="scanFrame" aria-hidden="true"></div>
-        <p id="scanStatus" class="scanStatus" role="status">Point the camera at the 5-digit code on the bus stop's pole</p>
-        <button id="scanClose" class="flagBtn scanClose" type="button"><span data-icon="close"></span> Close</button>
+        <p data-i18n="html.point_the_camera_at_the" id="scanStatus" class="scanStatus" role="status">Point the camera at the 5-digit code on the bus stop's pole</p>
+        <button id="scanClose" class="flagBtn scanClose" type="button"><span data-icon="close"></span> <span data-i18n="bug.close">Close</span></button>
     </div>
 
     <!-- A trip in progress, and its Get Off Alert: js/trip.js -->
@@ -1307,23 +1307,23 @@
     <div id="firstRunModal" class="modal-backdrop hidden">
         <form class="modal glass" id="firstRunForm" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle" aria-describedby="firstRunNote">
             <div class="modal-head">
-                <h2 id="firstRunTitle">Welcome to SG Bus Timings</h2>
+                <h2 data-i18n="html.welcome_to_sg_bus_timings" id="firstRunTitle">Welcome to SG Bus Timings</h2>
             </div>
             <fieldset class="firstRunPick">
-                <legend class="modal-section-label">Start with everything, or just the essentials?</legend>
+                <legend data-i18n="html.start_with_everything_or_just" class="modal-section-label">Start with everything, or just the essentials?</legend>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="minimal" />
-                    <span class="firstRunName">Minimal</span>
-                    <span class="firstRunWhat">Just Bus timings, Favourites, Navigate and Places. The rest is switched off.</span>
+                    <span data-i18n="html.minimal" class="firstRunName">Minimal</span>
+                    <span data-i18n="html.just_bus_timings_favourites_navigate" class="firstRunWhat">Just Bus timings, Favourites, Navigate and Places. The rest is switched off.</span>
                 </label>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="full" checked />
-                    <span class="firstRunName">Full</span>
-                    <span class="firstRunWhat">Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.</span>
+                    <span data-i18n="html.full_2" class="firstRunName">Full</span>
+                    <span data-i18n="html.everything_on_glance_service_alerts" class="firstRunWhat">Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.</span>
                 </label>
             </fieldset>
-            <p class="mode-note" id="firstRunNote">You can change this any time in Settings, Edge Tray buttons.</p>
-            <button class="btn firstRunGo" type="submit">Start</button>
+            <p data-i18n="html.you_can_change_this_any" class="mode-note" id="firstRunNote">You can change this any time in Settings, Edge Tray buttons.</p>
+            <button data-i18n="planner.start" class="btn firstRunGo" type="submit">Start</button>
         </form>
     </div>
 
@@ -1332,7 +1332,7 @@
         <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
             <div class="modal-head">
                 <h2 id="themeModalTitle" data-i18n="theme.title">Theme</h2>
-                <button class="icon-btn small" type="button" data-close-modal="themeModal" aria-label="Close">
+                <button class="icon-btn small" type="button" data-close-modal="themeModal" data-i18n-aria-label="bug.close" aria-label="Close">
                     <span data-icon="close"></span>
                 </button>
             </div>

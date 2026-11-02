@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Wear OS app's words in Malay: values/strings.xml has the English and the notes. The website's wording is in main-site/i18n. -->
+<resources>
+    <string name="tile_name">Waktu bas</string>
+    <string name="tile_description">Bas seterusnya di perhentian kegemaran anda yang terdekat</string>
+</resources>

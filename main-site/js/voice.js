@@ -33,7 +33,7 @@
     const btn = $('#voiceBtn');
     if (inApp()) {
       try {
-        const { text } = await AppBridge.call('SgBus', 'listen', { prompt: 'Say a stop, its code, or a bus' });
+        const { text } = await AppBridge.call('SgBus', 'listen', { prompt: I18n.t('voice.prompt', 'Say a stop, its code, or a bus') });
         search(text);
       } catch { /* cancelled */ }
       return;

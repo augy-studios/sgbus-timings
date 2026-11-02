@@ -34,7 +34,7 @@
     // Only from a tap: a browser won't go full screen for a link opened by itself.
     if (navigator.userActivation?.isActive !== false) document.documentElement.requestFullscreen?.().catch(() => {});
     await ensureStopsIndex().catch(() => {});
-    $('#boardStop').textContent = nameOf(code) || 'Bus stop';
+    $('#boardStop').textContent = nameOf(code) || I18n.t('favs.stopNoName', 'Bus stop');
     $('#boardCode').textContent = code;
     board.timers.push(setInterval(load, REFRESH_MS), setInterval(turn, PAGE_MS), setInterval(tick, 1000));
     tick();
@@ -54,7 +54,7 @@
       board.fetched = Date.now();
       $('#boardNote').textContent = '';
     } catch {
-      $('#boardNote').textContent = 'Couldn’t refresh just now: these are the last timings.';
+      $('#boardNote').textContent = I18n.t('board.stale', 'Couldn’t refresh just now: these are the last timings.');
     }
     render();
   }
@@ -94,9 +94,9 @@
           `<span class="boardEta">${when(s.next, board.fetched)}</span><span class="boardEta">${when(s.next2, board.fetched)}</span>` +
           `<span class="boardEta">${when(s.next3, board.fetched)}</span></div>`;
       }).join('')
-      : `<p class="boardEmpty">${board.fetched ? 'No live buses right now.' : 'Getting the timings…'}</p>`;
+      : `<p class="boardEmpty">${esc(board.fetched ? I18n.t('board.none', 'No live buses right now.') : I18n.t('board.getting', 'Getting the timings…'))}</p>`;
     $('#boardPage').textContent = pages > 1 ? `${board.page + 1} / ${pages}` : '';
-    $('#boardUnit').textContent = LS.getClockTimes() ? 'Clock times' : 'Minutes';
+    $('#boardUnit').textContent = LS.getClockTimes() ? I18n.t('board.clock', 'Clock times') : I18n.t('board.minutes', 'Minutes');
   }
 
   function close() {

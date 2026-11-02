@@ -63,7 +63,7 @@
   async function load() {
     const token = ++loadToken;
     const body = $("#alertsBody");
-    if (!body.innerHTML) body.innerHTML = `<p class="plannerStatus">Loading service alerts&hellip;</p>`;
+    if (!body.innerHTML) body.innerHTML = `<p class="plannerStatus">${esc(I18n.t("alerts.loading", "Loading service alerts…"))}</p>`;
     $("#alertsRefresh").classList.add("busy");
     try {
       const [res, news] = await Promise.all([fetch("/api/service-alerts", { cache: "no-store" }), notices(true).catch(() => null)]);
@@ -73,7 +73,7 @@
       if (token === loadToken) body.innerHTML = render(data) + renderNewsfeed(news);
     } catch {
       if (token === loadToken) {
-        body.innerHTML = `<p class="plannerStatus">Couldn&rsquo;t reach LTA for service alerts. Check your connection, then tap Refresh.</p>`;
+        body.innerHTML = `<p class="plannerStatus">${esc(I18n.t("alerts.loadFailed", "Couldn’t reach LTA for service alerts. Check your connection, then tap Refresh."))}</p>`;
       }
     } finally {
       if (token === loadToken) $("#alertsRefresh").classList.remove("busy");
@@ -81,20 +81,20 @@
   }
 
   function render({ train, traffic, fetchedAt }) {
-    const time = new Date(fetchedAt || Date.now()).toLocaleTimeString("en-GB", { timeZone: "Asia/Singapore" });
-    return renderTrain(train) + renderTraffic(traffic) + `<p class="estimateNote">From LTA, updated ${esc(time)}</p>`;
+    const time = new Date(fetchedAt || Date.now()).toLocaleTimeString(LOCALE, { timeZone: "Asia/Singapore" });
+    return renderTrain(train) + renderTraffic(traffic) + `<p class="estimateNote">${esc(I18n.t("alerts.updated", "From LTA, updated {time}", { time }))}</p>`;
   }
 
   function renderTrain(value) {
-    let html = `<h3 class="alertsHead">${ico("train")} Trains</h3>`;
-    if (!value) return html + `<p class="alertsLine">Couldn&rsquo;t reach LTA for train alerts.</p>`;
+    let html = `<h3 class="alertsHead">${ico("train")} ${esc(I18n.t("alerts.trains", "Trains"))}</h3>`;
+    if (!value) return html + `<p class="alertsLine">${esc(I18n.t("alerts.trainsFailed", "Couldn’t reach LTA for train alerts."))}</p>`;
 
     const status = Number(value.Status) || 1;
     const segments = Array.isArray(value.AffectedSegments) ? value.AffectedSegments : [];
     const notices = Array.isArray(value.Message) ? value.Message : [];
 
     if (status <= 1 && !segments.length) {
-      html += `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>All train services are running normally.</p>`;
+      html += `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>${esc(I18n.t("alerts.trainsOk", "All train services are running normally."))}</p>`;
     } else {
       html += segments.map((seg) => {
         const disrupted = (Number(seg.Status ?? status) || status) > 1;
@@ -102,14 +102,14 @@
         const extras = [];
         const bus = split(seg.FreePublicBus).map(stationLabel);
         const shuttle = split(seg.FreeMRTShuttle).map(stationLabel);
-        if (bus.length) extras.push(`Free buses at ${bus.join(", ")}`);
-        if (shuttle.length) extras.push(`Free shuttle at ${shuttle.join(", ")}${seg.MRTShuttleDirection ? ` (${seg.MRTShuttleDirection})` : ""}`);
+        if (bus.length) extras.push(I18n.t("alerts.freeBuses", "Free buses at {list}", { list: bus.join(", ") }));
+        if (shuttle.length) extras.push(`${I18n.t("alerts.freeShuttle", "Free shuttle at {list}", { list: shuttle.join(", ") })}${seg.MRTShuttleDirection ? ` (${seg.MRTShuttleDirection})` : ""}`);
         return `<div class="alertItem ${disrupted ? "error" : "warn"}">` +
           `<p class="alertsLine"><span class="statusDot ${disrupted ? "error" : "warn"}" aria-hidden="true"></span>` +
-          `<strong>${esc(window.MRT.lineLabel(seg.Line || "?"))}</strong> ${disrupted ? "disrupted" : "minor delay"}` +
+          `<strong>${esc(window.MRT.lineLabel(seg.Line || "?"))}</strong> ${esc(disrupted ? I18n.t("alerts.disrupted", "disrupted") : I18n.t("alerts.minorDelay", "minor delay"))}` +
           // LTA's Direction is "Both", or the terminus the affected trains head to.
-          `${seg.Direction ? (/both/i.test(seg.Direction) ? ", both directions" : `, towards ${esc(seg.Direction)}`) : ""}</p>` +
-          (stations.length ? `<p class="alertsDetail">Affects ${esc(stations.join(", "))}</p>` : "") +
+          `${seg.Direction ? esc(/both/i.test(seg.Direction) ? I18n.t("alerts.bothWays", ", both directions") : I18n.t("alerts.towards", ", towards {to}", { to: seg.Direction })) : ""}</p>` +
+          (stations.length ? `<p class="alertsDetail">${esc(I18n.t("alerts.affects", "Affects {list}", { list: stations.join(", ") }))}</p>` : "") +
           extras.map((e) => `<p class="alertsDetail">${esc(e)}</p>`).join("") +
           `</div>`;
       }).join("");
@@ -123,23 +123,24 @@
   }
 
   function renderTraffic(incidents) {
-    let html = `<h3 class="alertsHead">${ico("cone")} Roads</h3>`;
-    if (!incidents) return html + `<p class="alertsLine">Couldn&rsquo;t reach LTA for traffic incidents.</p>`;
+    let html = `<h3 class="alertsHead">${ico("cone")} ${esc(I18n.t("alerts.roads", "Roads"))}</h3>`;
+    if (!incidents) return html + `<p class="alertsLine">${esc(I18n.t("alerts.roadsFailed", "Couldn’t reach LTA for traffic incidents."))}</p>`;
     if (!incidents.length) {
-      return html + `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>No traffic incidents reported.</p>`;
+      return html + `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>${esc(I18n.t("alerts.roadsOk", "No traffic incidents reported."))}</p>`;
     }
 
     const blocking = incidents.filter(isBlocking);
     const others = incidents.filter((i) => !isBlocking(i));
-    html += `<p class="alertsLine">${incidents.length} incident${incidents.length === 1 ? "" : "s"} across Singapore, ` +
-      `${blocking.length} of them able to block or reroute a bus.</p>`;
+    html += `<p class="alertsLine">${esc(incidents.length === 1
+      ? I18n.t("alerts.incidentsOne", "1 incident across Singapore, {b} of them able to block or reroute a bus.", { b: blocking.length })
+      : I18n.t("alerts.incidentsMany", "{n} incidents across Singapore, {b} of them able to block or reroute a bus.", { n: incidents.length, b: blocking.length }))}</p>`;
     if (blocking.length) html += list(blocking);
     if (others.length) {
       const counts = {};
       others.forEach((i) => { counts[i.type] = (counts[i.type] || 0) + 1; });
       const summary = Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([t, n]) => `${n} ${t.toLowerCase()}`).join(", ");
-      html += `<p class="alertsDetail">Also reported: ${esc(summary)}.</p>` +
-        `<button type="button" class="iconBtn alertsMore" aria-expanded="false" aria-controls="alertsOthers">Show the other ${others.length}</button>` +
+      html += `<p class="alertsDetail">${esc(I18n.t("alerts.alsoReported", "Also reported: {list}.", { list: summary }))}</p>` +
+        `<button type="button" class="iconBtn alertsMore" aria-expanded="false" aria-controls="alertsOthers">${esc(I18n.t("alerts.showOthers", "Show the other {n}", { n: others.length }))}</button>` +
         `<div id="alertsOthers" class="alertsOthers" hidden>${list(others)}</div>`;
     }
     return html;
@@ -169,11 +170,12 @@
   // When a notice is, by today: "Today", "Tomorrow", "From Sun 1 Nov", or its own words.
   function whenText(n) {
     const today = sgDate();
-    if (onDate(n, today)) return n.to && n.to !== today ? `Today, till ${dayText(n.to)}` : "Today";
-    if (onDate(n, sgDate(1))) return "Tomorrow";
+    if (onDate(n, today)) return n.to && n.to !== today ? I18n.t("alerts.todayTill", "Today, till {day}", { day: dayText(n.to) }) : I18n.t("alerts.today", "Today");
+    if (onDate(n, sgDate(1))) return I18n.t("alerts.tomorrow", "Tomorrow");
     return n.dates || (n.from ? dayText(n.from) : "");
   }
-  const dayText = (date) => new Date(`${date}T12:00:00+08:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Singapore" });
+  const LOCALE = I18n.lang() === "en" ? "en-GB" : I18n.lang();
+  const dayText = (date) => new Date(`${date}T12:00:00+08:00`).toLocaleDateString(LOCALE, { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Singapore" });
 
   // Your favourite stops and buses a notice names.
   function yours(n) {
@@ -192,21 +194,21 @@
     const { myStops, myBuses } = yours(n);
     const services = (n.services || []).slice(0, 14);
     const mine = [
-      myStops.length && `your stop${myStops.length > 1 ? "s" : ""} ${myStops.map((c) => (window.nameOf?.(c) || c)).join(", ")}`,
-      myBuses.length && `your bus${myBuses.length > 1 ? "es" : ""} ${myBuses.join(", ")}`,
+      myStops.length && (myStops.length > 1 ? I18n.t("alerts.yourStops", "your stops {list}", { list: myStops.map((c) => (window.nameOf?.(c) || c)).join(", ") }) : I18n.t("alerts.yourStop", "your stop {list}", { list: myStops.map((c) => (window.nameOf?.(c) || c)).join(", ") })),
+      myBuses.length && (myBuses.length > 1 ? I18n.t("alerts.yourBuses", "your buses {list}", { list: myBuses.join(", ") }) : I18n.t("alerts.yourBus", "your bus {list}", { list: myBuses.join(", ") })),
     ].filter(Boolean);
     return `<li class="noticeItem${mine.length ? " mine" : ""}">` +
       `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer"><strong>${esc(n.title)}</strong></a>` +
       `<span class="noticeMeta">${esc(whenText(n))} · ${esc(n.source === "lta" ? "LTA" : sources[n.source] || n.source)}</span>` +
       (services.length ? `<span class="noticeBuses">${services.map((s) => `<span class="busChip">${esc(s)}</span>`).join("")}${n.services.length > services.length ? ` +${n.services.length - services.length}` : ""}</span>` : "") +
-      (mine.length ? `<span class="noticeMine">${ico("star")} Affects ${esc(mine.join(" and "))}</span>` : "") +
+      (mine.length ? `<span class="noticeMine">${ico("star")} ${esc(I18n.t("alerts.affects", "Affects {list}", { list: mine.join(I18n.t("trip.and", " and ")) }))}</span>` : "") +
       `</li>`;
   }
 
   function renderNewsfeed(data) {
-    let html = `<h3 class="alertsHead">${ico("chart")} Newsfeed</h3>`;
+    let html = `<h3 class="alertsHead">${ico("chart")} ${esc(I18n.t("alerts.newsfeed", "Newsfeed"))}</h3>`;
     // Nothing read yet (`at` null) isn't nothing announced.
-    if (!data || !data.at) return html + `<p class="alertsLine">Couldn&rsquo;t get the newsfeed just now. Tap Refresh in a minute.</p>`;
+    if (!data || !data.at) return html + `<p class="alertsLine">${esc(I18n.t("alerts.newsFailed", "Couldn’t get the newsfeed just now. Tap Refresh in a minute."))}</p>`;
     const today = sgDate();
     const ahead = sgDate(AHEAD_DAYS);
     const items = data.items || [];
@@ -216,10 +218,10 @@
       .sort((a, b) => (yours(b).myStops.length + yours(b).myBuses.length > 0) - (yours(a).myStops.length + yours(a).myBuses.length > 0) || (a.from || "").localeCompare(b.from || ""));
     const news = items.filter((n) => n.kind === "news").sort((a, b) => (b.published || "").localeCompare(a.published || "")).slice(0, NEWS_SHOWN);
     html += coming.length
-      ? `<p class="alertsSub">Today and the next two weeks</p><ul class="noticeList">${coming.map((n) => noticeItem(n, data.sources || {})).join("")}</ul>`
-      : `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>No bus or train changes announced for the next two weeks.</p>`;
+      ? `<p class="alertsSub">${esc(I18n.t("alerts.nextTwoWeeks", "Today and the next two weeks"))}</p><ul class="noticeList">${coming.map((n) => noticeItem(n, data.sources || {})).join("")}</ul>`
+      : `<p class="alertsLine"><span class="statusDot ok" aria-hidden="true"></span>${esc(I18n.t("alerts.noChanges", "No bus or train changes announced for the next two weeks."))}</p>`;
     if (news.length) {
-      html += `<p class="alertsSub">From the operators</p><ul class="noticeList news">` +
+      html += `<p class="alertsSub">${esc(I18n.t("alerts.fromOperators", "From the operators"))}</p><ul class="noticeList news">` +
         news.map((n) => `<li class="noticeItem"><a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">${esc(n.title)}</a>` +
           `<span class="noticeMeta">${esc(n.published ? dayText(n.published) : "")} · ${esc((data.sources || {})[n.source] || n.source)}</span></li>`).join("") + `</ul>`;
     }
@@ -232,16 +234,16 @@
     const data = noticesHad?.data;
     if (!data) return [];
     const notes = [];
-    for (const [offset, word] of [[0, "Today"], [1, "Tomorrow"]]) {
+    for (const [offset, word] of [[0, I18n.t("alerts.today", "Today")], [1, I18n.t("alerts.tomorrow", "Tomorrow")]]) {
       const date = sgDate(offset);
       for (const n of data.items || []) {
         if (n.source !== "lta" || !onDate(n, date) || !(n.stops?.[code] || n.codes?.includes(code))) continue;
         const here = n.stops?.[code];
         const what = here
-          ? `${here.services.join(", ")} skip${here.services.length === 1 ? "s" : ""} this stop${here.when ? `, ${here.when.replace(/^first bus/i, "first bus")}` : ""}`
-          : "this stop is affected";
+          ? `${here.services.length === 1 ? I18n.t("alerts.skipsOne", "{list} skips this stop", { list: here.services.join(", ") }) : I18n.t("alerts.skipsMany", "{list} skip this stop", { list: here.services.join(", ") })}${here.when ? `, ${here.when.replace(/^first bus/i, "first bus")}` : ""}`
+          : I18n.t("alerts.stopAffected", "this stop is affected");
         notes.push({ html: `<p class="stopAsideNote noticeNote">${ico("alert")} <span><strong>${word}:</strong> ${esc(what)}. ${esc(n.title)}. ` +
-          `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">Details</a></span></p>` });
+          `<a href="${esc(n.url)}" target="_blank" rel="noopener noreferrer">${esc(I18n.t("alerts.details", "Details"))}</a></span></p>` });
       }
       if (notes.length) break;
     }
@@ -262,15 +264,15 @@
     if (status <= 1 && !segments.length) return null;
     const parts = segments.map((seg) => {
       const stations = split(seg.Stations).map(stationLabel);
-      const where = stations.length > 1 ? `, ${stations[0]} to ${stations[stations.length - 1]}`
-        : stations.length ? `, at ${stations[0]}` : "";
-      const towards = seg.Direction && !/both/i.test(seg.Direction) ? `, towards ${seg.Direction}` : "";
+      const where = stations.length > 1 ? I18n.t("alerts.fromTo", ", {from} to {to}", { from: stations[0], to: stations[stations.length - 1] })
+        : stations.length ? I18n.t("alerts.atStation", ", at {station}", { station: stations[0] }) : "";
+      const towards = seg.Direction && !/both/i.test(seg.Direction) ? I18n.t("alerts.towards", ", towards {to}", { to: seg.Direction }) : "";
       return `${window.MRT.lineLabel(seg.Line || "?")}${where}${towards}`;
     });
-    const what = status > 1 ? "Train disruption" : "Train delay";
+    const what = status > 1 ? I18n.t("alerts.trainDisruption", "Train disruption") : I18n.t("alerts.trainDelay", "Train delay");
     if (parts.length) return `${what}: ${parts.join("; ")}`;
     const notice = (Array.isArray(train.Message) ? train.Message : []).map((n) => String(n.Content || "").trim()).find(Boolean);
-    return notice || `${what} on the MRT or LRT`;
+    return notice || I18n.t("alerts.onMrtLrt", "{what} on the MRT or LRT", { what });
   }
 
   function showBar(text) {
@@ -279,8 +281,8 @@
     if (bar.hidden || bar.dataset.text === text) return;
     bar.dataset.text = text;
     bar.innerHTML = `<div class="disruption-inner">${ico("alert")}<p>${esc(text)}</p>` +
-      `<button type="button" class="btn" data-disruption="details">Details</button>` +
-      `<button type="button" class="iconBtn" data-disruption="hide">Hide</button></div>`;
+      `<button type="button" class="btn" data-disruption="details">${esc(I18n.t("alerts.details", "Details"))}</button>` +
+      `<button type="button" class="iconBtn" data-disruption="hide">${esc(I18n.t("alerts.hide", "Hide"))}</button></div>`;
   }
 
   // Only while the page is on screen; coming back to it checks straight away.
@@ -355,29 +357,29 @@
   }
 
   const TRAIN_NOTES = {
-    all: "every change to MRT and LRT services, including service notices",
-    disruptions: "train disruptions starting, changing or clearing",
+    all: I18n.t("alerts.note.trainAll", "every change to MRT and LRT services, including service notices"),
+    disruptions: I18n.t("alerts.note.trainDis", "train disruptions starting, changing or clearing"),
   };
   const TRAFFIC_NOTES = {
-    all: "every new traffic incident in Singapore",
-    disruptions: "accidents, breakdowns, road blocks and diversions",
+    all: I18n.t("alerts.note.trafficAll", "every new traffic incident in Singapore"),
+    disruptions: I18n.t("alerts.note.trafficDis", "accidents, breakdowns, road blocks and diversions"),
   };
   const NEWSFEED_NOTES = {
-    all: "every new notice and piece of news from LTA and the bus and train operators",
-    disruptions: "new notices that change a bus or train service",
+    all: I18n.t("alerts.note.newsAll", "every new notice and piece of news from LTA and the bus and train operators"),
+    disruptions: I18n.t("alerts.note.newsDis", "new notices that change a bus or train service"),
   };
   const PROBLEMS = {
-    unsupported: "This browser can't receive notifications. On iPhone or iPad, add the app to your Home Screen, open it from there, and try again.",
-    denied: "Notifications are blocked for this site. Allow them in your browser's site settings, then pick again.",
-    failed: "Couldn't reach the alerts server. Try again in a minute.",
-    appUnsupported: "This copy of the app can't get notifications from the server yet. Update it when an update's offered, or use the website.",
-    appDenied: "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again.",
+    unsupported: I18n.t("alerts.problem.unsupported", "This browser can't receive notifications. On iPhone or iPad, add the app to your Home Screen, open it from there, and try again."),
+    denied: I18n.t("alerts.problem.denied", "Notifications are blocked for this site. Allow them in your browser's site settings, then pick again."),
+    failed: I18n.t("alerts.problem.failed", "Couldn't reach the alerts server. Try again in a minute."),
+    appUnsupported: I18n.t("alerts.problem.appUnsupported", "This copy of the app can't get notifications from the server yet. Update it when an update's offered, or use the website."),
+    appDenied: I18n.t("alerts.problem.appDenied", "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again."),
   };
 
   function noteFor(modes) {
     const parts = [TRAIN_NOTES[modes.train], TRAFFIC_NOTES[modes.traffic], NEWSFEED_NOTES[modes.newsfeed]].filter(Boolean);
-    if (!parts.length) return "Notifications are off. This window still shows what's happening now.";
-    return `You'll be notified of ${parts.join(", and of ")}.`;
+    if (!parts.length) return I18n.t("alerts.notesOff", "Notifications are off. This window still shows what's happening now.");
+    return I18n.t("alerts.notesOn", "You'll be notified of {list}.", { list: parts.join(I18n.t("alerts.andOf", ", and of ")) });
   }
 
   function showModes(modes, problem) {
@@ -586,7 +588,8 @@
     }
     if (desktop !== d) return;
     const parts = [];
-    let title = "Service Alerts";
+    const SERVICE_ALERTS = I18n.t("alerts.title", "Service Alerts");
+    let title = SERVICE_ALERTS;
 
     if (data.train) {
       const status = Number(data.train.Status) || 1;
@@ -594,8 +597,8 @@
       const now = JSON.stringify([status, segments, data.train.Message || []]);
       const disrupted = status > 1 || segments.length > 0;
       if (d.train && d.train.key !== now && (d.modes.train === "all" || (d.modes.train === "disruptions" && (disrupted || d.train.disrupted)))) {
-        parts.push(disruptionText(data.train) || "All train services are running normally again.");
-        title = disrupted ? "Train disruption" : "Train service update";
+        parts.push(disruptionText(data.train) || I18n.t("alerts.trainsOkAgain", "All train services are running normally again."));
+        title = disrupted ? I18n.t("alerts.trainDisruption", "Train disruption") : I18n.t("alerts.trainUpdate", "Train service update");
       }
       d.train = { key: now, disrupted };
     }
@@ -613,9 +616,9 @@
       d.seen = seen;
       const heard = d.modes.traffic === "all" ? fresh : d.modes.traffic === "disruptions" ? fresh.filter(isBlocking) : [];
       if (heard.length) {
-        parts.push(heard[0].message + (heard.length > 1 ? `\nAnd ${heard.length - 1} more traffic incident${heard.length > 2 ? "s" : ""}.` : ""));
-        if (title === "Service Alerts" && !parts[1]) title = heard.length === 1 ? `New ${heard[0].type.toLowerCase()}` : `${heard.length} new traffic incidents`;
-        if (parts.length > 1) title = "Service Alerts";
+        parts.push(heard[0].message + (heard.length > 2 ? `\n${I18n.t("alerts.moreIncidents", "And {n} more traffic incidents.", { n: heard.length - 1 })}` : heard.length > 1 ? `\n${I18n.t("alerts.oneMoreIncident", "And 1 more traffic incident.")}` : ""));
+        if (title === SERVICE_ALERTS && !parts[1]) title = heard.length === 1 ? I18n.t("alerts.newIncident", "New {type}", { type: heard[0].type.toLowerCase() }) : I18n.t("alerts.newIncidents", "{n} new traffic incidents", { n: heard.length });
+        if (parts.length > 1) title = SERVICE_ALERTS;
       }
     }
 
@@ -643,7 +646,7 @@
     if (!heard.length) return;
     const from = (n) => (n.source === "lta" ? "LTA" : (data.sources || {})[n.source] || n.source);
     window.sgbusDesktop.notify({
-      title: heard.length === 1 ? `Newsfeed: ${from(heard[0])}` : `Newsfeed: ${heard.length} new notices`,
+      title: heard.length === 1 ? I18n.t("alerts.newsFrom", "Newsfeed: {from}", { from: from(heard[0]) }) : I18n.t("alerts.newsMany", "Newsfeed: {n} new notices", { n: heard.length }),
       body: heard.slice(0, 3).map((n) => (heard.length === 1 ? n.title : `${from(n)}: ${n.title}`)).join("\n"),
       url: "/#alerts",
     });
@@ -669,7 +672,7 @@
       const others = $("#alertsOthers");
       others.hidden = !others.hidden;
       more.setAttribute("aria-expanded", String(!others.hidden));
-      more.textContent = others.hidden ? `Show the other ${others.querySelectorAll("li").length}` : "Hide them";
+      more.textContent = others.hidden ? I18n.t("alerts.showOthers", "Show the other {n}", { n: others.querySelectorAll("li").length }) : I18n.t("alerts.hideThem", "Hide them");
     });
 
     // In the app: a push that came while it was in front, which FCM leaves to the app to
@@ -683,7 +686,7 @@
         } else if (d.type === "board") {
           window.dispatchEvent(new CustomEvent("push:board", { detail: { tripId: d.tripId, leg: Number(d.leg), text: d.body } }));
         } else if (d.type === "service-alert") {
-          AppBridge.notify({ channel: "alerts", tag: "service-alert", title: d.title || "Service Alerts", body: d.body || "", url: d.url || "/#alerts" });
+          AppBridge.notify({ channel: "alerts", tag: "service-alert", title: d.title || I18n.t("alerts.title", "Service Alerts"), body: d.body || "", url: d.url || "/#alerts" });
           if (!$("#alertsSection").hidden) load();
         }
       });

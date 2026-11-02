@@ -50,7 +50,7 @@
     const one = (kind) => {
       const p = LS.getPlace(kind);
       if (!p) return null;
-      const end = { label: kind === 'home' ? 'Home' : 'Work', lat: p.lat, lng: p.lng };
+      const end = { label: kind === 'home' ? I18n.t('places.home', 'Home') : I18n.t('places.work', 'Work'), lat: p.lat, lng: p.lng };
       return { ...end, url: `${location.origin}/${navHashFor('here', end)}` };
     };
     AppBridge.call('SgBus', 'setPlaces', { home: one('home'), work: one('work') }).catch(() => {});
@@ -71,12 +71,12 @@
   // ---------- what went wrong, said under the reminders ----------
 
   const NEEDS = {
-    location: 'Location isn’t allowed for SG Bus Timings, so it can’t tell when you’re near a stop.',
-    background: 'To watch your stops with the app closed, allow location “All the time” for SG Bus Timings.',
-    calendar: 'Time to leave needs to read this phone’s calendar: allow Calendar for SG Bus Timings.',
-    activity: '“On a bus?” needs Physical activity: allow it for SG Bus Timings.',
+    location: I18n.t('reminders.needLocation', 'Location isn’t allowed for SG Bus Timings, so it can’t tell when you’re near a stop.'),
+    background: I18n.t('reminders.needBackground', 'To watch your stops with the app closed, allow location “All the time” for SG Bus Timings.'),
+    calendar: I18n.t('reminders.needCalendar', 'Time to leave needs to read this phone’s calendar: allow Calendar for SG Bus Timings.'),
+    activity: I18n.t('reminders.needActivity', '“On a bus?” needs Physical activity: allow it for SG Bus Timings.'),
   };
-  const NO_NOTIFICATIONS = 'Notifications are off for SG Bus Timings, so these reminders can’t show.';
+  const NO_NOTIFICATIONS = I18n.t('reminders.noNotifications', 'Notifications are off for SG Bus Timings, so these reminders can’t show.');
 
   // Where each is said: Settings, Timings near a stop's modal, or Routines'.
   const NOTES = { settings: '#remindersNote', near: '#nearStopsNote', routines: '#routinesNote' };
@@ -84,13 +84,13 @@
   function note(text, settings = false, where = 'settings') {
     const el = $(NOTES[where]);
     el.hidden = !text;
-    el.innerHTML = text ? `${esc(text)}${settings ? ` <button type="button" class="iconBtn" data-reminders-settings>${ico('settings')} Open settings</button>` : ''}` : '';
+    el.innerHTML = text ? `${esc(text)}${settings ? ` <button type="button" class="iconBtn" data-reminders-settings>${ico('settings')} ${esc(I18n.t('offline.openSettings', 'Open settings'))}</button>` : ''}` : '';
   }
 
   function failed(err, where = 'settings') {
     const need = err?.data?.need;
     if (err?.code === 'permission' && NEEDS[need]) note(NEEDS[need], true, where);
-    else note(err?.message || 'Couldn’t set that up. Try again.', false, where);
+    else note(err?.message || I18n.t('reminders.failed', 'Couldn’t set that up. Try again.'), false, where);
   }
 
   // ---------- the switches in Settings, and the two modals ----------
@@ -140,11 +140,11 @@
     const idx = await ensureStopsIndex().catch(() => null);
     $('#nearStopsList').innerHTML = favs.length
       ? favs.map(({ code, name }) => {
-        const label = name || nameOf(code) || 'Bus stop';
+        const label = name || nameOf(code) || I18n.t('favs.stopNoName', 'Bus stop');
         const where = idx?.[code];
         return `<label class="syncItem"><input type="checkbox" value="${esc(code)}"${picked.has(code) ? ' checked' : ''}${where?.lat == null ? ' disabled' : ''}> <span>${esc(label)} <span class="sub">${esc(code)}</span></span></label>`;
       }).join('')
-      : '<p class="mode-note">Save some stops to your favourites first, with the star on a stop’s timings.</p>';
+      : `<p class="mode-note">${esc(I18n.t('reminders.noFavs', 'Save some stops to your favourites first, with the star on a stop’s timings.'))}</p>`;
     $('#nearStopsSave').hidden = !favs.length;
     openModal('nearStopsModal');
     refresh();
@@ -184,7 +184,7 @@
     if (!times || ![times.wd, times.sat, times.sun].some((t) => /^\d{4}$/.test(t))) return '';
     const on = isLast(code, service);
     return `<button type="button" class="lastBusBell${on ? ' on' : ''}" data-lastbus="${esc(service)}" aria-pressed="${on}" ` +
-      `title="${on ? 'Stop reminding me' : 'Remind me 20 minutes before'} the last ${esc(service)} here">${ico('bell')}</button>`;
+      `title="${esc(on ? I18n.t('reminders.lastOff', 'Stop reminding me of the last {no} here', { no: service }) : I18n.t('reminders.lastOn', 'Remind me 20 minutes before the last {no} here', { no: service }))}">${ico('bell')}</button>`;
   }
 
   async function toggleLast(service, code) {
@@ -307,7 +307,7 @@
     setDays(r ? r.days : [1, 2, 3, 4, 5]);
     $('#routineError').hidden = true;
     document.querySelector('.routineFormHead').textContent = r ? I18n.t('routine.edit', 'Edit routine') : I18n.t('routine.add', 'Add a routine');
-    $('#routineSave').textContent = r ? 'Save' : 'Add';
+    $('#routineSave').textContent = r ? I18n.t('common.save', 'Save') : I18n.t('routine.addButton', 'Add');
     $('#routineCancel').hidden = !r;
   }
 
@@ -327,8 +327,8 @@
     const buses = [...new Set($('#routineBuses').value.toUpperCase().split(/[\s,]+/).filter((b) => /^[0-9A-Z]{1,5}$|^[0-9A-Z]{1,3}\*$/.test(b)))];
     // An app before 2.2.3 would match "22*" to no bus at all.
     const wild = buses.some((b) => b.endsWith('*')) && !has('routinewild');
-    const why = !/^\d{5}$/.test(code) ? 'Pick a stop.' : !/^\d{4}$/.test(time) ? 'Set a time.' : !days.length ? 'Pick at least one day.'
-      : wild ? 'Update the app to 2.2.3 for a routine with 22* and the like, or list the buses.' : '';
+    const why = !/^\d{5}$/.test(code) ? I18n.t('routine.pickStop', 'Pick a stop.') : !/^\d{4}$/.test(time) ? I18n.t('routine.setTime', 'Set a time.') : !days.length ? I18n.t('routine.pickDay', 'Pick at least one day.')
+      : wild ? I18n.t('routine.updateForWild', 'Update the app to 2.2.3 for a routine with 22* and the like, or list the buses.') : '';
     if (why) {
       $('#routineError').textContent = why;
       $('#routineError').hidden = false;

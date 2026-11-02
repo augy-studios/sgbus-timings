@@ -117,7 +117,7 @@
   }
 
   const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB`;
-  const day = (ms) => new Date(ms).toLocaleDateString('en-SG', { day: 'numeric', month: 'short', year: 'numeric' });
+  const day = (ms) => new Date(ms).toLocaleDateString(I18n.lang() === 'en' ? 'en-SG' : I18n.lang(), { day: 'numeric', month: 'short', year: 'numeric' });
 
   // ---------- fetching ----------
 
@@ -173,11 +173,11 @@
     if (state) return;
     message = '';
     if (!navigator.serviceWorker?.controller) {
-      message = "Saving the map needs the app's offline support, which isn't on here yet. Reload the app and try again.";
+      message = I18n.t("mapSave.noSw", "Saving the map needs the app's offline support, which isn't on here yet. Reload the app and try again.");
       return render();
     }
     if (window.Offline?.on()) {
-      message = 'Saving the map needs a connection.';
+      message = I18n.t('mapSave.offline', 'Saving the map needs a connection.');
       return render();
     }
     const had = meta();
@@ -193,7 +193,7 @@
       const vector = tilesFor(week.template, MIN_ZOOM, week.maxzoom);
       const extras = await extrasFor(styles);
       const tileCount = vector.length + extras.filter(([, isTile]) => isTile).length;
-      if (tileCount > MAX_TILES) throw new Error(`That's ${tileCount} tiles, more than the ${MAX_TILES} OpenFreeMap allows in one download.`);
+      if (tileCount > MAX_TILES) throw new Error(I18n.t("mapSave.tooMany", "That's {n} tiles, more than the {max} OpenFreeMap allows in one download.", { n: tileCount, max: MAX_TILES }));
       Object.assign(state, { total: vector.length + extras.length, starting: false });
       render(true);
 
@@ -232,7 +232,7 @@
       if (run.cancelled) {
         // A first download cancelled keeps nothing; an update keeps what it had, the weeks mixed.
         if (!run.update) await caches.delete(SAVED_CACHE);
-        message = run.update ? 'Update cancelled. The map saved before is still there.' : 'Cancelled. Nothing was kept.';
+        message = run.update ? I18n.t('mapSave.updateCancelled', 'Update cancelled. The map saved before is still there.') : I18n.t('mapSave.cancelled', 'Cancelled. Nothing was kept.');
         return render(true);
       }
       // Stopped at MAX_BYTES: kept as it is, without offering to fetch the rest.
@@ -240,13 +240,13 @@
       setMeta({ tiles: week.template, at: Date.now(), bytes: run.bytes, count: vector.length, missing: run.failed, capped });
       newer = null;
       message = capped
-        ? `The map came near ${mb(MAX_BYTES)}, OpenFreeMap's limit for one download, so it stopped there: the closest-in view of some places isn't saved.`
-        : run.failed ? `${run.failed} of its ${run.total} parts couldn't be saved. Try again to fill them in.` : '';
+        ? I18n.t("mapSave.capped", "The map came near {mb}, OpenFreeMap's limit for one download, so it stopped there: the closest-in view of some places isn't saved.", { mb: mb(MAX_BYTES) })
+        : run.failed ? I18n.t("mapSave.someFailed", "{n} of its {total} parts couldn't be saved. Try again to fill them in.", { n: run.failed, total: run.total }) : '';
     } catch (err) {
       const run = state;
       state = null;
       if (run && !run.update) await caches.delete(SAVED_CACHE).catch(() => {});
-      message = `Couldn't save the map: ${err.message}`;
+      message = I18n.t("mapSave.failed", "Couldn't save the map: {why}", { why: err.message });
     }
     render(true);
   }
@@ -256,7 +256,7 @@
     await caches.delete(SAVED_CACHE).catch(() => {});
     setMeta(null);
     newer = null;
-    message = 'Removed. The map keeps what you look at, as before.';
+    message = I18n.t('mapSave.removed', 'Removed. The map keeps what you look at, as before.');
     render(true);
   }
 
@@ -283,27 +283,27 @@
     const say = message ? `<p class="mapSaveMsg">${escapeHtml(message)}</p>` : '';
     if (state) {
       body.innerHTML = state.starting
-        ? `<p>Counting the tiles…</p>`
-        : `<p>${state.update ? 'Updating' : 'Saving'} the map… ${state.done} of ${state.total} · ${mb(state.bytes)}</p>` +
+        ? `<p>${escapeHtml(I18n.t('mapSave.counting', 'Counting the tiles…'))}</p>`
+        : `<p>${escapeHtml(state.update ? I18n.t('mapSave.updating', 'Updating the map… {done} of {total}', { done: state.done, total: state.total }) : I18n.t('mapSave.saving', 'Saving the map… {done} of {total}', { done: state.done, total: state.total }))} · ${mb(state.bytes)}</p>` +
           `<progress max="${state.total}" value="${state.done}"></progress>` +
-          `<div class="mapActions"><button type="button" class="iconBtn" data-map-save="cancel">${ico('close')} Cancel</button></div>`;
+          `<div class="mapActions"><button type="button" class="iconBtn" data-map-save="cancel">${ico('close')} ${escapeHtml(I18n.t('common.cancel', 'Cancel'))}</button></div>`;
       return;
     }
     if (m) {
       body.innerHTML = say +
-        `<p>${ico('download')} <b>Map saved for offline</b> (${escapeHtml(day(m.at))}, ${escapeHtml(mb(m.bytes))})</p>` +
-        (m.capped && !message ? `<p class="mapSaveMsg">It stopped at OpenFreeMap's ${mb(MAX_BYTES)} limit, so the closest-in view of some places isn't saved.</p>` : '') +
-        (newer ? `<p class="mapSaveMsg">OpenFreeMap has a newer map out. Update to get it; the one saved still works offline meanwhile.</p>` : '') +
+        `<p>${ico('download')} <b>${escapeHtml(I18n.t('mapSave.saved', 'Map saved for offline'))}</b> (${escapeHtml(day(m.at))}, ${escapeHtml(mb(m.bytes))})</p>` +
+        (m.capped && !message ? `<p class="mapSaveMsg">${escapeHtml(I18n.t("mapSave.cappedNote", "It stopped at OpenFreeMap's {mb} limit, so the closest-in view of some places isn't saved.", { mb: mb(MAX_BYTES) }))}</p>` : '') +
+        (newer ? `<p class="mapSaveMsg">${escapeHtml(I18n.t('mapSave.newer', 'OpenFreeMap has a newer map out. Update to get it; the one saved still works offline meanwhile.'))}</p>` : '') +
         `<div class="mapActions">` +
-        (newer || m.missing ? `<button type="button" class="btn" data-map-save="download">${ico('sync')} ${newer ? 'Update map' : 'Try again'}</button>` : '') +
-        `<button type="button" class="iconBtn" data-map-save="remove">${ico('close')} Remove</button></div>`;
+        (newer || m.missing ? `<button type="button" class="btn" data-map-save="download">${ico('sync')} ${escapeHtml(newer ? I18n.t('mapSave.update', 'Update map') : I18n.t('common.tryAgain', 'Try again'))}</button>` : '') +
+        `<button type="button" class="iconBtn" data-map-save="remove">${ico('close')} ${escapeHtml(I18n.t('mapSave.remove', 'Remove'))}</button></div>`;
       return;
     }
     const count = vectorCount();
     body.innerHTML = say +
-      `<p>Keep Singapore's map on this phone, so the live map shows the streets with no connection, on a trip or a walk.</p>` +
-      `<p class="mapSaveMsg">${count} tiles from OpenFreeMap, about ${estimate == null ? '…' : escapeHtml(mb(estimate))}. Best on Wi-Fi.</p>` +
-      `<div class="mapActions"><button type="button" class="btn" data-map-save="download">${ico('download')} Download the Singapore map</button></div>`;
+      `<p>${escapeHtml(I18n.t("mapSave.intro", "Keep Singapore's map on this phone, so the live map shows the streets with no connection, on a trip or a walk."))}</p>` +
+      `<p class="mapSaveMsg">${escapeHtml(I18n.t('mapSave.size', '{n} tiles from OpenFreeMap, about {mb}. Best on Wi-Fi.', { n: count, mb: estimate == null ? '…' : mb(estimate) }))}</p>` +
+      `<div class="mapActions"><button type="button" class="btn" data-map-save="download">${ico('download')} ${escapeHtml(I18n.t('mapSave.download', 'Download the Singapore map'))}</button></div>`;
   }
 
   function open() {

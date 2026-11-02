@@ -39,7 +39,7 @@
   }
 
   function showAsk() {
-    $('#makeIt').innerHTML = `<button type="button" class="iconBtn" data-makeit>${ico('walk')} How far’s my walk?</button>`;
+    $('#makeIt').innerHTML = `<button type="button" class="iconBtn" data-makeit>${ico('walk')} ${esc(I18n.t('makeIt.ask', 'How far’s my walk?'))}</button>`;
     $('#makeIt').hidden = false;
   }
 
@@ -79,12 +79,12 @@
     const box = $('#makeIt');
     if (walk.metres == null) return hide();
     if (walk.metres < AT_STOP_M) {
-      box.textContent = 'You’re at the stop.';
+      box.textContent = I18n.t('makeIt.atStop', 'You’re at the stop.');
       box.hidden = false;
       return;
     }
     if (walk.metres > TOO_FAR_M) {
-      box.textContent = `You’re ${(walk.metres / 1000).toFixed(1)} km away: try Navigate to get here.`;
+      box.textContent = I18n.t('makeIt.tooFar', 'You’re {km} km away: try Navigate to get here.', { km: (walk.metres / 1000).toFixed(1) });
       box.hidden = false;
       return;
     }
@@ -95,17 +95,17 @@
       const bus = [s.next, s.next2, s.next3].find((b) => b?.eta_ms != null && b.eta_ms >= w);
       return bus ? { no: s.serviceNo, min: Math.round(bus.eta_ms / 60000) } : null;
     }).filter(Boolean).sort((a, b) => a.min - b.min).slice(0, 3);
-    const list = catchable.map((c) => `the <strong>${esc(c.no)}</strong> in ${c.min} min`);
-    box.innerHTML = `${ico('walk')} About a ${mins} min walk from you. ` + (list.length
-      ? `Leave now for ${list.length > 1 ? `${list.slice(0, -1).join(', ')} or ${list.at(-1)}` : list[0]}.`
-      : 'Every bus due now would leave before you got there.');
+    const list = catchable.map((c) => esc(I18n.t('makeIt.busIn', 'the {no} in {m} min', { no: '\u0000', m: c.min })).replace('\u0000', `<strong>${esc(c.no)}</strong>`));
+    box.innerHTML = `${ico('walk')} ${esc(I18n.t('makeIt.walk', 'About a {m} min walk from you.', { m: mins }))} ` + (list.length
+      ? esc(I18n.t('makeIt.leaveNow', 'Leave now for {list}.', { list: '\u0000' })).replace('\u0000', list.length > 1 ? `${list.slice(0, -1).join(', ')}${esc(I18n.t('makeIt.or', ' or '))}${list.at(-1)}` : list[0])
+      : esc(I18n.t('makeIt.none', 'Every bus due now would leave before you got there.')));
     box.hidden = false;
   }
 
   function init() {
     $('#makeIt').addEventListener('click', (e) => {
       if (e.target.closest('[data-makeit]') && current) {
-        $('#makeIt').textContent = 'Finding where you are…';
+        $('#makeIt').textContent = I18n.t('map.finding', 'Finding where you are…');
         locate(current.code);
       }
     });

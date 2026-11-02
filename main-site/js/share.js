@@ -41,7 +41,7 @@
   async function api(url, options) {
     const r = await fetch(url, { cache: 'no-store', ...options });
     const body = r.status === 204 ? {} : await r.json().catch(() => ({}));
-    if (!r.ok) throw Object.assign(new Error(body.error || 'Something went wrong. Please try again.'), { status: r.status });
+    if (!r.ok) throw Object.assign(new Error(body.error || I18n.t('share.wentWrong', 'Something went wrong. Please try again.')), { status: r.status });
     return body;
   }
 
@@ -52,12 +52,12 @@
 
   // ---------- what's shared ----------
 
-  const placeOf = (p) => ({ label: p.label === HERE_LABEL ? 'My location' : p.label, lat: p.lat, lng: p.lng });
+  const placeOf = (p) => ({ label: isHereLabel(p.label) ? 'My location' : p.label, lat: p.lat, lng: p.lng });
   // An end of the directions: Your location stays "wherever you are" for whoever opens it.
-  const endOf = (p) => (p.label === HERE_LABEL ? 'here' : placeOf(p));
+  const endOf = (p) => (isHereLabel(p.label) ? 'here' : placeOf(p));
 
   // ", via Tampines Mall" for directions with a stop on the way.
-  const viaText = () => (nav.via ? `, via ${placeOf(nav.via).label}` : '');
+  const viaText = () => (nav.via ? I18n.t('share.via', ', via {place}', { place: placeOf(nav.via).label }) : '');
 
   function directionsData() {
     const o = nav.option;
@@ -96,10 +96,10 @@
   function openMenu() {
     const items = [];
     // Live progress needs a connection all the way, so offline it isn't offered (js/offline.js).
-    if (Trip.active() && !window.Offline?.on()) items.push({ pick: 'eta', icon: 'clock', title: 'Share my ETA', sub: 'Live progress, until you get there' });
-    if (nav.from && nav.to) items.push({ pick: 'directions', icon: 'route', title: 'Share these directions', sub: `${nav.from.label} to ${nav.to.label}${viaText()}` });
-    if (nav.from) items.push({ pick: 'start', icon: 'pin', title: 'Share start', sub: placeOf(nav.from).label });
-    if (nav.to) items.push({ pick: 'end', icon: 'flag', title: 'Share end', sub: placeOf(nav.to).label });
+    if (Trip.active() && !window.Offline?.on()) items.push({ pick: 'eta', icon: 'clock', title: I18n.t('trip.share_my_eta', 'Share my ETA'), sub: I18n.t('share.etaSub', 'Live progress, until you get there') });
+    if (nav.from && nav.to) items.push({ pick: 'directions', icon: 'route', title: I18n.t('share.directions', 'Share these directions'), sub: `${I18n.t('planner.fromTo', '{from} to {to}', { from: nav.from.label, to: nav.to.label })}${viaText()}` });
+    if (nav.from) items.push({ pick: 'start', icon: 'pin', title: I18n.t('share.start', 'Share start'), sub: placeOf(nav.from).label });
+    if (nav.to) items.push({ pick: 'end', icon: 'flag', title: I18n.t('share.end', 'Share end'), sub: placeOf(nav.to).label });
     $('#shareMenuList').innerHTML = items.map((it) =>
       `<button type="button" class="shareMenuItem" data-share-pick="${it.pick}">${ico(it.icon)}` +
       `<span><strong>${escapeHtml(it.title)}</strong><span class="sub">${escapeHtml(it.sub)}</span></span></button>`
@@ -118,12 +118,12 @@
     if (pick === 'directions') {
       const o = nav.option;
       showCard({
-        heading: 'Share these directions',
-        name: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}${viaText()}`,
-        sub: o ? `~${o.minutes} min · ${navMixText(o)}` : When.describe(nav.when),
+        heading: I18n.t('share.directions', 'Share these directions'),
+        name: `${I18n.t('planner.fromTo', '{from} to {to}', { from: placeOf(nav.from).label, to: placeOf(nav.to).label })}${viaText()}`,
+        sub: o ? `${I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes })} · ${navMixText(o)}` : When.describe(nav.when),
         kind: 'directions',
         data: directionsData(),
-        text: `${placeOf(nav.from).label} to ${placeOf(nav.to).label}${viaText()}, by bus and train`,
+        text: I18n.t('share.byBusTrain', '{ends}, by bus and train', { ends: `${I18n.t('planner.fromTo', '{from} to {to}', { from: placeOf(nav.from).label, to: placeOf(nav.to).label })}${viaText()}` }),
       });
       return;
     }
@@ -133,20 +133,20 @@
   }
 
   function sharePlaceCard(place, note = '') {
-    showCard({ heading: 'How to get to:', name: place.label, sub: note, kind: 'place', data: place, text: `How to get to ${place.label}` });
+    showCard({ heading: I18n.t('share.howToGetTo', 'How to get to:'), name: place.label, sub: note, kind: 'place', data: place, text: I18n.t('share.howToGetToPlace', 'How to get to {place}', { place: place.label }) });
   }
 
   // A trip from Your trips: its two ends, with no time or way picked, so whoever opens it gets
   // every way there from now.
   function shareDirectionsCard({ from, to, summary }) {
-    const ends = `${from.label} to ${to.label}`;
+    const ends = I18n.t('planner.fromTo', '{from} to {to}', { from: from.label, to: to.label });
     showCard({
-      heading: 'Share this trip',
+      heading: I18n.t('share.thisTrip', 'Share this trip'),
       name: ends,
       sub: summary,
       kind: 'directions',
       data: { from: placeOf(from), to: placeOf(to), when: null, way: null, summary, path: null },
-      text: `${ends}, by bus and train`,
+      text: I18n.t('share.byBusTrain', '{ends}, by bus and train', { ends }),
     });
   }
 
@@ -175,7 +175,7 @@
     // Offline, no short link can be made: said at once, rather than after the fetch fails.
     // Offline Sharing's own link (offlineUrl) still goes, phone to phone.
     if (!made && window.Offline?.on()) {
-      setLink(null, `You're offline, so there's no short link to send.${window.OfflineShare?.canSend() && kind !== 'eta' ? ' Offline Sharing still sends it to a phone nearby.' : ''} Try again when you reconnect.`);
+      setLink(null, window.OfflineShare?.canSend() && kind !== 'eta' ? I18n.t("share.offlineNearby", "You're offline, so there's no short link to send. Offline Sharing still sends it to a phone nearby. Try again when you reconnect.") : I18n.t("share.offline", "You're offline, so there's no short link to send. Try again when you reconnect."));
       return null;
     }
     try {
@@ -197,7 +197,7 @@
   function setLink(url, error = '') {
     const el = $('#shareCardLink');
     el.classList.toggle('making', !url && !error);
-    el.textContent = url || error || 'Making a short link…';
+    el.textContent = url || error || I18n.t('share.making', 'Making a short link…');
     $('#shareRetry').hidden = !error;
     for (const btn of document.querySelectorAll('#shareTargets [data-share-to]')) {
       btn.disabled = btn.dataset.shareTo === 'offline' ? !offlineUrl() : !url;
@@ -239,12 +239,12 @@
       try {
         await navigator.clipboard.writeText(url);
       } catch {
-        prompt('Copy this link:', url);
+        prompt(I18n.t('share.copyThisLink', 'Copy this link:'), url);
         return;
       }
       const lbl = btn.querySelector('.lbl');
-      lbl.textContent = 'Copied';
-      setTimeout(() => { lbl.textContent = 'Copy link'; }, 2000);
+      lbl.textContent = I18n.t('share.copied', 'Copied');
+      setTimeout(() => { lbl.textContent = I18n.t('share.copyLink', 'Copy link'); }, 2000);
     }
   }
 
@@ -271,7 +271,7 @@
 
   function etaText(p) {
     const mins = Math.max(0, Math.round(p.minutesLeft));
-    return `I'm on my way to ${p.to.label}, arriving around ${clock(Date.now() + mins * 60000)}. Follow along live:`;
+    return I18n.t("share.etaText", "I'm on my way to {place}, arriving around {time}. Follow along live:", { place: p.to.label, time: clock(Date.now() + mins * 60000) });
   }
 
   async function openEtaCard() {
@@ -281,9 +281,9 @@
     if (window.Offline?.blocked()) return;
     const mine = eta?.tripId === p.tripId ? eta : null;
     const link = await showCard({
-      heading: 'Share live progress',
-      name: `I will arrive in ${Math.max(0, Math.round(p.minutesLeft))} min`,
-      sub: `at ${p.to.label}, around ${clock(Date.now() + p.minutesLeft * 60000)}`,
+      heading: I18n.t('share.liveProgress', 'Share live progress'),
+      name: I18n.t('share.willArrive', 'I will arrive in {m} min', { m: Math.max(0, Math.round(p.minutesLeft)) }),
+      sub: I18n.t('share.atAround', 'at {place}, around {time}', { place: p.to.label, time: clock(Date.now() + p.minutesLeft * 60000) }),
       kind: 'eta',
       data: etaData(p),
       text: etaText(p),
@@ -377,33 +377,37 @@
     const { data: d, updatedAt, gone } = view;
     const name = d.name;
     let head;
-    if (gone) head = 'This trip has ended';
-    else if (d.stopped) head = name ? `${name} stopped sharing` : 'Sharing stopped';
-    else if (d.ended) head = name ? `${name} has arrived` : 'Arrived';
+    if (gone) head = I18n.t('share.view.ended', 'This trip has ended');
+    else if (d.stopped) head = name ? I18n.t('share.view.stoppedName', '{name} stopped sharing', { name }) : I18n.t('share.view.stopped', 'Sharing stopped');
+    else if (d.ended) head = name ? I18n.t('share.view.arrivedName', '{name} has arrived', { name }) : I18n.t('share.view.arrived', 'Arrived');
     else {
       const mins = minutesTo(d.arriveAt);
-      head = mins === 0 ? `${name || 'They'}'re arriving now` : `${name ? `${name} will arrive` : 'Arriving'} in ${mins} min`;
+      head = mins === 0
+        ? (name ? I18n.t('share.view.nowName', '{name} is arriving now', { name }) : I18n.t("share.view.now", "They're arriving now"))
+        : (name ? I18n.t('share.view.inName', '{name} will arrive in {m} min', { name, m: mins }) : I18n.t('share.view.in', 'Arriving in {m} min', { m: mins }));
     }
     $('#etaHead').textContent = head;
-    $('#etaSub').textContent = d.ended || d.stopped || gone ? `at ${d.to.label}` : `at ${d.to.label}, around ${clock(d.arriveAt)}`;
+    $('#etaSub').textContent = d.ended || d.stopped || gone ? I18n.t('share.at', 'at {place}', { place: d.to.label }) : I18n.t('share.atAround', 'at {place}, around {time}', { place: d.to.label, time: clock(d.arriveAt) });
 
     const leg = d.leg;
     const live = !d.ended && !d.stopped && !gone;
     $('#etaLeg').hidden = !(live && leg?.label);
     if (live && leg?.label) {
       $('#etaLeg').textContent = (leg.kind === 'walk'
-        ? `Walking to ${leg.to}`
-        : `On ${leg.label}: ${leg.stopsLeft === 0 ? `at ${leg.to}` : `${leg.stopsLeft} stop${leg.stopsLeft === 1 ? '' : 's'} to ${leg.to}`}`) +
-        (d.legCount > 1 ? ` · part ${d.legIndex + 1} of ${d.legCount}` : '');
+        ? I18n.t('share.view.walking', 'Walking to {to}', { to: leg.to })
+        : leg.stopsLeft === 0 ? I18n.t('share.view.onAt', 'On {ride}: at {to}', { ride: leg.label, to: leg.to })
+        : leg.stopsLeft === 1 ? I18n.t('share.view.onOne', 'On {ride}: 1 stop to {to}', { ride: leg.label, to: leg.to })
+        : I18n.t('share.view.onMany', 'On {ride}: {n} stops to {to}', { ride: leg.label, n: leg.stopsLeft, to: leg.to })) +
+        (d.legCount > 1 ? ` · ${I18n.t('trip.part', 'part {n} of {of}', { n: d.legIndex + 1, of: d.legCount })}` : '');
     }
     renderViewTimeline(live ? d.timeline : null);
     $('#etaLiveMap').hidden = gone;
     if (window.LiveMap?.mode() === 'follow') LiveMap.updateFollow(d);
     const ago = Math.round((Date.now() - updatedAt) / 60000);
-    $('#etaUpdated').textContent = gone ? 'The link has expired.'
-      : !live ? `Updated ${clock(updatedAt)}.`
-      : Date.now() - updatedAt > VIEW_STALE_MS ? `Last updated ${ago} min ago, so the arrival time is the last estimate.`
-      : `Updated ${ago < 1 ? 'just now' : `${ago} min ago`}. This refreshes by itself.`;
+    $('#etaUpdated').textContent = gone ? I18n.t('share.view.expired', 'The link has expired.')
+      : !live ? I18n.t('share.view.updatedAt', 'Updated {time}.', { time: clock(updatedAt) })
+      : Date.now() - updatedAt > VIEW_STALE_MS ? I18n.t('share.view.stale', 'Last updated {m} min ago, so the arrival time is the last estimate.', { m: ago })
+      : ago < 1 ? I18n.t('share.view.justNow', 'Updated just now. This refreshes by itself.') : I18n.t('share.view.ago', 'Updated {m} min ago. This refreshes by itself.', { m: ago });
 
     const img = $('#etaMapImg');
     const src = `/api/share-map?id=${view.id}&v=${updatedAt}`;
@@ -424,10 +428,10 @@
       const last = leg.names.length - 1;
       const stops = leg.names.map((n, i) =>
         `<li class="tlStop${k === 0 && i <= Math.floor(pos + 0.001) ? ' passed' : ''}${i === last ? ' end' : ''}"><span class="tlNode"></span><span class="tlName">${escapeHtml(n)}</span>` +
-        (k === 0 && i === Math.min(last, Math.round(pos)) ? `<span class="tlTag etaHere">${ico('pin')} Here</span>` : '') + `</li>`
+        (k === 0 && i === Math.min(last, Math.round(pos)) ? `<span class="tlTag etaHere">${ico('pin')} ${escapeHtml(I18n.t('route.here', 'Here'))}</span>` : '') + `</li>`
       ).join('');
       const icon = leg.kind === 'train' ? 'train' : leg.kind === 'walk' ? 'walk' : 'bus';
-      return `<section class="tlLeg${k === 0 ? ' current' : ''}"><p class="tlHead">${ico(icon)} ${escapeHtml(leg.label)} <span>to ${escapeHtml(leg.to)}</span></p>` +
+      return `<section class="tlLeg${k === 0 ? ' current' : ''}"><p class="tlHead">${ico(icon)} ${escapeHtml(leg.label)} <span>${escapeHtml(I18n.t('share.view.to', 'to {to}', { to: leg.to }))}</span></p>` +
         `<ol class="tlStops">${stops}</ol></section>`;
     }).join('');
   }
@@ -447,7 +451,7 @@
     try {
       got = await api(`/api/share?id=${encodeURIComponent(id)}`);
     } catch (e) {
-      alert(e.status === 404 ? 'This link has expired, or doesn’t exist.' : e.message);
+      alert(e.status === 404 ? I18n.t('share.expired', 'This link has expired, or doesn’t exist.') : e.message);
       if (location.hash.startsWith('#share/')) history.replaceState(null, '', location.pathname);
       return;
     }

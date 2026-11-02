@@ -46,7 +46,7 @@
       });
       if (!res.ok && res.status !== 204) {
         const data = await res.json().catch(() => null);
-        const err = new Error(data?.error || 'Couldn’t reach the site. Check your connection.');
+        const err = new Error(data?.error || I18n.t('syncRelay.noSite', 'Couldn’t reach the site. Check your connection.'));
         err.status = res.status;
         throw err;
       }
@@ -72,20 +72,20 @@
         if (joined && this.status === 'waiting') this.setStatus('connected');
         for (const message of messages || []) {
           if (message?.type === 'bye') {
-            this.setStatus('ended', 'The Telegram bot ended the sync.');
+            this.setStatus('ended', I18n.t('syncRelay.botEnded', 'The Telegram bot ended the sync.'));
             return;
           }
           this.emit('message', { message });
         }
         if (!open) {
           this.setStatus('ended', Date.now() >= this.expiresAt
-            ? 'The sync with the Telegram bot ended after 10 minutes. Start it again for more.'
-            : 'The sync with the Telegram bot has ended.');
+            ? I18n.t('syncRelay.timedOut', 'The sync with the Telegram bot ended after 10 minutes. Start it again for more.')
+            : I18n.t('syncRelay.ended', 'The sync with the Telegram bot has ended.'));
           return;
         }
       } catch {
         if (++this.fails >= MAX_FAILS) {
-          this.setStatus('error', 'Lost touch with the site. Check your connection, then start again.');
+          this.setStatus('error', I18n.t('syncRelay.lost', 'Lost touch with the site. Check your connection, then start again.'));
           return;
         }
       }

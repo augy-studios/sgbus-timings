@@ -156,7 +156,7 @@ public class WidgetConfigActivity extends Activity {
             return;
         }
         LinkedHashSet<String> set = new LinkedHashSet<>();
-        for (String b : mBuses.getText().toString().toUpperCase().split("[\\s,]+")) if (!b.isEmpty()) set.add(b);
+        for (String b : mBuses.getText().toString().toUpperCase().split("[\\s,\uFF0C\u3001]+")) if (!b.isEmpty()) set.add(b);
         for (String b : set) {
             if (!b.matches("[0-9A-Z]{1,4}")) {
                 mNote.setText(R.string.widget_setup_bad_buses);

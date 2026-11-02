@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The phone app's words in Tamil: values/strings.xml has the English and the notes. The website's wording is in main-site/i18n. -->
+<resources>
+    <string name="exit_hint">வெளியேற மீண்டும் பின் பொத்தானை அழுத்துங்கள்</string>
+    <string name="shortcut_near">எனக்கு அருகிலுள்ள நிறுத்தங்கள்</string>
+    <string name="shortcut_near_short">அருகில்</string>
+    <string name="shortcut_nav">வழிகாட்டல்</string>
+    <string name="shortcut_nav_short">வழிகாட்டல்</string>
+    <string name="shortcut_alerts">சேவை எச்சரிக்கைகள்</string>
+    <string name="shortcut_alerts_short">எச்சரிக்கைகள்</string>
+    <string name="shortcut_card">அட்டை இருப்பு</string>
+    <string name="shortcut_card_short">அட்டை இருப்பு</string>
+    <string name="tile_home">வீட்டுக்குப் பேருந்து</string>
+    <string name="tile_work">வேலைக்குப் பேருந்து</string>
+    <string name="widget_name">பேருந்து நேரங்கள்</string>
+    <string name="widget_description">நீங்கள் தேர்ந்தெடுக்கும் பேருந்து நிறுத்தத்தில் நேரலை வருகைகள், அங்குள்ள எல்லாப் பேருந்துகளுக்கும் அல்லது நீங்கள் தேர்ந்தெடுப்பவற்றுக்கு மட்டும்</string>
+    <string name="widget_pick">பேருந்து நேரங்கள்</string>
+    <string name="widget_pick_help">ஒரு நிறுத்தத்தைத் தேர்ந்தெடுக்க இங்கே தட்டுங்கள்</string>
+    <string name="widget_loading">நேரங்களைப் பெறுகிறது…</string>
+    <string name="widget_refreshing">புதுப்பிக்கிறது…</string>
+    <string name="widget_refresh">புதுப்பி</string>
+    <string name="widget_offline">LTA-வை அணுக முடியவில்லை. மீண்டும் முயல, புதுப்பி என்பதைத் தட்டுங்கள்.</string>
+    <string name="widget_offline_short">ஆஃப்லைன்</string>
+    <string name="widget_none">இப்போது இங்கே பேருந்து எதுவும் வரவில்லை.</string>
+    <string name="widget_none_of_those">அந்தப் பேருந்துகளில் எதுவும் இப்போது இங்கே வரவில்லை.</string>
+    <string name="widget_updated">%1$s இல் புதுப்பிக்கப்பட்டது</string>
+    <string name="widget_setup_title">பேருந்து நேரங்கள் விட்ஜெட்</string>
+    <string name="widget_setup_intro">விட்ஜெட்டுக்கு ஒரு நிறுத்தத்தைத் தேர்ந்தெடுங்கள்; விரும்பினால், அதன் பேருந்துகளில் சிலவற்றை மட்டும்.</string>
+    <string name="widget_setup_favourites">உங்களுக்குப் பிடித்த நிறுத்தங்கள்</string>
+    <string name="widget_setup_no_favourites">செயலியில் நீங்கள் சேமிக்கும் நிறுத்தங்கள் தேர்ந்தெடுக்க இங்கே காட்டப்படும்.</string>
+    <string name="widget_setup_code">பேருந்து நிறுத்தக் குறியீடு (5 இலக்கங்கள்)</string>
+    <string name="widget_setup_buses">இந்தப் பேருந்துகள் மட்டும், எ.கா. 15, 62 (விருப்பத்தேர்வு)</string>
+    <string name="widget_setup_save">சேமி</string>
+    <string name="widget_setup_bad_code">பிடித்த நிறுத்தம் ஒன்றைத் தேர்ந்தெடுங்கள், அல்லது 5 இலக்க நிறுத்தக் குறியீட்டைத் தட்டச்சு செய்யுங்கள்.</string>
+    <string name="widget_setup_bad_buses">பேருந்து எண்கள் 21 அல்லது NR7 போன்றவை, காற்புள்ளிகளால் பிரிக்கப்பட்டவை.</string>
+</resources>

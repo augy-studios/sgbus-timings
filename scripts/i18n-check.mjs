@@ -6,7 +6,7 @@
 //
 // The English is read from where the site says it: in index.html, an element's text where it
 // has data-i18n="key", and an attribute's value where it has data-i18n-title (or
-// -aria-label, -placeholder) ="key"; in the scripts, tr("key", "English") and
+// -aria-label, -placeholder, -alt) ="key"; in the scripts, tr("key", "English") and
 // I18n.t("key", "English"), quoted with ', " or `. One key, one English, everywhere it's used.
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
@@ -37,7 +37,7 @@ for (const m of html.matchAll(/<(\w+)([^>]*?)\sdata-i18n="([^"]+)"([^>]*)>([\s\S
   add(m[3], decode(m[5].replace(/<[^>]+>/g, "")).replace(/\s+/g, " ").trim(), `index.html:${line(m.index)}`);
 }
 for (const m of html.matchAll(/<\w+[^>]*>/g)) {
-  for (const a of m[0].matchAll(/data-i18n-(data-title|data-short|title|aria-label|placeholder)="([^"]+)"/g)) {
+  for (const a of m[0].matchAll(/data-i18n-(data-title|data-short|title|aria-label|placeholder|alt)="([^"]+)"/g)) {
     const v = m[0].match(new RegExp(`\\s${a[1]}="([^"]*)"`));
     if (!v) problems.push(`${a[2]}: index.html:${line(m.index)} has no ${a[1]} to take the English from`);
     else add(a[2], decode(v[1]), `index.html:${line(m.index)}`);

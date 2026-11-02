@@ -444,7 +444,7 @@
         const wait = crossing ? Math.ceil(clearing(crossing[1]) / 2) : after ? Math.floor(clearing(after[1]) / 2) : leg.wait;
         parts.push({
           ...leg,
-          label: crossing ? `${leg.label} across the Causeway` : leg.label,
+          label: crossing ? I18n.t("trip.acrossCauseway", "{ride} across the Causeway", { ride: leg.label }) : leg.label,
           to: leg.names?.[b] || leg.to,
           points,
           names: leg.names?.slice(a, b + 1),
@@ -1089,8 +1089,8 @@
   function boardText(leg, eta) {
     const where = stopName(leg, 0);
     return eta <= 20 * 1000
-      ? `${leg.label} is arriving at ${where}. Get ready to board.`
-      : `${leg.label} is 1 min away from ${where}. Get ready to board.`;
+      ? I18n.t("trip.boardArriving", "{ride} is arriving at {stop}. Get ready to board.", { ride: leg.label, stop: where })
+      : I18n.t("trip.boardOneMin", "{ride} is 1 min away from {stop}. Get ready to board.", { ride: leg.label, stop: where });
   }
 
   function readyToBoard(leg, eta) {
@@ -1098,7 +1098,7 @@
     trip.readied[trip.leg] = true;
     trip.boardText = text;
     if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
-    notify({ title: "Get ready to board", body: text, tag: "board", vibrate: BOARD_VIBRATION, channel: "board" });
+    notify({ title: I18n.t("trip.getReady", "Get ready to board"), body: text, tag: "board", vibrate: BOARD_VIBRATION, channel: "board" });
     flash();
     save();
     render();
@@ -1136,11 +1136,11 @@
   // What the bar says of a leg's last bus, if anything: gone, due before you'd get to the stop
   // `reach` minutes from now, or among the last three. `etas` are the minutes to its next buses.
   function lastBusWord(leg, last, etas, reach) {
-    const bus = leg.label || `Bus ${leg.service}`;
+    const bus = leg.label || I18n.t("trip.bus", "Bus {no}", { no: leg.service });
     const where = leg.names?.[0] || window.nameOf?.(leg.board) || leg.board;
-    if (!etas.length && last.left < 0) return { kind: "gone", text: `${bus}'s last bus from ${where} has gone (${last.text}).` };
-    if (last.left < reach && !etas.some((e) => e >= reach)) return { kind: "miss", text: `${bus}'s last bus from ${where} is at ${last.text}, before you'll get there.` };
-    if (etas.length >= 3 ? last.left <= etas[2] + 1 : last.left <= LAST_MIN) return { kind: "soon", text: `Last bus soon: ${bus}'s last from ${where} is at ${last.text}.` };
+    if (!etas.length && last.left < 0) return { kind: "gone", text: I18n.t("trip.lastGone", "{bus}'s last bus from {stop} has gone ({time}).", { bus, stop: where, time: last.text }) };
+    if (last.left < reach && !etas.some((e) => e >= reach)) return { kind: "miss", text: I18n.t("trip.lastMiss", "{bus}'s last bus from {stop} is at {time}, before you'll get there.", { bus, stop: where, time: last.text }) };
+    if (etas.length >= 3 ? last.left <= etas[2] + 1 : last.left <= LAST_MIN) return { kind: "soon", text: I18n.t("trip.lastSoonText", "Last bus soon: {bus}'s last from {stop} is at {time}.", { bus, stop: where, time: last.text }) };
     return null;
   }
 
@@ -1192,7 +1192,7 @@
       trip.lastWarned[i] = true;
       if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
       const instead = word.kind !== "soon" && another ? ` ${anotherText()}` : "";
-      notify({ title: word.kind === "soon" ? "Last bus soon" : "Last bus", body: word.text + instead, tag: `lastbus-${i}`, vibrate: BOARD_VIBRATION, channel: "board" });
+      notify({ title: word.kind === "soon" ? I18n.t("trip.lastSoon", "Last bus soon") : I18n.t("settings.short.last_bus", "Last bus"), body: word.text + instead, tag: `lastbus-${i}`, vibrate: BOARD_VIBRATION, channel: "board" });
       save();
     }
     render();
@@ -1208,9 +1208,9 @@
 
   // Where you are: your last good fix if it's recent, or where the trip has you.
   function whereNow() {
-    if (trip.me && Date.now() - trip.me.t < 2 * 60 * 1000) return { label: "Where you are", lat: trip.me.lat, lng: trip.me.lng };
+    if (trip.me && Date.now() - trip.me.t < 2 * 60 * 1000) return { label: I18n.t("trip.whereYouAre", "Where you are"), lat: trip.me.lat, lng: trip.me.lng };
     const [lat, lng] = progress().at;
-    return { label: "Where you are", lat, lng };
+    return { label: I18n.t("trip.whereYouAre", "Where you are"), lat, lng };
   }
 
   // Where the trip ends.
@@ -1269,33 +1269,35 @@
   }
 
   // A way's rides, "Bus 12 → NE Line".
-  const ridesText = (o) => o.legs.filter((l) => l.mode !== "walk").map((l) => (l.mode === "bus" ? `Bus ${l.route}` : `${l.route} ${l.lrt ? "LRT" : "Line"}`)).join(" → ");
+  const ridesText = (o) => o.legs.filter((l) => l.mode !== "walk").map((l) => (l.mode === "bus" ? I18n.t("trip.bus", "Bus {no}", { no: l.route }) : l.lrt ? I18n.t("trip.lrt", "{line} LRT", { line: l.route }) : I18n.t("trip.line", "{line} Line", { line: l.route }))).join(" → ");
   // When you'd get in, setting off `after` minutes from now.
-  const byClock = (o, after = 0) => (window.When?.clock ? `, there by ${When.clock(Date.now() + (after + o.minutes) * 60000)}` : "");
+  const byClock = (o, after = 0) => (window.When?.clock ? I18n.t("trip.thereBy", ", there by {time}", { time: When.clock(Date.now() + (after + o.minutes) * 60000) }) : "");
 
   // What to do first on a way, in words: "Walk 3 min to Opp Blk 5, take Bus 12 there", or "Take
   // Bus 12 from Blk 390".
   function firstStep(o) {
     const name = (p) => (typeof placeName === "function" ? placeName(p) : p?.name || "");
     const ride = o.legs.find((l) => l.mode !== "walk");
-    if (!ride) return "Walk the rest of the way";
-    const what = ride.mode === "bus" ? `Bus ${ride.route}` : `the ${ride.route} ${ride.lrt ? "LRT" : "Line"}`;
+    if (!ride) return I18n.t("trip.walkRest", "Walk the rest of the way");
+    const what = ride.mode === "bus" ? I18n.t("trip.bus", "Bus {no}", { no: ride.route }) : ride.lrt ? I18n.t("trip.theLrt", "the {line} LRT", { line: ride.route }) : I18n.t("trip.theLine", "the {line} Line", { line: ride.route });
     const walk = o.legs[0].mode === "walk" && (o.legs[0].metres ?? 100) >= 60 ? o.legs[0] : null;
     return walk
-      ? `Walk ${Math.max(1, Math.round(walk.minutes || 1))} min to ${name(ride.from)}, take ${what} there`
-      : `Take ${what} from ${name(ride.from)}`;
+      ? I18n.t("trip.walkThenTake", "Walk {m} min to {stop}, take {ride} there", { m: Math.max(1, Math.round(walk.minutes || 1)), stop: name(ride.from), ride: what })
+      : I18n.t("trip.takeFrom", "Take {ride} from {stop}", { ride: what, stop: name(ride.from) });
   }
 
   // The way found, in a line: "Instead: walk 3 min to Opp Blk 5, take Bus 12 there. Bus 12 →
   // NE Line, ~35 min, there by 01:20."
-  function anotherText() {
+  // `lead` false leaves off "Instead: ", for after "Now: ".
+  function anotherText(lead = true) {
     const o = another?.way;
-    if (!o) return another?.failed ? "Couldn't look for another way just now. It'll try again in a minute." : "No other way by bus or train is running now.";
-    const lead = another.via ? `After ${another.via} to ${another.from.label}: ` : "Instead: ";
+    if (!o) return another?.failed ? I18n.t("trip.anotherFailed", "Couldn't look for another way just now. It'll try again in a minute.") : I18n.t("trip.anotherNone", "No other way by bus or train is running now.");
     const by = byClock(o, another.reach || 0);
-    if (o.walkOnly) return `${lead}walk the rest of the way, ~${o.minutes} min${by}.`;
-    const step = firstStep(o);
-    return `${lead}${step[0].toLowerCase()}${step.slice(1)}. ${ridesText(o)}, ~${o.minutes} min${by}.`;
+    const way = o.walkOnly
+      ? I18n.t("trip.walkRestAbout", "Walk the rest of the way, ~{m} min{by}.", { m: o.minutes, by })
+      : I18n.t("trip.stepThenRides", "{step}. {rides}, ~{m} min{by}.", { step: firstStep(o), rides: ridesText(o), m: o.minutes, by });
+    if (another.via) return I18n.t("trip.afterVia", "After {via} to {stop}: {way}", { via: another.via, stop: another.from.label, way });
+    return lead ? I18n.t("trip.instead", "Instead: {way}", { way }) : way;
   }
 
   // Whether your location's on and recent: Navigate from here can find you.
@@ -1303,7 +1305,7 @@
 
   // The way found, as the trip from here on.
   // `note` is what the bar says of it (replan): by default, that you rerouted.
-  function switchToAnother(note = { title: "Rerouted.", reason: "", now: anotherText().replace(/^Instead: /, "") }) {
+  function switchToAnother(note = { title: I18n.t("trip.rerouted", "Rerouted."), reason: "", now: anotherText(false) }) {
     if (!another?.way || typeof tripFromNav !== "function") return;
     const next = tripFromNav(another.way, another.to, another.from);
     if (!next.legs.length) return;
@@ -1317,10 +1319,10 @@
 
   function autoSwitch(words) {
     const reason = words.map((w) => w.text).join(" ");
-    const now = anotherText().replace(/^Instead: /, "");
-    switchToAnother({ title: "Switched to another way.", reason, now, key: another.key });
+    const now = anotherText(false);
+    switchToAnother({ title: I18n.t("trip.switched", "Switched to another way."), reason, now, key: another.key });
     if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
-    notify({ title: "Switched to another way", body: `${reason} Now: ${now}`, tag: "switched", vibrate: BOARD_VIBRATION, channel: "board" });
+    notify({ title: I18n.t("trip.switchedTitle", "Switched to another way"), body: `${reason} ${I18n.t("trip.now", "Now: {now}", { now })}`, tag: "switched", vibrate: BOARD_VIBRATION, channel: "board" });
   }
 
   function undoSwitch() {
@@ -1450,7 +1452,10 @@
       const extra = Math.round(trafficExtra(i, pos));
       const incidents = (t.incidents || []).map((inc) => (typeof incidentText === "function" ? incidentText(inc) : inc.message));
       if (extra < TRAFFIC_SAY_MIN && !incidents.length) continue;
-      const slow = extra >= TRAFFIC_SAY_MIN ? `${leg.label} ~${extra} min slower than usual${t.roads?.length ? `: heavy traffic on ${t.roads.join(" and ")}` : ""}.` : `${leg.label}:`;
+      const roads = t.roads?.join(I18n.t("trip.and", " and "));
+      const slow = extra >= TRAFFIC_SAY_MIN
+        ? (roads ? I18n.t("trip.slowerRoads", "{ride} ~{m} min slower than usual: heavy traffic on {roads}.", { ride: leg.label, m: extra, roads }) : I18n.t("trip.slower", "{ride} ~{m} min slower than usual.", { ride: leg.label, m: extra }))
+        : `${leg.label}:`;
       return { i, leg, extra, text: [slow, ...incidents].join(" ") };
     }
     return null;
@@ -1498,11 +1503,14 @@
   // Why another way's quicker, as far as the trip can tell: traffic, or a long wait.
   function whyFaster() {
     const note = trafficNote();
-    if (note?.extra >= TRAFFIC_SAY_MIN) return `${note.leg.label} is slowed by traffic${note.leg && trafficHeard[note.i]?.roads?.length ? ` on ${trafficHeard[note.i].roads.join(" and ")}` : ""}`;
+    if (note?.extra >= TRAFFIC_SAY_MIN) {
+      const roads = trafficHeard[note.i]?.roads?.join(I18n.t("trip.and", " and "));
+      return roads ? I18n.t("trip.slowedOn", "{ride} is slowed by traffic on {roads}", { ride: note.leg.label, roads }) : I18n.t("trip.slowed", "{ride} is slowed by traffic", { ride: note.leg.label });
+    }
     const leg = trip.legs[trip.leg];
     if (toBoard(trip.leg) && busHeard?.tripId === trip.tripId && busHeard.leg === trip.leg) {
       const wait = Math.round((busHeard.at + busHeard.eta - Date.now()) / 60000);
-      if (wait >= 8) return `${leg.label} isn't due for ${wait} min`;
+      if (wait >= 8) return I18n.t("trip.notDueFor", "{ride} isn't due for {m} min", { ride: leg.label, m: wait });
     }
     return "";
   }
@@ -1557,7 +1565,7 @@
       const said = `${faster.kind}:${faster.way ? faster.way.legs.map((l) => l.route || l.mode).join(">") : ""}`;
       if (said !== fasterSaid) {
         fasterSaid = said;
-        notify({ title: `A faster way: saves ${faster.saves} min`, body: fasterText(), tag: "faster", channel: "board" });
+        notify({ title: I18n.t("trip.fasterTitle", "A faster way: saves {m} min", { m: faster.saves }), body: fasterText(), tag: "faster", channel: "board" });
       }
     }
     render();
@@ -1566,17 +1574,18 @@
   function fasterText() {
     const f = faster;
     const by = byClock({ minutes: f.minutes });
-    const why = f.why ? `, as ${f.why}` : "";
-    const off = f.k != null ? `Get off at ${f.from.label}, then ` : "";
-    if (f.kind === "walk") return `Faster to walk${f.k != null ? ` from ${f.from.label}` : ""}: ~${f.minutes} min${by}. Saves ${f.saves} min${why}.`;
-    if (f.kind === "cycle") return `Faster by bike${f.k != null ? ` from ${f.from.label}` : ""}: ~${f.minutes} min${by}. Saves ${f.saves} min${why}.`;
+    const why = f.why ? I18n.t("trip.fasterWhy", ", as {why}", { why: f.why }) : "";
+    const v = { stop: f.from?.label, m: f.minutes, by, saves: f.saves, why };
+    if (f.kind === "walk") return f.k != null ? I18n.t("trip.fasterWalkFrom", "Faster to walk from {stop}: ~{m} min{by}. Saves {saves} min{why}.", v) : I18n.t("trip.fasterWalk", "Faster to walk: ~{m} min{by}. Saves {saves} min{why}.", v);
+    if (f.kind === "cycle") return f.k != null ? I18n.t("trip.fasterBikeFrom", "Faster by bike from {stop}: ~{m} min{by}. Saves {saves} min{why}.", v) : I18n.t("trip.fasterBike", "Faster by bike: ~{m} min{by}. Saves {saves} min{why}.", v);
+    const head = I18n.t("trip.fasterWay", "Faster: {rides}, ~{m} min{by}. Saves {saves} min{why}.", { ...v, rides: ridesText(f.way) });
     const step = firstStep(f.way);
-    return `Faster: ${ridesText(f.way)}, ~${f.minutes} min${by}. Saves ${f.saves} min${why}. ${off}${off ? step[0].toLowerCase() + step.slice(1) : step}.`;
+    return `${head} ${f.k != null ? I18n.t("trip.getOffThen", "Get off at {stop}, then: {step}.", { stop: f.from.label, step }) : `${step}.`}`;
   }
 
   // On foot, by bike or by car from one place to another, as a trip's leg: `mode` "walk",
   // "cycle" (marked `cycle`) or "drive" (marked `drive`).
-  const FOOT_LABELS = { walk: "Walk", cycle: "Cycle", drive: "Drive" };
+  const FOOT_LABELS = { walk: I18n.t("trip.walk", "Walk"), cycle: I18n.t("trip.foot.cycle", "Cycle"), drive: I18n.t("trip.foot.drive", "Drive") };
   const footLeg = (from, to, minutes, mode = "walk") => ({
     kind: "walk", label: FOOT_LABELS[mode], to: to.label, points: [[from.lat, from.lng], [to.lat, to.lng]],
     names: [from.label, to.label], minutes: Math.max(1, Math.round(minutes)), wait: 0, walkAfter: 0, ...(mode !== "walk" && { [mode]: true }),
@@ -1593,8 +1602,8 @@
       legs = [footLeg(f.from, f.to, f.minutes - f.reach, f.kind)];
     }
     if (!legs.length) return;
-    const now = f.kind === "way" ? `${firstStep(f.way)}.` : `${f.kind === "cycle" ? "Cycle" : "Walk"} the rest of the way, ~${f.minutes - Math.round(f.reach)} min.`;
-    replan(f.j, f.k, legs, { title: f.k != null ? `Changed at ${f.from.label} for a faster way.` : "Rerouted to a faster way.", reason: "", now });
+    const now = f.kind === "way" ? `${firstStep(f.way)}.` : f.kind === "cycle" ? I18n.t("trip.cycleRest", "Cycle the rest of the way, ~{m} min.", { m: f.minutes - Math.round(f.reach) }) : I18n.t("trip.walkRestMin", "Walk the rest of the way, ~{m} min.", { m: f.minutes - Math.round(f.reach) });
+    replan(f.j, f.k, legs, { title: f.k != null ? I18n.t("trip.changedFaster", "Changed at {stop} for a faster way.", { stop: f.from.label }) : I18n.t("trip.reroutedFaster", "Rerouted to a faster way."), reason: "", now });
   }
 
   // ---------- are you walking? ----------
@@ -1744,7 +1753,7 @@
     if (!o || typeof tripFromNav !== "function") return;
     const next = tripFromNav(o, changing.to, changing.from);
     if (!next.legs.length) return;
-    replan(changing.j, changing.k, next.legs, { title: `Changed at ${changing.from.label}.`, reason: "", now: `${firstStep(o)}.` });
+    replan(changing.j, changing.k, next.legs, { title: I18n.t("trip.changedAt", "Changed at {stop}.", { stop: changing.from.label }), reason: "", now: `${firstStep(o)}.` });
   }
 
   function renderChange() {
@@ -1753,16 +1762,16 @@
     if (changing && (changing.j < trip.leg || !trip.legs[changing.j])) changing = null;
     box.hidden = !changing;
     if (!changing) return;
-    const head = `<p class="tripChangeHead">Change at ${esc(changing.from.label)}</p>`;
+    const head = `<p class="tripChangeHead">${esc(I18n.t("trip.changeAt", "Change at {stop}", { stop: changing.from.label }))}</p>`;
     const body = changing.ways == null
-      ? `<p>Finding the ways on from there…</p>`
+      ? `<p>${esc(I18n.t("trip.findingOn", "Finding the ways on from there…"))}</p>`
       : changing.ways.length
         ? changing.ways.map((o, i) => `<button type="button" class="tripChangeWay" data-trip-change="${i}">` +
-          `<b>${esc(o.walkOnly ? "Walk the rest of the way" : ridesText(o))}</b><span>~${o.minutes} min${esc(byClock(o))}. ${esc(firstStep(o))}.</span></button>`).join("")
-        : `<p>${changing.failed ? "Couldn't find the ways on just now." : "No other way on by bus or train is running from there now."}</p>`;
+          `<b>${esc(o.walkOnly ? I18n.t("trip.walkRest", "Walk the rest of the way") : ridesText(o))}</b><span>~${o.minutes} min${esc(byClock(o))}. ${esc(firstStep(o))}.</span></button>`).join("")
+        : `<p>${esc(changing.failed ? I18n.t("trip.changeFailed", "Couldn't find the ways on just now.") : I18n.t("trip.changeNone", "No other way on by bus or train is running from there now."))}</p>`;
     box.innerHTML = head + body +
-      `<div class="tripChangeActions"><button type="button" class="iconBtn" data-trip-change="all">See all ways</button>` +
-      `<button type="button" class="iconBtn" data-trip-change="cancel">Cancel</button></div>`;
+      `<div class="tripChangeActions"><button type="button" class="iconBtn" data-trip-change="all">${esc(I18n.t("trip.seeAllWays", "See all ways"))}</button>` +
+      `<button type="button" class="iconBtn" data-trip-change="cancel">${esc(I18n.t("common.cancel", "Cancel"))}</button></div>`;
   }
 
   // Navigate's Bus and train, from `from` to the trip's end, for every way.
@@ -1783,7 +1792,7 @@
     trip.readied[leg] = true;
     if (waiting) {
       trip.boardText = text;
-      if (show) notify({ title: "Get ready to board", body: text, tag: "board", vibrate: BOARD_VIBRATION, channel: "board" });
+      if (show) notify({ title: I18n.t("trip.getReady", "Get ready to board"), body: text, tag: "board", vibrate: BOARD_VIBRATION, channel: "board" });
       flash();
     }
     save();
@@ -1962,7 +1971,7 @@
         try { window.Coins?.tripDone(trip); } catch (err) { console.warn("couldn't count the coins:", err); }
         try { window.Eggs?.tripDone(trip); } catch (err) { console.warn("couldn't look for feats:", err); }
       }
-      render("You've arrived.");
+      render(I18n.t("trip.arrived", "You've arrived."));
       arrivedTimer ??= setTimeout(() => {
         arrivedTimer = null;
         stop();
@@ -1993,8 +2002,10 @@
     const leg = trip.legs[trip.leg];
     const last = !ridesAfter();
     const text = left === 0
-      ? `Get off now at ${leg.to}.`
-      : `Get off in ${left} stop${left === 1 ? "" : "s"}, at ${leg.to}${last ? "" : ", to change"}.`;
+      ? I18n.t("trip.getOffNow", "Get off now at {stop}.", { stop: leg.to })
+      : left === 1
+        ? (last ? I18n.t("trip.getOffOne", "Get off in 1 stop, at {stop}.", { stop: leg.to }) : I18n.t("trip.getOffOneChange", "Get off in 1 stop, at {stop}, to change.", { stop: leg.to }))
+        : (last ? I18n.t("trip.getOffMany", "Get off in {n} stops, at {stop}.", { n: left, stop: leg.to }) : I18n.t("trip.getOffManyChange", "Get off in {n} stops, at {stop}, to change.", { n: left, stop: leg.to }));
 
     soundAlert(text);
     flash();
@@ -2014,8 +2025,8 @@
     const quiet = nativeSubs && Boolean(window.Reminders?.earphonesOnly());
     if (navigator.vibrate) navigator.vibrate(VIBRATION);
     if (!quiet) beep();
-    if (nativeSubs) AppBridge.call("Trip", "alert", { title: "Get Off Alert", body: text, quiet }).catch(() => {});
-    else notify({ title: "Get Off Alert", body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
+    if (nativeSubs) AppBridge.call("Trip", "alert", { title: I18n.t("route.get_off_alert", "Get Off Alert"), body: text, quiet }).catch(() => {});
+    else notify({ title: I18n.t("route.get_off_alert", "Get Off Alert"), body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
   }
 
   // The server sent the alert (it follows the bus too, from LTA's live positions): shown on
@@ -2456,9 +2467,9 @@
       const also = alsoText(leg);
       if (also) notes.push(`${also}.`);
     }
-    if (!enabled()) notes.push("Get Off Alert is off in Settings.");
-    if (trip.noLocation) notes.push("No location: going by the clock.");
-    else if (Date.now() - trip.lastFixAt > FIX_STALE_MS && trip.lastFixAt) notes.push("Location weak: going by the clock.");
+    if (!enabled()) notes.push(I18n.t("trip.alertOff", "Get Off Alert is off in Settings."));
+    if (trip.noLocation) notes.push(I18n.t("trip.noLocation", "No location: going by the clock."));
+    else if (Date.now() - trip.lastFixAt > FIX_STALE_MS && trip.lastFixAt) notes.push(I18n.t("trip.weakLocation", "Location weak: going by the clock."));
     $("#tripNote").textContent = notes.join(" ");
     $("#tripNote").hidden = !notes.length;
     // Last bus soon, for the rides still to board (watchLastBus), with another way for a lost one.
@@ -2467,17 +2478,17 @@
     $("#tripWarn").innerHTML = warns.map((w) => `<p class="tripWarnLine">${window.icon("alert")}<span>${esc(w.text)}</span></p>`).join("") +
       (lost && another
         ? `<div class="tripAnother"><p>${esc(anotherText())}</p>` +
-          (another.way ? `<button type="button" class="btn tripGo" data-trip-another="switch" title="${another.via ? `Keep the trip to ${esc(another.from.label)}, then go this way` : "Go this way from where you are"}">Reroute</button>` : "") +
+          (another.way ? `<button type="button" class="btn tripGo" data-trip-another="switch" title="${esc(another.via ? I18n.t("trip.keepThenGo", "Keep the trip to {stop}, then go this way", { stop: another.from.label }) : I18n.t("trip.goFromHere", "Go this way from where you are"))}">${esc(I18n.t("trip.reroute", "Reroute"))}</button>` : "") +
           (located()
-            ? `<button type="button" class="iconBtn" data-trip-another="here">Navigate from here</button>`
-            : `<button type="button" class="iconBtn" data-trip-another="all">See all ways</button>`) + `</div>`
-        : lost ? `<div class="tripAnother"><p>Finding another way…</p></div>` : "");
+            ? `<button type="button" class="iconBtn" data-trip-another="here">${esc(I18n.t("trip.navFromHere", "Navigate from here"))}</button>`
+            : `<button type="button" class="iconBtn" data-trip-another="all">${esc(I18n.t("trip.seeAllWays", "See all ways"))}</button>`) + `</div>`
+        : lost ? `<div class="tripAnother"><p>${esc(I18n.t("trip.findingAnother", "Finding another way…"))}</p></div>` : "");
     // The trip changed, by itself (autoSwitch) or by you: what, why, what's next, and Undo.
     const sw = trip.switched;
     if (sw) {
-      $("#tripWarn").innerHTML = `<p class="tripSwitched">${window.icon("alert")}<span><b>${esc(sw.title || "Switched to another way.")}</b>${sw.reason ? ` ${esc(sw.reason)}` : ""} Now: ${esc(sw.now)}</span></p>` +
-        `<div class="tripAnother"><button type="button" class="iconBtn" data-trip-switched="undo">Undo</button>` +
-        `<button type="button" class="iconBtn" data-trip-switched="ok">OK</button></div>` + $("#tripWarn").innerHTML;
+      $("#tripWarn").innerHTML = `<p class="tripSwitched">${window.icon("alert")}<span><b>${esc(sw.title || I18n.t("trip.switched", "Switched to another way."))}</b>${sw.reason ? ` ${esc(sw.reason)}` : ""} ${esc(I18n.t("trip.now", "Now: {now}", { now: sw.now }))}</span></p>` +
+        `<div class="tripAnother"><button type="button" class="iconBtn" data-trip-switched="undo">${esc(I18n.t("trip.undo", "Undo"))}</button>` +
+        `<button type="button" class="iconBtn" data-trip-switched="ok">${esc(I18n.t("trip.ok", "OK"))}</button></div>` + $("#tripWarn").innerHTML;
     }
     $("#tripWarn").hidden = !warns.length && !sw;
     // Traffic on a bus still ahead, and why; tapped, its road on the live map.
@@ -2485,14 +2496,14 @@
     $("#tripTraffic").hidden = !jam;
     if (jam) {
       $("#tripTraffic").dataset.leg = jam.i;
-      $("#tripTraffic").innerHTML = `${window.icon("alert")}<span>${esc(jam.text)} <u>See it on the map</u></span>`;
+      $("#tripTraffic").innerHTML = `${window.icon("alert")}<span>${esc(jam.text)} <u>${esc(I18n.t("trip.seeOnMap", "See it on the map"))}</u></span>`;
     }
     // A faster way, and why.
     $("#tripFaster").hidden = !faster;
     if (faster) {
       $("#tripFaster").innerHTML = `<p>${window.icon("route")}<span>${esc(fasterText())}</span></p>` +
-        `<div class="tripAnother"><button type="button" class="btn tripGo" data-trip-faster="take">Reroute</button>` +
-        `<button type="button" class="iconBtn" data-trip-faster="keep">Keep my way</button></div>`;
+        `<div class="tripAnother"><button type="button" class="btn tripGo" data-trip-faster="take">${esc(I18n.t("trip.reroute", "Reroute"))}</button>` +
+        `<button type="button" class="iconBtn" data-trip-faster="keep">${esc(I18n.t("trip.keepMyWay", "Keep my way"))}</button></div>`;
     }
     renderChange();
     $("#tripPrev").hidden = trip.leg === 0;
@@ -2516,7 +2527,7 @@
 
   function stopName(leg, i) {
     const last = leg.points.length - 1;
-    return leg.names?.[i] || (i === last ? leg.to : i === 0 ? (isWalk(leg) ? "Where you set off" : "Where you got on") : `Stop ${i + 1}`);
+    return leg.names?.[i] || (i === last ? leg.to : i === 0 ? (isWalk(leg) ? I18n.t("trip.whereSetOff", "Where you set off") : I18n.t("trip.whereGotOn", "Where you got on")) : I18n.t("trip.stopN", "Stop {n}", { n: i + 1 }));
   }
 
   // A bus leg's stop codes, one per point, for the timeline's buttons: its own, or for a leg
@@ -2544,7 +2555,7 @@
     const change = canChange ? `<button type="button" class="iconBtn" data-tl-change-mode="on">${window.icon("swap")} ${esc(I18n.t("nav.change_current_route", "Change my way"))}</button>` : "";
     const back = trip.origin ? `<button type="button" class="iconBtn" data-tl-origin>${window.icon("navigate")} ${esc(I18n.t("stop.back.nav", "Back to Navigate"))}</button>` : "";
     const mode = canChange && choosingChange
-      ? `<p class="tlChangeMode"><span>Tap Change here by the stop to get off at.</span><button type="button" class="iconBtn" data-tl-change-mode="off">Cancel</button></p>`
+      ? `<p class="tlChangeMode"><span>${esc(I18n.t("trip.tapChangeHere", "Tap Change here by the stop to get off at."))}</span><button type="button" class="iconBtn" data-tl-change-mode="off">${esc(I18n.t("common.cancel", "Cancel"))}</button></p>`
       : change || back ? `<p class="tlChangeMode">${change}${back}</p>` : "";
     box.innerHTML = mode + trip.legs
       .slice(trip.leg)
@@ -2557,22 +2568,22 @@
         const stops = leg.points
           .map((_, i) => {
             const tag = i === last
-              ? `<span class="tlTag">${window.icon("flag")} ${isWalk(leg) ? (final ? "Arrive" : "Board") : final ? "Get off" : "Change"}</span>`
+              ? `<span class="tlTag">${window.icon("flag")} ${esc(isWalk(leg) ? (final ? I18n.t("trip.tag.arrive", "Arrive") : I18n.t("trip.tag.board", "Board")) : final ? I18n.t("trip.tag.getOff", "Get off") : I18n.t("trip.tag.change", "Change"))}</span>`
               : i === alertAt && alertAt > 0 && enabled()
-                ? `<span class="tlTag">${window.icon("bell")} Alert</span>`
+                ? `<span class="tlTag">${window.icon("bell")} ${esc(I18n.t("trip.tag.alert", "Alert"))}</span>`
                 : "";
             // A bus stop with its code: a button to its timings for this bus, and the other direct
             // buses that call there (init).
             const code = codes?.[i] || null;
             const buses = code ? busesAt(leg, code) : "";
-            const which = buses.includes(",") ? `buses ${buses.split(",").join(", ")}` : leg.label;
+            const which = buses.includes(",") ? I18n.t("trip.busesList", "buses {list}", { list: buses.split(",").join(", ") }) : leg.label;
             const name = code
-              ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(buses)}" title="Timings for ${esc(which)} here">${esc(stopName(leg, i))}</button>`
+              ? `<button type="button" class="tlName tlGo" data-tl-stop="${esc(code)}" data-tl-bus="${esc(buses)}" title="${esc(I18n.t("trip.timingsHere", "Timings for {which} here", { which }))}">${esc(stopName(leg, i))}</button>`
               : `<span class="tlName">${esc(stopName(leg, i))}</span>`;
             // Change here: a stop still ahead on a ride, to get off at and go on another way, once
             // Change my way's been tapped.
             const ahead = choosingChange && !isWalk(leg) && i > 0 && (k > 0 || i > Math.floor(target()));
-            const change = ahead ? `<button type="button" class="tlChange" data-tl-change="${trip.leg + k},${i}" title="Get off here and go on another way">Change here</button>` : "";
+            const change = ahead ? `<button type="button" class="tlChange" data-tl-change="${trip.leg + k},${i}" title="${esc(I18n.t("trip.changeHereTitle", "Get off here and go on another way"))}">${esc(I18n.t("trip.changeHere", "Change here"))}</button>` : "";
             return `<li class="tlStop${i === last ? " end" : ""}"><span class="tlNode"></span>${name}${tag}${change}</li>`;
           })
           .join("");

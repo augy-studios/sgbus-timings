@@ -63,7 +63,7 @@
     try {
       localStorage.setItem(KEY, JSON.stringify(s));
     } catch {
-      throw new Error("This browser won't keep the calendar. Try a smaller file.");
+      throw new Error(I18n.t('cal.tooBigToKeep', "This browser won't keep the calendar. Try a smaller file."));
     }
   }
 
@@ -318,7 +318,7 @@
         if (skip?.has(start)) continue;
         if (len ? start + len <= now : start < now) continue;
         const key = `${ev.uid || ev.title}|${start}`;
-        if (!hidden.has(key)) out.push({ key, title: ev.title || 'Event', location: ev.location, start, end: start + len, allDay: ev.start.allDay });
+        if (!hidden.has(key)) out.push({ key, title: ev.title || I18n.t('cal.event', 'Event'), location: ev.location, start, end: start + len, allDay: ev.start.allDay });
       }
     }
     return out.sort((a, b) => a.start - b.start).slice(0, 100);
@@ -394,7 +394,7 @@
     if (fetching) return fetching;
     fetching = (async () => {
       const r = await fetch('/api/calendar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url: s.url }), cache: 'no-store' });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || "Couldn't read your calendar right now.");
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || I18n.t('cal.readFailed', "Couldn't read your calendar right now."));
       const list = parseIcs(await r.text());
       fetched = { url: s.url, at: Date.now(), events: list };
       return list;
@@ -414,11 +414,11 @@
   // The phone's events from the Android app, as upcoming() gives them, without the hidden ones.
   async function phoneEvents() {
     if (!window.AppBridge || !(await AppBridge.ready()) || !AppBridge.has('calendar')) {
-      throw new PhoneError('app', "Your phone's calendar is read by the SG Bus Timings Android app. Open this there, or pick another calendar in Calendar settings.");
+      throw new PhoneError('app', I18n.t('cal.phoneNeedsApp', "Your phone's calendar is read by the SG Bus Timings Android app. Open this there, or pick another calendar in Calendar settings."));
     }
     const reply = await AppBridge.request('calendar', { days: DAYS });
-    if (reply.error === 'permission') throw new PhoneError('permission', 'Allow SG Bus Timings to see your calendar, and your events with a location show here.');
-    if (reply.error || !Array.isArray(reply.events)) throw new Error("Couldn't read your phone's calendar. Try again.");
+    if (reply.error === 'permission') throw new PhoneError('permission', I18n.t('cal.allowPhone', 'Allow SG Bus Timings to see your calendar, and your events with a location show here.'));
+    if (reply.error || !Array.isArray(reply.events)) throw new Error(I18n.t('cal.phoneFailed', "Couldn't read your phone's calendar. Try again."));
     const now = Date.now();
     const hidden = new Set(settings().hidden);
     return reply.events
@@ -426,7 +426,7 @@
       // Its end, from the app (after 2.2.8); from an older one, a whole day, or none.
       .map((ev) => ({ ...ev, end: Number.isFinite(ev.end) && ev.end >= ev.start ? ev.end : ev.start + (ev.allDay ? DAY_MS : 0) }))
       .filter((ev) => (ev.end > ev.start ? ev.end > now : ev.start >= now) && ev.start < now + DAYS * DAY_MS)
-      .map((ev) => ({ key: String(ev.key), title: String(ev.title || 'Event').slice(0, 120), location: ev.location.trim().slice(0, 200), start: ev.start, end: ev.end, allDay: !!ev.allDay }))
+      .map((ev) => ({ key: String(ev.key), title: String(ev.title || I18n.t('cal.event', 'Event')).slice(0, 120), location: ev.location.trim().slice(0, 200), start: ev.start, end: ev.end, allDay: !!ev.allDay }))
       .filter((ev) => !hidden.has(ev.key))
       .sort((a, b) => a.start - b.start)
       .slice(0, 100);
@@ -437,32 +437,38 @@
     return settings().phone ? phoneEvents() : upcoming(await events({ fresh }));
   }
 
-  const allowLink = (label = 'Allow calendar access') =>
+  const allowLink = (label = I18n.t('cal.allowAccess', 'Allow calendar access')) =>
     `<a class="iconBtn calAllow" href="${PERMISSION_LINK}">${ico('calendar')} ${label}</a>`;
 
   // ---------- the tab ----------
 
-  const dayFmt = new Intl.DateTimeFormat('en-GB', { timeZone: SG, month: 'short', day: 'numeric' });
+  const LOCALE = I18n.lang() === 'en' ? 'en-GB' : I18n.lang();
+  const dayFmt = new Intl.DateTimeFormat(LOCALE, { timeZone: SG, month: 'short', day: 'numeric' });
+  // "3 events with a location in the next 30 days."
+  const eventsText = (n, yet) => (n === 1 ? I18n.t('cal.oneEvent', '1 event with a location in the next {d} days.', { d: DAYS })
+    : n ? I18n.t('cal.manyEvents', '{n} events with a location in the next {d} days.', { n, d: DAYS })
+    : yet ? I18n.t('cal.noEventsYet', 'No events with a location in the next {d} days yet.', { d: DAYS })
+    : I18n.t('cal.noEvents', 'No events with a location in the next {d} days.', { d: DAYS }));
   const sgDay = (ms) => new Date(ms + 8 * 3600 * 1000).toISOString().slice(0, 10);
 
   function whenText(ev) {
     const today = sgDay(Date.now());
     const d = sgDay(ev.start);
     const tomorrow = sgDay(Date.now() + DAY_MS);
-    const dayText = d === today ? 'Today' : d === tomorrow ? 'Tomorrow' : dayFmt.format(ev.start);
+    const dayText = d === today ? I18n.t('alerts.today', 'Today') : d === tomorrow ? I18n.t('alerts.tomorrow', 'Tomorrow') : dayFmt.format(ev.start);
     // Under way: till when, rather than when to arrive.
     if (!ev.allDay && ev.start <= Date.now() && ev.end > Date.now()) {
-      return `On now: until ${sgDay(ev.end) === today ? '' : `${dayFmt.format(ev.end)}, `}${When.clock(ev.end)}`;
+      return I18n.t('cal.onNow', 'On now: until {time}', { time: `${sgDay(ev.end) === today ? '' : `${dayFmt.format(ev.end)}, `}${When.clock(ev.end)}` });
     }
-    return ev.allDay ? `All day: ${dayText}` : `Arrive: ${dayText}, ${When.clock(ev.start)}`;
+    return ev.allDay ? I18n.t('cal.allDay', 'All day: {day}', { day: dayText }) : I18n.t('cal.arrive', 'Arrive: {day}, {time}', { day: dayText, time: When.clock(ev.start) });
   }
 
   function render(box, onPick) {
     if (!connected()) {
       box.innerHTML = `<button type="button" class="calSetup" data-cal-settings>${ico('calendar')}` +
-        `<span class="recentText"><span class="name">Sync with calendar</span><span class="sub">Plan trips from your events</span></span>${ico('forward')}</button>`;
+        `<span class="recentText"><span class="name">${escapeHtml(I18n.t('cal.sync', 'Sync with calendar'))}</span><span class="sub">${escapeHtml(I18n.t('cal.syncSub', 'Plan trips from your events'))}</span></span>${ico('forward')}</button>`;
     } else {
-      box.innerHTML = `<p class="recentEmpty">Reading your calendar…</p>`;
+      box.innerHTML = `<p class="recentEmpty">${escapeHtml(I18n.t('cal.reading', 'Reading your calendar…'))}</p>`;
     }
     let list = [];
     let menu = null;
@@ -478,12 +484,12 @@
         return `<div class="recentRow${open ? ' open' : ''}" data-menu-row="${escapeHtml(ev.key)}">` +
           `<button type="button" class="recentMain" data-cal-pick="${i}">${ico('calendar')}<span class="recentText">` +
           `<span class="calWhen">${escapeHtml(whenText(ev))}</span><span class="name">${escapeHtml(ev.title)}</span>` +
-          `<span class="sub">${escapeHtml(ev.location)}${place === null ? ' <em>· Location not found. Tap to pick it.</em>' : ''}</span></span></button>` +
-          `<button type="button" class="recentMore" data-cal-menu="${escapeHtml(ev.key)}" data-menu-toggle aria-expanded="${open}" aria-label="More for ${escapeHtml(ev.title)}">${ico('more')}</button>` +
+          `<span class="sub">${escapeHtml(ev.location)}${place === null ? ` <em>· ${escapeHtml(I18n.t('cal.notFound', 'Location not found. Tap to pick it.'))}</em>` : ''}</span></span></button>` +
+          `<button type="button" class="recentMore" data-cal-menu="${escapeHtml(ev.key)}" data-menu-toggle aria-expanded="${open}" aria-label="${escapeHtml(I18n.t('cal.moreFor', 'More for {title}', { title: ev.title }))}">${ico('more')}</button>` +
           `<div class="rowMenu"><div><div class="recentMenu">` +
-          (place ? `<button type="button" class="iconBtn" data-cal-act="save" data-cal="${i}">${ico('pin')} Save as place</button>` : '') +
-          (place ? `<button type="button" class="iconBtn" data-cal-act="share" data-cal="${i}">${ico('share')} Share place</button>` : '') +
-          `<button type="button" class="iconBtn" data-cal-act="hide" data-cal="${i}">${ico('close')} Hide this event</button>` +
+          (place ? `<button type="button" class="iconBtn" data-cal-act="save" data-cal="${i}">${ico('pin')} ${escapeHtml(I18n.t('cal.saveAsPlace', 'Save as place'))}</button>` : '') +
+          (place ? `<button type="button" class="iconBtn" data-cal-act="share" data-cal="${i}">${ico('share')} ${escapeHtml(I18n.t('cal.sharePlace', 'Share place'))}</button>` : '') +
+          `<button type="button" class="iconBtn" data-cal-act="hide" data-cal="${i}">${ico('close')} ${escapeHtml(I18n.t('cal.hideEvent', 'Hide this event'))}</button>` +
           `</div></div></div>` +
           `</div>`;
       };
@@ -494,10 +500,10 @@
       const later = list.filter((ev) => !isToday(ev));
       box.innerHTML =
         (list.length
-          ? (todays.length ? `<p class="recentHead">Today</p>${todays.map((ev) => row(ev, list.indexOf(ev))).join('')}` : '') +
-            (later.length ? `<p class="recentHead">Later</p>${later.map((ev) => row(ev, list.indexOf(ev))).join('')}` : '')
-          : `<p class="recentEmpty">No events with a location in the next ${DAYS} days.</p>`) +
-        `<button type="button" class="recentClear" data-cal-settings>Calendar settings</button>`;
+          ? (todays.length ? `<p class="recentHead">${escapeHtml(I18n.t('alerts.today', 'Today'))}</p>${todays.map((ev) => row(ev, list.indexOf(ev))).join('')}` : '') +
+            (later.length ? `<p class="recentHead">${escapeHtml(I18n.t('cal.later', 'Later'))}</p>${later.map((ev) => row(ev, list.indexOf(ev))).join('')}` : '')
+          : `<p class="recentEmpty">${escapeHtml(eventsText(0))}</p>`) +
+        `<button type="button" class="recentClear" data-cal-settings>${escapeHtml(I18n.t('cal.settings', 'Calendar settings'))}</button>`;
     };
 
     box.addEventListener('click', (e) => {
@@ -539,7 +545,7 @@
           if (!inApp || !AppBridge.has('calendar') || !box.isConnected || connected()) return;
           box.insertAdjacentHTML('afterbegin',
             `<button type="button" class="calSetup" data-cal-phone>${ico('calendar')}` +
-            `<span class="recentText"><span class="name">Use this phone's calendar</span><span class="sub">Every calendar on this phone</span></span>${ico('forward')}</button>`);
+            `<span class="recentText"><span class="name">${escapeHtml(I18n.t('cal.usePhone', "Use this phone's calendar"))}</span><span class="sub">${escapeHtml(I18n.t('cal.usePhoneSub', 'Every calendar on this phone'))}</span></span>${ico('forward')}</button>`);
         });
       }
       box.addEventListener('click', (e) => {
@@ -559,7 +565,7 @@
     }
 
     function load() {
-      box.innerHTML = `<p class="recentEmpty">Reading your calendar…</p>`;
+      box.innerHTML = `<p class="recentEmpty">${escapeHtml(I18n.t('cal.reading', 'Reading your calendar…'))}</p>`;
       upcomingList().then((upcomingEvents) => {
         list = upcomingEvents;
         draw();
@@ -584,7 +590,7 @@
         }
         box.innerHTML = `<p class="recentEmpty">${escapeHtml(err.message)}</p>` +
           (allow ? `<p class="calAllowRow">${allowLink()}</p>` : '') +
-          `<button type="button" class="recentClear" data-cal-settings>Calendar settings</button>`;
+          `<button type="button" class="recentClear" data-cal-settings>${escapeHtml(I18n.t('cal.settings', 'Calendar settings'))}</button>`;
       });
     }
   }
@@ -594,10 +600,10 @@
   function renderSettings(note = '', tone = '') {
     const s = settings();
     $('#calUrl').value = s.url || '';
-    $('#calSource').textContent = s.phone ? "Using this phone's calendar, through the Android app."
-      : s.url ? 'Linked to your calendar by its iCal link.'
-      : s.file ? `Imported from ${s.file.name}, ${new Date(s.file.importedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}. Import it again for new events.`
-      : 'Not linked yet.';
+    $('#calSource').textContent = s.phone ? I18n.t('cal.source.phone', "Using this phone's calendar, through the Android app.")
+      : s.url ? I18n.t('cal.source.url', 'Linked to your calendar by its iCal link.')
+      : s.file ? I18n.t('cal.source.file', 'Imported from {file}, {date}. Import it again for new events.', { file: s.file.name, date: new Date(s.file.importedAt).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short' }) })
+      : I18n.t('cal.source.none', 'Not linked yet.');
     $('#calRemove').hidden = !connected();
     // Only in the Android app, which can read the phone's calendar.
     $('#calPhoneBlock').hidden = !window.AppBridge?.has('calendar');
@@ -611,10 +617,10 @@
   async function usePhone() {
     saveSettings({ hidden: settings().hidden, phone: true });
     fetched = null;
-    renderSettings("Reading your phone's calendar…");
+    renderSettings(I18n.t('cal.readingPhone', "Reading your phone's calendar…"));
     try {
       const list = await phoneEvents();
-      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From, To or Add a stop.`);
+      renderSettings(`${I18n.t('cal.linked', 'Linked.')} ${eventsText(list.length, true)} ${I18n.t('cal.findThem', "Find them under Calendar when you tap into Navigate's From, To or Add a stop.")}`);
     } catch (err) {
       renderSettings(err.message, err.reason === 'permission' ? 'allow' : 'error');
     }
@@ -628,16 +634,16 @@
 
   async function saveUrl() {
     const url = $('#calUrl').value.trim();
-    if (!url) return renderSettings('Paste the link first.', 'error');
+    if (!url) return renderSettings(I18n.t('cal.pasteFirst', 'Paste the link first.'), 'error');
     const s = settings();
     const btn = $('#calSave');
     btn.disabled = true;
-    renderSettings('Reading your calendar…');
+    renderSettings(I18n.t('cal.reading', 'Reading your calendar…'));
     $('#calUrl').value = url;
     try {
       saveSettings({ hidden: s.hidden, url });
       const list = upcoming(await events({ fresh: true }));
-      renderSettings(`Linked. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days yet.`} Find them under Calendar when you tap into Navigate's From, To or Add a stop.`);
+      renderSettings(`${I18n.t('cal.linked', 'Linked.')} ${eventsText(list.length, true)} ${I18n.t('cal.findThem', "Find them under Calendar when you tap into Navigate's From, To or Add a stop.")}`);
     } catch (err) {
       saveSettings(s);
       renderSettings(err.message, 'error');
@@ -650,13 +656,13 @@
   async function importFile(file) {
     if (!file) return;
     try {
-      if (file.size > 5 * 1024 * 1024) throw new Error('That file is too big. Export just the next few months.');
+      if (file.size > 5 * 1024 * 1024) throw new Error(I18n.t('cal.fileTooBig', 'That file is too big. Export just the next few months.'));
       const text = await file.text();
-      if (!/BEGIN:VCALENDAR/i.test(text.slice(0, 2000))) throw new Error("That isn't a calendar file. Pick an .ics file.");
+      if (!/BEGIN:VCALENDAR/i.test(text.slice(0, 2000))) throw new Error(I18n.t('cal.notIcs', "That isn't a calendar file. Pick an .ics file."));
       const kept = parseIcs(text).filter(stillAhead).slice(0, MAX_EVENTS);
       saveSettings({ hidden: settings().hidden, file: { name: file.name.slice(0, 80), importedAt: Date.now(), events: kept } });
       const list = upcoming(kept);
-      renderSettings(`Imported. ${list.length ? `${plural(list.length, 'event')} with a location in the next ${DAYS} days.` : `No events with a location in the next ${DAYS} days.`}`);
+      renderSettings(`${I18n.t('cal.imported', 'Imported.')} ${eventsText(list.length)}`);
     } catch (err) {
       renderSettings(err.message, 'error');
     } finally {
@@ -665,7 +671,7 @@
   }
 
   function remove() {
-    if (!confirm('Stop showing your calendar here? This forgets the link, file or phone calendar choice on this device.')) return;
+    if (!confirm(I18n.t('cal.removeConfirm', 'Stop showing your calendar here? This forgets the link, file or phone calendar choice on this device.'))) return;
     saveSettings({ hidden: [] });
     fetched = null;
     try {

@@ -50,12 +50,12 @@
   async function read() {
     if (reading) return;
     const { nfc } = await AppBridge.call('Card', 'status').catch(() => ({ nfc: 'none' }));
-    if (nfc === 'none') return show(`<p>This phone can't read cards: it has no NFC.</p>`);
-    if (nfc === 'off') return show(`<p>NFC is off. Turn it on, then come back here.</p>`, { nfc: true });
+    if (nfc === 'none') return show(`<p>${esc(I18n.t("card.noNfc", "This phone can't read cards: it has no NFC."))}</p>`);
+    if (nfc === 'off') return show(`<p>${esc(I18n.t('offline.nfcOff', 'NFC is off. Turn it on, then come back here.'))}</p>`, { nfc: true });
 
     reading = true;
-    show(`<div class="cardWait">${ico('card')}<p><strong>Hold your card to the back of the phone</strong></p>` +
-      `<p class="sub">Near the camera on most phones. Keep it still until it's read.</p></div>`);
+    show(`<div class="cardWait">${ico('card')}<p><strong>${esc(I18n.t('card.hold', 'Hold your card to the back of the phone'))}</strong></p>` +
+      `<p class="sub">${esc(I18n.t("card.nearCamera", "Near the camera on most phones. Keep it still until it's read."))}</p></div>`);
     try {
       showCard(await AppBridge.call('Card', 'read'));
     } catch (err) {
@@ -68,13 +68,13 @@
   // The app's found a card and is reading it (2.2.0): it isn't done until the value shows.
   function readingNow() {
     if ($('#cardModal').classList.contains('hidden')) openModal('cardModal');
-    show(`<div class="cardWait cardReading">${ico('card')}<p><strong>Reading your card…</strong></p>` +
-      `<p class="sub">Keep holding it still. It takes about a second.</p></div>`);
+    show(`<div class="cardWait cardReading">${ico('card')}<p><strong>${esc(I18n.t('card.reading', 'Reading your card…'))}</strong></p>` +
+      `<p class="sub">${esc(I18n.t('card.keepHolding', 'Keep holding it still. It takes about a second.'))}</p></div>`);
   }
 
   // Read: a short double buzz, and a line saying the card can come away now.
   const DONE_BUZZ = [40, 60, 40];
-  const doneLine = () => `<p class="cardDone">${ico('check')} Done: you can take your card away.</p>`;
+  const doneLine = () => `<p class="cardDone">${ico('check')} ${esc(I18n.t('card.done', 'Done: you can take your card away.'))}</p>`;
 
   function showCard(c) {
     lastRaw = c.raw || null;
@@ -83,8 +83,8 @@
     if (!(c.balance >= MIN_CENTS && c.balance <= MAX_CENTS)) {
       show(
         doneLine() +
-        `<p><strong>This card's value couldn't be read.</strong></p>` +
-        `<p class="sub">Check it in the SimplyGo app for now. To help fix this, open Card data below, copy it and send it to us: it doesn't include your card's number.</p>` +
+        `<p><strong>${esc(I18n.t("card.unreadable", "This card's value couldn't be read."))}</strong></p>` +
+        `<p class="sub">${esc(I18n.t("card.unreadableHelp", "Check it in the SimplyGo app for now. To help fix this, open Card data below, copy it and send it to us: it doesn't include your card's number."))}</p>` +
         rawBlock(),
         { again: true },
       );
@@ -93,14 +93,14 @@
     show(
       doneLine() +
       `<p class="cardValue">${dollars(c.balance)}</p>` +
-      `<p class="sub">on card ${esc(can(c.can))}</p>` +
+      `<p class="sub">${esc(I18n.t('card.onCard', 'on card {can}', { can: can(c.can) }))}</p>` +
       `<dl class="cardFacts">` +
-      `<dt>Expires</dt><dd>${expired ? '<strong>Expired</strong> ' : ''}${date(c.expiry)}</dd>` +
-      (c.autoloadOn && c.autoload > 0 && c.autoload <= MAX_CENTS ? `<dt>Auto top-up</dt><dd>${dollars(c.autoload)} when it runs low</dd>` : '') +
+      `<dt>${esc(I18n.t('card.expires', 'Expires'))}</dt><dd>${expired ? `<strong>${esc(I18n.t('card.expired', 'Expired'))}</strong> ` : ''}${date(c.expiry)}</dd>` +
+      (c.autoloadOn && c.autoload > 0 && c.autoload <= MAX_CENTS ? `<dt>${esc(I18n.t('card.autoTopUp', 'Auto top-up'))}</dt><dd>${esc(I18n.t('card.whenLow', '{amount} when it runs low', { amount: dollars(c.autoload) }))}</dd>` : '') +
       `</dl>` +
-      (c.balance < 300 ? `<p class="cardLow">${ico('alert')} Under $3: top up before your next ride.</p>` : '') +
+      (c.balance < 300 ? `<p class="cardLow">${ico('alert')} ${esc(I18n.t('card.low', 'Under $3: top up before your next ride.'))}</p>` : '') +
       historyBlock(c.history) +
-      `<p class="mode-note">A card on SimplyGo keeps its value in your SimplyGo account, so this can be out of date for it: check the SimplyGo app.</p>` +
+      `<p class="mode-note">${esc(I18n.t('card.simplygo', 'A card on SimplyGo keeps its value in your SimplyGo account, so this can be out of date for it: check the SimplyGo app.'))}</p>` +
       rawBlock(),
       { again: true },
     );
@@ -108,13 +108,13 @@
 
   function showError(code, raw) {
     const why = {
-      'not-cepas': "That card couldn't be read as an EZ-Link or NETS FlashPay card. Bank cards and phones can't be read for a value.",
-      lost: 'The card moved away too soon. Hold it still against the phone, and try again.',
-      off: 'NFC is off. Turn it on, then come back here.',
+      'not-cepas': I18n.t("card.notCepas", "That card couldn't be read as an EZ-Link or NETS FlashPay card. Bank cards and phones can't be read for a value."),
+      lost: I18n.t('card.lost', 'The card moved away too soon. Hold it still against the phone, and try again.'),
+      off: I18n.t('offline.nfcOff', 'NFC is off. Turn it on, then come back here.'),
       cancelled: null,
     }[code];
     lastRaw = raw || null;
-    if (why !== null) show(`<p>${esc(why || "Couldn't read the card. Try again.")}</p>` + rawBlock(), { again: true, nfc: code === 'off' });
+    if (why !== null) show(`<p>${esc(why || I18n.t("card.failed", "Couldn't read the card. Try again."))}</p>` + rawBlock(), { again: true, nfc: code === 'off' });
   }
 
   // A card held to the phone while the card value wasn't waiting for one, already read by the
@@ -127,26 +127,26 @@
   }
 
   // The card's last rides and top-ups, newest first, as the card keeps them.
-  const KINDS = { bus: ['bus', 'Bus'], train: ['train', 'Train'], topup: ['card', 'Top-up'], refund: ['bus', 'Bus refund'], other: ['card', 'Other'] };
-  const when = (ms) => new Date(ms).toLocaleString('en-GB', { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const KINDS = { bus: ['bus', I18n.t('history.bus', 'Bus')], train: ['train', I18n.t('card.train', 'Train')], topup: ['card', I18n.t('card.topUp', 'Top-up')], refund: ['bus', I18n.t('card.refund', 'Bus refund')], other: ['card', I18n.t('card.other', 'Other')] };
+  const when = (ms) => new Date(ms).toLocaleString(I18n.lang() === 'en' ? 'en-GB' : I18n.lang(), { timeZone: 'Asia/Singapore', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
   function historyBlock(history) {
     if (!Array.isArray(history) || !history.length) return '';
     const rows = history.slice(0, 15).map((h) => {
       const [icon, label] = KINDS[h.type] || KINDS.other;
       // A bus's "BUS228" or "BUS  21" says its number; a train's "HBC-BDK" its stations.
-      const what = h.type === 'bus' || h.type === 'refund' ? h.what.replace(/^BUS\s*/i, 'Bus ') : h.what;
+      const what = h.type === 'bus' || h.type === 'refund' ? I18n.t('favs.bus', 'Bus {no}', { no: h.what.replace(/^BUS\s*/i, '') }) : h.what;
       return `<li>${ico(icon)}<span class="cardRide"><span>${esc(what || label)}</span><span class="sub">${esc(when(h.time))}</span></span>` +
         `<span class="cardAmt${h.amount > 0 ? ' plus' : ''}">${h.amount > 0 ? '+' : ''}${dollars(h.amount)}</span></li>`;
     }).join('');
-    return `<p class="modal-section-label cardHistLabel">Recent rides and top-ups</p><ul class="cardHistory">${rows}</ul>`;
+    return `<p class="modal-section-label cardHistLabel">${esc(I18n.t('card.history', 'Recent rides and top-ups'))}</p><ul class="cardHistory">${rows}</ul>`;
   }
 
   // The card's data as read, without its numbers, to copy and send if a card reads wrongly.
   function rawBlock() {
     if (!lastRaw) return '';
-    return `<details class="cardRaw"><summary>Card data</summary><code>${esc(lastRaw)}</code>` +
-      `<button type="button" class="iconBtn" data-card-copy>${ico('copy')} Copy</button></details>`;
+    return `<details class="cardRaw"><summary>${esc(I18n.t('card.data', 'Card data'))}</summary><code>${esc(lastRaw)}</code>` +
+      `<button type="button" class="iconBtn" data-card-copy>${ico('copy')} ${esc(I18n.t('card.copy', 'Copy'))}</button></details>`;
   }
 
   function init() {
@@ -164,7 +164,7 @@
     $('#cardBody').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-card-copy]');
       if (!btn || !lastRaw) return;
-      navigator.clipboard?.writeText(lastRaw).then(() => { btn.lastChild.textContent = ' Copied'; }).catch(() => {});
+      navigator.clipboard?.writeText(lastRaw).then(() => { btn.lastChild.textContent = ` ${I18n.t('share.copied', 'Copied')}`; }).catch(() => {});
     });
     $('#cardNfc').addEventListener('click', () => AppBridge.call('SgBus', 'openSettings', { what: 'nfc' }));
     $('#cardModal').addEventListener('modalclose', () => {

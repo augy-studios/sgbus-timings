@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The phone app's words in Malay: values/strings.xml has the English and the notes. The website's wording is in main-site/i18n. -->
+<resources>
+    <string name="exit_hint">Tekan kembali sekali lagi untuk keluar</string>
+    <string name="shortcut_near">Perhentian berhampiran saya</string>
+    <string name="shortcut_near_short">Berhampiran</string>
+    <string name="shortcut_nav">Navigasi</string>
+    <string name="shortcut_nav_short">Navigasi</string>
+    <string name="shortcut_alerts">Amaran perkhidmatan</string>
+    <string name="shortcut_alerts_short">Amaran</string>
+    <string name="shortcut_card">Baki kad</string>
+    <string name="shortcut_card_short">Baki kad</string>
+    <string name="tile_home">Bas ke rumah</string>
+    <string name="tile_work">Bas ke tempat kerja</string>
+    <string name="widget_name">Waktu bas</string>
+    <string name="widget_description">Ketibaan langsung di perhentian bas yang anda pilih, untuk setiap bas di situ atau hanya bas yang anda pilih</string>
+    <string name="widget_pick">Waktu bas</string>
+    <string name="widget_pick_help">Ketik di sini untuk memilih perhentian</string>
+    <string name="widget_loading">Mendapatkan waktu…</string>
+    <string name="widget_refreshing">Memuat semula…</string>
+    <string name="widget_refresh">Muat semula</string>
+    <string name="widget_offline">Tidak dapat menghubungi LTA. Ketik muat semula untuk mencuba lagi.</string>
+    <string name="widget_offline_short">Luar talian</string>
+    <string name="widget_none">Tiada bas akan tiba di sini sekarang.</string>
+    <string name="widget_none_of_those">Tiada satu pun bas itu akan tiba di sini sekarang.</string>
+    <string name="widget_updated">Dikemas kini %1$s</string>
+    <string name="widget_setup_title">Widget waktu bas</string>
+    <string name="widget_setup_intro">Pilih perhentian untuk widget, dan, jika mahu, hanya sebahagian basnya.</string>
+    <string name="widget_setup_favourites">Perhentian kegemaran anda</string>
+    <string name="widget_setup_no_favourites">Perhentian yang anda simpan dalam aplikasi dipaparkan di sini untuk dipilih.</string>
+    <string name="widget_setup_code">Kod perhentian bas (5 digit)</string>
+    <string name="widget_setup_buses">Hanya bas ini, cth. 15, 62 (pilihan)</string>
+    <string name="widget_setup_save">Simpan</string>
+    <string name="widget_setup_bad_code">Pilih kegemaran, atau taip kod perhentian 5 digit.</string>
+    <string name="widget_setup_bad_buses">Nombor bas adalah seperti 21 atau NR7, dipisahkan dengan koma.</string>
+</resources>

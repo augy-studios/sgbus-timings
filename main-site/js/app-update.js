@@ -63,17 +63,17 @@
     const bar = document.createElement('div');
     bar.className = 'app-update-notice';
     bar.setAttribute('role', 'status');
-    bar.setAttribute('aria-label', 'App update');
+    bar.setAttribute('aria-label', I18n.t('appUpdate.label', 'App update'));
     bar.innerHTML = `
       <div class="update-notice-inner">
         <p></p>
         <a class="btn"></a>
-        <button type="button" class="iconBtn">Not now</button>
+        <button type="button" class="iconBtn">${escapeHtml(I18n.t('appUpdate.notNow', 'Not now'))}</button>
       </div>
     `;
-    bar.querySelector('p').textContent = `Version ${latest.version} of the Android app is out.`;
+    bar.querySelector('p').textContent = I18n.t('appUpdate.out', 'Version {v} of the Android app is out.', { v: latest.version });
     const go = bar.querySelector('a');
-    go.textContent = selfUpdate ? 'Update' : 'Download';
+    go.textContent = selfUpdate ? I18n.t('appUpdate.update', 'Update') : I18n.t('appUpdate.download', 'Download');
     // An intent is handed to Android, not opened in a tab; GitHub opens over the app.
     go.href = selfUpdate ? LINK : latest.page;
     bar.querySelector('button').addEventListener('click', () => {
@@ -86,12 +86,12 @@
   // ---------- "New versions of the app" in Service alerts (2.1.1) ----------
 
   const NOTES = {
-    appOn: "You'll get a notification the moment a new version is out, even with the app closed. Tap it to update.",
-    appOff: 'Off. While the app is open, the bar at the top still says when a new version is out.',
-    desktopOn: "A notification says when a new version is out. The app looks every hour while it's running, open or in the tray.",
-    desktopOff: "Off. The tray's menu still says when a new version is out.",
-    denied: "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again.",
-    failed: "Couldn't change that just now. Check you're online, then try again.",
+    appOn: I18n.t("appUpdate.appOn", "You'll get a notification the moment a new version is out, even with the app closed. Tap it to update."),
+    appOff: I18n.t('appUpdate.appOff', 'Off. While the app is open, the bar at the top still says when a new version is out.'),
+    desktopOn: I18n.t("appUpdate.desktopOn", "A notification says when a new version is out. The app looks every hour while it's running, open or in the tray."),
+    desktopOff: I18n.t("appUpdate.desktopOff", "Off. The tray's menu still says when a new version is out."),
+    denied: I18n.t("alerts.problem.appDenied", "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again."),
+    failed: I18n.t("appUpdate.failed", "Couldn't change that just now. Check you're online, then try again."),
   };
 
   function showReleases(on, note) {
@@ -199,12 +199,12 @@
     const bar = document.createElement('div');
     bar.className = 'app-update-notice';
     bar.setAttribute('role', 'status');
-    bar.setAttribute('aria-label', 'Get the Android app');
+    bar.setAttribute('aria-label', I18n.t('appUpdate.getApp', 'Get the Android app'));
     bar.innerHTML = `
       <div class="update-notice-inner">
-        <p>Get the Android app: widgets, routines and stop reminders, even with it closed. <a target="_blank" rel="noopener noreferrer">How to install</a></p>
-        <a class="btn">Download</a>
-        <button type="button" class="iconBtn">Not now</button>
+        <p>${escapeHtml(I18n.t('appUpdate.getAppText', 'Get the Android app: widgets, routines and stop reminders, even with it closed.'))} <a target="_blank" rel="noopener noreferrer">${escapeHtml(I18n.t('appUpdate.howToInstall', 'How to install'))}</a></p>
+        <a class="btn">${escapeHtml(I18n.t('appUpdate.download', 'Download'))}</a>
+        <button type="button" class="iconBtn">${escapeHtml(I18n.t('appUpdate.notNow', 'Not now'))}</button>
       </div>
     `;
     bar.querySelector('p a').href = GUIDE;

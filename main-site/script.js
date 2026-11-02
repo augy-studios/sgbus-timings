@@ -225,7 +225,8 @@ function updateGreeting() {
         return;
     }
     const age = birthdayAge();
-    const wish = `Happy ${age ? `${ordinal(age)} ` : ''}Birthday`;
+    // "25th" in English; the number alone in the other languages, which put it in their own way.
+    const wish = age ? tr('greet.birthdayAge', 'Happy {nth} Birthday', { nth: I18n.lang() === 'en' ? ordinal(age) : age }) : tr('greet.birthday', 'Happy Birthday');
     h1.innerHTML = name
         ? `<span class="greetLine">${escapeHtml(wish)},</span><span class="greetLine">${escapeHtml(name)}!</span>`
         : `<span class="greetLine">${escapeHtml(wish)}!</span>`;
@@ -414,13 +415,13 @@ async function shareLink(btn, url, title) {
     try {
         await navigator.clipboard.writeText(url);
     } catch {
-        prompt('Copy this link:', url);
+        prompt(tr('share.copyThisLink', 'Copy this link:'), url);
         return;
     }
     const lbl = btn.querySelector('.lbl');
     if (!lbl) return;
     lbl.dataset.label ??= lbl.textContent;
-    lbl.textContent = 'Link copied';
+    lbl.textContent = tr('share.linkCopied', 'Link copied');
     clearTimeout(btn.shareTimer);
     btn.shareTimer = setTimeout(() => { lbl.textContent = lbl.dataset.label; }, 2000);
 }
@@ -434,7 +435,7 @@ function serviceEndsText(no) {
     if (!BusNet.isReady() || !BusNet.hasService(no)) return '';
     const t = BusNet.terminals(no);
     if (!t.origin || !t.dest) return '';
-    if (t.loop || t.origin === t.dest) return `Loop from ${nameOf(t.origin) || t.origin}`;
+    if (t.loop || t.origin === t.dest) return tr('route.loopFrom', 'Loop from {stop}', { stop: nameOf(t.origin) || t.origin });
     return `${nameOf(t.origin) || t.origin} → ${nameOf(t.dest) || t.dest}`;
 }
 
@@ -498,7 +499,7 @@ function matchStops(q, limit = 20) {
     if (atStation.length) {
         return {
             stops: atStation.map(s => ({ code: s.code, name: nameOf(s.code), road: stopsIndex[s.code]?.road || '', distance: s.distance })),
-            note: `Bus stops at ${StationSearch.label(station)}`,
+            note: tr('search.stopsAt', 'Bus stops at {station}', { station: StationSearch.label(station) }),
         };
     }
 
@@ -543,12 +544,12 @@ function renderAcList(box, stops, services = [], postal = null, direct = null, n
         (postal
             ? `<div class="acItem acService" data-postal="${escapeHtml(postal)}">` +
               `<span class="code">${ico('pin')} ${escapeHtml(postal)}</span>` +
-              `<span class="name">Bus stops near this postal code</span>` +
+              `<span class="name">${escapeHtml(tr('search.nearPostal', 'Bus stops near this postal code'))}</span>` +
               `</div>`
             : '') +
         services.map(no =>
             `<div class="acItem acService" data-svc="${escapeHtml(no)}">` +
-            `<span class="code">${ico('bus')} Bus ${escapeHtml(no)}</span>` +
+            `<span class="code">${ico('bus')} ${escapeHtml(tr('favs.bus', 'Bus {no}', { no }))}</span>` +
             `<span class="name">${escapeHtml(serviceEndsText(no))}</span>` +
             `</div>`
         ).join('') +
@@ -622,7 +623,7 @@ function attachAutocomplete(input, box, { withServices = false, withCampus = fal
         const code = v.match(/\b\d{5}\b/)?.[0];
         const pick = code && stopsIndex?.[code] ? code : suggest(v).stops[0]?.code;
         if (pick) onStop(pick);
-        else if (v) alert('No bus stops matched that. Try a bus stop number or part of its name.');
+        else if (v) alert(tr('search.noMatch', 'No bus stops matched that. Try a bus stop number or part of its name.'));
     });
     box.addEventListener('click', e => {
         const postal = e.target.closest('[data-postal]');
@@ -645,7 +646,7 @@ const removeIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512
 
 // `buses`, a stop's starred buses ("183, 188"), go after its name and are kept whole, the name
 // cut short first, so the numbers always show (help desk #11).
-function chip(openAttr, removeAttr, code, name, title, removeLabel = 'Remove from favourites', buses = '') {
+function chip(openAttr, removeAttr, code, name, title, removeLabel = tr('favs.remove', 'Remove from favourites'), buses = '') {
     return `<span class="chip">` +
         `<button type="button" class="chipMain" ${openAttr} title="${escapeHtml(title)}">` +
         (code ? `<span class="code">${escapeHtml(code)}</span>` : '') +
@@ -808,21 +809,21 @@ function renderFavs() {
     renderFavLists(list);
 
     $('#favChips').innerHTML = favs.map(({ code, name }) => {
-        const displayName = name || nameOf(code) || 'Bus Stop';
+        const displayName = name || nameOf(code) || tr('favs.stopNoName', 'Bus stop');
         return chip(`data-fav="${escapeHtml(code)}"`, list ? `data-list-out="${escapeHtml(favKey.stop(code))}"` : `data-remove="${escapeHtml(code)}"`, code, displayName, `${displayName} (${code})`, out);
     }).join('');
 
     $('#favBusChips').innerHTML = buses.map(no =>
-        chip(`data-fav-bus="${escapeHtml(no)}"`, list ? `data-list-out="${escapeHtml(favKey.bus(no))}"` : `data-remove-bus="${escapeHtml(no)}"`, no, serviceEndsText(no), `Bus ${no}`, out)
+        chip(`data-fav-bus="${escapeHtml(no)}"`, list ? `data-list-out="${escapeHtml(favKey.bus(no))}"` : `data-remove-bus="${escapeHtml(no)}"`, no, serviceEndsText(no), tr('favs.bus', 'Bus {no}', { no }), out)
     ).join('');
 
     // A stop with its starred buses: tapped, its timings for just those.
     $('#favStopBusChips').innerHTML = atStops.map(({ code, buses: nos }) => {
-        const name = nameOf(code) || 'Bus stop';
+        const name = nameOf(code) || tr('favs.stopNoName', 'Bus stop');
         const keys = nos.map(no => favKey.stopBus(code, no)).join(' ');
         return chip(`data-fav-stopbus="${escapeHtml(code)}" data-buses="${escapeHtml(nos.join(','))}"`,
             list ? `data-list-out="${escapeHtml(keys)}"` : `data-remove-stopbus="${escapeHtml(code)}"`,
-            code, name, `${nos.length === 1 ? `Bus ${nos[0]}` : `Buses ${listText(nos)}`} at ${name} (${code})`, out, nos.join(', '));
+            code, name, nos.length === 1 ? tr('favs.busAtStop', 'Bus {no} at {stop} ({code})', { no: nos[0], stop: name, code }) : tr('favs.busesAtStop', 'Buses {list} at {stop} ({code})', { list: listText(nos), stop: name, code }), out, nos.join(', '));
     }).join('');
 
     $('#favRouteChips').innerHTML = routes.map((r, i) => {
@@ -972,7 +973,7 @@ function busWays(services) {
         const heading = headings.get(s);
         if (heading) {
             const to = nameOf(heading.to) || heading.to;
-            ways.set(s, { label: `To ${to}`, short: `→ ${to}`, tone: heading.tone, dir: heading.dir });
+            ways.set(s, { label: tr('trip.to', 'To {to}', { to }), short: `→ ${to}`, tone: heading.tone, dir: heading.dir });
             out.push(s);
             continue;
         }
@@ -997,12 +998,12 @@ function timeRound(no, bus) {
     const home = nameOf(bus.dest) || bus.dest || '';
     if (bus.visit === 2) {
         return isLoop
-            ? { label: `Back to ${home}`, short: `↩ ${home}`, tone: 1 }
-            : { label: 'Second time past here', short: '2nd time', tone: 1 };
+            ? { label: tr('stop.way.backTo', 'Back to {stop}', { stop: home }), short: `↩ ${home}`, tone: 1 }
+            : { label: tr('stop.way.second', 'Second time past here'), short: tr('stop.way.secondShort', '2nd time'), tone: 1 };
     }
     return isLoop
-        ? { label: loop ? `Out to ${loop}` : 'On its way out', short: `→ ${loop || 'Out'}`, tone: 0 }
-        : { label: 'First time past here', short: '1st time', tone: 0 };
+        ? { label: loop ? tr('stop.way.outTo', 'Out to {stop}', { stop: loop }) : tr('stop.way.out', 'On its way out'), short: `→ ${loop || tr('stop.way.outShort', 'Out')}`, tone: 0 }
+        : { label: tr('stop.way.first', 'First time past here'), short: tr('stop.way.firstShort', '1st time'), tone: 0 };
 }
 
 // ----------- Incoming Buses Bar -----------
@@ -1106,7 +1107,7 @@ function renderStopHeader() {
     const { code } = current;
     $('#stopFavBtn').hidden = false;
     $('#stopCode').textContent = code;
-    $('#stopName').textContent = nameOf(code) || 'Bus Stop';
+    $('#stopName').textContent = nameOf(code) || tr('favs.stopNoName', 'Bus stop');
     $('#stopRoad').textContent = stopsIndex?.[code]?.road || '';
     setFavButton($('#stopFavBtn'), isFavStop(code), tr('stop.save', 'Save'), tr('stop.saved', 'Saved'));
 }
@@ -1134,7 +1135,7 @@ function renderStopTools() {
     parts.push(`<button type="button" class="iconBtn" data-tool="board" title="${escapeHtml(tr('stop.tool.board.title', 'This stop’s buses full screen, like an interchange’s departure screens'))}">${ico('clock')} ${escapeHtml(tr('stop.tool.board', 'Board'))}</button>`);
     // The desktop app: this stop's (or bus's) next buses in the tray (desktop/glance.js).
     if (window.sgbusDesktop?.tray) {
-        parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="Show ${oneBus(service) && !expanded ? `bus ${escapeHtml(service)}'s` : "this stop's"} next buses in the tray, and stop it from the tray's menu">${ico('bell')} Tray countdown</button>`);
+        parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="${escapeHtml(oneBus(service) && !expanded ? tr('stop.tool.trayBus.title', "Show bus {no}'s next buses in the tray, and stop it from the tray's menu", { no: service }) : tr('stop.tool.tray.title', "Show this stop's next buses in the tray, and stop it from the tray's menu"))}">${ico('bell')} ${escapeHtml(tr('stop.tool.tray', 'Tray countdown'))}</button>`);
     }
     // The Android app with NFC: this stop on a sticker (js/offline-share.js).
     if (window.OfflineShare?.canSticker()) {
@@ -1189,10 +1190,10 @@ function renderStopAside() {
     const parts = [];
     const r = BusNet.restricted(code);
     if (r) {
-        parts.push(`<p class="stopAsideNote">${ico('alert')} <span><strong>Authorised personnel only.</strong> ` +
+        parts.push(`<p class="stopAsideNote">${ico('alert')} <span><strong>${escapeHtml(tr('stop.restricted', 'Authorised personnel only.'))}</strong> ` +
             escapeHtml(r.through
-                ? `This stop is at ${r.place}: the public can't get on or off here, but can ride past.`
-                : `This stop is inside ${r.place}: the public can't get on or off here, or ride through.`) +
+                ? tr('stop.restrictedAt', "This stop is at {place}: the public can't get on or off here, but can ride past.", { place: r.place })
+                : tr('stop.restrictedIn', "This stop is inside {place}: the public can't get on or off here, or ride through.", { place: r.place })) +
             `</span></p>`);
     }
     const border = BusNet.crossBorder(code);
@@ -1201,8 +1202,8 @@ function renderStopAside() {
             `${escapeHtml(border.note)}</span></p>`);
     }
     for (const other of samePlaceStops(code)) {
-        parts.push(`<button type="button" class="iconBtn" data-same-place="${escapeHtml(other)}" title="Some buses here only stop at the other code">` +
-            `${ico('bus')} Also ${escapeHtml(nameOf(other) || other)} (${escapeHtml(other)})</button>`);
+        parts.push(`<button type="button" class="iconBtn" data-same-place="${escapeHtml(other)}" title="${escapeHtml(tr('stop.samePlace.title', 'Some buses here only stop at the other code'))}">` +
+            `${ico('bus')} ${escapeHtml(tr('stop.samePlace', 'Also {stop} ({code})', { stop: nameOf(other) || other, code: other }))}</button>`);
     }
     // Buses skipping it today or tomorrow, from the newsfeed (js/alerts.js): drawn again once
     // it's in.
@@ -1323,7 +1324,7 @@ function renderArrivals() {
             `<div class="svcLeft">` +
             `<div class="svcNo">${fav ? favMark() : ''}${escapeHtml(svcNo)}</div>` +
             // Which way this one's going, or which time round, where the stop has it both ways.
-            (way ? `<div class="svcTo" title="Bus ${escapeHtml(svcNo)}: ${escapeHtml(way.label)}">${escapeHtml(way.short)}</div>` : '') +
+            (way ? `<div class="svcTo" title="${escapeHtml(tr('stop.svc.way.title', 'Bus {no}: {way}', { no: svcNo, way: way.label }))}">${escapeHtml(way.short)}</div>` : '') +
             (s.operator ? `<div class="svcOp">${escapeHtml(s.operator)}</div>` : '') +
             `<button class="viewRouteBtn" data-view-route="${escapeHtml(svcNo)}"${way?.dir != null ? ` data-dir="${way.dir}"` : ''} title="${escapeHtml(tr('stop.svc.route.title', 'Bus {no}’s route and stops', { no: svcNo }))}">${escapeHtml(tr('stop.svc.route', 'Route'))}</button>` +
             // This bus at this stop, in Favourites (toggleFavStopBus), as LTA's MyTransport has it.
@@ -1433,7 +1434,7 @@ async function loadStop(code, { service = null, expanded = false, ctx = null, di
     if (!/^\d{5}$/.test(code)) {
         // A campus stop of its own, by its id (js/campus.js): its shuttles, with no live buses.
         if (window.Campus?.at(code) && !Campus.at(code).lta) { loadCampusStop(code, { ctx, scroll }); return; }
-        alert('Please enter a valid 5-digit bus stop code.');
+        alert(tr('search.badCode', 'Please enter a valid 5-digit bus stop code.'));
         return;
     }
     // Offline, Bus timings is gone till it's back (js/offline.js): a stop tapped anywhere, a
@@ -1554,10 +1555,10 @@ async function openBusPicker() {
 
     const favs = new Set(LS.getFavBuses());
     services = pinFavourites(services, favs, LS.getPin('bus'));
-    $('#busPickTitle').textContent = `Buses at ${nameOf(code) || code}`;
+    $('#busPickTitle').textContent = tr('stop.busesAt', 'Buses at {stop}', { stop: nameOf(code) || code });
     $('#busPickGrid').innerHTML =
         services.map(no => busButton(no, favs.has(no), `data-pick-bus="${escapeHtml(no)}"`)).join('') ||
-        '<div class="empty">No buses found for this stop.</div>';
+        `<div class="empty">${escapeHtml(tr('stop.noBuses', 'No buses found for this stop.'))}</div>`;
     openModal('busPickModal');
 }
 
@@ -1573,7 +1574,7 @@ async function openService(service, { fromStop = null, onward = false, dir = nul
         await BusNet.load(stopsIndex);
     } catch (e) {
         console.error(e);
-        alert('Could not load route information.');
+        alert(tr('route.loadFailed', 'Could not load route information.'));
         return;
     }
     if (!BusNet.hasService(service)) { alert(`No route found for bus ${service}.`); return; }
@@ -1617,8 +1618,8 @@ function renderServiceModal() {
     const isLoop = !!(t.loop || (t.origin && t.origin === t.dest));
     const label = code => code ? `${nameOf(code) || code} (${code})` : '-';
 
-    $('#svcModalTitle').textContent = `Bus ${service}`;
-    setFavButton($('#busFavBtn'), isFavBus(service), 'Save bus', 'Saved');
+    $('#svcModalTitle').textContent = tr('favs.bus', 'Bus {no}', { no: service });
+    setFavButton($('#busFavBtn'), isFavBus(service), tr('route.save_bus', 'Save bus'), tr('stop.saved', 'Saved'));
 
     let codes;
     if (onward) {
@@ -1630,20 +1631,20 @@ function renderServiceModal() {
     }
 
     const summary = isLoop
-        ? `Loop service, starting and ending at ${label(t.origin)}${t.loop ? ` (loops at ${t.loop})` : ''}`
-        : `${label(t.origin)} → ${label(t.dest)}${t.directions > 1 ? ' (and back)' : ''}`;
+        ? (t.loop ? tr('route.loopAt', 'Loop service, starting and ending at {stop} (loops at {loop})', { stop: label(t.origin), loop: t.loop }) : tr('route.loop', 'Loop service, starting and ending at {stop}', { stop: label(t.origin) }))
+        : `${label(t.origin)} → ${label(t.dest)}${t.directions > 1 ? tr('route.andBack', ' (and back)') : ''}`;
     // Traced over the stops on show, so the onward view reads as the journey left to make.
     const via = BusNet.landmarks(codes);
     $('#svcMeta').innerHTML =
-        `<div><strong>Route:</strong> ${escapeHtml(summary)}</div>` +
-        (via.length ? `<div><strong>Via:</strong> ${escapeHtml(via.join(' → '))}</div>` : '') +
-        `<div><strong>Operator:</strong> ${escapeHtml(info.op || '-')}</div>` +
-        (info.cat ? `<div><strong>Category:</strong> ${escapeHtml(info.cat)}</div>` : '');
+        `<div><strong>${escapeHtml(tr('route.meta.route', 'Route:'))}</strong> ${escapeHtml(summary)}</div>` +
+        (via.length ? `<div><strong>${escapeHtml(tr('route.meta.via', 'Via:'))}</strong> ${escapeHtml(via.join(' → '))}</div>` : '') +
+        `<div><strong>${escapeHtml(tr('route.meta.operator', 'Operator:'))}</strong> ${escapeHtml(info.op || '-')}</div>` +
+        (info.cat ? `<div><strong>${escapeHtml(tr('route.meta.category', 'Category:'))}</strong> ${escapeHtml(info.cat)}</div>` : '');
 
     const modeTabs = $('#svcModeTabs');
     modeTabs.hidden = !fromStop;
     if (fromStop) {
-        modeTabs.querySelector('[data-svc-mode="onward"]').textContent = `From ${nameOf(fromStop) || fromStop}`;
+        modeTabs.querySelector('[data-svc-mode="onward"]').textContent = tr('route.from', 'From {stop}', { stop: nameOf(fromStop) || fromStop });
         modeTabs.querySelectorAll('.tab').forEach(tab => {
             const on = (tab.dataset.svcMode === 'onward') === onward;
             tab.classList.toggle('active', on);
@@ -1663,8 +1664,8 @@ function renderServiceModal() {
     if (onward) {
         const toGo = codes.length - 1;
         note.textContent = toGo > 0
-            ? `${toGo} stop${toGo === 1 ? '' : 's'} to go, ending at ${label(codes[codes.length - 1])}`
-            : `This is the last stop on bus ${service}'s route; there's nothing further to go.`;
+            ? (toGo === 1 ? tr('route.oneToGo', '1 stop to go, ending at {stop}', { stop: label(codes[codes.length - 1]) }) : tr('route.manyToGo', '{n} stops to go, ending at {stop}', { n: toGo, stop: label(codes[codes.length - 1]) }))
+            : tr('route.lastStop', "This is the last stop on bus {no}'s route; there's nothing further to go.", { no: service });
     }
 
     const favs = new Set(LS.getFavs().map(f => f.code));
@@ -1672,29 +1673,29 @@ function renderServiceModal() {
         `<button type="button" class="routeStop${code === fromStop ? ' me' : ''}" data-stop="${escapeHtml(code)}">` +
         `<span class="seq">${seq}</span>` +
         `<span class="name">${favs.has(code) ? favMark() : ''}${escapeHtml(nameOf(code) || code)}` +
-        (BusNet.restricted(code) ? `<span class="road">Authorised personnel only</span>` : '') +
-        (BusNet.crossBorder(code) ? `<span class="road">${escapeHtml(BusNet.crossBorder(code).label)}: passport needed</span>` : '') + `</span>` +
+        (BusNet.restricted(code) ? `<span class="road">${escapeHtml(tr('stop.restrictedShort', 'Authorised personnel only'))}</span>` : '') +
+        (BusNet.crossBorder(code) ? `<span class="road">${escapeHtml(tr('stop.passport', '{place}: passport needed', { place: BusNet.crossBorder(code).label }))}</span>` : '') + `</span>` +
         `<span class="pill">${escapeHtml(code)}</span>` +
         `</button>`;
 
     let html;
     if (onward) {
-        html = codes.map((c, i) => row(c, i === 0 ? 'Here' : `+${i}`)).join('');
+        html = codes.map((c, i) => row(c, i === 0 ? tr('route.here', 'Here') : `+${i}`)).join('');
     } else {
         const all = codes.map((c, i) => row(c, i + 1)).join('');
         const favCodes = codes.filter(c => favs.has(c));
         if (favCodes.length) {
             // The favourited stops get a section of their own, then the whole route, in
             // which they still appear in their place.
-            const favHtml = `<div class="routeSection">Your favourite stops on ${escapeHtml(service)}</div>` +
+            const favHtml = `<div class="routeSection">${escapeHtml(tr('route.favsOn', 'Your favourite stops on {no}', { no: service }))}</div>` +
                 favCodes.map(c => row(c, codes.indexOf(c) + 1)).join('');
-            const allHtml = `<div class="routeSection">All stops</div>${all}`;
+            const allHtml = `<div class="routeSection">${escapeHtml(tr('route.allStops', 'All stops'))}</div>${all}`;
             html = LS.getPin('stop') === 'bottom' ? allHtml + favHtml : favHtml + allHtml;
         } else {
             html = all;
         }
     }
-    $('#routeList').innerHTML = html || '<div class="empty">No route data.</div>';
+    $('#routeList').innerHTML = html || `<div class="empty">${escapeHtml(tr('route.noData', 'No route data.'))}</div>`;
 }
 
 // ----------- Nearby stops -----------
@@ -1721,7 +1722,7 @@ function locationMessage(err, toDo) {
 function findNearbyStops(limit = 8, { noTurnOn = false } = {}) {
     return new Promise((resolve, reject) => {
         if (!navigator.geolocation) {
-            reject(new Error("This browser can't share its location."));
+            reject(new Error(tr('location.cantShare', "This browser can't share its location.")));
             return;
         }
         navigator.geolocation.getCurrentPosition(
@@ -1752,7 +1753,7 @@ function openStopList(title, stops, { pin = true, onPick, direct = null, note = 
     const rows = stopRows(stops, { pin, direct });
     $('#stopListBody').innerHTML = rows
         ? (note ? `<p class="stopListNote">${escapeHtml(note)}</p>` : '') + rows
-        : '<div class="empty">No bus stops found nearby.</div>';
+        : `<div class="empty">${escapeHtml(tr('near.none', 'No bus stops found nearby.'))}</div>`;
     stopListPick = onPick;
     openModal('stopListModal');
 }
@@ -1769,15 +1770,15 @@ function stopRows(stops, { pin = true, direct = null } = {}) {
         return `<button type="button" class="routeStop${buses ? ' direct' : ''}" data-stop="${escapeHtml(s.code)}">` +
             `<span class="name">${favs.has(s.code) ? favMark() : ''}${escapeHtml(nameOf(s.code) || s.code)}` +
             (road ? `<span class="road">${escapeHtml(road)}</span>` : '') +
-            (BusNet.crossBorder(s.code) ? `<span class="road">${escapeHtml(BusNet.crossBorder(s.code).label)}: passport needed</span>` : '') +
-            (buses ? `<span class="via">${ico('bus')} Direct: ${escapeHtml(buses.join(', '))}</span>` : '') + `</span>` +
+            (BusNet.crossBorder(s.code) ? `<span class="road">${escapeHtml(tr('stop.passport', '{place}: passport needed', { place: BusNet.crossBorder(s.code).label }))}</span>` : '') +
+            (buses ? `<span class="via">${ico('bus')} ${escapeHtml(tr('near.direct', 'Direct: {list}', { list: buses.join(', ') }))}</span>` : '') + `</span>` +
             (s.distance != null ? `<span class="dist">${formatDistance(s.distance)}</span>` : '') +
             `<span class="pill">${escapeHtml(s.code)}</span>` +
             `</button>`;
     }).join('');
 }
 
-function openNearbyList(stops, title = 'Nearby bus stops') {
+function openNearbyList(stops, title = tr('near.title', 'Nearby bus stops')) {
     openStopList(title, stops, {
         onPick: code => loadStop(code, { ctx: { kind: 'nearby', stops, title }, scroll: true }),
     });
@@ -1848,10 +1849,10 @@ async function showNearStops({ ask = false } = {}) {
 // The stops nearest the address with a 6-digit postal code, and a title naming it.
 async function postalStops(code) {
     const [r] = await Promise.all([fetch(`/api/postal-code?code=${encodeURIComponent(code)}`), ensureStopsIndex()]);
-    if (r.status === 404) throw new Error(`No address has the postal code ${code}.`);
-    if (!r.ok) throw new Error("Couldn't look up that postal code. Please try again.");
+    if (r.status === 404) throw new Error(tr('search.noPostal', 'No address has the postal code {code}.', { code }));
+    if (!r.ok) throw new Error(tr('search.postalFailed', "Couldn't look up that postal code. Please try again."));
     const place = await r.json();
-    return { title: `Stops near ${place.address} (${code})`, stops: stopsNear(place.lat, place.lng) };
+    return { title: tr('search.stopsNear', 'Stops near {place} ({code})', { place: place.address, code }), stops: stopsNear(place.lat, place.lng) };
 }
 
 function openPostalList(code) {
@@ -1889,7 +1890,7 @@ function storeTray(key, value) {
 
 function setTrayOpen(open, save = true) {
     page.toggleAttribute('data-tray-closed', !open);
-    const label = open ? 'Hide the Edge Tray' : 'Show the Edge Tray';
+    const label = open ? tr('tray.hideTray', 'Hide the Edge Tray') : tr('tray.showTray', 'Show the Edge Tray');
     $('#trayTab').setAttribute('aria-expanded', String(open));
     $('#trayTab').setAttribute('aria-label', label);
     $('#trayTab').title = label;
@@ -2054,7 +2055,7 @@ function settingsView(name) {
     $('#settingsHome').hidden = !!settingsAt;
     settingsGroups().forEach(g => { g.hidden = g.dataset.settingsGroup !== settingsAt; });
     $('#settingsBack').hidden = !settingsAt;
-    $('#settingsTitle').textContent = settingsAt ? settingsGroupEl(settingsAt).dataset.title : 'Settings';
+    $('#settingsTitle').textContent = settingsAt ? settingsGroupEl(settingsAt).dataset.title : tr('settings.settings', 'Settings');
     // Back on the list with Find's words still there: the list's height again, as above.
     const finding = !settingsAt && settingsListHeight && $('#settingsFind').value.trim();
     $('#settingsModal .modal').style.minHeight = finding ? `${settingsListHeight}px` : '';
@@ -2099,7 +2100,7 @@ function findSettings() {
         ? found.map(f => `<button class="shareMenuItem" type="button" data-settings-find="${f.group.dataset.settingsGroup}:${f.i}">` +
             `<span><strong>${escapeHtml(f.label.textContent.trim())}</strong><span class="sub">${escapeHtml(f.group.dataset.title)}</span></span>` +
             `<span class="settingsGo" aria-hidden="true">${window.icon('chevron')}</span></button>`).join('')
-        : '<p class="mode-note settingsFindNone">No setting by that name. Try a word such as tray, alert or sync.</p>';
+        : `<p class="mode-note settingsFindNone">${escapeHtml(tr('settings.findNone', 'No setting by that name. Try a word such as tray, alert or sync.'))}</p>`;
 }
 
 // A block from Find: its group, scrolled to it, its label lit a moment.
@@ -2200,7 +2201,7 @@ async function runSearch() {
         loadStop(first.code);
     }
     else if (window.Campus?.search(v, 1).stops[0]) loadStop(Campus.search(v, 1).stops[0].key);
-    else alert('Type a bus stop name, 5-digit stop code, 6-digit postal code, or bus number.');
+    else alert(tr('search.typeSomething', 'Type a bus stop name, 5-digit stop code, 6-digit postal code, or bus number.'));
 }
 
 // ----------- Events -----------
@@ -2351,8 +2352,8 @@ $('#stopTools').addEventListener('click', e => {
         window.sgbusDesktop.tray.set({
             code: current.code, name: nameOf(current.code) || '', service: !current.expanded ? oneBus(current.service) : null,
         }).then(() => {
-            btn.lastChild.textContent = ' In the tray';
-            setTimeout(() => { if (btn.isConnected) btn.lastChild.textContent = ' Tray countdown'; }, 2500);
+            btn.lastChild.textContent = ` ${tr('stop.tool.inTray', 'In the tray')}`;
+            setTimeout(() => { if (btn.isConnected) btn.lastChild.textContent = ` ${tr('stop.tool.tray', 'Tray countdown')}`; }, 2500);
         }).catch(() => {});
     } else if (tool === 'sticker') {
         OfflineShare.sticker({ url: `${location.origin}/#${current.code}`, title: `${nameOf(current.code) || 'Bus stop'} (${current.code})` });
@@ -2437,7 +2438,7 @@ function tripLegForBus(service, codes, toCode) {
     let metres = 0;
     for (let i = 1; i < points.length; i++) metres += haversine(points[i - 1][0], points[i - 1][1], points[i][0], points[i][1]) || 0;
     return {
-        kind: 'bus', label: `Bus ${service}`, to: nameOf(toCode) || toCode,
+        kind: 'bus', label: tr('favs.bus', 'Bus {no}', { no: service }), to: nameOf(toCode) || toCode,
         points, names: known.map(c => nameOf(c) || c), codes: known, minutes: metres / 250, wait: 0,
         service, board: known[0], alight: toCode,
     };
@@ -2448,7 +2449,7 @@ function startBusTrip(service, dir, toCode, fromStop) {
     const end = stops.indexOf(toCode);
     const start = fromStop && stops.indexOf(fromStop) !== -1 && stops.indexOf(fromStop) < end ? stops.indexOf(fromStop) : 0;
     if (end < 1) return;
-    Trip.start({ title: `Bus ${service} to ${nameOf(toCode) || toCode}`, legs: [tripLegForBus(service, stops.slice(start, end + 1), toCode)] });
+    Trip.start({ title: tr('trip.busTo', 'Bus {no} to {stop}', { no: service, stop: nameOf(toCode) || toCode }), legs: [tripLegForBus(service, stops.slice(start, end + 1), toCode)] });
 }
 
 $('#routeList').addEventListener('click', e => {

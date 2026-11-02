@@ -112,7 +112,7 @@
       pending.set(id, resolve);
       port.postMessage(JSON.stringify({ ...body, id, type }));
       setTimeout(() => {
-        if (pending.delete(id)) reject(new Error("The app didn't answer. Try again."));
+        if (pending.delete(id)) reject(new Error(I18n.t("appBridge.noAnswer", "The app didn't answer. Try again.")));
       }, ms);
     });
   }

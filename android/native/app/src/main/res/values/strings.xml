@@ -1,9 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">SG Bus Timings</string>
-    <string name="title_activity_main">SG Bus Timings</string>
-    <string name="package_name">org.uwuapps.sgbus</string>
-    <string name="custom_url_scheme">org.uwuapps.sgbus</string>
+    <string name="app_name" translatable="false">SG Bus Timings</string>
+    <string name="title_activity_main" translatable="false">SG Bus Timings</string>
+    <string name="package_name" translatable="false">org.uwuapps.sgbus</string>
+    <string name="custom_url_scheme" translatable="false">org.uwuapps.sgbus</string>
     <!-- Back with nothing left to close (MainActivity, 2.2.7) -->
     <string name="exit_hint">Press back again to exit</string>
     <string name="shortcut_near">Stops near me</string>
@@ -15,7 +15,7 @@
     <string name="shortcut_card">Card value</string>
     <string name="shortcut_card_short">Card value</string>
     <!-- Offline Sharing's tap (ShareTagService.java), as Android's NFC settings may list it -->
-    <string name="share_tag_service">SG Bus Timings Offline Sharing</string>
+    <string name="share_tag_service" translatable="false">SG Bus Timings Offline Sharing</string>
     <!-- Quick Settings tiles (PlaceTile.java) -->
     <string name="tile_home">Bus home</string>
     <string name="tile_work">Bus to work</string>

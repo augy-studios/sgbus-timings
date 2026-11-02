@@ -58,7 +58,7 @@
       script.async = true;
       script.onload = () =>
         window.Peer ? resolve((peerLibrary = window.Peer)) : reject(new Error("PeerJS did not define Peer"));
-      script.onerror = () => reject(new Error("Could not load PeerJS"));
+      script.onerror = () => reject(new Error(I18n.t('p2p.noPeerjs', 'Could not load PeerJS')));
       document.head.appendChild(script);
     });
   }
@@ -66,18 +66,18 @@
   function describePeerError(error) {
     switch (error?.type) {
       case "peer-unavailable":
-        return "Nobody is showing that code. Check it and try again.";
+        return I18n.t('p2p.nobody', 'Nobody is showing that code. Check it and try again.');
       case "unavailable-id":
-        return "That code is already in use. Generate a new one.";
+        return I18n.t('p2p.inUse', 'That code is already in use. Generate a new one.');
       case "network":
       case "server-error":
       case "socket-error":
       case "socket-closed":
-        return "Cannot reach the pairing service. Everything else still works.";
+        return I18n.t('p2p.noService', 'Cannot reach the pairing service. Everything else still works.');
       case "browser-incompatible":
-        return "This browser cannot make peer-to-peer connections.";
+        return I18n.t('p2p.noP2p', 'This browser cannot make peer-to-peer connections.');
       default:
-        return "The connection failed.";
+        return I18n.t('p2p.failed', 'The connection failed.');
     }
   }
 

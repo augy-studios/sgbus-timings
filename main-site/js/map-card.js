@@ -42,7 +42,7 @@
   let token = 0;
 
   const esc = (s) => escapeHtml(String(s ?? ''));
-  const listText = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
+  const listText = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')}${I18n.t('trip.and', ' and ')}${xs[xs.length - 1]}`);
 
   // ---------- where it sits ----------
 
@@ -101,9 +101,9 @@
     if (dest) host.onDirections(dest);
   }
 
-  const head = (inner) => `<div class="mcHead">${inner}<button class="icon-btn small mcClose" type="button" data-mc-close aria-label="Close">${ico('close')}</button></div>`;
-  const foot = () => `<button class="btn mcGo" type="button" data-mc-go>${ico('navigate')} Directions</button>`;
-  const timingsBtn = (code) => `<button class="btn mcGo" type="button" data-mc-timings="${esc(code)}">${ico('clock')} Show bus timings</button>`;
+  const head = (inner) => `<div class="mcHead">${inner}<button class="icon-btn small mcClose" type="button" data-mc-close aria-label="${esc(I18n.t('common.close', 'Close'))}">${ico('close')}</button></div>`;
+  const foot = () => `<button class="btn mcGo" type="button" data-mc-go>${ico('navigate')} ${esc(I18n.t('stop.tool.directions', 'Directions'))}</button>`;
+  const timingsBtn = (code) => `<button class="btn mcGo" type="button" data-mc-timings="${esc(code)}">${ico('clock')} ${esc(I18n.t('mapCard.showTimings', 'Show bus timings'))}</button>`;
 
   // ---------- a bus stop ----------
 
@@ -141,7 +141,7 @@
   async function stopCard(code) {
     const s = stopsIndex?.[code];
     if (!s) return;
-    const body = frame(`Bus stop ${code}, ${s.n || ''}`);
+    const body = frame(`${I18n.t('favs.stop', 'Bus stop {code}', { code })}, ${s.n || ''}`);
     at = [s.lat, s.lng];
     dest = { label: s.n || code, lat: s.lat, lng: s.lng };
     const mine = token;
@@ -151,14 +151,14 @@
       const pills = buses.length
         ? buses.map((no) => {
           const st = state(no, code, etas ? etas.get(no) || [] : null);
-          const what = { on: 'running', last: 'last 3 buses of the day', off: 'not running now' }[st];
-          return `<button class="svcPill ${st}" type="button" data-mc-timings="${esc(code)}" data-mc-bus="${esc(no)}" title="Bus ${esc(no)}: ${what}. Its timings here">${esc(no)}</button>`;
+          const what = { on: I18n.t('mapCard.running', 'running'), last: I18n.t('mapCard.lastThree', 'last 3 buses of the day'), off: I18n.t('mapCard.notRunning', 'not running now') }[st];
+          return `<button class="svcPill ${st}" type="button" data-mc-timings="${esc(code)}" data-mc-bus="${esc(no)}" title="${esc(I18n.t('mapCard.pillTitle', 'Bus {no}: {what}. Its timings here', { no, what }))}">${esc(no)}</button>`;
         }).join('')
-        : '<p class="mcNote">No buses call here.</p>';
+        : `<p class="mcNote">${esc(I18n.t('mapCard.noBuses', 'No buses call here.'))}</p>`;
       body.innerHTML =
-        head(`<span class="mcCode">${esc(code)}</span><div class="mcTitle"><strong>${esc(s.n || 'Bus stop')}</strong><span>${esc(s.road || '')}</span></div>`) +
+        head(`<span class="mcCode">${esc(code)}</span><div class="mcTitle"><strong>${esc(s.n || I18n.t('favs.stopNoName', 'Bus stop'))}</strong><span>${esc(s.road || '')}</span></div>`) +
         `<div class="mcPills">${pills}</div>` +
-        (buses.length ? '<p class="mcKey"><span class="mcKeyDot on"></span>Running<span class="mcKeyDot last"></span>Last 3 buses<span class="mcKeyDot off"></span>Not running now</p>' : '') +
+        (buses.length ? `<p class="mcKey"><span class="mcKeyDot on"></span>${esc(I18n.t('mapCard.keyRunning', 'Running'))}<span class="mcKeyDot last"></span>${esc(I18n.t('mapCard.keyLast', 'Last 3 buses'))}<span class="mcKeyDot off"></span>${esc(I18n.t('mapCard.keyOff', 'Not running now'))}</p>` : '') +
         // Shuttle buses here too (js/campus.js), live where they're seen.
         (window.Campus?.listHtml(code) || '') +
         timingsBtn(code) + foot();
@@ -206,37 +206,43 @@
 
   // ---------- a station ----------
 
-  const leadText = (x) => (x === 'Exit' ? 'the exit' : /\b(Line|LRT)( towards |$)/.test(x) ? `the ${x}` : x);
+    // A way off the platform, as js/mrt-doors.js names it ("Exit", "NS Line towards Jurong East").
+  const leadText = (x) => {
+    if (x === 'Exit') return I18n.t('mapCard.theExit', 'the exit');
+    const toward = /^(.*\b(?:Line|LRT)) towards (.+)$/.exec(x);
+    if (toward) return I18n.t('mapCard.lineTowards', 'the {line} towards {to}', { line: toward[1], to: toward[2] });
+    return /\b(Line|LRT)$/.test(x) ? I18n.t('mapCard.theLine', 'the {line}', { line: x }) : x;
+  };
 
   function slideHtml(p) {
     const colour = colourOf(p.code);
     const rows = p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
-      `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">Door</span><b>${n}</b></span>`).join('')}</span>` +
-      `<span class="doorWhere">${esc(DOOR_TYPE[r.t] || r.t)} to ${esc(listText(r.leads.map(leadText)))}</span></li>`).join('');
+      `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">${esc(I18n.t('doors.door', 'Door'))}</span><b>${n}</b></span>`).join('')}</span>` +
+      `<span class="doorWhere">${esc(I18n.t('mapCard.typeTo', '{type} to {places}', { type: DOOR_TYPE[r.t] || r.t, places: listText(r.leads.map(leadText)) }))}</span></li>`).join('');
     return `<div class="mcDir" style="--line:${colour}">` +
       `<span class="lineCode" style="--line:${colour}">${esc(p.code)}</span>` +
-      `<span class="mcDirText"><b>${p.last ? 'Trains end here' : `Towards ${esc(p.towards)}`}</b>${p.next ? `<span>Next: ${esc(p.next)}</span>` : ''}</span></div>` +
+      `<span class="mcDirText"><b>${esc(p.last ? I18n.t('mapCard.endHere', 'Trains end here') : I18n.t('mapCard.towards', 'Towards {to}', { to: p.towards }))}</b>${p.next ? `<span>${esc(I18n.t('mapCard.next', 'Next: {stn}', { stn: p.next }))}</span>` : ''}</span></div>` +
       (rows
         ? `<div class="legDoors" style="--line:${colour}"><ul class="doorRows">${rows}</ul>` +
           `<div class="doorFoot">${p.numberAt ? doorNumberAt(p.numberAt) : ''}<span>${MrtDoors.numberAtHtml(p.numberAt)}</span></div></div>`
-        : '<p class="mcNote">No door details for this platform yet.</p>') +
-      (p.cross.length ? `<p class="mcNote">${ico('swap')} Across the platform: ${esc(listText(p.cross))}</p>` : '');
+        : `<p class="mcNote">${esc(I18n.t('mapCard.noDoorsPlatform', 'No door details for this platform yet.'))}</p>`) +
+      (p.cross.length ? `<p class="mcNote">${ico('swap')} ${esc(I18n.t('mapCard.across', 'Across the platform: {lines}', { lines: listText(p.cross) }))}</p>` : '');
   }
 
   async function stationCard(st) {
-    const body = frame(`${st.name} station`);
+    const body = frame(I18n.t('mapCard.station', '{name} station', { name: st.name }));
     at = [st.lat, st.lng];
-    dest = { label: `${st.name} station`, lat: st.lat, lng: st.lng };
+    dest = { label: I18n.t('mapCard.station', '{name} station', { name: st.name }), lat: st.lat, lng: st.lng };
     const mine = token;
     const codes = st.codes.map((c) => `<span class="lineCode" style="--line:${colourOf(c)}">${esc(c)}</span>`).join('');
     const top = head(`<div class="mcTitle"><strong>${esc(st.name)}</strong><span class="mcCodes">${codes}</span></div>`);
-    body.innerHTML = `${top}<p class="mcNote">Finding the doors…</p>${foot()}`;
+    body.innerHTML = `${top}<p class="mcNote">${esc(I18n.t('mapCard.findingDoors', 'Finding the doors…'))}</p>${foot()}`;
     place();
     await MrtDoors.load();
     if (mine !== token) return;
     const slides = MrtDoors.station(st.codes);
     if (!slides.length) {
-      body.innerHTML = `${top}<p class="mcNote">No door details for this station yet.</p>${foot()}`;
+      body.innerHTML = `${top}<p class="mcNote">${esc(I18n.t('mapCard.noDoorsStation', 'No door details for this station yet.'))}</p>${foot()}`;
       return place();
     }
     let i = 0;

@@ -43,7 +43,7 @@
   // cells around a stop.
   const CELL_DEG = 0.002;
 
-  const ESTIMATE_NOTE = "Times are rough estimates for riding and walking, not counting the wait for a bus.";
+  const ESTIMATE_NOTE = I18n.t('journeys.estimate', 'Times are rough estimates for riding and walking, not counting the wait for a bus.');
 
   let gridFor = null;
   let grid = null;

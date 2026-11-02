@@ -35,7 +35,7 @@
       if (found && found.error) { if (error) error(failure(found.error)); return; }
       success(position(found));
     }, function () {
-      if (error) error(failure({ code: 2, message: "Couldn't get your location. Please try again." }));
+      if (error) error(failure({ code: 2, message: I18n.t("location.failed", "Couldn't get your location. Please try again.") }));
     });
   }
 

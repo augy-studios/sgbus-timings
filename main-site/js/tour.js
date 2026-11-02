@@ -26,92 +26,92 @@
     glance: {
       icon: 'eye',
       steps: [
-        { el: '#glanceHero', text: 'Your next bus, big enough to read on the move. Tap it for all its times.' },
-        { el: '#glanceSource', text: 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.' },
-        { el: '#glanceStops .glanceStop', text: 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.' },
-        { el: '#trayViews', text: () => `Each page has its button at the top of the Edge Tray: ${pageList()}. Press and hold a button to see what it does.` },
-        { el: '#settingsBtn', text: 'In Settings, Pages and Edge Tray has Custom home, the page the app opens on, and Help and extras has Show me around, for any page’s tour again.' },
+        { el: '#glanceHero', text: () => I18n.t('tour.glance.1', 'Your next bus, big enough to read on the move. Tap it for all its times.') },
+        { el: '#glanceSource', text: () => I18n.t('tour.glance.2', 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.') },
+        { el: '#glanceStops .glanceStop', text: () => I18n.t('tour.glance.3', 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.') },
+        { el: '#trayViews', text: () => I18n.t('tour.glance.4', 'Each page has its button at the top of the Edge Tray: {pages}. Press and hold a button to see what it does.', { pages: pageList() }) },
+        { el: '#settingsBtn', text: () => I18n.t('tour.glance.5', 'In Settings, Pages and Edge Tray has Custom home, the page the app opens on, and Help and extras has Show me around, for any page’s tour again.') },
       ],
     },
     timings: {
       icon: 'bus',
       steps: [
-        { el: '.searchWrap', text: 'Look up any stop by its name or 5-digit code, the stops near an address by its postal code, or a bus by its number for its route.' },
-        { el: '#voiceBtn', text: 'Or say it: a stop, a road or a bus number.' },
-        { el: '#scanBtn', text: 'Or scan the code on a bus stop’s pole with the camera.' },
-        { el: '#nearStops:not([hidden])', text: 'The stops around you, nearest first. Tap one for its timings.' },
-        { el: '#weatherBtn', text: 'Today’s weather and air, before you head out.' },
+        { el: '.searchWrap', text: () => I18n.t('tour.timings.1', 'Look up any stop by its name or 5-digit code, the stops near an address by its postal code, or a bus by its number for its route.') },
+        { el: '#voiceBtn', text: () => I18n.t('tour.timings.2', 'Or say it: a stop, a road or a bus number.') },
+        { el: '#scanBtn', text: () => I18n.t('tour.timings.3', 'Or scan the code on a bus stop’s pole with the camera.') },
+        { el: '#nearStops:not([hidden])', text: () => I18n.t('tour.timings.4', 'The stops around you, nearest first. Tap one for its timings.') },
+        { el: '#weatherBtn', text: () => I18n.t('tour.timings.5', 'Today’s weather and air, before you head out.') },
       ],
     },
     favs: {
       icon: 'star',
       steps: [
-        { el: '#favStopsGroup:not([hidden])', text: 'Every stop you’ve starred. Tap one for its timings.' },
-        { el: '#favBusesGroup:not([hidden])', text: 'Buses you’ve starred. Glance shows only these at your stops.' },
-        { el: '#favRoutesGroup:not([hidden]), #favNavsGroup:not([hidden])', text: 'Journeys you’ve saved in Navigate, ready to plan again in a tap.' },
-        { el: '#favEmpty:not([hidden])', text: 'Nothing here yet. Tap the star on a stop, a bus or a journey in Navigate, and it shows here.' },
+        { el: '#favStopsGroup:not([hidden])', text: () => I18n.t('tour.favs.1', 'Every stop you’ve starred. Tap one for its timings.') },
+        { el: '#favBusesGroup:not([hidden])', text: () => I18n.t('tour.favs.2', 'Buses you’ve starred. Glance shows only these at your stops.') },
+        { el: '#favRoutesGroup:not([hidden]), #favNavsGroup:not([hidden])', text: () => I18n.t('tour.favs.3', 'Journeys you’ve saved in Navigate, ready to plan again in a tap.') },
+        { el: '#favEmpty:not([hidden])', text: () => I18n.t('tour.favs.4', 'Nothing here yet. Tap the star on a stop, a bus or a journey in Navigate, and it shows here.') },
       ],
     },
     nav: {
       icon: 'navigate',
       steps: [
-        { el: '#navSection .navModes, #plannerSection .navModes', text: 'Bus and train plans with the MRT too; Bus only keeps to buses, stop to stop.' },
-        { el: '#navSection .navFields, #plannerSection .plannerFields', text: 'Where from and where to: a place, an address, a stop, a postal code. Home, Work and your places are a tap away under each box.' },
-        { el: '#navWhen, #routeWhen', text: 'Leave now, leave at a time, or arrive by one.' },
-        { el: '#navBody [data-nav-option], #plannerBody [data-journey]', text: 'Your ways, quickest first. Open one for every part of it, which train door to stand at, and Start trip to be told when to get off.' },
-        { el: '#navFavBtn, #routeFavBtn', text: 'Save the journey to Favourites, and Share sends it to someone.' },
+        { el: '#navSection .navModes, #plannerSection .navModes', text: () => I18n.t('tour.nav.1', 'Bus and train plans with the MRT too; Bus only keeps to buses, stop to stop.') },
+        { el: '#navSection .navFields, #plannerSection .plannerFields', text: () => I18n.t('tour.nav.2', 'Where from and where to: a place, an address, a stop, a postal code. Home, Work and your places are a tap away under each box.') },
+        { el: '#navWhen, #routeWhen', text: () => I18n.t('tour.nav.3', 'Leave now, leave at a time, or arrive by one.') },
+        { el: '#navBody [data-nav-option], #plannerBody [data-journey]', text: () => I18n.t('tour.nav.4', 'Your ways, quickest first. Open one for every part of it, which train door to stand at, and Start trip to be told when to get off.') },
+        { el: '#navFavBtn, #routeFavBtn', text: () => I18n.t('tour.nav.5', 'Save the journey to Favourites, and Share sends it to someone.') },
       ],
     },
     alerts: {
       icon: 'bell',
       steps: [
-        { el: '#alertModes', text: 'Be told about MRT and LRT disruptions and road incidents, even with the app closed: every update, disruptions only, or off.' },
-        { el: '#alertsBody', text: 'What’s going on right now, on the trains and the roads.' },
+        { el: '#alertModes', text: () => I18n.t('tour.alerts.1', 'Be told about MRT and LRT disruptions and road incidents, even with the app closed: every update, disruptions only, or off.') },
+        { el: '#alertsBody', text: () => I18n.t('tour.alerts.2', 'What’s going on right now, on the trains and the roads.') },
       ],
     },
     trips: {
       icon: 'chart',
       steps: [
-        { el: '#tripsBody .empty', text: 'Each trip you take with Start trip shows here. Start one from a way in Navigate, or a bus’s route.' },
-        { el: '#tripsBody .statsSince', text: 'How many trips and rides you’ve taken, and how long on the move.' },
-        { el: '#tripsBody .statsCard', text: 'How your time splits between walking, waiting and riding, and the buses and lines you ride most.' },
-        { el: '#tripsBody .tripRowMain', text: 'Each trip, by week. Tap one for its rides and times, to take it again or share it.' },
+        { el: '#tripsBody .empty', text: () => I18n.t('tour.trips.1', 'Each trip you take with Start trip shows here. Start one from a way in Navigate, or a bus’s route.') },
+        { el: '#tripsBody .statsSince', text: () => I18n.t('tour.trips.2', 'How many trips and rides you’ve taken, and how long on the move.') },
+        { el: '#tripsBody .statsCard', text: () => I18n.t('tour.trips.3', 'How your time splits between walking, waiting and riding, and the buses and lines you ride most.') },
+        { el: '#tripsBody .tripRowMain', text: () => I18n.t('tour.trips.4', 'Each trip, by week. Tap one for its rides and times, to take it again or share it.') },
       ],
     },
     places: {
       icon: 'bookmark',
       steps: [
-        { el: '#placesList .placeRow', text: 'Home, Work and your own places. Tap one for the way there from where you are.' },
-        { el: '#placesList .placeMore', text: 'The dots edit, share or delete it.' },
-        { el: '#placeNewBtn', text: 'Add a place: the gym, school, a friend’s. Each one shows under From and To in Navigate, and on Glance.' },
+        { el: '#placesList .placeRow', text: () => I18n.t('tour.places.1', 'Home, Work and your own places. Tap one for the way there from where you are.') },
+        { el: '#placesList .placeMore', text: () => I18n.t('tour.places.2', 'The dots edit, share or delete it.') },
+        { el: '#placeNewBtn', text: () => I18n.t('tour.places.3', 'Add a place: the gym, school, a friend’s. Each one shows under From and To in Navigate, and on Glance.') },
       ],
     },
     // The views that aren't pages.
     explorer: {
       icon: 'map',
-      label: 'Explorer',
+      label: I18n.t('tour.explorer', 'Explorer'),
       view: true,
       open: () => window.LiveMap?.explore(),
       isOpen: () => window.LiveMap?.mode() === 'explore',
       steps: [
-        { el: '#mapSpot', text: 'Stops are white dots ringed in green, stations dots in their line’s colour, interchanges pills in all of theirs. Zoom in for the stops.' },
-        { el: '#mapSpot', text: 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.' },
-        { el: '#mapHeading', text: 'The compass turns the map with you, the way your phone points up.' },
-        { el: '#mapLayers', text: 'Layers picks what the map shows: bus stops, MRT and LRT stations and lines, and shuttle buses’ routes and stops. Tap one to turn it off or on.' },
-        { el: '#mapClose', text: 'Back closes Explorer. Its button in the Edge Tray can be turned off in Settings.' },
+        { el: '#mapSpot', text: () => I18n.t('tour.explorer.1', 'Stops are white dots ringed in green, stations dots in their line’s colour, interchanges pills in all of theirs. Zoom in for the stops.') },
+        { el: '#mapSpot', text: () => I18n.t('tour.explorer.2', 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.') },
+        { el: '#mapHeading', text: () => I18n.t('tour.explorer.3', 'The compass turns the map with you, the way your phone points up.') },
+        { el: '#mapLayers', text: () => I18n.t('tour.explorer.4', 'Layers picks what the map shows: bus stops, MRT and LRT stations and lines, and shuttle buses’ routes and stops. Tap one to turn it off or on.') },
+        { el: '#mapClose', text: () => I18n.t('tour.explorer.5', 'Back closes Explorer. Its button in the Edge Tray can be turned off in Settings.') },
       ],
     },
     terminal: {
       icon: 'terminal',
-      label: 'sgbus terminal',
+      label: I18n.t('tour.terminal', 'sgbus terminal'),
       view: true,
       open: () => window.openTerminal?.(),
       isOpen: () => !!document.querySelector('#terminalModal:not(.hidden)'),
       after: () => document.getElementById('termIn')?.focus(),
       steps: [
-        { el: '#terminalModal .termLine', text: 'Type a command, as on the Linux command line: a stop like 84009, a stop’s name, nav home work, favs. Tab finishes a word, and Up brings back the last one.' },
-        { el: '#terminalModal .termScreen', text: 'The answers show here. Ctrl+C stops one that keeps updating, or clears the line; with text selected, it copies.' },
-        { el: '#terminalModal .termClose', text: 'Esc, exit or this closes it. Ctrl+` opens it again on a computer, as does Settings.' },
+        { el: '#terminalModal .termLine', text: () => I18n.t('tour.terminal.1', 'Type a command, as on the Linux command line: a stop like 84009, a stop’s name, nav home work, favs. Tab finishes a word, and Up brings back the last one.') },
+        { el: '#terminalModal .termScreen', text: () => I18n.t('tour.terminal.2', 'The answers show here. Ctrl+C stops one that keeps updating, or clears the line; with text selected, it copies.') },
+        { el: '#terminalModal .termClose', text: () => I18n.t('tour.terminal.3', 'Esc, exit or this closes it. Ctrl+` opens it again on a computer, as does Settings.') },
       ],
     },
   };
@@ -124,9 +124,9 @@
 
   // The pages on, for the Edge Tray's step: "Glance, Bus timings, … and places".
   function pageList() {
-    const words = { glance: 'Glance', timings: 'Bus timings', favs: 'Favourites', nav: 'Navigate', alerts: 'alerts', trips: 'your trips', places: 'places' };
+    const words = { glance: I18n.t('tour.page.glance', 'Glance'), timings: I18n.t('tray.timings', 'Bus timings'), favs: I18n.t('favs.title', 'Favourites'), nav: I18n.t('tray.navigate', 'Navigate'), alerts: I18n.t('tour.page.alerts', 'alerts'), trips: I18n.t('tour.page.trips', 'your trips'), places: I18n.t('tour.page.places', 'places') };
     const on = Object.keys(words).filter(there).map((id) => words[id]);
-    return on.length > 1 ? `${on.slice(0, -1).join(', ')} and ${on[on.length - 1]}` : on.join('');
+    return on.length > 1 ? `${on.slice(0, -1).join(', ')}${I18n.t('trip.and', ' and ')}${on[on.length - 1]}` : on.join('');
   }
 
   let steps = [];
@@ -167,10 +167,10 @@
     root.innerHTML =
       '<div class="tourHole"></div>' +
       '<svg class="tourArrow" aria-hidden="true"><defs><filter id="tourChalk"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="2.5"/></filter></defs><path class="tourLine" filter="url(#tourChalk)"/><path class="tourHead" filter="url(#tourChalk)"/></svg>' +
-      '<button class="tourSkip" type="button">Skip</button>' +
+      `<button class="tourSkip" type="button">${I18n.t('tour.skip', 'Skip')}</button>` +
       '<div class="tourCard">' +
       '<p id="tourText" class="tourText" aria-live="polite"></p>' +
-      '<div class="tourFoot"><span class="tourDots" aria-hidden="true"></span><button class="tourNext btn" type="button">Next</button></div>' +
+      `<div class="tourFoot"><span class="tourDots" aria-hidden="true"></span><button class="tourNext btn" type="button">${I18n.t('trip.next', 'Next')}</button></div>` +
       '</div>';
     document.body.appendChild(root);
     root.querySelector('.tourSkip').addEventListener('click', end);
@@ -190,7 +190,7 @@
     el.scrollIntoView({ block: 'center', behavior: 'instant' });
     root.querySelector('.tourText').textContent = typeof steps[i].text === 'function' ? steps[i].text() : steps[i].text;
     root.querySelector('.tourDots').innerHTML = steps.map((_, n) => `<span${n === i ? ' class="on"' : ''}></span>`).join('');
-    root.querySelector('.tourNext').textContent = i === steps.length - 1 ? 'Done' : 'Next';
+    root.querySelector('.tourNext').textContent = i === steps.length - 1 ? I18n.t('common.done', 'Done') : I18n.t('trip.next', 'Next');
     requestAnimationFrame(place);
     root.querySelector('.tourNext').focus({ preventScroll: true });
   }
@@ -336,7 +336,7 @@
       tries++;
       if (MainScreen.active() !== id || root) return clearInterval(waiting);
       const hero = $('#glanceHero');
-      const ready = id !== 'glance' || !window.Glance?.enabled() || (hero.textContent.trim() && !hero.textContent.includes('Getting the times'));
+      const ready = id !== 'glance' || !window.Glance?.enabled() || (hero.textContent.trim() && !hero.textContent.includes(I18n.t('glance.getting', 'Getting the times…').replace(/…$/, '')));
       if (ready ? tries < 2 : tries <= 16) return;
       clearInterval(waiting);
       if (!covered()) start(id);

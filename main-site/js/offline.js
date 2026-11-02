@@ -108,11 +108,13 @@
     bar = document.createElement('div');
     bar.className = 'offline-notice';
     bar.setAttribute('role', 'status');
-    bar.setAttribute('aria-label', 'Offline');
+    // Before js/i18n.js on the page, so English until it's there.
+    const ok = !!window.I18n;
+    bar.setAttribute('aria-label', ok ? I18n.t('offline.offline', 'Offline') : 'Offline');
     bar.innerHTML = `
       <div class="update-notice-inner">
-        <p>You&rsquo;re offline. Timings and alerts come back when you reconnect.</p>
-        <button type="button" class="iconBtn">OK</button>
+        <p>${ok ? I18n.t('offline.bar', 'You’re offline. Timings and alerts come back when you reconnect.') : 'You’re offline. Timings and alerts come back when you reconnect.'}</p>
+        <button type="button" class="iconBtn">${ok ? I18n.t('trip.ok', 'OK') : 'OK'}</button>
       </div>
     `;
     bar.querySelector('button').addEventListener('click', () => {

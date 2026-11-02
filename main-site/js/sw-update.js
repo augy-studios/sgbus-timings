@@ -6,10 +6,10 @@
   const SW_URL = "/sw.js";
 
   const COPY = {
-    label: "Update",
-    ready: "A new version of SG Bus Timings is ready.",
-    reload: "Reload",
-    later: "Not now",
+    label: I18n.t('appUpdate.update', 'Update'),
+    ready: I18n.t('swUpdate.ready', 'A new version of SG Bus Timings is ready.'),
+    reload: I18n.t('swUpdate.reload', 'Reload'),
+    later: I18n.t('appUpdate.notNow', 'Not now'),
   };
 
   let registration = null;
