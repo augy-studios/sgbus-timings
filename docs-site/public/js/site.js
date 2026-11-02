@@ -426,10 +426,22 @@
     }
   });
 
+  // ---------- installed app ----------
+  // sw.js (made by build.mjs) is what lets the guide install as an app and open
+  // pages already read while offline. It's network first and never answers
+  // /version.json, so the update bar below works just as it did without it.
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/sw.js").catch(() => {});
+    });
+  }
+
   // ---------- new version bar ----------
-  // No service worker here, so this is the "site has no service worker"
-  // variant of update-bar-spec.md: compare the build this page booted with
-  // against /version.json, on visibility and on a slow timer.
+  // The worker is network first and stays out of this, so this is still the
+  // "site has no service worker" variant of update-bar-spec.md: compare the
+  // build this page booted with against /version.json, on visibility and on a
+  // slow timer.
 
   const COPY = {
     label: "Update",

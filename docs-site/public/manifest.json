@@ -1,0 +1,61 @@
+{
+    "name": "SG Bus Timings Guide",
+    "short_name": "SG Bus Guide",
+    "description": "How to use SG Bus Timings' web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.",
+    "id": "sgbus-guide",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "any",
+    "theme_color": "#ccffcc",
+    "background_color": "#ccffcc",
+    "dir": "ltr",
+    "lang": "en",
+    "categories": [
+        "books",
+        "education",
+        "utilities"
+    ],
+    "icons": [
+        {
+            "src": "/images/icons/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/icons/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "any"
+        },
+        {
+            "src": "/images/icons/icon-192.png",
+            "type": "image/png",
+            "sizes": "192x192",
+            "purpose": "maskable"
+        },
+        {
+            "src": "/images/icons/icon-512.png",
+            "type": "image/png",
+            "sizes": "512x512",
+            "purpose": "maskable"
+        }
+    ],
+    "screenshots": [
+        {
+            "src": "/images/guide-phone.png",
+            "type": "image/png",
+            "sizes": "1560x3380",
+            "form_factor": "narrow",
+            "label": "The guide on a phone"
+        },
+        {
+            "src": "/images/guide-desktop.png",
+            "type": "image/png",
+            "sizes": "3840x1976",
+            "form_factor": "wide",
+            "label": "The guide on a computer"
+        }
+    ]
+}

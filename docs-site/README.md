@@ -80,3 +80,13 @@ A Vercel project with **Root Directory** set to `docs-site`. `vercel.json`
 holds the build command, output directory and clean URLs. Add the domain
 `guide.sgbus.uwuapps.org` to the project, and a `CNAME` record for `guide.sgbus`
 pointing at `cname.vercel-dns.com` with the DNS provider.
+
+## Installing as an app
+
+`public/manifest.json` and the service worker `build.mjs` writes to `dist/sw.js`
+make the guide install as a standalone app, as the web app does. The worker is
+network first with the build id in its cache name, so readers online always get
+the latest deploy, pages they've read open offline, and anything else offline
+shows `/offline`. It never answers `/version.json`, so the update bar works as
+before. App icons are `public/images/icons/icon-{192,512}.png`, cut from
+`sgbusicon1.png`.

@@ -339,7 +339,11 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
   <link rel="stylesheet" href="/css/style.css?v=${buildId}">
 
   <link rel="icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
   <link rel="apple-touch-icon" href="/sgbusicon1.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SG Bus Guide">
 </head>
 
 <body${page.secret ? ' class="secret-page"' : ""}>
@@ -419,6 +423,16 @@ const NOT_IN_GUIDE = `<header class="doc-head">
         </header>
         <div class="prose">
           <p><a class="btn" href="/">Back to the guide</a> <button type="button" class="iconBtn" data-open-search><span data-icon="search"></span>Search</button></p>
+        </div>`;
+
+// What the installed guide shows offline for a page it hasn't kept yet (sw.js).
+const OFFLINE = `<header class="doc-head">
+          <p class="eyebrow">Offline</p>
+          <h1>This page isn't saved for offline yet</h1>
+          <p class="lead">Pages you've opened before work without a connection. This one needs the internet the first time.</p>
+        </header>
+        <div class="prose">
+          <p><a class="btn" href="/">Back to the guide</a> <button type="button" class="iconBtn" onclick="location.reload()"><span data-icon="sync"></span>Try again</button></p>
         </div>`;
 
 function articleHtml(page, prev, next) {
@@ -578,8 +592,19 @@ async function build() {
     bodyHtml: NOT_IN_GUIDE,
   }));
 
+  // Offline fallback for sw.js, outside the sidebar order.
+  await writeFile(path.join(DIST, "offline.html"), layout({
+    page: { file: "", url: "/offline", title: "Offline", description: "" },
+    groups,
+    buildId,
+    noindex: true,
+    toc: "",
+    bodyHtml: OFFLINE,
+  }));
+
   await writeFile(path.join(DIST, "search-index.json"), JSON.stringify(pages.map(searchRecords)));
   await writeFile(path.join(DIST, "version.json"), JSON.stringify({ version: buildId }));
+  await writeFile(path.join(DIST, "sw.js"), serviceWorker(buildId));
 
   const today = new Date().toISOString().slice(0, 10);
   const urls = pages.filter((p) => !p.secret).map((p) =>
@@ -589,6 +614,75 @@ async function build() {
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`);
 
   console.log(`Built ${pages.length} pages into dist/ in ${Date.now() - started} ms (build ${buildId})`);
+}
+
+// ---------- service worker ----------
+
+// Network first, so an online reader always gets the page as deployed and the update bar
+// (site.js, via /version.json) keeps working as before. Each page and file that comes back is
+// kept, and answers when the network can't. The build id is baked in, so every deploy is a new
+// worker with a fresh cache, and older caches are dropped once it takes over.
+function serviceWorker(buildId) {
+  const precache = [
+    "/",
+    "/offline",
+    `/css/style.css?v=${buildId}`,
+    ...["icons", "ui", "theme", "site"].map((n) => `/js/${n}.js?v=${buildId}`),
+    `/search-index.json?v=${buildId}`,
+    "/manifest.json",
+    "/sgbusicon1.png",
+    "/favicon.ico",
+    "/images/icons/icon-192.png",
+    "/images/icons/icon-512.png",
+  ];
+  return `// Made by build.mjs. Edit serviceWorker() there, not this file.
+const CACHE = "sgbus-guide-${buildId}";
+const PRECACHE = ${JSON.stringify(precache)};
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE)
+      .then((cache) => cache.addAll(PRECACHE))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("sgbus-guide-") && k !== CACHE).map((k) => caches.delete(k))))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  // Other sites (fonts, Analytics) and the version check go straight to the network.
+  if (url.origin !== self.location.origin || url.pathname === "/version.json" || url.pathname === "/sw.js") return;
+
+  const isPage = req.mode === "navigate";
+  event.respondWith(
+    fetch(req)
+      .then((res) => {
+        if (res.ok && res.type === "basic") {
+          const copy = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(req, copy));
+        }
+        return res;
+      })
+      .catch(async () => {
+        const cache = await caches.open(CACHE);
+        const hit = await cache.match(req, { ignoreSearch: isPage }) ||
+          (isPage && (await cache.match(url.pathname.replace(/\\/+$/, "") || "/")));
+        if (hit) return hit;
+        if (isPage) return (await cache.match("/offline")) || Response.error();
+        return Response.error();
+      })
+  );
+});
+`;
 }
 
 // ---------- local server ----------
