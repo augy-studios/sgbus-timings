@@ -32,7 +32,7 @@ it asks you to type `allow pasting` first.
 `simulateHelp()` lists them all.
 
 <figure>
-<img src="/screenshots/web/console-help.png" alt="The console after simulateHelp(): a list of every command and what it does, from simulateEgg('ktm'), a feat done, to simulateAllLines(), the every-line celebration as a preview, then: Each says more with 'help', such as simulateCoins('help')." width="720" height="329" loading="lazy">
+<img src="/screenshots/web/console-help.png" alt="The console after simulateHelp(): a list of every command and what it does, from simulateEgg('ktm'), a feat done, through simulatePastTrips(), what your trips from before uwuCoins earned, to simulateAllLines(), the every-line celebration as a preview, then: Each says more with 'help', such as simulateCoins('help')." width="720" height="347" loading="lazy">
 <figcaption>simulateHelp(), and what it lists.</figcaption>
 </figure>
 
@@ -56,6 +56,15 @@ Each command also explains itself when given `'help'`, such as
 
 Coins given float up from the bottom of the screen, as a trip's do, and the
 wheel and the Edge Tray's coin show the new total straight away.
+
+`simulatePastTrips()` gives nothing: it says what your
+[trips from before uwuCoins](uwucoins.md#trips-from-before-uwucoins) earned,
+once they have, or what they would.
+
+<figure>
+<img src="/screenshots/web/console-past-trips.png" alt="The console: simulatePastTrips() answers done 30/10/2026, 8:30:00 am: 13 past trips, +257 uwuCoins, feats: ktm, long." width="720" height="124" loading="lazy">
+<figcaption>What trips from before uwuCoins earned.</figcaption>
+</figure>
 
 <figure>
 <img src="/screenshots/web/console-coins-app.png" alt="Settings, Help and extras, at the wheel: 1000 uwuCoins over the wheel, and a gold chip at the bottom of the screen, +770 uwuCoins." width="420" height="900" loading="lazy">

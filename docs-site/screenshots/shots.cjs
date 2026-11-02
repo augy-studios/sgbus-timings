@@ -12,8 +12,8 @@
 // STILL=1 takes any group still: the page's clock stopped at STILL_AT, and each stop's bus
 // timings made up (stillArrivals) for the buses its routes have running then, so a shot comes
 // out the same whenever it's taken. The groups after "help desk #13" are always taken still, as
-// are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, and the secret pages':
-// eggs, secrets, material and console.
+// are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, past-trips, and the
+// secret pages': eggs, secrets, material and console.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -39,6 +39,8 @@ const STATE = {
   sgbus_hold_hint: '1',
   // Not the tour of the basics over every shot (main-site/js/tour.js), only where it's the subject.
   sgbus_tour: 'done',
+  // Nor the window for trips from before uwuCoins (main-site/js/retrofit.js), but in past-trips.
+  sgbus_retrofit: JSON.stringify({ at: 0, trips: 0, coins: 0, feats: [] }),
   // Nor each page's own the first time it opens.
   sgbus_tours: JSON.stringify(['timings', 'favs', 'nav', 'alerts', 'trips', 'places', 'explorer', 'terminal']),
   sgbus_favs_v2: JSON.stringify([{ code: '84009', name: 'Bedok Int' }, { code: '75009', name: 'Tampines Int' }]),
@@ -179,7 +181,8 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
   await ctx.addInitScript((s) => {
     if (sessionStorage.getItem('seeded')) return;
     sessionStorage.setItem('seeded', '1');
-    for (const [k, v] of Object.entries(s)) localStorage.setItem(k, v);
+    // A key given as null is left out, for what STATE puts in.
+    for (const [k, v] of Object.entries(s)) if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v);
   }, { ...STATE, ...extra });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('pageerror', e.message));
@@ -216,6 +219,72 @@ async function el(page, sel, name) {
   const b = await page.locator(sel).first().boundingBox();
   await page.locator(sel).first().screenshot({ path: OUT + name });
   console.log('wrote', name, Math.round(b.width), Math.round(b.height));
+}
+
+// Each command run in `page` as the console would, and what came of it: its logs (gathered in
+// `logs`), then its value.
+async function typeAll(page, logs, cmds) {
+  const out = [];
+  for (const cmd of cmds) {
+    logs.length = 0;
+    const v = await page.evaluate(async (c) => {
+      const r = (0, eval)(c);
+      if (r && typeof r.then === 'function') return { p: 1, v: await r };
+      return r === undefined ? { u: 1 } : { v: r };
+    }, cmd);
+    await page.waitForTimeout(200);
+    out.push({ cmd, logs: [...logs], value: v.u ? undefined : v.v, promise: !!v.p });
+    await page.evaluate(() => { window.Confetti?.stop?.(); document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)); });
+    await page.waitForTimeout(300);
+  }
+  return out;
+}
+
+// Each command run as the console would (typed), drawn as Chrome's console is, one picture
+// per name in `shots`.
+async function drawConsole(browser, shots) {
+  // Drawn as Chrome's console, dark: a > before what's typed, its logs, then <· and its value.
+  const draw = await browser.newPage({ viewport: { width: 900, height: 600 }, deviceScaleFactor: 3 });
+  const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
+  // A value as Chrome shows it: a string quoted, a promise with what it came to.
+  const value = (v) => (v === undefined ? '<span class="undef">undefined</span>' : typeof v === 'string' ? `<span class="str">'${esc(v)}'</span>` : `<span class="num">${esc(JSON.stringify(v))}</span>`);
+  const shown = (r) => (r.promise ? `<span>Promise {<span class="undef">&lt;fulfilled&gt;</span>: ${value(r.value)}}</span>` : value(r.value));
+  for (const [name, runs] of Object.entries(shots)) {
+    const rows = runs.map((r) => `<div class="row in"><span class="mark">&gt;</span><span class="code">${esc(r.cmd)}</span></div>` +
+      r.logs.map((l) => `<div class="row log"><span class="mark"></span><span>${esc(l)}</span></div>`).join('') +
+      `<div class="row out"><span class="mark">&lt;&middot;</span>${shown(r)}</div>`).join('');
+    await draw.setContent(`<!doctype html><meta charset="utf-8"><style>
+      body { margin: 0; background: transparent; }
+      .con { width: 720px; border-radius: 12px; overflow: hidden; background: #282828; color: #e3e3e3; font: 13px/1.5 Consolas, 'Cascadia Mono', ConsolasLike, 'DejaVu Sans Mono', monospace; }
+      .tabs { display: flex; gap: 18px; padding: 8px 14px; background: #3c3c3c; color: #9aa0a6; font: 12px system-ui, sans-serif; }
+      .tabs b { color: #a8c7fa; font-weight: 500; border-bottom: 2px solid #a8c7fa; padding-bottom: 6px; margin-bottom: -8px; }
+      .row { display: flex; gap: 10px; padding: 4px 14px; border-bottom: 1px solid #3a3a3a; white-space: pre-wrap; word-break: break-word; }
+      .mark { flex: 0 0 18px; color: #9aa0a6; }
+      .in .mark { color: #a8c7fa; }
+      .code { color: #e3e3e3; }
+      .str { color: #f28b82; }
+      .num { color: #b3a1f9; }
+      .undef { color: #9aa0a6; }
+      .prompt { padding: 6px 14px 10px; color: #a8c7fa; }
+    </style><div class="con"><div class="tabs"><span>Elements</span><b>Console</b><span>Sources</span><span>Network</span></div>${rows}<div class="prompt">&gt;</div></div>`);
+    // Without Consolas (Linux, macOS): Inconsolata, made after it, sized to its width (0.55em
+    // to Inconsolata's 0.5), so the lines wrap where they do on Windows. Where Consolas is, it's
+    // first in .con's fonts, so it's still the one used.
+    await draw.evaluate(async () => {
+      try {
+        const css = await (await fetch('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400')).text();
+        const style = document.createElement('style');
+        style.textContent = css.replace(/font-family: 'Inconsolata';/g, "font-family: 'ConsolasLike'; size-adjust: 110%;");
+        document.head.appendChild(style);
+        await document.fonts.load("13px ConsolasLike", 'simulate');
+      } catch { /* the next in the list */ }
+      await document.fonts.ready;
+    });
+    await draw.locator('.con').screenshot({ path: OUT + name, omitBackground: true });
+    const b = await draw.locator('.con').boundingBox();
+    console.log('wrote', name, Math.round(b.width), Math.round(b.height));
+  }
+  await draw.close();
 }
 
 (async () => {
@@ -1253,6 +1322,64 @@ async function el(page, sel, name) {
     await el(page, '[data-settings-group="achievements"]', 'settings-achievements.png');
     await ctx.close();
   }
+  // past-trips: trips from before uwuCoins (main-site/js/retrofit.js), as Your trips kept them in
+  // October, each seen boarding by the location: the window saying what they earned, Achievements
+  // after, simulatePastTrips() in the console, and the celebration for someone whose past trips
+  // rode every line. Always still.
+  if (want('past-trips')) {
+    const HOUR = 3600 * 1000;
+    const oct = (d, h, m = 0) => Date.parse(`2026-10-${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00+08:00`);
+    const ride = (kind, route, from, to, rideMin, op = 'SBST') => ({
+      kind, route, ...(kind === 'train' ? { color: '', lrt: ['BP', 'SK', 'PG'].includes(route) } : { op }),
+      from, to, waitMin: 4, rideMin, waitMeasured: true, rideMeasured: kind === 'bus', done: true,
+    });
+    const trip = (id, startedAt, hours, from, to, legs) => ({ id: `past-${id}`, startedAt, endedAt: startedAt + hours * HOUR, title: '', from, to, arrived: true, walkMin: 6, legs });
+    const woodlands = { label: 'W\'lands Train Checkpt', lat: 1.442783, lng: 103.769356 };
+    const cantonment = { label: 'Cantonment', lat: 1.273115, lng: 103.837028 };
+    const tampinesHub = { label: 'Our Tampines Hub', lat: 1.353134, lng: 103.940408 };
+    // Two weeks of mornings to work, the gym on a Sunday, down the old railway one Saturday and
+    // the long way round to the airport the next.
+    const trips = [
+      ...[12, 13, 14, 15, 16, 19, 20, 21, 22, 23].map((d) => trip(`work-${d}`, oct(d, 8, 5), 0.7, P.bedokMall, P.raffles, [ride('train', 'EW', 'Bedok', 'Raffles Place', 24)])),
+      trip('gym', oct(18, 10), 0.6, P.bedokMall, tampinesHub, [ride('bus', '69', 'Bedok Int', 'Our Tampines Hub', 25)]),
+      trip('ktm', oct(11, 9), 1.1, woodlands, cantonment, [ride('train', 'TE', 'Woodlands', 'Outram Park', 38)]),
+      trip('long', oct(25, 9), 3.2, woodlands, P.changi, [ride('bus', '858', 'Woodlands Int', 'Changi Airport', 150, 'SMRT')]),
+    ];
+    const extra = { sgbus_retrofit: null, sgbus_trips: JSON.stringify(trips), sgbus_eggs_told: JSON.stringify(['colours', 'phone']) };
+    let { ctx, page } = await open(browser, { width: 420, height: 1800, extra, still: true });
+    const logs = [];
+    page.on('console', (m) => { if (m.type() === 'log') logs.push(m.text()); });
+    // It waits for the bus routes and the app before it says anything.
+    await page.waitForFunction(() => !document.getElementById('eggModal').classList.contains('hidden'), null, { timeout: 30000 });
+    await page.waitForTimeout(600);
+    await page.evaluate(() => window.Confetti?.stop?.());
+    await page.waitForTimeout(600);
+    await el(page, '#eggModal .modal', 'past-trips.png');
+    await page.evaluate(() => window.closeModal('eggModal'));
+    await page.waitForTimeout(400);
+    // Achievements after: the lines and buses from those trips, and the two feats done.
+    await settingsGroup(page, 'help');
+    await page.evaluate(() => document.getElementById('coinAchievements').click());
+    await page.waitForTimeout(700);
+    await el(page, '[data-settings-group="achievements"]', 'past-trips-achievements.png');
+    await drawConsole(browser, { 'console-past-trips.png': await typeAll(page, logs, ['simulatePastTrips()']) });
+    await ctx.close();
+
+    // Every line ridden on past trips: the celebration says what they earned.
+    const lines = [['NS', 'Yishun', 'Orchard', 30], ['NE', 'Punggol', 'Dhoby Ghaut', 28], ['CC', 'Dhoby Ghaut', 'HarbourFront', 22], ['DT', 'Bugis', 'Botanic Gardens', 16],
+      ['TE', 'Woodlands', 'Orchard', 26], ['BP', 'Choa Chu Kang', 'Bukit Panjang', 12], ['SK', 'Sengkang', 'Rumbia', 8], ['PG', 'Punggol', 'Damai', 6]];
+    const everyLine = [
+      ...trips,
+      ...lines.map(([line, from, to, min], i) => trip(`line-${line}`, oct(1 + i, 10), 1, P.bedokMall, P.raffles, [ride('train', line, from, to, min)])),
+    ];
+    ({ ctx, page } = await open(browser, { width: 420, height: 900, extra: { ...extra, sgbus_trips: JSON.stringify(everyLine) }, still: true }));
+    await page.waitForFunction(() => window.Celebrate?.running(), null, { timeout: 30000 });
+    await page.waitForTimeout(6000);
+    // Drawn in software where there's no GPU, each frame slowly: given longer.
+    await page.screenshot({ path: OUT + 'past-trips-celebration.png', timeout: 180000 });
+    console.log('wrote past-trips-celebration.png 420 900');
+    await ctx.close();
+  }
   // Your colours (main-site/js/colours.js, js/wheel.js): the wheel, presets and preview in Theme,
   // then the app in a colour picked, light and dark. Always still.
   if (want('colours')) {
@@ -1528,23 +1655,7 @@ async function el(page, sel, name) {
     let { ctx, page } = await open(browser, { width: 420, height: 900, extra: told, still: true });
     const logs = [];
     page.on('console', (m) => { if (m.type() === 'log') logs.push(m.text()); });
-    // Each command run as the console would, and what came of it: its logs, then its value.
-    const typed = async (cmds) => {
-      const out = [];
-      for (const cmd of cmds) {
-        logs.length = 0;
-        const v = await page.evaluate(async (c) => {
-          const r = (0, eval)(c);
-          if (r && typeof r.then === 'function') return { p: 1, v: await r };
-          return r === undefined ? { u: 1 } : { v: r };
-        }, cmd);
-        await page.waitForTimeout(200);
-        out.push({ cmd, logs: [...logs], value: v.u ? undefined : v.v, promise: !!v.p });
-        await page.evaluate(() => { window.Confetti?.stop?.(); document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal(m.id)); });
-        await page.waitForTimeout(300);
-      }
-      return out;
-    };
+    const typed = (cmds) => typeAll(page, logs, cmds);
     const shots = {
       'console-help.png': await typed(['simulateHelp()']),
       'console-coins.png': await typed(['simulateCoins()', 'simulateCoins(500)', 'simulateCoins(-30)', "simulateCoins('set', 1000)"]),
@@ -1554,35 +1665,7 @@ async function el(page, sel, name) {
     };
     await ctx.close();
 
-    // Drawn as Chrome's console, dark: a > before what's typed, its logs, then <· and its value.
-    const draw = await browser.newPage({ viewport: { width: 900, height: 600 }, deviceScaleFactor: 3 });
-    const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
-    // A value as Chrome shows it: a string quoted, a promise with what it came to.
-    const value = (v) => (v === undefined ? '<span class="undef">undefined</span>' : typeof v === 'string' ? `<span class="str">'${esc(v)}'</span>` : `<span class="num">${esc(JSON.stringify(v))}</span>`);
-    const shown = (r) => (r.promise ? `<span>Promise {<span class="undef">&lt;fulfilled&gt;</span>: ${value(r.value)}}</span>` : value(r.value));
-    for (const [name, runs] of Object.entries(shots)) {
-      const rows = runs.map((r) => `<div class="row in"><span class="mark">&gt;</span><span class="code">${esc(r.cmd)}</span></div>` +
-        r.logs.map((l) => `<div class="row log"><span class="mark"></span><span>${esc(l)}</span></div>`).join('') +
-        `<div class="row out"><span class="mark">&lt;&middot;</span>${shown(r)}</div>`).join('');
-      await draw.setContent(`<!doctype html><meta charset="utf-8"><style>
-        body { margin: 0; background: transparent; }
-        .con { width: 720px; border-radius: 12px; overflow: hidden; background: #282828; color: #e3e3e3; font: 13px/1.5 Consolas, 'Cascadia Mono', 'DejaVu Sans Mono', monospace; }
-        .tabs { display: flex; gap: 18px; padding: 8px 14px; background: #3c3c3c; color: #9aa0a6; font: 12px system-ui, sans-serif; }
-        .tabs b { color: #a8c7fa; font-weight: 500; border-bottom: 2px solid #a8c7fa; padding-bottom: 6px; margin-bottom: -8px; }
-        .row { display: flex; gap: 10px; padding: 4px 14px; border-bottom: 1px solid #3a3a3a; white-space: pre-wrap; word-break: break-word; }
-        .mark { flex: 0 0 18px; color: #9aa0a6; }
-        .in .mark { color: #a8c7fa; }
-        .code { color: #e3e3e3; }
-        .str { color: #f28b82; }
-        .num { color: #b3a1f9; }
-        .undef { color: #9aa0a6; }
-        .prompt { padding: 6px 14px 10px; color: #a8c7fa; }
-      </style><div class="con"><div class="tabs"><span>Elements</span><b>Console</b><span>Sources</span><span>Network</span></div>${rows}<div class="prompt">&gt;</div></div>`);
-      await draw.locator('.con').screenshot({ path: OUT + name, omitBackground: true });
-      const b = await draw.locator('.con').boundingBox();
-      console.log('wrote', name, Math.round(b.width), Math.round(b.height));
-    }
-    await draw.close();
+    await drawConsole(browser, shots);
 
     // What they do: 1000 uwuCoins and the coin floating up over the wheel, and Achievements after
     // three of the five buses.
