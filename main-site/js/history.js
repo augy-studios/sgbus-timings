@@ -9,8 +9,10 @@
 //   waiting  from the leg's start to boarding, when the fixes showed you board (less the walk
 //            to the first stop, on the first leg); otherwise the plan's wait.
 //   riding   from boarding to getting off, when both were seen; a train from the leg's start
-//            to its end less the plan's wait; otherwise the plan's ride time, or the share of
-//            it covered on a ride the trip ended partway along.
+//            to its end less the plan's wait, when neither was the clock's (js/trip.js,
+//            startBy and endBy: underground, a change of line is when the plan has you there)
+//            and it's near the plan, as trains keep to time; otherwise the plan's ride time, or
+//            the share of it covered on a ride the trip ended partway along.
 //   walking  always the plan's walks, before the first ride and after each one finished.
 //
 // A measured time far off the plan (a trip started well before leaving, a bar left running
@@ -29,6 +31,11 @@
   // A measured ride outside this share of the plan's (plus a little) wasn't the ride.
   const RIDE_MIN_SHARE = 0.3;
   const RIDE_MAX_SHARE = 3;
+  // A train's, which runs to time: outside this, the leg's span took in more than the ride (a
+  // change it never saw, Next tapped late).
+  const TRAIN_MIN_SHARE = 0.5;
+  const TRAIN_MAX_SHARE = 1.5;
+  const TRAIN_EXTRA_MIN = 5;
   // An end this near a saved place is named after it: "To Home".
   const NEAR_PLACE_M = 150;
 
@@ -121,10 +128,14 @@
       let rideMin = planRide * share;
       let rideMeasured = false;
       let measured = null;
+      const train = leg.kind === 'train' && !(t.gps && t.board);
       if (t.gps && t.board && t.end) measured = minutes(t.end - t.board);
-      else if (leg.kind === 'train' && t.start && t.end) measured = minutes(t.end - t.start) - planWait;
+      else if (leg.kind === 'train' && t.start && t.end && t.startBy !== 'clock' && t.endBy !== 'clock') measured = minutes(t.end - t.start) - planWait;
       const plan = planRide * share;
-      if (measured != null && measured >= 0 && (!done || (measured >= plan * RIDE_MIN_SHARE && measured <= plan * RIDE_MAX_SHARE + 10))) {
+      const believable = train
+        ? measured >= plan * TRAIN_MIN_SHARE && measured <= plan * TRAIN_MAX_SHARE + TRAIN_EXTRA_MIN
+        : !done || (measured >= plan * RIDE_MIN_SHARE && measured <= plan * RIDE_MAX_SHARE + 10);
+      if (measured != null && measured >= 0 && believable) {
         rideMin = measured;
         rideMeasured = true;
       }

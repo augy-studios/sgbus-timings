@@ -937,6 +937,12 @@ const placeName = (p) => (p?.kind === 'station' ? `${stationName(p.name)} statio
 // the walks to and from it end and start at it (api/_nav/via.js), marked `via`.
 const viaName = (o) => o?.via?.label || nav.via?.label || 'your stop';
 const wayPlaceName = (o, p) => (p?.via ? viaName(o) : placeName(p));
+// A way's stop on the way as a place, { label, lat, lng }: where its walks to and from it meet,
+// or Navigate's own stop; null if neither has a point.
+function viaPlace(o) {
+  const p = [o.legs[o.via.leg - 1]?.to, o.legs[o.via.leg]?.from].find((x) => x?.via && x.lat != null) || nav.via;
+  return p?.lat != null && p?.lng != null ? { label: viaName(o), lat: Number(p.lat), lng: Number(p.lng) } : null;
+}
 
 async function renderNavOption(o) {
   const body = $('#navBody');
@@ -1156,12 +1162,16 @@ function busCodes(l) {
 }
 
 // A way with a stop on the way (`via`) is one trip, its two halves' legs in turn: the walk to
-// the stop is named for it, and no time is counted there.
+// the stop is named for it, and no time is counted there. The first leg after the stop is
+// marked `afterVia` with the stop, { label, lat, lng }, so the trip (js/trip.js, goal) plans
+// any other way to the stop while it's still ahead, not past it to the end.
 function tripFromNav(o, to, from = nav.from) {
   const legs = [];
   let walkBefore = 0;
+  let viaAt = -1;
   const at = (p) => (p?.lat != null && p?.lng != null ? [Number(p.lat), Number(p.lng)] : null);
   o.legs.forEach((l, k) => {
+    if (o.via && k === o.via.leg) viaAt = legs.length;
     if (l.mode === 'walk') {
       const start = at(k === 0 ? from : l.from || o.legs[k - 1]?.to);
       const endPlace = k === o.legs.length - 1 ? to : l.to;
@@ -1207,6 +1217,8 @@ function tripFromNav(o, to, from = nav.from) {
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
     });
   });
+  const stop = o.via && legs[viaAt] ? viaPlace(o) : null;
+  if (stop) legs[viaAt].afterVia = stop;
   return {
     title: to?.label ? I18n.t('trip.to', 'To {to}', { to: to.label }) : I18n.t('trip.toYourStop', 'To your stop'),
     legs,

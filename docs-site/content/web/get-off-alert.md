@@ -312,6 +312,11 @@ Walking the rest of the way counts too, and with **Cycling** set to **I have a
 bike** in [Settings](settings.md), cycling it, with a couple of minutes for the
 bike.
 
+On a trip with a stop on the way, from **Add a stop** in Navigate, a faster way
+goes to that stop while it's still ahead, and the trip carries on from there as
+you planned it. The same goes for another way found for a last bus, **Change
+here**, and cycling or driving all the way.
+
 **Reroute** makes it your trip from there, alerts and all: on a ride, you get off
 at that next stop. The bar then says what changed, with **Undo**. **Keep my way** puts the suggestion away for 15 minutes,
 unless something comes along that saves more again. A notification says it once

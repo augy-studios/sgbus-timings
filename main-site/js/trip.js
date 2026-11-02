@@ -120,6 +120,13 @@
 // and a bus or train's 40 km/h or so is riding. Riding speed is never walking, whatever the
 // steps say, and riding speed 150 m down a bus's route is enough to be on board.
 //
+// Off a train: a train runs beside roads and comes in to stations along bus routes, so a fix
+// there is no sign you've got off. Off it near the next ride's first stop only once you've
+// stopped (atSpeed), and on a bus after it only going its way (headingAlong), never back
+// towards its first stop. A bus taken as boarded that a good fix then has standing at its first
+// stop is waited for again (backAtStop). From one line to the next, underground, the clock
+// moves you on at the interchange, and says so (`startBy`, `endBy` on trip.times) for Your trips.
+//
 // On the bar, a trip of more than one part (each ride and each walk; `legs` here) has Back and
 // Next, to move it by hand. Back puts you where you were on the part before, or at its start if
 // you'd finished it, and re-arms its alerts; the server hears it was by hand (`movedAt`), so
@@ -654,6 +661,59 @@
 
   // ---------- where you are ----------
 
+  // Good fixes of the last few minutes on this trip, one every MOVE_SAMPLE_MS, as { p, acc, t }:
+  // for how fast you're going (speedKmh) and which way along a ride (headingAlong), so a train
+  // running beside a bus's route, or coming in to the station it starts at, isn't taken for
+  // getting off the train and on the bus.
+  const RECENT_KEEP_MS = 3 * 60 * 1000;
+  // Your speed over this much of them, at least SPEED_MIN_MS.
+  const SPEED_SPAN_MS = 30 * 1000;
+  const SPEED_MIN_MS = 10 * 1000;
+  // Which way along a ride, from a fix this long ago or more, up to RECENT_KEEP_MS.
+  const HEADING_MIN_MS = 10 * 1000;
+  let recentFixes = [];
+  let recentFor = null;
+
+  function keepFix(here, accuracy) {
+    const now = Date.now();
+    if (recentFor !== trip.tripId) [recentFixes, recentFor] = [[], trip.tripId];
+    const last = recentFixes[recentFixes.length - 1];
+    if (last && now - last.t < MOVE_SAMPLE_MS) return;
+    recentFixes = [...recentFixes.filter((f) => now - f.t <= RECENT_KEEP_MS), { p: here, acc: accuracy, t: now }];
+  }
+
+  // Your speed lately in km/h, less the fixes' own wobble, or null without fixes enough apart.
+  function speedKmh() {
+    const now = Date.now();
+    const last = recentFixes[recentFixes.length - 1];
+    const first = recentFixes.find((f) => now - f.t <= SPEED_SPAN_MS);
+    if (recentFor !== trip?.tripId || !last || !first || last.t - first.t < SPEED_MIN_MS || now - last.t > SPEED_SPAN_MS) return null;
+    return (Math.max(0, metres(first.p, last.p) - (first.acc + last.acc) / 2) / ((last.t - first.t) / 1000)) * 3.6;
+  }
+
+  // Going at a bus or train's speed: by the app's word on your pace (Motion), or the fixes.
+  const atSpeed = () => Motion.state() === "riding" || (speedKmh() ?? 0) > NOT_WALKING_KMH;
+
+  // Which way you've gone along `leg` lately, from where you are: 1 down it (MOVE_M further
+  // on than a fix of the last few minutes), -1 back up it towards its start (MOVE_M nearer),
+  // 0 for neither, or without a fix on it to go by.
+  function headingAlong(leg, here) {
+    const now = Date.now();
+    const at = alongLeg(here, leg, 0);
+    if (at == null || recentFor !== trip.tripId) return 0;
+    const m = metresAlong(leg, at);
+    let way = 0;
+    for (const f of recentFixes) {
+      if (now - f.t < HEADING_MIN_MS) continue;
+      const was = alongLeg(f.p, leg, 0);
+      if (was == null) continue;
+      const d = m - metresAlong(leg, was);
+      if (d >= MOVE_M) way = 1;
+      else if (d <= -MOVE_M) way = -1;
+    }
+    return way;
+  }
+
   function onFix(pos) {
     const accuracy = pos.coords.accuracy;
     if (!trip || accuracy > ROUGH_FIX_M) return;
@@ -662,8 +722,9 @@
     if (accuracy <= GOOD_FIX_M) trip.me = { lat: here[0], lng: here[1], accuracy: Math.round(accuracy), t: Date.now() };
     // Already on a later ride: on to it, on board.
     const ahead = accuracy <= GOOD_FIX_M ? rideAhead(here, leg) : -1;
+    if (accuracy <= GOOD_FIX_M) keepFix(here, accuracy);
     if (ahead !== -1) {
-      while (trip.leg < ahead) nextLeg();
+      while (trip.leg < ahead) nextLeg(false, "fix");
       leg = trip.legs[trip.leg];
       boardedNow(alongLeg(here, leg, 0) ?? 0);
     }
@@ -672,6 +733,7 @@
     if (isWalk(leg)) return onWalkFix(here, accuracy, leg);
     if (realign(here, accuracy, leg)) return;
     if (accuracy > GOOD_FIX_M) return;
+    if (backAtStop(here, accuracy, leg)) return;
     trip.lastFixAt = Date.now();
     trip.noLocation = false;
     // Alerted well before the stop, by the server about another bus: it can go off again.
@@ -714,9 +776,11 @@
       trip.pos = lastStop;
     }
 
-    // Off at the end of this leg and already near the next one's first stop: on to it.
+    // Off at the end of this leg and already near the next one's first stop: on to it. Off a
+    // train once it's stopped, too: the clock can have it at the station while it's still
+    // coming in, past the stops of a bus from there.
     const next = trip.legs[trip.leg + 1];
-    if (next && trip.at >= leg.points.length - 1 && metres(here, next.points[0]) <= ON_ROUTE_M) nextLeg();
+    if (next && trip.at >= leg.points.length - 1 && metres(here, next.points[0]) <= ON_ROUTE_M && !(leg.kind === "train" && atSpeed())) nextLeg(false, "fix");
     check();
   }
 
@@ -792,7 +856,9 @@
       || (along >= 1 && fromStop > ON_ROAD_M && moves.some((x) => along - x.along >= MOVE_STOPS));
     const lastT = moves.length ? moves[moves.length - 1].t : 0;
     trip.moves = now - lastT >= MOVE_SAMPLE_MS ? [...moves.slice(-240), { along, m, t: now }] : moves;
-    if (!moved) return false;
+    // Going back up the route, towards the stop you get on at: on something else coming to it
+    // (a train into the station there), not on board.
+    if (!moved || headingAlong(leg, here) === -1) return false;
     boardedNow(along, moves);
     return true;
   }
@@ -834,7 +900,10 @@
     const k = trip.legs.findIndex((l, i) => i > trip.leg && !isWalk(l));
     const ride = trip.legs[k];
     if (!ride || ride.points.length < 2 || metres(here, ride.points[0]) < LEFT_STOP_M) return -1;
-    return (alongLeg(here, ride, 0) ?? 0) >= MOVE_STOPS ? k : -1;
+    if ((alongLeg(here, ride, 0) ?? 0) < MOVE_STOPS) return -1;
+    // From a ride, only once the fixes have gone down the next one: a train beside its route,
+    // or coming the other way into the station it starts at, is still the train.
+    return isWalk(leg) || headingAlong(ride, here) === 1 ? k : -1;
   }
 
   // Checked on every fix, rough ones too: if you're clearly not where the trip has you, it
@@ -889,6 +958,39 @@
     save();
     sync();
     check();
+    return true;
+  }
+
+  // On a bus leg taken as boarded, a stop or more on, but a good fix has you standing at the
+  // stop you get on at: you never got on (a train running beside its route set it off), and
+  // you're waiting for the bus again, the clock held till it comes. Only in the first part of
+  // the ride, so a route that comes back near where it began isn't sent back. Says whether it
+  // moved you.
+  function backAtStop(here, accuracy, leg) {
+    if (leg.kind !== "bus" || !trip.boarded || trip.noLocation) return false;
+    const last = leg.points.length - 1;
+    const believed = target();
+    if (believed < 1 || believed > Math.max(2, last * 0.6)) return false;
+    const fromStop = metres(here, leg.points[0]);
+    if (fromStop > ON_ROAD_M / 2 + Math.min(accuracy, ON_ROAD_M / 2)) return false;
+    if (leg.points.some((p, k) => k > 0 && metres(here, p) < fromStop)) return false;
+    if (atSpeed()) return false;
+    const now = Date.now();
+    Object.assign(trip, { at: 0, pos: 0, anchor: { pos: 0, t: now }, boarded: false, moves: [], realignedAt: now, lastFixAt: now, onLegAt: now });
+    const t = trip.times[trip.leg];
+    if (t) {
+      delete t.board;
+      delete t.gps;
+    }
+    if (trip.alerted[trip.leg]) {
+      trip.alerted[trip.leg] = false;
+      trip.alertText = null;
+    }
+    shown = null;
+    save();
+    sync();
+    record();
+    render();
     return true;
   }
 
@@ -1221,6 +1323,19 @@
     return { label: final.to, lat, lng };
   }
 
+  // Where another way from leg `from` on goes: the trip's stop on the way (Navigate's Add a
+  // stop: the leg after it is marked `afterVia`, tripFromNav) while it's still ahead, or else
+  // where the trip ends. `upTo` is the leg the trip goes on with from there (the legs' length
+  // at the end), so a way found to the stop is followed by the rest of the trip as it was
+  // (withRest), not planned past it.
+  function goal(from = trip.leg) {
+    const i = trip.legs.findIndex((l, k) => k > from && l.afterVia);
+    return i === -1 ? { to: tripEnd(), upTo: trip.legs.length, via: false } : { to: trip.legs[i].afterVia, upTo: i, via: true };
+  }
+
+  // A way's legs to `g` (goal), then the trip as it was from there.
+  const withRest = (legs, g) => [...legs, ...trip.legs.slice(g.upTo)];
+
   // The ride a way takes, as "bus:59@84031", to tell it from the lost ones.
   const rideKey = (mode, route, code) => `${mode}:${String(route).toUpperCase()}@${code || ""}`;
 
@@ -1232,7 +1347,8 @@
     const key = lostAt.map((i) => rideKey("bus", trip.legs[i].service, trip.legs[i].board)).join(">");
     if (another?.key === key && Date.now() - another.at < ANOTHER_EVERY_MS) return;
     const asked = trip;
-    const to = tripEnd();
+    const g = goal();
+    const to = g.to;
     const skip = new Set(key.split(">"));
     const pick = (data) => (data.options || []).find((o) => !o.walkOnly && !o.legs.some((l) => l.mode === "bus" && skip.has(rideKey("bus", l.route, l.from?.code)))) ||
       (data.options || []).find((o) => o.walkOnly) || null;
@@ -1256,7 +1372,7 @@
         if (trip !== asked) return;
         const way = pick(data);
         if (way || t === tries[tries.length - 1]) {
-          another = { ...t, to, way, at: Date.now(), key };
+          another = { ...t, to, upTo: g.upTo, way, at: Date.now(), key };
           return;
         }
       } catch {
@@ -1265,7 +1381,7 @@
     }
     if (trip !== asked) return;
     // Not asked again for a minute, rather than on every check.
-    if (failed) another = { ...tries[0], to, way: null, at: Date.now() - ANOTHER_EVERY_MS + 60 * 1000, key, failed: true };
+    if (failed) another = { ...tries[0], to, upTo: g.upTo, way: null, at: Date.now() - ANOTHER_EVERY_MS + 60 * 1000, key, failed: true };
   }
 
   // A way's rides, "Bus 12 → NE Line".
@@ -1309,7 +1425,7 @@
     if (!another?.way || typeof tripFromNav !== "function") return;
     const next = tripFromNav(another.way, another.to, another.from);
     if (!next.legs.length) return;
-    replan(another.j, another.k, next.legs, note);
+    replan(another.j, another.k, withRest(next.legs, { upTo: another.upTo ?? trip.legs.length }), note);
   }
 
   // ---------- switched by itself ----------
@@ -1520,7 +1636,9 @@
     if (Date.now() - fasterCheckedAt < FASTER_EVERY_MS - TICK_MS / 2) return;
     // A lost last bus comes first, and a switch just made stands.
     if (Object.values(lastHeard).some((w) => w.kind !== "soon") || trip.switched) return;
-    const left = minutesLeft();
+    // To the trip's stop on the way while it's ahead, against the minutes to it; else to the end.
+    const g = goal();
+    const left = minutesTo(g.upTo);
     if (left < FASTER_FROM_MIN) return;
     fasterCheckedAt = Date.now();
     const asked = trip;
@@ -1536,7 +1654,7 @@
     } else {
       start = { from: whereNow(), j: trip.leg, k: null, reach: 0 };
     }
-    const to = tripEnd();
+    const to = g.to;
     let data;
     try {
       const when = start.reach >= 1 && window.When?.msToAt ? { mode: "leave", at: When.msToAt(Date.now() + start.reach * 60000) } : null;
@@ -1546,7 +1664,7 @@
     }
     if (trip !== asked || trip.legs !== legs) return;
     // Your own way from there, which isn't another.
-    const mine = legs.slice(start.k == null ? start.j : start.j + 1).filter((l) => !isWalk(l)).map(rideKeyOf).join(">");
+    const mine = legs.slice(start.k == null ? start.j : start.j + 1, g.upTo).filter((l) => !isWalk(l)).map(rideKeyOf).join(">");
     const picks = [];
     for (const o of (data.options || []).filter((x) => !x.walkOnly && x.legs.filter((l) => l.mode !== "walk").map(rideKeyOf).join(">") !== mine).slice(0, 2)) {
       const minutes = await liveMinutes(o);
@@ -1559,7 +1677,7 @@
     const saves = best ? Math.round(left - best.minutes) : 0;
     const kept = fasterKept && Date.now() - fasterKept.at < KEEP_FOR_MS && saves < fasterKept.saves + FASTER_MIN;
     faster = best && saves >= Math.max(FASTER_MIN, left * FASTER_SHARE) && !kept
-      ? { ...start, to, ...best, minutes: Math.round(best.minutes), saves, why: whyFaster() }
+      ? { ...start, to, upTo: g.upTo, via: g.via, ...best, minutes: Math.round(best.minutes), saves, why: whyFaster() }
       : null;
     if (faster) {
       const said = `${faster.kind}:${faster.way ? faster.way.legs.map((l) => l.route || l.mode).join(">") : ""}`;
@@ -1576,6 +1694,12 @@
     const by = byClock({ minutes: f.minutes });
     const why = f.why ? I18n.t("trip.fasterWhy", ", as {why}", { why: f.why }) : "";
     const v = { stop: f.from?.label, m: f.minutes, by, saves: f.saves, why };
+    // To the trip's stop on the way, not its end: said so, as the rest of the trip stands.
+    if (f.via) return `${fasterWords(f, v)} ${I18n.t("trip.fasterThenStop", "That's to {place}, then on as planned.", { place: f.to.label })}`;
+    return fasterWords(f, v);
+  }
+
+  function fasterWords(f, v) {
     if (f.kind === "walk") return f.k != null ? I18n.t("trip.fasterWalkFrom", "Faster to walk from {stop}: ~{m} min{by}. Saves {saves} min{why}.", v) : I18n.t("trip.fasterWalk", "Faster to walk: ~{m} min{by}. Saves {saves} min{why}.", v);
     if (f.kind === "cycle") return f.k != null ? I18n.t("trip.fasterBikeFrom", "Faster by bike from {stop}: ~{m} min{by}. Saves {saves} min{why}.", v) : I18n.t("trip.fasterBike", "Faster by bike: ~{m} min{by}. Saves {saves} min{why}.", v);
     const head = I18n.t("trip.fasterWay", "Faster: {rides}, ~{m} min{by}. Saves {saves} min{why}.", { ...v, rides: ridesText(f.way) });
@@ -1602,7 +1726,11 @@
       legs = [footLeg(f.from, f.to, f.minutes - f.reach, f.kind)];
     }
     if (!legs.length) return;
-    const now = f.kind === "way" ? `${firstStep(f.way)}.` : f.kind === "cycle" ? I18n.t("trip.cycleRest", "Cycle the rest of the way, ~{m} min.", { m: f.minutes - Math.round(f.reach) }) : I18n.t("trip.walkRestMin", "Walk the rest of the way, ~{m} min.", { m: f.minutes - Math.round(f.reach) });
+    legs = withRest(legs, f);
+    const m = f.minutes - Math.round(f.reach);
+    const now = f.kind === "way" ? `${firstStep(f.way)}.`
+      : f.via ? (f.kind === "cycle" ? I18n.t("trip.cycleToStop", "Cycle to {place}, ~{m} min.", { place: f.to.label, m }) : I18n.t("trip.walkToStop", "Walk to {place}, ~{m} min.", { place: f.to.label, m }))
+        : f.kind === "cycle" ? I18n.t("trip.cycleRest", "Cycle the rest of the way, ~{m} min.", { m }) : I18n.t("trip.walkRestMin", "Walk the rest of the way, ~{m} min.", { m });
     replan(f.j, f.k, legs, { title: f.k != null ? I18n.t("trip.changedFaster", "Changed at {stop} for a faster way.", { stop: f.from.label }) : I18n.t("trip.reroutedFaster", "Rerouted to a faster way."), reason: "", now });
   }
 
@@ -1696,7 +1824,8 @@
     const legs = trip.legs;
     const ride = k == null ? null : legs[k];
     const from = whereNow();
-    const to = ride ? { label: boardName(k), lat: ride.points[0][0], lng: ride.points[0][1] } : tripEnd();
+    const g = goal();
+    const to = ride ? { label: boardName(k), lat: ride.points[0][0], lng: ride.points[0][1] } : g.to;
     const at = (p) => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`;
     let minutes = null;
     try {
@@ -1712,7 +1841,7 @@
         : I18n.t("trip.cycleToRide", "Cycle to {to}, ~{m} min, then {ride}.", { to: to.label, m, ride: ride.label }))
       : drive ? I18n.t("trip.driveRest", "Drive the rest of the way, ~{m} min.", { m }) : I18n.t("trip.cycleRest", "Cycle the rest of the way, ~{m} min.", { m });
     const title = drive ? I18n.t("trip.switchedDrive", "Switched to driving.") : I18n.t("trip.switchedCycle", "Switched to cycling.");
-    replan(trip.leg, null, [footLeg(from, to, minutes, mode), ...(ride ? legs.slice(k) : [])], { title, reason: "", now });
+    replan(trip.leg, null, [footLeg(from, to, minutes, mode), ...(ride ? legs.slice(k) : legs.slice(g.upTo))], { title, reason: "", now });
     // Its way there, from where you are.
     window.LiveMap?.trip();
   }
@@ -1727,8 +1856,9 @@
     const leg = trip.legs[j];
     if (!leg || typeof fetchWays !== "function") return;
     const from = { label: stopName(leg, k), lat: leg.points[k][0], lng: leg.points[k][1] };
-    const to = tripEnd();
-    const asked = (changing = { j, k, from, to, ways: null });
+    const g = goal(j);
+    const to = g.to;
+    const asked = (changing = { j, k, from, to, upTo: g.upTo, ways: null });
     setExpanded(false);
     render();
     try {
@@ -1753,7 +1883,7 @@
     if (!o || typeof tripFromNav !== "function") return;
     const next = tripFromNav(o, changing.to, changing.from);
     if (!next.legs.length) return;
-    replan(changing.j, changing.k, next.legs, { title: I18n.t("trip.changedAt", "Changed at {stop}.", { stop: changing.from.label }), reason: "", now: `${firstStep(o)}.` });
+    replan(changing.j, changing.k, withRest(next.legs, changing), { title: I18n.t("trip.changedAt", "Changed at {stop}.", { stop: changing.from.label }), reason: "", now: `${firstStep(o)}.` });
   }
 
   function renderChange() {
@@ -1838,15 +1968,18 @@
   }
 
   // On to the next part, by itself or by hand (Next). Where you'd got to on this one is kept,
-  // for Back.
-  function nextLeg(byHand = false) {
-    endLegTime();
+  // for Back. `by` is what moved it on, for Your trips: "fix", "clock" (no recent good fix:
+  // it's when the plan has you there, not when you were) or "hand"; by default the clock
+  // when the fixes are stale, else a fix.
+  function nextLeg(byHand = false, by = null) {
+    by = byHand ? "hand" : by || (stale() ? "clock" : "fix");
+    endLegTime(by);
     (trip.left ??= [])[trip.leg] = {
       at: trip.at, pos: trip.pos || 0, anchor: trip.anchor || null, boarded: Boolean(trip.boarded), legStartedAt: trip.legStartedAt,
     };
     if (byHand) handMoved();
     trip.leg += 1;
-    trip.times[trip.leg] = { start: Date.now() };
+    trip.times[trip.leg] = { start: Date.now(), ...(by !== "fix" && { startBy: by }) };
     delete trip.nearEnd;
     trip.at = 0;
     trip.pos = 0;
@@ -1881,6 +2014,7 @@
     const was = trip.left?.[trip.leg];
     const t = trip.times[trip.leg] || (trip.times[trip.leg] = { start: Date.now() });
     delete t.end;
+    delete t.endBy;
     if (was && was.at < last) {
       Object.assign(trip, { at: was.at, pos: was.pos, anchor: was.anchor, boarded: was.boarded, legStartedAt: was.legStartedAt });
     } else {
@@ -1921,9 +2055,13 @@
   // ---------- Your trips (js/history.js) ----------
 
   // The leg on now has ended, if it hadn't: changed from, arrived at, or the trip ended on it.
-  function endLegTime() {
+  // `by` (nextLeg) is kept on it unless it was a fix, so Your trips knows a time the clock set.
+  function endLegTime(by = null) {
     const t = trip.times?.[trip.leg];
-    if (t && !t.end) t.end = Date.now();
+    if (t && !t.end) {
+      t.end = Date.now();
+      if (by && by !== "fix") t.endBy = by;
+    }
     // The ride's judged: kept by line or bus if it was really taken (js/rides.js).
     try { window.RideCheck?.done(trip, trip.leg); } catch (err) { console.warn("couldn't judge the ride:", err); }
   }
@@ -1953,8 +2091,10 @@
       trip.alerted[trip.leg] = true;
       if (enabled()) alertNow(left);
     }
-    // At the end of a walk, or off a ride with a walk next: on to the next leg.
-    if (left === 0 && next && (isWalk(leg) || isWalk(next))) {
+    // At the end of a walk, or off a ride with a walk next: on to the next leg. And from one
+    // train line to the next at an interchange, where underground nothing but the clock can say
+    // you've changed: otherwise the first line's ride ran on through the change and the next.
+    if (left === 0 && next && (isWalk(leg) || isWalk(next) || (leg.kind === "train" && next.kind === "train"))) {
       nextLeg();
       render();
       return;
@@ -1963,7 +2103,7 @@
     if (left === 0 && trip.leg === trip.legs.length - 1) {
       if (!trip.arrived) {
         trip.arrived = true;
-        endLegTime();
+        endLegTime(stale() && underWay(leg) ? "clock" : null);
         save();
         record();
         // Its uwuCoins (js/coins.js), and its feats: back where it started, over three hours,
