@@ -12,7 +12,8 @@
 //      Saturday night, term and vacation, a public holiday, bands that share a minute.
 //   4. Departures: from each end of K, a stop after either end, the end of R1, P's way back from
 //      OTH, the days K, R1, CR and CR-W don't run, after the last departure.
-//   5. The words, and the problems a broken file gives.
+//   5. The words, and the problems a broken file gives; SGH's shuttles and the eve of a
+//      public holiday (ph_eve).
 //   6. The credits: each university's only while one of its lines is in the map's view.
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -190,6 +191,31 @@ ok('max under min is a problem', problems.some((p) => /z\.weekdays: every 5-3/.t
 // A campus stop within MERGE_M of an LTA stop is shown as that stop.
 const merged = C.build({ nus: { stops: [{ id: 'NUS-X', name: 'X', loc: '1.29430,103.76990' }, { id: 'NUS-Y', name: 'Y', loc: '1.2950,103.7700' }], routes: [{ id: 'T', stops: ['NUS-X', 'NUS-Y'], timings: { weekday: [{ start: '0700', end: '0800', min: 5, max: 5 }] } }] } }, LTA);
 ok(`a campus stop ${C.MERGE_M} m or less from an LTA stop is that stop`, merged.stops.has('16009') && !merged.stops.has('NUS-X') && merged.stops.has('NUS-Y'), [...merged.stops.keys()]);
+
+// ---------- 5b. SGH's shuttles and the eve of a public holiday ----------
+// shuttles.json's SGH group, built on its own against LTA's two Outram Park stops.
+const LTA_SGH = { ...LTA, '10018': { n: 'Outram Pk Stn Exit 6/SGH', road: 'Eu Tong Sen St', lat: 1.27901, lng: 103.8386 }, '06011': { n: 'Outram Pk Stn Exit 7', road: 'Outram Rd', lat: 1.28166, lng: 103.83801 } };
+const sghRaw = { shuttles: { groups: { sgh: file('shuttles.json').groups.sgh } } };
+const sgh = C.build(sghRaw, LTA_SGH);
+eq('SGH: no problems', sgh.problems, []);
+eq('SGH: three routes, each a loop', sgh.routes.map((r) => [r.code, r.loop]), [['SGH Orange', true], ['SGH Blue', true], ['SGH Car Park H', true]]);
+ok('SGH: Orange and Blue start at Outram Pk Stn Exit 6 (10018), then 06011', ['SGH Orange', 'SGH Blue'].every((c) => sgh.routes.find((r) => r.code === c).keys.slice(0, 2).join() === '10018,06011'));
+ok('SGH: every stop placed, none merged', sgh.routes.every((r) => r.keys.every(Boolean)) && !sgh.notes.some((n) => /shown as that stop/.test(n)));
+ok('SGH: OCH is on Blue and Car Park H', sgh.stops.get('sgh-och')?.routes.map((x) => x.route.code).join() === 'SGH Blue,SGH Car Park H');
+const sghAt = (code, stop, when) => {
+  const r = sgh.routes.find((x) => x.code === code);
+  return C.status(r, r.ids.indexOf(stop), sg(when), opts);
+};
+eq('SGH Orange, Thu 24 Dec 13:00 (Christmas Eve): every ~20 till 14:00', pick(sghAt('SGH Orange', '10018', '2026-12-24T13:00'), 'state', 'min', 'last'), { state: 'every', min: 20, last: 840 });
+eq('SGH Orange, Christmas Eve 15:00: no more today', sghAt('SGH Orange', '10018', '2026-12-24T15:00').state, 'done');
+eq('SGH Orange, Thu 17 Dec 15:00 (no holiday after): weekday, till 19:00', pick(sghAt('SGH Orange', '10018', '2026-12-17T15:00'), 'state', 'last'), { state: 'every', last: 1140 });
+eq('SGH Blue, Christmas Day: not running, next Sat 26 Dec 08:00', (({ state, next }) => [state, next.inDays, next.at])(sghAt('SGH Blue', '10018', '2026-12-25T10:00')), ['notToday', 1, 480]);
+eq('SGH Orange, Sun 8 Nov (eve of Deepavali, a Sunday): not running', sghAt('SGH Orange', '10018', '2026-11-08T10:00').state, 'notToday');
+eq('SGH Car Park H has no eve times: Christmas Eve 20:00 is a weekday, till 22:20', pick(sghAt('SGH Car Park H', 'sgh-och', '2026-12-24T20:00'), 'state', 'last'), { state: 'every', last: 1340 });
+eq('SGH Car Park H, Sat 15:00: no more today', sghAt('SGH Car Park H', 'sgh-och', '2026-12-26T15:00').state, 'done');
+const eveProblems = [];
+eq('ph_eve and eve read as the eve of a public holiday', Object.keys(C.readTimings({ weekdays: [{ start: '0800', end: '0900', min: 5, max: 5 }], eve: [{ start: '0800', end: '0830', min: 5, max: 5 }] }, ['A'], 'e', eveProblems).all), ['weekday', 'ph_eve']);
+eq('…with no problems', eveProblems, []);
 
 // ---------- 6. The credits ----------
 // Each route as Explorer draws it before the roads are in: straight from stop to stop.

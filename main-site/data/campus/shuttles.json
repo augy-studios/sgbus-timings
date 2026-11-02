@@ -1,5 +1,5 @@
 {
-  "_about": "The island's shuttle buses beyond NUS's and NTU's (js/campus.js reads them as it reads nus.json and ntu.json; js/nav-core/campus.js routes on them). Found from ShuttleBusFinder's Singapore directory as a list of services only, then each taken from its operator's own page, cited in `source` and checked on `checked`. Each group is a file and its config in one: `name`, `colour`, `fare` (\"free\" or \"paid\", with `fareText`), `access` (\"public\", \"guests\" for a hotel's, \"residents\" for a condo's, ridden in Navigate only from or to `place`), and its `stops` and `routes` as nus.json has them. Timings: \"daily\" or weekday/sat/sun_ph, as bands or departure times from a stop. A stop with a five-digit id is LTA's stop of that code. `kmh` is a route's speed between stops where it isn't ~15 km/h. `live` is where its buses can be seen live (api/shuttle-live.js). Left out, as no current timetable could be found from the operator: Sembawang Shopping Centre's (last published March 2023), Marina Square's lunchtime shuttle (ran to 31 December 2025), and the condos' (Lilydale, Skies Miltonia, The Shaughnessy, The Miltonia Residences, The Canopy, Seletaris, Treetops Executive Residences).",
+  "_about": "The island's shuttle buses beyond NUS's and NTU's (js/campus.js reads them as it reads nus.json and ntu.json; js/nav-core/campus.js routes on them). Found from ShuttleBusFinder's Singapore directory as a list of services only, then each taken from its operator's own page, cited in `source` and checked on `checked`. Each group is a file and its config in one: `name`, `colour`, `fare` (\"free\" or \"paid\", with `fareText`), `access` (\"public\", \"guests\" for a hotel's, \"residents\" for a condo's, ridden in Navigate only from or to `place`), and its `stops` and `routes` as nus.json has them. Timings: \"daily\" or weekday/sat/sun_ph (and ph_eve, the day before a public holiday, where a route has its own), as bands or departure times from a stop. A stop with a five-digit id is LTA's stop of that code. `kmh` is a route's speed between stops where it isn't ~15 km/h. `live` is where its buses can be seen live (api/shuttle-live.js). Left out, as no current timetable could be found from the operator: Sembawang Shopping Centre's (last published March 2023), Marina Square's lunchtime shuttle (ran to 31 December 2025), and the condos' (Lilydale, Skies Miltonia, The Shaughnessy, The Miltonia Residences, The Canopy, Seletaris, Treetops Executive Residences).",
   "groups": {
     "ikea": {
       "name": "IKEA",
@@ -183,18 +183,18 @@
       "access": "public",
       "source": "https://www.sgh.com.sg/patient-care/visitor-information/shuttle-services",
       "checked": "2026-11-02",
-      "_stops": "The SGH Campus shuttles' stops as SGH's shuttle page lists them, in its order. Outram Park's two are LTA's: 10018 (Outram Pk Stn Exit 6/SGH, Eu Tong Sen St) and 06011 (Outram Pk Stn Exit 7, Outram Rd, where SGH's page says \"opposite the Outram Park MRT (East-West Line & Thomson-East Coast Line) station (Exit 7)\"). The campus ones' positions are placed by each building on the campus map, not surveyed: check them against SGH's campus map or OneMap. The page gives no departure times, only a bus about every 20 minutes; live times are in ComfortDelGro's Comfort Connect app (SingHealth Shuttle Service, SGH Campus), not read here. The Orange and Blue routes also run 8am to 2pm on eves of public holidays, which the timings here can't say: such a day counts as a weekday.",
+      "_stops": "The SGH Campus shuttles' stops as SGH's shuttle page lists them, in its order. Outram Park's two are LTA's: 10018 (Outram Pk Stn Exit 6/SGH, Eu Tong Sen St) and 06011 (Outram Pk Stn Exit 7, Outram Rd, where SGH's page says \"opposite the Outram Park MRT (East-West Line & Thomson-East Coast Line) station (Exit 7)\"). The buildings' positions are OneMap's for each (checked 2026-11-02): NCCS 168583, DMC, SNEC 168751, SGH Blk 3, Outram Community Hospital / SingHealth Tower, SGH Emergency / NNI at 1 Hospital Blvd 168581, NHCS 169609, and MSCP 'H'. The Car Park H shuttle stop (opposite SGH Blk 7) and Open Air Car Park H aren't on OneMap: they're placed by Blk 7 and MSCP H, on Macalister Rd as SGH's page says. The page gives no departure times, only a bus about every 20 minutes; live times are in ComfortDelGro's Comfort Connect app (SingHealth Shuttle Service, SGH Campus), not read here. The Orange and Blue routes run Saturday's 8am to 2pm on eves of public holidays (`ph_eve`); the Car Park H page says nothing of eves.",
       "stops": [
-        { "id": "sgh-nccs", "name": "NCCS New Building", "road": "Hospital Blvd", "loc": "1.280050, 103.837650" },
-        { "id": "sgh-dmc", "name": "Diabetes & Metabolism Centre", "road": "Third Hospital Ave", "loc": "1.281300, 103.835300" },
-        { "id": "sgh-snec", "name": "Singapore National Eye Centre", "road": "Third Hospital Ave", "loc": "1.282248, 103.835785" },
-        { "id": "sgh-blk3", "name": "SGH Block 3", "road": "Hospital Blvd", "loc": "1.280500, 103.835800" },
-        { "id": "sgh-och", "name": "Outram Community Hospital / SingHealth Tower", "road": "Hospital Blvd", "loc": "1.280800, 103.836800" },
-        { "id": "sgh-nni", "name": "SGH Emergency / NNI", "road": "Outram Rd", "loc": "1.281000, 103.833500" },
-        { "id": "sgh-nhcs", "name": "National Heart Centre Singapore", "road": "Hospital Dr", "loc": "1.279000, 103.836500" },
-        { "id": "sgh-cph-stop", "name": "Car Park H Shuttle Bus Stop (Opp SGH Blk 7)", "road": "Macalister Rd", "loc": "1.277200, 103.834300" },
-        { "id": "sgh-cph-mscp", "name": "Multi-storey Car Park H", "road": "Macalister Rd", "loc": "1.276500, 103.835000" },
-        { "id": "sgh-cph-open", "name": "Open Air Car Park H", "road": "Macalister Rd", "loc": "1.276800, 103.835800" }
+        { "id": "sgh-nccs", "name": "NCCS New Building", "road": "Hospital Blvd", "loc": "1.281168, 103.837825" },
+        { "id": "sgh-dmc", "name": "Diabetes & Metabolism Centre", "road": "Third Hospital Ave", "loc": "1.281572, 103.836606" },
+        { "id": "sgh-snec", "name": "Singapore National Eye Centre", "road": "Third Hospital Ave", "loc": "1.280878, 103.836071" },
+        { "id": "sgh-blk3", "name": "SGH Block 3", "road": "Hospital Cres", "loc": "1.278942, 103.834303" },
+        { "id": "sgh-och", "name": "Outram Community Hospital / SingHealth Tower", "road": "Hospital Blvd", "loc": "1.277514, 103.835478" },
+        { "id": "sgh-nni", "name": "SGH Emergency / NNI", "road": "Hospital Blvd", "loc": "1.277617, 103.833808" },
+        { "id": "sgh-nhcs", "name": "National Heart Centre Singapore", "road": "Hospital Dr", "loc": "1.278581, 103.836119" },
+        { "id": "sgh-cph-stop", "name": "Car Park H Shuttle Bus Stop (Opp SGH Blk 7)", "road": "Hospital Cres", "loc": "1.280600, 103.834250" },
+        { "id": "sgh-cph-mscp", "name": "Multi-storey Car Park H", "road": "Macalister Rd", "loc": "1.279940, 103.830721" },
+        { "id": "sgh-cph-open", "name": "Open Air Car Park H", "road": "Macalister Rd", "loc": "1.280350, 103.831600" }
       ],
       "routes": [
         {
@@ -204,7 +204,8 @@
           "stops": ["10018", "06011", "sgh-nccs", "sgh-dmc", "sgh-snec", "sgh-blk3", "10018"],
           "timings": {
             "weekdays": [{ "start": "0800", "end": "1900", "min": 20, "max": 20 }],
-            "sat": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }]
+            "sat": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }],
+            "ph_eve": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }]
           }
         },
         {
@@ -214,7 +215,8 @@
           "stops": ["10018", "06011", "sgh-och", "sgh-nni", "sgh-nhcs", "10018"],
           "timings": {
             "weekdays": [{ "start": "0800", "end": "1900", "min": 20, "max": 20 }],
-            "sat": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }]
+            "sat": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }],
+            "ph_eve": [{ "start": "0800", "end": "1400", "min": 20, "max": 20 }]
           }
         },
         {

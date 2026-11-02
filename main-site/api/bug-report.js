@@ -4,8 +4,13 @@
 //   POST { text, contact?, version?, platform?, device?, page?, lang?, website?, images? }  → 204
 //
 // `images` (optional) is up to MAX_IMAGES pictures as JPEG, PNG or WebP data URLs, each at most
-// MAX_IMAGE_BYTES (js/bug-report.js makes them JPEGs of about 900 KB at most): sent after the
-// message, to each chat that took it, as a photo or an album replying to it.
+// MAX_IMAGE_BYTES (js/bug-report.js makes them JPEGs of about 900 KB at most).
+//
+// It goes as a Telegram rich message (Bot API sendRichMessage): a heading, a table of what the
+// form added, what was typed under its own heading, and the pictures in the message itself,
+// uploaded with it (InputRichMessage `media`, each a tg://photo?id= link in the Markdown). If a
+// chat won't take a rich message, it gets what it got before: the same words as plain text
+// (sendMessage), then the pictures as a photo or an album replying to it.
 //
 // What's sent on is what the person typed (`text`, and `contact` if they gave one), with what
 // the form adds and shows them first: the app's version, which app (web, Android, desktop, the
@@ -25,8 +30,8 @@
 // Without either it answers 503, and the form offers email instead. A public endpoint, so it's
 // kept small: at most MAX_TEXT characters and MAX_BODY bytes in all, PER_MINUTE a minute from
 // one IP in this instance, and with Redis set up (api/_push/store.js), PER_HOUR an hour from one
-// IP and ALL_PER_HOUR from everyone together. The message goes as plain text, so nothing typed
-// is read as Telegram's HTML or Markdown. `website` is a field people never see: filled in, it's
+// IP and ALL_PER_HOUR from everyone together. Everything typed is escaped (escapeMd), so nothing
+// in it is read as Telegram's Rich Markdown or HTML; the plain text fallback has no parse_mode. `website` is a field people never see: filled in, it's
 // a bot, told it went and sent nothing.
 
 import { rateLimited, redis, storeConfigured } from "./_push/store.js";
@@ -106,23 +111,86 @@ async function sendImages(chat, pics, replyTo) {
   }
 }
 
-// The message Augy gets: what the form added, then what was typed.
-export function message(body) {
+// What the form added, as [label, value], in order.
+function details(body) {
   const platform = PLATFORMS[body.platform] || "Unknown";
   const version = clean(body.version, 60);
+  return [
+    ["App", `${platform}${version ? ` ${version}` : ""}`],
+    ["Device", clean(body.device, 200) || "not given"],
+    ["Page", clean(body.page, 100) || "not given"],
+    ["Language", clean(body.lang, 10) || "not given"],
+    ["Contact", clean(body.contact, MAX_CONTACT) || "none given"],
+  ];
+}
+
+// The message Augy gets as plain text, where a rich message won't go: what the form added,
+// then what was typed.
+export function message(body) {
   const lines = [
     "Bug report, SG Bus Timings",
     "",
-    `App: ${platform}${version ? ` ${version}` : ""}`,
-    `Device: ${clean(body.device, 200) || "not given"}`,
-    `Page: ${clean(body.page, 100) || "not given"}`,
-    `Language: ${clean(body.lang, 10) || "not given"}`,
-    `Contact: ${clean(body.contact, MAX_CONTACT) || "none given"}`,
+    ...details(body).map(([k, v]) => `${k}: ${v}`),
     ...(Array.isArray(body.images) && body.images.length ? [`Pictures: ${body.images.length}, below`] : []),
     "",
     clean(body.text, MAX_TEXT, { lines: true }),
   ];
   return lines.join("\n");
+}
+
+// Text for Telegram's Rich Markdown, read as it is: Markdown's and HTML's characters, and the
+// ones its own syntax uses (== marked, || spoiler, $ formulas), each behind a backslash, and a
+// line that would start a list or a heading made not to.
+const MD_SPECIAL = /([\\*_~`|\[\]#>=<!$&^(){}])/g;
+export function escapeMd(text) {
+  return String(text)
+    .replace(MD_SPECIAL, "\\$1")
+    .replace(/^(\s*)([-+])(?=\s|$)/gm, "$1\\$2")
+    .replace(/^(\s*\d+)([.)])/gm, "$1\\$2");
+}
+// A table cell: escaped, on one line.
+const escapeCell = (text) => escapeMd(String(text).replace(/\s*\n\s*/g, " "));
+
+// The rich message: a heading, the form's details as a table, what was typed under a heading of
+// its own (each line kept a line), then each picture as a block of its own, `p0`, `p1`... the
+// ids of the files uploaded with it.
+export function richMarkdown(body, pictures = 0) {
+  const typed = clean(body.text, MAX_TEXT, { lines: true }).split("\n").map((l) => escapeMd(l));
+  const lines = [
+    "# Bug report",
+    "*SG Bus Timings*",
+    "",
+    "| Detail | Given |",
+    "| --- | --- |",
+    ...details(body).map(([k, v]) => `| ${k} | ${escapeCell(v)} |`),
+    "",
+    "## What went wrong",
+    "",
+    // Two spaces at a line's end keep the next on a line of its own; a blank line stays one.
+    ...typed.map((l, i) => (i < typed.length - 1 && l && typed[i + 1] ? `${l}  ` : l)),
+  ];
+  if (pictures) {
+    lines.push("", `## ${pictures === 1 ? "Picture" : `Pictures (${pictures})`}`);
+    for (let i = 0; i < pictures; i++) lines.push("", `![](tg://photo?id=p${i}${pictures > 1 ? ` "Picture ${i + 1} of ${pictures}"` : ""})`);
+  }
+  return lines.join("\n");
+}
+
+// The report as a rich message to one chat, its pictures in it: a form, so the files go with it.
+async function sendRich(chat, body, pics) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(chat)) form.append(k, String(v));
+  form.append("rich_message", JSON.stringify({
+    markdown: richMarkdown(body, pics.length),
+    ...(pics.length && { media: pics.map((p, i) => ({ id: `p${i}`, media: { type: "photo", media: `attach://p${i}` } })) }),
+  }));
+  pics.forEach((p, i) => form.append(`p${i}`, new Blob([p.bytes], { type: `image/${p.type}` }), `picture${i + 1}.${p.type === "jpeg" ? "jpg" : p.type}`));
+  const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/sendRichMessage`, {
+    method: "POST", body: form, signal: AbortSignal.timeout(TELEGRAM_MS * (pics.length ? 2 : 1)),
+  });
+  if (r.ok) return;
+  const reason = await r.json().then((d) => d?.description).catch(() => null);
+  throw new Error(`Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);
 }
 
 // Over the hour's limit, from Redis: one IP's, or everyone's. A Redis that fails lets it through.
@@ -172,9 +240,16 @@ export default async function handler(req, res) {
   if (body.website) return res.status(204).end();
   if (await overHour(ip)) return res.status(429).json({ error: "That's a lot of reports this hour. Try again later." });
 
-  // To every chat at once. One that took it is enough; the others are logged.
+  // To every chat at once, as a rich message, or as before where that won't go. One that took
+  // it is enough; the others are logged.
   const text = message(body);
   const results = await Promise.all(chats().map(async (chat, i) => {
+    try {
+      await sendRich(chat, body, pics);
+      return true;
+    } catch (err) {
+      console.error(`bug-report: chat ${i + 1}: rich message: ${err.name === "TimeoutError" ? "Telegram took too long" : err.message}; sending it as plain text`);
+    }
     try {
       const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/sendMessage`, {
         method: "POST",

@@ -145,8 +145,8 @@ and your language. Never where you are, your places or your saved stops.
 <figcaption>Two pictures: one from the phone, and a screenshot of the app.</figcaption>
 </figure>
 
-Pictures are made smaller on your phone before they're sent, and reach Augy with
-your report.
+Pictures are made smaller on your phone before they're sent, and reach Augy
+inside your report's message, under what you typed.
 
 - What you've typed, and the pictures, stay while the app's open, even if you
   close the window, until it's sent.

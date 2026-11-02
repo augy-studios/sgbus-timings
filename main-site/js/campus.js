@@ -27,7 +27,9 @@
 //            other is a problem, said in the console, and left out.
 //
 // A day is Singapore's (UTC+8), whatever the phone's clock is set to: a weekday, Saturday, or
-// Sunday and public holidays together (When.isHoliday, js/when.js's list). A route with no times
+// Sunday and public holidays together (When.isHoliday, js/when.js's list). A route with times for
+// `ph_eve` (SGH's campus shuttles) runs them on the day before a public holiday, unless that day
+// is a Sunday or a holiday itself; a route without them keeps its usual day. A route with no times
 // for the day doesn't run that day. NUS's term or vacation is by config.json's dates.
 //
 // Campus.load() fetches the three files and builds the shuttles against LTA's stops; then
@@ -50,7 +52,7 @@
   // "Hall 4"), so this is kept tight.
   const MERGE_M = 10;
   const SEASONS = ['term', 'vacation'];
-  const DAY_KEYS = { weekday: 'weekday', weekdays: 'weekday', mon_fri: 'weekday', sat: 'sat', saturday: 'sat', sun_ph: 'sun_ph', sun: 'sun_ph', sunday: 'sun_ph', ph: 'sun_ph' };
+  const DAY_KEYS = { weekday: 'weekday', weekdays: 'weekday', mon_fri: 'weekday', sat: 'sat', saturday: 'sat', sun_ph: 'sun_ph', sun: 'sun_ph', sunday: 'sun_ph', ph: 'sun_ph', ph_eve: 'ph_eve', eve: 'ph_eve' };
   // Singapore, roughly: a stop outside it is a typo.
   const SG = { lat: [1.1, 1.5], lng: [103.5, 104.2] };
 
@@ -311,13 +313,17 @@
     return terms.some(([from, to]) => ymd >= from && ymd <= to) ? 'term' : 'vacation';
   }
 
+  // The date after a Singapore date, as YYYY-MM-DD.
+  const nextYmd = (ymd) => new Date(Date.parse(`${ymd}T00:00:00Z`) + DAY_MS).toISOString().slice(0, 10);
+
   // A route's times on a day: { season (null all year), day, slot (null if it doesn't run) }.
+  // The eve of a public holiday is 'ph_eve' where the route has times for it.
   function slotFor(route, ymd, dow, opts) {
-    const day = dayType(ymd, dow, opts.isHoliday);
-    if (!route.seasonal) return { season: null, day, slot: route.timings.all?.[day] || null };
-    const s = season(ymd, opts.config?.[route.uni]);
+    const s = route.seasonal ? season(ymd, opts.config?.[route.uni]) : null;
     // A season the file hasn't got: the other's, rather than nothing.
-    const days = route.timings[s] || route.timings[s === 'term' ? 'vacation' : 'term'] || {};
+    const days = (s ? route.timings[s] || route.timings[s === 'term' ? 'vacation' : 'term'] : route.timings.all) || {};
+    let day = dayType(ymd, dow, opts.isHoliday);
+    if (day !== 'sun_ph' && days.ph_eve && opts.isHoliday?.(nextYmd(ymd))) day = 'ph_eve';
     return { season: s, day, slot: days[day] || null };
   }
 
