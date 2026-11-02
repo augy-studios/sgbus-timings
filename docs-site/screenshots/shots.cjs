@@ -1230,6 +1230,36 @@ async function drawConsole(browser, shots) {
     await cardDown(page, '#resultCard', '#campusSvc', 'timings-campus.png');
     await ctx.close();
   }
+  // SGH's campus shuttles (data/campus/shuttles.json): its three routes over the campus on
+  // Explorer, Bus timings at Outram Pk Stn Exit 6/SGH (10018) with the Orange and Blue under its
+  // buses, and the Orange route's window from search. A Friday morning (STILL_AT). Always still.
+  if (want('sgh')) {
+    let { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: { latitude: 1.2794, longitude: 103.8352, accuracy: 10 }, still: true, mapHook: true });
+    await exploreOpen(page, 6000);
+    await page.evaluate(() => window.__map?.jumpTo({ center: [103.8352, 1.2794], zoom: 16 }));
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: OUT + 'explorer-sgh.png' });
+    console.log('wrote explorer-sgh.png 390 844');
+    await ctx.close();
+
+    // Outram Park has a long list of buses: the shuttles under them, on their own.
+    ({ ctx, page } = await open(browser, { width: 420, height: 6000, hash: '#10018', still: true }));
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no timings'));
+    await page.waitForSelector('#campusSvc:not([hidden]) .campusRow', { timeout: 20000 }).catch(() => console.log('no shuttles'));
+    await page.waitForTimeout(1200);
+    await blur(page);
+    await el(page, '#campusSvc', 'timings-sgh.png');
+    await ctx.close();
+
+    ({ ctx, page } = await open(browser, { width: 420, height: 1200, still: true }));
+    await page.evaluate(() => MainScreen.open('timings'));
+    await page.fill('#q', 'Orange');
+    await page.press('#q', 'Enter');
+    await page.waitForSelector('#campusRouteModal:not(.hidden)', { timeout: 20000 }).catch(() => console.log('no route'));
+    await page.waitForTimeout(600);
+    await el(page, '#campusRouteModal .modal', 'shuttle-route-sgh.png');
+    await ctx.close();
+  }
   // Explorer's Save the map (main-site/js/map-save.js): its sheet before a download.
   if (want('map-save')) {
     const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: { latitude: 1.3040, longitude: 103.8320, accuracy: 10 }, still: true });

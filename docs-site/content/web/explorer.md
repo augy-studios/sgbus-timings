@@ -105,6 +105,11 @@ both too.
 <figcaption>NTU's campus loops, its stops edged in red.</figcaption>
 </figure>
 
+<figure>
+<img src="/screenshots/web/explorer-sgh.png" alt="Explorer over the SGH campus at Outram: the Orange route as a line along the campus roads past the National Eye Centre and SGH Block 3, the Blue route along Hospital Boulevard and Hospital Drive to the National Heart Centre, the Car Park H route in green from Outram Community Hospital to the Car Park H Shuttle Bus Stop, the campus stops as white dots edged in orange, and a blue dot for you." width="390" height="844" loading="lazy">
+<figcaption>SGH's Orange, Blue and Car Park H shuttles at Outram.</figcaption>
+</figure>
+
 ## Directions
 
 Every card ends with **Directions**. It closes the map and opens

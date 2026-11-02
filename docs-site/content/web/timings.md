@@ -115,7 +115,8 @@ At a stop a shuttle bus calls at, **Shuttle buses** comes under the live buses,
 each route in its colour. The shuttles are NUS's and NTU's campus buses and the
 island's others anyone can ride: IKEA Tampines' from Tampines and Serangoon
 MRT, Changi Airport's between the terminals and to Tanah Merah Ferry Terminal,
-KK Women's and Children's Hospital's from Novena and Bugis, Mandai's from
+KK Women's and Children's Hospital's from Novena and Bugis, the SGH campus
+shuttles from Outram Park, Mandai's from
 Khatib, Clarke Quay's late-night shuttles home, Orchid Country Club's from
 Yishun, and the TS1 coach from Changi Airport to Johor Bahru. The Novotel and
 Mercure on Stevens' shuttle is there too, marked **Hotel guests only**.
@@ -143,6 +144,36 @@ are on the map.
 A stop only shuttles use, such as PGP or IKEA Tampines, opens the same way,
 from [the search](search.md#shuttle-buses) or from Explorer: its shuttles, and
 a line saying no public buses stop there.
+
+### SGH's campus shuttles
+
+<figure>
+<img src="/screenshots/web/timings-sgh.png" alt="Shuttle buses, scheduled times, not live, at Outram Pk Stn Exit 6/SGH: Orange, every ~20 min, SGH, till 19:00, and Blue, every ~20 min, SGH, till 19:00, each in its route's colour." width="316" height="143" loading="lazy">
+<figcaption>Outram Pk Stn Exit 6/SGH on a Friday morning: the Orange and Blue under its buses.</figcaption>
+</figure>
+
+Singapore General Hospital's free shuttles go round its campus at Outram:
+
+- **Orange**, from Outram Park station's Exit 6 on Eu Tong Sen Street and
+  Exit 7 on Outram Road, to the National Cancer Centre, the Diabetes &
+  Metabolism Centre, the National Eye Centre and SGH Block 3.
+- **Blue**, from the same two stops, to Outram Community Hospital and
+  SingHealth Tower, SGH Emergency and the National Neuroscience Institute, and
+  the National Heart Centre.
+- **Car Park H**, between Outram Community Hospital, the stop opposite SGH
+  Block 7, and Car Park H on Macalister Road.
+
+<figure>
+<img src="/screenshots/web/shuttle-route-sgh.png" alt="SGH shuttle Orange in a window of its own: every ~20 min till 19:00, a note that shuttle times are from the timetable and live where the operator shares them, then its stops in order: Outram Pk Stn Exit 6/SGH (10018), Outram Pk Stn Exit 7 (06011), NCCS New Building, Diabetes & Metabolism Centre, Singapore National Eye Centre, SGH Block 3, and Outram Pk Stn Exit 6/SGH again, and A loop: it ends where it starts." width="396" height="563" loading="lazy">
+<figcaption>The Orange route, from the search: type Orange, Blue or Car Park H.</figcaption>
+</figure>
+
+SGH says a bus comes about every 20 minutes, so that's what the list shows.
+The Orange and Blue run 8am to 7pm on weekdays and 8am to 2pm on Saturdays,
+and on the day before a public holiday they stop at 2pm too. The Car Park H
+shuttle runs 6am to 10.20pm on weekdays and 6am to 1.50pm on Saturdays. None
+of them run on Sundays or public holidays. SGH's live times are only in
+ComfortDelGro's Comfort Connect app, so they aren't here.
 
 ## Arriving from a list
 
