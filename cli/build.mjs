@@ -24,7 +24,9 @@ if (desktop !== version) throw new Error(`cli/package.json says ${version}, desk
 
 // ---------- the one file ----------
 
-const source = fs.readFileSync(path.join(here, 'sgbus.js'), 'utf8');
+// LF throughout, as it's checked out with CRLF on Windows (core.autocrlf) and the marker below
+// is looked for with \n.
+const source = fs.readFileSync(path.join(here, 'sgbus.js'), 'utf8').replace(/\r\n/g, '\n');
 // The site's scripts it runs in its sandbox, and the commands themselves (sgbus-core.js, shared
 // with the web app's terminal).
 const files = [
@@ -36,7 +38,7 @@ const marker = "'use strict';\n";
 if (!source.includes(marker)) throw new Error("sgbus.js lost its 'use strict': the build puts the site's scripts after it.");
 // A function, not a string, to put them in: the scripts are full of "$'" and "$`", which a
 // replacement string reads as the text either side of the match.
-const bundled = source.replace(/\r\n/g, '\n').replace(marker, () => `${marker}const BUILT_VERSION = ${JSON.stringify(version)};\nconst SITE_SCRIPTS = ${JSON.stringify(scripts)};\n`);
+const bundled = source.replace(marker, () => `${marker}const BUILT_VERSION = ${JSON.stringify(version)};\nconst SITE_SCRIPTS = ${JSON.stringify(scripts)};\n`);
 
 const dist = path.join(here, 'dist');
 fs.mkdirSync(dist, { recursive: true });
