@@ -2,6 +2,7 @@
   "achievements.done": "已完成",
   "achievements.eggFound": "它的彩蛋：已找到",
   "achievements.eggsNote": "每项成就一次值 100 个 uwuCoins。它的彩蛋来自“帮助和更多”里的 uwuCoins 转盘。",
+  "achievements.ridesNote": "只有手机定位显示您确实乘坐过的车程才会计入这里，所以次数可能比“你的行程”里的少。",
   "achievements.feats": "成就",
   "achievements.notYet": "还没",
   "achievements.of": "{have}/{need}",

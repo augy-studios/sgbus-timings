@@ -1,11 +1,20 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 2 November 2026**
+**Latest update: 3 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 3 November 2026: 100 rides, in the right words
+
+### Web app
+
+- **100 rides, in Malay and Tamil** - The 100 rides feat said trips (perjalanan, பயணங்கள்) in Malay and Tamil, though it counts rides, so it looked like it disagreed with the trips in Your trips. It says rides now (tunggangan, சவாரிகள்), and so do Your trips' stats in Tamil.
+- **Why the rides differ** - Achievements now says a ride counts there once your phone's location shows you took it, so it can show fewer than the rides in Your trips.
 
 ---
 
