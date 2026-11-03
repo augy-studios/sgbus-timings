@@ -627,16 +627,18 @@
     const coord = (p) => `${p.lat.toFixed(6)},${p.lng.toFixed(6)}`;
 
     async function navPlan(fromText, toText, opts) {
-      const [from, to] = await Promise.all([resolvePlace(fromText, 'From'), resolvePlace(toText, 'To')]);
+      // --via: a stop on the way, as Navigate's Add a stop.
+      const [from, to, via] = await Promise.all([resolvePlace(fromText, 'From'), resolvePlace(toText, 'To'), opts.via ? resolvePlace(opts.via, 'Via') : null]);
       const when = parseWhen(opts);
       const W = host.scripts().When;
       const late = W.problem(when);
       if (late) throw new Fail(late);
       if (opts.save) {
         const navs = config().navs;
-        const same = (a, b) => coord(a) === coord(b);
-        if (!navs.some((n) => same(n.from, from) && same(n.to, to))) {
-          navs.push({ from: { label: from.label, lat: from.lat, lng: from.lng }, to: { label: to.label, lat: to.lat, lng: to.lng } });
+        const same = (a, b) => (a && b ? coord(a) === coord(b) : !a && !b);
+        const end = (p) => ({ label: p.label, lat: p.lat, lng: p.lng });
+        if (!navs.some((n) => same(n.from, from) && same(n.to, to) && same(n.via, via))) {
+          navs.push({ from: end(from), to: end(to), ...(via && { via: end(via) }) });
           saveConfig();
         }
         note(dim('Saved: sgbus navs lists it.'));
@@ -645,10 +647,11 @@
       const open = config().settings.restricted ? '&restricted=1' : '';
       const own = config().settings.customs;
       const customs = own === 'auto' ? '' : `&customs=${own}`;
-      const data = await get(`/api/nav?from=${coord(from)}&to=${coord(to)}${at}${open}${customs}`, { timeout: 60000 });
-      if (opts.json) return out(JSON.stringify({ from, to, ...data }, null, 2));
+      const stop = via ? `&via=${coord(via)}` : '';
+      const data = await get(`/api/nav?from=${coord(from)}&to=${coord(to)}${stop}${at}${open}${customs}`, { timeout: 60000 });
+      if (opts.json) return out(JSON.stringify({ from, to, ...(via && { via }), ...data }, null, 2));
       const options = data.options || [];
-      const lines = [`${bold(from.label)} → ${bold(to.label)}  ${dim(W.describe(when))}`];
+      const lines = [`${bold(from.label)} → ${via ? `${bold(via.label)} → ` : ''}${bold(to.label)}  ${dim(W.describe(when))}`];
       if (!options.length) return out(...lines, 'No way by bus or train found between those two. Try a time when buses are running, or somewhere nearer a stop.');
       if (data.alerts?.lines?.length) lines.push(red(`Train trouble now on ${data.alerts.lines.join(', ')}: see sgbus alerts.`));
       lines.push(`${plural(options.length, 'way')} to get there, quickest first:`);
@@ -664,7 +667,7 @@
         lines.push(`${dim(`${i + 1}.`)} ${chips}  ${time} · ${o.walkOnly ? `${Math.round(walked)} m` : `${changes ? plural(changes, 'change') : 'No change'} · ${Math.round(walked)} m walk`}${o.disrupted ? red('  disrupted') : ''}${o.onemapMinutes ? dim(`  OneMap ~${o.onemapMinutes} min`) : ''}`);
       });
       const pick = Math.min(options.length, Math.max(1, Number(opts.way) || 1));
-      lines.push('', bold(`Way ${pick}:`), ...(await waySteps(options[pick - 1], when, to.label)));
+      lines.push('', bold(`Way ${pick}:`), ...(await waySteps(options[pick - 1], when, to.label, via?.label)));
       if (options.length > 1) lines.push(dim('--way N for another one step by step.'));
       out(...lines);
     }
@@ -683,7 +686,8 @@
       return p.code && p.kind !== 'place' ? `${name} (${p.code})` : name;
     }
 
-    async function waySteps(o, when, endLabel) {
+    // `viaLabel`: the stop on the way's name, for the walks to and from it (api/_nav/via.js).
+    async function waySteps(o, when, endLabel, viaLabel = null) {
       await stops().catch(() => {});
       const lines = [];
       // Leave now: the live timings of each bus where it's boarded.
@@ -694,8 +698,10 @@
           if (l.metres < 20) return;
           // A walk's end is a place: the end of the way, or where the next ride starts.
           const next = o.legs[i + 1];
-          const to = l.to?.kind !== 'place' ? placeLabel(l.to) : next ? placeLabel(next.from) : endLabel;
-          lines.push(`  Walk ${Math.round(l.metres)} m to ${to}, ~${Math.round(l.minutes)} min`);
+          const to = l.to?.via ? viaLabel || 'your stop' : l.to?.kind !== 'place' ? placeLabel(l.to) : next ? placeLabel(next.from) : endLabel;
+          // To and from a station by its exit nearest the walk's other end (nav-core/router.js).
+          if (l.fromExit?.name) lines.push(`  Leave ${placeLabel(l.from || o.legs[i - 1]?.to) || 'the station'} by Exit ${l.fromExit.name}`);
+          lines.push(`  Walk ${Math.round(l.metres)} m to ${to}${l.toExit?.name && l.to?.kind === 'station' ? `, Exit ${l.toExit.name}` : ''}, ~${Math.round(l.minutes)} min`);
         } else if (l.mode === 'train') {
           lines.push(`  ${lineChip(l)} ${l.name || ''}${l.towards ? ` towards ${l.towards}` : ''}: ${placeLabel(l.from)} to ${placeLabel(l.to)}, ${plural(l.stops, 'stop')}, ~${Math.round(l.minutes)} min${l.disrupted ? red('  disrupted') : ''}`);
         } else {
@@ -745,7 +751,7 @@
         bold('Favourite stops'), ...(c.favs.length ? c.favs.map((f) => `  ${cyan(f.code)}  ${f.name || nameOf(f.code) || ''}`) : [dim('  none: sgbus fav add <stop>')]),
         bold('Favourite buses'), `  ${c.buses.join(', ') || dim('none: sgbus fav bus add <bus>')}`,
         bold('Routes'), ...(c.routes.length ? c.routes.map((r, i) => `  ${i + 1}. ${r.startName} (${r.start}) → ${r.endName} (${r.end})`) : [dim('  none: sgbus route <start> <end> --save')]),
-        bold('Navs'), ...(c.navs.length ? c.navs.map((n, i) => `  ${i + 1}. ${n.from.label} → ${n.to.label}`) : [dim('  none: sgbus nav <from> <to> --save')]),
+        bold('Navs'), ...(c.navs.length ? c.navs.map((n, i) => `  ${i + 1}. ${n.from.label} → ${n.via ? `${n.via.label} → ` : ''}${n.to.label}`) : [dim('  none: sgbus nav <from> <to> --save')]),
       );
     }
 
@@ -768,7 +774,7 @@
       const [first, second] = args;
       if (!first) {
         if (!list.length) return out(dim(kind === 'routes' ? 'No saved routes: sgbus route <start> <end> --save' : 'No saved navs: sgbus nav <from> <to> --save'));
-        return out(...list.map((x, i) => (kind === 'routes' ? `${i + 1}. ${x.startName} (${x.start}) → ${x.endName} (${x.end})` : `${i + 1}. ${x.from.label} → ${x.to.label}`)));
+        return out(...list.map((x, i) => (kind === 'routes' ? `${i + 1}. ${x.startName} (${x.start}) → ${x.endName} (${x.end})` : `${i + 1}. ${x.from.label} → ${x.via ? `${x.via.label} → ` : ''}${x.to.label}`)));
       }
       if (first === 'rm') {
         const i = Number(second) - 1;
@@ -780,7 +786,7 @@
       const x = list[Number(first) - 1];
       if (!x) throw new Fail(`There's no ${kind.slice(0, -1)} ${first}.`);
       if (kind === 'routes') return routePlan(x.start, x.end, opts);
-      return navPlan(`${x.from.lat},${x.from.lng}`, `${x.to.lat},${x.to.lng}`, opts);
+      return navPlan(`${x.from.lat},${x.from.lng}`, `${x.to.lat},${x.to.lng}`, { ...opts, ...(x.via && { via: `${x.via.lat},${x.via.lng}` }) });
     }
 
     // ---------- places ----------
@@ -1035,7 +1041,7 @@
 
     // ---------- reading the command line ----------
 
-    const VALUE_FLAGS = new Set(['leave', 'arrive', 'day', 'days', 'buses', 'stop', 'time', 'dir', 'from', 'way', 'show']);
+    const VALUE_FLAGS = new Set(['leave', 'arrive', 'day', 'days', 'buses', 'stop', 'time', 'dir', 'from', 'way', 'show', 'via']);
     const SWITCHES = new Set(['watch', 'details', 'json', 'help', 'version', 'save', 'all', 'notify']);
     const SHORT = { w: 'watch', d: 'details', j: 'json', h: 'help', v: 'version' };
 
@@ -1083,6 +1089,7 @@
       '    --show N                      journey N step by step, with live timings',
       '  sgbus nav <from> <to>           by bus and train, from anywhere to anywhere (Navigate)',
       '    --way N                       way N step by step (the first, unless picked)',
+      '    --via <place>                 by way of a stop on the way, kept with --save too',
       '  Either takes --leave 08:30 or --arrive 6pm, with --day tomorrow, a weekday or a date,',
       '  and --save to keep it. Ends can be stops, places, postal codes, stations, lat,lng or',
       '  plus codes, and your places by name: sgbus nav home work.',

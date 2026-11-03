@@ -68,6 +68,24 @@ press within two seconds leaves the app, from any page. The app's text also
 follows your phone's font size (**Settings**, **Display**, **Font size**),
 changed while the app's away or not.
 
+## The app's language
+
+From version 2.3.1, the app has a language of its own in Android: on Android 13
+and later, open **Settings**, **Apps**, **SG Bus Timings**, **Language**, and
+pick **English**, **Bahasa Melayu**, **தமிழ்** (Tamil) or **中文** (Chinese).
+
+It's the same language as the app's own **Language** in
+[Settings](settings.md), whichever you change:
+
+- Pick one in Android's settings and the app follows, at once if it's open.
+- Pick one in the app's **Settings**, and Android's setting changes to match, so
+  the app's notifications, its widget and its update page are in it too.
+- **System default** in Android's settings puts the app back on your phone's
+  language.
+
+On Android 12 and older, Android has no setting for it: the app's own
+**Language** sets both.
+
 ## Card value
 
 On a phone with NFC, the app reads an **EZ-Link** or **NETS FlashPay** card.

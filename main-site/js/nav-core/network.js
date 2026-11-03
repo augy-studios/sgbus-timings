@@ -229,7 +229,7 @@ export function buildGraph(rail, stopsPayload, routesPayload, { open = false, ca
     nodes.push({ kind: "stop", code: s.c, name: s.n, road: s.r || "", lat: s.la, lng: s.lo });
   }
   const stationNode = rail.stations.map((s) => {
-    nodes.push({ kind: "station", code: s.codes.join("/"), codes: s.codes, name: s.name, lat: s.lat, lng: s.lng, exits: s.exits });
+    nodes.push({ kind: "station", code: s.codes.join("/"), codes: s.codes, name: s.name, lat: s.lat, lng: s.lng, exits: s.exits, exitNames: s.exitNames || [] });
     return nodes.length - 1;
   });
 

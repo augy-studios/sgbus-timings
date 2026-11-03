@@ -77,7 +77,9 @@ Not sure of the code? `sgbus bedok int` finds a stop by name or road, with LTA's
 `sgbus nav <from> <to>` is [Navigate](nav.md), by bus and train from anywhere to anywhere.
 Either end can be an address, a building, a postal code, a station, a stop's code, or one of
 your places by name, such as `home`. The first way comes step by step, with live timings for
-its buses; `--way 3` shows the third instead.
+its buses; `--way 3` shows the third instead. `--via gym` goes by a stop on the way, and with
+`--save` it's saved with the stop, as Navigate's [Save nav](nav.md#save-it) does. A walk to or
+from a station says which exit, the one nearest the walk's other end.
 
 <figure>
 <img src="/screenshots/web/cli-route.png" alt="A terminal: sgbus route 98101 95099 --show 1 notes the quickest buses leave from the stop across the road, lists five journeys such as 89 on its own in about 26 minutes, each getting off at SAF Ferry Ter, then the first step by step with bus 89's next buses and when you'd arrive." width="1037" height="488" loading="lazy">

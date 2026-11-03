@@ -8,11 +8,12 @@
 // until script.js calls initNav().
 
 // walksOpen: the walks of the open way whose Directions have been opened into map apps.
+// doorsOpen: the train rides of the open way whose doors panel is opened (doorsPanel), by leg.
 // when: the time picked (js/when.js), null for Leave now.
 // pickWay: a shared way to open once the ways are in (openNavAt).
 // via: one stop on the way, a place like either end, or null; viaOpen: its box shown, not yet
 // set (Add a stop).
-const nav = { from: null, to: null, via: null, viaOpen: false, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), walksFor: null, pickWay: null };
+const nav = { from: null, to: null, via: null, viaOpen: false, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), doorsOpen: new Set(), walksFor: null, pickWay: null };
 
 const NAV_PLACES_DELAY_MS = 300;
 // A Google Maps link, which /api/places reads for the one place it points at (api/_lib/gmaps.js).
@@ -91,7 +92,7 @@ function initNav() {
     refreshNav();
   });
   $('#navFavBtn').addEventListener('click', () => {
-    toggleFavNav(nav.from, nav.to);
+    toggleFavNav(nav.from, nav.to, nav.via);
     renderNavFav();
   });
   // Share: these directions, the start or the end, or your ETA on a trip, as short links
@@ -111,6 +112,14 @@ function initNav() {
     if (saved) useSavedPlace(saved.dataset.savedPlace, (place) => setNavEnd(saved.dataset.savedFor, place));
   });
 
+  // A doors panel opened or folded: kept so, when the way's drawn again with its live timings.
+  // A toggle doesn't bubble, so it's caught on the way down.
+  $('#navBody').addEventListener('toggle', (e) => {
+    const key = e.target.dataset?.doors;
+    if (key == null) return;
+    if (e.target.open) nav.doorsOpen.add(key);
+    else nav.doorsOpen.delete(key);
+  }, true);
   $('#navBody').addEventListener('click', (e) => {
     const option = e.target.closest('[data-nav-option]');
     if (option) {
@@ -839,7 +848,7 @@ function doorNumberAt(at) {
   return `<svg class="dnSvg" viewBox="0 0 40 32" aria-hidden="true">${at === 'post' ? half : full}` +
     `<circle cx="${spot[0]}" cy="${spot[1]}" r="4.2" class="dnRing"/><circle cx="${spot[0]}" cy="${spot[1]}" r="1.6" class="dnDot"/></svg>`;
 }
-function doorsPanel(p, text, color) {
+function doorsPanel(p, text, color, key = null) {
   if (!p) return '';
   const stn = escapeHtml(p.station);
   const head = p.cross ? escapeHtml(I18n.t('nav.doors.at', 'At {stn}', { stn: p.station }))
@@ -852,12 +861,17 @@ function doorsPanel(p, text, color) {
         `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">${escapeHtml(I18n.t('doors.door', 'Door'))}</span><b>${n}</b></span>`).join('')}</span>` +
         `<span class="doorWhere">${escapeHtml(r.places.length ? I18n.t('mapCard.typeTo', '{type} to {places}', { type: DOOR_TYPE[r.t] || r.t, places: r.places.join(', ') }) : DOOR_TYPE[r.t] || r.t)}</span></li>`).join('');
   const line = color ? ` style="--line:${escapeHtml(color)}"` : '';
-  return `<div class="legDoors" role="note" aria-label="${escapeHtml(text || '')}"${line}>` +
-    `<div class="doorHead" aria-hidden="true">${ico('train')}<span>${head}</span></div>` +
+  // Folded away to its heading unless it's been opened (nav.doorsOpen, by `key`), so the doors
+  // don't push the rest of the way down the screen; tapping the heading opens or folds it.
+  // Explorer's (js/map-card.js) stays open, as it's in a card of its own.
+  const open = key != null && nav.doorsOpen.has(key) ? ' open' : '';
+  return `<details class="legDoors"${key != null ? ` data-doors="${escapeHtml(key)}"` : ''}${open}${line}>` +
+    `<summary class="doorHead">${ico('train')}<span>${head}</span>${ico('chevron')}</summary>` +
+    (text ? `<span class="srOnly">${escapeHtml(text)}</span>` : '') +
     `<ul class="doorRows" aria-hidden="true">${rows}</ul>` +
     (p.cross ? '' : `<div class="doorFoot" aria-hidden="true">${p.numberAt ? doorNumberAt(p.numberAt) : ''}` +
       `<span>${MrtDoors.numberAtHtml(p.numberAt)}</span></div>`) +
-    `</div>`;
+    `</details>`;
 }
 
 // A shuttle bus (js/nav-core/campus.js) in its route's colour, with whose it is: "NUS A1".
@@ -937,6 +951,11 @@ const placeName = (p) => (p?.kind === 'station' ? `${stationName(p.name)} statio
 // the walks to and from it end and start at it (api/_nav/via.js), marked `via`.
 const viaName = (o) => o?.via?.label || nav.via?.label || 'your stop';
 const wayPlaceName = (o, p) => (p?.via ? viaName(o) : placeName(p));
+// A walk's end at a station, by its exit (js/nav-core/router.js, toExit and fromExit): "Tampines
+// station, Exit B", or the station alone where the exit has no name. And where it is: the exit's
+// point, or the place's own without one.
+const exitPlaceName = (o, p, exit) => (exit?.name ? I18n.t('nav.stationExit', '{station}, Exit {exit}', { station: wayPlaceName(o, p), exit: exit.name }) : wayPlaceName(o, p));
+const exitPoint = (p, exit) => (exit?.lat != null && exit?.lng != null ? { ...p, lat: exit.lat, lng: exit.lng } : p);
 // A way's stop on the way as a place, { label, lat, lng }: where its walks to and from it meet,
 // or Navigate's own stop; null if neither has a point.
 function viaPlace(o) {
@@ -950,6 +969,7 @@ async function renderNavOption(o) {
   if (nav.walksFor !== o) {
     nav.walksFor = o;
     nav.walksOpen = new Set();
+    nav.doorsOpen = new Set();
   }
   const head =
     `<div class="plannerNav">` +
@@ -980,8 +1000,13 @@ async function renderNavOption(o) {
     : '';
   const legStep = (leg, k, timings) => {
     if (leg.mode === 'walk') {
-      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || I18n.t('nav.theEnd', 'the end')) : escapeHtml(wayPlaceName(o, leg.to));
+      const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || I18n.t('nav.theEnd', 'the end')) : escapeHtml(exitPlaceName(o, leg.to, leg.toExit));
+      // Out of a station by the exit nearest where the walk goes (js/nav-core/router.js).
+      const out = leg.fromExit?.name
+        ? `<span class="walkExit">${escapeHtml(I18n.t('nav.leaveByExit', 'Leave {station} by Exit {exit}.', { station: wayPlaceName(o, leg.from || o.legs[k - 1]?.to), exit: leg.fromExit.name }))}</span>`
+        : '';
       return `<li class="step stepWalk">${ico('walk')}<div class="walkBody">` +
+        out +
         `<span>${escapeHtml(I18n.t('nav.walkStep', 'Walk ~{m} m to {to}, ~{min} min', { m: leg.metres, to: '\u0000', min: Math.max(1, Math.round(leg.minutes)) })).replace('\u0000', where)}</span>` +
         walkDirections(o, k) +
         `</div></li>`;
@@ -990,7 +1015,7 @@ async function renderNavOption(o) {
       // Where to stand for the way off the platform, or the change across it (js/mrt-doors.js):
       // no change when it's to the stop on the way.
       const next = o.legs.slice(k + 1, k < o.via?.leg ? o.via.leg : undefined).find((l) => l.mode !== 'walk') || null;
-      const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next), leg.color);
+      const doors = doorsPanel(window.MrtDoors?.plan(leg, next), window.MrtDoors?.tip(leg, next), leg.color, String(k));
       return `<li class="step stepLeg">` +
         `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.name || leg.route)}</span></div>` +
         `<div class="legRide">${escapeHtml(leg.towards
@@ -1079,12 +1104,14 @@ function navCrossingSteps(leg) {
 // or station the last ride got off at, to the next one or the end. Like a stop's Directions
 // (renderStopTools in script.js), the button opens into the live map (js/map.js) and a link to
 // Citymapper.
+// A walk to or from a station goes to or from the exit nearest its other end (toExit, fromExit).
 function walkDirections(o, k) {
   const leg = o.legs[k];
-  const from = leg.from || o.legs[k - 1]?.to || nav.from;
-  const to = k === o.legs.length - 1 ? nav.to : leg.to;
+  const from = exitPoint(leg.from || o.legs[k - 1]?.to || nav.from, leg.fromExit);
+  const last = k === o.legs.length - 1;
+  const to = last ? nav.to : exitPoint(leg.to, leg.toExit);
   if (to?.lat == null || to?.lng == null) return '';
-  const dest = { lat: to.lat, lng: to.lng, n: to.label || wayPlaceName(o, to) };
+  const dest = { lat: to.lat, lng: to.lng, n: to.label || (last ? wayPlaceName(o, to) : exitPlaceName(o, leg.to, leg.toExit)) };
   const opts = { from: from?.lat != null && from?.lng != null ? from : null, walk: true };
   if (!nav.walksOpen.has(k)) {
     return `<button type="button" class="iconBtn" data-nav-walk="${k}">${ico('navigate')} ${escapeHtml(I18n.t('stop.tool.directions', 'Directions'))}</button>`;
@@ -1098,21 +1125,24 @@ function walkDirections(o, k) {
 
 // ---- Favourite navs ----
 
-const sameNav = (n, from, to) => from && to && coord(n.from) === coord(from) && coord(n.to) === coord(to);
+// A saved nav is its two ends and its stop on the way, if it has one: A to B and A to B by way
+// of C are two favourites, and so are a nav and its reverse, like a route. Synced with the stop
+// (js/sync.js), and the bot keeps it too.
+const sameVia = (a, b) => (a?.lat != null && a?.lng != null ? b?.lat != null && b?.lng != null && coord(a) === coord(b) : !(b?.lat != null && b?.lng != null));
+const sameNav = (n, from, to, via = null) => from && to && coord(n.from) === coord(from) && coord(n.to) === coord(to) && sameVia(n.via, via);
+const navEnd = (p) => ({ label: p.label, lat: p.lat, lng: p.lng });
 
-function isFavNav(from, to) {
-  return LS.getFavNavs().some((n) => sameNav(n, from, to));
+function isFavNav(from, to, via = null) {
+  return LS.getFavNavs().some((n) => sameNav(n, from, to, via));
 }
 
-// Like a route, a nav and its reverse are two separate favourites. A stop on the way isn't kept
-// with one: a saved nav is its two ends, as synced (js/sync.js) and in the bot.
-function toggleFavNav(from, to) {
+function toggleFavNav(from, to, via = null) {
   if (!from || !to) return;
   const navs = LS.getFavNavs();
-  if (navs.some((n) => sameNav(n, from, to))) {
-    LS.setFavNavs(navs.filter((n) => !sameNav(n, from, to)));
+  if (navs.some((n) => sameNav(n, from, to, via))) {
+    LS.setFavNavs(navs.filter((n) => !sameNav(n, from, to, via)));
   } else {
-    navs.push({ from: { label: from.label, lat: from.lat, lng: from.lng }, to: { label: to.label, lat: to.lat, lng: to.lng } });
+    navs.push({ from: navEnd(from), to: navEnd(to), ...(via?.lat != null && via?.lng != null && { via: navEnd(via) }) });
     LS.setFavNavs(navs);
   }
   renderFavs();
@@ -1123,8 +1153,8 @@ function renderNavFav() {
   const btn = $('#navFavBtn');
   btn.hidden = !(nav.from && nav.to);
   $('#navRefresh').hidden = btn.hidden;
-  if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to), I18n.t('nav.saveNav', 'Save nav'), I18n.t('stop.saved', 'Saved'));
-  btn.title = nav.via ? I18n.t('nav.saveViaTitle', 'Save to favourites: the start and end, not the stop') : I18n.t('nav.save_to_favourites', 'Save to favourites');
+  if (!btn.hidden) setFavButton(btn, isFavNav(nav.from, nav.to, nav.via), I18n.t('nav.saveNav', 'Save nav'), I18n.t('stop.saved', 'Saved'));
+  btn.title = nav.via ? I18n.t('nav.saveViaTitle', 'Save to favourites, with your stop on the way') : I18n.t('nav.save_to_favourites', 'Save to favourites');
 }
 
 // Refresh: the ways planned again, for new disruptions and the time of day, or, with one
@@ -1173,17 +1203,21 @@ function tripFromNav(o, to, from = nav.from) {
   o.legs.forEach((l, k) => {
     if (o.via && k === o.via.leg) viaAt = legs.length;
     if (l.mode === 'walk') {
-      const start = at(k === 0 ? from : l.from || o.legs[k - 1]?.to);
-      const endPlace = k === o.legs.length - 1 ? to : l.to;
-      const end = at(endPlace);
+      // From and to a station's exit, the one nearest the walk's other end (js/nav-core/router.js).
+      const startPlace = k === 0 ? from : l.from || o.legs[k - 1]?.to;
+      const start = at(k === 0 ? from : exitPoint(startPlace, l.fromExit));
+      const last = k === o.legs.length - 1;
+      const endPlace = last ? to : l.to;
+      const end = at(last ? endPlace : exitPoint(endPlace, l.toExit));
       if (start && end && (l.metres ?? WALK_LEG_MIN_M) >= WALK_LEG_MIN_M) {
-        const startName = k === 0 ? from?.label || I18n.t('trip.whereSetOff', 'Where you set off') : wayPlaceName(o, l.from || o.legs[k - 1]?.to);
+        const startName = k === 0 ? from?.label || I18n.t('trip.whereSetOff', 'Where you set off') : exitPlaceName(o, startPlace, l.fromExit);
+        const endName = last ? to?.label || placeName(endPlace) : exitPlaceName(o, endPlace, l.toExit);
         legs.push({
           kind: 'walk',
           label: I18n.t('trip.walk', 'Walk'),
-          to: k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace),
+          to: endName,
           points: [start, end],
-          names: [startName, k === o.legs.length - 1 ? to?.label || placeName(endPlace) : wayPlaceName(o, endPlace)],
+          names: [startName, endName],
           minutes: Math.max(1, Math.round(l.minutes || 1)),
           wait: 0,
           walkAfter: 0,

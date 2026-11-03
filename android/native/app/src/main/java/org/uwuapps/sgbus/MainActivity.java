@@ -167,10 +167,21 @@ public class MainActivity extends BridgeActivity {
     // is already waiting for one (CardPlugin's reader mode). Either way it lands in
     // onNewIntent, and CardPlugin reads it and tells the page (js/card.js).
 
+    // The app's language changed in Android's settings (Settings, Apps, SG Bus Timings,
+    // Language): told to the page, which follows it (SgBusPlugin.onLanguage). The activity
+    // handles a locale change itself (AndroidManifest.xml's configChanges), so the page isn't
+    // loaded again for it.
+    @Override
+    public void onConfigurationChanged(Configuration config) {
+        super.onConfigurationChanged(config);
+        SgBusPlugin.onLanguage();
+    }
+
     @Override
     public void onResume() {
         super.onResume();
         fitTextSize();
+        SgBusPlugin.onLanguage();
         NfcAdapter nfc = NfcAdapter.getDefaultAdapter(this);
         if (nfc == null) return;
         PendingIntent self = PendingIntent.getActivity(this, 0,

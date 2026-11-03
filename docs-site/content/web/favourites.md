@@ -21,9 +21,18 @@ favourites, or tap the cross on its right to remove it.
 | A bus | Tap **Save bus** on the bus's [route](bus-routes.md) | That bus's route |
 | A bus at one stop | Tap the star on the bus's row in the stop's timings | That stop's timings, for just your buses there |
 | A bus-only route | Tap **Save route** on Navigate's [Bus only](route-planner.md) tab | Bus only, with both ends set |
-| A nav | Tap **Save nav** in [Navigate](nav.md) | Navigate, with both ends set |
+| A nav | Tap **Save nav** in [Navigate](nav.md) | Navigate, with both ends set, and its stop on the way if it has one |
 
 A saved button reads **Saved**. Tap it again to remove the favourite.
+
+<figure>
+<img src="/screenshots/web/favourites-nav-stop.png" alt="The Favourites window, its Navs group at the bottom with two chips: Bedok Mall to Changi Airport, and Our Tampines Hub to Bedok Mall to NEX, each with a cross to remove it." width="342" height="581" loading="lazy">
+<figcaption>A nav saved with its stop on the way: Our Tampines Hub → Bedok Mall → NEX.</figcaption>
+</figure>
+
+A nav saved with a [stop on the way](nav.md#save-it) shows it between its
+ends, and keeps it: the same two ends without the stop are a favourite of their
+own.
 
 ## Favourite buses are pinned
 

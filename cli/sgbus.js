@@ -73,6 +73,9 @@ function loadSite() {
     localStorage: { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) },
     location: { origin: SITE },
     navigator: { userAgent: `sgbus-cli/${VERSION}` },
+    // The site's words, in English: its scripts ask js/i18n.js for them (network.js as it
+    // loads), which isn't run here.
+    I18n: { lang: () => 'en', t: (key, en, vars) => String(en ?? key).replace(/\{(\w+)\}/g, (m, k) => (vars?.[k] != null ? vars[k] : m)) },
   };
   ctx.window = ctx;
   ctx.self = ctx;

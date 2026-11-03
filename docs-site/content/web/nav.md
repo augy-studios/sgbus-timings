@@ -251,7 +251,8 @@ timed at about 15 km/h.
 Tap a way to see it part by part:
 
 - **Walks**, with the distance and roughly how long. **Directions** opens the
-  walk on the [live map](live-map.md), or in Citymapper.
+  walk on the [live map](live-map.md), or in Citymapper. A walk to or from a
+  station goes by [its nearest exit](#the-nearest-exit).
 - **Trains**, with the line, the direction to take (**towards** its last
   station), how many stops, and where to get off. For almost every MRT
   station, it also says [which door to stand at](#which-door-to-stand-at).
@@ -270,15 +271,49 @@ Tap a way to see it part by part:
 
 
 
+### The nearest exit
+
+<figure>
+<img src="/screenshots/web/nav-exits.png" alt="One way from Our Tampines Hub to NEX, part by part: Walk about 276 m to Tampines station, Exit F, about 7 min, with Directions; the Downtown Line from Tampines towards Bukit Panjang, 6 stops to MacPherson, with a folded panel, Changing at MacPherson for the Circle Line; the Circle Line from MacPherson towards HarbourFront, 3 stops to Serangoon, with a folded panel, Getting off at Serangoon; then Leave Serangoon station by Exit G, and Walk about 77 m to NEX, about 3 min, with Directions." width="316" height="462" loading="lazy">
+<figcaption>To Tampines by Exit F, and out of Serangoon by Exit G.</figcaption>
+</figure>
+
+A station has several exits, often a few hundred metres apart. A walk to a
+station goes to the exit nearest where you start it, and says which: **Walk
+~276 m to Tampines station, Exit F**. A walk out of a station starts with
+which exit to leave by, the one nearest where you're going: **Leave Serangoon
+station by Exit G**. A walk from one station to another goes between the two
+exits nearest each other.
+
+**Directions** goes to or from that exit, not the middle of the station, and
+so does a [trip](get-off-alert.md) started from the way, so the live map and
+the Get Off Alert walk you to the right exit.
+
 ### Which door to stand at
+
+<figure>
+<img src="/screenshots/web/nav-doors-folded.png" alt="A Downtown Line ride from Tampines towards Bukit Panjang, 6 stops to MacPherson, with a panel folded to one line under it: a train icon, Changing at MacPherson for the Circle Line, and a downward arrow." width="316" height="152" loading="lazy">
+<figcaption>Folded: tap the line to see the doors.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/nav-doors-unfolded.png" alt="The same ride with its panel opened: Changing at MacPherson for the Circle Line, door 9 for the escalator and door 4 for the lift, on blue doors, and Door number: at the top right of each door." width="316" height="324" loading="lazy">
+<figcaption>Opened: the doors for the change.</figcaption>
+</figure>
+
+Under a train ride, a panel says where on the train to stand. It starts folded
+to one line, such as **Changing at MacPherson for the Circle Line** or
+**Getting off at Serangoon**, so the rest of the way isn't pushed down the
+screen. Tap that line to open it, and again to fold it. It stays as you left it
+while the way's live timings come in or you tap **Refresh**. In
+[Explorer](explorer.md), a station's doors are always shown.
 
 <figure>
 <img src="/screenshots/web/nav-doors.png" alt="A ride on the Changi Airport branch, with a panel under it: Getting off at Changi Airport, then door 20 for the escalator to T1, T3, T4 and Jewel, door 5 for the escalator to T2, door 5 for the lift to T2, and door 20 for the lift to T1, T3, T4 and Jewel, each door drawn as a little green platform door with its number. Under them, Look for the number on each platform door." width="310" height="512" loading="lazy">
 <figcaption>Getting off: the doors nearest each way out, and where it leads.</figcaption>
 </figure>
 
-Under a train ride, a panel says where on the train to stand. Each way off the
-platform has a row: its icon (escalator, lift or stairs), the doors that stop
+Opened, each way off the platform has a row: its icon (escalator, lift or stairs), the doors that stop
 nearest it, and where it leads. Each door is drawn as a little platform door in
 the line's colour with its number on it, the same number the real platform door
 has, so you can walk along the platform to it.
@@ -337,6 +372,17 @@ and the end: see [Get Off Alert](get-off-alert.md).
 
 Tap **Save nav** to add it to your [favourites](favourites.md), under **Navs**.
 Like routes, a nav and its reverse are two separate favourites.
+
+<figure>
+<img src="/screenshots/web/nav-save-stop.png" alt="The top of Navigate with a stop on the way: Refresh, Share and Saved with a filled star; then From Our Tampines Hub, Stop at Bedok Mall with a cross to take it off, and To NEX." width="342" height="501" loading="lazy">
+<figcaption>Saved with its stop on the way.</figcaption>
+</figure>
+
+With a stop on the way (**Add a stop**, under **From**), the nav is saved with
+its stop, and opening it from Favourites puts the stop back. So Home to Work
+and Home to Work by way of the gym are two favourites, and Favourites shows the
+second as **Home → Gym → Work**. A saved nav and its stop sync to your other
+devices and the [Telegram bot](../bot/nav.md#save-it).
 
 A saved nav doesn't keep a time.
 

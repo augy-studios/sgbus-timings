@@ -26,6 +26,10 @@
 //      says it's sent; not set up, it offers email instead with the words filled in. Pictures:
 //      one from the phone and Screenshot this page, each shown with a way to take it off, sent
 //      as JPEGs and on to Telegram in the rich message, and cleared once sent.
+//  11. Each report has an ID, the day in Singapore and four letters, answered and in the message;
+//      a whole-page screenshot (`full`) goes as a file too, replying to the report, and the
+//      report counts as sent even if the file doesn't. The form says the ID once it's sent, and
+//      its Screenshot this page takes the whole page, top to bottom, marked `full`.
 //  10. Pictures: up to three images, uploaded with the rich message and shown in it, each a
 //      tg://photo?id= block; where the rich message won't go, sent after the plain one and
 //      replying to it, one as a photo and more as an album; four, a non-image or one too big
@@ -54,7 +58,7 @@ global.fetch = async (url, opts = {}) => {
   if (url.startsWith('https://api.telegram.org/')) {
     // A picture goes as a form: its files kept as what they are, not their bytes.
     const body = opts.body instanceof FormData
-      ? Object.fromEntries([...opts.body.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : { file: true, size: v.size, type: v.type }]))
+      ? Object.fromEntries([...opts.body.entries()].map(([k, v]) => [k, typeof v === 'string' ? v : { file: true, size: v.size, type: v.type, name: v.name }]))
       : JSON.parse(opts.body);
     sent.push({ url, body });
     const r = await telegram(opts);
@@ -131,13 +135,15 @@ async function api() {
   ok('3. nothing sent for any of them', sent.length === 0);
 
   r = await call(handler, { body: REPORT, headers: { origin: 'https://sgbus.test' } });
-  ok('4. a report from the site: 204', r.statusCode === 204, `${r.statusCode} ${JSON.stringify(r.payload)}`);
+  ok('4. a report from the site: 200', r.statusCode === 200, `${r.statusCode} ${JSON.stringify(r.payload)}`);
   const rm = sent[0];
   ok('4. one call, to Telegram\'s sendRichMessage with the bot\'s token', sent.length === 1 && rm?.url === `https://api.telegram.org/bot${TOKEN}/sendRichMessage`, rm?.url);
   ok('4. to the chat set', rm?.body.chat_id === CHAT);
   ok('4. no parse_mode', rm && !('parse_mode' in rm.body));
   const md = rich(rm)?.markdown || '';
-  ok('4. a heading, then the details as a table', /^# Bug report\n/.test(md) && md.includes('| Detail | Given |\n| --- | --- |'), JSON.stringify(md));
+  ok('4. answers the report\'s ID', /^\d{8}-[2-9A-HJKMNP-Z]{4}$/.test(r.payload?.id || ''), JSON.stringify(r.payload));
+  ok('4. the ID in the table too', md.includes(`| Report | ${r.payload?.id} |`), md.split('\n').slice(0, 8).join(' / '));
+  ok('4. a heading with the report\'s ID, then the details as a table', /^# Bug report \d{8}-[2-9A-HJKMNP-Z]{4}\n/.test(md) && md.includes('| Detail | Given |\n| --- | --- |'), JSON.stringify(md));
   ok('4. the app and its version, the device, page, language and contact', md.includes('| App | Android app 2.2.7, site v127 |') && md.includes('| Device | Android 14 · Chrome 130 · 412×915 |') && md.includes('| Page | Bus timings, stop 84009 |') && md.includes('| Language | en |') && md.includes('| Contact | @someone |'), JSON.stringify(md));
   ok('4. what was typed under its heading, escaped, a line a line', md.includes('## What went wrong\n\nThe \\<b\\>timings\\</b\\> for 84009 show "Arr" forever \\& never change.  \nSteps: open it, wait.'), JSON.stringify(md));
   ok('4. no pictures, no media', !('media' in (rich(rm) || {})) && !/tg:\/\/photo/.test(md));
@@ -158,7 +164,7 @@ async function api() {
   r = await call(handler, { body: REPORT });
   console.error = errorRich;
   const m = sent[1];
-  ok('4. no rich message: 204, then Telegram\'s sendMessage', r.statusCode === 204 && sent[0]?.url.endsWith('/sendRichMessage') && m?.url === `https://api.telegram.org/bot${TOKEN}/sendMessage`, sent.map((x) => x.url).join());
+  ok('4. no rich message: 200, then Telegram\'s sendMessage', r.statusCode === 200 && sent[0]?.url.endsWith('/sendRichMessage') && m?.url === `https://api.telegram.org/bot${TOKEN}/sendMessage`, sent.map((x) => x.url).join());
   ok('4. the reason logged, never the token', logsRich.some((l) => l.includes('rich messages are not allowed') && l.includes('plain text')) && !logsRich.some((l) => l.includes(TOKEN)), logsRich.join(' | '));
   ok('4. to the chat set', m?.body.chat_id === CHAT);
   ok('4. as plain text: no parse_mode', m && !('parse_mode' in m.body));
@@ -171,7 +177,7 @@ async function api() {
 
   sent.length = 0;
   r = await call(handler, { body: { text: 'Only the words.\u0000\u0007 Bye' } });
-  ok('4. with nothing else, it says so, control characters out', r.statusCode === 204 && /App: Unknown\n/.test(sent[1]?.body.text) && /Contact: none given/.test(sent[1]?.body.text) && /Only the words\. Bye$/.test(sent[1]?.body.text), JSON.stringify(sent[1]?.body.text));
+  ok('4. with nothing else, it says so, control characters out', r.statusCode === 200 && /App: Unknown\n/.test(sent[1]?.body.text) && /Contact: none given/.test(sent[1]?.body.text) && /Only the words\. Bye$/.test(sent[1]?.body.text), JSON.stringify(sent[1]?.body.text));
   r = await call(handler, { body: { ...REPORT, platform: '<script>' } });
   ok('4. an unknown platform is Unknown', /App: Unknown 2\.2\.7/.test(sent.at(-1)?.body.text));
   telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
@@ -180,7 +186,7 @@ async function api() {
   sent.length = 0;
   const codes = [];
   for (let i = 0; i < 3; i++) codes.push((await call(handler, { body: REPORT, ip: '10.9.9.9' })).statusCode);
-  ok('5. two a minute from one IP, then 429', codes.join() === '204,204,429', codes.join());
+  ok('5. two a minute from one IP, then 429', codes.join() === '200,200,429', codes.join());
   ok('5. the third not sent', sent.length === 2);
   // An hour's, from one IP (a different instance each minute, so only Redis counts).
   const hour = Math.floor(Date.now() / 3600000);
@@ -194,7 +200,7 @@ async function api() {
 
   sent.length = 0;
   r = await call(handler, { body: { ...REPORT, website: 'https://spam.example' } });
-  ok('6. the bot\'s field filled in: 204, nothing sent', r.statusCode === 204 && sent.length === 0);
+  ok('6. the bot\'s field filled in: 200, nothing sent', r.statusCode === 200 && sent.length === 0);
 
   const logs = [];
   const error = console.error;
@@ -221,7 +227,7 @@ async function api() {
   process.env.BUG_REPORT_CHAT_ID = `${CHAT}, -1001234567890/17, @sgbus_reports`;
   sent.length = 0;
   r = await call(handler, { body: REPORT });
-  ok('9. three chats: 204, three messages', r.statusCode === 204 && sent.length === 3, `${r.statusCode} ${sent.length}`);
+  ok('9. three chats: 200, three messages', r.statusCode === 200 && sent.length === 3, `${r.statusCode} ${sent.length}`);
   ok('9. each to its chat, the topic with its ID, the same words', sent[0]?.body.chat_id === CHAT && !('message_thread_id' in sent[0].body)
     && sent[1]?.body.chat_id === '-1001234567890' && sent[1].body.message_thread_id === '17'
     && sent[2]?.body.chat_id === '@sgbus_reports' && sent.every((x) => x.body.rich_message === sent[0].body.rich_message));
@@ -230,7 +236,7 @@ async function api() {
   sent.length = 0;
   telegram = (opts) => (opts.body instanceof FormData ? opts.body.get('chat_id') : JSON.parse(opts.body).chat_id) === CHAT ? { status: 200, body: { ok: true } } : { status: 403, body: { ok: false, description: 'Forbidden: bot is not a member of the channel chat' } };
   r = await call(handler, { body: REPORT });
-  ok('9. one took it, two didn\'t: still 204', r.statusCode === 204);
+  ok('9. one took it, two didn\'t: still 200', r.statusCode === 200);
   ok('9. the two that didn\'t are logged by place, with the reason', logs.some((l) => l.includes('chat 2:') && l.includes('not a member')) && logs.some((l) => l.includes('chat 3:')) && !logs.some((l) => l.includes(TOKEN)), logs.join(' | '));
   ok('9. the one that took it got one message, the others a rich and a plain try each', sent.filter((x) => x.body.chat_id === CHAT).length === 1 && sent.filter((x) => x.body.chat_id !== CHAT).length === 4, sent.map((x) => `${x.body.chat_id}:${x.url.split('/').pop()}`).join());
   telegram = () => ({ status: 400, body: { ok: false, description: 'Bad Request: chat not found' } });
@@ -245,13 +251,13 @@ async function api() {
   sent.length = 0;
   r = await call(handler, { body: { ...REPORT, images: [jpeg(50)] } });
   let rr = rich(sent[0]);
-  ok('10. one picture: 204, one rich message, nothing after it', r.statusCode === 204 && sent.length === 1 && sent[0].url.endsWith('/sendRichMessage'), sent.map((x) => x.url).join());
+  ok('10. one picture: 200, one rich message, nothing after it', r.statusCode === 200 && sent.length === 1 && sent[0].url.endsWith('/sendRichMessage'), sent.map((x) => x.url).join());
   ok('10. the picture uploaded with it, as p0', sent[0]?.body.p0?.file && sent[0].body.p0.type === 'image/jpeg' && JSON.stringify(rr?.media) === JSON.stringify([{ id: 'p0', media: { type: 'photo', media: 'attach://p0' } }]), JSON.stringify(rr?.media));
   ok('10. and shown in it, under Picture', /## Picture\n\n!\[\]\(tg:\/\/photo\?id=p0\)$/.test(rr?.markdown || ''), JSON.stringify(rr?.markdown));
   sent.length = 0;
   r = await call(handler, { body: { ...REPORT, images: [jpeg(40), jpeg(40), `data:image/png;base64,${Buffer.alloc(2048, 1).toString('base64')}`] } });
   rr = rich(sent[0]);
-  ok('10. three: one rich message, three files, three picture blocks with captions', r.statusCode === 204 && sent.length === 1 && rr?.media?.length === 3 && sent[0].body.p2?.type === 'image/png'
+  ok('10. three: one rich message, three files, three picture blocks with captions', r.statusCode === 200 && sent.length === 1 && rr?.media?.length === 3 && sent[0].body.p2?.type === 'image/png'
     && ['p0', 'p1', 'p2'].every((id, i) => rr.markdown.includes(`![](tg://photo?id=${id} "Picture ${i + 1} of 3")`)) && rr.markdown.includes('## Pictures (3)'), JSON.stringify(rr));
 
   // Where a rich message won't go: after the plain message, replying to it.
@@ -261,14 +267,14 @@ async function api() {
   sent.length = 0;
   r = await call(handler, { body: { ...REPORT, images: [jpeg(50)] } });
   sent.shift();
-  ok('10. one picture: 204', r.statusCode === 204, `${r.statusCode} ${JSON.stringify(r.payload)}`);
+  ok('10. one picture: 200', r.statusCode === 200, `${r.statusCode} ${JSON.stringify(r.payload)}`);
   ok('10. no rich: the message says there are pictures', /Pictures: 1, below/.test(sent[0]?.body.text || ''), sent[0]?.body.text);
   ok('10. no rich: then sendPhoto, to the chat, replying to the message', sent[1]?.url.endsWith('/sendPhoto') && sent[1].body.chat_id === CHAT && JSON.parse(sent[1].body.reply_parameters).message_id === 77 && sent[1].body.photo?.file && sent[1].body.photo.type === 'image/jpeg', JSON.stringify(sent[1]?.body));
   sent.length = 0;
   r = await call(handler, { body: { ...REPORT, images: [jpeg(40), jpeg(40), `data:image/png;base64,${Buffer.alloc(2048, 1).toString('base64')}`] } });
   sent.shift();
   const album = sent[1];
-  ok('10. no rich: three as an album of three, the first with a caption', r.statusCode === 204 && album?.url.endsWith('/sendMediaGroup') && JSON.parse(album.body.media).length === 3 && /3 pictures/.test(JSON.parse(album.body.media)[0].caption) && album.body.p2?.type === 'image/png', JSON.stringify(album?.body));
+  ok('10. no rich: three as an album of three, the first with a caption', r.statusCode === 200 && album?.url.endsWith('/sendMediaGroup') && JSON.parse(album.body.media).length === 3 && /3 pictures/.test(JSON.parse(album.body.media)[0].caption) && album.body.p2?.type === 'image/png', JSON.stringify(album?.body));
   console.error = quiet;
   telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
   sent.length = 0;
@@ -282,7 +288,31 @@ async function api() {
   telegram = (o) => (o.body instanceof FormData ? { status: 400, body: { ok: false, description: 'Bad Request: photo too big' } } : { status: 200, body: { ok: true, result: { message_id: 78 } } });
   // (the rich message with the picture refused, then the plain one sent, its picture refused)
   r = await call(handler, { body: { ...REPORT, images: [jpeg(10)] } });
-  ok('10. the pictures failing: the report still sent, 204', r.statusCode === 204);
+  ok('10. the pictures failing: the report still sent, 200', r.statusCode === 200);
+  console.error = error2;
+  // 11. Report IDs and whole-page screenshots.
+  telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
+  const { reportId, fullShots } = await import(path.join(__dirname, '../main-site/api/bug-report.js'));
+  ok('11. an ID is the day in Singapore and four letters', reportId(new Date('2026-11-02T17:30:00Z'), () => [0, 1, 2, 30]) === '20261103-234Z', reportId(new Date('2026-11-02T17:30:00Z'), () => [0, 1, 2, 30]));
+  const ids = new Set(Array.from({ length: 200 }, () => reportId()));
+  ok('11. none of 0, O, 1, I or L, and 200 in a row all different', [...ids].every((x) => /^\d{8}-[2-9A-HJKMNP-Z]{4}$/.test(x)) && ids.size === 200);
+  ok('11. full: only whole numbers in range, once each', JSON.stringify(fullShots([2, 0, 0, 5, -1, 1.5, '1'], 3)) === '[0,2]' && JSON.stringify(fullShots('x', 3)) === '[]');
+  sent.length = 0;
+  r = await call(handler, { body: { ...REPORT, images: [jpeg(30), jpeg(40)], full: [1] } });
+  const doc = sent.find((x) => x.url.endsWith('/sendDocument'));
+  ok('11. a whole-page shot: the rich message, then it again as a file', r.statusCode === 200 && sent.length === 2 && sent[0].url.endsWith('/sendRichMessage') && doc === sent[1], sent.map((x) => x.url.split('/').pop()).join());
+  ok('11. the file replies to the report, named and captioned with its ID', JSON.parse(doc?.body.reply_parameters || '{}').message_id === 77
+    && doc?.body.document?.name === `report-${r.payload.id}-page-2.jpg` && doc.body.caption.includes(r.payload.id) && doc.body.document.size === 40 * 1024, JSON.stringify(doc?.body));
+  ok('11. the photo in the rich message is still there, both pictures', rich(sent[0])?.media?.length === 2);
+  console.error = () => {};
+  telegram = noRich(() => ({ status: 200, body: { ok: true, result: { message_id: 91 } } }));
+  sent.length = 0;
+  r = await call(handler, { body: { ...REPORT, images: [jpeg(30)], full: [0] } });
+  ok('11. no rich: message, photo, then the file, each with the ID', r.statusCode === 200 && sent.map((x) => x.url.split('/').pop()).join() === 'sendRichMessage,sendMessage,sendPhoto,sendDocument'
+    && sent[1].body.text.startsWith(`Bug report ${r.payload.id},`) && sent[2].body.caption.includes(r.payload.id) && JSON.parse(sent[3].body.reply_parameters).message_id === 91, sent.map((x) => x.url.split('/').pop()).join());
+  telegram = (o) => (o.body instanceof FormData && o.body.has('document') ? { status: 400, body: { ok: false, description: 'Bad Request: file too big' } } : { status: 200, body: { ok: true, result: { message_id: 77 } } });
+  r = await call(handler, { body: { ...REPORT, images: [jpeg(30)], full: [0] } });
+  ok('11. the file failing: the report still sent, with its ID', r.statusCode === 200 && /^\d{8}-/.test(r.payload?.id || ''));
   console.error = error2;
   telegram = () => ({ status: 200, body: { ok: true, result: { message_id: 77 } } });
   return handler;
@@ -360,11 +390,12 @@ async function form(handler) {
   await page.waitForFunction(() => /Sent/.test(document.getElementById('bugStatus').textContent));
   const p = posted.at(-1) || {};
   ok('8. sends the words, the contact and what it showed', p.text === 'The map is blank <i>here</i>.' && p.contact === 'me@example.com' && p.platform === 'web' && p.page === 'Bus timings, stop 84009' && /Chrome/.test(p.device) && p.lang === 'en', JSON.stringify(p));
-  ok('8. nothing more: no location, favourites or address', Object.keys(p).sort().join() === 'contact,device,images,lang,page,platform,text,version,website', Object.keys(p).join());
+  ok('8. nothing more: no location, favourites or address', Object.keys(p).sort().join() === 'contact,device,full,images,lang,page,platform,text,version,website', Object.keys(p).join());
   ok('8. no pictures unless added', Array.isArray(p.images) && p.images.length === 0);
 
 
   ok('8. it reached Telegram (the stand-in) as a rich message', sent.length === 1 && sent[0].url.endsWith('/sendRichMessage') && (rich(sent[0])?.markdown || '').includes('The map is blank \\<i\\>here\\</i\\>.'), rich(sent[0])?.markdown);
+  ok('8. it says the report\'s ID once sent', /Sent as report \d{8}-[2-9A-HJKMNP-Z]{4}\./.test(await page.textContent('#bugStatus')), await page.textContent('#bugStatus'));
   ok('8. the form is cleared once sent', (await page.inputValue('#bugText')) === '' && (await page.inputValue('#bugContact')) === '');
 
   // Pictures: one from the phone, and a screenshot of the app under Settings.
@@ -383,6 +414,30 @@ async function form(handler) {
   ok('8. both sent, as JPEGs', withPics.images?.length === 2 && withPics.images.every((x) => x.startsWith('data:image/jpeg;base64,')), String(withPics.images?.length));
   ok('8. and on to Telegram in the rich message, two pictures in it', sent.length === 1 && rich(sent[0])?.media?.length === 2 && sent[0].body.p1?.file, JSON.stringify(rich(sent[0])?.media));
   ok('8. the pictures cleared once sent', (await page.$$('#bugShots .bugShot')).length === 0);
+  ok('8. a page no taller than the screen: no file, nothing marked whole-page', JSON.stringify(withPics.full) === '[]' && !sent.some((x) => x.url.endsWith('/sendDocument')));
+
+  // A page taller than the screen: the whole of it, top to bottom, and a file too.
+  sent.length = 0;
+  await page.evaluate(() => {
+    const tall = document.createElement('div');
+    tall.id = 'testTall';
+    tall.style.cssText = 'position:relative;height:2400px;background:linear-gradient(#f00,#00f)';
+    document.body.appendChild(tall);
+  });
+  const pageHeight = await page.evaluate(() => Math.max(document.scrollingElement.scrollHeight, document.body.scrollHeight));
+  await page.fill('#bugText', 'The whole page, please.');
+  await page.click('#bugScreenshot');
+  await page.waitForFunction(() => document.querySelectorAll('#bugShots .bugShot').length === 1 || /Couldn't take/.test(document.getElementById('bugStatus').textContent), null, { timeout: 30000 });
+  const shotSize = await page.evaluate(() => { const i = document.querySelector('#bugShots img'); return i ? [i.naturalWidth, i.naturalHeight] : null; });
+  ok('8. a tall page: the screenshot is the whole page, not the screen', !!shotSize && pageHeight > 820 * 2 && shotSize[1] / shotSize[0] > (pageHeight / 400) * 0.95, `${shotSize} for a page ${pageHeight} tall`);
+  ok('8. within what Telegram takes as a photo', !!shotSize && shotSize[0] + shotSize[1] <= 10000 && shotSize[1] <= shotSize[0] * 20, String(shotSize));
+  await page.click('#bugSend');
+  await page.waitForFunction(() => /Sent/.test(document.getElementById('bugStatus').textContent));
+  const tallSent = posted.at(-1) || {};
+  ok('8. sent marked whole-page, under 900 KB', JSON.stringify(tallSent.full) === '[0]' && (tallSent.images?.[0]?.length || 0) * 0.75 <= 900 * 1024 + 4, `${JSON.stringify(tallSent.full)} ${Math.round((tallSent.images?.[0]?.length || 0) * 0.75 / 1024)} KB`);
+  ok('8. and on to Telegram as a photo and as a file', sent.length === 2 && sent[1].url.endsWith('/sendDocument'), sent.map((x) => x.url.split('/').pop()).join());
+  if (process.env.SHOTS && tallSent.images?.[0]) fs.writeFileSync(path.join(process.env.SHOTS, 'bug-whole-page.jpg'), Buffer.from(tallSent.images[0].split(',')[1], 'base64'));
+  await page.evaluate(() => { const t = document.getElementById('testTall'); if (t) t.parentNode.removeChild(t); });
 
   // Not set up: email instead, with the words in it.
   delete process.env.BUG_REPORT_CHAT_ID;

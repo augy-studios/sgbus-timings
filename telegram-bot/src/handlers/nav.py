@@ -4,7 +4,7 @@ from ..flows import Flow, end_flow, get_flow, register_flow, set_flow
 from ..lta import fetch_arrivals
 from ..nav_api import NavError, places, plan
 from ..nav_view import NO_MATCH, build_mynavs_view, build_nav_option, build_nav_panel, nav_place_buttons, option_is_live
-from ..navs import clear_nav_draft, draft_place, draft_when, get_favourite_nav, get_nav_draft, start_nav_draft
+from ..navs import clear_nav_draft, draft_place, draft_via, draft_when, get_favourite_nav, get_nav_draft, row_via, start_nav_draft
 from ..reply import edit_rich_message, send_rich_message
 from ..user_settings import get_clock_times, get_has_bike
 from ..when import parse_typed, problem
@@ -26,31 +26,33 @@ def _armed_draft(chat_id, fields=("from", "to")):
     return draft if draft and draft["field"] in fields else None
 
 
-async def _ways(start, end, when, chat_id=None) -> dict:
-    """The ways between two ends at a time, as build_nav_panel takes them: {"result": ...}
-    from the API, or {"error": ...} saying why there are none."""
+async def _ways(start, end, when, chat_id=None, via=None) -> dict:
+    """The ways between two ends at a time, by way of `via` if there's a stop on the way, as
+    build_nav_panel takes them: {"result": ...} from the API, or {"error": ...} saying why
+    there are none."""
     late = problem(when)
     if late:
         return {"error": late}
     try:
-        return {"result": await plan(start, end, when, bike=bool(chat_id) and get_has_bike(chat_id))}
+        return {"result": await plan(start, end, when, bike=bool(chat_id) and get_has_bike(chat_id), via=via)}
     except NavError as err:
         return {"error": str(err)}
 
 
-async def send_nav_panel(client, chat_id, start, end, awaiting=None, when=None):
+async def send_nav_panel(client, chat_id, start, end, awaiting=None, when=None, via=None):
     """Posts the panel: with both ends set, the ways between them; otherwise a prompt for
-    the end still missing, armed so the next message answers it."""
+    the end still missing, armed so the next message answers it. `via`, a starred nav's stop
+    on the way, is kept as the ends change."""
     if awaiting is None and not (start and end):
         awaiting = "from" if not start else "to"
-    start_nav_draft(chat_id, awaiting, start, end, when)
+    start_nav_draft(chat_id, awaiting, start, end, when, via)
     if awaiting:
         set_flow(chat_id, FLOW)
-        rich, buttons = build_nav_panel(chat_id, start, end, awaiting=awaiting, when=when)
+        rich, buttons = build_nav_panel(chat_id, start, end, awaiting=awaiting, when=when, via=via)
         await send_rich_message(client, chat_id, rich, buttons)
         return
     end_flow(chat_id)
-    rich, buttons = build_nav_panel(chat_id, start, end, when=when, **await _ways(start, end, when, chat_id))
+    rich, buttons = build_nav_panel(chat_id, start, end, when=when, via=via, **await _ways(start, end, when, chat_id, via))
     await send_rich_message(client, chat_id, rich, buttons)
 
 
@@ -63,41 +65,41 @@ async def set_end(client, chat_id, field, place):
         start = place
     else:
         end = place
-    await send_nav_panel(client, chat_id, start, end, when=draft_when(draft))
+    await send_nav_panel(client, chat_id, start, end, when=draft_when(draft), via=draft_via(draft))
 
 
-async def show_nav(client, event, start, end, when=None):
-    """Redraws a panel in place with the ways between two ends."""
-    rich, buttons = build_nav_panel(event.chat_id, start, end, when=when, **await _ways(start, end, when, event.chat_id))
+async def show_nav(client, event, start, end, when=None, via=None):
+    """Redraws a panel in place with the ways between two ends, by `via` if given."""
+    rich, buttons = build_nav_panel(event.chat_id, start, end, when=when, via=via, **await _ways(start, end, when, event.chat_id, via))
     await edit_rich_message(client, event, rich, buttons)
 
 
 async def redraw_panel(client, event, chat_id, payload, when):
     """The panel a time was picked on, redrawn in place at that time: the ways, with both
     ends set, or else armed again for the end still missing."""
-    start, end = payload.get("from"), payload.get("to")
+    start, end, via = payload.get("from"), payload.get("to"), payload.get("via")
     if start and end:
         end_flow(chat_id)
-        await show_nav(client, event, start, end, when)
+        await show_nav(client, event, start, end, when, via)
         return
     awaiting = "from" if not start else "to"
-    start_nav_draft(chat_id, awaiting, start, end, when)
+    start_nav_draft(chat_id, awaiting, start, end, when, via)
     set_flow(chat_id, FLOW)
-    rich, buttons = build_nav_panel(chat_id, start, end, awaiting=awaiting, when=when)
+    rich, buttons = build_nav_panel(chat_id, start, end, awaiting=awaiting, when=when, via=via)
     await edit_rich_message(client, event, rich, buttons)
 
 
 async def arm_when(client, event, chat_id, payload):
     """Leave at or Arrive by tapped: waits for the time to be typed, keeping both ends."""
     mode = payload["mode"]
-    start_nav_draft(chat_id, f"when:{mode}", payload.get("from"), payload.get("to"), payload.get("when"))
+    start_nav_draft(chat_id, f"when:{mode}", payload.get("from"), payload.get("to"), payload.get("when"), payload.get("via"))
     set_flow(chat_id, FLOW)
-    ends = {k: payload[k] for k in ("from", "to", "when") if k in payload}
+    ends = {k: payload[k] for k in ("from", "to", "when", "via") if k in payload}
     rich, buttons = build_when_prompt("nav", ends, mode, WHEN_BACK)
     await edit_rich_message(client, event, rich, buttons)
 
 
-async def show_option(client, event, start, end, option, when=None):
+async def show_option(client, event, start, end, option, when=None, via=None):
     """One way, leg by leg, with the live timings of each bus at the stop it's boarded, when
     it sets off soon enough for those to matter."""
     timings = {}
@@ -112,27 +114,28 @@ async def show_option(client, event, start, end, option, when=None):
             timings[k] = etas or None
         except Exception:
             timings[k] = None
-    rich, buttons = build_nav_option(start, end, option, timings, when, clock_times=get_clock_times(event.sender_id))
+    rich, buttons = build_nav_option(start, end, option, timings, when, clock_times=get_clock_times(event.sender_id), via=via)
     await edit_rich_message(client, event, rich, buttons)
 
 
 async def arm_nav_field(client, event, chat_id, payload):
     """A Set start / Set end tap: waits for that end, keeping the other and the time."""
-    start, end, when = payload.get("from"), payload.get("to"), payload.get("when")
-    start_nav_draft(chat_id, payload["field"], start, end, when)
+    start, end, when, via = payload.get("from"), payload.get("to"), payload.get("when"), payload.get("via")
+    start_nav_draft(chat_id, payload["field"], start, end, when, via)
     set_flow(chat_id, FLOW)
-    rich, buttons = build_nav_panel(chat_id, start, end, awaiting=payload["field"], when=when)
+    rich, buttons = build_nav_panel(chat_id, start, end, awaiting=payload["field"], when=when, via=via)
     await send_rich_message(client, chat_id, rich, buttons)
 
 
 async def open_favourite_nav(client, chat_id, nav_id):
-    """A starred nav, at Leave now: a time picked before isn't kept."""
+    """A starred nav, at Leave now: a time picked before isn't kept. With its stop on the way,
+    if it was starred with one."""
     row = get_favourite_nav(chat_id, nav_id)
     if not row:
         return False
     start = {"label": row["from_label"], "lat": row["from_lat"], "lng": row["from_lng"]}
     end = {"label": row["to_label"], "lat": row["to_lat"], "lng": row["to_lng"]}
-    await send_nav_panel(client, chat_id, start, end)
+    await send_nav_panel(client, chat_id, start, end, via=row_via(row))
     return True
 
 
@@ -169,7 +172,7 @@ def register_nav(client):
         if not when or late:
             await event.respond(late or TYPED_HINT)
             raise events.StopPropagation
-        await send_nav_panel(client, event.chat_id, draft_place(draft, "from"), draft_place(draft, "to"), when=when)
+        await send_nav_panel(client, event.chat_id, draft_place(draft, "from"), draft_place(draft, "to"), when=when, via=draft_via(draft))
         raise events.StopPropagation
 
     @client.on(events.NewMessage(func=lambda e: bool(e.message.text) and not e.message.text.startswith("/")))

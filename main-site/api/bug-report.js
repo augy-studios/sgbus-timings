@@ -1,10 +1,17 @@
 // Report a bug (help desk #13): Settings' form (js/bug-report.js) sends what went wrong here, and
 // it reaches Augy as a message from the Telegram bot.
 //
-//   POST { text, contact?, version?, platform?, device?, page?, lang?, website?, images? }  → 204
+//   POST { text, contact?, version?, platform?, device?, page?, lang?, website?, images?, full? }
+//     → 200 { id }
 //
 // `images` (optional) is up to MAX_IMAGES pictures as JPEG, PNG or WebP data URLs, each at most
-// MAX_IMAGE_BYTES (js/bug-report.js makes them JPEGs of about 900 KB at most).
+// MAX_IMAGE_BYTES (js/bug-report.js makes them JPEGs of about 900 KB at most). `full` (optional)
+// lists which of them are whole-page screenshots: as tall as the page, which Telegram shrinks as
+// a photo till it can't be read, so each also goes as a file (sendDocument), at its full size.
+//
+// Each report gets an ID, reportId(): the day in Singapore and four letters, "20261103-7K3Q", in
+// the message's heading and answered to the form, which shows it, so a report can be talked
+// about by it. Nothing's stored: the day keeps them in order, the letters apart.
 //
 // It goes as a Telegram rich message (Bot API sendRichMessage): a heading, a table of what the
 // form added, what was typed under its own heading, and the pictures in the message itself,
@@ -47,6 +54,23 @@ const PER_HOUR = 6;
 const ALL_PER_HOUR = 60;
 const TELEGRAM_MS = 10 * 1000;
 const PLATFORMS = { web: "Web", pwa: "Web, installed", android: "Android app", desktop: "Desktop app", telegram: "Telegram Mini App" };
+// A report ID's letters: no 0 or O, 1, I or L, so one read out or typed back can't be mistaken.
+const ID_LETTERS = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+const ID_LENGTH = 4;
+
+// "20261103-7K3Q": the day in Singapore it was sent, and ID_LENGTH random letters.
+export function reportId(now = new Date(), random = (n) => crypto.getRandomValues(new Uint8Array(n))) {
+  const day = new Date(now.getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10).replace(/-/g, "");
+  const letters = [...random(ID_LENGTH)].map((b) => ID_LETTERS[b % ID_LETTERS.length]).join("");
+  return `${day}-${letters}`;
+}
+
+// The whole-page screenshots among `count` pictures, as their indexes: `full` as sent, each
+// once and in range, anything else left out.
+export function fullShots(full, count) {
+  if (!Array.isArray(full)) return [];
+  return [...new Set(full.filter((i) => Number.isInteger(i) && i >= 0 && i < count))].sort((a, b) => a - b);
+}
 
 // BUG_REPORT_CHAT_ID as [{ chat_id, message_thread_id? }], in order; anything that isn't a chat
 // ID, an @name or a chat ID with a topic is left out.
@@ -88,11 +112,11 @@ export function images(list) {
 }
 
 // The pictures to one chat, replying to the report (`replyTo`): one as a photo, more as an album.
-async function sendImages(chat, pics, replyTo) {
+async function sendImages(chat, pics, replyTo, id) {
   const form = new FormData();
   for (const [k, v] of Object.entries(chat)) form.append(k, String(v));
   if (replyTo) form.append("reply_parameters", JSON.stringify({ message_id: replyTo, allow_sending_without_reply: true }));
-  const caption = pics.length === 1 ? "Picture for the report above" : `${pics.length} pictures for the report above`;
+  const caption = `${pics.length === 1 ? "Picture" : `${pics.length} pictures`} for report ${id}`;
   const file = (p, i) => new Blob([p.bytes], { type: `image/${p.type}` });
   let method;
   if (pics.length === 1) {
@@ -111,11 +135,29 @@ async function sendImages(chat, pics, replyTo) {
   }
 }
 
-// What the form added, as [label, value], in order.
+// A whole-page screenshot (`full`), as a file, so Telegram keeps it at its full size: replying to
+// the report where it's known, captioned with the report's ID.
+async function sendFile(chat, pic, n, id, replyTo) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(chat)) form.append(k, String(v));
+  if (replyTo) form.append("reply_parameters", JSON.stringify({ message_id: replyTo, allow_sending_without_reply: true }));
+  const ext = pic.type === "jpeg" ? "jpg" : pic.type;
+  form.append("document", new Blob([pic.bytes], { type: `image/${pic.type}` }), `report-${id}-page-${n}.${ext}`);
+  form.append("caption", `Whole page, picture ${n}, at full size: report ${id}`);
+  form.append("disable_content_type_detection", "true");
+  const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/sendDocument`, { method: "POST", body: form, signal: AbortSignal.timeout(TELEGRAM_MS * 2) });
+  if (!r.ok) {
+    const reason = await r.json().then((d) => d?.description).catch(() => null);
+    throw new Error(`Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);
+  }
+}
+
+// What the form added, as [label, value], in order: the report's ID first.
 function details(body) {
   const platform = PLATFORMS[body.platform] || "Unknown";
   const version = clean(body.version, 60);
   return [
+    ...(body.id ? [["Report", body.id]] : []),
     ["App", `${platform}${version ? ` ${version}` : ""}`],
     ["Device", clean(body.device, 200) || "not given"],
     ["Page", clean(body.page, 100) || "not given"],
@@ -128,7 +170,7 @@ function details(body) {
 // then what was typed.
 export function message(body) {
   const lines = [
-    "Bug report, SG Bus Timings",
+    `Bug report${body.id ? ` ${body.id}` : ""}, SG Bus Timings`,
     "",
     ...details(body).map(([k, v]) => `${k}: ${v}`),
     ...(Array.isArray(body.images) && body.images.length ? [`Pictures: ${body.images.length}, below`] : []),
@@ -157,7 +199,7 @@ const escapeCell = (text) => escapeMd(String(text).replace(/\s*\n\s*/g, " "));
 export function richMarkdown(body, pictures = 0) {
   const typed = clean(body.text, MAX_TEXT, { lines: true }).split("\n").map((l) => escapeMd(l));
   const lines = [
-    "# Bug report",
+    `# Bug report${body.id ? ` ${escapeMd(body.id)}` : ""}`,
     "*SG Bus Timings*",
     "",
     "| Detail | Given |",
@@ -177,6 +219,7 @@ export function richMarkdown(body, pictures = 0) {
 }
 
 // The report as a rich message to one chat, its pictures in it: a form, so the files go with it.
+// Its message's ID, for the whole-page files to reply to, or null if Telegram didn't say.
 async function sendRich(chat, body, pics) {
   const form = new FormData();
   for (const [k, v] of Object.entries(chat)) form.append(k, String(v));
@@ -188,7 +231,7 @@ async function sendRich(chat, body, pics) {
   const r = await fetch(`https://api.telegram.org/bot${process.env.BUG_REPORT_BOT_TOKEN}/sendRichMessage`, {
     method: "POST", body: form, signal: AbortSignal.timeout(TELEGRAM_MS * (pics.length ? 2 : 1)),
   });
-  if (r.ok) return;
+  if (r.ok) return r.json().then((d) => d?.result?.message_id ?? null).catch(() => null);
   const reason = await r.json().then((d) => d?.description).catch(() => null);
   throw new Error(`Telegram replied ${r.status}${reason ? `: ${reason}` : ""}`);
 }
@@ -237,15 +280,26 @@ export default async function handler(req, res) {
   const ip = req.headers["x-real-ip"] || String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
   if (await rateLimited(`bug:${ip}`, PER_MINUTE)) return res.status(429).json({ error: "That's a lot of reports at once. Try again in a minute." });
   // The bot's field: no message, and no sign it was noticed.
-  if (body.website) return res.status(204).end();
+  if (body.website) return res.status(200).json({ id: reportId() });
   if (await overHour(ip)) return res.status(429).json({ error: "That's a lot of reports this hour. Try again later." });
 
   // To every chat at once, as a rich message, or as before where that won't go. One that took
   // it is enough; the others are logged.
-  const text = message(body);
+  const id = reportId();
+  const report = { ...body, id };
+  const full = fullShots(body.full, pics.length);
+  // Each whole-page screenshot as a file too, after the report; the report counts as sent even
+  // if they don't go.
+  const files = async (chat, i, replyTo) => {
+    for (const k of full) {
+      await sendFile(chat, pics[k], k + 1, id, replyTo).catch((err) => console.error(`bug-report: chat ${i + 1}: whole page ${k + 1}: ${err.message}`));
+    }
+  };
+  const text = message(report);
   const results = await Promise.all(chats().map(async (chat, i) => {
     try {
-      await sendRich(chat, body, pics);
+      const sent = await sendRich(chat, report, pics);
+      await files(chat, i, sent);
       return true;
     } catch (err) {
       console.error(`bug-report: chat ${i + 1}: rich message: ${err.name === "TimeoutError" ? "Telegram took too long" : err.message}; sending it as plain text`);
@@ -259,10 +313,11 @@ export default async function handler(req, res) {
       });
       if (r.ok) {
         // Then its pictures, replying to it. The report counts as sent even if they don't go.
+        const replyTo = await r.json().then((d) => d?.result?.message_id).catch(() => null);
         if (pics.length) {
-          const id = await r.json().then((d) => d?.result?.message_id).catch(() => null);
-          await sendImages(chat, pics, id).catch((err) => console.error(`bug-report: chat ${i + 1}: pictures: ${err.message}`));
+          await sendImages(chat, pics, replyTo, id).catch((err) => console.error(`bug-report: chat ${i + 1}: pictures: ${err.message}`));
         }
+        await files(chat, i, replyTo);
         return true;
       }
       // Telegram's reason, for the logs: never the token, which is only in the address.
@@ -274,5 +329,5 @@ export default async function handler(req, res) {
     return false;
   }));
   if (!results.includes(true)) return res.status(502).json({ error: "Couldn't send it right now. Please try again." });
-  return res.status(204).end();
+  return res.status(200).json({ id });
 }

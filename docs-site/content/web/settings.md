@@ -18,7 +18,7 @@ straight to one.
 
 | Setting | What it does |
 |---|---|
-| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. In Chinese, Malay or Tamil, **Tell us** under the list emails Augy about a translation that looks wrong. |
+| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. In the [Android app](android-app.md#the-apps-language), it's also the app's language in Android's own settings, and changes with it. In Chinese, Malay or Tamil, **Tell us** under the list emails Augy about a translation that looks wrong. |
 | **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
 | **Birthday** | On the day, the greeting becomes "Happy 28th Birthday, Sam!", on two lines so your whole name shows. The age comes from the year you were born. **Clear** removes it. |
 | **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |
@@ -118,12 +118,15 @@ Something not working? Open [Settings](#settings), **Help and extras**, and tap
    like an answer. It's optional.
 3. To show what happened, add up to three **pictures**: **Add pictures** picks
    them from your phone, and **Screenshot this page** takes the app as it is
-   under Settings and the window. A map may come out blank in a screenshot taken
-   this way; take one with your phone instead if it matters.
+   under Settings and the window: the whole page, top to bottom, not only the
+   part on your screen. A map may come out blank in a screenshot taken this way;
+   take one with your phone instead if it matters.
 4. Read the line under it, **Sent with it, to help find the bug**: that's
    everything else that goes with your words.
-5. Tap **Send**. It reaches Augy on Telegram, and the window says **Sent. Thank
-   you! Augy will look into it.**
+5. Tap **Send**. It reaches Augy on Telegram, and the window says **Sent as
+   report 20261103-7K3Q. Thank you! Augy will look into it.** That's your
+   report's ID: the day it was sent and four letters. Mention it if you write
+   to Augy about it, and he can find it straight away.
 
 <figure>
 <img src="/screenshots/web/bug-report.png" alt="The Report a bug window filled in: What went wrong? says bus 60's timings at Bedok Int showed Arr for 5 minutes, but the bus didn't come till 8 minutes later; How to reach you says @sam_tan; under them, Sent with it, to help find the bug: Web, site v128, Android 15, Chrome 141, 390×844, Bus timings, stop 84009; then Send and Cancel." width="366" height="479" loading="lazy">
@@ -136,8 +139,8 @@ window, the page you were on (with the stop's or bus's number if one was open)
 and your language. Never where you are, your places or your saved stops.
 
 <figure>
-<img src="/screenshots/web/bug-report-sent.png" alt="The Report a bug window after Send: the boxes empty again, and Sent. Thank you! Augy will look into it." width="366" height="514" loading="lazy">
-<figcaption>Sent: the boxes clear, ready for the next one.</figcaption>
+<img src="/screenshots/web/bug-report-sent.png" alt="The Report a bug window after Send: the boxes empty again, and Sent as report 20261103-7K3Q. Thank you! Augy will look into it." width="366" height="683" loading="lazy">
+<figcaption>Sent, with the report's ID: the boxes clear, ready for the next one.</figcaption>
 </figure>
 
 <figure>
@@ -147,6 +150,15 @@ and your language. Never where you are, your places or your saved stops.
 
 Pictures are made smaller on your phone before they're sent, and reach Augy
 inside your report's message, under what you typed.
+
+<figure>
+<img src="/screenshots/web/bug-report-whole.png" alt="The Report a bug window with a screenshot of the whole of Bedok Int's timings under Pictures, a tall picture shown cut to fit its square, then Add pictures and Screenshot this page, and the note: Up to 3. Screenshot this page takes the whole page, top to bottom." width="366" height="717" loading="lazy">
+<figcaption>A screenshot of a page longer than the screen: all of it, top to bottom.</figcaption>
+</figure>
+
+A screenshot of a page longer than your screen is kept as tall as the page.
+Telegram makes a tall picture small, so it also reaches Augy as a file at its
+full size, where every line can be read.
 
 - What you've typed, and the pictures, stay while the app's open, even if you
   close the window, until it's sent.

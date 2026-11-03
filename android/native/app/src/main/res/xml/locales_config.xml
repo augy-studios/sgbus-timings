@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The languages Android offers for the app (Settings, Apps, SG Bus Timings, Language, on
+     Android 13 and later): the site's own (main-site/js/i18n.js), with res/values-ms, -ta and -zh
+     for the app's own words. Picked there or in the page's Language, each follows the other
+     (SgBusPlugin.setLanguage, main-site/js/app-bridge.js). -->
+<locale-config xmlns:android="http://schemas.android.com/apk/res/android">
+    <locale android:name="en" />
+    <locale android:name="ms" />
+    <locale android:name="ta" />
+    <locale android:name="zh-SG" />
+</locale-config>

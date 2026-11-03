@@ -257,7 +257,7 @@ def register_callbacks(client):
                     await event.answer()
                     await use_saved_route_place(client, event, user_id, payload, place, name)
                     return
-                ends = {"from": payload.get("from"), "to": payload.get("to")}
+                ends = {"from": payload.get("from"), "to": payload.get("to"), **({"via": payload["via"]} if payload.get("via") else {})}
                 ends[payload["field"]] = nav_end(place)
                 await event.answer("Finding ways there…" if ends["from"] and ends["to"] else None)
                 await redraw_nav_panel(client, event, event.chat_id, ends, payload.get("when"))
@@ -557,17 +557,23 @@ def register_callbacks(client):
 
             if action == "nav_show":
                 await event.answer("Finding ways there…")
-                await show_nav(client, event, payload["from"], payload["to"], payload.get("when"))
+                await show_nav(client, event, payload["from"], payload["to"], payload.get("when"), payload.get("via"))
                 return
 
             if action == "nav_option":
                 await event.answer()
-                await show_option(client, event, payload["from"], payload["to"], payload["option"], payload.get("when"))
+                await show_option(client, event, payload["from"], payload["to"], payload["option"], payload.get("when"), payload.get("via"))
                 return
 
             if action == "nav_fav":
-                now_fav = toggle_favourite_nav(event.chat_id, payload["from"], payload["to"])
+                now_fav = toggle_favourite_nav(event.chat_id, payload["from"], payload["to"], payload.get("via"))
                 await event.answer("Nav added to favourites" if now_fav else "Nav removed from favourites")
+                await show_nav(client, event, payload["from"], payload["to"], payload.get("when"), payload.get("via"))
+                return
+
+            # The stop on the way taken off: the ways again, straight from one end to the other.
+            if action == "nav_via_off":
+                await event.answer("Finding ways there…")
                 await show_nav(client, event, payload["from"], payload["to"], payload.get("when"))
                 return
 

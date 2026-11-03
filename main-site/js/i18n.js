@@ -21,7 +21,11 @@
 //
 // The language is Settings' (LANG_KEY), else the phone's if it's one of these, else English.
 //
-// Window.I18n = { lang(), languages, t(key, en, vars), apply(root), set(lang) }.
+// In the Android app (2.3.1), Language and Android's own per-app language for it (Settings,
+// Apps, SG Bus Timings, Language) follow each other: js/app-bridge.js.
+//
+// Window.I18n = { lang(), chosen(), languages, t(key, en, vars), apply(root), set(lang), unset(),
+// match(tag) }.
 // Plain script: exports go on window.
 (function () {
   var LANG_KEY = "sgbus_lang";
@@ -29,7 +33,7 @@
   // The words' revision, set by scripts/i18n-check.mjs --write from every language's file: a
   // copy kept from another revision is old, and the file's fetched there and then instead, so
   // words added or changed in an update are never shown in English, or as they were, first.
-  var WORDS_REV = "91a6601c457f";
+  var WORDS_REV = "b01f25c1f823";
   // { code: its name in itself }. Add a language here and its i18n/<code>.json.
   var LANGUAGES = { en: "English", "zh-SG": "中文", ms: "Bahasa Melayu", ta: "தமிழ்" };
   // data-title is a Settings group's heading (script.js).
@@ -137,10 +141,31 @@
       .catch(function () { /* the copy kept does */ });
   }
 
-  // Settings' Language: kept, then the page opens again in it.
+  // Settings' Language: kept, then the page opens again in it. In the Android app it's the
+  // app's own language too (js/app-bridge.js, tellLanguage), told before the page goes.
+  var TELL_MS = 1500;
+  // Once the page is on its way to opening again, nothing more: the app's "language" event for
+  // the very change it was told of can come in before it goes.
+  var leaving = false;
   function set(code) {
-    if (!LANGUAGES[code] || code === lang) return;
+    if (leaving || !LANGUAGES[code] || code === lang) return;
+    leaving = true;
     store(LANG_KEY, code);
+    store(WORDS_KEY, null);
+    var told = window.AppBridge && window.AppBridge.tellLanguage ? window.AppBridge.tellLanguage(code) : null;
+    if (!told || typeof told.then !== "function") return location.reload();
+    var gone = false;
+    var go = function () { if (!gone) { gone = true; location.reload(); } };
+    told.then(go, go);
+    setTimeout(go, TELL_MS);
+  }
+
+  // The phone's own choice again, as Android's "System default" for the app: the choice kept
+  // dropped, and the page opened again in the phone's language (pick).
+  function unset() {
+    if (leaving || stored(LANG_KEY) == null) return;
+    leaving = true;
+    store(LANG_KEY, null);
     store(WORDS_KEY, null);
     location.reload();
   }
@@ -153,5 +178,5 @@
     if (document.visibilityState === "visible" && Date.now() - refreshedAt >= REFRESH_MS) refresh(lang);
   });
 
-  window.I18n = { lang: function () { return lang; }, languages: LANGUAGES, t: t, apply: apply, set: set };
+  window.I18n = { lang: function () { return lang; }, chosen: function () { return stored(LANG_KEY); }, languages: LANGUAGES, t: t, apply: apply, set: set, unset: unset, match: match };
 })();

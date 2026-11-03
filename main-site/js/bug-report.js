@@ -13,9 +13,14 @@
 //
 // Pictures, up to MAX_SHOTS: picked from the phone (any image), or Screenshot this page, which
 // draws the app as it is under its windows, this one and Settings (vendor/html-to-image, loaded
-// the first time it's used; a map's canvas can come out blank). Each is made a JPEG of at most
-// SHOT_SIDE pixels a side and about SHOT_BYTES here, before it's sent, and kept with what's
-// typed until it's sent.
+// the first time it's used; a map's canvas can come out blank): the whole page, top to bottom,
+// not only the part on the screen. Each is made a JPEG of at most SHOT_SIDE pixels a side and
+// about SHOT_BYTES here, before it's sent, and kept with what's typed until it's sent. A
+// screenshot of a page taller than the screen is kept as tall as it is instead (shrinkPage),
+// within what Telegram takes as a photo, and sent marked `full`, so it also reaches Augy as a
+// file at its full size (api/bug-report.js).
+//
+// Once it's sent, the form says the report's ID (api/bug-report.js, reportId), to quote.
 //
 // Window.BugReport = { open() }. Plain script: exports go on window.
 (function () {
@@ -28,11 +33,20 @@
   let siteVersion = null;
   let details = null;
   let sending = false;
-  // The pictures to send, as JPEG data URLs.
+  // The pictures to send, as JPEG data URLs, and which of them are whole-page screenshots.
   let shots = [];
+  let fullShots = new Set();
   const MAX_SHOTS = 3;
   const SHOT_SIDE = 1600;
   const SHOT_BYTES = 900 * 1024;
+  // A whole-page screenshot: at most PAGE_WIDTH wide, and within Telegram's limits for a photo,
+  // width and height PAGE_SUM at most together and the height PAGE_RATIO times the width at
+  // most (any more is cut off at the bottom). Drawn at most PAGE_DRAW pixels tall, as a browser
+  // won't make a canvas much taller.
+  const PAGE_WIDTH = 1080;
+  const PAGE_SUM = 10000;
+  const PAGE_RATIO = 20;
+  const PAGE_DRAW = 16000;
   const CAPTURE_LIB = '/vendor/html-to-image-1.11.13/html-to-image.js';
 
   // The site's version, from the service worker serving it ("v127"), or null without one.
@@ -166,6 +180,33 @@
     return null;
   }
 
+  // A whole-page screenshot (a data URL) as a JPEG data URL, as tall as the page, within
+  // PAGE_WIDTH, PAGE_SUM and PAGE_RATIO and about SHOT_BYTES, smaller and rougher till it is.
+  async function shrinkPage(src) {
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = () => reject(new Error('not an image'));
+      i.src = src;
+    });
+    const w = img.naturalWidth;
+    const h = Math.min(img.naturalHeight, w * PAGE_RATIO);
+    let k = Math.min(1, PAGE_WIDTH / w, (PAGE_SUM - 2) / (w + h));
+    for (let tries = 0; tries < 8; tries++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.floor(w * k));
+      canvas.height = Math.max(1, Math.floor(h * k));
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, w, h, 0, 0, canvas.width, canvas.height);
+      const out = canvas.toDataURL('image/jpeg', tries < 2 ? 0.8 : 0.68);
+      if (out.length * 0.75 <= SHOT_BYTES || tries === 7) return out;
+      if (tries >= 1) k *= 0.82;
+    }
+    return null;
+  }
+
   function renderShots() {
     const box = $('#bugShots');
     box.innerHTML = shots.map((s, i) => `<span class="bugShot"><img src="${s}" alt="${I18n.t('bug.picture_n', 'Picture {n}', { n: i + 1 })}"><button type="button" class="bugShotX" data-bug-shot="${i}" aria-label="${I18n.t('bug.remove_picture', 'Remove picture {n}', { n: i + 1 })}">×</button></span>`).join('');
@@ -200,7 +241,8 @@
     return lib;
   }
 
-  // The app as it is under its windows (this one, and Settings it was opened from), drawn.
+  // The app as it is under its windows (this one, and Settings it was opened from), drawn: the
+  // whole page, from the top, however far down it goes.
   async function screenshot() {
     if (shots.length >= MAX_SHOTS) return;
     const btn = $('#bugScreenshot');
@@ -209,11 +251,14 @@
     try {
       const h2i = await captureLib();
       const bg = getComputedStyle(document.body).backgroundColor;
+      const width = window.innerWidth;
+      const height = Math.max(window.innerHeight, document.scrollingElement?.scrollHeight || 0, document.body.scrollHeight || 0);
+      const tall = height > window.innerHeight + 4;
       const url = await h2i.toJpeg(document.body, {
         quality: 0.85,
-        pixelRatio: Math.min(2, window.devicePixelRatio || 1),
-        width: window.innerWidth,
-        height: window.innerHeight,
+        pixelRatio: Math.min(2, window.devicePixelRatio || 1, PAGE_DRAW / height),
+        width,
+        height,
         backgroundColor: bg && bg !== 'rgba(0, 0, 0, 0)' ? bg : '#ffffff',
         cacheBust: false,
         imagePlaceholder: 'data:image/gif;base64,R0lGODlhAQABAAAAACw=',
@@ -224,7 +269,15 @@
           && node.tagName !== 'VIDEO'
           && !(node.tagName === 'IMG' && (!node.currentSrc || !node.complete || !node.naturalWidth)),
       });
-      await addShot(url);
+      if (tall) {
+        const page = await shrinkPage(url);
+        if (page && shots.length < MAX_SHOTS) {
+          shots.push(page);
+          fullShots.add(shots.length - 1);
+        }
+      } else {
+        await addShot(url);
+      }
       say('');
     } catch (err) {
       console.warn("couldn't take the screenshot:", err);
@@ -255,14 +308,17 @@
       const r = await fetch('/api/bug-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...sent, text, contact: $('#bugContact').value.trim(), website: $('#bugWebsite').value, images: shots }),
+        body: JSON.stringify({ ...sent, text, contact: $('#bugContact').value.trim(), website: $('#bugWebsite').value, images: shots, full: [...fullShots] }),
       });
       if (r.ok) {
         $('#bugText').value = '';
         $('#bugContact').value = '';
         shots = [];
+        fullShots = new Set();
         renderShots();
-        say(I18n.t('bug.sent', 'Sent. Thank you! Augy will look into it.'));
+        // Its ID, to quote (a site from before IDs answers with none).
+        const id = await r.json().then((d) => (typeof d?.id === 'string' ? d.id : null)).catch(() => null);
+        say(id ? I18n.t('bug.sentId', 'Sent as report {id}. Thank you! Augy will look into it.', { id }) : I18n.t('bug.sent', 'Sent. Thank you! Augy will look into it.'));
         return;
       }
       const err = await r.json().then((d) => d?.error).catch(() => null);
@@ -290,7 +346,9 @@
     $('#bugShots').addEventListener('click', (e) => {
       const x = e.target.closest('[data-bug-shot]');
       if (!x) return;
-      shots.splice(Number(x.dataset.bugShot), 1);
+      const n = Number(x.dataset.bugShot);
+      shots.splice(n, 1);
+      fullShots = new Set([...fullShots].filter((i) => i !== n).map((i) => (i > n ? i - 1 : i)));
       renderShots();
     });
     renderShots();

@@ -132,6 +132,17 @@ by when you'd get there, as on the [web](../web/nav.md#across-the-causeway).
 Tap **Add favourite** on the panel. `/mynavs` lists your starred navs; tap one
 to plan it again. A nav and its reverse are two separate favourites.
 
+A nav saved on the web with a [stop on the way](../web/nav.md#save-it) comes
+to the bot with it, when you [sync](sync.md): `/mynavs` lists it as
+**Home → Gym → Work**, and its panel shows **Stop on the way** between **From**
+and **To**, with every way going by it. Starring or unstarring it there keeps
+the stop. **Remove the stop on the way** plans straight from one end to the
+other instead.
+
+A walk to or from a station says which exit, the one nearest the walk's other
+end: 🚪 **Leave Serangoon station by Exit G**, then the walk from there, as on
+the [web](../web/nav.md#the-nearest-exit).
+
 ## Also on the web
 
 The [web app's Navigate](../web/nav.md) uses the same planner, and can follow you

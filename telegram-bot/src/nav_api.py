@@ -55,16 +55,18 @@ async def share_place(place: dict) -> str:
     return config.webapp_url.rstrip("/") + res.json()["path"]
 
 
-async def plan(from_point: dict, to_point: dict, when: "dict | None" = None, bike: bool = False) -> dict:
+async def plan(from_point: dict, to_point: dict, when: "dict | None" = None, bike: bool = False, via: "dict | None" = None) -> dict:
     """{options: [...], onemap: bool, alerts: {lines}, when, traffic, others}, quickest option
     first. `when` is a picked time (when.py), None for Leave now. With `bike`, `others` has
     cycling as well as walking. Setting off now, buses are timed by the traffic and each bus
-    leg may have `lastBus` and `traffic` (the site's api/_nav/live.js)."""
+    leg may have `lastBus` and `traffic` (the site's api/_nav/live.js). `via` is a stop on the
+    way (the site's api/_nav/via.js), from a starred nav."""
     params = {
         "from": f"{from_point['lat']:.5f},{from_point['lng']:.5f}",
         "to": f"{to_point['lat']:.5f},{to_point['lng']:.5f}",
         **({"when": when["mode"], "at": when["at"]} if when else {}),
         **({"bike": "1"} if bike else {}),
+        **({"via": f"{via['lat']:.5f},{via['lng']:.5f}"} if via else {}),
     }
     try:
         res = await shared_client().get(_url("/api/nav"), params=params, headers=_headers(), timeout=60)

@@ -29,7 +29,7 @@ from .favourite_prefs import get_pref, set_pref
 from .favourite_routes import add_favourite_route, is_favourite_route, list_favourite_routes
 from .favourites import add_favourite, is_favourite, list_favourites
 from .http_client import shared_client
-from .navs import is_favourite_nav, list_favourite_navs, toggle_favourite_nav
+from .navs import is_favourite_nav, list_favourite_navs, row_via, toggle_favourite_nav
 from .routines import add_routine, join_services, list_routines, split_services
 from .saved_places import add_place, custom_count, get_place, list_places, set_place, MAX_CUSTOM
 from .user_settings import (
@@ -99,6 +99,7 @@ def own_favs(chat_id: int) -> dict:
             {
                 "from": {"label": r["from_label"], "lat": r["from_lat"], "lng": r["from_lng"]},
                 "to": {"label": r["to_label"], "lat": r["to_lat"], "lng": r["to_lng"]},
+                **({"via": v} if (v := row_via(r)) else {}),
             }
             for r in list_favourite_navs(chat_id)
         ],
@@ -192,8 +193,10 @@ def merge(chat_id: int, favs: dict) -> dict:
             continue
         a = {"label": _text(n["from"].get("label")) or "Place", "lat": n["from"]["lat"], "lng": n["from"]["lng"]}
         b = {"label": _text(n["to"].get("label")) or "Place", "lat": n["to"]["lat"], "lng": n["to"]["lng"]}
-        if not is_favourite_nav(chat_id, a, b):
-            toggle_favourite_nav(chat_id, a, b)
+        # Its stop on the way, as the web app keeps it, if it has one.
+        via = {"label": _text(n["via"].get("label")) or "Stop", "lat": n["via"]["lat"], "lng": n["via"]["lng"]} if _point(n.get("via")) else None
+        if not is_favourite_nav(chat_id, a, b, via):
+            toggle_favourite_nav(chat_id, a, b, via)
             count("nav")
 
     have = {(round(p["lat"], 5), round(p["lng"], 5)) for p in list_places(chat_id) if p["kind"] not in ("home", "work")}

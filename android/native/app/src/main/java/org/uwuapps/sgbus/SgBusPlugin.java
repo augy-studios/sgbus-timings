@@ -1,7 +1,7 @@
 /*
  * The app itself, to the page (main-site/js/app-bridge.js):
  *
- *   info()                   { version, versionCode, features }: what this app can do
+ *   info()                   { version, versionCode, features, lang }: what this app can do
  *   notify({ channel, tag, title, body, url })   a notification (Notifications.java)
  *   notificationsAllowed()   { allowed }
  *   openSettings({ what })   the app's page in Android's settings ("app"), its notification
@@ -43,6 +43,14 @@
  *                            colours" (js/colours.js): { accent1, accent2, accent3, neutral1,
  *                            neutral2 }, each tone ("0", "10", "50", "100" … "900", "1000") as
  *                            "#rrggbb". Android 12 and later only, as "phonecolours" (2.3.0)
+ *   setLanguage({ lang })    the app's own language, as Android's per-app languages have it
+ *                            (Settings, Apps, SG Bus Timings, Language on Android 13 and later):
+ *                            "en", "ms", "ta" or "zh-SG", "" for the phone's. Set by the page's
+ *                            Language as it changes, so the app's notifications, widget and
+ *                            update page say the same; info() says it back as `lang`, and a
+ *                            "language" event says { lang } when it's changed in Android's
+ *                            settings while the app's open (MainActivity), for the page to
+ *                            follow. As "applang" (2.3.1)
  *
  * And intent: links, which a WebView can't follow by itself as Chrome does: the site's
  * SimplyGo button, the calendar permission and the update bar each link to one of this app's
@@ -156,6 +164,8 @@ public class SgBusPlugin extends Plugin {
         features.put("cardreading"); // CardPlugin's "reading" event
         // 2.3.0
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) features.put("phonecolours"); // phoneColours
+        // 2.3.1
+        features.put("applang"); // setLanguage, `lang` here and "language" events
         // Firebase is set up for this build (google-services.json): the server can push.
         if (firebaseReady()) {
             features.put("push");
@@ -163,7 +173,50 @@ public class SgBusPlugin extends Plugin {
         }
         out.put("features", features);
         out.put("android", Build.VERSION.SDK_INT);
+        out.put("lang", appLanguage());
         call.resolve(out);
+    }
+
+    // ---------- the app's language (2.3.1) ----------
+    // Android's per-app languages (res/xml/locales_config.xml): kept by Android itself from
+    // Android 13, and by AppCompat before it (AppLocalesMetadataHolderService, autoStoreLocales,
+    // in AndroidManifest.xml). Two-way with the page's Language (main-site/js/app-bridge.js).
+
+    // The app's own language as a tag ("ms", "zh-SG"), or "" when it follows the phone's.
+    static String appLanguage() {
+        androidx.core.os.LocaleListCompat list = androidx.appcompat.app.AppCompatDelegate.getApplicationLocales();
+        return list.isEmpty() || list.get(0) == null ? "" : list.get(0).toLanguageTag();
+    }
+
+    @PluginMethod
+    public void setLanguage(PluginCall call) {
+        String tag = call.getString("lang", "");
+        String wanted = tag == null ? "" : tag.trim();
+        getActivity().runOnUiThread(() -> {
+            if (!wanted.equalsIgnoreCase(appLanguage())) {
+                androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(wanted.isEmpty()
+                        ? androidx.core.os.LocaleListCompat.getEmptyLocaleList()
+                        : androidx.core.os.LocaleListCompat.forLanguageTags(wanted));
+            }
+            JSObject out = new JSObject();
+            out.put("lang", appLanguage());
+            call.resolve(out);
+        });
+    }
+
+    // The app's language as it is now, to the page, when the configuration changes
+    // (MainActivity.onConfigurationChanged): changed in Android's settings, or by setLanguage.
+    private static String sLastLanguage = null;
+
+    static void onLanguage() {
+        String now = appLanguage();
+        if (now.equals(sLastLanguage)) return;
+        sLastLanguage = now;
+        SgBusPlugin plugin = sPlugin.get();
+        if (plugin == null) return;
+        JSObject out = new JSObject();
+        out.put("lang", now);
+        plugin.notifyListeners("language", out);
     }
 
     // Material You's tonal palettes, as Android 12 and later name them: system_accent1_500 and

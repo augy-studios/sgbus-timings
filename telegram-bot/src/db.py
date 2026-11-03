@@ -252,6 +252,16 @@ if "clock_times" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN clock_times INTEGER NOT NULL DEFAULT 0")
 
+# A stop on the way for a starred nav and the nav being planned (navs.py), as the web app's
+# Navigate keeps with a saved nav: NULL for none, as every nav from before has.
+for _table in ("favourite_navs", "nav_drafts"):
+    _columns = {row["name"] for row in db.execute(f"PRAGMA table_info({_table})").fetchall()}
+    if "via_label" not in _columns:
+        with db:
+            db.execute(f"ALTER TABLE {_table} ADD COLUMN via_label TEXT")
+            db.execute(f"ALTER TABLE {_table} ADD COLUMN via_lat REAL")
+            db.execute(f"ALTER TABLE {_table} ADD COLUMN via_lng REAL")
+
 # A routine's `services` is a comma-separated list of the bus numbers it sends; NULL, as
 # every routine saved before buses could be picked has, means every bus at the stop.
 _routines_columns = {row["name"] for row in db.execute("PRAGMA table_info(routines)").fetchall()}

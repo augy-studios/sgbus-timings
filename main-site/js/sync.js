@@ -55,9 +55,10 @@ const FAV_KINDS = [
   // is keyed by its name and what's in it: taking one adds what it has to the list of that name.
   { kind: 'stopbus', list: 'stopBuses', label: I18n.t('favs.group.stopBuses', 'Buses at stops'), key: (b) => `stopbus:${b.code}/${b.service}` },
   { kind: 'favlist', list: 'favLists', label: I18n.t('sync.kind.lists', 'Lists'), key: (l) => `favlist:${l.name.toLowerCase()}=${[...l.items].sort().join(',')}` },
-  // Navs, from Navigate (js/nav.js): two places, keyed by where they are. A device from
-  // before navs synced sends none and ignores these, so sync still works between the two.
-  { kind: 'nav',   list: 'navs',   label: I18n.t('favs.group.navs', 'Navs'),      key: (n) => `nav:${navPoint(n.from)}>${navPoint(n.to)}` },
+  // Navs, from Navigate (js/nav.js): two places and a stop on the way if there's one, keyed by
+  // where they are. A device from before navs synced sends none and ignores these, so sync
+  // still works between the two; one from before stops were kept takes the two ends.
+  { kind: 'nav',   list: 'navs',   label: I18n.t('favs.group.navs', 'Navs'),      key: navKey },
   // Places (js/places.js): Home and Work as themselves, so one is only ever filled where it
   // isn't set, never replaced, and the rest by where they are. Trips (js/history.js) by id.
   // A device from before these sends none and ignores them, as with navs.
@@ -80,6 +81,7 @@ const FAV_KINDS = [
 const LEGACY_KINDS = ['profile', 'stop', 'bus', 'route', 'nav', 'place', 'trip', 'search'];
 
 const navPoint = (p) => `${Number(p.lat).toFixed(5)},${Number(p.lng).toFixed(5)}`;
+function navKey(n) { return `nav:${navPoint(n.from)}>${navPoint(n.to)}${n.via ? `/via/${navPoint(n.via)}` : ''}`; }
 
 // ---- Settings ----
 // Each: what Settings calls it, its value as words, what it starts as, and how it's read and
@@ -428,8 +430,9 @@ function cleanFavs(raw) {
       .filter((r) => isStop(r?.start) && isStop(r?.end) && once(`route:${r.start}>${r.end}`))
       .map((r) => ({ start: r.start, startName: text(r.startName), end: r.end, endName: text(r.endName) })),
     navs: list(raw.navs)
-      .filter((n) => isPlace(n?.from) && isPlace(n?.to) && once(`nav:${navPoint(n.from)}>${navPoint(n.to)}`))
-      .map((n) => ({ from: place(n.from), to: place(n.to) })),
+      .filter((n) => isPlace(n?.from) && isPlace(n?.to))
+      .map((n) => ({ from: place(n.from), to: place(n.to), ...(isPlace(n.via) && { via: place(n.via) }) }))
+      .filter((n) => once(navKey(n))),
     places: list(raw.places).map(Places.clean).filter((p) => p && once(Places.syncKey(p))),
     trips: list(raw.trips).map(TripHistory.clean).filter((t) => t && once(`trip:${t.id}`)),
     searches: list(raw.searches).map(Recents.clean).filter((r) => r && once(`search:${Recents.syncKey(r)}`)),

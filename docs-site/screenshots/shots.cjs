@@ -14,7 +14,8 @@
 // out the same whenever it's taken. The groups after "help desk #13" are always taken still, as
 // are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, past-trips, and the
 // secret pages': eggs, secrets, material and console. 2 November 2026's (coins-switch, first-run,
-// feats-new, bug-pictures, trip-ccl) need no live data at all.
+// feats-new, bug-pictures, trip-ccl) need no live data at all. 3 November 2026's (nav-exits,
+// nav-save-stop, bug-whole) are always still too.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -388,6 +389,10 @@ async function drawConsole(browser, shots) {
         await idle(page, '#navBody', 20000);
       }
       await page.waitForTimeout(1500);
+      // Each panel opened, as they start folded to their heading (3 November 2026).
+      const folded = page.locator('#navBody .legDoors:not([open]) > summary');
+      for (let n = 0; n < 6 && (await folded.count()); n++) await folded.first().click();
+      await page.waitForTimeout(400);
       // The train rides, from the first to the last with doors.
       const rides = page.locator('#navBody .stepLeg:has(.legDoors)');
       const a = await rides.first().boundingBox();
@@ -403,6 +408,85 @@ async function drawConsole(browser, shots) {
     await shoot({ label: 'Bedok Reservoir Stn', lat: 1.336284, lng: 103.931887 }, { label: 'Serangoon Stn', lat: 1.349807, lng: 103.873771 }, 'nav-doors-change.png', 2);
     // Across the platform at Jurong East.
     await shoot({ label: 'Clementi Stn', lat: 1.3151, lng: 103.765231 }, { label: 'Bukit Batok Stn', lat: 1.349057, lng: 103.749591 }, 'nav-doors-across.png', 1);
+  }
+  // 3 November 2026: Navigate's walks to and from a station's nearest exit, and its doors panels
+  // folded to their heading; a nav saved with its stop on the way, in Favourites. Planned with
+  // this checkout's own router (the live site's has no exits yet) over the live stops and
+  // routes; the doors are the live site's. Always still.
+  const ownWays = async () => {
+    const { pathToFileURL } = require('url');
+    const fs = require('fs');
+    const site = path.resolve(__dirname, '../../main-site');
+    const core = (f) => import(pathToFileURL(path.join(site, 'js/nav-core', f)).href);
+    const [{ buildGraph }, { planFor, planViaFor }, { joinWays }] = await Promise.all([core('network.js'), core('plan.js'), core('via.js')]);
+    const j = (f) => JSON.parse(fs.readFileSync(path.join(site, f), 'utf8'));
+    const [stops, routes] = await Promise.all(['bus-stops', 'bus-routes'].map((a) => liveJson(a)));
+    const graph = buildGraph(j('data/rail.json'), stops, routes, { campus: { nus: j('data/campus/nus.json'), ntu: j('data/campus/ntu.json'), config: j('data/campus/config.json'), shuttles: j('data/campus/shuttles.json') } });
+    const when = { mode: 'leave', ms: STILL_AT.getTime() };
+    return (from, to, via = null) => {
+      if (!via) return planFor(graph, from, to, when, null, {}).options;
+      const { first, second, fits } = planViaFor(graph, from, via, to, when, null, {});
+      return joinWays(first.options, second.options, via, { fits });
+    };
+  };
+  const answerNav = (ctx, options, via = null) => ctx.route(/\/api\/nav\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ options, onemap: false, alerts: { lines: [] }, when: { mode: 'now', ms: STILL_AT.getTime() }, traffic: null, others: {}, ...(via && { via: { lat: via.lat, lng: via.lng } }) }) }));
+  const HUB = { label: 'Our Tampines Hub', lat: 1.353134, lng: 103.940408 };
+  const NEX = { label: 'NEX', lat: 1.350639, lng: 103.87219 };
+  if (want('nav-exits')) {
+    const ways = await ownWays();
+    // The way by the Downtown and Circle lines, with its exits at both ends.
+    const all = ways(HUB, NEX);
+    const byTrain = all.filter((o) => o.legs.some((l) => l.mode === 'train') && o.legs[0]?.toExit && o.legs.at(-1)?.fromExit);
+    const options = [...byTrain, ...all.filter((o) => !byTrain.includes(o))];
+    const { ctx, page } = await open(browser, { width: 420, height: 2400, still: true });
+    await answerNav(ctx, options);
+    await page.evaluate((h) => { location.hash = h; }, `#nav/${enc(HUB)}/${enc(NEX)}`);
+    await idle(page, '#navBody');
+    await page.click('#navBody [data-nav-option="0"]');
+    await page.waitForSelector('#navBody .legDoors', { timeout: 15000 }).catch(() => console.log('no doors'));
+    await page.waitForTimeout(1200);
+    await blur(page);
+    await el(page, '#navBody .journeySteps', 'nav-exits.png');
+    const ride = page.locator('#navBody .stepLeg:has(.legDoors)').first();
+    await el(page, '#navBody .stepLeg:has(.legDoors) >> nth=0', 'nav-doors-folded.png');
+    await ride.locator('summary').click();
+    await page.waitForTimeout(500);
+    await el(page, '#navBody .stepLeg:has(.legDoors) >> nth=0', 'nav-doors-unfolded.png');
+    await ctx.close();
+  }
+  if (want('nav-save-stop')) {
+    const ways = await ownWays();
+    const gym = { label: 'Bedok Mall', lat: 1.324736, lng: 103.929256 };
+    const options = ways(HUB, NEX, gym);
+    const { ctx, page } = await open(browser, { width: 420, height: 1400, still: true, extra: { sgbus_fav_navs: JSON.stringify([{ from: P.bedokMall, to: P.changi }]) } });
+    await answerNav(ctx, options, gym);
+    await page.evaluate((h) => { location.hash = h; }, `#nav/${enc(HUB)}/${enc(NEX)}/via/${enc(gym)}`);
+    await idle(page, '#navBody');
+    await page.click('#navFavBtn');
+    await page.waitForTimeout(500);
+    await blur(page);
+    await cardDown(page, N, '#navSection .navFields', 'nav-save-stop.png');
+    await page.evaluate(() => closeNav());
+    await page.click('#favsBtn');
+    await page.waitForTimeout(700);
+    await el(page, '#favsModal .modal', 'favourites-nav-stop.png');
+    await ctx.close();
+  }
+  // A whole-page screenshot in Report a bug: Bedok Int's timings, longer than the screen, taken
+  // top to bottom. Always still.
+  if (want('bug-whole')) {
+    const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, hash: '#84009', still: true });
+    await page.waitForSelector('#services .svc', { timeout: 20000 }).catch(() => console.log('no timings'));
+    await settingsGroup(page, 'help');
+    await page.click('#settingsBug');
+    await page.waitForTimeout(1500);
+    await page.fill('#bugText', 'Bus 14 is missing from the list at Bedok Int.');
+    await page.click('#bugScreenshot');
+    await page.waitForFunction(() => document.querySelectorAll('#bugShots .bugShot').length === 1 || /Couldn't take/.test(document.getElementById('bugStatus').textContent), null, { timeout: 40000 });
+    await blur(page);
+    await page.waitForTimeout(400);
+    await el(page, '#bugModal .modal', 'bug-report-whole.png');
+    await ctx.close();
   }
   if (want('calendar-nav')) {
     const tomorrow = new Date(Date.now() + 86400000).toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' });
@@ -1134,7 +1218,7 @@ async function drawConsole(browser, shots) {
     const ua = 'Mozilla/5.0 (Linux; Android 15; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36';
     const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, ua, hash: '#84009', still: true });
     let sent = null;
-    await ctx.route(/\/api\/bug-report$/, (r) => { sent = r.request().postDataJSON(); r.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }); });
+    await ctx.route(/\/api\/bug-report$/, (r) => { sent = r.request().postDataJSON(); r.fulfill({ status: 200, contentType: 'application/json', body: '{"id":"20261103-7K3Q"}' }); });
     // The site's version as its service worker says it, the first time the form opens.
     await page.evaluate(async () => { await navigator.serviceWorker?.ready; });
     if (!(await page.evaluate(() => !!navigator.serviceWorker?.controller))) {

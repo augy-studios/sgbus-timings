@@ -12,7 +12,7 @@ from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .config import config
 from .format import _format_eta, escape_md
-from .navs import is_favourite_nav, list_favourite_navs
+from .navs import is_favourite_nav, list_favourite_navs, row_via
 from .pagination import nav_row, paginate
 from .saved_places import KINDS, list_places
 from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
@@ -104,19 +104,26 @@ def option_summary(option: dict) -> str:
     return f"{' → '.join(_chip(leg) for leg in rides)} · {change_text}, {_metres(walk)} walk"
 
 
-def _ends_lines(start: "dict | None", end: "dict | None", when=None) -> tuple[list, list]:
+def _ends_lines(start: "dict | None", end: "dict | None", when=None, via=None) -> tuple[list, list]:
     md = [
         f"**From:** {escape_md(start['label']) if start else '_not set_'}",
+        *([f"**Stop on the way:** {escape_md(via['label'])}"] if via else []),
         f"**To:** {escape_md(end['label']) if end else '_not set_'}",
         f"**When:** {escape_md(describe(when))}",
     ]
-    plain = [f"From: {start['label'] if start else 'not set'}", f"To: {end['label'] if end else 'not set'}", f"When: {describe(when)}"]
+    plain = [
+        f"From: {start['label'] if start else 'not set'}",
+        *([f"Stop on the way: {via['label']}"] if via else []),
+        f"To: {end['label'] if end else 'not set'}",
+        f"When: {describe(when)}",
+    ]
     return md, plain
 
 
-def _ends_payload(start, end, when=None) -> dict:
-    """What every /nav button carries: both ends, and the time picked when there is one."""
-    return {"from": start, "to": end, **({"when": when} if when else {})}
+def _ends_payload(start, end, when=None, via=None) -> dict:
+    """What every /nav button carries: both ends, the time picked when there is one, and the
+    stop on the way when there is one (a starred nav's)."""
+    return {"from": start, "to": end, **({"when": when} if when else {}), **({"via": via} if via else {})}
 
 
 def _clocks(when, minutes) -> str:
@@ -130,11 +137,11 @@ def _too_late(when, minutes) -> bool:
     return bool(when) and when["mode"] == "arrive" and span(when, minutes)[0] < now() - timedelta(minutes=1)
 
 
-def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, result: "dict | None" = None, error: "str | None" = None, when=None):
+def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, result: "dict | None" = None, error: "str | None" = None, when=None, via=None):
     """The /nav panel. With both ends set and `result` from the API, the ways between them,
     a button each; otherwise a prompt for the end it's waiting on. `when` is the time picked
-    (when.py), None for Leave now."""
-    md_ends, plain_ends = _ends_lines(start, end, when)
+    (when.py), None for Leave now; `via` a stop on the way, from a starred nav."""
+    md_ends, plain_ends = _ends_lines(start, end, when, via)
     md = ["# 🧭 Navigate by bus and train", "", *md_ends, ""]
     plain = ["🧭 Navigate by bus and train", "", *plain_ends, ""]
     buttons = []
@@ -178,7 +185,7 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 short = _clocks(when, o["minutes"]) if when else f"~{o['minutes']} min"
                 buttons.append(
                     [Button.inline(f"{i} · {short} · {' → '.join(leg['route'] for leg in _rides(o)) or 'walk'}"[:64],
-                                   make_button("nav_option", {**_ends_payload(start, end, when), "option": o}))]
+                                   make_button("nav_option", {**_ends_payload(start, end, when, via), "option": o}))]
                 )
             # Walking or cycling the whole way, where it might compete (the API only sends it then).
             best = min((o["minutes"] for o in options if not o.get("walkOnly")), default=None)
@@ -193,18 +200,22 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 md += ["", *(escape_md(line) for line in lines)]
                 plain += ["", *lines]
             traffic = " Bus times allow for the traffic right now, from LTA; 🚦 marks a bus it slows." if result.get("traffic") else ""
+            stop = " No time is counted at your stop on the way." if via else ""
             note = ("Times include walking and an average wait to board. Only buses and trains running at the time "
-                    f"are used. ⚠️ marks a line LTA reports a disruption on, ⏰ a last bus of the day.{traffic}")
+                    f"are used. ⚠️ marks a line LTA reports a disruption on, ⏰ a last bus of the day.{traffic}{stop}")
             md += ["", f"_{escape_md(note)}_"]
             plain += ["", note]
 
-    ends = _ends_payload(start, end, when)
+    ends = _ends_payload(start, end, when, via)
     if start and end:
-        fav = is_favourite_nav(chat_id, start, end)
+        fav = is_favourite_nav(chat_id, start, end, via)
         buttons.append([
             Button.inline("⭐ Remove favourite" if fav else "⭐ Add favourite", make_button("nav_fav", ends)),
             Button.inline("🔄 Refresh", make_button("nav_show", ends)),
         ])
+    # A starred nav's stop on the way, which planning goes by until it's taken off.
+    if via:
+        buttons.append([Button.inline("✖️ Remove the stop on the way"[:64], make_button("nav_via_off", ends))])
     # The end being waited on swaps its letter for a pencil, as on the /route panel.
     buttons.append([
         Button.inline(f"{'✏️' if awaiting == 'from' else '🅰'} Set start", make_button("nav_set", {**ends, "field": "from"})),
@@ -242,13 +253,14 @@ def option_is_live(option: dict, when) -> bool:
     return not when or live_lead(span(when, option["minutes"])[0]) is not None
 
 
-def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_times=False):
+def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_times=False, via=None):
     """One way, leg by leg. `timings` maps a bus leg's index to its next ETAs in ms (or None
     when LTA has none); for a way setting off too far ahead for those (option_is_live), each
     bus and train says when it's boarded instead, by the clock. `clock_times` shows the ETAs as
     the time each bus comes (Settings' Bus times)."""
-    md = [f"# 🧭 ~{option['minutes']} min", f"{escape_md(start['label'])} → {escape_md(end['label'])}", ""]
-    plain = [f"🧭 ~{option['minutes']} min", f"{start['label']} → {end['label']}", ""]
+    ends = [start["label"], *([via["label"]] if via else []), end["label"]]
+    md = [f"# 🧭 ~{option['minutes']} min", " → ".join(escape_md(x) for x in ends), ""]
+    plain = [f"🧭 ~{option['minutes']} min", " → ".join(ends), ""]
     buttons = []
     legs = option["legs"]
     live = option_is_live(option, when)
@@ -267,7 +279,16 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
         return f"   Board around {clock(leave + timedelta(minutes=leg['board']))}{', after an average wait' if after_wait else ''}."
     for k, leg in enumerate(legs):
         if leg["mode"] == "walk":
-            where = end["label"] if k == len(legs) - 1 else _place_name(leg.get("to"))
+            # To and from a station by the exit nearest the walk's other end (the site's
+            # js/nav-core/router.js, toExit and fromExit), where it has a name.
+            from_exit = (leg.get("fromExit") or {}).get("name")
+            if from_exit:
+                was = leg.get("from") or (legs[k - 1].get("to") if k else None)
+                line = f"🚪 Leave {_place_name(was) or 'the station'} by Exit {from_exit}."
+                md.append(escape_md(line))
+                plain.append(line)
+            to_exit = (leg.get("toExit") or {}).get("name")
+            where = end["label"] if k == len(legs) - 1 else _place_name(leg.get("to")) + (f", Exit {to_exit}" if to_exit else "")
             line = f"🚶 Walk ~{leg['metres']} m to {where}, ~{max(1, round(leg['minutes']))} min"
             md.append(escape_md(line))
             plain.append(line)
@@ -319,7 +340,7 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
                 plain.append(line)
             if leg.get("from", {}).get("code"):
                 # The way rides along, so the timings can come back to it.
-                way = {**_ends_payload(start, end, when), "option": option}
+                way = {**_ends_payload(start, end, when, via), "option": option}
                 buttons.append([Button.inline(f"🚏 {leg['route']} at {leg['from']['name']}"[:64],
                                               make_button("stop", {"code": leg["from"]["code"], "bus_no": leg["route"], "nav": way}))])
     note = ("Train times are estimates from distance; bus timings are live from LTA." if live
@@ -328,8 +349,8 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
     md += ["", f"_{escape_md(note)}_"]
     plain += ["", note]
     buttons.append([
-        Button.inline("🔄 Refresh", make_button("nav_option", {**_ends_payload(start, end, when), "option": option})),
-        Button.inline("🔙 Back to all ways", make_button("nav_show", _ends_payload(start, end, when))),
+        Button.inline("🔄 Refresh", make_button("nav_option", {**_ends_payload(start, end, when, via), "option": option})),
+        Button.inline("🔙 Back to all ways", make_button("nav_show", _ends_payload(start, end, when, via))),
     ])
     return {"markdown": "\n".join(md).strip(), "fallback": "\n".join(plain).strip()}, buttons
 
@@ -350,7 +371,8 @@ def build_mynavs_view(chat_id: int, page: int):
         "fallback": "Your favourite navs\nSelect one to see the ways there by bus and train.",
     }
     buttons = [
-        [Button.inline(f"{n['from_label']} → {n['to_label']}"[:64], make_button("nav_open_fav", {"id": n["id"]}))]
+        [Button.inline(" → ".join([n["from_label"], *([v["label"]] if (v := row_via(n)) else []), n["to_label"]])[:64],
+                       make_button("nav_open_fav", {"id": n["id"]}))]
         for n in page_items
     ]
     buttons += nav_row("mynavs_page", {}, page, total_pages)

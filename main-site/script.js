@@ -832,7 +832,8 @@ function renderFavs() {
     }).join('');
 
     $('#favNavChips').innerHTML = navs.map((n, i) => {
-        const label = `${n.from.label} → ${n.to.label}`;
+        // With its stop on the way, if it has one: Home → Gym → Work.
+        const label = n.via?.label ? `${n.from.label} → ${n.via.label} → ${n.to.label}` : `${n.from.label} → ${n.to.label}`;
         return chip(`data-fav-nav="${i}"`, `data-remove-nav="${i}"`, '', label, label);
     }).join('');
 
@@ -2610,7 +2611,7 @@ $('#favsModal').addEventListener('click', e => {
         if (!$('#navSection').hidden) renderNavFav();
     } else if (d.favNav) {
         const n = LS.getFavNavs()[Number(d.favNav)];
-        if (n) openNav(n.from, n.to);
+        if (n) openNav(n.from, n.to, { via: n.via?.lat != null && n.via?.lng != null ? n.via : null });
     }
 });
 

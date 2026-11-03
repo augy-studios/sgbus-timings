@@ -1126,6 +1126,8 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
     white-space: nowrap;
     text-align: left;
 }
+/* A nav's chip, A → stop → B, wraps rather than cutting off its stop or its end (script.js). */
+#favNavChips .chip .name { max-width: none; white-space: normal; overflow-wrap: anywhere; }
 
 .chip:hover .code,
 .chip:hover .name {
@@ -1999,6 +2001,8 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 .stepArrive { color: var(--ink); font-size: 0.875rem; }
 /* A nav's walk: what to walk, then its Directions (js/nav.js). */
 .walkBody { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+/* Which exit to leave a station by, before the walk from it (js/nav.js, fromExit). */
+.walkExit { font-weight: 700; }
 .walkApps { display: flex; flex-wrap: wrap; gap: 6px; }
 
 .stepLeg {
@@ -2029,6 +2033,17 @@ body.on-trip .tray-buttons { max-height: calc(100dvh - var(--hud-top) - 24px - v
 }
 .doorHead { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 700; }
 .doorHead .ico { color: var(--muted-strong); }
+/* Navigate's panel folds to its heading (js/nav.js doorsPanel): the heading's the button, with a
+   chevron that turns when it's open. */
+details.legDoors { align-self: stretch; box-sizing: border-box; width: 100%; }
+details.legDoors > summary { list-style: none; cursor: pointer; -webkit-tap-highlight-color: transparent; text-align: start; }
+details.legDoors > summary::-webkit-details-marker { display: none; }
+details.legDoors > summary > span:not(.ico) { flex: 1; min-width: 0; }
+details.legDoors > summary > .ico:last-child { transition: transform 0.2s ease; transform: rotate(180deg); }
+details.legDoors[open] > summary > .ico:last-child { transform: none; }
+details.legDoors:not([open]) { gap: 0; }
+details.legDoors > summary:focus-visible { outline: 2px solid var(--brand-ink); outline-offset: 4px; border-radius: 6px; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .doorRows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 /* On one line: the icon, its doors, then what it is and where to. */
 .doorRow {

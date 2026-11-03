@@ -188,7 +188,7 @@ export function plan(graph, from, to, { open = null, customs = null, wait = null
     }
   }
 
-  const options = [...byMix.values()].map((o) => toOption(graph, o)).filter(Boolean);
+  const options = [...byMix.values()].map((o) => toOption(graph, o, from, to)).filter(Boolean);
   // An end with no stop or station within a walk: how far off the nearest one is, in metres.
   if (starts.far != null || ends.far != null) {
     const far = { ...(starts.far != null && { from: starts.far }), ...(ends.far != null && { to: ends.far }) };
@@ -221,6 +221,40 @@ function haversineDirect(a, b) {
 
 const nodeRef = (n) => ({ kind: n.kind, code: n.code, name: n.name, lat: n.lat, lng: n.lng });
 
+// ---------- station exits ----------
+// A walk to or from a station goes to or from its exit nearest the walk's other end, as the
+// walk's metres are measured (network.js, metresTo), and says which: `toExit` and `fromExit`,
+// each { name, lat, lng }, its name as the station's signs have it ("A") or "" where the data
+// has none. A walk between two stations takes the two exits nearest each other.
+const exitsOf = (n) => (n?.kind === "station" && n.exits?.length ? n.exits.map(([lat, lng], i) => ({ name: n.exitNames?.[i] || "", lat, lng })) : null);
+
+function nearestExit(exits, p) {
+  let best = null;
+  let bestM = Infinity;
+  for (const e of exits) {
+    const m = haversineDirect(e, p);
+    if (m < bestM) { best = e; bestM = m; }
+  }
+  return best;
+}
+
+// The exits for a walk from `a` to `b`, each a node or a place { lat, lng }. Exported for
+// scripts/nav-exits-test.mjs.
+export function walkExits(a, b) {
+  const ea = exitsOf(a);
+  const eb = exitsOf(b);
+  if (ea && eb) {
+    let pair = null;
+    let bestM = Infinity;
+    for (const x of ea) for (const y of eb) {
+      const m = haversineDirect(x, y);
+      if (m < bestM) { pair = [x, y]; bestM = m; }
+    }
+    return { fromExit: pair[0], toExit: pair[1] };
+  }
+  return { ...(ea && b && { fromExit: nearestExit(ea, b) }), ...(eb && a && { toExit: nearestExit(eb, a) }) };
+}
+
 // Each option's rides as [run, board index, minutes in when boarded], for runsThroughout.
 const ridesOf = new WeakMap();
 
@@ -231,7 +265,7 @@ export function runsThroughout(option, open) {
 }
 
 // A chain of labels back to the start, as legs a person reads: walk, ride, walk.
-function toOption(graph, { total, label, end }) {
+function toOption(graph, { total, label, end }, from = null, to = null) {
   const chain = [];
   for (let l = label; l; l = l.prev.label) chain.unshift(l);
   const legs = [];
@@ -239,9 +273,10 @@ function toOption(graph, { total, label, end }) {
   for (const l of chain) {
     const node = graph.nodes[l.node];
     if (l.prev.kind === "access") {
-      legs.push({ mode: "walk", metres: Math.round(l.prev.metres), minutes: l.t, to: nodeRef(node) });
+      legs.push({ mode: "walk", metres: Math.round(l.prev.metres), minutes: l.t, to: nodeRef(node), ...walkExits(from, node) });
     } else if (l.prev.kind === "walk") {
-      legs.push({ mode: "walk", metres: Math.round(l.prev.metres), minutes: l.t - l.prev.label.t, from: nodeRef(graph.nodes[l.prev.from]), to: nodeRef(node) });
+      const was = graph.nodes[l.prev.from];
+      legs.push({ mode: "walk", metres: Math.round(l.prev.metres), minutes: l.t - l.prev.label.t, from: nodeRef(was), to: nodeRef(node), ...walkExits(was, node) });
     } else {
       const run = graph.runs[l.prev.run];
       const { from, to, crossed } = l.prev;
@@ -276,7 +311,7 @@ function toOption(graph, { total, label, end }) {
       rides.push([run, from, leg.board]);
     }
   }
-  legs.push({ mode: "walk", metres: Math.round(end.metres), minutes: end.min, to: { kind: "place" } });
+  legs.push({ mode: "walk", metres: Math.round(end.metres), minutes: end.min, to: { kind: "place" }, ...walkExits(graph.nodes[label.node], to) });
 
   // Walks of nothing (starting or ending right at a stop) say nothing.
   const kept = legs.filter((l) => l.mode !== "walk" || l.metres >= 20);

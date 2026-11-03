@@ -1,6 +1,6 @@
 // Builds main-site/data/rail.json, the MRT and LRT network the nav router rides on, on the
 // server and on the phone offline (main-site/js/nav-core/network.js):
-// every station with its codes, position and exits, and each line's stations in order with
+// every station with its codes, position and exits (and each exit's name), and each line's stations in order with
 // the links between neighbours. Vendored, never fetched at runtime, the way mrtroute-game
 // does it, and from the same snapshot.
 //
@@ -33,6 +33,9 @@ const stations = stationsGeo.features.map((f) => ({
   lat: round(f.geometry.coordinates[1]),
   lng: round(f.geometry.coordinates[0]),
   exits: [],
+  // Each exit's name, as the station's signs have it ("A", "B"), in the order of `exits`: for
+  // Navigate's walks to and from the nearest (main-site/js/nav-core/router.js).
+  exitNames: [],
 }));
 const byCode = new Map();
 stations.forEach((s, i) => s.codes.forEach((c) => byCode.set(c, i)));
@@ -45,6 +48,7 @@ for (const f of sgRail.features) {
   const i = byCode.get(code);
   if (i == null) continue;
   stations[i].exits.push([round(f.geometry.coordinates[1]), round(f.geometry.coordinates[0])]);
+  stations[i].exitNames.push(String(f.properties.name || "").trim());
   exits++;
 }
 

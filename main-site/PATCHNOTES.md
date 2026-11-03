@@ -9,6 +9,40 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 3 November 2026: The nearest exit, folding doors, saved stops, and the app's language
+
+### Web app
+
+- **The nearest exit** - Navigate's walks to and from a station go by its exit nearest the walk's other end, and say which: Walk ~276 m to Tampines station, Exit F, and Leave Serangoon station by Exit G. Directions, the live map and a trip started from the way walk you to and from that exit, not the middle of the station.
+- **Doors fold away** - A train ride's doors panel in Navigate starts folded to its line, such as Changing at MacPherson for the Circle Line. Tap it to see the doors, and again to fold it; it stays as you left it while live timings come in. Explorer's are always shown.
+- **Saved navs keep their stop** - Save nav with a stop on the way saves the stop too, and opening it from Favourites puts it back. Favourites shows it as Home → Gym → Work, apart from Home → Work. It syncs with your other devices and the Telegram bot.
+- **The whole page in a bug report** - Screenshot this page takes the whole page, top to bottom, not only the part on the screen.
+- **Bug report IDs** - A report sent says its ID, such as 20261103-7K3Q, to mention if you write to Augy about it.
+
+### Telegram bot
+
+- **Saved navs keep their stop** - A nav saved on the web with a stop on the way keeps it in /mynavs, planned by way of it, with Remove the stop on the way to go straight there.
+- **The nearest exit** - A way's walks say which exit to use, as on the web.
+
+### Android app 2.3.1
+
+- The web app's changes above.
+- **The app's language** - On Android 13 and later, Settings, Apps, SG Bus Timings, Language picks the app's language, and it's the same as the app's own Language in Settings: change either and the other follows, the app's notifications, widget and update page too.
+
+### Desktop app 2.3.1
+
+- The web app's changes above.
+
+### Linux command line 2.3.1
+
+- `sgbus nav` takes `--via` for a stop on the way, kept with `--save`, and says which exit to use at each station.
+
+### Guide
+
+- New and retaken screenshots of the nearest exit, the folding doors, a saved nav with its stop, and a bug report's ID and whole-page screenshot.
+
+---
+
 ## 3 November 2026: 100 rides, in the right words
 
 ### Web app

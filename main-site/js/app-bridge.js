@@ -22,6 +22,14 @@
 //   AppBridge.call(plugin, method, {}) a plugin's answer (the Capacitor app only)
 //   AppBridge.on(plugin, event, fn)    a plugin's events, as { remove() } (the same)
 //   AppBridge.notify({...})            a notification from the app (the same; SgBusPlugin)
+//   AppBridge.tellLanguage(code)       the app's own language set to the page's (2.3.1)
+//
+// The page's Language and the app's own (Android's per-app languages, 2.3.1, "applang") follow
+// each other. Picking one in Settings tells the app (js/i18n.js, set). The app's, picked in
+// Android's settings, is what the page opens in, and a change to it while the page is open is
+// followed at once ("language" events); "System default" there drops the page's choice too. An
+// app language not set yet, as on the first open after updating, is set to the page's choice
+// if it has one.
 // Plain script: exports go on window.
 (function () {
   const cap = window.Capacitor;
@@ -135,6 +143,27 @@
   // is where tapping it opens.
   const notify = (n) => call('SgBus', 'notify', { ...n, url: n.url ? new URL(n.url, location.origin).href : undefined });
 
+  // ---------- the app's own language (2.3.1) ----------
+
+  const canLang = () => native && !!hello?.features?.includes('applang');
+  // The page's language as the app's: a promise, or null where the app can't.
+  const tellLanguage = (code) => (canLang() ? call('SgBus', 'setLanguage', { lang: code }).catch(() => null) : null);
+  // The app's language (a tag, "" for the phone's) as the page's.
+  function followLanguage(tag) {
+    const I = window.I18n;
+    if (!I) return;
+    if (!tag) return I.unset();
+    const code = I.match(tag);
+    if (code && code !== I.lang()) I.set(code);
+  }
+  window.addEventListener('app:ready', () => {
+    if (!canLang()) return;
+    const appLang = typeof hello.lang === 'string' ? hello.lang : '';
+    if (appLang) followLanguage(appLang);
+    else if (window.I18n?.chosen()) tellLanguage(window.I18n.chosen());
+    on('SgBus', 'language', (d) => followLanguage(typeof d?.lang === 'string' ? d.lang : ''));
+  });
+
   window.AppBridge = {
     native,
     has: (feature) => !!hello?.features?.includes(feature),
@@ -144,6 +173,7 @@
     on,
     allow,
     notify,
+    tellLanguage,
     version: () => hello?.version || null,
   };
 })();

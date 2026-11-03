@@ -52,8 +52,9 @@ buses run. Behind a proxy, start `serve.cjs` with `NODE_USE_ENV_PROXY=1`.
 same whenever it's taken. The help desk #13 groups (`near-me`, `bug-report`, `explorer-back`,
 `campus`, `campus-ntu`, `campus-timings`, `sgh`, `map-save`), `bus-times` and 2.3.0's (`coins`,
 `colours`, `shuttles`, `nav-shuttle`, `shuttle-setting`) and the secret pages' (`eggs`,
-`secrets`, `console`) are always still; `nav-shuttle` plans
-with this checkout's own router, as the live site may not have the shuttles yet; the campus ones draw
+`secrets`, `console`) are always still, and so are 3 November 2026's (`nav-exits`,
+`nav-save-stop`, `bug-whole`); `nav-shuttle`, `nav-exits` and `nav-save-stop` plan
+with this checkout's own router, as the live site may not have the shuttles or the exits yet; the campus ones draw
 the shuttles along their roads from the live site's `/api/road`. Explorer's offline 3D shot
 (`explorer-offline-3d.png`) is the light zoom 16 view from
 `SCALE=3 SHOTS=<folder> node ../scripts/map-save-3d-test.cjs`, the map saved and the
