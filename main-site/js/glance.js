@@ -20,7 +20,10 @@
   const KEY = 'sgbus_glance';
   const OFF_KEY = 'sgbus_glance_off';
   const ASKED_KEY = 'sgbus_glance_near';
+  // Nearby and a place's: the nearest few. Saved stops and a list's are ones you picked, so all
+  // of them, up to CHOSEN_STOPS (bug report 20261104-ZGP2: a list's fifth stop never showed).
   const STOPS = 4;
+  const CHOSEN_STOPS = 12;
   const ROWS = 6;
   const PLACE_M = 500;
   const M_PER_MIN = 80;
@@ -96,11 +99,11 @@
     // A list's stops, and the stops it has a bus at, in the order put in it.
     if (src.list) {
       const codes = [...new Set(src.list.items.map((k) => k.match(/^stop(?:bus)?:(\d{5})/)?.[1]).filter(Boolean))];
-      return codes.slice(0, STOPS).map((code) => ({ code }));
+      return codes.slice(0, CHOSEN_STOPS).map((code) => ({ code }));
     }
     if (src.key === 'saved') {
       const codes = [...new Set([...LS.getFavs().map((f) => f.code), ...LS.getFavStopBuses().map((b) => b.code)])];
-      return codes.slice(0, STOPS).map((code) => ({ code }));
+      return codes.slice(0, CHOSEN_STOPS).map((code) => ({ code }));
     }
     await ensureStopsIndex();
     if (src.key === 'near') {
