@@ -2671,6 +2671,8 @@ function routeFromHash() {
     // A short share link (js/share.js), sent on here by api/share-page.js: a place or
     // directions open Navigate, live progress opens over the page.
     if ((m = hash.match(/^share\/([a-z0-9]{10})$/))) { Share.open(m[1]); return true; }
+    // A team run's invite (js/team.js): Achievements, with its code to join by.
+    if ((m = hash.match(/^team\/([a-z0-9]{10})$/))) { history.replaceState(null, '', location.pathname); window.Team?.fromLink(m[1]); return true; }
     // The installed app's shortcuts (manifest.json): the stops around you, and Navigate empty.
     if (hash === 'near') { MainScreen.open('timings'); closeStop(); showNearStops({ ask: true }); return true; }
     if (hash === 'nav') { openNav(); return true; }

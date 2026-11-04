@@ -161,6 +161,11 @@
     keep(rec);
     // Towards First to last and Ends of the island (js/eggs.js).
     window.Eggs?.rideDone?.(leg);
+    // Your team run's, if you're in one (js/team.js): only a ride judged real, as here.
+    const mode = leg.kind === 'train' ? 'train' : 'bus';
+    const line = mode === 'train' ? lineOf(leg) : '';
+    const bus = mode === 'bus' ? busOf(leg) : '';
+    if (line || bus) window.Team?.ride?.({ mode, line, bus, ...(window.Eggs?.rideMarks?.(leg) || {}) });
     checkUnlock(rec);
     // Nearly there: the celebration's three.js fetched ahead, in case the last line's offline.
     if (!linesFound() && LINES.filter((l) => !(rec.lines[l]?.n >= 1)).length <= 2) window.Celebrate?.prefetch();

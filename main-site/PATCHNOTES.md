@@ -9,11 +9,13 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 4 November 2026: A shared feat closes
+## 4 November 2026: Team runs, a shared feat closes, and every stop in a list on Glance
 
 ### Web app
 
+- **Team runs** - Speedrun the feats with friends. In Settings, Achievements, Team run, one of you starts a team with a name and sends the invite; the rest join with its link or code, up to eight of you. Rides and trips any of you take count for the whole team, and everyone gets each feat the team does, with its 100 uwuCoins. Hand a trip on by starting yours where a teammate's ended, within 30 minutes, and it counts as one trip, for The long way round, There and back again and Down the old railway: Continue from there plans from where they got to. Only rides your phone's location shows you took count, as ever, and only feats done after you joined. A team run ends 14 days after its last ride.
 - **A shared feat closes** - Opening someone's feat link showed their feat, but Later, the close button or a tap outside only brought it back again. Now any of them closes it, as with any other window.
+- **Every stop in a list on Glance** - Glance showed only the first four stops of a list or of your saved stops, so a stop added after those never showed. Now it shows every stop you've picked, up to twelve. Nearby and a place still show the nearest four.
 
 ---
 

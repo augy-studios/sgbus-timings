@@ -1,15 +1,19 @@
 # Share links setup
 
 Navigate's **Share** makes short links (`/go/…`, `/trip/…`, `/eta/…`) kept in
-Supabase, and so does Achievements' **Share** (`/feat/…`). Without it, Share still works with nothing set (the plain `#nav` link),
-but every short link answers "Sharing is not set up yet."
+Supabase, and so does Achievements' **Share** (`/feat/…`). Achievements' **Team run** keeps its
+teams there too. Without it, Share still works with nothing set (the plain `#nav` link),
+but every short link answers "Sharing is not set up yet.", and Team run "Team runs are not set up yet."
 
 1. Create a Supabase project, or use an existing one.
 2. In its **SQL Editor**, run [`migrations/0001_share_links.sql`](../migrations/0001_share_links.sql)
    from the repo root. That makes the `share_links` table, with row level security on
    and no policies, so only the service key reaches it. Then run
    [`migrations/0002_share_links_feat.sql`](../migrations/0002_share_links_feat.sql),
-   which lets the table keep feat links too.
+   which lets the table keep feat links too, and
+   [`migrations/0003_team_runs.sql`](../migrations/0003_team_runs.sql), which makes the
+   `team_runs`, `team_members` and `team_events` tables for Achievements' **Team run**
+   (`api/team.js`), the same way.
 3. In **Project Settings → API**, copy the project URL and the `service_role` key
    (or a newer `sb_secret_…` key).
 4. In the Vercel project's **Settings → Environment Variables**, set:

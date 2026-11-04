@@ -922,6 +922,37 @@
                 <p class="mode-note" data-i18n="achievements.ridesNote">Rides count here once your phone’s location shows you took them, so these can be fewer than the rides in Your trips.</p>
                 <!-- A card for socials, with a link (js/share.js, Share.feat) -->
                 <button id="achievementsShare" class="iconBtn settingsWide" type="button" hidden><span data-icon="share"></span> <span data-i18n="achievements.shareAll">Share your achievements</span></button>
+                <!-- Team run (js/team.js): the feats speedrun together, joined by a code or a #team/<code> link -->
+                <p class="modal-section-label" data-find="team run relay speedrun friends together group" data-i18n="team.title">Team run</p>
+                <div id="teamOut">
+                    <p class="mode-note" data-i18n="team.about">Speedrun the feats with friends. Rides and trips any of you take count for the whole team, and everyone gets each feat the team does, with its 100 uwuCoins. Hand a trip on by starting yours where a teammate&rsquo;s ended, within 30 minutes.</p>
+                    <label class="modal-section-label" for="teamYou" data-i18n="team.yourName">Your name in the team</label>
+                    <input id="teamYou" class="input settingsInput" maxlength="30" autocomplete="nickname" />
+                    <label class="modal-section-label" for="teamName" data-i18n="team.name">Start a team run</label>
+                    <div class="settingsRow">
+                        <input id="teamName" class="input settingsInput" maxlength="30" data-i18n-placeholder="team.namePlaceholder" placeholder="Team name, such as Night Owls" />
+                        <button id="teamCreate" class="btn" type="button" data-i18n="team.create">Start</button>
+                    </div>
+                    <label class="modal-section-label" for="teamCode" data-i18n="team.code">Or join one with its code</label>
+                    <div class="settingsRow">
+                        <input id="teamCode" class="input settingsInput" maxlength="10" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="abcde12345" />
+                        <button id="teamJoin" class="btn" type="button" data-i18n="team.join">Join</button>
+                    </div>
+                </div>
+                <div id="teamIn" hidden>
+                    <p id="teamHead" class="teamHead"></p>
+                    <p id="teamMembers" class="mode-note"></p>
+                    <p id="teamSummary" class="mode-note"></p>
+                    <div id="teamHandoff" class="teamHandoff" hidden>
+                        <p id="teamHandoffText" class="mode-note"></p>
+                        <button id="teamContinue" class="btn settingsWide" type="button"><span data-icon="navigate"></span> <span data-i18n="team.continue">Continue from there</span></button>
+                    </div>
+                    <ul id="teamList" class="achievements"></ul>
+                    <button id="teamInvite" class="iconBtn settingsWide" type="button"><span data-icon="share"></span> <span data-i18n="team.invite">Invite to the team</span></button>
+                    <p class="mode-note" data-i18n="team.rules">Only rides your phone&rsquo;s location shows you took count, as in your own Achievements. A team run ends 14 days after its last ride.</p>
+                    <button id="teamLeave" class="iconBtn settingsWide" type="button" data-i18n="team.leave">Leave the team run</button>
+                </div>
+                <p id="teamMsg" class="mode-note" role="status" hidden></p>
                 <p class="modal-section-label" data-find="easter eggs secrets wheel" data-i18n="eggs.title">Easter eggs</p>
                 <p class="mode-note coinsOnly" data-i18n="achievements.eggsNote">Each feat is worth 100 uwuCoins once. Its Easter egg comes from the uwuCoins wheel, in Help and extras.</p>
                 <p id="achievementsEggs" class="mode-note"></p>
@@ -1630,6 +1661,8 @@
     <script src="/js/celebrate.js"></script>
     <!-- Past trips, from before uwuCoins: their coins and feats, once (js/retrofit.js) -->
     <script src="/js/retrofit.js"></script>
+    <!-- Team runs: the feats done together (js/team.js) -->
+    <script src="/js/team.js"></script>
     <script src="/js/lang-pick.js"></script>
     <script src="/js/bug-report.js"></script>
 </body>

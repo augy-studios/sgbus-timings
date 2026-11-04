@@ -13,6 +13,9 @@ and the feats are the quickest way to the coins for spinning.
 [Achievements](uwucoins.md#achievements) in Settings shows how far along each
 feat is. This page shows how to do each one.
 
+Doing them with friends? A [team run](#team-runs) counts everyone's rides and
+trips together.
+
 ## What counts as a real ride
 
 Every feat needs rides you really take, with the
@@ -157,6 +160,30 @@ each counts once a ride that ends there is shown to be real.
 <img src="/screenshots/web/feat-ends.png" alt="A window with confetti: You did something special! Ends of the island. You got off a train at Tuas Link, Woodlands North, Punggol Coast and Changi Airport. +100 uwuCoins, for a spin of the wheel in Settings. 2 of 9 feats done. Spin the wheel, Later." width="396" height="296" loading="lazy">
 <figcaption>Ends of the island, done.</figcaption>
 </figure>
+
+## Team runs
+
+Speedrunning every feat is easier as a team. In Settings, **Achievements**,
+**Team run**:
+
+1. One of you puts in a team name and taps **Start**.
+2. Tap **Invite to the team** and send the link, or read out the ten-letter
+   code. The others open the link, or put the code in under **Or join one with
+   its code**, and tap **Join**. Up to eight can be in a team at once.
+3. Go. Every real ride and every trip taken with the Get Off Alert to the end,
+   by any of you, counts for the whole team. When the team finishes a feat,
+   everyone in it gets the feat and its 100 uwuCoins, said as the team's.
+
+A trip can be **handed on**: when a teammate's trip ends, start yours within
+400 m of where they got to and within 30 minutes, and the two count as one
+trip, for **The long way round**, **There and back again** and **Down the old
+railway**. Achievements shows the others **Continue from there** while
+there's time, which plans from where they got to. Your own two trips back to
+back aren't one; the hand-off has to be to someone else.
+
+The same checks as ever apply: only rides your phone's location shows you
+took count. A feat the team did before you joined isn't yours. Leaving keeps
+the feats you've had from it. A team run ends 14 days after its last ride.
 
 ## Spin for the eggs
 

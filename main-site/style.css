@@ -4087,6 +4087,10 @@ body.touring { overflow: hidden; }
 .achievementHow { margin: 4px 0 8px; font-size: 0.85rem; color: var(--muted-strong); }
 .achievementBar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 12%, transparent); overflow: hidden; }
 .achievementBar span { display: block; height: 100%; border-radius: inherit; background: var(--brand-ink); }
+.achievementTeam { margin: 0 0 8px; font-size: 0.8rem; font-weight: 700; color: var(--brand-ink); }
+.teamHead { margin: 4px 0; color: var(--ink); }
+.teamHandoff { margin: 8px 0 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--brand-ink); background: var(--surface-strong); }
+.teamHandoff .mode-note { margin-top: 0; }
 .achievementEgg { margin: 6px 0 0; font-size: 0.8rem; font-weight: 700; color: var(--brand-ink); }
 /* A feat done's Share (js/eggs.js), for its card (js/share.js, Share.feat) */
 .achievementShare { margin-top: 8px; padding: 6px 10px; }

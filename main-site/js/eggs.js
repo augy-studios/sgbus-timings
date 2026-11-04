@@ -49,6 +49,11 @@
 // a short /feat/<id> link (js/share.js, Share.feat). Opened, the link says what was done, here
 // in #eggModal, with how far along the person opening it is (showShared).
 //
+// Team runs (Augy, 4 November 2026, js/team.js): a team's rides and trips, from every member's
+// phone, do the feats together, and each member gets the feat done and its coins, said as the
+// team's (feat(id, { team }), TEAM_FEATS_KEY). Each phone sends its own real rides (rideMarks)
+// and trips (tripDone) to the team; nothing here is synced otherwise.
+//
 // Window.Eggs = { feat(id), found(id), progress(), rides(record), tripDone(trip), pastTrip(trip),
 // gather(fn), feats(), list(), has(secret), presets(), name(id), doneOn(id), showShared(data), all }. Past trips, from before
 // uwuCoins, do their feats once (js/retrofit.js: pastTrip, inside gather). The console's
@@ -63,6 +68,7 @@
   const PHONE_KEY = 'sgbus_phone_colours_unlocked';
   const MATERIAL_KEY = 'sgbus_material_unlocked'; // index.html's head
   const TOLD_KEY = 'sgbus_eggs_told';
+  const TEAM_FEATS_KEY = 'sgbus_team_feats'; // js/team.js
   const MARKS_KEY = 'sgbus_feat_marks';
   const FIRST_LAST = ['01012', '99189'];
   const HUNDRED = 100;
@@ -206,12 +212,15 @@
 
   // ---------- a feat done ----------
 
-  // `quiet`: not said (simulateEgg('all')), and never said later either.
-  function feat(id, { quiet = false } = {}) {
+  // `quiet`: not said (simulateEgg('all')), and never said later either. `team`: done by a team
+  // run you're in (js/team.js), its name, kept under TEAM_FEATS_KEY for Achievements to say so;
+  // the feat and its coins are yours all the same, as Augy wanted (4 November 2026).
+  function feat(id, { quiet = false, team = null } = {}) {
     if (!EGGS[id] || read(FEATS_KEY)[id]) return false;
     const all = read(FEATS_KEY);
     all[id] = Date.now();
     put(FEATS_KEY, JSON.stringify(all));
+    if (team) put(TEAM_FEATS_KEY, JSON.stringify({ ...teamFeats(), [id]: { team: String(team), at: all[id] } }));
     // Done by past trips (gather): kept for js/retrofit.js to say all at once, with no coin
     // floating up for each.
     if (gathered) {
@@ -222,11 +231,17 @@
       return true;
     }
     if (quiet) tell(`feat:${id}`);
-    window.Coins?.add(FEAT_COINS, { why: 'feat', feat: id });
+    window.Coins?.add(FEAT_COINS, { why: 'feat', feat: id, ...(team && { team: String(team) }) });
     window.dispatchEvent(new CustomEvent('eggs:feat', { detail: { id } }));
     announce(id);
     return true;
   }
+
+  // The feats a team run did for you: { id: { team, at } }.
+  const teamFeats = () => {
+    const v = readJson(TEAM_FEATS_KEY, {});
+    return v && typeof v === 'object' ? v : {};
+  };
 
   // The feats `fn` does, done without a window or a coin each, for js/retrofit.js to say
   // together: their ids.
@@ -254,7 +269,8 @@
     if (!document.getElementById('eggModal')) return;
     document.getElementById('eggTitle').textContent = tr('eggs.featDone', 'You did something special!');
     document.getElementById('eggName').textContent = EGGS[id].name();
-    document.getElementById('eggHow').textContent = EGGS[id].how();
+    const team = teamFeats()[id]?.team;
+    document.getElementById('eggHow').textContent = team ? tr('eggs.teamHow', 'Your team run, {team}, did it together: {goal}', { team, goal: EGGS[id].goal() }) : EGGS[id].how();
     document.getElementById('eggGot').textContent = coins;
     document.getElementById('eggCount').textContent = tr('eggs.featCount', '{n} of {all} feats done', { n: feats().length, all: IDS.length });
     const go = document.getElementById('eggGo');
@@ -290,7 +306,7 @@
         need = Object.keys(ENDS).length;
         have = done[id] ? need : Object.keys(ENDS).filter((c) => marks().ends[c]).length;
       }
-      return { id, name: e.name(), how: done[id] ? e.how() : e.goal(), done: !!done[id], have, need, egg: !!eggs[id] };
+      return { id, name: e.name(), how: done[id] ? e.how() : e.goal(), done: !!done[id], have, need, egg: !!eggs[id], team: done[id] ? teamFeats()[id]?.team || null : null };
     });
   }
 
@@ -311,6 +327,7 @@
       return `<li class="achievement${a.done ? ' done' : ''}">` +
         `<div class="achievementHead"><strong>${esc(a.name)}</strong><span class="achievementState">${esc(state)}</span></div>` +
         `<p class="achievementHow">${esc(a.how)}</p>` +
+        (a.team ? `<p class="achievementTeam">${esc(tr('achievements.withTeam', 'Done with your team run, {team}', { team: a.team }))}</p>` : '') +
         `<div class="achievementBar" role="progressbar" aria-valuemin="0" aria-valuemax="${a.need}" aria-valuenow="${a.have}" aria-label="${esc(a.name)}"><span style="width:${pct}%"></span></div>` +
         (a.egg ? `<p class="achievementEgg">${esc(tr('achievements.eggFound', 'Its Easter egg: found'))}</p>` : '') +
         (a.done ? `<button type="button" class="iconBtn achievementShare" data-feat-share="${a.id}">${window.icon ? `<span class="ico" aria-hidden="true">${window.icon('share')}</span>` : ''}<span>${esc(tr('achievements.share', 'Share'))}</span></button>` : '') +
@@ -360,18 +377,28 @@
     const v = readJson(MARKS_KEY, {});
     return { first: v?.first || {}, ends: v?.ends || {} };
   };
+  // What a ride is towards those two: { first: the FIRST_LAST codes it got on or off at, end: the
+  // ENDS station it got off at, or null }. A team run's rides too (js/team.js).
+  function rideMarks(leg) {
+    const out = { first: [], end: null };
+    if (!leg || !Array.isArray(leg.points) || leg.points.length < 2) return out;
+    if (leg.kind === 'bus') {
+      const codes = [leg.board, leg.alight, leg.codes?.[0], leg.codes?.[leg.codes.length - 1]].filter(Boolean).map(String);
+      out.first = FIRST_LAST.filter((code) => codes.includes(code));
+    } else if (leg.kind === 'train') {
+      const end = leg.points[leg.points.length - 1];
+      out.end = Object.keys(ENDS).find((code) => metres(end, ENDS[code]) <= ENDS_M) || null;
+    }
+    return out;
+  }
   function rideDone(leg) {
     if (!leg || !Array.isArray(leg.points) || leg.points.length < 2) return;
     const m = marks();
     const now = Date.now();
     let changed = false;
-    if (leg.kind === 'bus') {
-      const codes = [leg.board, leg.alight, leg.codes?.[0], leg.codes?.[leg.codes.length - 1]].filter(Boolean).map(String);
-      for (const code of FIRST_LAST) if (codes.includes(code) && !m.first[code]) { m.first[code] = now; changed = true; }
-    } else if (leg.kind === 'train') {
-      const end = leg.points[leg.points.length - 1];
-      for (const [code, at] of Object.entries(ENDS)) if (!m.ends[code] && metres(end, at) <= ENDS_M) { m.ends[code] = now; changed = true; }
-    }
+    const got = rideMarks(leg);
+    for (const code of got.first) if (!m.first[code]) { m.first[code] = now; changed = true; }
+    if (got.end && !m.ends[got.end]) { m.ends[got.end] = now; changed = true; }
     if (changed) put(MARKS_KEY, JSON.stringify(m));
     if (FIRST_LAST.every((c) => m.first[c])) feat('first');
     if (Object.keys(ENDS).every((c) => m.ends[c])) feat('ends');
@@ -389,6 +416,8 @@
     const via = trip.origin?.via;
     const viaAt = via && Number.isFinite(via.lat) ? [via.lat, via.lng] : null;
     tripFeats(start, end, Date.now() - trip.startedAt, viaAt && metres(start, viaAt) >= LOOP_AWAY_M);
+    // Your team run's, if you're in one, for a trip handed on to put together (js/team.js).
+    window.Team?.tripDone?.({ start, end, via: viaAt, startedAt: trip.startedAt, endedAt: Date.now() });
   }
 
   // A trip's feats, by where it started and ended, how long it took, and whether it went by way
@@ -528,7 +557,7 @@
   const EGG_HELP = `simulateEgg(id) does a feat, with its window and ${FEAT_COINS} uwuCoins; simulateEgg(id, 'egg') finds its Easter egg, as the wheel would. ids: ${IDS.join(', ')}. simulateEgg('all') does every feat, simulateEgg('all', 'egg') finds every egg, simulateEgg('undo') takes every feat, egg and secret away again (not the coins), simulateEgg('help') shows this.`;
   window.simulateEgg = (id, what) => {
     if (id === 'undo') {
-      for (const k of [FEATS_KEY, EGGS_KEY, UNLOCKED_KEY, PHONE_KEY, MATERIAL_KEY, TOLD_KEY]) put(k, null);
+      for (const k of [FEATS_KEY, EGGS_KEY, UNLOCKED_KEY, PHONE_KEY, MATERIAL_KEY, TOLD_KEY, TEAM_FEATS_KEY]) put(k, null);
       window.Colours?.paint(null);
       window.Material?.stop();
       window.dispatchEvent(new Event('eggs:unlocked'));
@@ -565,5 +594,8 @@
     "Each says more with 'help', such as simulateCoins('help').",
   ].join('\n'));
 
-  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, rideDone, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, doneOn, showShared, all: IDS, KTM, FEAT_COINS };
+  window.Eggs = { feat, found, progress, renderAchievements, prizeText, rides, rideDone, tripDone, pastTrip, gather, feats, list, has, presets, settle, name: (id) => EGGS[id]?.name() || id, doneOn, showShared, all: IDS, KTM, FEAT_COINS,
+    // For js/team.js, which works out a team run's feats by the same rules.
+    rideMarks, metres, goal: (id) => EGGS[id]?.goal() || '', buses: (id) => EGGS[id]?.buses || null, FIRST_LAST, ENDS: Object.keys(ENDS),
+    RULES: { LOOP_M, LOOP_AWAY_M, LONG_MS, KTM_M, HUNDRED } };
 })();
