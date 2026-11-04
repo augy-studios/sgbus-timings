@@ -516,8 +516,11 @@
     else if (kind === 'directions') openNavAt(data.from, data.to, data.when, data.way, data.via || null);
     else if (kind === 'eta') openEtaView(id, { data, updatedAt: got.updatedAt });
     else if (kind === 'feat') {
-      window.Eggs?.showShared(data);
+      // The address put away before the window opens, not after: its step (js/ui.js) goes on top
+      // of this one, and closing it steps back here. Still at #share/<id>, that step back was a
+      // hashchange to the link again, which opened the window again, and again.
       if (location.hash.startsWith('#share/')) history.replaceState(null, '', location.pathname);
+      window.Eggs?.showShared(data);
     }
   }
 

@@ -1,11 +1,19 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 3 November 2026**
+**Latest update: 4 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 4 November 2026: A shared feat closes
+
+### Web app
+
+- **A shared feat closes** - Opening someone's feat link showed their feat, but Later, the close button or a tap outside only brought it back again. Now any of them closes it, as with any other window.
 
 ---
 
