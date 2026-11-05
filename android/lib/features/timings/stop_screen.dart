@@ -73,6 +73,8 @@ class _StopScreenState extends State<StopScreen> {
   void initState() {
     super.initState();
     Favs.I.addListener(_redraw);
+    MakeItLine.changed?.addListener(_redraw);
+    MakeItForStop.call(widget.code);
     if (!BusNet.ready) BusNet.load().then((_) => _redraw()).catchError((_) {});
     _load();
   }
@@ -80,6 +82,7 @@ class _StopScreenState extends State<StopScreen> {
   @override
   void dispose() {
     Favs.I.removeListener(_redraw);
+    MakeItLine.changed?.removeListener(_redraw);
     super.dispose();
   }
 
@@ -243,6 +246,7 @@ class _StopScreenState extends State<StopScreen> {
               if (Native.has('sticker'))
                 Pill(icon: Icons.nfc, label: 'NFC sticker', onTap: () => AppNav.open('sticker', {'url': Links.stop(code), 'label': name})),
             ]),
+            if (MakeItLine.build != null) Padding(padding: const EdgeInsets.only(top: 8), child: MakeItLine.build!(context, code, svcs)),
             // ---- notes about the stop ----
             if (restricted != null)
               _Aside(
@@ -524,6 +528,19 @@ class _Badge extends StatelessWidget {
 class MakeItHook {
   MakeItHook._();
   static bool Function(String code, int etaMs) tooSoon = (_, _) => false;
+}
+
+/// Will I make it? looks for the walk as a stop opens, once it's been asked.
+class MakeItForStop {
+  MakeItForStop._();
+  static void Function(String code) call = (_) {};
+}
+
+/// Will I make it?'s line under the tools (features/timings/make_it.dart).
+class MakeItLine {
+  MakeItLine._();
+  static Widget Function(BuildContext context, String code, List<ServiceArrivals> services)? build;
+  static ValueNotifier<int>? changed;
 }
 
 /// The Android app's last bus reminder bell beside the first and last bus (features/reminders/).
