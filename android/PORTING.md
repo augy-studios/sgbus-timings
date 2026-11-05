@@ -36,7 +36,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Disruptions bar, Service alerts, push | `js/alerts.js` | ✅ |
 | Board, Flag, Will I make it | `js/board.js`, `js/flag.js`, `js/make-it.js` | ✅ |
 | Navigate (bus and train; train doors to do) | `js/nav.js` | 🚧 |
-| Route planner (bus only) | `js/planner.js`, `js/journeys.js` | ⬜ |
+| Route planner (bus only), journeys checked against the site's | `js/planner.js`, `js/journeys.js` | ✅ |
 | Live map, Explorer | `js/map*.js` | ⬜ |
 | Places (past searches to do) | `js/places.js`, `js/recents.js` | 🚧 |
 | Calendar | `js/calendar.js` | ⬜ |

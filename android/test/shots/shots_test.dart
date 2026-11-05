@@ -5,6 +5,8 @@ import 'package:sgbus_timings/features/favs/favs_page.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
 import 'package:sgbus_timings/features/nav/nav_page.dart';
+import 'package:sgbus_timings/features/planner/planner.dart';
+import 'package:sgbus_timings/data/store.dart';
 import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';
 import 'package:sgbus_timings/features/settings/theme_screen.dart';
@@ -68,5 +70,13 @@ void main() {
     await shot(t, 'nav', () => onPage('nav', const NavPage()));
     await t.runAsync(() => n.open(n.options[1]));
     await shot(t, 'nav-way', () => onPage('nav', const NavPage()));
+    NavPage.busOnly = () => const PlannerTab();
+    Store.I.put('sgbus_nav_mode', 'bus');
+    final p = PlannerState.I
+      ..start = '84009'
+      ..end = '53009';
+    await t.runAsync(p.search);
+    await shot(t, 'planner', () => onPage('nav', const NavPage()));
+    Store.I.put('sgbus_nav_mode', null);
   });
 }

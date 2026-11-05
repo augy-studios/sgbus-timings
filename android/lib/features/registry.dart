@@ -11,6 +11,7 @@ import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
 import 'nav/nav_page.dart';
 import 'places/places_page.dart';
+import 'planner/planner.dart';
 import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
 import 'timings/board_screen.dart';
@@ -33,6 +34,8 @@ Map<String, Widget Function()> pages() => {
     };
 
 void registerFeatures() {
+  NavPage.busOnly = () => const PlannerTab();
+  AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top = () => const DisruptionBar();
   Alerts.listen();
   Alerts.startBar();

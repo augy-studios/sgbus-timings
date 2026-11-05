@@ -135,7 +135,7 @@ class BusNet {
     ready = true;
   }
 
-  static Future<void> load() => _loading ??= () async {
+  static Future<void> load() => ready ? Future.value() : _loading ??= () async {
         try {
           final payload = await Api.map('bus-routes');
           index(payload);
