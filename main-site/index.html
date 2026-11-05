@@ -57,8 +57,8 @@
                 for (var t in tokens) document.documentElement.style.setProperty(t, tokens[t]);
                 document.documentElement.setAttribute("data-custom-colours", "");
             }
-            // The Material You look (js/material.js), unlocked and on, in the Android app.
-            if (localStorage.getItem("sgbus_look") === "material" && localStorage.getItem("sgbus_material_unlocked") && window.Capacitor) document.documentElement.setAttribute("data-look", "material");
+            // The Material You look (js/material.js), on, in the Android app: never on the website.
+            if (localStorage.getItem("sgbus_look") === "material" && window.Capacitor) document.documentElement.setAttribute("data-look", "material");
             // Singapore's map saved for offline (js/map-save.js, META_KEY): Explorer stays offline.
             if (localStorage.getItem("sgbus_map_saved")) document.documentElement.setAttribute("data-map-saved", "");
         } catch (e) { /* the tray opens on the right */ }
@@ -1450,8 +1450,8 @@
                     <button id="colourReplay" class="iconBtn" type="button" data-i18n="colours.replay" hidden>Watch the celebration again</button>
                 </div>
             </section>
-            <!-- Your phone's colours: a secret too, in the Android app on Android 12 and later
-                 (js/colours.js, SgBusPlugin.phoneColours): Material You's, for the whole app -->
+            <!-- Your phone's colours: in the Android app on Android 12 and later (js/colours.js,
+                 SgBusPlugin.phoneColours): Material You's, for the whole app -->
             <section id="phoneColours" class="customColours" aria-labelledby="phoneColoursTitle" hidden>
                 <p class="modal-section-label" id="phoneColoursTitle" data-i18n="phoneColours.title">Your phone&rsquo;s colours</p>
                 <p class="mode-note" data-i18n="phoneColours.note">The whole app in your phone&rsquo;s own colours, from its wallpaper, as Android&rsquo;s apps have them. They change when your wallpaper does.</p>
@@ -1461,8 +1461,8 @@
                     <button id="phoneColoursOff" class="iconBtn" type="button" data-i18n="colours.reset" hidden>Back to the usual colours</button>
                 </div>
             </section>
-            <!-- The Material You look: a secret too, in the Android app (js/material.js): the whole
-                 app redrawn the way Android's own apps are, in whichever colours are on -->
+            <!-- The Material You look, in the Android app (js/material.js): the whole app redrawn
+                 the way Android's own apps are, in whichever colours are on -->
             <section id="materialLook" class="customColours" aria-labelledby="materialLookTitle" hidden>
                 <p class="modal-section-label" id="materialLookTitle" data-i18n="material.title">Material You</p>
                 <p class="mode-note" data-i18n="material.note">The whole app redrawn the way Android&rsquo;s own apps are: your phone&rsquo;s font, solid cards, rounder corners, pill-shaped buttons, windows that come up from the bottom, and a ripple where you tap. It goes with any colours, and best with Your phone&rsquo;s colours.</p>

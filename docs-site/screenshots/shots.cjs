@@ -1666,25 +1666,13 @@ async function drawConsole(browser, shots) {
     await shoot(P.bedokMall, P.bedokMall, { label: 'Tampines Mall', lat: 1.352448, lng: 103.944832 }, 'secret-loop-nav.png');
     await shoot({ label: 'Cantonment station', lat: 1.273115, lng: 103.837028 }, { label: 'King Albert Park station', lat: 1.33566, lng: 103.78416 }, null, 'secret-ktm-nav.png');
   }
-  // secrets: the shortcut's two places and its window, Your colours with every preset, the eggs
-  // found in Theme, and Your phone's colours in the Android app (a made-up wallpaper's palette).
+  // secrets: Your colours with every preset and the eggs found in Theme, and Your phone's colours
+  // in the 2.x Android app (a made-up wallpaper's palette). Material You is no longer a secret
+  // (5 November 2026): the Android app's own, with no unlock.
   if (want('secrets')) {
     const allEggs = Object.fromEntries(['lines', 'up', 'down', 'loop', 'long', 'ktm', 'first', 'hundred', 'ends'].map((id) => [id, Date.now()]));
-    let { ctx, page } = await open(browser, { width: 420, height: 1100, still: true });
-    await el(page, '#titleBtn', 'secret-greeting.png');
-    // The shortcut, done for real: the greeting three times, then Settings' title three times.
-    for (let i = 0; i < 3; i++) { await page.click('#greeting'); await page.waitForTimeout(120); }
-    await page.click('#settingsBtn');
-    await page.waitForTimeout(600);
-    await el(page, '#settingsModal .settingsHead', 'secret-settings-title.png');
-    for (let i = 0; i < 3; i++) { await page.click('#settingsTitle'); await page.waitForTimeout(120); }
-    await page.waitForSelector('#eggModal:not(.hidden)', { timeout: 5000 }).catch(() => console.log('no trick window'));
-    await page.waitForTimeout(600);
-    await el(page, '#eggModal .modal', 'secret-trick.png');
-    await ctx.close();
-
-    const found = { sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs), sgbus_colours_unlocked: String(Date.now()), sgbus_eggs_told: JSON.stringify(['colours', 'phone', 'material', ...Object.keys(allEggs).map((id) => `feat:${id}`)]) };
-    ({ ctx, page } = await open(browser, { width: 420, height: 2600, extra: found, still: true }));
+    const found = { sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs), sgbus_colours_unlocked: String(Date.now()), sgbus_eggs_told: JSON.stringify(['colours', ...Object.keys(allEggs).map((id) => `feat:${id}`)]) };
+    let { ctx, page } = await open(browser, { width: 420, height: 2600, extra: found, still: true });
     await page.click('#themeBtn');
     await page.waitForTimeout(600);
     await page.evaluate(() => document.querySelector('#colourPresets [data-colour-preset="ktm"]')?.click());
@@ -1702,7 +1690,7 @@ async function drawConsole(browser, shots) {
     const tones = (h, s) => Object.fromEntries([0, 10, 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000].map((t) => [String(t), hex(h, t === 0 || t === 1000 ? 0 : s, 1 - t / 1000)]));
     const palettes = { accent1: tones(18, 0.62), accent2: tones(18, 0.25), accent3: tones(48, 0.45), neutral1: tones(18, 0.08), neutral2: tones(18, 0.14) };
     const answers = { ...APP_ANSWERS, 'SgBus.info': { ...APP_ANSWERS['SgBus.info'], version: '2.3.0', features: [...APP_FEATURES, 'phonecolours'] }, 'SgBus.phoneColours': palettes };
-    const phone = { ...found, sgbus_phone_colours_unlocked: String(Date.now()) };
+    const phone = { ...found };
     ({ ctx, page } = await open(browser, { width: 420, height: 2600, extra: phone, app: true, answers, still: true }));
     await page.click('#themeBtn');
     await page.waitForTimeout(1200);
@@ -1732,8 +1720,8 @@ async function drawConsole(browser, shots) {
     const now = String(Date.now());
     const material = {
       sgbus_feats: JSON.stringify(allEggs), sgbus_eggs: JSON.stringify(allEggs),
-      sgbus_colours_unlocked: now, sgbus_phone_colours_unlocked: now, sgbus_material_unlocked: now,
-      sgbus_eggs_told: JSON.stringify(['colours', 'phone', 'material', ...Object.keys(allEggs).map((id) => `feat:${id}`)]),
+      sgbus_colours_unlocked: now,
+      sgbus_eggs_told: JSON.stringify(['colours', ...Object.keys(allEggs).map((id) => `feat:${id}`)]),
     };
     let { ctx, page } = await open(browser, { width: 420, height: 2600, extra: material, app: true, answers, still: true });
     await page.click('#themeBtn');

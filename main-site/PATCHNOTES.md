@@ -1,11 +1,19 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 4 November 2026**
+**Latest update: 5 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 5 November 2026: Material You is the Android app's own
+
+### Web app
+
+- **Material You isn't a secret any more** - Your phone's colours and the Material You look are features of the Android app now, with no Easter egg needed: find them in Theme in the app. The website doesn't have them. Easter eggs unlock Your colours, and bring their presets, as before. The greeting-and-Settings shortcut is gone with them.
 
 ---
 

@@ -23,26 +23,22 @@
 // least one such ride on it.
 //
 // The Easter eggs are the uwuCoins wheel's prizes (js/coins.js), one for each feat and named
-// after it: a feat done doesn't find its egg, only the wheel does. Each egg found unlocks a
-// secret still locked, picked at random, so which comes first is chance: Your colours
-// (js/colours.js, one colour of your own for the whole app); in the Android app on Android 12
-// and later, Your phone's colours (Material You's, from its wallpaper); and in the Android app,
-// the Material You look (js/material.js, the whole app redrawn as Android's own apps are). Once
-// every one that can be had is, an egg unlocks nothing more. Eggs found in a browser count when the app is opened later: the secrets
-// catch up with the eggs (settle). Each egg but `lines` also adds a preset to Your colours.
+// after it: a feat done doesn't find its egg, only the wheel does. The first egg found unlocks
+// the secret, Your colours (js/colours.js, one colour of your own for the whole app); after
+// that, an egg unlocks nothing more. Eggs found in a browser count when the app is opened later:
+// the secret catches up with the eggs (settle). Each egg but `lines` also adds a preset to Your
+// colours.
+//
+// Material You (Your phone's colours and the Material You look) is no longer a secret (Augy, 5
+// November 2026): it's a feature of the Android app, on by default in the Flutter app from 3.0.0
+// and in Theme for anyone in the 2.x app (js/colours.js, js/material.js), and the website never
+// has it. The greeting-and-Settings trick that unlocked it is gone with it, and what it or an egg
+// unlocked before (PHONE_KEY, MATERIAL_KEY) is let go of (settle).
 //
 // Kept under FEATS_KEY and EGGS_KEY as { id: when }. Your colours unlocked is UNLOCKED_KEY, as
-// it was when riding every line unlocked it; Your phone's colours PHONE_KEY; the Material You
-// look MATERIAL_KEY. Riding every line
-// before there were eggs counts as that feat done and its egg found. A feat is said once
-// (TOLD_KEY) in #eggModal, or for `lines` the celebration (js/celebrate.js). Not synced: they're
-// this phone's.
-//
-// A shortcut to Your phone's colours and the Material You look (Augy, 1 and 2 November 2026): the
-// greeting tapped three times and Settings' title tapped three times, within TRICK_MS of each
-// other in either order, unlocks both and puts on each that can be had here at once (trick). Kept
-// as "trick:<when>", so neither is counted as an egg's secret and the next egg still unlocks
-// one. Done again, both are off, and locked again where the trick unlocked them.
+// it was when riding every line unlocked it. Riding every line before there were eggs counts as
+// that feat done and its egg found. A feat is said once (TOLD_KEY) in #eggModal, or for `lines`
+// the celebration (js/celebrate.js). Not synced: they're this phone's.
 //
 // Settings' Achievements lists each feat with how far along it is (progress, renderAchievements).
 // Each feat done has its Share, and Achievements as a whole has one too: a card for socials with
@@ -65,8 +61,9 @@
   const FEATS_KEY = 'sgbus_feats';
   const EGGS_KEY = 'sgbus_eggs';
   const UNLOCKED_KEY = 'sgbus_colours_unlocked'; // js/rides.js
+  // What Material You's two secrets were kept under, before they were the Android app's own.
   const PHONE_KEY = 'sgbus_phone_colours_unlocked';
-  const MATERIAL_KEY = 'sgbus_material_unlocked'; // index.html's head
+  const MATERIAL_KEY = 'sgbus_material_unlocked';
   const TOLD_KEY = 'sgbus_eggs_told';
   const TEAM_FEATS_KEY = 'sgbus_team_feats'; // js/team.js
   const MARKS_KEY = 'sgbus_feat_marks';
@@ -81,9 +78,6 @@
     CG2: [1.357338, 103.988565], // Changi Airport
   };
   const FEAT_COINS = 100;
-  const TRICK_MS = 30 * 1000;
-  // Three taps this close together are a triple tap.
-  const TAPS_MS = 700;
   const LOOP_M = 300;
   // The stop on the way at least this far from the start, so a lap of the block isn't a loop.
   const LOOP_AWAY_M = 1000;
@@ -140,10 +134,7 @@
 
   // ---------- the secrets ----------
 
-  const SECRETS = { colours: UNLOCKED_KEY, phone: PHONE_KEY, material: MATERIAL_KEY };
-  const phoneCan = () => !!window.AppBridge?.has?.('phonecolours');
-  // The Material You look: in the Android app, any version of Android.
-  const materialCan = () => !!window.AppBridge?.native;
+  const SECRETS = { colours: UNLOCKED_KEY };
   const has = (secret) => !!get(SECRETS[secret] || UNLOCKED_KEY);
   const told = () => {
     const v = readJson(TOLD_KEY, null);
@@ -151,15 +142,16 @@
   };
   const tell = (what) => put(TOLD_KEY, JSON.stringify([...new Set([...told(), what])]));
 
-  // The secrets still locked that can be had here.
-  const locked = () => ['colours', ...(phoneCan() ? ['phone'] : []), ...(materialCan() ? ['material'] : [])].filter((s) => !has(s));
+  // The secrets still locked.
+  const locked = () => Object.keys(SECRETS).filter((s) => !has(s));
 
-  // As many secrets unlocked as there are eggs found, each picked at random from those left.
-  // Returns the ones unlocked now.
+  // As many secrets unlocked as there are eggs found. Returns the ones unlocked now.
   function settle() {
+    // Material You's old unlocks, from an egg or the trick: it's the Android app's own now.
+    put(PHONE_KEY, null);
+    put(MATERIAL_KEY, null);
     const got = [];
-    // The trick's unlock isn't an egg's.
-    const unlockedCount = () => Object.keys(SECRETS).filter((s) => has(s) && !String(get(SECRETS[s])).startsWith('trick')).length;
+    const unlockedCount = () => Object.keys(SECRETS).filter(has).length;
     while (unlockedCount() < list().length) {
       const left = locked();
       if (!left.length) break;
@@ -178,8 +170,6 @@
   function unlockedText(secrets) {
     const said = {
       colours: () => tr('eggs.got.colours', 'Your colours: pick one colour, and the app makes the whole theme from it.'),
-      phone: () => tr('eggs.got.phone', 'Your phone’s colours: the whole app in the colours of your phone’s wallpaper.'),
-      material: () => tr('eggs.got.material', 'Material You: the whole app redrawn the way Android’s own apps are.'),
     };
     return secrets.map((s) => (said[s] || said.colours)()).join(' ');
   }
@@ -448,64 +438,6 @@
     tripFeats(start, end, ms, rides.length >= 2);
   }
 
-  // ---------- the trick ----------
-
-  // Each place tapped three times, and when: both within TRICK_MS, and it's on.
-  const tripled = {};
-  function tapped(where) {
-    const now = Date.now();
-    const t = (tripled[where] ??= { taps: [], at: 0 });
-    t.taps = [...t.taps.filter((at) => now - at <= TAPS_MS * 2), now];
-    if (t.taps.length < 3 || now - t.taps[t.taps.length - 3] > TAPS_MS * 2) return;
-    t.taps = [];
-    t.at = now;
-    const other = tripled[where === 'greeting' ? 'settings' : 'greeting'];
-    if (other?.at && now - other.at <= TRICK_MS) {
-      tripled.greeting.at = 0;
-      tripled.settings.at = 0;
-      trick();
-    }
-  }
-
-  // The secrets the trick unlocks and puts on.
-  const TRICKED = ['phone', 'material'];
-
-  function trick() {
-    const byTrick = (secret) => String(get(SECRETS[secret]) || '').startsWith('trick');
-    // Done again: both off, and locked again where the trick was what unlocked them.
-    if (TRICKED.some(byTrick) || window.Colours?.phoneOn?.() || window.Material?.on?.()) {
-      if (window.Colours?.phoneOn?.()) window.Colours.stopPhone();
-      if (window.Material?.on?.()) window.Material.stop();
-      const relock = TRICKED.filter(byTrick);
-      if (relock.length) {
-        for (const secret of relock) put(SECRETS[secret], null);
-        put(TOLD_KEY, JSON.stringify(told().filter((x) => !relock.includes(x))));
-        window.dispatchEvent(new CustomEvent('eggs:unlocked', { detail: { secrets: [] } }));
-      }
-      return;
-    }
-    const fresh = TRICKED.filter((secret) => !has(secret));
-    for (const secret of fresh) {
-      put(SECRETS[secret], `trick:${Date.now()}`);
-      tell(secret);
-    }
-    if (fresh.length) window.dispatchEvent(new CustomEvent('eggs:unlocked', { detail: { secrets: fresh } }));
-    // Where they can be had, they're on now: the look in the Android app, and the colours there
-    // on Android 12 and later. Anywhere else, it says where they work.
-    let on = false;
-    if (materialCan() && window.Material) { window.Material.use(); on = true; }
-    if (phoneCan() && window.Colours?.usePhone) { window.Colours.usePhone(); on = true; }
-    if (on || !document.getElementById('eggModal')) return;
-    document.getElementById('eggTitle').textContent = tr('eggs.trick.title', 'A secret, unlocked');
-    document.getElementById('eggName').textContent = tr('eggs.trick.what', 'Your phone’s colours and Material You');
-    document.getElementById('eggHow').textContent = tr('eggs.trick.where', 'They work in the SG Bus Timings Android app: the whole app redrawn the way Android’s own apps are, and on Android 12 and later, in your phone’s own colours.');
-    document.getElementById('eggGot').textContent = '';
-    document.getElementById('eggCount').textContent = '';
-    const go = document.getElementById('eggGo');
-    if (go) { go.hidden = false; go.dataset.go = 'theme'; go.textContent = tr('eggs.go', 'Open Theme'); }
-    window.openModal('eggModal');
-  }
-
   function init() {
     renderAchievements();
     for (const ev of ['eggs:feat', 'eggs:found', 'eggs:unlocked']) window.addEventListener(ev, renderAchievements);
@@ -518,8 +450,6 @@
       if (btn) window.Share?.feat(btn.dataset.featShare);
     });
     document.getElementById('achievementsShare')?.addEventListener('click', () => window.Share?.feat(null));
-    document.getElementById('greeting')?.addEventListener('click', () => tapped('greeting'));
-    document.getElementById('settingsTitle')?.addEventListener('click', () => tapped('settings'));
     // Back in the app with eggs found elsewhere: the secrets catch up, said in the window.
     const catchUp = () => {
       const fresh = settle().filter((s) => !told().includes(s));
@@ -559,7 +489,6 @@
     if (id === 'undo') {
       for (const k of [FEATS_KEY, EGGS_KEY, UNLOCKED_KEY, PHONE_KEY, MATERIAL_KEY, TOLD_KEY, TEAM_FEATS_KEY]) put(k, null);
       window.Colours?.paint(null);
-      window.Material?.stop();
       window.dispatchEvent(new Event('eggs:unlocked'));
       return 'undone';
     }

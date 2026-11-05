@@ -4,7 +4,9 @@
 // kept under CONTRAST_KEY and drawn as data-contrast="more" on <html> (style.css), which
 // index.html's head sets again before first paint.
 //
-// Your colours and Your phone's colours are secrets, each unlocked by an Easter egg (js/eggs.js).
+// Your colours is a secret, unlocked by an Easter egg (js/eggs.js). Your phone's colours is a
+// feature of the Android app on Android 12 and later, part of Material You, and no longer an
+// egg's secret (5 November 2026); the website never has it.
 //
 // Your colours: one colour, picked on the colour wheel (js/wheel.js, the Color Guess Game's) or
 // from the presets the eggs bring, and the app makes the rest from it (derive): a background and
@@ -353,8 +355,7 @@
     if (p) keep(phoneTheme(p));
   }
 
-  // On: the phone's colours read now and put in place (Use my phone's colours, and the trick in
-  // js/eggs.js).
+  // On: the phone's colours read now and put in place (Use my phone's colours).
   async function usePhone() {
     const p = palettes || (await readPhone());
     if (p) keep(phoneTheme(p));
@@ -367,7 +368,7 @@
   function renderPhone() {
     const box = $('phoneColours');
     if (!box) return;
-    box.hidden = !(window.Eggs?.has('phone') && phoneCan());
+    box.hidden = !phoneCan();
     if (box.hidden) return;
     const on = saved()?.kind === 'phone';
     $('phoneColoursOn').hidden = on;
@@ -451,6 +452,7 @@
     });
 
     window.addEventListener('eggs:unlocked', render);
+    window.addEventListener('app:ready', render);
     window.addEventListener('eggs:found', render);
     // In the app, the phone's colours asked again as it opens and comes back.
     window.AppBridge?.ready?.(4000).then(refreshPhone);

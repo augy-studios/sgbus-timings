@@ -1,13 +1,15 @@
-// The Material You look, a secret unlocked by an Easter egg (js/eggs.js), in the Android app only
-// (Augy, 2 November 2026): the whole app redrawn the way Android's own apps are. The phone's own
+// The Material You look, a feature of the Android app only (Augy, 2 November 2026; no longer an
+// Easter egg's secret from 5 November 2026): the whole app redrawn the way Android's own apps are.
+// The Flutter app (3.0.0) draws itself in Material You by default; this is the 2.x app's, where
+// the site runs in a WebView, and the website never has it. The phone's own
 // font, solid tonal cards in place of the glass, Material 3's rounder shapes, pill buttons,
 // windows as bottom sheets on a phone, and a ripple where a button's tapped. The colours are
 // whichever are on (the brand colour, Your colours or Your phone's colours, js/colours.js), so it
 // goes with any of them; style.css has the look, under :root[data-look="material"].
 //
 // Kept under LOOK_KEY as "material", and drawn as data-look="material" on <html>, which
-// index.html's head sets again before first paint (with the unlock and the app, as here). Turned
-// on and off in the Theme window, under Your phone's colours.
+// index.html's head sets again before first paint (in the app, as here). Turned on and off in
+// the Theme window, under Your phone's colours.
 //
 // Window.Material = { on(), use(), stop(), can() }. Plain script: exports go on window.
 (function () {
@@ -19,8 +21,7 @@
   const put = (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* this visit only */ } };
 
   const can = () => !!window.AppBridge?.native;
-  const unlocked = () => !!window.Eggs?.has('material');
-  const on = () => get(LOOK_KEY) === 'material' && can() && unlocked();
+  const on = () => get(LOOK_KEY) === 'material' && can();
 
   function apply() {
     if (on()) root.setAttribute('data-look', 'material');
@@ -34,7 +35,7 @@
   function render() {
     const box = $('materialLook');
     if (!box) return;
-    box.hidden = !(unlocked() && can());
+    box.hidden = !can();
     if (box.hidden) return;
     const now = on();
     $('materialOn').hidden = now;
@@ -81,7 +82,7 @@
     $('materialOn')?.addEventListener('click', use);
     $('materialOff')?.addEventListener('click', stop);
     $('themeBtn')?.addEventListener('click', () => setTimeout(render, 0));
-    for (const ev of ['eggs:unlocked', 'eggs:found']) window.addEventListener(ev, apply);
+    window.addEventListener('app:ready', apply);
     document.addEventListener('pointerdown', ripple, { passive: true });
   }
 
