@@ -50,13 +50,16 @@ Future<void> _font(String family, List<String> files) async {
   await loader.load();
 }
 
-/// The fonts as on a phone: Jua for the usual look, Roboto (Android's) for Material You, and
+/// The fonts as on a phone: Jua for the UwU Apps theme, Roboto (stock Android's own font) for Material You, and
 /// the Material icons.
 Future<void> loadFonts() async {
   final root = Platform.environment['FLUTTER_ROOT'] ?? '/opt/sdk/flutter';
   final mf = '$root/bin/cache/artifacts/material_fonts';
   await _font('Jua', ['assets/fonts/Jua-Regular.ttf']);
-  await _font('Roboto', ['$mf/Roboto-Regular.ttf', '$mf/Roboto-Medium.ttf', '$mf/Roboto-Bold.ttf', '$mf/Roboto-Light.ttf']);
+  final roboto = ['$mf/Roboto-Regular.ttf', '$mf/Roboto-Medium.ttf', '$mf/Roboto-Bold.ttf', '$mf/Roboto-Light.ttf'];
+  await _font('Roboto', roboto);
+  // The phone's own font in Material You ("sans-serif", Android's default), as stock Android's.
+  await _font('sans-serif', roboto);
   // Android's own fallback (Noto) stood in for by DejaVu, for "→", "·" and the like.
   await _font('Noto Sans', ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']);
   await _font('MaterialIcons', ['$mf/MaterialIcons-Regular.otf']);

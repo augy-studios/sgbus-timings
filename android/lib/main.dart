@@ -1,4 +1,4 @@
-// SG Bus Timings for Android, 3.0.0: the app's own screens in Flutter, where 2.0.0 to 2.3.1 were
+// SG Bus Timings for Android, 2.4.0: the app's own screens in Flutter, where 2.0.0 to 2.3.1 were
 // the site in a WebView. The site's features, words, data and API are the same; the native parts
 // (trips with the screen off, the widget, the card reader, reminders, Offline Sharing, Wear OS)
 // are the Java plugins they always were (native/native_bridge.dart). README.md has the map.

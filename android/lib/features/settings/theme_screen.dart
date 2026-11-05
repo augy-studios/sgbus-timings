@@ -1,6 +1,6 @@
 // Theme (the site's theme window): Material You first, the Android app's own (on by default,
-// 3.0.0: no longer an Easter egg's secret), then light, dark, by the clock or the phone's, the
-// usual look's brand colour, High contrast, Your colours (still a secret an egg unlocks, as on
+// 2.4.0: no longer an Easter egg's secret), then light, dark, by the clock or the phone's, the
+// UwU Apps theme's brand colour, High contrast, Your colours (still a secret an egg unlocks, as on
 // the site: one colour on the colour wheel, or a preset an egg brought, and the whole theme made
 // from it), and the Easter eggs found.
 import 'dart:math' as math;
@@ -51,9 +51,17 @@ class _ThemeScreenState extends State<ThemeScreen> {
             onChanged: (on) => setState(() => look.materialYou = on),
             title: Text(tr('theme.materialYou', 'Material You'), style: Theme.of(context).textTheme.titleMedium),
             subtitle: Text(tr('theme.materialYouNote',
-                'The whole app drawn the way Android’s own apps are, in your phone’s colours from its wallpaper (Android 12 and later). Turn it off for the usual SG Bus Timings look.')),
+                'The whole app drawn the way Android’s own apps are, in your phone’s own fonts and the colours of its wallpaper (Android 12 and later). Turn it off for the UwU Apps theme: Jua, glass cards and the brand colours.')),
           ),
         ),
+        // ---- Material You's colours: the wallpaper's, unless Your colours are picked for it ----
+        if (look.materialYou && yc != null)
+          Choice(
+            label: tr('theme.youColours', 'Colours'),
+            value: look.youUseYours ? 'yours' : 'phone',
+            options: [('phone', tr('theme.youColours.phone', 'Your phone’s')), ('yours', tr('theme.youColours.yours', 'Your colours'))],
+            onChanged: (v) => setState(() => look.youUseYours = v == 'yours'),
+          ),
         // ---- light or dark ----
         Choice(
           label: tr('theme.mode', 'Mode'),
@@ -67,7 +75,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
           onChanged: (v) => setState(() => look.modePreference = v),
           note: modeNote,
         ),
-        // ---- the usual look's brand colour ----
+        // ---- the UwU Apps theme's brand colour ----
         if (!look.materialYou) ...[
           Text(tr('theme.brand', 'Brand colour'), style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),

@@ -52,10 +52,10 @@
  *                            "language" event says { lang } when it's changed in Android's
  *                            settings while the app's open (MainActivity), for the page to
  *                            follow. As "applang" (2.3.1)
- *   background()             the app to the background, for Back pressed twice (3.0.0)
- *   openLink({ url })        a link off the site in whatever app takes it (3.0.0)
+ *   background()             the app to the background, for Back pressed twice (2.4.0)
+ *   openLink({ url })        a link off the site in whatever app takes it (2.4.0)
  *   "open" events            { url }: the site's address for what the app was opened with
- *                            (MainActivity.pageFor), for the Dart side's router (3.0.0)
+ *                            (MainActivity.pageFor), for the Dart side's router (2.4.0)
  *
  * And intent: links, which openLink follows as Chrome does: the SimplyGo button and the update
  * bar each link to one of this app's activities with one (OpenAppActivity, UpdateActivity), and
@@ -171,7 +171,7 @@ public class SgBusPlugin extends Plugin {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) features.put("phonecolours"); // phoneColours
         // 2.3.1
         features.put("applang"); // setLanguage, `lang` here and "language" events
-        // 3.0.0: the app's screens in Flutter, not the site in a WebView
+        // 2.4.0: the app's screens in Flutter, not the site in a WebView
         features.put("flutter");
         features.put("materialyou"); // Material You, on by default: no longer an Easter egg's
         // Firebase is set up for this build (google-services.json): the server can push.
@@ -251,6 +251,31 @@ public class SgBusPlugin extends Plugin {
             out.put(palette, tones);
         }
         call.resolve(out);
+    }
+
+    // The phone's own fonts, as Android 12 and later name them for apps drawn in Material You:
+    // Google Sans on a Pixel, the maker's or the person's chosen font elsewhere. "sans-serif" is
+    // the phone's default font on every version.
+    @PluginMethod
+    public void phoneFonts(PluginCall call) {
+        JSObject out = new JSObject();
+        out.put("body", systemString("config_bodyFontFamily", "sans-serif"));
+        out.put("headline", systemString("config_headlineFontFamily", "sans-serif"));
+        out.put("bodyMedium", systemString("config_bodyFontFamilyMedium", ""));
+        call.resolve(out);
+    }
+
+    @SuppressLint("DiscouragedApi")
+    private static String systemString(String name, String fallback) {
+        try {
+            android.content.res.Resources r = android.content.res.Resources.getSystem();
+            int id = r.getIdentifier(name, "string", "android");
+            if (id == 0) return fallback;
+            String v = r.getString(id);
+            return v == null || v.trim().isEmpty() ? fallback : v.trim();
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 
     @PluginMethod
@@ -409,7 +434,7 @@ public class SgBusPlugin extends Plugin {
         resolveLocation(call, true);
     }
 
-    // ---------- the app's own links (3.0.0) ----------
+    // ---------- the app's own links (2.4.0) ----------
     // What the app was opened with (MainActivity.pageFor: a uwu://sgbus/ link, one of the site's
     // own, a shortcut, a tapped notification, something shared in), as the site's address for
     // it, which the Dart side's router takes (android/lib/app/links.dart). Kept until it

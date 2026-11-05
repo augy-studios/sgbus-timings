@@ -30,8 +30,8 @@
 // colours.
 //
 // Material You (Your phone's colours and the Material You look) is no longer a secret (Augy, 5
-// November 2026): it's a feature of the Android app, on by default in the Flutter app from 3.0.0
-// and in Theme for anyone in the 2.x app (js/colours.js, js/material.js), and the website never
+// November 2026): it's a feature of the Android app, on by default in the Flutter app from 2.4.0
+// and in Theme for anyone in the WebView app (2.0.0 to 2.3.1) (js/colours.js, js/material.js), and the website never
 // has it. The greeting-and-Settings trick that unlocked it is gone with it, and what it or an egg
 // unlocked before (PHONE_KEY, MATERIAL_KEY) is let go of (settle).
 //

@@ -1,6 +1,6 @@
 // The Material You look, a feature of the Android app only (Augy, 2 November 2026; no longer an
 // Easter egg's secret from 5 November 2026): the whole app redrawn the way Android's own apps are.
-// The Flutter app (3.0.0) draws itself in Material You by default; this is the 2.x app's, where
+// The Flutter app (2.4.0) draws itself in Material You by default; this is the WebView app's (2.0.0 to 2.3.1), where
 // the site runs in a WebView, and the website never has it. The phone's own
 // font, solid tonal cards in place of the glass, Material 3's rounder shapes, pill buttons,
 // windows as bottom sheets on a phone, and a ripple where a button's tapped. The colours are

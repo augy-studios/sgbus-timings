@@ -26,7 +26,7 @@ class SgCard extends StatelessWidget {
       child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
     );
     if (!sg.glass) return body;
-    // The usual look's glass: what's behind blurred through it.
+    // The UwU Apps theme's glass: what's behind blurred through it.
     return ClipRRect(
       borderRadius: radius,
       child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: body),

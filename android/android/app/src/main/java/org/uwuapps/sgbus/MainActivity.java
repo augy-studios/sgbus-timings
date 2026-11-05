@@ -1,5 +1,5 @@
 /*
- * The app (3.0.0): its screens are Flutter's (android/lib/), in a FlutterFragment here, with this
+ * The app (2.4.0): its screens are Flutter's (android/lib/), in a FlutterFragment here, with this
  * app's plugins reached from the Dart side over the bridge (bridge/Bridge.java,
  * android/lib/native/native_bridge.dart):
  *

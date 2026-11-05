@@ -1,7 +1,10 @@
 {
   "app.exitHint": "再按一次返回键退出",
   "theme.materialYou": "Material You",
-  "theme.materialYouNote": "整个应用按照 Android 自带应用的样子绘制，使用来自你手机壁纸的颜色（Android 12 及以上）。关闭即可恢复 SG Bus Timings 的一贯外观。",
-  "theme.usualLook": "一贯外观",
-  "migrate.done": "你之前的收藏、地点和设置都在这里。"
+  "theme.materialYouNote": "整个应用按照 Android 自带应用的样子绘制，使用你手机自己的字体和壁纸的颜色（Android 12 及以上）。关闭即可使用 UwU Apps 主题：Jua 字体、玻璃卡片和品牌颜色。",
+  "theme.usualLook": "UwU Apps 主题",
+  "migrate.done": "你之前的收藏、地点和设置都在这里。",
+  "theme.youColours": "颜色",
+  "theme.youColours.phone": "手机的颜色",
+  "theme.youColours.yours": "你的颜色"
 }

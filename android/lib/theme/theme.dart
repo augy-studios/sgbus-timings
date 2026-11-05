@@ -1,12 +1,14 @@
 // How the app looks. Two looks, picked in Settings, Theme:
 //
-//   Material You (the default, 3.0.0)  Material 3, as Android's own apps are: the phone's font,
+//   Material You (the default, 2.4.0)  Material 3, as Android's own apps are: the phone's own
+//            fonts (Google Sans on a Pixel, the maker's or the person's chosen font elsewhere),
 //            solid tonal cards, pill buttons, sheets from the bottom, and the colours of the
 //            phone's wallpaper on Android 12 and later (the app's green tonal palette before
-//            that), or Your colours' one colour when that's on. Only in the Android app, and no
-//            longer an Easter egg's secret: off is APP_LOOK_KEY = "usual".
-//   The usual look  the site's: Jua, see-through glass cards on a soft background, in one of
-//            the seven brand colours (sgbus.colorTheme) or Your colours (sgbus_colours).
+//            that). Your colours' one colour only when picked for it (app.youColours = "yours").
+//            Only in the Android app, and no longer an Easter egg's secret: off is
+//            APP_LOOK_KEY = "usual".
+//   The UwU Apps theme  the site's: Jua, see-through glass cards on a soft background, in one
+//            of the seven brand colours (sgbus.colorTheme) or Your colours (sgbus_colours).
 //
 // Either way light, dark or by the clock (sgbus.mode: light 09:00 to 18:00), and High contrast
 // (sgbus_contrast: the phone's setting, on or off). Every screen takes its colours from
@@ -19,6 +21,7 @@ import 'package:flutter/material.dart';
 import 'package:material_color_utilities/material_color_utilities.dart' show CorePalette, Scheme;
 
 import '../data/store.dart';
+import '../native/native_bridge.dart';
 
 /// The site's colour tokens, as both looks have them.
 @immutable
@@ -55,7 +58,7 @@ class SgColors extends ThemeExtension<SgColors> {
   final Color busy; // limited standing
   final Color error;
   final List<Color> tones; // the ways a bus goes at a stop it calls at both ways
-  final bool glass; // the usual look's see-through cards
+  final bool glass; // the UwU Apps theme's see-through cards
 
   /// A load's colour: SEA, SDA, LSD.
   Color load(String? l) => switch ((l ?? '').toUpperCase()) {
@@ -137,6 +140,19 @@ class AppLook extends ChangeNotifier {
   ColorScheme? phoneLight;
   ColorScheme? phoneDark;
 
+  /// The phone's own fonts, as Android names them ("google-sans-text" on a Pixel), once read.
+  /// "sans-serif" is the phone's default font everywhere else.
+  String phoneBodyFont = 'sans-serif';
+  String phoneHeadFont = 'sans-serif';
+
+  /// In Material You: the wallpaper's colours ("phone", the default) or Your colours ("yours").
+  static const youColoursKey = 'app.youColours';
+  bool get youUseYours => Store.I.get(youColoursKey) == 'yours' && yourColours != null;
+  set youUseYours(bool on) {
+    Store.I.put(youColoursKey, on ? 'yours' : null);
+    notifyListeners();
+  }
+
   /// For tests and screenshots: the platform's brightness and contrast.
   Brightness Function()? platformBrightness;
 
@@ -213,7 +229,7 @@ class AppLook extends ChangeNotifier {
   ThemeData _material(Brightness b, bool contrast) {
     final yc = yourColours;
     ColorScheme scheme;
-    if (yc != null) {
+    if (yc != null && youUseYours) {
       scheme = ColorScheme.fromSeed(seedColor: hexColor(yc['base'] as String), brightness: b);
     } else {
       final phone = b == Brightness.dark ? phoneDark : phoneLight;
@@ -243,12 +259,28 @@ class AppLook extends ChangeNotifier {
           : const [Color(0xFF1D4ED8), Color(0xFFBE185D), Color(0xFF6D28D9)],
       glass: false,
     );
+    // The phone's own fonts: its headline font for the big words, its body font for the rest,
+    // and the phone's default (then Noto) for arrows and the other languages' letters.
+    const fallback = ['sans-serif', 'Roboto', 'Noto Sans'];
+    final base = Typography.material2021(platform: TargetPlatform.android);
+    final plain = (dark ? base.white : base.black).apply(fontFamily: phoneBodyFont, fontFamilyFallback: fallback);
+    TextStyle? head(TextStyle? t) => t?.copyWith(fontFamily: phoneHeadFont, fontFamilyFallback: fallback);
+    final text = plain.copyWith(
+      displayLarge: head(plain.displayLarge),
+      displayMedium: head(plain.displayMedium),
+      displaySmall: head(plain.displaySmall),
+      headlineLarge: head(plain.headlineLarge),
+      headlineMedium: head(plain.headlineMedium),
+      headlineSmall: head(plain.headlineSmall),
+      titleLarge: head(plain.titleLarge),
+    );
     return ThemeData(
       useMaterial3: true,
       colorScheme: scheme,
       brightness: b,
-      // The phone's font, and its fallbacks for arrows and the other languages' letters.
-      fontFamilyFallback: const ['Noto Sans', 'sans-serif'],
+      fontFamily: phoneBodyFont,
+      fontFamilyFallback: fallback,
+      textTheme: text,
       extensions: [sg],
       // Material 3 Expressive's rounder shapes, as the site's Material look had them.
       cardTheme: CardThemeData(
@@ -270,7 +302,7 @@ class AppLook extends ChangeNotifier {
     );
   }
 
-  // ---------- the usual look ----------
+  // ---------- the UwU Apps theme ----------
 
   Color _token(Map<String, dynamic>? tokens, String name, Color fallback) {
     final v = tokens?[name];
@@ -418,8 +450,18 @@ class AppLook extends ChangeNotifier {
     );
   }
 
-  /// Reads the wallpaper's colours (Android 12 and later), each time the app opens or comes back.
+  /// Reads the wallpaper's colours (Android 12 and later) and the phone's fonts, each time the
+  /// app opens or comes back.
   Future<void> readPhone() async {
+    try {
+      final fonts = await Native.call('SgBus', 'phoneFonts');
+      if (fonts != null) {
+        phoneBodyFont = (fonts['body'] as String?) ?? 'sans-serif';
+        phoneHeadFont = (fonts['headline'] as String?) ?? phoneBodyFont;
+      }
+    } catch (_) {
+      // An older app or no bridge: the phone's default font.
+    }
     try {
       final palette = await DynamicColorPlugin.getCorePalette();
       if (palette == null) return;

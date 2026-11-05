@@ -47,7 +47,7 @@ class SettingsScreen extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: Text(tr('theme.title', 'Theme')),
-          subtitle: Text(AppLook.I.materialYou ? tr('theme.materialYou', 'Material You') : tr('theme.usualLook', 'The usual look')),
+          subtitle: Text(AppLook.I.materialYou ? tr('theme.materialYou', 'Material You') : tr('theme.usualLook', 'UwU Apps theme')),
           onTap: () => AppNav.open('theme'),
         ),
         for (final g in groups)
@@ -206,6 +206,9 @@ class _SettingsGroupState extends State<SettingsGroup> {
     final extras = {
       'explorer': tr('settings.explorer', 'Explorer'),
       'simplygo': tr('settings.simplygo', 'SimplyGo'),
+      'telegram': tr('settings.telegram_bot', 'Telegram bot'),
+      'coffee': tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
+      'guide': tr('settings.guide', 'Guide'),
       'coins': tr('settings.coins', 'uwuCoins'),
       'nearstops': tr('settings.timings_near_a_stop', 'Timings near a stop'),
       'routines': tr('settings.routines', 'Routines'),

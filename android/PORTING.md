@@ -1,4 +1,4 @@
-# Porting the site to the native Flutter app (3.0.0)
+# Porting the site to the native Flutter app (2.4.0)
 
 The Android app is moving from the site in a WebView to its own screens in Dart, with full
 parity with the site. The site's JS (`main-site/js/`, `main-site/script.js`) and the guide
@@ -18,7 +18,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Stops, search, contractions, stations | `script.js`, `js/contractions.js`, `js/station-search.js` | `lib/data/stops.dart`, `search.dart`, `contractions.dart`, `stations.dart` | ✅ |
 | Bus network (routes, first/last, graph) | `js/network.js` | `lib/data/network.dart` | ✅ |
 | Times and when | `js/when.js` | `lib/data/when.dart` | ✅ |
-| Theme: Material You (default) and the usual look | `js/theme.js`, `js/colours.js`, `js/material.js` | `lib/theme/theme.dart` | ✅ |
+| Theme: Material You (default) and the UwU Apps theme | `js/theme.js`, `js/colours.js`, `js/material.js` | `lib/theme/theme.dart` | ✅ |
 | Edge Tray, pages, links, Back twice | `script.js`, `js/main-screen.js` | `lib/app/` | ✅ |
 
 ## Screens
