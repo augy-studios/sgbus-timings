@@ -600,6 +600,7 @@ class TripScreen extends StatelessWidget {
             title: t.title,
             actions: [
               IconButton(tooltip: tr('trip.live_map', 'Live map'), onPressed: () => AppNav.open('tripMap'), icon: const Icon(Icons.map_outlined)),
+              IconButton(tooltip: tr('share.liveProgress', 'Share live progress'), onPressed: () => AppNav.open('tripShare'), icon: const Icon(Icons.share_outlined)),
               IconButton(tooltip: tr('trip.end_trip', 'End trip'), onPressed: () {
               t.stop();
               Navigator.of(context).maybePop();

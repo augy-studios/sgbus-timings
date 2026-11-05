@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 class AppNav {
   AppNav._();
   static final navigatorKey = GlobalKey<NavigatorState>();
+  static final shotKey = GlobalKey();
   static final messengerKey = GlobalKey<ScaffoldMessengerState>();
 
   static NavigatorState? get nav => navigatorKey.currentState;

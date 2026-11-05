@@ -39,22 +39,29 @@ class PlacePick {
 }
 
 /// Searches for a place in a sheet, and gives back the one picked.
-Future<PlacePick?> pickPlace(BuildContext context, {String? title, bool here = true, bool saved = true, bool calendar = false}) =>
-    showModalBottomSheet<PlacePick>(context: context, isScrollControlled: true, builder: (_) => _PlaceSheet(title: title, here: here, saved: saved, calendar: calendar));
+Future<PlacePick?> pickPlace(BuildContext context, {String? title, bool here = true, bool saved = true, bool calendar = false, String? query}) =>
+    showModalBottomSheet<PlacePick>(context: context, isScrollControlled: true, builder: (_) => _PlaceSheet(title: title, here: here, saved: saved, calendar: calendar, query: query));
 
 class _PlaceSheet extends StatefulWidget {
-  const _PlaceSheet({this.title, required this.here, required this.saved, this.calendar = false});
+  const _PlaceSheet({this.title, required this.here, required this.saved, this.calendar = false, this.query});
   final String? title;
   final bool here;
   final bool saved;
   final bool calendar;
+  final String? query; // something shared into the app, searched for at once
 
   @override
   State<_PlaceSheet> createState() => _PlaceSheetState();
 }
 
 class _PlaceSheetState extends State<_PlaceSheet> {
-  final _q = TextEditingController();
+  late final _q = TextEditingController(text: widget.query ?? '');
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.query != null) _search(widget.query!);
+  }
   Timer? _timer;
   int _token = 0;
   List<PlacePick> _found = [];

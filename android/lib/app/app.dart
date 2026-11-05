@@ -101,7 +101,8 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
                 statusBarColor: Colors.transparent,
                 systemNavigationBarColor: Colors.transparent,
               ),
-              child: child!,
+              // The whole app, for a bug report's Screenshot this page.
+              child: RepaintBoundary(key: AppNav.shotKey, child: child!),
             );
           },
           home: Shell(pages: widget.pages),

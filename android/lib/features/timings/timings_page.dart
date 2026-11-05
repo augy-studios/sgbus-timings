@@ -27,6 +27,8 @@ class TimingsPage extends StatefulWidget {
   const TimingsPage({super.key});
 
   static final focusSearch = ValueNotifier<int>(0);
+  /// A #near link: the stops near you, asking for your location.
+  static final askNear = ValueNotifier<int>(0);
 
   @override
   State<TimingsPage> createState() => _TimingsPageState();
@@ -47,6 +49,7 @@ class _TimingsPageState extends State<TimingsPage> {
     _q.addListener(() => setState(() {}));
     _focus.addListener(() => setState(() {}));
     TimingsPage.focusSearch.addListener(() => _focus.requestFocus());
+    TimingsPage.askNear.addListener(() => _showNear(ask: true));
     Stops.load().then((_) {
       if (mounted) setState(() {});
       _showNear();

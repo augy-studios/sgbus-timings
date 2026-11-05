@@ -14,7 +14,7 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 
 class ShareCard extends StatefulWidget {
-  const ShareCard({super.key, required this.heading, required this.name, this.sub = '', required this.kind, required this.data, required this.text, this.made});
+  const ShareCard({super.key, required this.heading, required this.name, this.sub = '', required this.kind, required this.data, required this.text, this.made, this.onStop});
   final String heading;
   final String name;
   final String sub;
@@ -22,6 +22,7 @@ class ShareCard extends StatefulWidget {
   final Map<String, Object?> data;
   final String text;
   final Future<Map<String, dynamic>>? made; // a link already made (live progress)
+  final VoidCallback? onStop; // live progress: Stop sharing
 
   static Future<void> show(BuildContext context, ShareCard card) =>
       showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => card);
@@ -137,6 +138,18 @@ class _ShareCardState extends State<ShareCard> {
             if (Native.has('sharetap') || Native.has('sharenearby'))
               Pill(icon: Icons.wifi_tethering, label: tr('offline.title', 'Offline Sharing'), onTap: _url == null ? null : () => AppNav.open('offlineShare', {'url': _url, 'label': widget.name})),
           ]),
+          if (widget.onStop != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: TextButton.icon(
+                onPressed: () {
+                  widget.onStop!();
+                  Navigator.of(context).maybePop();
+                },
+                icon: Icon(Icons.stop_circle_outlined, color: sg.error),
+                label: Text(tr('html.stop_sharing_my_eta', 'Stop sharing my ETA'), style: TextStyle(color: sg.error)),
+              ),
+            ),
         ]),
       ),
     );

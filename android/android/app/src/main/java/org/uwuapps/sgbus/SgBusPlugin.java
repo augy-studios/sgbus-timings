@@ -2,7 +2,7 @@
  * The app itself, to the Dart side (android/lib/native/), as it was to the site's page in the
  * WebView from 2.0.0 to 2.3.1 (main-site/js/app-bridge.js):
  *
- *   info()                   { version, versionCode, features, lang }: what this app can do
+ *   info()                   { version, versionCode, features, lang, android, model }: what this app can do
  *   notify({ channel, tag, title, body, url })   a notification (Notifications.java)
  *   notificationsAllowed()   { allowed }
  *   openSettings({ what })   the app's page in Android's settings ("app"), its notification
@@ -118,6 +118,9 @@ public class SgBusPlugin extends Plugin {
         } catch (PackageManager.NameNotFoundException e) {
             out.put("version", null);
         }
+        // For a bug report's details: "Android 15", "Google Pixel 8".
+        out.put("android", Build.VERSION.RELEASE);
+        out.put("model", (Build.MODEL.toLowerCase().startsWith(Build.MANUFACTURER.toLowerCase()) ? "" : Build.MANUFACTURER + " ") + Build.MODEL);
         JSArray features = new JSArray();
         features.put("calendar"); // PhoneCalendarPlugin
         features.put("update"); // UpdateActivity

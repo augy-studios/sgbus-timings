@@ -14,6 +14,8 @@ import 'team/team.dart';
 import 'reminders/reminders.dart';
 import 'share/offline_share.dart';
 import 'card/card.dart';
+import 'share/shared.dart';
+import 'misc/misc.dart';
 import 'map/live_map.dart';
 import 'nav/doors.dart';
 import 'nav/nav_page.dart';
@@ -52,6 +54,8 @@ void registerFeatures() {
   Reminders.register();
   registerOfflineShare();
   registerCard();
+  registerShared();
+  registerMisc();
   NavPage.busOnly = () => const PlannerTab();
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top
