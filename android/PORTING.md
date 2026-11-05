@@ -38,13 +38,13 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Navigate (bus and train) | `js/nav.js` | ⬜ |
 | Route planner (bus only) | `js/planner.js`, `js/journeys.js` | ⬜ |
 | Live map, Explorer | `js/map*.js` | ⬜ |
-| Places, past searches | `js/places.js`, `js/recents.js` | ⬜ |
+| Places (past searches to do) | `js/places.js`, `js/recents.js` | 🚧 |
 | Calendar | `js/calendar.js` | ⬜ |
 | Get Off Alert, trips, stats | `js/trip.js`, `js/history.js`, `js/rides.js` | ⬜ |
 | uwuCoins, feats, Easter eggs, team runs | `js/coins.js`, `js/eggs.js`, `js/team.js` | ⬜ |
 | Sync | `js/sync.js` | ⬜ |
 | Reminders, routines, widgets, shortcuts | `js/reminders.js`, `js/widget.js` | ⬜ |
-| Share, QR, links, Offline Sharing | `js/share.js`, `js/qr.js`, `js/offline-share.js` | ⬜ |
+| Share card and links (QR, Offline Sharing to do) | `js/share.js`, `js/qr.js`, `js/offline-share.js` | 🚧 |
 | Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ⬜ |
 | Terminal | `js/terminal.js`, `js/sgbus-core.js` | ⬜ |
 | Bug report, updates, tours, first run | `js/bug-report.js`, `js/app-update.js`, `js/tour.js` | ⬜ |

@@ -9,6 +9,7 @@ import '../i18n/i18n.dart';
 import '../widgets/common.dart';
 import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
+import 'places/places_page.dart';
 import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
 import 'timings/board_screen.dart';
@@ -27,7 +28,7 @@ Map<String, Widget Function()> pages() => {
       'nav': () => _Soon(tr('tray.navigate', 'Navigate')),
       'alerts': () => const AlertsPage(),
       'trips': () => _Soon(tr('mainScreen.trips', 'Your trips')),
-      'places': () => _Soon(tr('tray.places', 'Places')),
+      'places': () => const PlacesPage(),
     };
 
 void registerFeatures() {
