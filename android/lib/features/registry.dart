@@ -9,6 +9,8 @@ import '../i18n/i18n.dart';
 import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
 import 'calendar/calendar.dart';
+import 'coins/coins.dart';
+import 'team/team.dart';
 import 'map/live_map.dart';
 import 'nav/doors.dart';
 import 'nav/nav_page.dart';
@@ -42,6 +44,8 @@ void registerFeatures() {
   LiveMap.register();
   AppNav.register('calendarSettings', (_) => CalendarSettings.open());
   hookDoors();
+  registerCoins();
+  TeamRun.register();
   NavPage.busOnly = () => const PlannerTab();
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top
@@ -52,7 +56,7 @@ void registerFeatures() {
   AppNav.register('startTrip', (a) {
     final n = NavState.I;
     final t = tripFromNav(a['option'] as Map<String, dynamic>, n.from, n.to);
-    if (t != null) Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null);
+    if (t != null) Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null, via: n.via?.toJson());
   });
   AppNav.register('startTripLegs', (a) {
     final end = a['end'] as String;

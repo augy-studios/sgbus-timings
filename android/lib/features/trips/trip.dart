@@ -23,6 +23,7 @@ import '../../data/journeys.dart';
 import '../../data/location.dart';
 import '../../data/network.dart';
 import '../../data/stops.dart';
+import '../../data/rewards.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
@@ -104,6 +105,10 @@ class Trip extends ChangeNotifier {
   final Map<int, ({int? boardAt, int? offAt})> times = {};
   bool arrived = false;
   Fix? here;
+  /// What the location's seen of each ride (data/rewards.dart, RideCheck), kept with the trip.
+  List<Map<String, dynamic>?> seen = [];
+  /// Navigate's stop on the way, for There and back again.
+  Map<String, Object?>? via;
 
   NativeListener? _loc;
   NativeListener? _end;
@@ -115,7 +120,7 @@ class Trip extends ChangeNotifier {
 
   // ---------- starting and stopping ----------
 
-  Future<void> start({required String title, required List<TripLeg> legs, Map<String, Object?>? from, Map<String, Object?>? to}) async {
+  Future<void> start({required String title, required List<TripLeg> legs, Map<String, Object?>? from, Map<String, Object?>? to, Map<String, Object?>? via}) async {
     if (legs.isEmpty) return;
     if (active) await stop(record: true);
     id = '${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}${math.Random().nextInt(1 << 30).toRadixString(36)}';
@@ -129,6 +134,8 @@ class Trip extends ChangeNotifier {
     alerted.clear();
     times.clear();
     arrived = false;
+    seen = List.filled(legs.length, null);
+    this.via = via;
     startedAt = legStartedAt = When.nowMs();
     _save();
     await _follow();
@@ -160,6 +167,10 @@ class Trip extends ChangeNotifier {
 
   Future<void> stop({bool record = true}) async {
     if (!active) return;
+    // The ride you're on is judged as the trip ends; a trip that got there earns its feats and
+    // coins (data/rewards.dart).
+    _judge(leg);
+    if (arrived) _rewards();
     if (record) _record();
     _tick?.cancel();
     _loc?.cancel();
@@ -191,6 +202,8 @@ class Trip extends ChangeNotifier {
     startedAt = (s['startedAt'] as num?)?.toInt() ?? When.nowMs();
     legStartedAt = (s['legStartedAt'] as num?)?.toInt() ?? startedAt;
     alerted.addAll(((s['alerted'] as List?) ?? const []).map((e) => (e as num).toInt()));
+    seen = [for (var i = 0; i < legs.length; i++) i < ((s['seen'] as List?)?.length ?? 0) ? ((s['seen'] as List)[i] as Map?)?.cast<String, dynamic>() : null];
+    via = (s['via'] as Map?)?.cast<String, Object?>();
     await _follow();
     notifyListeners();
   }
@@ -198,7 +211,34 @@ class Trip extends ChangeNotifier {
   void _save() => Store.I.putJson(savedKey, {
         'id': id, 'title': title, 'legs': [for (final l in legs) l.toJson()], 'from': from, 'to': to, 'leg': leg, 'pos': pos,
         'boarded': boarded, 'startedAt': startedAt, 'legStartedAt': legStartedAt, 'alerted': alerted.toList(),
+        'seen': seen, 'via': via,
       });
+
+  Map<String, dynamic> _seenOf(int i) {
+    while (seen.length < legs.length) {
+      seen.add(null);
+    }
+    return seen[i] ??= {'fixes': 0, 'startAt': null, 'endAt': null, 'along': <int>[]};
+  }
+
+  void _judge(int i) {
+    if (i < 0 || i >= legs.length || !legs[i].ride || id == null) return;
+    RideCheck.done(legs[i].toJson(), _seenOf(i), id!);
+  }
+
+  void _rewards() {
+    final legsJson = [for (final l in legs) l.toJson()];
+    Coins.tripDone(id!, legsJson, seen);
+    final last = legs.last.points.last;
+    final v = via;
+    Feats.tripDone(
+      start: legs.first.points.first,
+      end: last,
+      startedAt: startedAt,
+      via: v != null && v['lat'] is num ? [(v['lat'] as num).toDouble(), (v['lng'] as num).toDouble()] : null,
+      realRide: seen.any((x) => x?['ok'] == true),
+    );
+  }
 
   // ---------- where you are ----------
 
@@ -235,6 +275,8 @@ class Trip extends ChangeNotifier {
       _changed();
       return;
     }
+    RideCheck.see(l.toJson(), _seenOf(leg), p, f.accuracy ?? 999);
+    _save();
     final at = project(l.points, p);
     final onRoute = at.off <= math.max(250.0, (f.accuracy ?? 0) + 100);
     if (!onRoute) {
@@ -309,6 +351,7 @@ class Trip extends ChangeNotifier {
   }
 
   void _next() {
+    _judge(leg);
     final t = times[leg];
     if (current?.ride == true) times[leg] = (boardAt: t?.boardAt, offAt: When.nowMs());
     if (leg >= legs.length - 1) {

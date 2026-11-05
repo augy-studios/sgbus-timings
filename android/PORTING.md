@@ -41,7 +41,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Places and past searches | `js/places.js`, `js/recents.js` | ✅ |
 | Calendar: the phone's, an iCal link or an .ics file, checked against the site's | `js/calendar.js` | ✅ |
 | Get Off Alert (core: follow, alert, arrive, bar, timeline), Your trips and Trip Mix | `js/trip.js`, `js/history.js`, `js/rides.js` | 🚧 |
-| uwuCoins, feats, Easter eggs, team runs | `js/coins.js`, `js/eggs.js`, `js/team.js` | ⬜ |
+| Rides checked real, uwuCoins and the wheel, feats, Easter eggs, Achievements, past trips, the celebration, team runs | `js/rides.js`, `js/coins.js`, `js/eggs.js`, `js/retrofit.js`, `js/celebrate.js`, `js/team.js` | ✅ |
 | Sync | `js/sync.js` | ⬜ |
 | Reminders, routines, widgets, shortcuts | `js/reminders.js`, `js/widget.js` | ⬜ |
 | Share card and links (QR, Offline Sharing to do) | `js/share.js`, `js/qr.js`, `js/offline-share.js` | 🚧 |

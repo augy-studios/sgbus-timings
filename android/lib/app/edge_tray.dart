@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../data/favs.dart';
+import '../data/rewards.dart';
 import '../data/store.dart';
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
@@ -13,12 +14,13 @@ import 'nav.dart';
 import 'pages.dart';
 
 class TrayExtra {
-  const TrayExtra(this.id, this.icon, this.label, this.open, {this.when});
+  const TrayExtra(this.id, this.icon, this.label, this.open, {this.when, this.badge});
   final String id;
   final IconData icon;
   final String Function() label;
   final void Function() open;
   final bool Function()? when;
+  final String? Function()? badge;
 }
 
 class EdgeTray extends StatefulWidget {
@@ -39,7 +41,9 @@ class EdgeTray extends StatefulWidget {
 
   static final extras = <TrayExtra>[
     TrayExtra('explorer', Icons.explore_outlined, () => tr('tray.explorer', 'Explorer'), () => AppNav.open('explorer')),
-    TrayExtra('coins', Icons.toll_outlined, () => tr('coins.title', 'uwuCoins'), () => AppNav.open('coins')),
+    // Its balance on it; hidden with Show uwuCoins off.
+    TrayExtra('coins', Icons.toll_outlined, () => tr('coins.title', 'uwuCoins'), () => AppNav.open('coins'),
+        when: () => Coins.shown, badge: () => '${Coins.balance}'),
     TrayExtra('nearstops', Icons.notifications_active_outlined, () => tr('tray.nearStops', 'Timings near a stop'),
         () => AppNav.open('nearStopsReminder'), when: () => Native.has('nearstops')),
     TrayExtra('routines', Icons.repeat, () => tr('tray.routines', 'Routines'), () => AppNav.open('routines'), when: () => Native.has('routines')),
@@ -70,6 +74,7 @@ class _EdgeTrayState extends State<EdgeTray> {
   void initState() {
     super.initState();
     AppNav.page.addListener(_redraw);
+    Rewards.I.addListener(_redraw);
     Store.I.changes.listen((k) {
       if (mounted && (k.startsWith('sgbus_tray') || k.startsWith('sgbus_fav') || k == Pages.offKey || k == Pages.glanceOffKey || k == Pages.homeKey || k == 'sgbus_lang')) {
         setState(() {});
@@ -80,6 +85,7 @@ class _EdgeTrayState extends State<EdgeTray> {
   @override
   void dispose() {
     AppNav.page.removeListener(_redraw);
+    Rewards.I.removeListener(_redraw);
     super.dispose();
   }
 
@@ -183,7 +189,7 @@ class _EdgeTrayState extends State<EdgeTray> {
           round(p.icon, p.label(), () => AppNav.showPage(p.id),
               on: AppNav.page.value == p.id, badge: p.id == 'favs' && favCount > 0 ? '$favCount' : null),
         if (extras.isNotEmpty) rule(),
-        for (final e in extras) round(e.icon, e.label(), e.open),
+        for (final e in extras) round(e.icon, e.label(), e.open, badge: e.badge?.call()),
         rule(),
         round(Icons.settings_outlined, tr('settings.settings', 'Settings'), () => AppNav.open('settings')),
         round(Icons.palette_outlined, tr('theme.title', 'Theme'), () => AppNav.open('theme')),
