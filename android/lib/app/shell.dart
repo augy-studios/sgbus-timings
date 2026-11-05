@@ -15,6 +15,9 @@ class Shell extends StatefulWidget {
   const Shell({super.key, required this.pages});
   final Map<String, Widget Function()> pages;
 
+  /// What runs along the top of every page: the disruptions bar (features/alerts/).
+  static Widget Function()? top;
+
   @override
   State<Shell> createState() => _ShellState();
 }
@@ -71,12 +74,22 @@ class _ShellState extends State<Shell> {
         if (!didPop) _back();
       },
       child: Scaffold(
-        body: EdgeTray(
-          child: IndexedStack(
-            index: _built.keys.toList().indexOf(id),
-            children: [for (final k in _built.keys) KeyedSubtree(key: ValueKey(k), child: k == id ? page : _built[k]!)],
+        body: Column(children: [
+          if (Shell.top != null) Shell.top!(),
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              // Under the bar, the page needn't keep clear of the status bar too.
+              removeTop: false,
+              child: EdgeTray(
+                child: IndexedStack(
+                  index: _built.keys.toList().indexOf(id),
+                  children: [for (final k in _built.keys) KeyedSubtree(key: ValueKey(k), child: k == id ? page : _built[k]!)],
+                ),
+              ),
+            ),
           ),
-        ),
+        ]),
       ),
     );
   }

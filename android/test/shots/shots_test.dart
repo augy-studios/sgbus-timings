@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sgbus_timings/features/alerts/alerts.dart';
 import 'package:sgbus_timings/features/favs/favs_page.dart';
+import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';
 import 'package:sgbus_timings/features/settings/theme_screen.dart';
@@ -35,11 +37,14 @@ void main() {
 
   testWidgets('pages', timeout: _t, (t) async {
     await t.runAsync(() => stillData(state: sam));
+    GlancePage.weather = (_) => const WeatherButton();
     await shot(t, 'glance', () => onPage('glance', const GlancePage()));
     await shot(t, 'glance-usual', () => onPage('glance', const GlancePage()), material: false);
     await shot(t, 'timings', () => onPage('timings', const TimingsPage()));
     await shot(t, 'favs', () => onPage('favs', const FavsPage()));
     await shot(t, 'bus', () => const BusScreen(no: '14', fromStop: '84009'));
+    await shot(t, 'alerts', () => onPage('alerts', const AlertsPage()));
+    await shot(t, 'weather', () => const Scaffold(body: WeatherSheet()));
   });
 
   testWidgets('settings', timeout: _t, (t) async {

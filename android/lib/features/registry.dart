@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 
 import '../app/nav.dart';
+import '../app/shell.dart';
+import 'alerts/alerts.dart';
 import '../i18n/i18n.dart';
 import '../widgets/common.dart';
 import 'favs/favs_page.dart';
@@ -10,6 +12,7 @@ import 'glance/glance_page.dart';
 import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
 import 'timings/bus_screen.dart';
+import 'weather/weather.dart';
 import 'timings/stop_screen.dart';
 import 'timings/timings_page.dart';
 
@@ -19,12 +22,19 @@ Map<String, Widget Function()> pages() => {
       'timings': () => const TimingsPage(),
       'favs': () => const FavsPage(),
       'nav': () => _Soon(tr('tray.navigate', 'Navigate')),
-      'alerts': () => _Soon(tr('tray.alerts', 'Service alerts')),
+      'alerts': () => const AlertsPage(),
       'trips': () => _Soon(tr('mainScreen.trips', 'Your trips')),
       'places': () => _Soon(tr('tray.places', 'Places')),
     };
 
 void registerFeatures() {
+  Shell.top = () => const DisruptionBar();
+  Alerts.listen();
+  Alerts.startBar();
+  hookAlertsIntoStops();
+  Alerts.resync();
+  AppNav.register('alerts', (_) => AppNav.showPage('alerts'));
+  GlancePage.weather = (_) => const WeatherButton();
   AppNav.register('home', (_) => AppNav.showPage('glance'));
   AppNav.register('settings', (a) => SettingsScreen.open(a['group'] as String?));
   AppNav.register('theme', (_) => ThemeScreen.open());

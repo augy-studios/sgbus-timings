@@ -32,8 +32,8 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Favourites and lists | `script.js` | ✅ |
 | Settings | `index.html`, `script.js` | ✅ |
 | Theme, Material You switch, Your colours, High contrast | `js/theme.js`, `js/colours.js`, `js/wheel.js` | ✅ |
-| Weather | `js/weather.js` | ⬜ |
-| Disruptions bar, Service alerts, push | `js/alerts.js` | ⬜ |
+| Weather | `js/weather.js` | ✅ |
+| Disruptions bar, Service alerts, push | `js/alerts.js` | ✅ |
 | Board, Flag, Will I make it | `js/board.js`, `js/flag.js`, `js/make-it.js` | ⬜ |
 | Navigate (bus and train) | `js/nav.js` | ⬜ |
 | Route planner (bus only) | `js/planner.js`, `js/journeys.js` | ⬜ |
