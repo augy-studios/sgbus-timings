@@ -14,8 +14,16 @@ environment:
   sdk: ^3.13.0
 
 dependencies:
+  dynamic_color: ^2.1.0
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  geolocator: ^14.1.2
+  http: ^1.6.0
+  intl: ^0.20.3
+  material_color_utilities: ^0.13.0
+  shared_preferences: ^2.5.6
 
 dev_dependencies:
   flutter_test:
@@ -23,5 +31,15 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
+  uses-material-design: true
   assets:
-    - assets/offline.html
+    # The site's own words, in each of its languages: copied from main-site/i18n/ by
+    # tool/sync_i18n.dart, and checked to match by test/i18n_test.dart.
+    - assets/i18n/
+    # The few words only the app says (Back twice, Material You's switch).
+    - assets/i18n_app/
+  fonts:
+    # The site's font, for the usual look. Material You uses the phone's own.
+    - family: Jua
+      fonts:
+        - asset: assets/fonts/Jua-Regular.ttf
