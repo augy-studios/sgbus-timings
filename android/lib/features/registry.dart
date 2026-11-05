@@ -9,6 +9,7 @@ import '../i18n/i18n.dart';
 import '../widgets/common.dart';
 import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
+import 'nav/nav_page.dart';
 import 'places/places_page.dart';
 import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
@@ -25,7 +26,7 @@ Map<String, Widget Function()> pages() => {
       'glance': () => const GlancePage(),
       'timings': () => const TimingsPage(),
       'favs': () => const FavsPage(),
-      'nav': () => _Soon(tr('tray.navigate', 'Navigate')),
+      'nav': () => const NavPage(),
       'alerts': () => const AlertsPage(),
       'trips': () => _Soon(tr('mainScreen.trips', 'Your trips')),
       'places': () => const PlacesPage(),
@@ -45,6 +46,21 @@ void registerFeatures() {
   MakeIt.hook();
   AppNav.register('board', (a) => BoardScreen.open(a['code'] as String));
   AppNav.register('flag', (a) => FlagScreen.open(a['no'] as String));
+  AppNav.register('nav', (_) => AppNav.showPage('nav'));
+  AppNav.register('navHash', (a) => openNav(
+        from: NavEnd.parse(a['from'] as String?),
+        to: NavEnd.parse(a['to'] as String?),
+        via: NavEnd.parse(a['via'] as String?),
+        when: a['when'] as dynamic,
+      ));
+  AppNav.register('navAt', (a) => openNav(
+        from: a['from'] == 'here' ? NavEnd.parse('here') : NavEnd.from(a['from']),
+        to: a['to'] == 'here' ? NavEnd.parse('here') : NavEnd.from(a['to']),
+      ));
+  AppNav.register('navSaved', (a) {
+    final n = a['nav'] as Map;
+    openNav(from: NavEnd.from(n['from']), to: NavEnd.from(n['to']), via: NavEnd.from(n['via']));
+  });
   AppNav.register('stop', (a) => StopScreen.open(a['code'] as String, service: a['service'] as String?));
   AppNav.register('bus', (a) => BusScreen.open(a['no'] as String, fromStop: a['fromStop'] as String?, onward: a['onward'] == true, dir: a['dir'] as int?));
 }

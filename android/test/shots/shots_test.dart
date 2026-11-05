@@ -4,6 +4,8 @@ import 'package:sgbus_timings/features/alerts/alerts.dart';
 import 'package:sgbus_timings/features/favs/favs_page.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
+import 'package:sgbus_timings/features/nav/nav_page.dart';
+import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';
 import 'package:sgbus_timings/features/settings/theme_screen.dart';
 import 'package:sgbus_timings/features/timings/bus_screen.dart';
@@ -54,5 +56,17 @@ void main() {
     await shot(t, 'theme-dark', () => const ThemeScreen(), brightness: Brightness.dark);
     await shot(t, 'settings', () => const SettingsScreen());
     await shot(t, 'settings-pages', () => const SettingsGroup(group: 'pages'));
+  });
+
+  testWidgets('navigate', timeout: _t, (t) async {
+    await t.runAsync(() => stillData(state: sam));
+    final n = NavState.I;
+    n.from = const NavEnd('Bedok Mall', 1.324736, 103.929256);
+    n.to = const NavEnd('One Raffles Place', 1.28435, 103.851073);
+    n.when = const WhenPick('leave', '2026-10-30T08:35');
+    await t.runAsync(n.run);
+    await shot(t, 'nav', () => onPage('nav', const NavPage()));
+    await t.runAsync(() => n.open(n.options[1]));
+    await shot(t, 'nav-way', () => onPage('nav', const NavPage()));
   });
 }

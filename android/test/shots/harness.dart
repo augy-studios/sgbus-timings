@@ -137,6 +137,8 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
         return _json('weather');
       case '/notices':
         return _json('notices');
+      case '/nav':
+        return _json('nav');
     }
     throw ApiError('No fixture for $path');
   };
