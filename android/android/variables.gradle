@@ -1,0 +1,29 @@
+ext {
+    minSdkVersion = 24
+    compileSdkVersion = 36
+    targetSdkVersion = 36
+    androidxAppCompatVersion = '1.7.1'
+    androidxCoreVersion = '1.17.0'
+    coreSplashScreenVersion = '1.2.0'
+    // The bridge to the page (bridge/Bridge.java): WebViewCompat's message listener and
+    // document-start script, both held to the site's own origin.
+    androidxWebkitVersion = '1.14.0'
+    // TripService's location.
+    playServicesLocationVersion = '21.3.0'
+    // Offline Sharing's Nearby (OfflineSharePlugin).
+    playServicesNearbyVersion = '19.5.1'
+    // Scan a stop's code (ScanPlugin), ML Kit's text recognition in Play services.
+    mlkitTextRecognitionVersion = '19.0.1'
+    // The Wear OS app (wear/), and the phone handing it your favourite stops.
+    playServicesWearableVersion = '20.0.1'
+    wearTilesVersion = '1.6.2'
+    protolayoutVersion = '1.4.2'
+    concurrentFuturesVersion = '1.2.0'
+    // The widget's refresh (WidgetRefreshWorker).
+    workVersion = '2.11.2'
+    // The updater's Material 3 page, its colours from the wallpaper (UpdateActivity).
+    materialVersion = '1.13.0'
+    // Notifications from the server (PushNotificationsPlugin, MessagingService) and
+    // SgBusPlugin's "new versions" topic (2.1.1).
+    firebaseMessagingVersion = '25.0.1'
+}

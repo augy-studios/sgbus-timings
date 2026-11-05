@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SG Bus Timings for Android: see android/README.md for what each part is for. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- Location: the site's own (Near me, Navigate, the live map), and the trip being followed
+         with the screen off (TripService). "All the time" is asked once, on the first trip. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Service Alerts and the Get Off Alert (Notifications.java), and its buzz. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- The Get Off Alert's beeps in a call-only Bluetooth earpiece, over its call link for a
+         moment (EarBeep). Granted with the app: nothing is asked. -->
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
+    <!-- The phone's calendar, for Navigate's Calendar tab (PhoneCalendarPlugin). Asked for only
+         when you choose it. -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+
+    <!-- A card's value (CardPlugin), and Android offering this app when a card's held to the
+         phone. Phones without NFC still install the app. -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
+    <!-- Offline Sharing (OfflineSharePlugin): the phone as an NFC tag for a tap (host card
+         emulation), and Google's Nearby Connections over Bluetooth and Wi-Fi. Bluetooth's and
+         Nearby devices' are asked for the first time Nearby's used; before Android 12 it's
+         location, which the app has already. Phones without them still install the app. -->
+    <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+    <uses-feature android:name="android.hardware.wifi" android:required="false" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+    <!-- The reminders (RemindersPlugin): set again after a restart (BootReceiver); the last bus
+         and Time to leave on time to the minute (USE_EXACT_ALARM, granted at install; not
+         allowed on Google Play for an app like this one, like REQUEST_INSTALL_PACKAGES); "On a
+         bus?" by Play services' activity recognition, which asks for Physical activity. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" />
+
+    <!-- Asked on the first trip, so a phone's battery saver doesn't stop it in the background
+         (TripPlugin). Not allowed on Google Play for an app like this one. -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- Scan a stop's code: the camera, read by ML Kit (ScanPlugin). The torch for the
+         flag-down screen needs no permission. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.flash" android:required="false" />
+
+    <!-- Search by voice: Android's own speech screen, which Android 11 and later hide from this
+         app unless it's named here (SgBusPlugin.listen). -->
+    <queries>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+    </queries>
+
+    <!-- The app updating itself from GitHub (UpdateActivity.java). Each update still asks you on
+         Android's own install screen. Not allowed on Google Play: drop it for a Play build. -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!-- The apps OpenAppActivity opens, which Android 11 and later hide from this app unless
+         they're named here. -->
+    <queries>
+        <package android:name="sg.com.transitlink" />
+        <package android:name="sg.gov.ica.mobile.app" />
+    </queries>
+
+    <application
+        android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:localeConfig="@xml/locales_config"
+        android:theme="@style/AppTheme">
+
+        <!-- The app's own language before Android 13, kept by AppCompat (SgBusPlugin.setLanguage);
+             from Android 13 Android keeps it, and lists it in the app's settings. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+        <!-- Firebase's notifications (Service Alerts and the server's Get Off Alert) use these
+             unless the push names its own (main-site/api/_push/fcm.js). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification_icon" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="alerts" />
+
+        <!-- The Flutter embedding the app's screens use (MainActivity, android/lib/). -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+
+        <!-- Pushes from the server while the app's up (PushNotificationsPlugin). -->
+        <service
+            android:name=".MessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- ML Kit's text recognition model, fetched by Play services with the app rather than
+             on the first scan (ScanPlugin). -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr" />
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|layoutDirection|fontScale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize"
+            android:label="@string/title_activity_main"
+            android:theme="@style/AppTheme.NoActionBarLaunch"
+            android:launchMode="singleTask"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- The site's own links open in the app: Android checks the site lists this app's
+                 signing key in main-site/.well-known/assetlinks.json. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="sgbus.uwuapps.org" />
+            </intent-filter>
+
+            <!-- uwu://sgbus/ links (MainActivity.fromAppLink). Only the sgbus host, so UwU Apps'
+                 other apps can answer uwu:// links of their own. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="uwu" android:host="sgbus" />
+            </intent-filter>
+
+            <!-- Sharing a place into Navigate, from Google Maps and the like. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
+            <!-- Another phone's Offline Sharing held to this one (ShareTagService on that
+                 phone): a tag with a link to the site, opened here (MainActivity.tappedLink)
+                 rather than in the browser. Before the card's filter, as Android tries NDEF
+                 first. -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="https" android:host="sgbus.uwuapps.org" />
+            </intent-filter>
+
+            <!-- A card held to the phone (CardPlugin.tapped): Android offers this app for it,
+                 with the app closed or in the background. -->
+            <intent-filter>
+                <action android:name="android.nfc.action.TECH_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <meta-data android:name="android.nfc.action.TECH_DISCOVERED" android:resource="@xml/nfc_tech" />
+
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
+        </activity>
+
+        <!-- Opens another app, such as SimplyGo, for the site's button (OpenAppActivity.java).
+             Shows nothing, and leaves no trace in recents or this app's task. -->
+        <activity android:name=".OpenAppActivity"
+            android:exported="true"
+            android:noHistory="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="org.uwuapps.sgbus" android:host="open" />
+            </intent-filter>
+        </activity>
+
+        <!-- The app updating itself, for the site's update bar (UpdateActivity.java), and the
+             installer's answers to it, which no other app may send (not exported). -->
+        <activity android:name=".UpdateActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
+            android:theme="@style/UpdateTheme">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="org.uwuapps.sgbus" android:host="update" />
+            </intent-filter>
+        </activity>
+        <receiver android:name=".UpdateActivity$InstallStatus"
+            android:exported="false" />
+
+        <!-- The Bus timings widget (TimingsWidget.java), its rows, and its setup. -->
+        <receiver android:name=".TimingsWidget"
+            android:label="@string/widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/timings_widget_info" />
+        </receiver>
+        <service android:name=".TimingsWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+        <activity android:name=".WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/UpdateTheme">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Offline Sharing's tap: this phone as an NFC tag with the link on it
+             (ShareTagService.java), answering only while the share card's Offline Sharing is
+             open. Only Android's NFC service may bind it. -->
+        <service android:name=".ShareTagService"
+            android:exported="true"
+            android:permission="android.permission.BIND_NFC_SERVICE">
+            <intent-filter>
+                <action android:name="android.nfc.cardemulation.action.HOST_APDU_SERVICE" />
+            </intent-filter>
+            <meta-data android:name="android.nfc.cardemulation.host_apdu_service"
+                android:resource="@xml/share_tag_service" />
+        </service>
+
+        <!-- The reminders (RemindersPlugin): each one's events from Play services or the alarm,
+             which no other app may send (not exported), and setting them again after a restart
+             or an update (BootReceiver), broadcasts only Android sends. -->
+        <receiver android:name=".NearStops$Receiver" android:exported="false" />
+        <receiver android:name=".LastBus$Receiver" android:exported="false" />
+        <receiver android:name=".Routines$Receiver" android:exported="false" />
+        <receiver android:name=".LeaveTime$Receiver" android:exported="false" />
+        <receiver android:name=".OnABus$Receiver" android:exported="false" />
+        <receiver android:name=".BootReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Quick Settings tiles: Bus home and Bus to work (PlaceTile.java, PlaceShortcuts.java). -->
+        <service android:name=".PlaceTile$Home"
+            android:label="@string/tile_home"
+            android:icon="@drawable/tile_home"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+        <service android:name=".PlaceTile$Work"
+            android:label="@string/tile_work"
+            android:icon="@drawable/tile_work"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- The trip being followed (TripService.java). Ends with the app swiped away. -->
+        <service android:name=".TripService"
+            android:exported="false"
+            android:foregroundServiceType="location"
+            android:stopWithTask="true" />
+    </application>
+</manifest>

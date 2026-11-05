@@ -1,0 +1,63 @@
+plugins {
+    id "com.android.application"
+}
+
+// SG Bus Timings for Wear OS: a tile with the next buses at your nearest favourite stop, and a
+// small screen with all your favourites (wear/README.md). Built alongside the phone's app by
+// android/build-apk.ps1, into release/<version>/ as sg-bus-timings-<version>-watch.apk.
+//
+// The same application id and signing key as the phone's, which the Wearable Data Layer
+// needs to pair the two (the phone hands the watch your favourite stops), and the same
+// version, read from the Flutter app's pubspec.yaml (version: 2.3.1+26) so it's only ever
+// raised there.
+def pubspec = file('../../pubspec.yaml').text
+def phoneVersion = (pubspec =~ /(?m)^version:\s*([^+\s]+)\+(\d+)/)[0]
+def phoneVersionName = phoneVersion[1]
+def phoneVersionCode = phoneVersion[2] as int
+
+android {
+    namespace = "org.uwuapps.sgbus.wear"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId = "org.uwuapps.sgbus"
+        // Wear OS 3, the first with tiles from other apps.
+        minSdk = 30
+        targetSdk = rootProject.ext.targetSdkVersion
+        versionCode = phoneVersionCode
+        versionName = phoneVersionName
+    }
+    // The phone's key: android/keystore.properties and android/android.keystore.
+    def keystoreProps = new Properties()
+    def keystoreFile = rootProject.file('../keystore.properties')
+    if (keystoreFile.exists()) keystoreFile.withInputStream { keystoreProps.load(it) }
+    signingConfigs {
+        release {
+            if (keystoreProps.storeFile) {
+                storeFile = rootProject.file("../${keystoreProps.storeFile}")
+                storePassword = keystoreProps.storePassword
+                keyAlias = keystoreProps.keyAlias
+                keyPassword = keystoreProps.keyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+            signingConfig = keystoreProps.storeFile ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+}
+
+dependencies {
+    implementation "androidx.core:core:$androidxCoreVersion"
+    implementation "androidx.wear.tiles:tiles:$wearTilesVersion"
+    implementation "androidx.wear.protolayout:protolayout:$protolayoutVersion"
+    implementation "androidx.wear.protolayout:protolayout-expression:$protolayoutVersion"
+    implementation "androidx.concurrent:concurrent-futures:$concurrentFuturesVersion"
+    implementation "com.google.android.gms:play-services-wearable:$playServicesWearableVersion"
+    implementation "com.google.android.gms:play-services-location:$playServicesLocationVersion"
+}

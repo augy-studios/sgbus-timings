@@ -1,0 +1,75 @@
+plugins {
+    id "com.android.application"
+    // Flutter's Gradle plugin, after Android's: the Dart side (android/lib/) and its plugins.
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace = "org.uwuapps.sgbus"
+    compileSdk = rootProject.ext.compileSdkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    defaultConfig {
+        applicationId = "org.uwuapps.sgbus"
+        minSdk = rootProject.ext.minSdkVersion
+        targetSdk = rootProject.ext.targetSdkVersion
+        // From pubspec.yaml's version (2.3.1+26 is versionName 2.3.1, versionCode 26): raise it
+        // there for a new version.
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    // Signed with the same key as every version before, from android/keystore.properties and
+    // android/android.keystore, which are kept out of git (android/README.md). Without them, a
+    // build for trying out is signed with the debug key, which build-apk.ps1 refuses.
+    def keystoreProps = new Properties()
+    def keystoreFile = rootProject.file('../keystore.properties')
+    if (keystoreFile.exists()) keystoreFile.withInputStream { keystoreProps.load(it) }
+    signingConfigs {
+        release {
+            if (keystoreProps.storeFile) {
+                storeFile = rootProject.file("../${keystoreProps.storeFile}")
+                storePassword = keystoreProps.storePassword
+                keyAlias = keystoreProps.keyAlias
+                keyPassword = keystoreProps.keyPassword
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled = false
+            shrinkResources = false
+            signingConfig = keystoreProps.storeFile ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+dependencies {
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation "androidx.webkit:webkit:$androidxWebkitVersion"
+    implementation "com.google.android.gms:play-services-location:$playServicesLocationVersion"
+    implementation "com.google.android.gms:play-services-nearby:$playServicesNearbyVersion"
+    implementation "com.google.android.gms:play-services-mlkit-text-recognition:$mlkitTextRecognitionVersion"
+    implementation "com.google.android.gms:play-services-wearable:$playServicesWearableVersion"
+    implementation "androidx.work:work-runtime:$workVersion"
+    implementation "com.google.android.material:material:$materialVersion"
+    implementation "com.google.firebase:firebase-messaging:$firebaseMessagingVersion"
+}
+
+// Firebase is set up for this build: the server can push to it (android/FIREBASE-SETUP.md).
+// Without google-services.json the app builds and works, but gets no notifications from the
+// server.
+if (file('google-services.json').exists()) {
+    apply plugin: 'com.google.gms.google-services'
+} else {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

@@ -1,0 +1,27 @@
+# SG Bus Timings for Android: the site at sgbus.uwuapps.org in a Flutter app's WebView, with
+# the app's native parts reached through a bridge (README.md).
+name: sgbus_timings
+description: "SG Bus Timings for Android: the site at sgbus.uwuapps.org in Flutter, with native plugins."
+publish_to: 'none'
+
+# The app's version: versionName+versionCode. Raise both for a new version: a phone only takes
+# a higher versionCode as an update. 1.0.0 to 1.2.0 (versionCode 1 to 3) were the Bubblewrap
+# app, 2.0.0 to 2.3.1 (4 to 26) the Capacitor one. The watch app (android/wear/) reads it here
+# too, and desktop/package.json's version is raised to the same.
+version: 2.3.1+26
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  assets:
+    - assets/offline.html

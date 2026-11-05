@@ -8,7 +8,14 @@ keystore.properties
 # Firebase's settings for the app (FIREBASE-SETUP.md): not secret, but your project's own.
 google-services.json
 
-node_modules/
+# Flutter's and Dart's: the packages fetched (pubspec.lock is kept), and everything built.
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+*.iml
+.idea/
 
 # Built apps
 *.apk
