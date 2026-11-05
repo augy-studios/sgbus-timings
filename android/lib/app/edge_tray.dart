@@ -37,15 +37,15 @@ class EdgeTray extends StatefulWidget {
   }
 
   static final extras = <TrayExtra>[
-    TrayExtra('explorer', Icons.explore_outlined, () => tr('html.explorer', 'Explorer'), () => AppNav.open('explorer')),
+    TrayExtra('explorer', Icons.explore_outlined, () => tr('tray.explorer', 'Explorer'), () => AppNav.open('explorer')),
     TrayExtra('coins', Icons.toll_outlined, () => tr('coins.title', 'uwuCoins'), () => AppNav.open('coins')),
-    TrayExtra('nearstops', Icons.notifications_active_outlined, () => tr('html.timings_near_a_stop', 'Timings near a stop'),
+    TrayExtra('nearstops', Icons.notifications_active_outlined, () => tr('tray.nearStops', 'Timings near a stop'),
         () => AppNav.open('nearStopsReminder'), when: () => Native.has('nearstops')),
-    TrayExtra('routines', Icons.repeat, () => tr('html.routines', 'Routines'), () => AppNav.open('routines'), when: () => Native.has('routines')),
-    TrayExtra('card', Icons.credit_card, () => tr('html.card_value', 'Card value'), () => AppNav.open('card'), when: () => Native.has('card')),
-    TrayExtra('receive', Icons.download_for_offline_outlined, () => tr('html.receive_nearby', 'Receive nearby'),
+    TrayExtra('routines', Icons.repeat, () => tr('tray.routines', 'Routines'), () => AppNav.open('routines'), when: () => Native.has('routines')),
+    TrayExtra('card', Icons.credit_card, () => tr('tray.card', 'Card value'), () => AppNav.open('card'), when: () => Native.has('card')),
+    TrayExtra('receive', Icons.download_for_offline_outlined, () => tr('tray.receive', 'Receive nearby'),
         () => AppNav.open('receive'), when: () => Native.has('sharenearby')),
-    TrayExtra('update', Icons.system_update_alt, () => tr('html.check_for_app_updates', 'Check for app updates'),
+    TrayExtra('update', Icons.system_update_alt, () => tr('tray.appUpdate', 'Check for app updates'),
         () => AppNav.open('appUpdate'), when: () => Native.has('checkupdate')),
     TrayExtra('simplygo', Icons.contactless_outlined, () => tr('html.open_simplygo', 'Open SimplyGo'), () => AppNav.open('simplygo')),
   ];
@@ -122,8 +122,8 @@ class _EdgeTrayState extends State<EdgeTray> {
         const SizedBox(height: 8),
         for (final e in extras) round(e.icon, e.label(), e.open),
         const SizedBox(height: 8),
-        round(Icons.settings_outlined, tr('html.settings', 'Settings'), () => AppNav.open('settings')),
-        round(Icons.palette_outlined, tr('html.theme', 'Theme'), () => AppNav.open('theme')),
+        round(Icons.settings_outlined, tr('settings.settings', 'Settings'), () => AppNav.open('settings')),
+        round(Icons.palette_outlined, tr('theme.title', 'Theme'), () => AppNav.open('theme')),
       ],
     );
 

@@ -148,7 +148,7 @@ class _StopScreenState extends State<StopScreen> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(tr('stop.pick.title', 'Pick a bus'), style: Theme.of(ctx).textTheme.titleLarge),
+            Text(tr('stop.tool.pick', 'Pick a bus'), style: Theme.of(ctx).textTheme.titleLarge),
             const SizedBox(height: 12),
             if (all.isEmpty) EmptyNote(tr('stop.noLive', 'No live buses right now.')),
             Wrap(spacing: 8, runSpacing: 8, children: [
@@ -194,7 +194,7 @@ class _StopScreenState extends State<StopScreen> {
             icon: const Icon(Icons.refresh),
           ),
           IconButton(
-            tooltip: tr('share.share', 'Share'),
+            tooltip: tr('nav.share', 'Share'),
             onPressed: () => shareLink(context, Links.stop(code) + (narrowed ? ',$_service' : ''), name),
             icon: const Icon(Icons.share_outlined),
           ),
