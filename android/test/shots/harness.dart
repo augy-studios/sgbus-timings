@@ -16,6 +16,9 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/api/api.dart';
+import 'package:sgbus_timings/app/edge_tray.dart';
+import 'package:sgbus_timings/app/nav.dart';
+import 'package:sgbus_timings/data/location.dart';
 import 'package:sgbus_timings/data/network.dart';
 import 'package:sgbus_timings/data/stations.dart';
 import 'package:sgbus_timings/data/stops.dart';
@@ -54,6 +57,8 @@ Future<void> loadFonts() async {
   final mf = '$root/bin/cache/artifacts/material_fonts';
   await _font('Jua', ['assets/fonts/Jua-Regular.ttf']);
   await _font('Roboto', ['$mf/Roboto-Regular.ttf', '$mf/Roboto-Medium.ttf', '$mf/Roboto-Bold.ttf', '$mf/Roboto-Light.ttf']);
+  // Android's own fallback (Noto) stood in for by DejaVu, for "→", "·" and the like.
+  await _font('Noto Sans', ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']);
   await _font('MaterialIcons', ['$mf/MaterialIcons-Regular.otf']);
 }
 
@@ -113,6 +118,8 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
   Store.memory({...state});
   When.now = () => stillAt;
   Native.available = false;
+  // Standing outside Bedok Mall, as the site's shots.
+  Locate.fake = const Fix(1.324736, 103.929256, accuracy: 8);
   Stops.useRows(_gz('bus-stops') as List);
   BusNet.index(Map<String, dynamic>.from(_gz('bus-routes') as Map));
   final rail = File('../main-site/data/rail-stations.json');
@@ -182,4 +189,10 @@ Future<void> shot(WidgetTester tester, String name, Widget Function() build,
   });
   outDir.createSync(recursive: true);
   File('${outDir.path}/$name.png').writeAsBytesSync(bytes!);
+}
+
+/// A page as the main screen shows it: in the Edge Tray, its tab on.
+Widget onPage(String id, Widget page) {
+  AppNav.page.value = id;
+  return Scaffold(body: EdgeTray(child: page));
 }

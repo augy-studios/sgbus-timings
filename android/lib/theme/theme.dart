@@ -247,6 +247,8 @@ class AppLook extends ChangeNotifier {
       useMaterial3: true,
       colorScheme: scheme,
       brightness: b,
+      // The phone's font, and its fallbacks for arrows and the other languages' letters.
+      fontFamilyFallback: const ['Noto Sans', 'sans-serif'],
       extensions: [sg],
       // Material 3 Expressive's rounder shapes, as the site's Material look had them.
       cardTheme: CardThemeData(

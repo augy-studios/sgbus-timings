@@ -28,8 +28,8 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | A stop's timings | `script.js` (loadStop, renderArrivals) | ✅ |
 | Bus timings page: search, near me, postal codes | `script.js` | ✅ |
 | Bus route | `script.js` (openService) | ✅ |
-| Glance | `js/glance.js` | ⬜ |
-| Favourites and lists | `script.js` | ⬜ |
+| Glance | `js/glance.js` | ✅ |
+| Favourites and lists | `script.js` | ✅ |
 | Settings | `index.html`, `script.js` | ⬜ |
 | Theme, Your colours, High contrast | `js/theme.js`, `js/colours.js`, `js/wheel.js` | ⬜ |
 | Weather | `js/weather.js` | ⬜ |
