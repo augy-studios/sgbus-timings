@@ -4,6 +4,10 @@ import 'package:sgbus_timings/features/alerts/alerts.dart';
 import 'package:sgbus_timings/features/favs/favs_page.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
+import 'package:sgbus_timings/features/map/live_map.dart';
+import 'package:sgbus_timings/data/doors.dart';
+import 'dart:convert';
+import 'dart:io';
 import 'package:sgbus_timings/features/nav/nav_page.dart';
 import 'package:sgbus_timings/features/planner/planner.dart';
 import 'package:sgbus_timings/features/trips/trip.dart';
@@ -103,5 +107,53 @@ void main() {
     await shot(t, 'trip', () => const TripScreen());
     await t.runAsync(() => Trip.I.stop());
     await shot(t, 'trips', () => onPage('trips', const TripsPage()));
+  });
+
+  testWidgets('map', timeout: _t, (t) async {
+    await t.runAsync(() async {
+      await stillData(state: sam);
+      await MrtDoors.load();
+    });
+    // Explorer round Bedok, the station's card open on its doors.
+    await shot(t, 'explorer', () => const LiveMap(MapMode.explore), then: (t) async {
+      for (var i = 0; i < 6; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      openMapCard(const MapPick.station('Bedok', ['EW5'], 1.323935, 103.929995));
+    });
+    await shot(t, 'explorer-stop', () => const LiveMap(MapMode.explore), then: (t) async {
+      for (var i = 0; i < 6; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      openMapCard(const MapPick.stop('84031'));
+    });
+    // Walking to a stop, turn by turn.
+    await shot(t, 'map-walk', () => const LiveMap(MapMode.walk, place: (lat: 1.32432719820227, lng: 103.93471220144858, label: 'Blk 27', code: '84049')),
+        then: (t) async {
+      for (var i = 0; i < 6; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      // The whole walk at once, as Overview shows it.
+      await t.tap(find.byTooltip('Show the whole route'));
+    });
+    // The traffic on bus 14's way out of Bedok.
+    final way = jsonDecode(File('test/fixtures/traffic-way.json').readAsStringSync()) as Map;
+    await shot(
+      t,
+      'map-traffic',
+      () => LiveMap(MapMode.traffic,
+          trafficPts: [for (final p in way['points'] as List) [(p[0] as num).toDouble(), (p[1] as num).toDouble()]],
+          trafficNames: [for (final n in way['names'] as List) '$n'],
+          trafficTitle: 'Bus 14 to Clementi Int'),
+      then: (t) async {
+        for (var i = 0; i < 6; i++) {
+          await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+          await t.pump(const Duration(milliseconds: 100));
+        }
+      },
+    );
   });
 }

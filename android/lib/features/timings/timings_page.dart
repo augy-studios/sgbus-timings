@@ -15,7 +15,9 @@ import '../../data/store.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
+import '../../data/recents.dart';
 import '../../widgets/common.dart';
+import '../../widgets/recents_panel.dart';
 import '../../widgets/stop_rows.dart';
 import 'bus_screen.dart';
 import 'greeting.dart';
@@ -87,12 +89,13 @@ class _TimingsPageState extends State<TimingsPage> {
 
   void _openStop(String code, {String? service}) {
     _focus.unfocus();
-    Recents.add({'kind': 'stop', 'code': code, 'label': Stops.nameOf(code)});
+    Recents.add(Recents.stop(code));
     StopScreen.open(code, service: service);
   }
 
   Future<void> _postal(String code) async {
     _focus.unfocus();
+    Recents.add(Recents.postal(code));
     try {
       await Stops.load();
       final place = await Api.map('postal-code', query: {'code': code});
@@ -195,7 +198,7 @@ class _TimingsPageState extends State<TimingsPage> {
                     name: BusNet.endsText(no),
                     onTap: () {
                       _focus.unfocus();
-                      Recents.add({'kind': 'bus', 'no': no});
+                      Recents.add(Recents.bus(no));
                       BusScreen.open(no);
                     },
                   ),
@@ -214,8 +217,28 @@ class _TimingsPageState extends State<TimingsPage> {
                   EmptyNote(tr('search.noMatch', 'No bus stops matched that. Try a bus stop number or part of its name.')),
               ]),
             ),
+          ] else if (_focus.hasFocus) ...[
+            const SizedBox(height: 8),
+            RecentsPanel(
+              favs: true,
+              accepts: (r) => r.kind == 'stop' || r.kind == 'bus' || r.kind == 'postal',
+              onPick: (r) {
+                if (r.kind == 'stop') {
+                  _openStop(r.code!);
+                } else if (r.kind == 'bus') {
+                  _focus.unfocus();
+                  BusScreen.open(r.code!);
+                } else {
+                  _postal(r.code!);
+                }
+              },
+              onFavStop: _openStop,
+              onFavBus: (no) {
+                _focus.unfocus();
+                BusScreen.open(no);
+              },
+            ),
           ] else ...[
-            RecentsStrip(onStop: _openStop),
             const SizedBox(height: 8),
             SectionLabel(
               tr('timings.stops_near_me', 'Stops near me'),
@@ -311,21 +334,6 @@ Future<void> showStopList(BuildContext context, String title, List<StopRowItem> 
       ]),
     ),
   );
-}
-
-/// Past searches (js/recents.js), filled in by features/recents/.
-class Recents {
-  Recents._();
-  static void Function(Map<String, Object?> item) add = (_) {};
-}
-
-class RecentsStrip extends StatelessWidget {
-  const RecentsStrip({super.key, required this.onStop});
-  final void Function(String code) onStop;
-  static Widget Function(BuildContext context, void Function(String code) onStop)? builder;
-
-  @override
-  Widget build(BuildContext context) => builder?.call(context, onStop) ?? const SizedBox.shrink();
 }
 
 /// For other features: the store, read in a widget.

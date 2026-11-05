@@ -555,10 +555,13 @@ class TripScreen extends StatelessWidget {
           }
           return SgScaffold(
             title: t.title,
-            actions: [IconButton(tooltip: tr('trip.end_trip', 'End trip'), onPressed: () {
+            actions: [
+              IconButton(tooltip: tr('trip.live_map', 'Live map'), onPressed: () => AppNav.open('tripMap'), icon: const Icon(Icons.map_outlined)),
+              IconButton(tooltip: tr('trip.end_trip', 'End trip'), onPressed: () {
               t.stop();
               Navigator.of(context).maybePop();
-            }, icon: const Icon(Icons.stop_circle_outlined))],
+            }, icon: const Icon(Icons.stop_circle_outlined)),
+            ],
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
               SgCard(child: Text(t.barText(), style: Theme.of(context).textTheme.titleMedium)),
               if (!Trip.enabled) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('trip.alertOff', 'Get Off Alert is off in Settings.'), style: TextStyle(color: sg.warn))),

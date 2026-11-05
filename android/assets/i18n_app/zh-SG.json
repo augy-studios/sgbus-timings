@@ -6,5 +6,7 @@
   "migrate.done": "你之前的收藏、地点和设置都在这里。",
   "theme.youColours": "颜色",
   "theme.youColours.phone": "手机的颜色",
-  "theme.youColours.yours": "你的颜色"
+  "theme.youColours.yours": "你的颜色",
+  "map.arrive": "{time} 到达",
+  "map.locate": "以在地图上显示你的位置"
 }

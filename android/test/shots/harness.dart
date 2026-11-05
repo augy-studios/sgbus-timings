@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sgbus_timings/features/map/live_map.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/app/edge_tray.dart';
 import 'package:sgbus_timings/app/nav.dart';
@@ -121,6 +122,7 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
   Store.memory({...state});
   When.now = () => stillAt;
   Native.available = false;
+  LiveMap.preview = true;
   // Standing outside Bedok Mall, as the site's shots.
   Locate.fake = const Fix(1.324736, 103.929256, accuracy: 8);
   Stops.useRows(_gz('bus-stops') as List);
@@ -142,6 +144,16 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
         return _json('notices');
       case '/nav':
         return _json('nav');
+      case '/mrt-doors':
+        return _json('mrt-doors');
+      case '/walk':
+        return _json('walk');
+      case '/road':
+        return _json('road');
+      case '/traffic':
+        return _json('traffic');
+      case '/data/rail-tracks.json':
+        return jsonDecode(File('../main-site/data/rail-tracks.json').readAsStringSync());
     }
     throw ApiError('No fixture for $path');
   };

@@ -1,26 +1,30 @@
 // A search box for a place (the site's attachPlaceSearch, js/nav.js): /api/places, which finds
 // addresses and buildings (OneMap), bus stops and stations, two letters on; and above the
-// results, Use where I am, then your places and past searches while nothing's typed.
+// results, Use where I am, then past searches and your places while nothing's typed
+// (widgets/recents_panel.dart).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 
 import '../api/api.dart';
 import '../data/location.dart';
-import '../data/places.dart';
+import '../data/recents.dart';
+import '../data/when.dart';
 import '../data/stops.dart';
 import '../i18n/i18n.dart';
 import '../theme/theme.dart';
 import 'common.dart';
+import 'recents_panel.dart';
 
 class PlacePick {
-  const PlacePick({required this.label, required this.lat, required this.lng, this.kind = 'place', this.sub = '', this.code});
+  const PlacePick({required this.label, required this.lat, required this.lng, this.kind = 'place', this.sub = '', this.code, this.arriveBy});
   final String label;
   final double lat;
   final double lng;
   final String kind; // place, stop, station, here
   final String sub;
   final String? code;
+  final int? arriveBy; // a calendar event's start, for Navigate's To
 
   Map<String, Object?> toJson() => {'label': label, 'lat': lat, 'lng': lng, if (kind == 'stop' && code != null) 'stop': code};
 
@@ -35,14 +39,15 @@ class PlacePick {
 }
 
 /// Searches for a place in a sheet, and gives back the one picked.
-Future<PlacePick?> pickPlace(BuildContext context, {String? title, bool here = true, bool saved = true}) =>
-    showModalBottomSheet<PlacePick>(context: context, isScrollControlled: true, builder: (_) => _PlaceSheet(title: title, here: here, saved: saved));
+Future<PlacePick?> pickPlace(BuildContext context, {String? title, bool here = true, bool saved = true, bool calendar = false}) =>
+    showModalBottomSheet<PlacePick>(context: context, isScrollControlled: true, builder: (_) => _PlaceSheet(title: title, here: here, saved: saved, calendar: calendar));
 
 class _PlaceSheet extends StatefulWidget {
-  const _PlaceSheet({this.title, required this.here, required this.saved});
+  const _PlaceSheet({this.title, required this.here, required this.saved, this.calendar = false});
   final String? title;
   final bool here;
   final bool saved;
+  final bool calendar;
 
   @override
   State<_PlaceSheet> createState() => _PlaceSheetState();
@@ -100,7 +105,6 @@ class _PlaceSheetState extends State<_PlaceSheet> {
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
-    final places = widget.saved && _q.text.trim().isEmpty ? Places.all() : const <Place>[];
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: DraggableScrollableSheet(
@@ -121,12 +125,27 @@ class _PlaceSheetState extends State<_PlaceSheet> {
               title: Text(tr('glance.useLocation', 'Use my location')),
               onTap: _locating ? null : _useHere,
             ),
-          for (final p in places)
-            ListTile(
-              leading: Icon(p.icon),
-              title: Text(p.name),
-              subtitle: p.name != p.label ? Text(p.label) : null,
-              onTap: () => Navigator.pop(context, PlacePick(label: p.name, lat: p.lat, lng: p.lng, code: p.stop, kind: p.stop != null ? 'stop' : 'place')),
+          // Until something's typed: past searches, and a tab for your places.
+          if (_q.text.trim().isEmpty)
+            RecentsPanel(
+              accepts: (r) => r.hasPoint,
+              onPick: (r) => Navigator.pop(context, PlacePick(label: r.label, lat: r.lat!, lng: r.lng!, kind: r.kind == 'stop' || r.kind == 'station' ? r.kind : 'place', sub: r.sub, code: r.code)),
+              onPlace: (p) => Navigator.pop(context, PlacePick(label: p.name, lat: p.lat, lng: p.lng, code: p.stop, kind: p.stop != null ? 'stop' : 'saved')),
+              // An event: the way to its place, arriving by its start; or, its location matching
+              // nothing, the location in the box to pick the place by hand.
+              onEvent: widget.calendar
+                  ? (e) {
+                      final place = e.place;
+                      if (place == null) {
+                        _q.text = e.event.location;
+                        _search(e.event.location);
+                        setState(() {});
+                        return;
+                      }
+                      final soon = !e.event.allDay && e.event.start > When.nowMs();
+                      Navigator.pop(context, PlacePick(label: place.label, lat: place.lat, lng: place.lng, kind: 'event', arriveBy: soon ? e.event.start : null));
+                    }
+                  : null,
             ),
           if (_note.isNotEmpty) Padding(padding: const EdgeInsets.all(8), child: Text(_note, style: TextStyle(color: sg.muted))),
           for (final p in _found)
@@ -134,9 +153,12 @@ class _PlaceSheetState extends State<_PlaceSheet> {
               leading: Icon(p.kind == 'station' ? Icons.train_outlined : p.kind == 'stop' ? Icons.directions_bus_outlined : Icons.place_outlined),
               title: Text(p.label),
               subtitle: p.sub.isNotEmpty ? Text(p.sub) : null,
-              onTap: () => Navigator.pop(context, p),
+              onTap: () {
+                Recents.add(Recents.place(kind: p.kind, label: p.label, sub: p.sub, code: p.code, lat: p.lat, lng: p.lng));
+                Navigator.pop(context, p);
+              },
             ),
-          if (_found.isEmpty && _q.text.trim().length < 2 && places.isEmpty && !widget.here) EmptyNote(tr('places.searchOrHere', 'Search for the place, or use where you are.')),
+          if (_found.isEmpty && _q.text.trim().length == 1 && !widget.here) EmptyNote(tr('places.searchOrHere', 'Search for the place, or use where you are.')),
         ]),
       ),
     );

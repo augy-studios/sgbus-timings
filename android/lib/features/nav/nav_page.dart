@@ -22,6 +22,7 @@ import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/place_search.dart';
+import '../map/live_map.dart';
 import '../share/share_card.dart';
 import '../timings/stop_screen.dart';
 import 'when_picker.dart';
@@ -294,6 +295,7 @@ class _NavPageState extends State<NavPage> {
   Future<void> _setEnd(String which) async {
     final p = await pickPlace(
       context,
+      calendar: true,
       title: which == 'from'
           ? tr('nav.from', 'From')
           : which == 'to'
@@ -305,7 +307,11 @@ class _NavPageState extends State<NavPage> {
     if (which == 'from') nav.from = e;
     if (which == 'to') nav.to = e;
     if (which == 'via') nav.via = e;
-    Recents.addPlace(p);
+    // A calendar event in To: arriving by its start.
+    if (which == 'to' && p.arriveBy != null) {
+      final w = WhenPick('arrive', When.msToAt(p.arriveBy!));
+      if (When.problem(w) == null) nav.when = w;
+    }
     nav.run();
   }
 
@@ -607,6 +613,34 @@ class _NavPageState extends State<NavPage> {
                     'min': ((leg['minutes'] as num?) ?? 1).round().clamp(1, 999),
                   }),
                 ),
+                // The walk on the live map, from where it starts (the exit nearest it, for a
+                // station) to where it ends.
+                ?() {
+                  Map? point(Object? p, Object? exit) {
+                    if (p is! Map) return null;
+                    final e = exit is Map && exit['lat'] is num ? exit : null;
+                    return e != null ? {...p, 'lat': e['lat'], 'lng': e['lng']} : p;
+                  }
+                  final end = last
+                      ? (nav.to == null || nav.to!.here ? null : {'lat': nav.to!.lat, 'lng': nav.to!.lng})
+                      : point(leg['to'], leg['toExit']);
+                  final start = point(leg['from'] ?? (k > 0 ? legs[k - 1]['to'] : null), leg['fromExit']) ??
+                      (nav.from == null || nav.from!.here ? null : {'lat': nav.from!.lat, 'lng': nav.from!.lng});
+                  if (end?['lat'] is! num) return null;
+                  return Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: () => LiveMap.walkTo(
+                        lat: (end!['lat'] as num).toDouble(),
+                        lng: (end['lng'] as num).toDouble(),
+                        label: to,
+                        from: start?['lat'] is num ? (lat: (start!['lat'] as num).toDouble(), lng: (start['lng'] as num).toDouble()) : null,
+                      ),
+                      icon: const Icon(Icons.map_outlined),
+                      label: Text(tr('trip.live_map', 'Live map')),
+                    ),
+                  );
+                }(),
               ],
             ),
           ),
@@ -700,7 +734,15 @@ class _NavPageState extends State<NavPage> {
                 ),
               if (leg['lastBus'] != null)
                 _warn(tr('nav.lastBus', 'Last {no} from here today is at {time}. Don’t miss it.', {'no': leg['route'], 'time': leg['lastBus']})),
-              if (leg['traffic'] is Map) _warn(trafficText(leg['traffic'] as Map), traffic: true),
+              if (leg['traffic'] is Map)
+                InkWell(
+                  onTap: leg['path'] is List
+                      ? () => LiveMap.traffic(LiveMap.pathOf(leg['path']),
+                          names: (leg['names'] as List?)?.map((e) => '$e').toList(),
+                          title: tr('trip.busTo', 'Bus {no} to {stop}', {'no': leg['route'], 'stop': (leg['to'] as Map?)?['name'] ?? tr('nav.itsStop', 'its stop')}))
+                      : null,
+                  child: _warn('${trafficText(leg['traffic'] as Map)}${leg['path'] is List ? ' ${tr('trip.seeOnMap', 'See it on the map')}' : ''}', traffic: true),
+                ),
               if (from?['code'] != null)
                 TextButton.icon(
                   onPressed: () => StopScreen.open('${from['code']}', service: '${leg['route']}', ctx: const StopContext('nav')),
@@ -920,12 +962,6 @@ class _NavPageState extends State<NavPage> {
 class TrainDoors {
   TrainDoors._();
   static Widget? Function(BuildContext context, Map leg, Map? next)? build;
-}
-
-/// Past searches (features/places/recents.dart) take each place picked.
-class Recents {
-  Recents._();
-  static void Function(PlacePick p) addPlace = (_) {};
 }
 
 /// Opens Navigate with its ends, from a link, a place or a saved nav.

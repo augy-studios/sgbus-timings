@@ -18,7 +18,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Stops, search, contractions, stations | `script.js`, `js/contractions.js`, `js/station-search.js` | `lib/data/stops.dart`, `search.dart`, `contractions.dart`, `stations.dart` | ✅ |
 | Bus network (routes, first/last, graph) | `js/network.js` | `lib/data/network.dart` | ✅ |
 | Times and when | `js/when.js` | `lib/data/when.dart` | ✅ |
-| Theme: Material You (default) and the UwU Apps theme | `js/theme.js`, `js/colours.js`, `js/material.js` | `lib/theme/theme.dart` | ✅ |
+| Theme: Material You (default: the phone's fonts and wallpaper colours) and the UwU Apps theme | `js/theme.js`, `js/colours.js`, `js/material.js` | `lib/theme/theme.dart` | ✅ |
 | Edge Tray, pages, links, Back twice | `script.js`, `js/main-screen.js` | `lib/app/` | ✅ |
 
 ## Screens
@@ -35,11 +35,11 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Weather | `js/weather.js` | ✅ |
 | Disruptions bar, Service alerts, push | `js/alerts.js` | ✅ |
 | Board, Flag, Will I make it | `js/board.js`, `js/flag.js`, `js/make-it.js` | ✅ |
-| Navigate (bus and train; train doors to do) | `js/nav.js` | 🚧 |
+| Navigate (bus and train), train doors, walks and traffic on the live map | `js/nav.js`, `js/mrt-doors.js` | ✅ |
 | Route planner (bus only), journeys checked against the site's | `js/planner.js`, `js/journeys.js` | ✅ |
-| Live map, Explorer | `js/map*.js` | ⬜ |
-| Places (past searches to do) | `js/places.js`, `js/recents.js` | 🚧 |
-| Calendar | `js/calendar.js` | ⬜ |
+| Live map, Explorer, station cards, Save the map (MapLibre; NUS and NTU shuttles to do) | `js/map*.js`, `js/rail-tracks.js` | 🚧 |
+| Places and past searches | `js/places.js`, `js/recents.js` | ✅ |
+| Calendar: the phone's, an iCal link or an .ics file, checked against the site's | `js/calendar.js` | ✅ |
 | Get Off Alert (core: follow, alert, arrive, bar, timeline), Your trips and Trip Mix | `js/trip.js`, `js/history.js`, `js/rides.js` | 🚧 |
 | uwuCoins, feats, Easter eggs, team runs | `js/coins.js`, `js/eggs.js`, `js/team.js` | ⬜ |
 | Sync | `js/sync.js` | ⬜ |

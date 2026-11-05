@@ -6,5 +6,7 @@
   "migrate.done": "உங்கள் பிடித்தவை, இடங்கள், அமைப்புகள் முன்பிருந்தபடியே இங்கே உள்ளன.",
   "theme.youColours": "வண்ணங்கள்",
   "theme.youColours.phone": "உங்கள் போனின்",
-  "theme.youColours.yours": "உங்கள் வண்ணங்கள்"
+  "theme.youColours.yours": "உங்கள் வண்ணங்கள்",
+  "map.arrive": "{time}க்கு வந்துசேரும்",
+  "map.locate": "வரைபடத்தில் நீங்கள் இருக்கும் இடத்தைக் காட்ட"
 }

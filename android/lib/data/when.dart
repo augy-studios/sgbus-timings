@@ -166,6 +166,13 @@ class When {
     return '${_dow[c.dow]} ${c.day} ${_months[c.month]}';
   }
 
+  /// "13 Oct", by Singapore's calendar, in the language picked.
+  static String dayShort(int ms) {
+    final c = sgClock(ms);
+    if (I18n.I.lang != 'en') return DateFormat('d MMM', I18n.I.current.locale.toLanguageTag()).format(DateTime.utc(c.year, c.month + 1, c.day));
+    return '${c.day} ${_months[c.month]}';
+  }
+
   static String clockDay(int ms) =>
       sgClock(ms).ymd == sgClock(nowMs()).ymd ? clock(ms) : tr('when.clockDay', '{time} {day}', {'time': clock(ms), 'day': dayLabel(ms)});
 

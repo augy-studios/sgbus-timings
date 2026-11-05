@@ -8,6 +8,9 @@ import 'alerts/alerts.dart';
 import '../i18n/i18n.dart';
 import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
+import 'calendar/calendar.dart';
+import 'map/live_map.dart';
+import 'nav/doors.dart';
 import 'nav/nav_page.dart';
 import 'places/places_page.dart';
 import 'planner/planner.dart';
@@ -36,6 +39,9 @@ Map<String, Widget Function()> pages() => {
     };
 
 void registerFeatures() {
+  LiveMap.register();
+  AppNav.register('calendarSettings', (_) => CalendarSettings.open());
+  hookDoors();
   NavPage.busOnly = () => const PlannerTab();
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top
