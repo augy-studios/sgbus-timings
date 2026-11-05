@@ -7,6 +7,8 @@ import '../i18n/i18n.dart';
 import '../widgets/common.dart';
 import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
+import 'settings/settings_screen.dart';
+import 'settings/theme_screen.dart';
 import 'timings/bus_screen.dart';
 import 'timings/stop_screen.dart';
 import 'timings/timings_page.dart';
@@ -24,6 +26,8 @@ Map<String, Widget Function()> pages() => {
 
 void registerFeatures() {
   AppNav.register('home', (_) => AppNav.showPage('glance'));
+  AppNav.register('settings', (a) => SettingsScreen.open(a['group'] as String?));
+  AppNav.register('theme', (_) => ThemeScreen.open());
   AppNav.register('stop', (a) => StopScreen.open(a['code'] as String, service: a['service'] as String?));
   AppNav.register('bus', (a) => BusScreen.open(a['no'] as String, fromStop: a['fromStop'] as String?, onward: a['onward'] == true, dir: a['dir'] as int?));
 }
