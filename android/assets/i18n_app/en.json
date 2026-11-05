@@ -8,5 +8,6 @@
   "theme.youColours.phone": "Your phone’s",
   "theme.youColours.yours": "Your colours",
   "map.arrive": "arrive {time}",
-  "map.locate": "to show where you are on the map"
+  "map.locate": "to show where you are on the map",
+  "app.reminders": "Reminders"
 }

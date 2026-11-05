@@ -279,9 +279,9 @@ class _SettingsGroupState extends State<SettingsGroup> {
         if (Native.has('earphones'))
           Choice(
             label: tr('settings.get_off_alerts_sound', "Get Off Alert's sound"),
-            value: Store.I.get('sgbus_getoff_earphones') == 'on' ? 'ear' : 'loud',
+            value: const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones')) ? 'ear' : 'loud',
             options: [('loud', tr('settings.out_loud', 'Out loud')), ('ear', tr('settings.earphones_only', 'Earphones only'))],
-            onChanged: (v) => _set('sgbus_getoff_earphones', v == 'ear' ? 'on' : null),
+            onChanged: (v) => _set('sgbus_getoff_earphones', v == 'ear' ? 'true' : 'false'),
             note: tr('settings.earphones_only_with_earphones_in',
                 'Earphones only: with earphones in, the beeps play just in them; without, the phone only buzzes. Never out loud on a quiet bus.'),
           ),

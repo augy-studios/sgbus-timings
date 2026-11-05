@@ -28,6 +28,23 @@ public class ScanPlugin extends Plugin {
     private TextRecognizer mRecognizer;
     private volatile boolean mBusy;
 
+    // A camera still says which way up it is in its EXIF (the Flutter app's frames); a frame drawn
+    // from the page's video (the WebView app's) has none, and is the right way up already.
+    private static int rotationOf(String base64) {
+        try {
+            byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+            android.media.ExifInterface exif = new android.media.ExifInterface(new java.io.ByteArrayInputStream(bytes));
+            switch (exif.getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL)) {
+                case android.media.ExifInterface.ORIENTATION_ROTATE_90: return 90;
+                case android.media.ExifInterface.ORIENTATION_ROTATE_180: return 180;
+                case android.media.ExifInterface.ORIENTATION_ROTATE_270: return 270;
+                default: return 0;
+            }
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
     @PluginMethod
     public void read(PluginCall call) {
         String image = call.getString("image");
@@ -52,7 +69,7 @@ public class ScanPlugin extends Plugin {
         }
         if (mRecognizer == null) mRecognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         mBusy = true;
-        mRecognizer.process(InputImage.fromBitmap(bitmap, 0))
+        mRecognizer.process(InputImage.fromBitmap(bitmap, rotationOf(image)))
                 .addOnSuccessListener(text -> {
                     JSObject out = new JSObject();
                     out.put("text", text.getText());

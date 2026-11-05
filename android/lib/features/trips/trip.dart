@@ -343,7 +343,7 @@ class Trip extends ChangeNotifier {
         ? (change ? tr('trip.getOffOneChange', 'Get off in 1 stop, at {stop}, to change.', {'stop': stop}) : tr('trip.getOffOne', 'Get off in 1 stop, at {stop}.', {'stop': stop}))
         : (change ? tr('trip.getOffManyChange', 'Get off in {n} stops, at {stop}, to change.', {'n': n, 'stop': stop}) : tr('trip.getOffMany', 'Get off in {n} stops, at {stop}.', {'n': n, 'stop': stop}));
     if (Native.has('trip')) {
-      Native.call('Trip', 'alert', {'title': title, 'body': body, 'quiet': Store.I.get('sgbus_getoff_earphones') == 'on'}).catchError((_) => null);
+      Native.call('Trip', 'alert', {'title': title, 'body': body, 'quiet': const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones'))}).catchError((_) => null);
     } else {
       HapticFeedback.heavyImpact();
       AppNav.say(body);

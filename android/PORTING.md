@@ -43,9 +43,9 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Get Off Alert (core: follow, alert, arrive, bar, timeline), Your trips and Trip Mix | `js/trip.js`, `js/history.js`, `js/rides.js` | 🚧 |
 | Rides checked real, uwuCoins and the wheel, feats, Easter eggs, Achievements, past trips, the celebration, team runs | `js/rides.js`, `js/coins.js`, `js/eggs.js`, `js/retrofit.js`, `js/celebrate.js`, `js/team.js` | ✅ |
 | Sync | `js/sync.js` | ⬜ |
-| Reminders, routines, widgets, shortcuts | `js/reminders.js`, `js/widget.js` | ⬜ |
-| Share card and links (QR, Offline Sharing to do) | `js/share.js`, `js/qr.js`, `js/offline-share.js` | 🚧 |
-| Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ⬜ |
+| Reminders (near a stop, time to leave, on a bus, last bus), routines, widgets, shortcuts | `js/reminders.js` | ✅ |
+| Share card and links, Offline Sharing and NFC stickers (opening shared links, Sync's QR to do) | `js/share.js`, `js/qr.js`, `js/offline-share.js` | 🚧 |
+| Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ✅ |
 | Terminal | `js/terminal.js`, `js/sgbus-core.js` | ⬜ |
 | Bug report, updates, tours, first run | `js/bug-report.js`, `js/app-update.js`, `js/tour.js` | ⬜ |
 

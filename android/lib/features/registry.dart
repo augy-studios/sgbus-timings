@@ -11,6 +11,9 @@ import 'glance/glance_page.dart';
 import 'calendar/calendar.dart';
 import 'coins/coins.dart';
 import 'team/team.dart';
+import 'reminders/reminders.dart';
+import 'share/offline_share.dart';
+import 'card/card.dart';
 import 'map/live_map.dart';
 import 'nav/doors.dart';
 import 'nav/nav_page.dart';
@@ -46,6 +49,9 @@ void registerFeatures() {
   hookDoors();
   registerCoins();
   TeamRun.register();
+  Reminders.register();
+  registerOfflineShare();
+  registerCard();
   NavPage.busOnly = () => const PlannerTab();
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top

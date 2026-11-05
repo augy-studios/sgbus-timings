@@ -244,7 +244,7 @@ class _StopScreenState extends State<StopScreen> {
                 Pill(icon: Icons.directions_walk, label: tr('stop.tool.directions', 'Directions'), onTap: () => AppNav.open('walkTo', {'code': code})),
               Pill(icon: Icons.schedule, label: tr('stop.tool.board', 'Board'), onTap: () => AppNav.open('board', {'code': code})),
               if (Native.has('sticker'))
-                Pill(icon: Icons.nfc, label: 'NFC sticker', onTap: () => AppNav.open('sticker', {'url': Links.stop(code), 'label': name})),
+                Pill(icon: Icons.nfc, label: tr('offline.sticker', 'NFC sticker'), onTap: () => AppNav.open('sticker', {'url': Links.stop(code), 'label': name})),
             ]),
             if (MakeItLine.build != null) Padding(padding: const EdgeInsets.only(top: 8), child: MakeItLine.build!(context, code, svcs)),
             // ---- notes about the stop ----
