@@ -42,7 +42,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Calendar: the phone's, an iCal link or an .ics file, checked against the site's | `js/calendar.js` | ✅ |
 | Get Off Alert (core: follow, alert, arrive, bar, timeline), Your trips and Trip Mix | `js/trip.js`, `js/history.js`, `js/rides.js` | 🚧 |
 | Rides checked real, uwuCoins and the wheel, feats, Easter eggs, Achievements, past trips, the celebration, team runs | `js/rides.js`, `js/coins.js`, `js/eggs.js`, `js/retrofit.js`, `js/celebrate.js`, `js/team.js` | ✅ |
-| Sync | `js/sync.js` | ⬜ |
+| Sync with another device (PeerJS over WebRTC, BinaryPack, the site's own wire) or the Telegram bot | `js/sync.js`, `js/p2p.js`, `js/sync-relay.js` | ✅ |
 | Reminders (near a stop, time to leave, on a bus, last bus), routines, widgets, shortcuts | `js/reminders.js` | ✅ |
 | Share card and links, opening shared links, live progress both ways, Offline Sharing and NFC stickers | `js/share.js`, `js/offline-share.js` | ✅ |
 | Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ✅ |
