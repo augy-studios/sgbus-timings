@@ -15,8 +15,9 @@ class Shell extends StatefulWidget {
   const Shell({super.key, required this.pages});
   final Map<String, Widget Function()> pages;
 
-  /// What runs along the top of every page: the disruptions bar (features/alerts/).
-  static Widget Function()? top;
+  /// What runs along the top of every page: the disruptions bar (features/alerts/) and the trip
+  /// bar (features/trips/).
+  static final List<Widget Function()> top = [];
 
   @override
   State<Shell> createState() => _ShellState();
@@ -75,7 +76,7 @@ class _ShellState extends State<Shell> {
       },
       child: Scaffold(
         body: Column(children: [
-          if (Shell.top != null) Shell.top!(),
+          for (final t in Shell.top) t(),
           Expanded(
             child: MediaQuery.removePadding(
               context: context,

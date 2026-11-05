@@ -6,6 +6,10 @@ import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
 import 'package:sgbus_timings/features/nav/nav_page.dart';
 import 'package:sgbus_timings/features/planner/planner.dart';
+import 'package:sgbus_timings/features/trips/trip.dart';
+import 'package:sgbus_timings/features/trips/trips_page.dart';
+import 'package:sgbus_timings/app/shell.dart';
+import 'package:sgbus_timings/data/location.dart';
 import 'package:sgbus_timings/data/store.dart';
 import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';
@@ -78,5 +82,26 @@ void main() {
     await t.runAsync(p.search);
     await shot(t, 'planner', () => onPage('nav', const NavPage()));
     Store.I.put('sgbus_nav_mode', null);
+  });
+
+  testWidgets('trip', timeout: _t, (t) async {
+    await t.runAsync(() => stillData(state: sam));
+    final n = NavState.I;
+    n.from = const NavEnd('Bedok Mall', 1.324736, 103.929256);
+    n.to = const NavEnd('One Raffles Place', 1.28435, 103.851073);
+    n.when = null;
+    await t.runAsync(n.run);
+    final way = tripFromNav(n.options[1], n.from, n.to)!;
+    await t.runAsync(() => Trip.I.start(title: way.title, legs: way.legs, from: n.from!.toJson(), to: n.to!.toJson()));
+    // On bus 9 at Bedok Int, the walk there done.
+    Trip.I.step(1);
+    Trip.I.onFix(Fix(Trip.I.current!.points.first[0], Trip.I.current!.points.first[1], accuracy: 8));
+    Shell.top
+      ..clear()
+      ..add(() => const TripBar());
+    await shot(t, 'trip-bar', () => Scaffold(body: Column(children: [for (final b in Shell.top) b(), Expanded(child: onPage('glance', const GlancePage()))])));
+    await shot(t, 'trip', () => const TripScreen());
+    await t.runAsync(() => Trip.I.stop());
+    await shot(t, 'trips', () => onPage('trips', const TripsPage()));
   });
 }

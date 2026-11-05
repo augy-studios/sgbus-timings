@@ -40,7 +40,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Live map, Explorer | `js/map*.js` | ⬜ |
 | Places (past searches to do) | `js/places.js`, `js/recents.js` | 🚧 |
 | Calendar | `js/calendar.js` | ⬜ |
-| Get Off Alert, trips, stats | `js/trip.js`, `js/history.js`, `js/rides.js` | ⬜ |
+| Get Off Alert (core: follow, alert, arrive, bar, timeline), Your trips and Trip Mix | `js/trip.js`, `js/history.js`, `js/rides.js` | 🚧 |
 | uwuCoins, feats, Easter eggs, team runs | `js/coins.js`, `js/eggs.js`, `js/team.js` | ⬜ |
 | Sync | `js/sync.js` | ⬜ |
 | Reminders, routines, widgets, shortcuts | `js/reminders.js`, `js/widget.js` | ⬜ |

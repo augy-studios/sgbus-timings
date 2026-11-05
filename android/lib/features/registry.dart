@@ -6,12 +6,14 @@ import '../app/nav.dart';
 import '../app/shell.dart';
 import 'alerts/alerts.dart';
 import '../i18n/i18n.dart';
-import '../widgets/common.dart';
 import 'favs/favs_page.dart';
 import 'glance/glance_page.dart';
 import 'nav/nav_page.dart';
 import 'places/places_page.dart';
 import 'planner/planner.dart';
+import 'trips/trip.dart';
+import 'trips/trips_page.dart';
+import '../data/stops.dart';
 import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
 import 'timings/board_screen.dart';
@@ -29,14 +31,27 @@ Map<String, Widget Function()> pages() => {
       'favs': () => const FavsPage(),
       'nav': () => const NavPage(),
       'alerts': () => const AlertsPage(),
-      'trips': () => _Soon(tr('mainScreen.trips', 'Your trips')),
+      'trips': () => const TripsPage(),
       'places': () => const PlacesPage(),
     };
 
 void registerFeatures() {
   NavPage.busOnly = () => const PlannerTab();
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
-  Shell.top = () => const DisruptionBar();
+  Shell.top
+    ..clear()
+    ..add(() => const DisruptionBar())
+    ..add(() => const TripBar());
+  Trip.I.resume();
+  AppNav.register('startTrip', (a) {
+    final n = NavState.I;
+    final t = tripFromNav(a['option'] as Map<String, dynamic>, n.from, n.to);
+    if (t != null) Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null);
+  });
+  AppNav.register('startTripLegs', (a) {
+    final end = a['end'] as String;
+    Trip.I.start(title: tr('trip.to', 'To {to}', {'to': Stops.nameOf(end)}), legs: tripFromLegs((a['legs'] as List).cast()));
+  });
   Alerts.listen();
   Alerts.startBar();
   hookAlertsIntoStops();
@@ -70,10 +85,3 @@ void registerFeatures() {
 
 /// A note shown once the first screen is up.
 void startupNote(String text) => AppNav.say(text);
-
-class _Soon extends StatelessWidget {
-  const _Soon(this.title);
-  final String title;
-  @override
-  Widget build(BuildContext context) => SafeArea(child: EmptyNote(title));
-}
