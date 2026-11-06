@@ -23,6 +23,7 @@ import 'nav/nav_page.dart';
 import 'places/places_page.dart';
 import 'planner/planner.dart';
 import 'trips/trip.dart';
+import 'trips/trip_watch.dart';
 import 'trips/trips_page.dart';
 import '../data/stops.dart';
 import 'settings/settings_screen.dart';
@@ -65,6 +66,7 @@ void registerFeatures() {
     ..add(() => const DisruptionBar())
     ..add(() => const TripBar());
   Trip.I.resume();
+  TripWatch.I.start();
   AppNav.register('startTrip', (a) {
     final n = NavState.I;
     final t = tripFromNav(a['option'] as Map<String, dynamic>, n.from, n.to);

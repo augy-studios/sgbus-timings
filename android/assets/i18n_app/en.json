@@ -1,7 +1,7 @@
 {
   "app.exitHint": "Press back again to exit",
   "theme.materialYou": "Material You",
-  "theme.materialYouNote": "The whole app drawn the way Android’s own apps are, in your phone’s own fonts and the colours of its wallpaper (Android 12 and later). Turn it off for the UwU Apps theme: Jua, glass cards and the brand colours.",
+  "theme.materialYouNote": "Turn off for the UwU Apps theme.",
   "theme.usualLook": "UwU Apps theme",
   "migrate.done": "Your favourites, places and settings are here from before.",
   "theme.youColours": "Colours",
@@ -9,5 +9,6 @@
   "theme.youColours.yours": "Your colours",
   "map.arrive": "arrive {time}",
   "map.locate": "to show where you are on the map",
-  "app.reminders": "Reminders"
+  "app.reminders": "Reminders",
+  "app.myicaNote": "Have your MyICA QR code ready for immigration."
 }

@@ -32,6 +32,7 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
 import '../timings/stop_screen.dart';
+import 'trip_watch.dart';
 
 class TripLeg {
   TripLeg({required this.kind, required this.label, required this.to, required this.points, required this.names, required this.minutes,
@@ -101,6 +102,11 @@ class Trip extends ChangeNotifier {
   final Set<int> alerted = {};
   int startedAt = 0;
   int legStartedAt = 0;
+  /// When the trip was last moved by hand (Back or Next), for the server.
+  int movedAt = 0;
+  /// A change the trip made to itself, said on the bar with Undo (trip_watch.dart).
+  String? switchedNote;
+  Map<String, Object?>? _before;
   int lastFixAt = 0;
   final Map<int, ({int? boardAt, int? offAt})> times = {};
   bool arrived = false;
@@ -370,6 +376,7 @@ class Trip extends ChangeNotifier {
   /// Back and Next on the bar: the part before, or on to the next.
   void step(int by) {
     if (!active) return;
+    movedAt = When.nowMs();
     if (by > 0) return _next();
     if (leg == 0) return;
     leg--;
@@ -377,6 +384,48 @@ class Trip extends ChangeNotifier {
     boarded = false;
     alerted.remove(leg);
     legStartedAt = When.nowMs();
+    _changed();
+  }
+
+  /// Another way from here on, in place of the rest of this one: the trip as it was is kept
+  /// for Undo.
+  void replan(List<TripLeg> next, {String? note}) {
+    if (!active || next.isEmpty) return;
+    _before = {'legs': legs, 'leg': leg, 'pos': pos, 'boarded': boarded, 'alerted': alerted.toList(), 'seen': List.of(seen)};
+    legs = [...legs.take(leg), ...next];
+    seen = [...seen.take(leg), ...List<Map<String, dynamic>?>.filled(next.length, null)];
+    pos = 0;
+    boarded = false;
+    alerted.removeWhere((i) => i >= leg);
+    legStartedAt = When.nowMs();
+    switchedNote = note;
+    _changed();
+  }
+
+  void undo() {
+    final b = _before;
+    if (!active || b == null) return;
+    legs = (b['legs'] as List).cast<TripLeg>();
+    leg = b['leg'] as int;
+    pos = b['pos'] as double;
+    boarded = b['boarded'] as bool;
+    alerted
+      ..clear()
+      ..addAll((b['alerted'] as List).cast<int>());
+    seen = (b['seen'] as List).cast<Map<String, dynamic>?>();
+    _before = null;
+    switchedNote = null;
+    _changed();
+  }
+
+  /// Moved on by the server while the app was away.
+  void moveTo(int to, int? startedAt) {
+    if (!active || to <= leg || to >= legs.length) return;
+    _judge(leg);
+    leg = to;
+    pos = 0;
+    boarded = false;
+    legStartedAt = startedAt ?? When.nowMs();
     _changed();
   }
 
@@ -560,7 +609,7 @@ class TripBar extends StatelessWidget {
                 ]),
               )),
             ),
-          );
+          ).let((bar) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [bar, const TripNotes(compact: true)]));
         },
       );
 }
@@ -608,10 +657,15 @@ class TripScreen extends StatelessWidget {
             ],
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
               SgCard(child: Text(t.barText(), style: Theme.of(context).textTheme.titleMedium)),
+              const Padding(padding: EdgeInsets.only(top: 8), child: ClipRRect(borderRadius: BorderRadius.all(Radius.circular(12)), child: TripNotes())),
               if (!Trip.enabled) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('trip.alertOff', 'Get Off Alert is off in Settings.'), style: TextStyle(color: sg.warn))),
               ...rows,
             ]),
           );
         },
       );
+}
+
+extension _Let<T> on T {
+  R let<R>(R Function(T it) fn) => fn(this);
 }

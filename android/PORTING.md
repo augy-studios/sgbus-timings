@@ -40,7 +40,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Live map, Explorer, station cards, Save the map (MapLibre; NUS and NTU shuttles to do) | `js/map*.js`, `js/rail-tracks.js` | 🚧 |
 | Places and past searches | `js/places.js`, `js/recents.js` | ✅ |
 | Calendar: the phone's, an iCal link or an .ics file, checked against the site's | `js/calendar.js` | ✅ |
-| Get Off Alert (core: follow, alert, arrive, bar, timeline), Your trips and Trip Mix | `js/trip.js`, `js/history.js`, `js/rides.js` | 🚧 |
+| Get Off Alert: follow, alert, arrive, get ready to board, last bus with rerouting and Undo, traffic, a faster way, the server following the bus, MyICA (Change here and Are you walking? to do), Your trips | `js/trip.js`, `js/history.js` | 🚧 |
 | Rides checked real, uwuCoins and the wheel, feats, Easter eggs, Achievements, past trips, the celebration, team runs | `js/rides.js`, `js/coins.js`, `js/eggs.js`, `js/retrofit.js`, `js/celebrate.js`, `js/team.js` | ✅ |
 | Sync with another device (PeerJS over WebRTC, BinaryPack, the site's own wire) or the Telegram bot | `js/sync.js`, `js/p2p.js`, `js/sync-relay.js` | ✅ |
 | Reminders (near a stop, time to leave, on a bus, last bus), routines, widgets, shortcuts | `js/reminders.js` | ✅ |

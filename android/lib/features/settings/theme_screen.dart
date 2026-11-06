@@ -50,8 +50,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
             value: look.materialYou,
             onChanged: (on) => setState(() => look.materialYou = on),
             title: Text(tr('theme.materialYou', 'Material You'), style: Theme.of(context).textTheme.titleMedium),
-            subtitle: Text(tr('theme.materialYouNote',
-                'The whole app drawn the way Android’s own apps are, in your phone’s own fonts and the colours of its wallpaper (Android 12 and later). Turn it off for the UwU Apps theme: Jua, glass cards and the brand colours.')),
+            subtitle: Text(tr('theme.materialYouNote', 'Turn off for the UwU Apps theme.')),
           ),
         ),
         // ---- Material You's colours: the wallpaper's, unless Your colours are picked for it ----
