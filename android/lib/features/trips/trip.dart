@@ -32,11 +32,12 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
 import '../timings/stop_screen.dart';
+import 'trip_change.dart';
 import 'trip_watch.dart';
 
 class TripLeg {
   TripLeg({required this.kind, required this.label, required this.to, required this.points, required this.names, required this.minutes,
-      this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false});
+      this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false, this.foot = 'walk'});
   final String kind; // bus, train, walk
   final String label;
   final String to;
@@ -51,12 +52,37 @@ class TripLeg {
   final String? route;
   final String? color;
   final bool lrt;
+  /// A walk's way of going: walk, or cycle or drive (Are you walking?).
+  final String foot;
 
   bool get ride => kind != 'walk';
+
+  /// The ride cut short at its `k`th stop, for getting off there and going on another way.
+  TripLeg cutAt(int k) {
+    final n = points.length;
+    if (k <= 0 || k >= n - 1) return this;
+    return TripLeg(
+      kind: kind,
+      label: label,
+      to: k < names.length && names[k].isNotEmpty ? names[k] : to,
+      points: points.sublist(0, k + 1),
+      names: names.length > k ? names.sublist(0, k + 1) : names,
+      minutes: math.max(1, minutes * k / (n - 1)),
+      wait: wait,
+      service: service,
+      board: board,
+      alight: codes != null && k < codes!.length ? codes![k] : alight,
+      codes: codes != null && codes!.length > k ? codes!.sublist(0, k + 1) : codes,
+      route: route,
+      color: color,
+      lrt: lrt,
+    );
+  }
 
   Map<String, Object?> toJson() => {
         'kind': kind, 'label': label, 'to': to, 'points': points, 'names': names, 'minutes': minutes, 'wait': wait,
         'service': service, 'board': board, 'alight': alight, 'codes': codes, 'route': route, 'color': color, 'lrt': lrt,
+        if (foot != 'walk') 'foot': foot,
       };
 
   static TripLeg from(Map j) => TripLeg(
@@ -74,6 +100,7 @@ class TripLeg {
         route: j['route'] as String?,
         color: j['color'] as String?,
         lrt: j['lrt'] == true,
+        foot: j['foot'] as String? ?? 'walk',
       );
 }
 
@@ -115,6 +142,13 @@ class Trip extends ChangeNotifier {
   List<Map<String, dynamic>?> seen = [];
   /// Navigate's stop on the way, for There and back again.
   Map<String, Object?>? via;
+  /// Are you walking? is asked once a trip (trip_change.dart).
+  bool paceAsked = false;
+  /// The app's last word on your pace (Pace.java): walking, riding or still, and when.
+  String? paceState;
+  int paceAt = 0;
+  /// Asks Are you walking? (trip_change.dart), going at `kmh` on a walk.
+  static void Function(double kmh)? askPace;
 
   NativeListener? _loc;
   NativeListener? _end;
@@ -142,6 +176,8 @@ class Trip extends ChangeNotifier {
     arrived = false;
     seen = List.filled(legs.length, null);
     this.via = via;
+    paceAsked = false;
+    _paceFixes.clear();
     startedAt = legStartedAt = When.nowMs();
     _save();
     await _follow();
@@ -156,6 +192,8 @@ class Trip extends ChangeNotifier {
       _end?.cancel();
       _loc = Native.on('Trip', 'location', (d) {
         if (d['lat'] is num && d['lng'] is num) {
+          paceState = d['pace'] as String?;
+          paceAt = When.nowMs();
           onFix(Fix((d['lat'] as num).toDouble(), (d['lng'] as num).toDouble(), accuracy: (d['accuracy'] as num?)?.toDouble(), speed: (d['speed'] as num?)?.toDouble()));
         }
       });
@@ -210,6 +248,7 @@ class Trip extends ChangeNotifier {
     alerted.addAll(((s['alerted'] as List?) ?? const []).map((e) => (e as num).toInt()));
     seen = [for (var i = 0; i < legs.length; i++) i < ((s['seen'] as List?)?.length ?? 0) ? ((s['seen'] as List)[i] as Map?)?.cast<String, dynamic>() : null];
     via = (s['via'] as Map?)?.cast<String, Object?>();
+    paceAsked = s['paceAsked'] == true;
     await _follow();
     notifyListeners();
   }
@@ -217,7 +256,7 @@ class Trip extends ChangeNotifier {
   void _save() => Store.I.putJson(savedKey, {
         'id': id, 'title': title, 'legs': [for (final l in legs) l.toJson()], 'from': from, 'to': to, 'leg': leg, 'pos': pos,
         'boarded': boarded, 'startedAt': startedAt, 'legStartedAt': legStartedAt, 'alerted': alerted.toList(),
-        'seen': seen, 'via': via,
+        'seen': seen, 'via': via, 'paceAsked': paceAsked,
       });
 
   Map<String, dynamic> _seenOf(int i) {
@@ -274,6 +313,7 @@ class Trip extends ChangeNotifier {
     if (l == null) return;
     final p = [f.lat, f.lng];
     if (!l.ride) {
+      _watchPace(p, f.accuracy ?? 999, l);
       final toEnd = metresAB(p, l.points.last);
       final whole = metresAB(l.points.first, l.points.last);
       pos = whole <= 0 ? 1 : (1 - toEnd / whole).clamp(pos, 1.0);
@@ -300,6 +340,49 @@ class Trip extends ChangeNotifier {
     final last = l.points.length - 1;
     if (boarded && pos >= last - 0.15 && metresAB(p, l.points.last) <= 80) return _next();
     _changed();
+  }
+
+  // ---------- are you walking? ----------
+
+  // Walking is about 5 km/h in Singapore; over notWalkingKmh for a minute or so of good fixes,
+  // past even the fastest walkers with room for the GPS, isn't, unless the app's own word on
+  // your pace says walking (a run for the bus). Not along the next ride (on it already), nor
+  // this near the walk's end.
+  static const notWalkingKmh = 8.0;
+  static const _paceFixM = 50.0;
+  static const _paceSampleMs = 3000;
+  static const _paceSpanMs = 45000;
+  static const _paceKeepMs = 90000;
+  static const _paceNearEndM = 200.0;
+  static const _paceStaleMs = 10000;
+  final List<({List<double> p, double acc, int t})> _paceFixes = [];
+  TripLeg? _paceLeg;
+
+  void _watchPace(List<double> here, double accuracy, TripLeg l) {
+    if (!identical(_paceLeg, l)) {
+      _paceLeg = l;
+      _paceFixes.clear();
+    }
+    if (paceAsked || accuracy > _paceFixM || l.foot != 'walk') return;
+    final now = When.nowMs();
+    if (_paceFixes.isEmpty || now - _paceFixes.last.t >= _paceSampleMs) {
+      _paceFixes.removeWhere((f) => now - f.t > _paceKeepMs);
+      _paceFixes.add((p: here, acc: accuracy, t: now));
+    }
+    final first = _paceFixes.first;
+    if (now - first.t < _paceSpanMs) return;
+    final kmh = math.max(0, metresAB(first.p, here) - (first.acc + accuracy) / 2) / ((now - first.t) / 1000) * 3.6;
+    if (kmh <= notWalkingKmh) return;
+    if (paceState == 'walking' && now - paceAt <= _paceStaleMs) return;
+    final next = legs.indexed.where((e) => e.$1 > leg && e.$2.ride).firstOrNull?.$2;
+    if (next != null && project(next.points, here).off <= math.max(80.0, accuracy)) return;
+    if (metresAB(here, l.points.last) <= _paceNearEndM) return;
+    // Not while the app's out of sight, where it'd go unseen.
+    final shown = WidgetsBinding.instance.lifecycleState;
+    if (askPace == null || (shown != null && shown != AppLifecycleState.resumed)) return;
+    paceAsked = true;
+    _save();
+    askPace!(kmh.toDouble());
   }
 
   static double _stopGap(TripLeg l) {
@@ -398,6 +481,20 @@ class Trip extends ChangeNotifier {
     boarded = false;
     alerted.removeWhere((i) => i >= leg);
     legStartedAt = When.nowMs();
+    switchedNote = note;
+    _changed();
+  }
+
+  /// Another way on from leg `j`'s `k`th stop (Change here), the ride cut short there; or with
+  /// `k` null, from leg `j` as it starts. The trip as it was is kept for Undo.
+  void replanAt(int j, int? k, List<TripLeg> next, {String? note}) {
+    if (!active || next.isEmpty || j < leg || j >= legs.length) return;
+    final cut = k != null && k > 0 && (j > leg || k > pos) ? legs[j].cutAt(k) : null;
+    if (cut == null && j == leg) return replan(next, note: note);
+    _before = {'legs': legs, 'leg': leg, 'pos': pos, 'boarded': boarded, 'alerted': alerted.toList(), 'seen': List.of(seen)};
+    legs = [...legs.take(j), ?cut, ...next];
+    seen = [...seen.take(j), if (cut != null) j < seen.length ? seen[j] : null, ...List<Map<String, dynamic>?>.filled(next.length, null)];
+    alerted.removeWhere((i) => i >= j);
     switchedNote = note;
     _changed();
   }
@@ -614,8 +711,16 @@ class TripBar extends StatelessWidget {
       );
 }
 
-class TripScreen extends StatelessWidget {
+class TripScreen extends StatefulWidget {
   const TripScreen({super.key});
+
+  @override
+  State<TripScreen> createState() => _TripScreenState();
+}
+
+class _TripScreenState extends State<TripScreen> {
+  // Change my way: a Change here by every stop still ahead on a ride.
+  bool changing = false;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -633,12 +738,24 @@ class TripScreen extends StatelessWidget {
               final here = k == t.leg && i == t.pos.floor();
               final getOff = i == l.points.length - 1;
               final code = l.codes != null && i < l.codes!.length ? l.codes![i] : null;
+              final canChange = changing && l.ride && (k > t.leg || i > t.pos) && !(getOff && k == t.legs.length - 1);
               rows.add(ListTile(
                 dense: true,
                 leading: Icon(here ? Icons.my_location : getOff ? Icons.flag : Icons.circle_outlined, color: here ? sg.tones[0] : getOff ? sg.brandInk : sg.muted, size: here ? 22 : 14),
                 title: Text(i < l.names.length && l.names[i].isNotEmpty ? l.names[i] : tr('trip.stopN', 'Stop {n}', {'n': i + 1}),
                     style: TextStyle(fontWeight: here || getOff ? FontWeight.w700 : null)),
-                trailing: getOff
+                trailing: canChange
+                    ? Tooltip(
+                        message: tr('trip.changeHereTitle', 'Get off here and go on another way'),
+                        child: OutlinedButton(
+                          onPressed: () {
+                            setState(() => changing = false);
+                            TripChange.changeAt(context, k, i);
+                          },
+                          child: Text(tr('trip.changeHere', 'Change here')),
+                        ),
+                      )
+                    : getOff
                     ? Text(k == t.legs.length - 1 ? tr('trip.tag.arrive', 'Arrive') : l.ride ? tr('trip.tag.change', 'Change') : '', style: TextStyle(color: sg.brandInk))
                     : (l.ride && i == l.points.length - 1 - Trip.alertStops ? Text(tr('trip.tag.alert', 'Alert'), style: TextStyle(color: sg.warn)) : null),
                 onTap: code == null || l.service == null ? null : () => StopScreen.open(code, service: l.service),
@@ -657,6 +774,14 @@ class TripScreen extends StatelessWidget {
             ],
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
               SgCard(child: Text(t.barText(), style: Theme.of(context).textTheme.titleMedium)),
+              if (t.legs.skip(t.leg).any((l) => l.ride))
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Pill(icon: Icons.alt_route, label: tr('nav.change_current_route', 'Change my way'), on: changing, onTap: () => setState(() => changing = !changing)),
+                  ),
+                ),
               const Padding(padding: EdgeInsets.only(top: 8), child: ClipRRect(borderRadius: BorderRadius.all(Radius.circular(12)), child: TripNotes())),
               if (!Trip.enabled) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('trip.alertOff', 'Get Off Alert is off in Settings.'), style: TextStyle(color: sg.warn))),
               ...rows,
