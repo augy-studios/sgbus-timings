@@ -152,6 +152,8 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
         return _json('road');
       case '/traffic':
         return _json('traffic');
+      case final c when c.startsWith('/data/campus/'):
+        return jsonDecode(File('../main-site${u.path}').readAsStringSync());
       case '/data/rail-tracks.json':
         return jsonDecode(File('../main-site/data/rail-tracks.json').readAsStringSync());
     }

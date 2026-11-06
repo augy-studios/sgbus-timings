@@ -5,6 +5,9 @@
 // Android app's speech screen and camera, it takes a stop said aloud or read off its pole.
 import 'package:flutter/material.dart';
 
+import '../../data/campus.dart';
+import 'campus_ui.dart';
+
 import '../../api/api.dart';
 import '../../app/nav.dart';
 import '../../data/location.dart';
@@ -162,6 +165,9 @@ class _TimingsPageState extends State<TimingsPage> {
     final match = searching ? StopSearch.match(q) : null;
     final services = searching ? BusNet.matchServices(q, 4) : const <String>[];
     final postal = searching && StopSearch.isPostal(q) ? q.trim() : null;
+    // The shuttle buses' routes and the campus stops LTA hasn't got, fetched the first time.
+    if (searching && !Campus.ready) Campus.load().then((_) => mounted ? setState(() {}) : null).catchError((_) => null);
+    final campus = searching && Campus.ready ? Campus.search(q) : null;
 
     return SafeArea(
       bottom: false,
@@ -206,6 +212,16 @@ class _TimingsPageState extends State<TimingsPage> {
                       BusScreen.open(no);
                     },
                   ),
+                for (final r in campus?.routes ?? const <CampusRoute>[])
+                  _Suggestion(
+                    icon: Icons.airport_shuttle_outlined,
+                    code: r.code,
+                    name: tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': Campus.uniName(r.uni), 'route': r.code}),
+                    onTap: () {
+                      _focus.unfocus();
+                      CampusRouteScreen.open(r.key);
+                    },
+                  ),
                 for (final h in match.stops)
                   _Suggestion(
                     code: h.stop.code,
@@ -217,7 +233,17 @@ class _TimingsPageState extends State<TimingsPage> {
                     ].join(' · '),
                     onTap: () => _openStop(h.stop.code),
                   ),
-                if (match.stops.isEmpty && services.isEmpty && postal == null)
+                for (final c in campus?.stops ?? const <CampusStop>[])
+                  _Suggestion(
+                    code: Campus.uniName(c.uni),
+                    name: c.name,
+                    road: tr('campus.shuttleStop', 'Shuttle buses only'),
+                    onTap: () {
+                      _focus.unfocus();
+                      CampusStopScreen.open(c.key);
+                    },
+                  ),
+                if (match.stops.isEmpty && services.isEmpty && postal == null && (campus == null || (campus.routes.isEmpty && campus.stops.isEmpty)))
                   EmptyNote(tr('search.noMatch', 'No bus stops matched that. Try a bus stop number or part of its name.')),
               ]),
             ),

@@ -25,6 +25,7 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/share.dart';
+import 'campus_ui.dart';
 
 /// Where a stop was opened from, for its Back and the stops-left note.
 class StopContext {
@@ -293,6 +294,8 @@ class _StopScreenState extends State<StopScreen> {
                   onRefresh: () => _refreshService(s.serviceNo),
                 ),
               ),
+            // Shuttle buses here, scheduled times apart from the live ones; not while narrowed.
+            if (!narrowed) CampusList(key: ValueKey('campus$_seq'), stopKey: code),
           ],
         ),
       ),

@@ -32,6 +32,7 @@ import '../data/stops.dart';
 import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
 import 'timings/board_screen.dart';
+import 'timings/campus_ui.dart';
 import 'timings/bus_screen.dart';
 import 'timings/flag_screen.dart';
 import 'timings/make_it.dart';
@@ -63,6 +64,7 @@ void registerFeatures() {
   registerMisc();
   SyncScreen.register();
   TerminalScreen.register();
+  registerCampus();
   AppNav.register('tours', (_) => AppNav.push(Builder(builder: (c) => SgScaffold(
         title: tr('settings.show_me_around', 'Show me around'),
         body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: tourButtons(c)),

@@ -37,7 +37,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Board, Flag, Will I make it | `js/board.js`, `js/flag.js`, `js/make-it.js` | ✅ |
 | Navigate (bus and train), train doors, walks and traffic on the live map | `js/nav.js`, `js/mrt-doors.js` | ✅ |
 | Route planner (bus only), journeys checked against the site's | `js/planner.js`, `js/journeys.js` | ✅ |
-| Live map, Explorer, station cards, Save the map (MapLibre; NUS and NTU shuttles to do) | `js/map*.js`, `js/rail-tracks.js` | 🚧 |
+| Live map, Explorer, station cards, Save the map (MapLibre), shuttle buses (NUS, NTU and the rest: routes, stops, cards, Layers, credits) | `js/map*.js`, `js/rail-tracks.js`, `js/campus.js` | ✅ |
 | Places and past searches | `js/places.js`, `js/recents.js` | ✅ |
 | Calendar: the phone's, an iCal link or an .ics file, checked against the site's | `js/calendar.js` | ✅ |
 | Get Off Alert: follow, alert, arrive, get ready to board, last bus with rerouting and Undo, traffic, a faster way, the server following the bus, MyICA (Change here and Are you walking? to do), Your trips | `js/trip.js`, `js/history.js` | 🚧 |
@@ -46,7 +46,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Reminders (near a stop, time to leave, on a bus, last bus), routines, widgets, shortcuts | `js/reminders.js` | ✅ |
 | Share card and links, opening shared links, live progress both ways, Offline Sharing and NFC stickers | `js/share.js`, `js/offline-share.js` | ✅ |
 | Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ✅ |
-| Terminal | `js/terminal.js`, `js/sgbus-core.js` | ⬜ |
+| Terminal | `js/terminal.js`, `js/sgbus-core.js` | ✅ `lib/features/terminal` |
 | Bug report, the update bar, SimplyGo, the first-run choice and every page's tour | `js/bug-report.js`, `js/app-update.js`, `js/tour.js`, `js/first-run.js` | ✅ |
 
 ## Screenshots

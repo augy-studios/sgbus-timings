@@ -35,6 +35,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../api/api.dart';
 import '../../app/nav.dart';
+import '../../data/campus.dart';
 import '../../data/geo.dart';
 import '../../data/location.dart';
 import '../../data/rail_tracks.dart';
@@ -90,7 +91,7 @@ class MapDisc {
 /// A stop or station on the map, for Explorer: a dot from its zoom on.
 class MapPoi {
   const MapPoi(this.kind, this.lat, this.lng, {required this.pick, this.color, this.colors = const []});
-  final String kind; // stop, station
+  final String kind; // stop, station, campus
   final double lat;
   final double lng;
   final MapPick pick;
@@ -109,6 +110,13 @@ class MapPick {
   const MapPick.station(String this.name, this.codes, double this.lat, double this.lng)
       : kind = 'station',
         code = null;
+  /// A shuttle bus stop LTA hasn't got, by its key (data/campus.dart).
+  const MapPick.campus(String this.code)
+      : kind = 'campus',
+        name = null,
+        codes = const [],
+        lat = null,
+        lng = null;
   final String kind;
   final String? code;
   final String? name;
@@ -116,7 +124,7 @@ class MapPick {
   final double? lat;
   final double? lng;
 
-  String get key => kind == 'stop' ? 'stop:$code' : 'station:${codes.join('/')}';
+  String get key => kind == 'station' ? 'station:${codes.join('/')}' : '$kind:$code';
 }
 
 /// Everything over the map, in groups, as js/map-engine.js keeps it.
@@ -125,8 +133,9 @@ class MapInk extends ChangeNotifier {
   final Map<String, List<MapDot>> dots = {};
   final Map<String, List<MapDisc>> discs = {};
   List<({Color color, List<List<double>> points})> rails = [];
+  List<({String key, String uni, Color color, List<List<double>> points})> shuttles = [];
   List<MapPoi> pois = [];
-  Set<String> off = {}; // layers turned off: stops, stations, rails
+  Set<String> off = {}; // layers turned off: stops, stations, rails, shuttles, campus
 
   MapLine line(String group, List<List<double>> pts, {required Color color, double width = 5, double opacity = 1, bool dash = false, int z = 0}) {
     final l = MapLine(pts, color: color, width: width, opacity: opacity, dash: dash, z: z);
@@ -210,6 +219,7 @@ class LiveMap extends StatefulWidget {
   static const exploreZoom = 15.0;
   static const stationZoom = 10.0;
   static const stopZoom = 14.0;
+  static const campusZoom = 13.0;
   static const styleLight = 'https://tiles.openfreemap.org/styles/liberty';
   static const styleDark = 'https://tiles.openfreemap.org/styles/dark';
 
@@ -479,7 +489,7 @@ class _LiveMapState extends State<LiveMap> {
     if (m == null) return;
     _styled = true;
     const empty = {'type': 'FeatureCollection', 'features': <Object>[]};
-    for (final s in ['sg-rail', 'sg-poi', 'sg-fill', 'sg-line', 'sg-dot']) {
+    for (final s in ['sg-rail', 'sg-shuttle', 'sg-poi', 'sg-fill', 'sg-line', 'sg-dot']) {
       await m.addGeoJsonSource(s, empty);
     }
     final edgeOpacity = _dark ? 0.35 : 0.9;
@@ -487,6 +497,11 @@ class _LiveMapState extends State<LiveMap> {
     await m.addLineLayer('sg-rail', 'sg-rail-edge', LineLayerProperties(lineColor: '#ffffff', lineWidth: railWidth(2), lineOpacity: edgeOpacity, lineCap: 'round', lineJoin: 'round'),
         enableInteraction: false);
     await m.addLineLayer('sg-rail', 'sg-rail', LineLayerProperties(lineColor: ['get', 'color'], lineWidth: railWidth(0), lineCap: 'round', lineJoin: 'round'), enableInteraction: false);
+    // Shuttle buses' routes over the trains' lines, thinner at every zoom.
+    List<Object> shuttleWidth(double more) => ['interpolate', ['linear'], ['zoom'], 10, 1 + more, 12, 1.5 + more, 14, 2.5 + more, 18, 4.5 + more];
+    await m.addLineLayer('sg-shuttle', 'sg-shuttle-edge', LineLayerProperties(lineColor: '#ffffff', lineWidth: shuttleWidth(2), lineOpacity: edgeOpacity, lineCap: 'round', lineJoin: 'round'),
+        enableInteraction: false);
+    await m.addLineLayer('sg-shuttle', 'sg-shuttle', LineLayerProperties(lineColor: ['get', 'color'], lineWidth: shuttleWidth(0), lineCap: 'round', lineJoin: 'round'), enableInteraction: false);
     List<Object> grow(double z0, double small, double big) => ['interpolate', ['linear'], ['zoom'], z0, small, 18, big];
     await m.addCircleLayer(
       'sg-poi',
@@ -494,6 +509,18 @@ class _LiveMapState extends State<LiveMap> {
       CircleLayerProperties(circleRadius: grow(LiveMap.stopZoom, 3.5, 7), circleColor: '#ffffff', circleStrokeColor: '#1f9d55', circleStrokeWidth: grow(LiveMap.stopZoom, 2, 3)),
       minzoom: LiveMap.stopZoom,
       filter: ['==', ['get', 'kind'], 'stop'],
+    );
+    await m.addCircleLayer(
+      'sg-poi',
+      'sg-poi-campus',
+      CircleLayerProperties(
+        circleRadius: grow(LiveMap.campusZoom, 3, 7),
+        circleColor: '#ffffff',
+        circleStrokeColor: ['get', 'color'],
+        circleStrokeWidth: grow(LiveMap.campusZoom, 2, 3.5),
+      ),
+      minzoom: LiveMap.campusZoom,
+      filter: ['==', ['get', 'kind'], 'campus'],
     );
     await m.addCircleLayer(
       'sg-poi',
@@ -549,9 +576,13 @@ class _LiveMapState extends State<LiveMap> {
     await m.setGeoJsonSource('sg-rail', collection([
       for (final r in rails) feature({'type': 'LineString', 'coordinates': r.points.map(_lngLat).toList()}, {'color': _hex(r.color)}),
     ]));
+    await m.setGeoJsonSource('sg-shuttle', collection([
+      if (!ink.off.contains('shuttles'))
+        for (final r in ink.shuttles) feature({'type': 'LineString', 'coordinates': r.points.map(_lngLat).toList()}, {'color': _hex(r.color)}),
+    ]));
     await m.setGeoJsonSource('sg-poi', collection([
       for (final (i, p) in ink.pois.indexed)
-        if (!ink.off.contains(p.kind == 'stop' ? 'stops' : 'stations'))
+        if (!ink.off.contains(_poiLayer(p.kind)))
           feature({'type': 'Point', 'coordinates': [p.lng, p.lat]}, {
             'kind': p.kind,
             'i': i,
@@ -591,7 +622,7 @@ class _LiveMapState extends State<LiveMap> {
   Future<void> _onTap(math.Point<double> point, LatLng at) async {
     final m = _map;
     if (m == null) return;
-    final hits = await m.queryRenderedFeatures(point, ['sg-dot', 'sg-poi-station', 'sg-poi-stop'], null);
+    final hits = await m.queryRenderedFeatures(point, ['sg-dot', 'sg-poi-station', 'sg-poi-stop', 'sg-poi-campus'], null);
     for (final h in hits) {
       final layer = '${(h as Map)['layer']?['id'] ?? ''}';
       final props = (h['properties'] as Map?) ?? const {};
@@ -640,6 +671,10 @@ class _LiveMapState extends State<LiveMap> {
 
   List<double>? _cardLatLng(MapPick p) {
     if (p.kind == 'station') return [p.lat!, p.lng!];
+    if (p.kind == 'campus') {
+      final c = Campus.at(p.code!);
+      return c == null ? null : [c.lat, c.lng];
+    }
     final s = Stops.of(p.code!);
     return s?.lat == null ? null : [s!.lat!, s.lng!];
   }
@@ -1096,6 +1131,55 @@ class _LiveMapState extends State<LiveMap> {
     }
     ink.pois = pois;
     ink.changed();
+    _shuttles();
+  }
+
+  static String _poiLayer(String kind) => switch (kind) { 'stop' => 'stops', 'campus' => 'campus', _ => 'stations' };
+
+  // The shuttle buses' routes, each along its road from roads.json, else straight from stop to
+  // stop and then along its road once /api/road has it; and the campus stops LTA hasn't got.
+  Future<void> _shuttles() async {
+    try {
+      await Campus.load();
+      await Campus.loadRoads();
+    } catch (_) {
+      return;
+    }
+    if (!mounted) return;
+    final list = Campus.lines(Campus.keep);
+    final roads = <String, List<List<double>>>{};
+    void draw() {
+      ink.shuttles = [for (final l in list) (key: l.key, uni: l.uni, color: l.color, points: roads[l.key] ?? Campus.road(l.key, l.points) ?? l.points)];
+      ink.changed();
+      if (mounted) setState(() {});
+    }
+
+    ink.pois = [
+      ...ink.pois.where((p) => p.kind != 'campus'),
+      for (final c in Campus.dots(Campus.keep)) MapPoi('campus', c.lat, c.lng, color: Campus.uniColour(c.uni), pick: MapPick.campus(c.key)),
+    ];
+    draw();
+    if (LiveMap.preview) return;
+    for (final l in list) {
+      if (Campus.road(l.key, l.points) != null) continue;
+      Api.map('road', query: {'points': l.points.map((p) => '${p[0].toStringAsFixed(5)},${p[1].toStringAsFixed(5)}').join(';')}).then((r) {
+        final path = r['path'];
+        if (path is! List || path.length < 2 || !mounted) return;
+        roads[l.key] = [for (final q in path) if (q is List && q.length >= 2) [(q[0] as num).toDouble(), (q[1] as num).toDouble()]];
+        draw();
+      }).catchError((_) {});
+    }
+  }
+
+  /// The universities' credits while one of their routes is in view.
+  List<({String uni, String text, String url})> _shuttleCredits(Size size) {
+    if (ink.shuttles.isEmpty || ink.off.contains('shuttles')) return const [];
+    final perPx = 360 / (512 * math.pow(2, _zoom));
+    final dLng = size.width / 2 * perPx, dLat = size.height / 2 * perPx * math.cos(_centre.latitude * math.pi / 180);
+    return Campus.credits([
+      [_centre.latitude - dLat, _centre.longitude - dLng],
+      [_centre.latitude + dLat, _centre.longitude + dLng],
+    ], [for (final l in ink.shuttles) (uni: l.uni, points: l.points)]);
   }
 
   void _openLayers() {
@@ -1122,6 +1206,8 @@ class _LiveMapState extends State<LiveMap> {
                 row('stops', tr('layers.stops', 'Bus stops')),
                 row('stations', tr('layers.stations', 'MRT and LRT stations')),
                 row('rails', tr('layers.rails', 'MRT and LRT lines')),
+                row('shuttles', tr('layers.shuttles', 'Shuttle bus routes')),
+                row('campus', tr('layers.campus', 'Shuttle bus stops')),
               ]),
             ),
           );
@@ -1302,6 +1388,23 @@ class _LiveMapState extends State<LiveMap> {
             ),
           ),
         ),
+        // The shuttle operators' credits, while their routes are in view.
+        if (mode == MapMode.explore)
+          for (final credits in [_shuttleCredits(size)])
+            if (credits.isNotEmpty)
+              Positioned(
+                left: 48,
+                right: 72,
+                bottom: MediaQuery.paddingOf(context).bottom + 10,
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85), borderRadius: BorderRadius.circular(6)),
+                    child: Text(credits.map((c) => c.text).join(' · '), style: TextStyle(fontSize: 11, color: context.sg.muted)),
+                  ),
+                ),
+              ),
         // The buttons down the side.
         Positioned(
           right: 12,
@@ -1494,7 +1597,24 @@ class _PreviewPainter extends CustomPainter {
         path(r.points, stroke(r.color, w));
       }
     }
+    if (!ink.off.contains('shuttles')) {
+      final w = (zoom - 10).clamp(1.0, 4.5);
+      for (final r in ink.shuttles) {
+        path(r.points, stroke(Colors.white, w + 2, dark ? 0.35 : 0.9));
+      }
+      for (final r in ink.shuttles) {
+        path(r.points, stroke(r.color, w));
+      }
+    }
     for (final p in ink.pois) {
+      if (p.kind == 'campus') {
+        if (zoom < LiveMap.campusZoom || ink.off.contains('campus')) continue;
+        final s = at([p.lat, p.lng]);
+        final r = 3 + (zoom - LiveMap.campusZoom) / 5 * 4;
+        canvas.drawCircle(s, r, Paint()..color = Colors.white);
+        canvas.drawCircle(s, r, stroke(p.color ?? Colors.purple, 2 + (zoom - LiveMap.campusZoom) / 5 * 1.5));
+        continue;
+      }
       if (p.kind == 'stop' && (zoom < LiveMap.stopZoom || ink.off.contains('stops'))) continue;
       if (p.kind == 'station' && (zoom < LiveMap.stationZoom || ink.off.contains('stations'))) continue;
       final s = at([p.lat, p.lng]);

@@ -14,6 +14,7 @@
 // timings above it.
 import 'package:flutter/material.dart';
 
+import '../../data/campus.dart';
 import '../../data/arrivals.dart';
 import '../../data/doors.dart';
 import '../../data/network.dart';
@@ -21,6 +22,7 @@ import '../../data/stops.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../nav/doors.dart';
+import '../timings/campus_ui.dart';
 import 'live_map.dart';
 
 class MapCardBubble extends StatefulWidget {
@@ -70,6 +72,8 @@ class _MapCardBubbleState extends State<MapCardBubble> {
         }
         if (mounted) setState(() => _etas = etas);
       }).catchError((_) {});
+    } else if (widget.pick.kind == 'campus') {
+      // Nothing to fetch: the shuttles' times come from the timetable.
     } else if (!MrtDoors.ready) {
       MrtDoors.load().then((_) => mounted ? setState(() {}) : null);
     }
@@ -141,7 +145,7 @@ class _MapCardBubbleState extends State<MapCardBubble> {
                 padding: const EdgeInsets.fromLTRB(14, 8, 8, 12),
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxHeight: widget.area.height * 0.55),
-                  child: SingleChildScrollView(child: widget.pick.kind == 'stop' ? _stop() : _station()),
+                  child: SingleChildScrollView(child: switch (widget.pick.kind) { 'stop' => _stop(), 'campus' => _campus(), _ => _station() }),
                 ),
               ),
             ),
@@ -230,9 +234,50 @@ class _MapCardBubbleState extends State<MapCardBubble> {
             key('off', tr('mapCard.keyOff', 'Not running now')),
           ]),
         ),
+      // Shuttle buses here too, live where they're seen.
+      CampusList(stopKey: code, card: false),
       _button(Icons.schedule, tr('mapCard.showTimings', 'Show bus timings'), () => widget.onTimings(code, null)),
       if (s?.lat != null) _button(Icons.directions, tr('stop.tool.directions', 'Directions'), () => widget.onDirections(s!.name, s.lat!, s.lng!)),
     ]);
+  }
+
+  // A shuttle bus stop LTA hasn't got: its university, name and road, its shuttles' times.
+  Widget _campus() {
+    final sg = context.sg;
+    final s = Campus.at(widget.pick.code!);
+    if (s == null) return _head([const Expanded(child: SizedBox())]);
+    final uni = Campus.uniName(s.uni);
+    final colour = Campus.uniColour(s.uni);
+    // A code worth showing: the postcode a campus stop goes by, not a made-up id.
+    final code = RegExp(r'^\d+$').hasMatch(s.id) ? ' ${s.id}' : '';
+    return Semantics(
+      label: tr('campus.card', '{uni} shuttle stop {name}', {'uni': uni, 'name': s.name}),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _head([
+          Container(
+            margin: const EdgeInsets.only(top: 8, right: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            decoration: BoxDecoration(color: colour, borderRadius: BorderRadius.circular(8)),
+            child: Text(uni, style: TextStyle(color: colour.computeLuminance() > 0.45 ? Colors.black : Colors.white, fontWeight: FontWeight.w700)),
+          ),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(s.name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                if (s.road.isNotEmpty || code.isNotEmpty) Text('${s.road}$code', style: TextStyle(color: sg.muted, fontSize: 13)),
+              ]),
+            ),
+          ),
+        ]),
+        CampusList(stopKey: s.key, card: false),
+        Padding(
+          padding: const EdgeInsets.only(top: 6),
+          child: Text(tr('campus.timetableNote', 'Shuttle times are from the timetable, and live where the operator shares them.'), style: TextStyle(color: sg.muted, fontSize: 12)),
+        ),
+        _button(Icons.directions, tr('stop.tool.directions', 'Directions'), () => widget.onDirections(s.name, s.lat, s.lng)),
+      ]),
+    );
   }
 
   String _lead(String x) {
