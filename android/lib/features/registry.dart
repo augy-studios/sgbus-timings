@@ -17,6 +17,8 @@ import 'card/card.dart';
 import 'share/shared.dart';
 import 'misc/misc.dart';
 import 'sync/sync.dart';
+import 'tour/tour.dart';
+import '../widgets/common.dart';
 import 'map/live_map.dart';
 import 'nav/doors.dart';
 import 'nav/nav_page.dart';
@@ -40,11 +42,11 @@ import 'timings/timings_page.dart';
 Map<String, Widget Function()> pages() => {
       'glance': () => const GlancePage(),
       'timings': () => const TimingsPage(),
-      'favs': () => const FavsPage(),
+      'favs': () => const TourTarget(id: 'favs.list', child: FavsPage()),
       'nav': () => const NavPage(),
       'alerts': () => const AlertsPage(),
-      'trips': () => const TripsPage(),
-      'places': () => const PlacesPage(),
+      'trips': () => const TourTarget(id: 'trips.list', child: TripsPage()),
+      'places': () => const TourTarget(id: 'places.list', child: PlacesPage()),
     };
 
 void registerFeatures() {
@@ -59,6 +61,11 @@ void registerFeatures() {
   registerShared();
   registerMisc();
   SyncScreen.register();
+  AppNav.register('tours', (_) => AppNav.push(Builder(builder: (c) => SgScaffold(
+        title: tr('settings.show_me_around', 'Show me around'),
+        body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: tourButtons(c)),
+      )), name: 'tours'));
+  WidgetsBinding.instance.addPostFrameCallback((_) => Tours.begin());
   NavPage.busOnly = () => const PlannerTab();
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top

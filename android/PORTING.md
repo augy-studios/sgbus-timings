@@ -47,7 +47,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Share card and links, opening shared links, live progress both ways, Offline Sharing and NFC stickers | `js/share.js`, `js/offline-share.js` | ✅ |
 | Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ✅ |
 | Terminal | `js/terminal.js`, `js/sgbus-core.js` | ⬜ |
-| Bug report, the update bar, SimplyGo (tours and first run to do) | `js/bug-report.js`, `js/app-update.js`, `js/tour.js`, `js/first-run.js` | 🚧 |
+| Bug report, the update bar, SimplyGo, the first-run choice and every page's tour | `js/bug-report.js`, `js/app-update.js`, `js/tour.js`, `js/first-run.js` | ✅ |
 
 ## Screenshots
 

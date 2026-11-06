@@ -14,6 +14,7 @@ import 'features/registry.dart';
 import 'i18n/i18n.dart';
 import 'native/native_bridge.dart';
 import 'theme/theme.dart';
+import 'features/tour/tour.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,7 @@ Future<void> main() async {
   await Native.start();
   // Everything the WebView app kept, the first time (data/migrate.dart).
   final migrated = await Migrate.run(store);
+  Tours.decide();
   await I18n.I.load();
   await AppLook.I.readPhone();
   BusNet.setOpenAccess(store.get('sgbus_restricted') == 'on');

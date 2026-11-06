@@ -50,6 +50,7 @@ import '../nav/nav_page.dart';
 import '../timings/stop_screen.dart';
 import '../trips/trip.dart';
 import 'map_card.dart';
+import '../tour/tour.dart';
 import 'map_save.dart';
 
 // ---------- what's drawn ----------
@@ -412,6 +413,7 @@ class _LiveMapState extends State<LiveMap> {
         _jump(const LatLng(1.3521, 103.8198), 11);
         _watchMe();
         _explore();
+        Tours.first('explorer');
       case MapMode.traffic:
         _traffic();
     }
@@ -1266,7 +1268,7 @@ class _LiveMapState extends State<LiveMap> {
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: LiveMap.preview ? (d) => _previewTap(d.localPosition, size) : null,
-              child: map,
+              child: TourTarget(id: 'map.ground', child: map),
             ),
           ),
         ),
@@ -1282,11 +1284,11 @@ class _LiveMapState extends State<LiveMap> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(4, 6, 12, 8),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                IconButton(
+                TourTarget(id: 'map.close', child: IconButton(
                   tooltip: tr('html.close_the_map', 'Close the map'),
                   onPressed: () => Navigator.of(context).maybePop(),
                   icon: const Icon(Icons.arrow_back),
-                ),
+                )),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(top: 6),
@@ -1312,7 +1314,7 @@ class _LiveMapState extends State<LiveMap> {
             if (_located && mode != MapMode.follow && !LiveMap.preview)
               _round(turning ? Icons.explore : Icons.explore_outlined, tr('html.turn_the_map_with_the', 'Turn the map with the way you face'), () => _setTurning(!turning), on: turning),
             if (mode == MapMode.explore) ...[
-              _round(Icons.layers_outlined, tr('tray.layers', 'Layers'), _openLayers),
+              TourTarget(id: 'map.layers', child: _round(Icons.layers_outlined, tr('tray.layers', 'Layers'), _openLayers)),
               _round(Icons.download_for_offline_outlined, tr('html.save_the_map_for_offline', 'Save the map for offline'), () => MapSave.open(context)),
             ],
           ]),

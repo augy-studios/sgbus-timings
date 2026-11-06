@@ -21,6 +21,7 @@ import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../timings/stop_screen.dart';
+import '../tour/tour.dart';
 
 class GlanceSource {
   GlanceSource(this.key, this.name, this.icon, {this.list, this.place});
@@ -392,14 +393,14 @@ class _GlancePageState extends State<GlancePage> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
             Row(children: [
-              ActionChip(
+              TourTarget(id: 'glance.source', child: ActionChip(
                 avatar: Icon(src?.icon ?? Icons.my_location, size: 18),
                 label: Row(mainAxisSize: MainAxisSize.min, children: [
                   Text(src?.name ?? tr('glance.source.near', 'Nearby')),
                   const Icon(Icons.arrow_drop_down, size: 18),
                 ]),
                 onPressed: _pickSource,
-              ),
+              )),
               const SizedBox(width: 6),
               IconButton.filledTonal(
                 tooltip: tr('glance.refresh', 'Refresh'),
@@ -424,9 +425,10 @@ class _GlancePageState extends State<GlancePage> {
                 ),
             ]),
             const SizedBox(height: 14),
-            SgCard(padding: const EdgeInsets.all(18), child: _hero(src)),
+            TourTarget(id: 'glance.hero', child: SgCard(padding: const EdgeInsets.all(18), child: _hero(src))),
             if (GlancePage.weather != null) Padding(padding: const EdgeInsets.only(top: 10), child: GlancePage.weather!(context)),
-            ...cards,
+            if (cards.isNotEmpty) TourTarget(id: 'glance.stops', child: cards.first),
+            ...cards.skip(1),
             if (_fetchedAt != 0 && cards.isEmpty && only)
               EmptyNote(tr('glance.noneOfYours', 'None of your favourite buses are due at these stops right now.')),
           ],

@@ -25,6 +25,7 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../timings/stop_screen.dart';
+import '../tour/tour.dart';
 
 class Alerts {
   Alerts._();
@@ -663,7 +664,7 @@ class _AlertsPageState extends State<AlertsPage> {
           if (d == null && !_failed) EmptyNote(tr('alerts.loading', 'Loading service alerts…')),
           if (_failed && d == null) EmptyNote(tr('alerts.loadFailed', 'Couldn’t reach LTA for service alerts. Check your connection, then tap Refresh.'), icon: Icons.cloud_off),
           if (d != null) ...[
-            ..._train(d['train']),
+            TourTarget(id: 'alerts.body', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _train(d['train']))),
             ..._traffic(d['traffic']),
             if (at != null)
               Padding(
@@ -678,8 +679,8 @@ class _AlertsPageState extends State<AlertsPage> {
           SectionLabel(tr('alerts.notify_me_even_with_the', 'Notify me, even with the app closed:')),
           SgCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              _modeRow(tr('html.train_service_alerts_mrt_and', 'Train service alerts (MRT and LRT)'), 'train',
-                  [('off', off), ('all', tr('alerts.all_updates', 'All updates')), ('disruptions', tr('alerts.disruptions_only', 'Disruptions only'))]),
+              TourTarget(id: 'alerts.modes', child: _modeRow(tr('html.train_service_alerts_mrt_and', 'Train service alerts (MRT and LRT)'), 'train',
+                  [('off', off), ('all', tr('alerts.all_updates', 'All updates')), ('disruptions', tr('alerts.disruptions_only', 'Disruptions only'))])),
               _modeRow(tr('html.traffic_alerts_roads_and_buses', 'Traffic alerts (roads and buses)'), 'traffic',
                   [('off', off), ('all', tr('alerts.all_updates', 'All updates')), ('disruptions', tr('alerts.disruptions_only', 'Disruptions only'))]),
               _modeRow(tr('html.newsfeed_lta_and_the_operators', 'Newsfeed (LTA and the operators)'), 'newsfeed',

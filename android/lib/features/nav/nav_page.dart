@@ -26,6 +26,7 @@ import '../map/live_map.dart';
 import '../share/share_card.dart';
 import '../timings/stop_screen.dart';
 import 'when_picker.dart';
+import '../tour/tour.dart';
 
 /// An end of a journey: a place with a name, or "here" (wherever you are when it plans).
 class NavEnd {
@@ -883,14 +884,14 @@ class _NavPageState extends State<NavPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                 width: double.infinity,
-                child: SegmentedButton<String>(
+                child: TourTarget(id: 'nav.modes', child: SegmentedButton<String>(
                   segments: [
                     ButtonSegment(value: 'all', label: Text(tr('nav.bus_and_train', 'Bus and train'))),
                     ButtonSegment(value: 'bus', label: Text(tr('nav.bus_only', 'Bus only'))),
                   ],
                   selected: {_mode},
                   onSelectionChanged: (s) => setState(() => Store.I.put(NavPage.modeKey, s.first)),
-                ),
+                )),
               ),
             ),
           Expanded(
@@ -902,7 +903,7 @@ class _NavPageState extends State<NavPage> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                       children: [
                         if (nav.option == null) ...[
-                          Row(
+                          TourTarget(id: 'nav.fields', child: Row(
                             children: [
                               Expanded(
                                 child: Column(
@@ -927,7 +928,7 @@ class _NavPageState extends State<NavPage> {
                                 },
                               ),
                             ],
-                          ),
+                          )),
                           if (nav.via == null && !nav.viaOpen)
                             Align(
                               alignment: Alignment.centerLeft,
@@ -937,15 +938,15 @@ class _NavPageState extends State<NavPage> {
                                 label: Text(tr('nav.add_a_stop', 'Add a stop')),
                               ),
                             ),
-                          WhenPicker(
+                          TourTarget(id: 'nav.when', child: WhenPicker(
                             value: nav.when,
                             onChanged: (w) {
                               nav.when = w;
                               nav.run();
                             },
-                          ),
+                          )),
                           const SizedBox(height: 12),
-                          ..._ways(),
+                          if (nav.options.isNotEmpty) TourTarget(id: 'nav.ways', child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _ways())) else ..._ways(),
                         ] else
                           ..._way(nav.option!),
                       ],

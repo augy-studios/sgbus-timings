@@ -22,6 +22,7 @@ import '../../widgets/stop_rows.dart';
 import 'bus_screen.dart';
 import 'greeting.dart';
 import 'stop_screen.dart';
+import '../tour/tour.dart';
 
 class TimingsPage extends StatefulWidget {
   const TimingsPage({super.key});
@@ -170,7 +171,7 @@ class _TimingsPageState extends State<TimingsPage> {
         children: [
           const Greeting(),
           const SizedBox(height: 16),
-          TextField(
+          TourTarget(id: 'timings.search', child: TextField(
             controller: _q,
             focusNode: _focus,
             textInputAction: TextInputAction.search,
@@ -185,7 +186,7 @@ class _TimingsPageState extends State<TimingsPage> {
                   IconButton(tooltip: tr('timings.scan_a_stops_code', "Scan a stop's code"), icon: const Icon(Icons.photo_camera_outlined), onPressed: () => AppNav.open('scan')),
               ]),
             ),
-          ),
+          )),
           if (searching) ...[
             const SizedBox(height: 8),
             SgCard(
@@ -243,7 +244,7 @@ class _TimingsPageState extends State<TimingsPage> {
             ),
           ] else ...[
             const SizedBox(height: 8),
-            SectionLabel(
+            TourTarget(id: 'timings.near', child: SectionLabel(
               tr('timings.stops_near_me', 'Stops near me'),
               trailing: (_near != null || _nearError.isNotEmpty)
                   ? IconButton(
@@ -252,7 +253,7 @@ class _TimingsPageState extends State<TimingsPage> {
                       onPressed: () => _showNear(ask: true),
                     )
                   : null,
-            ),
+            )),
             SgCard(
               child: _nearBusy && _near == null
                   ? EmptyNote(tr('timings.finding_stops_near_you', 'Finding stops near you…'))

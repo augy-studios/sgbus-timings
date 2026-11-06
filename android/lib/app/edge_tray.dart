@@ -12,6 +12,7 @@ import '../native/native_bridge.dart';
 import '../theme/theme.dart';
 import 'nav.dart';
 import 'pages.dart';
+import '../features/tour/tour.dart';
 
 class TrayExtra {
   const TrayExtra(this.id, this.icon, this.label, this.open, {this.when, this.badge});
@@ -185,13 +186,18 @@ class _EdgeTrayState extends State<EdgeTray> {
     final buttons = Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final p in tabs)
-          round(p.icon, p.label(), () => AppNav.showPage(p.id),
-              on: AppNav.page.value == p.id, badge: p.id == 'favs' && favCount > 0 ? '$favCount' : null),
+        TourTarget(
+          id: 'tray.pages',
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            for (final p in tabs)
+              round(p.icon, p.label(), () => AppNav.showPage(p.id),
+                  on: AppNav.page.value == p.id, badge: p.id == 'favs' && favCount > 0 ? '$favCount' : null),
+          ]),
+        ),
         if (extras.isNotEmpty) rule(),
         for (final e in extras) round(e.icon, e.label(), e.open, badge: e.badge?.call()),
         rule(),
-        round(Icons.settings_outlined, tr('settings.settings', 'Settings'), () => AppNav.open('settings')),
+        TourTarget(id: 'tray.settings', child: round(Icons.settings_outlined, tr('settings.settings', 'Settings'), () => AppNav.open('settings'))),
         round(Icons.palette_outlined, tr('theme.title', 'Theme'), () => AppNav.open('theme')),
       ],
     );
