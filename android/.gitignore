@@ -17,6 +17,11 @@ google-services.json
 *.iml
 .idea/
 
+# Left on disk by the Capacitor app this one replaced: its packages and its old Android project
+# (mostly build output). Flutter uses neither; the Wear OS app now lives in android/wear/.
+/node_modules/
+/native/
+
 # Built apps
 *.apk
 *.aab
