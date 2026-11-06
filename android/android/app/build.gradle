@@ -48,6 +48,17 @@ android {
     }
 }
 
+// A release for phones' processors only: the map's and WebRTC's libraries bring x86 copies
+// too, for emulators, which took the APK past GitHub's 100 MB a file (release/<version>/).
+// A debug build keeps them, for an emulator. (Flutter's plugin sets abiFilters itself, so
+// they're left out of the package instead.)
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.packaging.jniLibs.excludes.add("lib/x86/**")
+        variant.packaging.jniLibs.excludes.add("lib/x86_64/**")
+    }
+}
+
 flutter {
     source = "../.."
 }
