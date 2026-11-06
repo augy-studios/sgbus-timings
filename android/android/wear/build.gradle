@@ -8,7 +8,7 @@ plugins {
 //
 // The same application id and signing key as the phone's, which the Wearable Data Layer
 // needs to pair the two (the phone hands the watch your favourite stops), and the same
-// version, read from the Flutter app's pubspec.yaml (version: 2.3.1+26) so it's only ever
+// version, read from the Flutter app's pubspec.yaml (version: 2.4.0+27) so it's only ever
 // raised there.
 def pubspec = file('../../pubspec.yaml').text
 def phoneVersion = (pubspec =~ /(?m)^version:\s*([^+\s]+)\+(\d+)/)[0]

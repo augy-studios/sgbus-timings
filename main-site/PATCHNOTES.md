@@ -1,11 +1,35 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 5 November 2026**
+**Latest update: 6 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 6 November 2026: The Android app, rebuilt as an app of its own (2.4.0)
+
+### Android app 2.4.0
+
+- **A real Android app** - Until now the Android app showed this website inside it. From 2.4.0 every screen is the app's own, built for Android: it opens faster and scrolls and animates smoothly. Install it over the old one as usual, and everything you've saved comes across by itself the first time you open it: favourites, lists, places, routines, trips, uwuCoins and feats, settings and all.
+- **Material You by default** - The app follows your phone: its own font, and your wallpaper's colours. Your colours (from the Easter eggs) can take over in Theme. Turn Material You off in Theme for the UwU Apps theme, the look you know from the website.
+- **The Edge Tray, smoother** - The same tray, with the same buttons, now sliding in and out as the website's does, with your favourites' count and your uwuCoins on it.
+- **Explorer on a proper map** - Explorer and the live map draw with MapLibre, faster and sharper, with the shuttle buses' routes and stops, station doors and Save the map for offline as before.
+- **Everything else, as on the website** - Bus timings, Glance, Navigate and the route planner, Service alerts, the Get Off Alert (Change here and Are you walking? included), Your trips, Places, the calendar, uwuCoins, the wheel and team runs, Sync, sharing, Card value, the sgbus terminal, tours, offline mode, picture-in-picture and shake to refresh.
+
+### Desktop app 2.4.0
+
+- No changes of its own: numbered 2.4.0 to stay in step with the Android app.
+
+### Linux command line 2.4.0
+
+- No changes of its own: numbered 2.4.0 to stay in step with the Android app.
+
+### Guide
+
+- The Android app's page is rewritten for 2.4.0: coming from 2.3 or earlier, Material You and the UwU Apps theme, the Edge Tray, and Explorer, with new screenshots of the app itself.
 
 ---
 

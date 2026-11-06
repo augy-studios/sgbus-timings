@@ -17,7 +17,7 @@ android {
         applicationId = "org.uwuapps.sgbus"
         minSdk = rootProject.ext.minSdkVersion
         targetSdk = rootProject.ext.targetSdkVersion
-        // From pubspec.yaml's version (2.3.1+26 is versionName 2.3.1, versionCode 26): raise it
+        // From pubspec.yaml's version (2.4.0+27 is versionName 2.4.0, versionCode 27): raise it
         // there for a new version.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
