@@ -55,6 +55,7 @@ import io.flutter.embedding.android.RenderMode;
 import io.flutter.embedding.android.TransparencyMode;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.android.FlutterEngineConfigurator;
+import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister;
 
 public class MainActivity extends AppCompatActivity implements FlutterEngineConfigurator {
     static final String SITE = "https://sgbus.uwuapps.org";
@@ -104,9 +105,13 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
         if (savedInstanceState == null) route(getIntent());
     }
 
-    // The Flutter engine's made: the bridge to it.
+    // The Flutter engine's made: its plugins (shared_preferences, geolocator, the camera, the
+    // map...), then the bridge to it. A FlutterFragment's engine doesn't register its plugins
+    // itself: it leaves that to the activity, as FlutterFragmentActivity does. Without them the
+    // Dart side's first await (Store.open) fails before runApp, and the app never opens.
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine engine) {
+        GeneratedPluginRegister.registerGeneratedPlugins(engine);
         mBridge.connect(engine.getDartExecutor().getBinaryMessenger());
     }
 
@@ -137,6 +142,20 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
     public void onPostResume() {
         super.onPostResume();
         if (mFlutter != null) mFlutter.onPostResume();
+    }
+
+    // The Flutter plugins' own permission prompts and screens (geolocator, the camera, picking
+    // a file) come back to the activity: handed on to them, as FlutterFragmentActivity does.
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (mFlutter != null) mFlutter.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (mFlutter != null) mFlutter.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override
