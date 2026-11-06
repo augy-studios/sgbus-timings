@@ -24,12 +24,20 @@ class AppNav {
   static final page = ValueNotifier<String>('glance');
 
   static void showPage(String id) {
+    _dropKeyboard();
     nav?.popUntil((r) => r.isFirst);
     page.value = id;
   }
 
-  static Future<T?> push<T>(Widget screen, {String? name}) =>
-      nav!.push<T>(MaterialPageRoute(builder: (_) => screen, settings: RouteSettings(name: name)));
+  static Future<T?> push<T>(Widget screen, {String? name}) {
+    _dropKeyboard();
+    return nav!.push<T>(MaterialPageRoute(builder: (_) => screen, settings: RouteSettings(name: name)));
+  }
+
+  /// A search box left focused on the page behind (the Edge Tray opens screens without taking
+  /// focus) keeps the keyboard up over the next screen, and brings it back on Back. Let it go
+  /// first; a screen that wants the keyboard (autofocus) still takes it once it's built.
+  static void _dropKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
 
   static void say(String text, {SnackBarAction? action}) {
     messengerKey.currentState
