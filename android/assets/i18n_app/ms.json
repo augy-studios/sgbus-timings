@@ -10,5 +10,13 @@
   "map.arrive": "tiba {time}",
   "map.locate": "untuk menunjukkan di mana anda berada pada peta",
   "app.reminders": "Peringatan",
-  "app.myicaNote": "Sediakan kod QR MyICA anda untuk imigresen."
+  "app.myicaNote": "Sediakan kod QR MyICA anda untuk imigresen.",
+  "terminal.stop": "Henti",
+  "terminal.tab": "Habiskan perkataan",
+  "terminal.up": "Yang sebelumnya",
+  "terminal.down": "Yang seterusnya",
+  "terminal.ctrlC": "Hentikannya, atau kosongkan baris",
+  "terminal.clear": "Kosongkan skrin",
+  "tour.terminal.2app": "Jawapan dipaparkan di sini. ^C menghentikan yang sentiasa dikemas kini, atau mengosongkan baris; tekan dan tahan untuk memilih teks dan menyalinnya.",
+  "tour.terminal.3app": "exit, Kembali atau ini menutupnya. Tetapan, Bantuan dan tambahan membukanya semula."
 }

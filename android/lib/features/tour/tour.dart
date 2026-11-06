@@ -100,6 +100,11 @@ class Tours {
     'places': [
       (target: 'places.list', text: () => tr('tour.places.1', 'Home, Work and your own places. Tap one for the way there from where you are.')),
     ],
+    'terminal': [
+      (target: 'terminal.prompt', text: () => tr('tour.terminal.1', 'Type a command, as on the Linux command line: a stop like 84009, a stop’s name, nav home work, favs. Tab finishes a word, and Up brings back the last one.')),
+      (target: 'terminal.screen', text: () => tr('tour.terminal.2app', 'The answers show here. ^C stops one that keeps updating, or clears the line; press and hold to select text and copy it.')),
+      (target: 'terminal.close', text: () => tr('tour.terminal.3app', 'exit, Back or this closes it. Settings, Help and extras opens it again.')),
+    ],
     'explorer': [
       (target: 'map.ground', text: () => tr('tour.explorer.1', 'Stops are white dots ringed in green, stations dots in their line’s colour, interchanges pills in all of theirs. Zoom in for the stops.')),
       (target: 'map.ground', text: () => tr('tour.explorer.2', 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.')),
@@ -309,6 +314,11 @@ List<Widget> tourButtons(BuildContext context) => [
             Navigator.of(context).popUntil((r) => r.isFirst);
             Tours.start(p.id);
           }),
+      ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.terminal), title: Text(tr('tour.terminal', 'sgbus terminal')), onTap: () {
+        Navigator.of(context).popUntil((r) => r.isFirst);
+        Store.I.putJson(Tours.pagesKey, [for (final v in Store.I.list(Tours.pagesKey)) if (v != 'terminal') v]);
+        AppNav.open('terminal');
+      }),
       ListTile(contentPadding: EdgeInsets.zero, leading: const Icon(Icons.explore_outlined), title: Text(tr('tour.explorer', 'Explorer')), onTap: () {
         Navigator.of(context).popUntil((r) => r.isFirst);
         Store.I.putJson(Tours.pagesKey, [for (final v in Store.I.list(Tours.pagesKey)) if (v != 'explorer') v]);

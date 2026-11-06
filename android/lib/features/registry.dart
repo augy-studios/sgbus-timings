@@ -17,6 +17,7 @@ import 'card/card.dart';
 import 'share/shared.dart';
 import 'misc/misc.dart';
 import 'sync/sync.dart';
+import 'terminal/terminal.dart';
 import 'tour/tour.dart';
 import '../widgets/common.dart';
 import 'map/live_map.dart';
@@ -61,6 +62,7 @@ void registerFeatures() {
   registerShared();
   registerMisc();
   SyncScreen.register();
+  TerminalScreen.register();
   AppNav.register('tours', (_) => AppNav.push(Builder(builder: (c) => SgScaffold(
         title: tr('settings.show_me_around', 'Show me around'),
         body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: tourButtons(c)),

@@ -10,5 +10,13 @@
   "map.arrive": "arrive {time}",
   "map.locate": "to show where you are on the map",
   "app.reminders": "Reminders",
-  "app.myicaNote": "Have your MyICA QR code ready for immigration."
+  "app.myicaNote": "Have your MyICA QR code ready for immigration.",
+  "terminal.stop": "Stop",
+  "terminal.tab": "Finish the word",
+  "terminal.up": "The one before",
+  "terminal.down": "The one after",
+  "terminal.ctrlC": "Stop it, or clear the line",
+  "terminal.clear": "Clear the screen",
+  "tour.terminal.2app": "The answers show here. ^C stops one that keeps updating, or clears the line; press and hold to select text and copy it.",
+  "tour.terminal.3app": "exit, Back or this closes it. Settings, Help and extras opens it again."
 }
