@@ -1,4 +1,4 @@
-The Android app rebuilt as an app of its own, in Material You by default, with Explorer on a proper map, plus team runs for the feats and every stop in a list on Glance.
+The Android app rebuilt from the ground up, in Material You by default, with Explorer on a proper map, plus team runs for the feats and every stop in a list on Glance.
 
 ## Download
 
