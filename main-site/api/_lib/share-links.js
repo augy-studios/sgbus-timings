@@ -155,11 +155,20 @@ function parseFeat(data, now) {
 
 const LEG_KINDS = ['bus', 'train', 'walk'];
 
+// Where the sharer is, if it's known. A location that doesn't fit (no time, an old fix, an app
+// from before `t` was sent) is left out rather than turning the whole link away: the link still
+// works, its map just goes by the trip's progress instead.
 function me(m, now) {
-  if (m == null) return null;
-  if (typeof m !== 'object' || !Number.isFinite(m.t) || Math.abs(m.t - now) > 60 * 60 * 1000) throw new ValidationError('bad location');
-  const [lat, lng] = point(m.lat, m.lng);
-  return { lat, lng, accuracy: Number.isFinite(m.accuracy) ? Math.min(1000, Math.max(0, Math.round(m.accuracy))) : null, t: Math.round(m.t) };
+  if (m == null || typeof m !== 'object') return null;
+  const t = m.t == null ? now : m.t;
+  if (!Number.isFinite(t) || Math.abs(t - now) > 60 * 60 * 1000) return null;
+  let lat, lng;
+  try {
+    [lat, lng] = point(m.lat, m.lng);
+  } catch {
+    return null;
+  }
+  return { lat, lng, accuracy: Number.isFinite(m.accuracy) ? Math.min(1000, Math.max(0, Math.round(m.accuracy))) : null, t: Math.round(t) };
 }
 
 // Each train ride's line and stations (progress in js/trip.js), for the live map to draw it

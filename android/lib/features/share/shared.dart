@@ -257,7 +257,11 @@ class EtaShare {
         for (final (k, l) in t.legs.indexed)
           if (l.kind == 'train' && k >= t.leg) {'leg': k, 'route': l.route ?? l.label.split(' ').first, 'points': l.points},
       ],
-      'me': t.here == null ? null : {'lat': t.here!.lat, 'lng': t.here!.lng, 'accuracy': t.here!.accuracy},
+      // When the fix was had, too: /api/share takes a location only with its time (js/trip.js's
+      // trip.me), and one older than the server allows is left out rather than sent.
+      'me': t.here == null || When.nowMs() - t.lastFixAt > 30 * 60000
+          ? null
+          : {'lat': t.here!.lat, 'lng': t.here!.lng, 'accuracy': t.here!.accuracy, 't': t.lastFixAt},
       'timeline': {
         'legs': [for (final l in rest.where((l) => l.ride || l == leg)) {'label': l.label, 'to': l.to, 'names': l.names, 'kind': l.kind}],
         'pos': t.pos,
