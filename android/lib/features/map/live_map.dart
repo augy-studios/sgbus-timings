@@ -1,6 +1,6 @@
 // The live map (the site's js/map.js and js/map-engine.js): full screen, following where you are,
 // drawn by MapLibre over OpenFreeMap's vector tiles (Liberty in light mode, Dark in dark mode),
-// the buildings standing up in 3D when it's tilted with two fingers. It takes the place of
+// the buildings standing up in 3D when it's tilted by its 3D button. It takes the place of
 // sending you off to Google Maps, in five ways:
 //
 //   LiveMap.walkTo(place)  walking directions to a stop or place, turn by turn, from where you
@@ -21,10 +21,13 @@
 //   LiveMap.traffic(...)   the traffic on a bus's way: its road, orange where it's slow and red
 //                          where it's jammed, by LTA's live speeds (/api/traffic), its incidents.
 //
-// It opens at street level on you and keeps following; a drag stops that, Recentre goes back to
-// it, Overview shows the whole way. Your dot is MapLibre's own, its arrow turning with the
-// phone's compass; Turn the map with the way you face turns the map with it. Two fingers pan it
-// as one does, unless they go straight up or down, which tilts it (tilt_or_pan.dart).
+// It opens at street level on you and keeps following, MapLibre's own tracking holding your dot
+// in the middle of the screen; a drag stops that, Recentre goes back to it, Overview shows the
+// whole way. Your dot is MapLibre's own, its arrow turning with the
+// phone's compass; Turn the map with the way you face turns the map with it. Two fingers only
+// pan and pinch and twist it: MapLibre's own two-finger tilt starts on any small drift up or down
+// and stops the pan until they lift, so it's off, and a button tilts it instead. A stick slides
+// it too (map_stick.dart).
 //
 // Where the platform's map can't be drawn (tests and the guide's screenshots), MapPreview draws
 // the same lines and dots on a plain ground, so every panel round it can still be seen.
@@ -54,7 +57,7 @@ import '../trips/trip.dart';
 import 'map_card.dart';
 import '../tour/tour.dart';
 import 'map_save.dart';
-import 'tilt_or_pan.dart';
+import 'map_stick.dart';
 
 // ---------- what's drawn ----------
 
@@ -183,6 +186,9 @@ class MapInk extends ChangeNotifier {
   Iterable<MapDisc> get allDiscs => discs.values.expand((l) => l);
 }
 
+/// A fix's speed in km/h, from metres a second, if it has one.
+int? speedKmh(double? metresPerSecond) => metresPerSecond == null || metresPerSecond.isNaN || metresPerSecond < 0 ? null : (metresPerSecond * 3.6).round();
+
 String _hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
 List<double> _lngLat(List<double> p) => [p[1], p[0]];
@@ -222,6 +228,8 @@ class LiveMap extends StatefulWidget {
   static const stationZoom = 10.0;
   static const stopZoom = 14.0;
   static const campusZoom = 13.0;
+  static const tilt = 55.0;
+  static const speedStale = Duration(seconds: 6);
   static const styleLight = 'https://tiles.openfreemap.org/styles/liberty';
   static const styleDark = 'https://tiles.openfreemap.org/styles/dark';
 
@@ -333,7 +341,10 @@ class _LiveMapState extends State<LiveMap> {
   bool following = true;
   bool turning = false;
   bool _located = false; // location allowed, so MapLibre draws your dot
-  final _fingers = TiltOrPan();
+  bool _tilted = false; // as the camera last was, as Overview can flatten it
+  int _steering = 0; // camera moves of the app's own under way (_steer)
+  int? _kmh; // how fast you're going, on a ride or a drive
+  Timer? _speedStale;
 
   String title = '';
   String sub = '';
@@ -387,6 +398,7 @@ class _LiveMapState extends State<LiveMap> {
     _watch?.cancel();
     _tripTimer?.cancel();
     _flush?.cancel();
+    _speedStale?.cancel();
     ink.removeListener(_inkChanged);
     AppNav.pip.removeListener(_redrawPip);
     super.dispose();
@@ -446,11 +458,7 @@ class _LiveMapState extends State<LiveMap> {
   void _jump(LatLng at, double zoom, {bool animate = false}) {
     _centre = at;
     _zoom = zoom;
-    final m = _map;
-    if (m != null) {
-      final u = CameraUpdate.newLatLngZoom(at, zoom);
-      animate && !MediaQuery.disableAnimationsOf(context) ? m.animateCamera(u, duration: const Duration(milliseconds: 600)) : m.moveCamera(u);
-    }
+    _steer(CameraUpdate.newLatLngZoom(at, zoom), animate: animate);
     if (mounted) setState(() {});
   }
 
@@ -482,12 +490,12 @@ class _LiveMapState extends State<LiveMap> {
     if (mounted) setState(() {});
   }
 
-  /// A finger on the map came down, moved or lifted: redrawn only if that changes whether it may tilt.
-  void _touched(void Function() change) {
-    final was = _fingers.tilt;
-    change();
-    if (_fingers.tilt != was) setState(() {});
+  void _toggleTilt() {
+    _steer(CameraUpdate.tiltTo(_tilted ? 0 : LiveMap.tilt));
   }
+
+  /// The stick's slide: the map's picture moving by [d], so the camera the other way.
+  void _slide(Offset d) => _map?.moveCamera(CameraUpdate.scrollBy(-d.dx, -d.dy));
 
   void _inkChanged() {
     if (LiveMap.preview || _map == null) {
@@ -581,6 +589,7 @@ class _LiveMapState extends State<LiveMap> {
       ),
     );
     await _push();
+    _track();
   }
 
   Future<void> _push() async {
@@ -708,6 +717,7 @@ class _LiveMapState extends State<LiveMap> {
     if (!mounted) return;
     _located = await Locate.allowed().catchError((_) => false);
     setState(() {});
+    _track();
     _watch = Locate.watch().listen(_onFix, onError: (_) {});
   }
 
@@ -715,13 +725,14 @@ class _LiveMapState extends State<LiveMap> {
     if ((f.accuracy ?? 0) > _roughM && here != null) return;
     final first = here == null;
     here = f;
+    _noteSpeed(f);
     final now = When.nowMs();
     if (!first && now - _drawnAt < _drawMs) return;
     _drawnAt = now;
     _drawMe();
     if (first && mode != MapMode.traffic && mode != MapMode.follow) {
       _jump(LatLng(f.lat, f.lng), mode == MapMode.explore ? LiveMap.exploreZoom : LiveMap.streetZoom);
-    } else if (following && mode != MapMode.traffic) {
+    } else if (following && mode != MapMode.traffic && _tracking == MyLocationTrackingMode.none) {
       _keepInView(LatLng(f.lat, f.lng));
     }
     if (mode == MapMode.walk) _onWalkFix();
@@ -749,37 +760,80 @@ class _LiveMapState extends State<LiveMap> {
     }
   }
 
+  /// Who's followed in the middle of the screen, where MapLibre isn't tracking them: someone's
+  /// shared trip, and MapPreview.
   void _keepInView(LatLng at) {
-    // Panned only once you've moved a fair way across, so a fix a second isn't a pan a second.
-    final size = MediaQuery.sizeOf(context);
-    final p = MapPreview.toScreen([at.latitude, at.longitude], _centre, _zoom, size);
-    final dx = (p.dx - size.width / 2).abs() / (size.width / 2);
-    final dy = (p.dy - size.height / 2).abs() / (size.height / 2);
-    if (dx > 0.25 || dy > 0.25 || LiveMap.preview) {
-      _centre = at;
-      _map?.animateCamera(CameraUpdate.newLatLng(at), duration: const Duration(milliseconds: 500));
-    }
+    _centre = at;
+    _map?.animateCamera(CameraUpdate.newLatLng(at), duration: const Duration(milliseconds: 500));
   }
 
   void _setFollowing(bool on) {
     following = on;
-    if (on && here != null) _jump(LatLng(here!.lat, here!.lng), mode == MapMode.explore ? LiveMap.exploreZoom + 1 : LiveMap.streetZoom, animate: true);
     if (!on && turning) _setTurning(false);
+    if (on && here != null) {
+      _jump(LatLng(here!.lat, here!.lng), mode == MapMode.explore ? LiveMap.exploreZoom + 1 : LiveMap.streetZoom, animate: true);
+    } else {
+      _track();
+    }
     setState(() {});
   }
 
   void _setTurning(bool on) {
     turning = on;
     if (on) following = true;
-    if (!on) _map?.animateCamera(CameraUpdate.bearingTo(0));
+    if (on) {
+      _track();
+    } else {
+      _steer(CameraUpdate.bearingTo(0));
+    }
     setState(() {});
   }
 
-  MyLocationTrackingMode get _tracking => !_located
-      ? MyLocationTrackingMode.none
-      : turning
-          ? MyLocationTrackingMode.trackingCompass
-          : MyLocationTrackingMode.none;
+  MyLocationTrackingMode get _tracking {
+    if (!_located || LiveMap.preview || mode == MapMode.follow) return MyLocationTrackingMode.none;
+    if (turning) return MyLocationTrackingMode.trackingCompass;
+    return following && mode != MapMode.traffic ? MyLocationTrackingMode.tracking : MyLocationTrackingMode.none;
+  }
+
+  /// Tells MapLibre how to track you. Called, not a widget option: it ends tracking by itself, on
+  /// a drag or a camera move, and an option left the same wouldn't be sent to start it again.
+  void _track() {
+    if (_steering == 0) _map?.updateMyLocationTrackingMode(_tracking);
+  }
+
+  /// A camera move of the app's own. Any ends MapLibre's tracking and reports it dismissed, as a
+  /// drag does: that's not taken for a drag while this is under way, and tracking starts again after.
+  Future<void> _steer(CameraUpdate u, {bool animate = true}) async {
+    final m = _map;
+    if (m == null) return;
+    _steering++;
+    try {
+      animate && !MediaQuery.disableAnimationsOf(context) ? await m.animateCamera(u, duration: const Duration(milliseconds: 600)) : await m.moveCamera(u);
+    } catch (_) {
+      // The map's gone, or the move was cut short: nothing to do but carry on.
+    }
+    _steering--;
+    if (mounted) _track();
+  }
+
+  void _trackingDismissed() {
+    if (_steering == 0 && (following || turning)) _setFollowing(false);
+  }
+
+  // ---------- how fast ----------
+
+  bool get _showsSpeed => mode == MapMode.walk && (widget.cycle || widget.drive);
+
+  /// Fixes come only as you move, so one that's gone quiet means you've stopped.
+  void _noteSpeed(Fix f) {
+    final k = speedKmh(f.speed);
+    if (!_showsSpeed || k == null) return;
+    if (k != _kmh) setState(() => _kmh = k);
+    _speedStale?.cancel();
+    _speedStale = Timer(LiveMap.speedStale, () {
+      if (mounted) setState(() => _kmh = 0);
+    });
+  }
 
   // ---------- a walk ----------
 
@@ -1318,7 +1372,7 @@ class _LiveMapState extends State<LiveMap> {
       ...ink.allDots.map((d) => d.at),
       if (here != null) [here!.lat, here!.lng],
     ];
-    following = false;
+    _setFollowing(false);
     _fit(pts);
   }
 
@@ -1336,16 +1390,13 @@ class _LiveMapState extends State<LiveMap> {
             minMaxZoomPreference: const MinMaxZoomPreference(9, 19),
             cameraTargetBounds: CameraTargetBounds(LatLngBounds(southwest: const LatLng(0.9, 103.2), northeast: const LatLng(1.8, 104.5))),
             trackCameraPosition: true,
-            tiltGesturesEnabled: _fingers.tilt,
+            tiltGesturesEnabled: false,
             compassEnabled: true,
             compassViewPosition: CompassViewPosition.topRight,
             compassViewMargins: const math.Point(16, 200),
             myLocationEnabled: _located,
             myLocationRenderMode: _located ? MyLocationRenderMode.compass : MyLocationRenderMode.normal,
-            myLocationTrackingMode: _tracking,
-            onCameraTrackingDismissed: () {
-              if (turning) _setTurning(false);
-            },
+            onCameraTrackingDismissed: _trackingDismissed,
             attributionButtonPosition: AttributionButtonPosition.bottomLeft,
             onMapCreated: (c) => _map = c,
             onStyleLoadedCallback: _onStyle,
@@ -1354,6 +1405,8 @@ class _LiveMapState extends State<LiveMap> {
               _centre = p.target;
               _zoom = p.zoom;
               if (card != null) _placeCard();
+              final tilted = p.tilt > 1;
+              if (tilted != _tilted) setState(() => _tilted = tilted);
             },
             onCameraIdle: () {
               if (card != null) _placeCard();
@@ -1364,16 +1417,12 @@ class _LiveMapState extends State<LiveMap> {
     if (AppNav.pip.value) return Scaffold(body: map);
     return Scaffold(
       body: Stack(children: [
-        // A drag stops following you; the fingers on it say whether it may tilt.
+        // A drag stops following you.
         Positioned.fill(
           child: Listener(
-            onPointerDown: (e) => _touched(() => _fingers.down(e.pointer, e.position)),
             onPointerMove: (e) {
               if (following && e.delta.distance > 2 && mode != MapMode.traffic) _setFollowing(false);
-              _touched(() => _fingers.move(e.pointer, e.position));
             },
-            onPointerUp: (e) => _touched(() => _fingers.up(e.pointer)),
-            onPointerCancel: (e) => _touched(() => _fingers.up(e.pointer)),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: LiveMap.preview ? (d) => _previewTap(d.localPosition, size) : null,
@@ -1428,11 +1477,41 @@ class _LiveMapState extends State<LiveMap> {
                   ),
                 ),
               ),
+        // How fast you're going, on a ride or a drive.
+        if (_showsSpeed && _kmh != null)
+          Positioned(
+            left: 12,
+            top: top + 96,
+            child: Material(
+              color: sg.surfaceStrong,
+              elevation: _lift,
+              shape: _panel(16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Text(tr('map.kmh', '{n} km/h', {'n': _kmh}), style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ),
         // The buttons down the side.
         Positioned(
           right: 12,
           top: top + 96,
           child: Column(children: [
+            // First, so the buttons that come and go below don't move it while it's held.
+            if (!LiveMap.preview) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: MapStick(
+                  builder: (held) => _face(Icons.open_with, tr('map.slide', 'Hold and drag to slide the map'), on: held),
+                  onStart: () {
+                    if (following || turning) _setFollowing(false);
+                  },
+                  onSlide: _slide,
+                  onTap: () => AppNav.say(tr('map.slide', 'Hold and drag to slide the map')),
+                ),
+              ),
+              _round(Icons.threed_rotation, tr('map.tilt', 'Tilt the map, for the buildings in 3D'), _toggleTilt, on: _tilted),
+            ],
             if (mode != MapMode.explore && mode != MapMode.traffic)
               _round(Icons.zoom_out_map, tr('html.show_the_whole_route', 'Show the whole route'), _overview),
             if (!following && mode != MapMode.traffic && (here != null || mode == MapMode.follow))
@@ -1510,22 +1589,20 @@ class _LiveMapState extends State<LiveMap> {
       RoundedRectangleBorder(borderRadius: BorderRadius.circular(r), side: LiveMap.preview ? BorderSide(color: context.sg.border) : BorderSide.none);
 
   Widget _round(IconData icon, String label, VoidCallback onTap, {bool on = false}) {
-    final sg = context.sg;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: Tooltip(
-        message: label,
-        child: Material(
-          color: on ? sg.brand : sg.surfaceStrong,
-          elevation: _lift,
-          shape: LiveMap.preview ? CircleBorder(side: BorderSide(color: sg.border)) : const CircleBorder(),
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: SizedBox(width: 48, height: 48, child: Icon(icon, color: on ? sg.onBrand : sg.ink, semanticLabel: label)),
-          ),
-        ),
-      ),
+      child: Tooltip(message: label, child: _face(icon, label, on: on, onTap: onTap)),
+    );
+  }
+
+  Widget _face(IconData icon, String label, {bool on = false, VoidCallback? onTap}) {
+    final sg = context.sg;
+    final face = SizedBox(width: 48, height: 48, child: Icon(icon, color: on ? sg.onBrand : sg.ink, semanticLabel: label));
+    return Material(
+      color: on ? sg.brand : sg.surfaceStrong,
+      elevation: _lift,
+      shape: LiveMap.preview ? CircleBorder(side: BorderSide(color: sg.border)) : const CircleBorder(),
+      child: onTap == null ? face : InkWell(customBorder: const CircleBorder(), onTap: onTap, child: face),
     );
   }
 }

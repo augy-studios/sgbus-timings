@@ -90,8 +90,11 @@ starred, and **uwuCoins** your balance.
 
 [Explorer](explorer.md) and the [live map](live-map.md) are drawn by the app
 too, over OpenFreeMap's map with buildings that stand up in 3D when you tilt it
-with two fingers. Tap a stop for its buses, or a station for the doors to stand
-at on each platform.
+with its 3D button. Drag with one finger or two to move the map, or hold the
+button with the four arrows and drag it, and the map slides that way until you
+let go. While it follows you, your dot stays in the middle of the screen, and
+Cycle it and Drive it show how fast you're going. Tap a stop for its buses, or a
+station for the doors to stand at on each platform.
 
 <figure>
 <img src="/screenshots/android/explorer.png" alt="Explorer round Bedok: stops as white dots ringed in green, and Bedok station's card open, towards Pasir Ris, with doors 7 and 18 for the escalator to the exit, door 12 for the lift, and where the door number is on the platform door." width="412" height="892" loading="lazy">

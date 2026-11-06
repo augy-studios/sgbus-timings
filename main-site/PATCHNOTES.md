@@ -9,6 +9,23 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 6 November 2026: The Android app's map, better to use (2.4.1)
+
+### Android app 2.4.1
+
+- **The map follows you properly** - On Explorer and the live map, while the map is following you, your dot now stays in the middle of the screen as you move, where it used to wait until you'd moved well off-centre.
+- **The compass button stays on** - Turn the map with the way you face no longer switches itself off and snaps back to north.
+- **Two fingers move the map** - A two-finger drag now pans the map in any direction, where it used to stop as soon as your fingers drifted up or down.
+- **A button to slide the map** - Hold the button with the four arrows and drag it, and the map slides that way until you let go.
+- **A button for 3D** - The 3D button tilts the map and stands the buildings up when you're zoomed in, in place of dragging two fingers up or down.
+- **Your speed on the map** - Cycle it and Drive it show how fast you're going, in km/h.
+
+### Desktop app and Linux command line
+
+- No changes: they stay on 2.4.0.
+
+---
+
 ## 6 November 2026: The Android app, rebuilt as an app of its own (2.4.0)
 
 ### Android app 2.4.0
@@ -18,7 +35,6 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **The Edge Tray, smoother** - The same tray, with the same buttons, now sliding in and out as the website's does, with your favourites' count and your uwuCoins on it.
 - **Explorer on a proper map** - Explorer and the live map draw with MapLibre, faster and sharper, with the shuttle buses' routes and stops, station doors and Save the map for offline as before.
 - **Everything else, as on the website** - Bus timings, Glance, Navigate and the route planner, Service alerts, the Get Off Alert (Change here and Are you walking? included), Your trips, Places, the calendar, uwuCoins, the wheel and team runs, Sync, sharing, Card value, the sgbus terminal, tours, offline mode, picture-in-picture and shake to refresh.
-- **Two fingers move the map** - On Explorer and the live map, a two-finger drag now pans the map in any direction, where it used to stop as soon as your fingers drifted up or down. Drag two fingers straight up or down to tilt it, as before.
 - **A bigger download** - The app is about 100 MB to download now, up from about 9 MB, so you may want to be on Wi-Fi to update.
 - The web app's changes from 4 and 5 November: team runs, every stop in a list on Glance, a shared feat that closes, and Material You in Theme with no Easter egg needed.
 
