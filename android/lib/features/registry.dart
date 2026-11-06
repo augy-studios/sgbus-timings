@@ -15,6 +15,7 @@ import 'reminders/reminders.dart';
 import 'share/offline_share.dart';
 import 'card/card.dart';
 import 'share/shared.dart';
+import 'misc/extras.dart';
 import 'misc/misc.dart';
 import 'sync/sync.dart';
 import 'terminal/terminal.dart';
@@ -63,6 +64,7 @@ void registerFeatures() {
   registerCard();
   registerShared();
   registerMisc();
+  registerExtras();
   SyncScreen.register();
   TerminalScreen.register();
   registerCampus();

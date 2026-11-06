@@ -4,6 +4,7 @@
 // a home that's off opens Bus timings instead.
 import 'package:flutter/material.dart';
 
+import '../api/net.dart';
 import '../data/store.dart';
 import '../i18n/i18n.dart';
 
@@ -43,7 +44,10 @@ class Pages {
     return out;
   }
 
-  static bool shows(String id) => !off().contains(id);
+  /// The pages that need the network, which go while offline (api/net.dart).
+  static const needNet = ['glance', 'timings', 'alerts'];
+
+  static bool shows(String id) => !off().contains(id) && !(Net.off.value && needNet.contains(id));
 
   static void setOn(String id, bool on) {
     if (id == 'glance') {
@@ -62,7 +66,7 @@ class Pages {
   static String home() {
     var v = Store.I.get(homeKey);
     if (!ids.contains(v)) v = 'glance';
-    return shows(v!) ? v : 'timings';
+    return shows(v!) ? v : shows('timings') ? 'timings' : 'favs';
   }
 
   /// In the tray's order: the home first, then the rest that are on.

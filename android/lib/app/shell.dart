@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../api/net.dart';
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
 import 'edge_tray.dart';
@@ -33,11 +34,20 @@ class _ShellState extends State<Shell> {
     super.initState();
     AppNav.page.value = Pages.home();
     AppNav.page.addListener(_changed);
+    Net.off.addListener(_net);
+  }
+
+  // Offline, a page that needs the network gives way to one that doesn't; back online, the
+  // tray has them all again.
+  void _net() {
+    if (!Pages.shows(AppNav.page.value)) AppNav.page.value = Pages.home();
+    setState(() {});
   }
 
   @override
   void dispose() {
     AppNav.page.removeListener(_changed);
+    Net.off.removeListener(_net);
     super.dispose();
   }
 
@@ -76,6 +86,7 @@ class _ShellState extends State<Shell> {
       },
       child: Scaffold(
         body: Column(children: [
+          const OfflineBar(),
           for (final t in Shell.top) t(),
           Expanded(
             child: MediaQuery.removePadding(
@@ -94,4 +105,37 @@ class _ShellState extends State<Shell> {
       ),
     );
   }
+}
+
+/// Offline: a bar at the top that says why pages went, with OK to put it away.
+class OfflineBar extends StatelessWidget {
+  const OfflineBar({super.key});
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: Listenable.merge([Net.off, Net.dismissed]),
+        builder: (context, _) {
+          if (!Net.off.value || Net.dismissed.value) return const SizedBox.shrink();
+          final scheme = Theme.of(context).colorScheme;
+          return Material(
+            color: scheme.inverseSurface,
+            child: SafeArea(
+              bottom: false,
+              child: Semantics(
+                liveRegion: true,
+                label: tr('offline.offline', 'Offline'),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
+                  child: Row(children: [
+                    Icon(Icons.cloud_off, size: 18, color: scheme.onInverseSurface),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(tr('offline.bar', 'You’re offline. Timings and alerts come back when you reconnect.'), style: TextStyle(color: scheme.onInverseSurface))),
+                    TextButton(onPressed: () => Net.dismissed.value = true, child: Text(tr('trip.ok', 'OK'), style: TextStyle(color: scheme.inversePrimary))),
+                  ]),
+                ),
+              ),
+            ),
+          );
+        },
+      );
 }

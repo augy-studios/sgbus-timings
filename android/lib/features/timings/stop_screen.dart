@@ -13,6 +13,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../api/net.dart';
 import '../../app/links.dart';
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';
@@ -25,6 +26,7 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/share.dart';
+import '../misc/extras.dart';
 import 'campus_ui.dart';
 
 /// Where a stop was opened from, for its Back and the stops-left note.
@@ -52,8 +54,11 @@ class StopScreen extends StatefulWidget {
   final StopContext? ctx;
   final int? dir;
 
-  static void open(String code, {String? service, StopContext? ctx, int? dir}) =>
-      AppNav.push(StopScreen(code: code, service: BusFilter.parse(service), ctx: ctx, dir: dir), name: 'stop');
+  static void open(String code, {String? service, StopContext? ctx, int? dir}) {
+    // Offline, a stop's timings are gone till it's back: the offline bar says so.
+    if (Net.blocked()) return;
+    AppNav.push(StopScreen(code: code, service: BusFilter.parse(service), ctx: ctx, dir: dir), name: 'stop');
+  }
 
   @override
   State<StopScreen> createState() => _StopScreenState();
@@ -78,12 +83,21 @@ class _StopScreenState extends State<StopScreen> {
     MakeItForStop.call(widget.code);
     if (!BusNet.ready) BusNet.load().then((_) => _redraw()).catchError((_) {});
     _load();
+    // Shake to refresh: these timings, while they're on top.
+    _shakeBefore = Shake.onShake;
+    Shake.onShake = _shaken;
+  }
+
+  VoidCallback? _shakeBefore;
+  void _shaken() {
+    if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) _load();
   }
 
   @override
   void dispose() {
     Favs.I.removeListener(_redraw);
     MakeItLine.changed?.removeListener(_redraw);
+    if (Shake.onShake == _shaken) Shake.onShake = _shakeBefore;
     super.dispose();
   }
 

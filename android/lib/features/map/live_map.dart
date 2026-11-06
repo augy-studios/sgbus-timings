@@ -374,6 +374,7 @@ class _LiveMapState extends State<LiveMap> {
     LiveMap._open = this;
     ink.off = _layersOff();
     ink.addListener(_inkChanged);
+    AppNav.pip.addListener(_redrawPip);
     WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
@@ -384,6 +385,7 @@ class _LiveMapState extends State<LiveMap> {
     _tripTimer?.cancel();
     _flush?.cancel();
     ink.removeListener(_inkChanged);
+    AppNav.pip.removeListener(_redrawPip);
     super.dispose();
   }
 
@@ -470,6 +472,10 @@ class _LiveMapState extends State<LiveMap> {
     _map?.animateCamera(
       CameraUpdate.newLatLngBounds(LatLngBounds(southwest: LatLng(s, w), northeast: LatLng(n, e)), left: pad, right: pad + 20, top: pad + 60, bottom: pad + 140),
     );
+    if (mounted) setState(() {});
+  }
+
+  void _redrawPip() {
     if (mounted) setState(() {});
   }
 
@@ -1343,6 +1349,8 @@ class _LiveMapState extends State<LiveMap> {
             },
           );
     final top = MediaQuery.paddingOf(context).top;
+    // Shrunk into picture-in-picture: the map alone.
+    if (AppNav.pip.value) return Scaffold(body: map);
     return Scaffold(
       body: Stack(children: [
         // A drag stops following you.

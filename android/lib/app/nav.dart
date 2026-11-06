@@ -12,6 +12,14 @@ class AppNav {
   static NavigatorState? get nav => navigatorKey.currentState;
   static BuildContext? get context => navigatorKey.currentContext;
 
+  /// Whether the app's shrunk into picture-in-picture (features/misc/extras.dart): the live map
+  /// shows only the map, and a trip only its line of text.
+  static final pip = ValueNotifier<bool>(false);
+
+  /// What the app shows over everything while it's small: set by the trip, null for the screen
+  /// as it is.
+  static Widget? Function()? pipView;
+
   /// The Edge Tray's page on show, and how to change it (set by the shell).
   static final page = ValueNotifier<String>('glance');
 

@@ -48,6 +48,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Card value, Scan, Voice | `js/card.js`, `js/scan.js`, `js/voice.js` | ✅ |
 | Terminal | `js/terminal.js`, `js/sgbus-core.js` | ✅ `lib/features/terminal` |
 | Bug report, the update bar, SimplyGo, the first-run choice and every page's tour | `js/bug-report.js`, `js/app-update.js`, `js/tour.js`, `js/first-run.js` | ✅ |
+| Offline mode, picture-in-picture, shake to refresh, the twice-yearly coffee ask | `js/offline.js`, `js/pip.js`, `js/shake.js`, `js/donate.js` | ✅ `lib/api/net.dart`, `lib/features/misc/extras.dart` |
 
 ## Screenshots
 

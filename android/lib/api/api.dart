@@ -6,6 +6,8 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
+import 'net.dart';
+
 class ApiError implements Exception {
   ApiError(this.message, {this.status});
   final String message;
@@ -34,16 +36,30 @@ class Api {
   static Future<Object?> get(String path, {Map<String, Object?>? query, Duration timeout = const Duration(seconds: 20)}) async {
     final u = uri(path, query);
     if (fake != null) return fake!(u.toString().substring('$site/api/'.length));
-    final r = await client.get(u, headers: const {'accept': 'application/json'}).timeout(timeout);
+    final http.Response r;
+    try {
+      r = await client.get(u, headers: const {'accept': 'application/json'}).timeout(timeout);
+    } catch (e) {
+      Net.failed(e);
+      rethrow;
+    }
+    Net.reached();
     return _read(r);
   }
 
   static Future<Object?> post(String path, Object? body, {Map<String, Object?>? query, Duration timeout = const Duration(seconds: 20)}) async {
     final u = uri(path, query);
     if (fake != null) return fake!(u.toString().substring('$site/api/'.length));
-    final r = await client
-        .post(u, headers: const {'accept': 'application/json', 'content-type': 'application/json'}, body: jsonEncode(body))
-        .timeout(timeout);
+    final http.Response r;
+    try {
+      r = await client
+          .post(u, headers: const {'accept': 'application/json', 'content-type': 'application/json'}, body: jsonEncode(body))
+          .timeout(timeout);
+    } catch (e) {
+      Net.failed(e);
+      rethrow;
+    }
+    Net.reached();
     return _read(r);
   }
 

@@ -4,6 +4,7 @@
 // and Theme. Its tab tucks it away (sgbus_tray_closed), leaving the whole width to the page.
 import 'package:flutter/material.dart';
 
+import '../api/net.dart';
 import '../data/favs.dart';
 import '../data/rewards.dart';
 import '../data/store.dart';
@@ -12,6 +13,7 @@ import '../native/native_bridge.dart';
 import '../theme/theme.dart';
 import 'nav.dart';
 import 'pages.dart';
+import '../features/map/map_save.dart';
 import '../features/tour/tour.dart';
 
 class TrayExtra {
@@ -41,18 +43,19 @@ class EdgeTray extends StatefulWidget {
   }
 
   static final extras = <TrayExtra>[
-    TrayExtra('explorer', Icons.explore_outlined, () => tr('tray.explorer', 'Explorer'), () => AppNav.open('explorer')),
+    // Offline, only with Singapore's map saved.
+    TrayExtra('explorer', Icons.explore_outlined, () => tr('tray.explorer', 'Explorer'), () => AppNav.open('explorer'), when: () => !Net.off.value || MapSave.saved),
     // Its balance on it; hidden with Show uwuCoins off.
     TrayExtra('coins', Icons.toll_outlined, () => tr('coins.title', 'uwuCoins'), () => AppNav.open('coins'),
         when: () => Coins.shown, badge: () => '${Coins.balance}'),
     TrayExtra('nearstops', Icons.notifications_active_outlined, () => tr('tray.nearStops', 'Timings near a stop'),
-        () => AppNav.open('nearStopsReminder'), when: () => Native.has('nearstops')),
-    TrayExtra('routines', Icons.repeat, () => tr('tray.routines', 'Routines'), () => AppNav.open('routines'), when: () => Native.has('routines')),
+        () => AppNav.open('nearStopsReminder'), when: () => Native.has('nearstops') && !Net.off.value),
+    TrayExtra('routines', Icons.repeat, () => tr('tray.routines', 'Routines'), () => AppNav.open('routines'), when: () => Native.has('routines') && !Net.off.value),
     TrayExtra('card', Icons.credit_card, () => tr('tray.card', 'Card value'), () => AppNav.open('card'), when: () => Native.has('card')),
     TrayExtra('receive', Icons.download_for_offline_outlined, () => tr('tray.receive', 'Receive nearby'),
         () => AppNav.open('receive'), when: () => Native.has('sharenearby')),
     TrayExtra('update', Icons.system_update_alt, () => tr('tray.appUpdate', 'Check for app updates'),
-        () => AppNav.open('appUpdate'), when: () => Native.has('checkupdate')),
+        () => AppNav.open('appUpdate'), when: () => Native.has('checkupdate') && !Net.off.value),
     TrayExtra('simplygo', Icons.contactless_outlined, () => tr('html.open_simplygo', 'Open SimplyGo'), () => AppNav.open('simplygo')),
     TrayExtra('telegram', Icons.send_outlined, () => tr('html.singapore_bus_timings_on_telegram', 'Singapore Bus Timings on Telegram'),
         () => _link('https://t.me/UwUsgbus_bot')),
@@ -76,6 +79,7 @@ class _EdgeTrayState extends State<EdgeTray> {
     super.initState();
     AppNav.page.addListener(_redraw);
     Rewards.I.addListener(_redraw);
+    Net.off.addListener(_redraw);
     Store.I.changes.listen((k) {
       if (mounted && (k.startsWith('sgbus_tray') || k.startsWith('sgbus_fav') || k == Pages.offKey || k == Pages.glanceOffKey || k == Pages.homeKey || k == 'sgbus_lang')) {
         setState(() {});
@@ -87,6 +91,7 @@ class _EdgeTrayState extends State<EdgeTray> {
   void dispose() {
     AppNav.page.removeListener(_redraw);
     Rewards.I.removeListener(_redraw);
+    Net.off.removeListener(_redraw);
     super.dispose();
   }
 
