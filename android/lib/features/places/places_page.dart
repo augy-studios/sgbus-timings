@@ -10,6 +10,7 @@ import '../../data/store.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
+import '../tour/tour.dart';
 import '../../widgets/place_search.dart';
 import '../share/share_card.dart';
 
@@ -126,7 +127,7 @@ class _PlacesPageState extends State<PlacesPage> {
         const SizedBox(height: 4),
         Align(
           alignment: Alignment.centerLeft,
-          child: FilledButton.icon(onPressed: () => _edit(), icon: const Icon(Icons.add), label: Text(tr('places.save_a_new_place', 'Save a new place'))),
+          child: TourTarget(id: 'places.add', child: FilledButton.icon(onPressed: () => _edit(), icon: const Icon(Icons.add), label: Text(tr('places.save_a_new_place', 'Save a new place')))),
         ),
         const SizedBox(height: 12),
         Text(tr('places.places_are_kept_on_this', 'Places are kept on this device. Sync with another device, in Settings, copies them to another.'),

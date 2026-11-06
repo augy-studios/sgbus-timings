@@ -6,14 +6,16 @@
 //                       a notification and a buzz.
 //   Last bus soon       each bus leg still to board, once a minute: down to its last three buses,
 //                       due before you'd get there, or gone. One you'll miss has the trip find
-//                       another way to where it ends without that bus, and switch to it by itself,
-//                       with Undo.
+//                       another way to where it ends without that bus, from where the last ride
+//                       before it ends if there's one, and switch to it by itself, with Undo. With
+//                       none, it says so, with Navigate from here or See all ways.
 //   Traffic             every 5 minutes, each bus leg still ahead, by LTA's live speeds: one
 //                       slowed by 2 min or more, or with an incident, says so; tapped, the live
 //                       map shows its road.
-//   A faster way        every 3 minutes, planned again from where you are; one that gets you in
-//                       at least 5 min and 15% sooner is suggested: Reroute takes it, Keep my way
-//                       puts it away for a while.
+//   A faster way        every 3 minutes, planned again from where you are, or from the next stop on
+//                       a ride, with its first bus by its live timing; one that gets you in at least
+//                       5 min and 15% sooner is suggested, walking or cycling the rest too, and says
+//                       why: Reroute takes it, Keep my way puts it away for a while.
 //   The server          the trip sent to /api/push/trips/<device>, at the start, at each change
 //                       and as the app goes into the background, so it follows the bus from LTA's
 //                       live positions and pushes the alert itself; its answer says how far it's
@@ -61,7 +63,6 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
   static const _trafficEvery = 5 * 60000, _trafficSay = 2;
   static const _fasterEvery = 3 * 60000, _fasterMin = 5, _fasterShare = 0.15, _keepFor = 15 * 60000;
   static const _liveSync = 60000;
-  static const _icaPlay = 'https://play.google.com/store/apps/details?id=sg.gov.ica.mobile.app';
 
   Timer? _tick;
   String? _tripId;
@@ -70,8 +71,6 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
   final Map<int, ({String kind, String text})> _lastHeard = {};
   final Set<int> _lastWarned = {};
   final Map<int, Map> _traffic = {};
-  ({Map<String, dynamic> option, int sooner, String why})? _faster;
-  int _keptUntil = 0;
   final Set<int> readied = {};
   String? boardText;
   Map<String, Object?>? _push;
@@ -119,6 +118,11 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     _lastWarned.clear();
     _traffic.clear();
     _faster = null;
+    _fasterKept = null;
+    _fasterSaid = null;
+    _another = null;
+    _keptWay = null;
+    _switchKey = null;
     readied.clear();
     boardText = null;
   }
@@ -171,7 +175,11 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _notify(String title, String body, String channel) {
-    HapticFeedback.heavyImpact();
+    if (Native.has('trip')) {
+      Native.call('Trip', 'buzz', {'what': channel}).catchError((_) => null);
+    } else {
+      HapticFeedback.heavyImpact();
+    }
     if (Native.has('notify')) {
       Native.call('SgBus', 'notify', {'channel': channel, 'title': title, 'body': body}).catchError((_) => null);
     } else {
@@ -241,18 +249,21 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
       ..addAll(heard);
     final lost = heard.entries.where((e) => e.value.kind != 'soon').toList();
     if (lost.isNotEmpty) {
-      // Another way to where it ends, without the lost buses, and switched to by itself.
-      final skip = {for (final e in lost) '${t.legs[e.key].service}@${t.legs[e.key].board}'};
-      final other = await _plan(skip: skip);
-      if (other != null && Trip.I.id == id) {
-        final words = lost.map((e) => e.value.text).join(' ');
-        _switchTo(other, words);
+      await _findAnother([for (final e in lost) e.key]);
+      if (Trip.I.id != id) return;
+      final found = _another;
+      // Undoing a switch made by itself: not switched again for the same lost bus.
+      if (found?.way != null && t.switchedNote == null && _keptWay != found!.key) {
+        _autoSwitch(found, lost.map((e) => e.value.text).join(' '));
         return;
       }
+    } else {
+      _another = null;
     }
     for (final e in heard.entries) {
       if (!_lastWarned.add(e.key)) continue;
-      _notify(e.value.kind == 'soon' ? tr('trip.lastSoon', 'Last bus soon') : tr('settings.short.last_bus', 'Last bus'), e.value.text, 'board');
+      final instead = e.value.kind != 'soon' && _another != null ? ' ${_anotherText()}' : '';
+      _notify(e.value.kind == 'soon' ? tr('trip.lastSoon', 'Last bus soon') : tr('settings.short.last_bus', 'Last bus'), '${e.value.text}$instead', 'board');
     }
   }
 
@@ -261,46 +272,162 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
   /// Where you are: a recent fix, or where the trip has you (the next stop, on a ride).
   NavEnd _whereNow() {
     final t = Trip.I;
-    if (t.here != null && When.nowMs() - t.lastFixAt < 60000) return NavEnd(tr('nav.yourLocation', 'Your location'), t.here!.lat, t.here!.lng, here: true);
+    final label = tr('trip.whereYouAre', 'Where you are');
+    if (t.here != null && When.nowMs() - t.lastFixAt < 120000) return NavEnd(label, t.here!.lat, t.here!.lng);
     final leg = t.current!;
     final i = math.min(leg.points.length - 1, t.pos.ceil());
-    return NavEnd(i < leg.names.length ? leg.names[i] : leg.to, leg.points[i][0], leg.points[i][1]);
+    return NavEnd(label, leg.points[i][0], leg.points[i][1]);
   }
 
-  NavEnd? get _end {
-    final to = Trip.I.to;
-    return to != null && to['lat'] is num ? NavEnd('${to['label'] ?? ''}', (to['lat'] as num).toDouble(), (to['lng'] as num).toDouble()) : null;
+  /// Where the trip ends.
+  NavEnd _tripEnd() {
+    final t = Trip.I;
+    final to = t.to;
+    if (to != null && to['lat'] is num) return NavEnd('${to['label'] ?? ''}', (to['lat'] as num).toDouble(), (to['lng'] as num).toDouble());
+    final last = t.legs.last;
+    return NavEnd(last.to, last.points.last[0], last.points.last[1]);
   }
 
-  Future<({Map<String, dynamic> option, NavEnd from, NavEnd to})?> _plan({Set<String> skip = const {}}) async {
-    final to = _end;
-    if (to == null) return null;
-    final from = _whereNow();
-    try {
-      final customs = Store.I.get('sgbus_customs');
-      final data = await Api.map('nav', query: {
-        'from': from.coord(),
-        'to': to.coord(),
-        if (BusNet.openAccess) 'restricted': 1,
-        if (['15', '30', '45', '60'].contains(customs)) 'customs': customs,
-        if (Store.I.get('sgbus_bike') == 'on') 'bike': 1,
-      });
-      for (final o in (data['options'] as List? ?? const []).whereType<Map>()) {
-        if (o['walkOnly'] == true) continue;
-        final legs = (o['legs'] as List? ?? const []).whereType<Map>();
-        if (legs.any((l) => l['mode'] == 'bus' && skip.contains('${l['route']}@${(l['from'] as Map?)?['code']}'))) continue;
-        return (option: Map<String, dynamic>.from(o), from: from, to: to);
+  /// Where another way goes: the trip's stop on the way while it's still ahead, or else where the
+  /// trip ends. `upTo` is the part the trip goes on with from there.
+  ({NavEnd to, int upTo, bool via}) _goal() {
+    final t = Trip.I;
+    for (var i = t.leg + 1; i < t.legs.length; i++) {
+      final v = t.legs[i].afterVia;
+      if (v != null) return (to: NavEnd('${v['label'] ?? ''}', (v['lat'] as num).toDouble(), (v['lng'] as num).toDouble()), upTo: i, via: true);
+    }
+    return (to: _tripEnd(), upTo: t.legs.length, via: false);
+  }
+
+  List<TripLeg> _withRest(List<TripLeg> legs, int upTo) => [...legs, ...Trip.I.legs.skip(upTo)];
+
+  /// A way's rides, "Bus 12 → NE Line".
+  static String _ridesText(Map o) => (o['legs'] as List).cast<Map>().where((l) => l['mode'] != 'walk').map((l) {
+        final route = '${l['route']}';
+        return l['mode'] == 'bus' ? tr('trip.bus', 'Bus {no}', {'no': route}) : l['lrt'] == true ? tr('trip.lrt', '{line} LRT', {'line': route}) : tr('trip.line', '{line} Line', {'line': route});
+      }).join(' → ');
+
+  /// When you'd get in, setting off `after` minutes from now.
+  static String _byClock(num minutes, [num after = 0]) => tr('trip.thereBy', ', there by {time}', {'time': When.clock(When.nowMs() + ((after + minutes) * 60000).round())});
+
+  /// What to do first on a way, in words: "Walk 3 min to Opp Blk 5, take Bus 12 there".
+  static String _firstStep(Map o) {
+    final legs = (o['legs'] as List).cast<Map>();
+    final ride = legs.where((l) => l['mode'] != 'walk').firstOrNull;
+    if (ride == null) return tr('trip.walkRest', 'Walk the rest of the way');
+    final route = '${ride['route']}';
+    final what = ride['mode'] == 'bus'
+        ? tr('trip.bus', 'Bus {no}', {'no': route})
+        : ride['lrt'] == true
+            ? tr('trip.theLrt', 'the {line} LRT', {'line': route})
+            : tr('trip.theLine', 'the {line} Line', {'line': route});
+    final first = legs.first;
+    final walked = first['mode'] == 'walk' && ((first['metres'] as num?) ?? 100) >= 60;
+    return walked
+        ? tr('trip.walkThenTake', 'Walk {m} min to {stop}, take {ride} there', {'m': math.max(1, ((first['minutes'] as num?) ?? 1).round()), 'stop': placeName(ride['from']), 'ride': what})
+        : tr('trip.takeFrom', 'Take {ride} from {stop}', {'ride': what, 'stop': placeName(ride['from'])});
+  }
+
+  // ---------- another way, when a last bus is lost ----------
+
+  static const _anotherEvery = 5 * 60000;
+
+  /// The quickest way found to where the trip's going without the lost buses (`way` null if there's
+  /// none): from the end of the last ride before them (`via` it, and `reach` the minutes till you're
+  /// there), or from where you are (`k` null).
+  ({NavEnd from, NavEnd to, int j, int? k, String? via, double reach, int upTo, Map<String, dynamic>? way, int at, String key, bool failed})? _another;
+  String? _keptWay;
+  String? _switchKey;
+
+  static String _rideKey(String route, String? code) => 'bus:${route.toUpperCase()}@${code ?? ''}';
+
+  Future<void> _findAnother(List<int> lostAt) async {
+    final t = Trip.I;
+    final id = t.id;
+    final key = lostAt.map((i) => _rideKey(t.legs[i].service ?? '', t.legs[i].board)).join('>');
+    if (_another?.key == key && When.nowMs() - _another!.at < _anotherEvery) return;
+    final g = _goal();
+    final skip = key.split('>').toSet();
+    Map<String, dynamic>? pick(Map<String, dynamic> data) {
+      final options = (data['options'] as List? ?? const []).whereType<Map>().map((o) => Map<String, dynamic>.from(o)).toList();
+      return options.where((o) => o['walkOnly'] != true && !(o['legs'] as List).cast<Map>().any((l) => l['mode'] == 'bus' && skip.contains(_rideKey('${l['route']}', (l['from'] as Map?)?['code'] as String?)))).firstOrNull ??
+          options.where((o) => o['walkOnly'] == true).firstOrNull;
+    }
+
+    // The waypoint: where the last ride before the first lost bus ends, if there's one from here on.
+    final tries = <({NavEnd from, int j, int? k, String? via, double reach})>[];
+    final firstLost = lostAt.reduce(math.min);
+    for (var r = firstLost - 1; r >= t.leg; r--) {
+      final leg = t.legs[r];
+      if (!leg.ride) continue;
+      final last = leg.points.length - 1;
+      tries.add((from: NavEnd(leg.names.length > last ? leg.names[last] : leg.to, leg.points[last][0], leg.points[last][1]), j: r, k: last, via: leg.label, reach: _minutesTo(r + 1)));
+      break;
+    }
+    tries.add((from: _whereNow(), j: t.leg, k: null, via: null, reach: 0));
+    var failed = 0;
+    for (final x in tries) {
+      // For when you'd be there, as the buses running then aren't the ones running now.
+      final when = x.reach >= 1 ? WhenPick('leave', When.msToAt(When.nowMs() + (x.reach * 60000).round())) : null;
+      try {
+        final data = await fetchWays(x.from, g.to, when: when);
+        if (Trip.I.id != id) return;
+        final way = pick(data);
+        if (way != null || identical(x, tries.last)) {
+          _another = (from: x.from, to: g.to, j: x.j, k: x.k, via: x.via, reach: x.reach, upTo: g.upTo, way: way, at: When.nowMs(), key: key, failed: false);
+          return;
+        }
+      } catch (_) {
+        failed++;
       }
-    } catch (_) {}
-    return null;
+    }
+    if (Trip.I.id != id) return;
+    // Not asked again for a minute, rather than on every check.
+    if (failed > 0) {
+      final x = tries.first;
+      _another = (from: x.from, to: g.to, j: x.j, k: x.k, via: x.via, reach: x.reach, upTo: g.upTo, way: null, at: When.nowMs() - _anotherEvery + 60000, key: key, failed: true);
+    }
   }
 
-  void _switchTo(({Map<String, dynamic> option, NavEnd from, NavEnd to}) way, String why) {
-    final made = tripFromNav(way.option, way.from, way.to);
-    if (made == null) return;
-    Trip.I.replan(made.legs, note: why);
+  /// The way found, in a line: "Instead: walk 3 min to Opp Blk 5, take Bus 12 there. Bus 12 → NE
+  /// Line, ~35 min, there by 01:20." `lead` false leaves off "Instead: ", for after "Now: ".
+  String _anotherText({bool lead = true}) {
+    final a = _another;
+    final o = a?.way;
+    if (a == null || o == null) {
+      return a?.failed == true ? tr('trip.anotherFailed', "Couldn't look for another way just now. It'll try again in a minute.") : tr('trip.anotherNone', 'No other way by bus or train is running now.');
+    }
+    final by = _byClock(o['minutes'] as num, a.reach);
+    final way = o['walkOnly'] == true
+        ? tr('trip.walkRestAbout', 'Walk the rest of the way, ~{m} min{by}.', {'m': o['minutes'], 'by': by})
+        : tr('trip.stepThenRides', '{step}. {rides}, ~{m} min{by}.', {'step': _firstStep(o), 'rides': _ridesText(o), 'm': o['minutes'], 'by': by});
+    if (a.via != null) return tr('trip.afterVia', 'After {via} to {stop}: {way}', {'via': a.via, 'stop': a.from.label, 'way': way});
+    return lead ? tr('trip.instead', 'Instead: {way}', {'way': way}) : way;
+  }
+
+  void _switchToAnother(String note) {
+    final a = _another;
+    final made = a?.way == null ? null : tripFromNav(a!.way!, a.from, a.to);
+    if (a == null || made == null || made.legs.isEmpty) return;
+    Trip.I.replanAt(a.j, a.k, _withRest(made.legs, a.upTo), note: note);
+    _another = null;
     _faster = null;
-    _notify(tr('route.get_off_alert', 'Get Off Alert'), '$why ${tr('trip.switched', 'Switched to another way.')}', 'board');
+    notifyListeners();
+  }
+
+  void _autoSwitch(({NavEnd from, NavEnd to, int j, int? k, String? via, double reach, int upTo, Map<String, dynamic>? way, int at, String key, bool failed}) found, String reason) {
+    final now = _anotherText(lead: false);
+    _switchKey = found.key;
+    _switchToAnother('${tr('trip.switched', 'Switched to another way.')} $reason ${tr('trip.now', 'Now: {now}', {'now': now})}');
+    _notify(tr('trip.switchedTitle', 'Switched to another way'), '$reason ${tr('trip.now', 'Now: {now}', {'now': now})}', 'board');
+  }
+
+  void _undoSwitch() {
+    if (_switchKey != null) _keptWay = _switchKey;
+    _switchKey = null;
+    Trip.I.undo();
+    _lastAt = 0;
+    notifyListeners();
   }
 
   // ---------- traffic ----------
@@ -363,30 +490,180 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
 
   // ---------- a faster way ----------
 
-  double _minutesLeft() => _minutesTo(Trip.I.legs.length);
+  static const _fasterFromMin = 10;
 
-  Future<void> _watchFaster() async {
-    if (When.nowMs() - _fasterAt < _fasterEvery - 7500 || When.nowMs() < _keptUntil) return;
-    _fasterAt = When.nowMs();
-    final id = Trip.I.id;
-    final way = await _plan();
-    if (way == null || Trip.I.id != id) return;
-    final mins = ((way.option['minutes'] as num?) ?? 9999).toDouble();
-    final now = _minutesLeft();
-    final sooner = (now - mins).round();
-    if (sooner >= _fasterMin && sooner >= now * _fasterShare) {
-      final rides = [
-        for (final l in (way.option['legs'] as List? ?? const []).whereType<Map>())
-          if (l['mode'] != 'walk') l['mode'] == 'bus' ? tr('trip.bus', 'Bus {no}', {'no': l['route']}) : '${l['name'] ?? l['route']}',
-      ].join(' → ');
-      _faster = (option: way.option, sooner: sooner, why: rides);
-      _fasterWay = way;
-    } else {
-      _faster = null;
+  /// Getting a bike out and parking it again.
+  static const _bikeExtraMin = 2;
+
+  ({NavEnd from, NavEnd to, int j, int? k, double reach, String kind, Map<String, dynamic>? way, int minutes, int saves, String why, int upTo, bool via})? _faster;
+  ({int at, int saves})? _fasterKept;
+  String? _fasterSaid;
+
+  static String _rideKeyOf(String mode, String? route) => '$mode:${(route ?? '').toUpperCase()}';
+
+  /// A way's minutes with its first bus by its live timing at the stop, catchable after the walk
+  /// there; null if none comes in time.
+  Future<double?> _liveMinutes(Map<String, dynamic> o) async {
+    final legs = (o['legs'] as List).cast<Map>();
+    final k = legs.indexWhere((l) => l['mode'] != 'walk');
+    final minutes = (o['minutes'] as num).toDouble();
+    if (k == -1) return minutes;
+    final ride = legs[k];
+    final code = (ride['from'] as Map?)?['code'];
+    if (ride['mode'] != 'bus' || code == null) return minutes;
+    final walk = legs.take(k).fold<double>(0, (a, l) => a + ((l['minutes'] as num?) ?? 0));
+    try {
+      final a = await Arrivals.fetch('$code', '${ride['route']}');
+      final svc = a.services.where((s) => s.serviceNo.toUpperCase() == '${ride['route']}'.toUpperCase()).firstOrNull;
+      if (svc == null) return minutes;
+      final due = [for (final b in svc.buses) if (b?.etaMs != null) b!.etaMs! / 60000].where((m) => m >= walk).firstOrNull;
+      return due == null ? null : minutes - ((ride['wait'] as num?) ?? 0) + (due - walk);
+    } catch (_) {
+      return minutes;
     }
   }
 
-  ({Map<String, dynamic> option, NavEnd from, NavEnd to})? _fasterWay;
+  /// Why another way's quicker, as far as the trip can tell: traffic, or a long wait.
+  String _whyFaster() {
+    final t = Trip.I;
+    final note = _trafficNote();
+    if (note != null && note.extra >= _trafficSay) {
+      final leg = t.legs[note.i];
+      final roads = [for (final r in (_traffic[note.i]?['roads'] as List? ?? const [])) '$r'].join(tr('trip.and', ' and '));
+      return roads.isNotEmpty ? tr('trip.slowedOn', '{ride} is slowed by traffic on {roads}', {'ride': leg.label, 'roads': roads}) : tr('trip.slowed', '{ride} is slowed by traffic', {'ride': leg.label});
+    }
+    final leg = t.current;
+    if (leg != null && leg.kind == 'bus' && !t.boarded && _boardEta != null) {
+      final wait = (_boardEta! / 60000).round();
+      if (wait >= 8) return tr('trip.notDueFor', "{ride} isn't due for {m} min", {'ride': leg.label, 'm': wait});
+    }
+    return '';
+  }
+
+  String _fasterText() {
+    final f = _faster!;
+    final why = f.why.isEmpty ? '' : tr('trip.fasterWhy', ', as {why}', {'why': f.why});
+    final by = _byClock(f.minutes);
+    final v = {'stop': f.from.label, 'm': f.minutes, 'by': by, 'saves': f.saves, 'why': why};
+    final String words;
+    if (f.kind == 'walk') {
+      words = f.k != null ? tr('trip.fasterWalkFrom', 'Faster to walk from {stop}: ~{m} min{by}. Saves {saves} min{why}.', v) : tr('trip.fasterWalk', 'Faster to walk: ~{m} min{by}. Saves {saves} min{why}.', v);
+    } else if (f.kind == 'cycle') {
+      words = f.k != null ? tr('trip.fasterBikeFrom', 'Faster by bike from {stop}: ~{m} min{by}. Saves {saves} min{why}.', v) : tr('trip.fasterBike', 'Faster by bike: ~{m} min{by}. Saves {saves} min{why}.', v);
+    } else {
+      final head = tr('trip.fasterWay', 'Faster: {rides}, ~{m} min{by}. Saves {saves} min{why}.', {...v, 'rides': _ridesText(f.way!)});
+      final step = _firstStep(f.way!);
+      words = '$head ${f.k != null ? tr('trip.getOffThen', 'Get off at {stop}, then: {step}.', {'stop': f.from.label, 'step': step}) : '$step.'}';
+    }
+    // To the trip's stop on the way, not its end: said so, as the rest of the trip stands.
+    return f.via ? '$words ${tr('trip.fasterThenStop', "That's to {place}, then on as planned.", {'place': f.to.label})}' : words;
+  }
+
+  Future<void> _watchFaster() async {
+    if (When.nowMs() - _fasterAt < _fasterEvery - 7500) return;
+    // A lost last bus comes first, and a switch just made stands.
+    final t = Trip.I;
+    if (_lastHeard.values.any((w) => w.kind != 'soon') || t.switchedNote != null) return;
+    final g = _goal();
+    final left = _minutesTo(g.upTo);
+    if (left < _fasterFromMin) return;
+    _fasterAt = When.nowMs();
+    final id = t.id;
+    final legs = t.legs;
+    final leg = t.current;
+    if (leg == null) return;
+    final last = leg.points.length - 1;
+    // On a ride: from its next stop, getting off there. Otherwise from where you are.
+    final NavEnd from;
+    int? k;
+    var reach = 0.0;
+    if (leg.ride && t.boarded) {
+      final next = math.min(last, t.pos.floor() + 1);
+      if (next >= last) return;
+      k = next;
+      from = NavEnd(next < leg.names.length ? leg.names[next] : leg.to, leg.points[next][0], leg.points[next][1]);
+      reach = math.max(0, leg.minutes * (next - t.pos) / math.max(1, last));
+    } else {
+      from = _whereNow();
+    }
+    final Map<String, dynamic> data;
+    try {
+      final when = reach >= 1 ? WhenPick('leave', When.msToAt(When.nowMs() + (reach * 60000).round())) : null;
+      data = await fetchWays(from, g.to, when: when);
+    } catch (_) {
+      return;
+    }
+    if (Trip.I.id != id || !identical(Trip.I.legs, legs)) return;
+    // Your own way from there, which isn't another.
+    final mine = legs
+        .sublist(k == null ? t.leg : t.leg + 1, g.upTo)
+        .where((l) => l.ride)
+        .map((l) => _rideKeyOf(l.kind, l.kind == 'bus' ? l.service : (l.route ?? l.label.split(' ').first)))
+        .join('>');
+    final picks = <({String kind, Map<String, dynamic>? way, double minutes})>[];
+    final options = (data['options'] as List? ?? const []).whereType<Map>().map((o) => Map<String, dynamic>.from(o));
+    final others = options
+        .where((o) => o['walkOnly'] != true && (o['legs'] as List).cast<Map>().where((l) => l['mode'] != 'walk').map((l) => _rideKeyOf('${l['mode']}', '${l['route']}')).join('>') != mine)
+        .take(2);
+    for (final o in others) {
+      final m = await _liveMinutes(o);
+      if (m != null) picks.add((kind: 'way', way: o, minutes: reach + m));
+    }
+    final byFoot = data['others'] as Map?;
+    final walk = ((byFoot?['walk'] as Map?)?['minutes'] as num?)?.toDouble();
+    final cycle = ((byFoot?['cycle'] as Map?)?['minutes'] as num?)?.toDouble();
+    if (walk != null) picks.add((kind: 'walk', way: null, minutes: reach + walk));
+    if (cycle != null && Store.I.get('sgbus_bike') == 'on') picks.add((kind: 'cycle', way: null, minutes: reach + cycle + _bikeExtraMin));
+    if (Trip.I.id != id || !identical(Trip.I.legs, legs)) return;
+    picks.sort((a, b) => a.minutes.compareTo(b.minutes));
+    final best = picks.firstOrNull;
+    final saves = best == null ? 0 : (left - best.minutes).round();
+    final kept = _fasterKept != null && When.nowMs() - _fasterKept!.at < _keepFor && saves < _fasterKept!.saves + _fasterMin;
+    if (best != null && saves >= math.max(_fasterMin, left * _fasterShare) && !kept) {
+      _faster = (from: from, to: g.to, j: t.leg, k: k, reach: reach, kind: best.kind, way: best.way, minutes: best.minutes.round(), saves: saves, why: _whyFaster(), upTo: g.upTo, via: g.via);
+      final said = '${best.kind}:${best.way == null ? '' : (best.way!['legs'] as List).cast<Map>().map((l) => l['route'] ?? l['mode']).join('>')}';
+      if (said != _fasterSaid) {
+        _fasterSaid = said;
+        _notify(tr('trip.fasterTitle', 'A faster way: saves {m} min', {'m': saves}), _fasterText(), 'board');
+      }
+    } else {
+      _faster = null;
+    }
+    notifyListeners();
+  }
+
+  void _takeFaster() {
+    final f = _faster;
+    if (f == null) return;
+    final m = f.minutes - f.reach.round();
+    final List<TripLeg> legs;
+    if (f.kind == 'way') {
+      legs = tripFromNav(f.way!, f.from, f.to)?.legs ?? const [];
+    } else {
+      legs = [
+        TripLeg(
+          kind: 'walk',
+          label: f.kind == 'cycle' ? tr('trip.foot.cycle', 'Cycle') : tr('trip.walk', 'Walk'),
+          to: f.to.label,
+          points: [[f.from.lat, f.from.lng], [f.to.lat, f.to.lng]],
+          names: [f.from.label, f.to.label],
+          minutes: math.max(1, m).toDouble(),
+          foot: f.kind,
+        ),
+      ];
+    }
+    if (legs.isEmpty) return;
+    final now = f.kind == 'way'
+        ? '${_firstStep(f.way!)}.'
+        : f.via
+            ? (f.kind == 'cycle' ? tr('trip.cycleToStop', 'Cycle to {place}, ~{m} min.', {'place': f.to.label, 'm': m}) : tr('trip.walkToStop', 'Walk to {place}, ~{m} min.', {'place': f.to.label, 'm': m}))
+            : (f.kind == 'cycle' ? tr('trip.cycleRest', 'Cycle the rest of the way, ~{m} min.', {'m': m}) : tr('trip.walkRestMin', 'Walk the rest of the way, ~{m} min.', {'m': m}));
+    final title = f.k != null ? tr('trip.changedFaster', 'Changed at {stop} for a faster way.', {'stop': f.from.label}) : tr('trip.reroutedFaster', 'Rerouted to a faster way.');
+    _faster = null;
+    _switchKey = null;
+    Trip.I.replanAt(f.j, f.k, _withRest(legs, f.upTo), note: '$title ${tr('trip.now', 'Now: {now}', {'now': now})}');
+    notifyListeners();
+  }
 
   // ---------- the server ----------
 
@@ -473,8 +750,9 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
       readied.add(leg);
       if (leg == t.leg) boardText = text;
     } else if (!t.alerted.contains(leg)) {
+      // Android shows nothing for a push with the app in front: sounded here, as if found here.
       t.alerted.add(leg);
-      if (leg == t.leg) AppNav.say(text);
+      if (leg == t.leg) t.soundAlert(text);
     }
     notifyListeners();
   }
@@ -492,12 +770,45 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     final t = Trip.I;
     if (!t.active) return const [];
     final out = <TripNote>[];
+    // Without a good fix, going by the clock: said, so that a dot standing still makes sense.
+    final current = t.current;
+    if (current != null && current.ride) {
+      final age = When.nowMs() - t.lastFixAt;
+      if (t.lastFixAt == 0 || age > 120000) {
+        out.add(TripNote(tr('trip.noLocation', 'No location: going by the clock.'), tone: 'info'));
+      } else if (age > 60000 || (t.here?.accuracy ?? 0) > 500) {
+        out.add(TripNote(tr('trip.weakLocation', 'Location weak: going by the clock.'), tone: 'info'));
+      }
+      // The other buses that go straight there, while you wait for yours.
+      if (!t.boarded) {
+        final also = Trip.directBuses(current);
+        if (also.isNotEmpty) out.add(TripNote('${tr('nav.alternate_buses', 'Also direct:')} ${also.join(', ')}', tone: 'info'));
+      }
+    }
     if (t.switchedNote != null) {
-      out.add(TripNote(t.switchedNote!, tone: 'warn', action: tr('trip.undo', 'Undo'), onAction: t.undo));
+      out.add(TripNote(t.switchedNote!, tone: 'warn', action: tr('trip.undo', 'Undo'), onAction: _undoSwitch));
     }
     if (boardText != null && !t.boarded) out.add(TripNote(boardText!, tone: 'info'));
     for (final e in _lastHeard.entries) {
-      if (e.key >= t.leg) out.add(TripNote(e.value.text, tone: e.value.kind == 'soon' ? 'warn' : 'error'));
+      // Once it's been switched for that, the note above says so.
+      if (e.key >= t.leg && t.switchedNote != e.value.text) out.add(TripNote(e.value.text, tone: e.value.kind == 'soon' ? 'warn' : 'error'));
+    }
+    // A last bus lost: the way found, to take; or none, with Navigate to look for yourself.
+    if (t.switchedNote == null && _lastHeard.entries.any((e) => e.key >= t.leg && e.value.kind != 'soon')) {
+      final a = _another;
+      final located = t.here != null && When.nowMs() - t.lastFixAt < 120000;
+      if (a == null) {
+        out.add(TripNote(tr('trip.findingAnother', 'Finding another way…'), tone: 'info'));
+      } else {
+        out.add(TripNote(
+          _anotherText(),
+          tone: 'info',
+          action: a.way == null ? null : tr('trip.reroute', 'Reroute'),
+          onAction: a.way == null ? null : () => _switchToAnother('${tr('trip.rerouted', 'Rerouted.')} ${tr('trip.now', 'Now: {now}', {'now': _anotherText(lead: false)})}'),
+          second: located ? tr('trip.navFromHere', 'Navigate from here') : tr('trip.seeAllWays', 'See all ways'),
+          onSecond: () => located ? openNav(from: NavEnd(tr('nav.yourLocation', 'Your location'), 0, 0, here: true), to: a.to) : openNav(from: a.from, to: a.to),
+        ));
+      }
     }
     final tn = _trafficNote();
     if (tn != null) {
@@ -509,16 +820,16 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
       ));
     }
     final f = _faster;
-    if (f != null && _fasterWay != null) {
+    if (f != null) {
       out.add(TripNote(
-        tr('trip.fasterWay', 'Faster: {rides}, ~{m} min{by}. Saves {saves} min{why}.', {'rides': f.why, 'm': ((f.option['minutes'] as num?) ?? 0).round(), 'by': '', 'saves': f.sooner, 'why': ''}),
+        _fasterText(),
         tone: 'info',
         action: tr('trip.reroute', 'Reroute'),
-        onAction: () => _switchTo(_fasterWay!, tr('trip.reroutedFaster', 'Rerouted to a faster way.')),
+        onAction: _takeFaster,
         second: tr('trip.keepMyWay', 'Keep my way'),
         onSecond: () {
+          _fasterKept = (at: When.nowMs(), saves: f.saves);
           _faster = null;
-          _keptUntil = When.nowMs() + _keepFor;
           notifyListeners();
         },
       ));
@@ -527,11 +838,7 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
       out.add(TripNote(
         tr('app.myicaNote', 'Have your MyICA QR code ready for immigration.'),
         action: tr('trip.myica', 'MyICA'),
-        onAction: () => Native.call('SgBus', 'openLink', {
-          'url': Native.has('myica')
-              ? 'intent://open/myica#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;S.browser_fallback_url=${Uri.encodeComponent(_icaPlay)};end'
-              : _icaPlay,
-        }).catchError((_) => null),
+        onAction: () => Native.call('SgBus', 'openApp', {'name': 'myica'}).catchError((_) => null),
       ));
     }
     return out;

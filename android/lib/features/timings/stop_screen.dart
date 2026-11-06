@@ -31,11 +31,14 @@ import 'campus_ui.dart';
 
 /// Where a stop was opened from, for its Back and the stops-left note.
 class StopContext {
-  const StopContext(this.kind, {this.service, this.dir, this.label});
+  const StopContext(this.kind, {this.service, this.dir, this.label, this.note});
   final String kind; // route, journey, service, nearby, nav
   final String? service;
   final int? dir;
   final String? label;
+
+  /// How far the bus still has to go, opened off a route or a journey.
+  final String? note;
 
   String back() => switch (kind) {
         'route' => tr('stop.back.route', 'Back to route'),
@@ -223,6 +226,7 @@ class _StopScreenState extends State<StopScreen> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
           children: [
+            if (widget.ctx?.note != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(widget.ctx!.note!, style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w600))),
             // ---- the stop ----
             SgCard(
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [

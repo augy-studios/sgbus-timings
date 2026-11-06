@@ -54,6 +54,7 @@
  *                            follow. As "applang" (2.3.1)
  *   background()             the app to the background, for Back pressed twice (2.4.0)
  *   openLink({ url })        a link off the site in whatever app takes it (2.4.0)
+ *   openApp({ name })        SimplyGo or MyICA, on its own, or its store page (OpenAppActivity)
  *   "open" events            { url }: the site's address for what the app was opened with
  *                            (MainActivity.pageFor), for the Dart side's router (2.4.0)
  *
@@ -478,6 +479,21 @@ public class SgBusPlugin extends Plugin {
         }
         try {
             getActivity().startActivity(new Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE));
+            call.resolve();
+        } catch (ActivityNotFoundException e) {
+            call.reject("Nothing on this phone opens that", "unavailable");
+        }
+    }
+
+    @PluginMethod
+    public void openApp(PluginCall call) {
+        String pkg = OpenAppActivity.packageOf(call.getString("name", ""));
+        if (pkg == null) {
+            call.reject("No such app", "unavailable");
+            return;
+        }
+        try {
+            OpenAppActivity.launch(getContext().getApplicationContext(), pkg);
             call.resolve();
         } catch (ActivityNotFoundException e) {
             call.reject("Nothing on this phone opens that", "unavailable");

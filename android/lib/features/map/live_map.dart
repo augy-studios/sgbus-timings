@@ -1,6 +1,6 @@
 // The live map (the site's js/map.js and js/map-engine.js): full screen, following where you are,
 // drawn by MapLibre over OpenFreeMap's vector tiles (Liberty in light mode, Dark in dark mode),
-// the buildings standing up in 3D when it's tilted by its 3D button. It takes the place of
+// the buildings standing up in 3D when it's tilted by its handle. It takes the place of
 // sending you off to Google Maps, in five ways:
 //
 //   LiveMap.walkTo(place)  walking directions to a stop or place, turn by turn, from where you
@@ -26,8 +26,8 @@
 // whole way. Your dot is MapLibre's own, its arrow turning with the
 // phone's compass; Turn the map with the way you face turns the map with it. Two fingers only
 // pan and pinch and twist it: MapLibre's own two-finger tilt starts on any small drift up or down
-// and stops the pan until they lift, so it's off, and a button tilts it instead. A stick slides
-// it too (map_stick.dart).
+// and stops the pan until they lift, so it's off, and a handle tilts and turns it instead
+// (orbit_handle.dart).
 //
 // Where the platform's map can't be drawn (tests and the guide's screenshots), MapPreview draws
 // the same lines and dots on a plain ground, so every panel round it can still be seen.
@@ -57,7 +57,8 @@ import '../trips/trip.dart';
 import 'map_card.dart';
 import '../tour/tour.dart';
 import 'map_save.dart';
-import 'map_stick.dart';
+import 'orbit_handle.dart';
+import 'two_finger_drag.dart';
 
 // ---------- what's drawn ----------
 
@@ -228,7 +229,6 @@ class LiveMap extends StatefulWidget {
   static const stationZoom = 10.0;
   static const stopZoom = 14.0;
   static const campusZoom = 13.0;
-  static const tilt = 55.0;
   static const speedStale = Duration(seconds: 6);
   static const styleLight = 'https://tiles.openfreemap.org/styles/liberty';
   static const styleDark = 'https://tiles.openfreemap.org/styles/dark';
@@ -341,8 +341,12 @@ class _LiveMapState extends State<LiveMap> {
   bool following = true;
   bool turning = false;
   bool _located = false; // location allowed, so MapLibre draws your dot
-  bool _tilted = false; // as the camera last was, as Overview can flatten it
-  int _steering = 0; // camera moves of the app's own under way (_steer)
+  int _steering = 0; // camera moves of the app's own under way (_steer, _orbitStart)
+  final _fingers = TwoFingerDrag();
+  CameraPosition? _orbitGoal;
+  bool _orbitHeld = false;
+  bool _orbitSending = false;
+  bool _orbitSteering = false;
   int? _kmh; // how fast you're going, on a ride or a drive
   Timer? _speedStale;
 
@@ -490,12 +494,58 @@ class _LiveMapState extends State<LiveMap> {
     if (mounted) setState(() {});
   }
 
-  void _toggleTilt() {
-    _steer(CameraUpdate.tiltTo(_tilted ? 0 : LiveMap.tilt));
+  /// A new drag on the handle, from wherever the camera is now. Turning the view by hand wins over
+  /// the compass, and the map stays on you: tracking waits for the drag, as it would fight it, and
+  /// starts again after (_orbitSettled).
+  void _orbitStart() {
+    _orbitGoal = null;
+    _orbitHeld = true;
+    if (!_orbitSteering) {
+      _orbitSteering = true;
+      _steering++;
+    }
+    if (turning) setState(() => turning = false);
+    _map?.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
   }
 
-  /// The stick's slide: the map's picture moving by [d], so the camera the other way.
-  void _slide(Offset d) => _map?.moveCamera(CameraUpdate.scrollBy(-d.dx, -d.dy));
+  /// Tilts and turns by a drag on the handle. A drag comes faster than the map answers, so only the
+  /// latest goal is sent.
+  void _orbitBy(Offset drag) {
+    final c = _map?.cameraPosition;
+    if (c == null) return;
+    final goal = _orbitGoal;
+    _orbitGoal = orbited(goal == null ? c : CameraPosition(target: c.target, zoom: c.zoom, tilt: goal.tilt, bearing: goal.bearing), drag);
+    _sendOrbit();
+  }
+
+  Future<void> _sendOrbit() async {
+    if (_orbitSending) return;
+    _orbitSending = true;
+    try {
+      CameraPosition? sent;
+      while (_orbitGoal != null && _orbitGoal != sent) {
+        sent = _orbitGoal;
+        await _map?.moveCamera(CameraUpdate.newCameraPosition(sent!));
+      }
+    } catch (_) {
+      // The map's gone: nothing to do but carry on.
+    }
+    _orbitSending = false;
+    _orbitSettled();
+  }
+
+  void _orbitEnd() {
+    _orbitHeld = false;
+    _orbitSettled();
+  }
+
+  /// With the finger up and the last move sent, tracking starts again.
+  void _orbitSettled() {
+    if (_orbitHeld || _orbitSending || !_orbitSteering) return;
+    _orbitSteering = false;
+    _steering--;
+    if (mounted) _track();
+  }
 
   void _inkChanged() {
     if (LiveMap.preview || _map == null) {
@@ -1405,8 +1455,6 @@ class _LiveMapState extends State<LiveMap> {
               _centre = p.target;
               _zoom = p.zoom;
               if (card != null) _placeCard();
-              final tilted = p.tilt > 1;
-              if (tilted != _tilted) setState(() => _tilted = tilted);
             },
             onCameraIdle: () {
               if (card != null) _placeCard();
@@ -1417,12 +1465,17 @@ class _LiveMapState extends State<LiveMap> {
     if (AppNav.pip.value) return Scaffold(body: map);
     return Scaffold(
       body: Stack(children: [
-        // A drag stops following you.
+        // A drag stops following you. Two fingers count only when they go the same way, so that a
+        // pinch or a twist keeps it.
         Positioned.fill(
           child: Listener(
+            onPointerDown: (e) => _fingers.down(e.pointer, e.localPosition),
             onPointerMove: (e) {
-              if (following && e.delta.distance > 2 && mode != MapMode.traffic) _setFollowing(false);
+              final dragged = _fingers.move(e.pointer, e.localPosition) || (_fingers.count == 1 && e.delta.distance > 2);
+              if (dragged && following && mode != MapMode.traffic) _setFollowing(false);
             },
+            onPointerUp: (e) => _fingers.up(e.pointer),
+            onPointerCancel: (e) => _fingers.up(e.pointer),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: LiveMap.preview ? (d) => _previewTap(d.localPosition, size) : null,
@@ -1497,33 +1550,32 @@ class _LiveMapState extends State<LiveMap> {
           right: 12,
           top: top + 96,
           child: Column(children: [
-            // First, so the buttons that come and go below don't move it while it's held.
-            if (!LiveMap.preview) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: MapStick(
-                  builder: (held) => _face(Icons.open_with, tr('map.slide', 'Hold and drag to slide the map'), on: held),
-                  onStart: () {
-                    if (following || turning) _setFollowing(false);
-                  },
-                  onSlide: _slide,
-                  onTap: () => AppNav.say(tr('map.slide', 'Hold and drag to slide the map')),
-                ),
-              ),
-              _round(Icons.threed_rotation, tr('map.tilt', 'Tilt the map, for the buildings in 3D'), _toggleTilt, on: _tilted),
-            ],
             if (mode != MapMode.explore && mode != MapMode.traffic)
               _round(Icons.zoom_out_map, tr('html.show_the_whole_route', 'Show the whole route'), _overview),
             if (!following && mode != MapMode.traffic && (here != null || mode == MapMode.follow))
               _round(Icons.my_location, tr('html.back_to_street_level_following', 'Back to street level, following'), () => _setFollowing(true)),
             if (_located && mode != MapMode.follow && !LiveMap.preview)
-              _round(turning ? Icons.explore : Icons.explore_outlined, tr('html.turn_the_map_with_the', 'Turn the map with the way you face'), () => _setTurning(!turning), on: turning),
+              TourTarget(id: 'map.compass', child: _round(turning ? Icons.explore : Icons.explore_outlined, tr('html.turn_the_map_with_the', 'Turn the map with the way you face'), () => _setTurning(!turning), on: turning)),
             if (mode == MapMode.explore) ...[
               TourTarget(id: 'map.layers', child: _round(Icons.layers_outlined, tr('tray.layers', 'Layers'), _openLayers)),
               _round(Icons.download_for_offline_outlined, tr('html.save_the_map_for_offline', 'Save the map for offline'), () => MapSave.open(context)),
             ],
           ]),
         ),
+        // The handle, beside the buttons rather than among them: a drag starting within about 30 points
+        // of the screen's edge is Android's back gesture, and dragging left from there leaves the app.
+        Positioned(
+            right: 68,
+            top: top + 96,
+            child: OrbitHandle(
+              label: tr('map.orbit', 'Drag to tilt and turn the map'),
+              builder: (held) => _face(Icons.open_with, tr('map.orbit', 'Drag to tilt and turn the map'), on: held),
+              onStart: _orbitStart,
+              onDrag: _orbitBy,
+              onEnd: _orbitEnd,
+              onTap: () => AppNav.say(tr('map.orbit', 'Drag to tilt and turn the map')),
+            ),
+          ),
         // A stop's or station's card, on its dot.
         if (card != null && _cardAt != null)
           MapCardBubble(

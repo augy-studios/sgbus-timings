@@ -26,9 +26,10 @@ APKs, and GitHub Actions also builds and attaches them.
 Upload the `.yml` and `.blockmap` files with the installers on every release: without them
 the desktop app can't tell there's a new version (`desktop/updater.js`).
 
-The APKs (a few MB each) are committed alongside the code they were built from. The desktop
-installers are around 80 to 110 MB each, and GitHub refuses any file over 100 MB in git, so
-they're kept out of git (`.gitignore`) and only uploaded to the GitHub release.
+The APKs up to 2.4.0 are committed alongside the code they were built from. From 2.4.1 the
+phone's APK is around 100 MB, and the desktop installers are around 80 to 110 MB each. GitHub
+refuses any file over 100 MB in git, so these are kept out of git (`.gitignore`) and only
+uploaded to the GitHub release.
 
 Share them through a **GitHub Release**, where anyone can download them from
 <https://github.com/augy-studios/sgbus-timings/releases>.
@@ -58,8 +59,8 @@ match `desktop/package.json` or the CLI's build stops.
 
 ## Put it on GitHub
 
-1. Commit and push your changes, the new APK included, so the release points at the code it
-   was built from.
+1. Commit and push your changes, so the release points at the code it was built from. The APKs
+   stay out of the commit: step 6's upload is where they go.
 2. Open <https://github.com/augy-studios/sgbus-timings/releases/new>.
 3. **Choose a tag**: type a new one, such as `android-v2.0.0`, and pick
    **Create new tag: android-v2.0.0 on publish**. Leave the target as `main`. Keep to

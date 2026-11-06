@@ -31,13 +31,13 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
-import '../timings/stop_screen.dart';
 import 'trip_change.dart';
+import 'trip_timeline.dart';
 import 'trip_watch.dart';
 
 class TripLeg {
   TripLeg({required this.kind, required this.label, required this.to, required this.points, required this.names, required this.minutes,
-      this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false, this.foot = 'walk'});
+      this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false, this.foot = 'walk', this.afterVia});
   final String kind; // bus, train, walk
   final String label;
   final String to;
@@ -54,6 +54,9 @@ class TripLeg {
   final bool lrt;
   /// A walk's way of going: walk, or cycle or drive (Are you walking?).
   final String foot;
+
+  /// Navigate's stop on the way, on the part just after it: { label, lat, lng }.
+  final Map<String, Object?>? afterVia;
 
   bool get ride => kind != 'walk';
 
@@ -76,6 +79,7 @@ class TripLeg {
       route: route,
       color: color,
       lrt: lrt,
+      afterVia: afterVia,
     );
   }
 
@@ -83,6 +87,7 @@ class TripLeg {
         'kind': kind, 'label': label, 'to': to, 'points': points, 'names': names, 'minutes': minutes, 'wait': wait,
         'service': service, 'board': board, 'alight': alight, 'codes': codes, 'route': route, 'color': color, 'lrt': lrt,
         if (foot != 'walk') 'foot': foot,
+        'afterVia': ?afterVia,
       };
 
   static TripLeg from(Map j) => TripLeg(
@@ -101,6 +106,7 @@ class TripLeg {
         color: j['color'] as String?,
         lrt: j['lrt'] == true,
         foot: j['foot'] as String? ?? 'walk',
+        afterVia: (j['afterVia'] as Map?)?.cast<String, Object?>(),
       );
 }
 
@@ -131,6 +137,9 @@ class Trip extends ChangeNotifier {
   int legStartedAt = 0;
   /// When the trip was last moved by hand (Back or Next), for the server.
   int movedAt = 0;
+  /// The Get Off Alert's words, kept on the bar until you pass another stop.
+  String? _alertText;
+  int _alertLeft = -1;
   /// A change the trip made to itself, said on the bar with Undo (trip_watch.dart).
   String? switchedNote;
   Map<String, Object?>? _before;
@@ -140,6 +149,9 @@ class Trip extends ChangeNotifier {
   Fix? here;
   /// What the location's seen of each ride (data/rewards.dart, RideCheck), kept with the trip.
   List<Map<String, dynamic>?> seen = [];
+  /// The Navigate screen it was started from, for Back to Navigate: { kind: "nav", from, to, via }
+  /// or { kind: "route", start, end }. Kept through every change to the trip.
+  Map<String, Object?>? origin;
   /// Navigate's stop on the way, for There and back again.
   Map<String, Object?>? via;
   /// Are you walking? is asked once a trip (trip_change.dart).
@@ -160,9 +172,11 @@ class Trip extends ChangeNotifier {
 
   // ---------- starting and stopping ----------
 
-  Future<void> start({required String title, required List<TripLeg> legs, Map<String, Object?>? from, Map<String, Object?>? to, Map<String, Object?>? via}) async {
+  Future<void> start({required String title, required List<TripLeg> legs, Map<String, Object?>? from, Map<String, Object?>? to, Map<String, Object?>? via, Map<String, Object?>? origin}) async {
     if (legs.isEmpty) return;
     if (active) await stop(record: true);
+    this.origin = origin;
+    _alertText = null;
     id = '${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}${math.Random().nextInt(1 << 30).toRadixString(36)}';
     this.title = title;
     this.legs = legs;
@@ -248,13 +262,14 @@ class Trip extends ChangeNotifier {
     alerted.addAll(((s['alerted'] as List?) ?? const []).map((e) => (e as num).toInt()));
     seen = [for (var i = 0; i < legs.length; i++) i < ((s['seen'] as List?)?.length ?? 0) ? ((s['seen'] as List)[i] as Map?)?.cast<String, dynamic>() : null];
     via = (s['via'] as Map?)?.cast<String, Object?>();
+    origin = (s['origin'] as Map?)?.cast<String, Object?>();
     paceAsked = s['paceAsked'] == true;
     await _follow();
     notifyListeners();
   }
 
   void _save() => Store.I.putJson(savedKey, {
-        'id': id, 'title': title, 'legs': [for (final l in legs) l.toJson()], 'from': from, 'to': to, 'leg': leg, 'pos': pos,
+        'id': id, 'title': title, 'legs': [for (final l in legs) l.toJson()], 'from': from, 'to': to, 'origin': origin, 'leg': leg, 'pos': pos,
         'boarded': boarded, 'startedAt': startedAt, 'legStartedAt': legStartedAt, 'alerted': alerted.toList(),
         'seen': seen, 'via': via, 'paceAsked': paceAsked,
       });
@@ -426,13 +441,29 @@ class Trip extends ChangeNotifier {
     if (left > alertStops + 0.1) return;
     alerted.add(leg);
     final change = leg < legs.length - 1;
-    final n = math.max(1, left.ceil());
+    // To the nearest stop: it's said as you come up to the stop two before the end.
+    final n = left.round();
     final stop = l.names.isNotEmpty ? l.names.last : l.to;
-    final body = n <= 1
-        ? (change ? tr('trip.getOffOneChange', 'Get off in 1 stop, at {stop}, to change.', {'stop': stop}) : tr('trip.getOffOne', 'Get off in 1 stop, at {stop}.', {'stop': stop}))
-        : (change ? tr('trip.getOffManyChange', 'Get off in {n} stops, at {stop}, to change.', {'n': n, 'stop': stop}) : tr('trip.getOffMany', 'Get off in {n} stops, at {stop}.', {'n': n, 'stop': stop}));
+    final body = n == 0
+        ? tr('trip.getOffNow', 'Get off now at {stop}.', {'stop': stop})
+        : n == 1
+            ? (change ? tr('trip.getOffOneChange', 'Get off in 1 stop, at {stop}, to change.', {'stop': stop}) : tr('trip.getOffOne', 'Get off in 1 stop, at {stop}.', {'stop': stop}))
+            : (change ? tr('trip.getOffManyChange', 'Get off in {n} stops, at {stop}, to change.', {'n': n, 'stop': stop}) : tr('trip.getOffMany', 'Get off in {n} stops, at {stop}.', {'n': n, 'stop': stop}));
+    soundAlert(body);
+    // The bar keeps saying so until you pass another stop.
+    _alertText = body;
+    _alertLeft = n;
+  }
+
+  /// The alert's buzz ("OFF" in Morse code), sound and notification, over the lock screen, in
+  /// earphones only if Settings says so (TripPlugin.alert).
+  void soundAlert(String body) {
     if (Native.has('trip')) {
-      Native.call('Trip', 'alert', {'title': title, 'body': body, 'quiet': const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones'))}).catchError((_) => null);
+      Native.call('Trip', 'alert', {
+        'title': tr('route.get_off_alert', 'Get Off Alert'),
+        'body': body,
+        'quiet': const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones')),
+      }).catchError((_) => null);
     } else {
       HapticFeedback.heavyImpact();
       AppNav.say(body);
@@ -535,14 +566,63 @@ class Trip extends ChangeNotifier {
   String _barText() {
     final l = current;
     if (l == null) return '';
-    if (!l.ride) return tr('trip.walkAbout', 'Walk to {to}, about {m} min', {'to': l.to, 'm': l.minutes.round()});
     final n = stopsLeft();
-    return n == 0
-        ? tr('trip.atStop', '{ride}: at {to}', {'ride': l.label, 'to': l.to})
-        : n == 1
-            ? tr('trip.oneStop', '{ride}: 1 stop to {to}', {'ride': l.label, 'to': l.to})
-            : tr('trip.stops', '{ride}: {n} stops to {to}', {'ride': l.label, 'n': n, 'to': l.to});
+    final arriving = n == 0 && leg == legs.length - 1;
+    // Not on a walk that's the whole trip, which says its minutes already.
+    final togo = arriving || (legs.length == 1 && !l.ride) ? '' : ' · ${tr('trip.minLeft', '~{m} min left', {'m': math.max(1, minutesLeft().round())})}';
+    if (_alertText != null && n >= _alertLeft) return '$_alertText$togo';
+    final share = l.points.length < 2 ? 1.0 : pos / (l.points.length - 1);
+    final m = math.max(1, (l.minutes * (1 - share)).round());
+    final ride = _rideName(l);
+    final where = !l.ride
+        ? (n == 0
+            ? (l.foot == 'drive' ? tr('trip.driveThere', 'Drive to {to}: there', {'to': l.to}) : l.foot == 'cycle' ? tr('trip.cycleThere', 'Cycle to {to}: there', {'to': l.to}) : tr('trip.walkThere', 'Walk to {to}: there', {'to': l.to}))
+            : (l.foot == 'drive' ? tr('trip.driveAbout', 'Drive to {to}, about {m} min', {'to': l.to, 'm': m}) : l.foot == 'cycle' ? tr('trip.cycleAbout', 'Cycle to {to}, about {m} min', {'to': l.to, 'm': m}) : tr('trip.walkAbout', 'Walk to {to}, about {m} min', {'to': l.to, 'm': m})))
+        : n == 0
+            ? tr('trip.atStop', '{ride}: at {to}', {'ride': ride, 'to': l.to})
+            : n == 1
+                ? tr('trip.oneStop', '{ride}: 1 stop to {to}', {'ride': ride, 'to': l.to})
+                : tr('trip.stops', '{ride}: {n} stops to {to}', {'ride': ride, 'n': n, 'to': l.to});
+    final part = legs.length > 1 ? ' · ${tr('trip.part', 'part {n} of {of}', {'n': leg + 1, 'of': legs.length})}' : '';
+    return '$where$part$togo';
   }
+
+  /// The minutes to the end of the whole trip: what's left of this part, and the rest.
+  double minutesLeft() {
+    final l = current;
+    if (l == null) return 0;
+    final share = l.points.length < 2 ? 1.0 : pos / (l.points.length - 1);
+    var m = l.minutes * (1 - share) + (l.ride && !boarded ? l.wait : 0);
+    for (final after in legs.skip(leg + 1)) {
+      m += after.minutes + after.wait;
+    }
+    return m;
+  }
+
+  /// A ride's name, with which way round on the Circle Line: "CC Line (clockwise)".
+  static String _rideName(TripLeg l) {
+    final way = loopWay(l);
+    if (way == null) return l.label;
+    return way == 'cw' ? tr('trip.rideCw', '{ride} (clockwise)', {'ride': l.label}) : tr('trip.rideAcw', '{ride} (anticlockwise)', {'ride': l.label});
+  }
+
+  /// Which way a Circle Line ride goes round the loop, as the map has it, north up, by how its
+  /// stations turn about the loop's middle: "cw", "acw", or null for any other ride.
+  static String? loopWay(TripLeg l) {
+    if (l.kind != 'train' || !RegExp(r'^C[CE]', caseSensitive: false).hasMatch(l.route ?? l.label)) return null;
+    const middle = [1.3047, 103.8411];
+    var turn = 0.0;
+    for (var i = 1; i < l.points.length; i++) {
+      final y1 = l.points[i - 1][0] - middle[0], x1 = l.points[i - 1][1] - middle[1];
+      final y2 = l.points[i][0] - middle[0], x2 = l.points[i][1] - middle[1];
+      turn += x1 * y2 - x2 * y1;
+    }
+    if (turn.abs() < 1e-6) return null;
+    return turn > 0 ? 'acw' : 'cw';
+  }
+
+  /// The buses that also go straight from a bus leg's first stop to its last.
+  static List<String> directBuses(TripLeg l) => directBusesOf(l);
 
   String barText() => _barText();
 
@@ -600,6 +680,28 @@ class TripDone {
 ({String title, List<TripLeg> legs})? tripFromNav(Map<String, dynamic> o, NavEnd? from, NavEnd? to) {
   final legs = <TripLeg>[];
   final ways = (o['legs'] as List).cast<Map>();
+  // The stop on the way (Navigate's Add a stop): marked on the first part after it.
+  final viaAt = (o['via'] as Map?)?['leg'] as int?;
+  final viaLabel = (o['via'] as Map?)?['label'];
+  Map<String, Object?>? viaPoint() {
+    if (viaAt == null) return null;
+    for (final l in ways) {
+      for (final p in [l['to'], l['from']]) {
+        if (p is Map && p['via'] == true && p['lat'] is num) return {'label': viaLabel ?? NavState.I.via?.label ?? '', 'lat': p['lat'], 'lng': p['lng']};
+      }
+    }
+    final v = NavState.I.via;
+    return v == null ? null : {'label': viaLabel ?? v.label, 'lat': v.lat, 'lng': v.lng};
+  }
+
+  var viaPending = viaPoint();
+  Map<String, Object?>? takeVia(int k) {
+    if (viaPending == null || viaAt == null || k < viaAt) return null;
+    final v = viaPending;
+    viaPending = null;
+    return v;
+  }
+
   List<double>? at(Object? p) => p is Map && p['lat'] is num && p['lng'] is num ? [(p['lat'] as num).toDouble(), (p['lng'] as num).toDouble()] : null;
   for (var k = 0; k < ways.length; k++) {
     final l = ways[k];
@@ -615,6 +717,7 @@ class TripDone {
           points: [start, end],
           names: [k == 0 ? (from?.label ?? '') : placeName(l['from'] ?? ways[k - 1]['to']), last ? (to?.label ?? '') : placeName(l['to'])],
           minutes: math.max(1, ((l['minutes'] as num?) ?? 1).toDouble()),
+          afterVia: takeVia(k),
         ));
       }
       continue;
@@ -641,6 +744,7 @@ class TripDone {
       route: l['mode'] == 'train' ? route : null,
       color: l['color'] as String?,
       lrt: l['lrt'] == true,
+      afterVia: takeVia(k),
     ));
   }
   if (legs.isEmpty) return null;
@@ -698,6 +802,7 @@ class TripBar extends StatelessWidget {
                       Text(t.barText(), style: TextStyle(color: sg.onBrand)),
                     ]),
                   ),
+                  Tooltip(message: tr('trip.show_the_stops_ahead', 'Show the stops ahead'), child: Icon(Icons.expand_more, color: sg.onBrand)),
                   if (t.legs.length > 1) ...[
                     IconButton(tooltip: tr('trip.back_to_the_part_before', 'Back to the part before'), onPressed: t.leg == 0 ? null : () => t.step(-1), icon: Icon(Icons.skip_previous, color: sg.onBrand)),
                     IconButton(tooltip: tr('trip.on_to_the_next_part', 'On to the next part'), onPressed: () => t.step(1), icon: Icon(Icons.skip_next, color: sg.onBrand)),
@@ -729,39 +834,6 @@ class _TripScreenState extends State<TripScreen> {
           final t = Trip.I;
           final sg = context.sg;
           if (!t.active) return SgScaffold(title: tr('trip.trip_in_progress', 'Trip in progress'), body: EmptyNote(tr('trip.arrived', "You've arrived.")));
-          final rows = <Widget>[];
-          for (var k = t.leg; k < t.legs.length; k++) {
-            final l = t.legs[k];
-            rows.add(SectionLabel('${l.label} · ${tr('trip.legTo', 'to {to}', {'to': l.to})}'));
-            final first = k == t.leg ? t.pos.floor() : 0;
-            for (var i = first; i < l.points.length; i++) {
-              final here = k == t.leg && i == t.pos.floor();
-              final getOff = i == l.points.length - 1;
-              final code = l.codes != null && i < l.codes!.length ? l.codes![i] : null;
-              final canChange = changing && l.ride && (k > t.leg || i > t.pos) && !(getOff && k == t.legs.length - 1);
-              rows.add(ListTile(
-                dense: true,
-                leading: Icon(here ? Icons.my_location : getOff ? Icons.flag : Icons.circle_outlined, color: here ? sg.tones[0] : getOff ? sg.brandInk : sg.muted, size: here ? 22 : 14),
-                title: Text(i < l.names.length && l.names[i].isNotEmpty ? l.names[i] : tr('trip.stopN', 'Stop {n}', {'n': i + 1}),
-                    style: TextStyle(fontWeight: here || getOff ? FontWeight.w700 : null)),
-                trailing: canChange
-                    ? Tooltip(
-                        message: tr('trip.changeHereTitle', 'Get off here and go on another way'),
-                        child: OutlinedButton(
-                          onPressed: () {
-                            setState(() => changing = false);
-                            TripChange.changeAt(context, k, i);
-                          },
-                          child: Text(tr('trip.changeHere', 'Change here')),
-                        ),
-                      )
-                    : getOff
-                    ? Text(k == t.legs.length - 1 ? tr('trip.tag.arrive', 'Arrive') : l.ride ? tr('trip.tag.change', 'Change') : '', style: TextStyle(color: sg.brandInk))
-                    : (l.ride && i == l.points.length - 1 - Trip.alertStops ? Text(tr('trip.tag.alert', 'Alert'), style: TextStyle(color: sg.warn)) : null),
-                onTap: code == null || l.service == null ? null : () => StopScreen.open(code, service: l.service),
-              ));
-            }
-          }
           return SgScaffold(
             title: t.title,
             actions: [
@@ -774,17 +846,25 @@ class _TripScreenState extends State<TripScreen> {
             ],
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
               SgCard(child: Text(t.barText(), style: Theme.of(context).textTheme.titleMedium)),
-              if (t.legs.skip(t.leg).any((l) => l.ride))
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Pill(icon: Icons.alt_route, label: tr('nav.change_current_route', 'Change my way'), on: changing, onTap: () => setState(() => changing = !changing)),
-                  ),
-                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(spacing: 8, runSpacing: 6, children: [
+                  if (t.legs.skip(t.leg).any((l) => l.ride))
+                    Pill(icon: Icons.alt_route, label: tr('nav.change_current_route', 'Change my way'), on: changing, onTap: () => setState(() => changing = !changing)),
+                  if (t.origin != null)
+                    Pill(icon: Icons.directions, label: tr('stop.back.nav', 'Back to Navigate'), onTap: () => AppNav.open('tripOrigin', {'origin': t.origin})),
+                ]),
+              ),
               const Padding(padding: EdgeInsets.only(top: 8), child: ClipRRect(borderRadius: BorderRadius.all(Radius.circular(12)), child: TripNotes())),
               if (!Trip.enabled) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('trip.alertOff', 'Get Off Alert is off in Settings.'), style: TextStyle(color: sg.warn))),
-              ...rows,
+              if (changing) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('trip.tapChangeHere', 'Tap Change here by the stop to get off at.'), style: TextStyle(color: sg.muted))),
+              TripTimeline(
+                changing: changing,
+                onChangeAt: (k, i) {
+                  setState(() => changing = false);
+                  TripChange.changeAt(context, k, i);
+                },
+              ),
             ]),
           );
         },

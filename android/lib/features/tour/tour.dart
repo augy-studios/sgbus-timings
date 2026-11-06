@@ -79,6 +79,8 @@ class Tours {
     ],
     'timings': [
       (target: 'timings.search', text: () => tr('tour.timings.1', 'Look up any stop by its name or 5-digit code, the stops near an address by its postal code, or a bus by its number for its route.')),
+      (target: 'timings.voice', text: () => tr('tour.timings.2', 'Or say it: a stop, a road or a bus number.')),
+      (target: 'timings.scan', text: () => tr('tour.timings.3', 'Or scan the code on a bus stop’s pole with the camera.')),
       (target: 'timings.near', text: () => tr('tour.timings.4', 'The stops around you, nearest first. Tap one for its timings.')),
     ],
     'favs': [
@@ -88,6 +90,7 @@ class Tours {
       (target: 'nav.modes', text: () => tr('tour.nav.1', 'Bus and train plans with the MRT too; Bus only keeps to buses, stop to stop.')),
       (target: 'nav.fields', text: () => tr('tour.nav.2', 'Where from and where to: a place, an address, a stop, a postal code. Home, Work and your places are a tap away under each box.')),
       (target: 'nav.when', text: () => tr('tour.nav.3', 'Leave now, leave at a time, or arrive by one.')),
+      (target: 'nav.save', text: () => tr('tour.nav.5', 'Save the journey to Favourites, and Share sends it to someone.')),
       (target: 'nav.ways', text: () => tr('tour.nav.4', 'Your ways, quickest first. Open one for every part of it, which train door to stand at, and Start trip to be told when to get off.')),
     ],
     'alerts': [
@@ -95,9 +98,11 @@ class Tours {
       (target: 'alerts.body', text: () => tr('tour.alerts.2', 'What’s going on right now, on the trains and the roads.')),
     ],
     'trips': [
+      (target: 'trips.empty', text: () => tr('tour.trips.1', 'Each trip you take with Start trip shows here. Start one from a way in Navigate, or a bus’s route.')),
       (target: 'trips.list', text: () => tr('tour.trips.4', 'Each trip, by week. Tap one for its rides and times, to take it again or share it.')),
     ],
     'places': [
+      (target: 'places.add', text: () => tr('tour.places.3', 'Add a place: the gym, school, a friend’s. Each one shows under From and To in Navigate, and on Glance.')),
       (target: 'places.list', text: () => tr('tour.places.1', 'Home, Work and your own places. Tap one for the way there from where you are.')),
     ],
     'terminal': [
@@ -108,6 +113,7 @@ class Tours {
     'explorer': [
       (target: 'map.ground', text: () => tr('tour.explorer.1', 'Stops are white dots ringed in green, stations dots in their line’s colour, interchanges pills in all of theirs. Zoom in for the stops.')),
       (target: 'map.ground', text: () => tr('tour.explorer.2', 'Tap a dot for its card: a stop’s buses, green while running, red down to their last three, grey when not; a station’s doors to stand at on each platform. Every card has Directions.')),
+      (target: 'map.compass', text: () => tr('tour.explorer.3', 'The compass turns the map with you, the way your phone points up.')),
       (target: 'map.layers', text: () => tr('tour.explorer.4', 'Layers picks what the map shows: bus stops, MRT and LRT stations and lines, and shuttle buses’ routes and stops. Tap one to turn it off or on.')),
       (target: 'map.close', text: () => tr('tour.explorer.5', 'Back closes Explorer. Its button in the Edge Tray can be turned off in Settings.')),
     ],

@@ -1,7 +1,8 @@
 // The Edge Tray (the site's docs/edge-tray-spec.md): a column of round buttons down one side
 // of the screen (sgbus_tray_side, right unless set to left), the pages' tabs first, the one on
 // show in the brand colour, then the extras Settings can hide (sgbus_tray_hide) and Settings
-// and Theme. Its tab tucks it away (sgbus_tray_closed), leaving the whole width to the page.
+// and Theme. Its tab tucks it away (sgbus_tray_closed), leaving the whole width to the page. On a
+// wide screen (a tablet), each button says what it is beside its icon.
 import 'package:flutter/material.dart';
 
 import '../api/net.dart';
@@ -11,19 +12,26 @@ import '../data/store.dart';
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
 import '../theme/theme.dart';
+import '../widgets/coin_icon.dart';
 import 'nav.dart';
 import 'pages.dart';
 import '../features/map/map_save.dart';
 import '../features/tour/tour.dart';
 
 class TrayExtra {
-  const TrayExtra(this.id, this.icon, this.label, this.open, {this.when, this.badge});
+  const TrayExtra(this.id, this.icon, this.label, this.open, {this.when, this.badge, this.short, this.face});
   final String id;
   final IconData icon;
   final String Function() label;
   final void Function() open;
   final bool Function()? when;
   final String? Function()? badge;
+
+  /// What it's called beside its icon on a wide screen, where `label` says too much.
+  final String Function()? short;
+
+  /// A picture of its own in place of `icon`, at a button's size.
+  final Widget Function(double size)? face;
 }
 
 class EdgeTray extends StatefulWidget {
@@ -33,6 +41,10 @@ class EdgeTray extends StatefulWidget {
   static const sideKey = 'sgbus_tray_side';
   static const closedKey = 'sgbus_tray_closed';
   static const hideKey = 'sgbus_tray_hide';
+
+  /// From this wide, a button says what it is beside its icon.
+  static const wideFrom = 600.0;
+  static const wideButton = 196.0;
 
   static bool left() => Store.I.get(sideKey) == 'left';
   static Set<String> hidden() => (Store.I.get(hideKey) ?? '').split(' ').where((s) => s.isNotEmpty).toSet();
@@ -47,7 +59,7 @@ class EdgeTray extends StatefulWidget {
     TrayExtra('explorer', Icons.explore_outlined, () => tr('tray.explorer', 'Explorer'), () => AppNav.open('explorer'), when: () => !Net.off.value || MapSave.saved),
     // Its balance on it; hidden with Show uwuCoins off.
     TrayExtra('coins', Icons.toll_outlined, () => tr('coins.title', 'uwuCoins'), () => AppNav.open('coins'),
-        when: () => Coins.shown, badge: () => '${Coins.balance}'),
+        when: () => Coins.shown, badge: () => '${Coins.balance}', face: (size) => CoinIcon(size: size * 0.62)),
     TrayExtra('nearstops', Icons.notifications_active_outlined, () => tr('tray.nearStops', 'Timings near a stop'),
         () => AppNav.open('nearStopsReminder'), when: () => Native.has('nearstops') && !Net.off.value),
     TrayExtra('routines', Icons.repeat, () => tr('tray.routines', 'Routines'), () => AppNav.open('routines'), when: () => Native.has('routines') && !Net.off.value),
@@ -56,13 +68,15 @@ class EdgeTray extends StatefulWidget {
         () => AppNav.open('receive'), when: () => Native.has('sharenearby')),
     TrayExtra('update', Icons.system_update_alt, () => tr('tray.appUpdate', 'Check for app updates'),
         () => AppNav.open('appUpdate'), when: () => Native.has('checkupdate') && !Net.off.value),
-    TrayExtra('simplygo', Icons.contactless_outlined, () => tr('html.open_simplygo', 'Open SimplyGo'), () => AppNav.open('simplygo')),
+    TrayExtra('simplygo', Icons.contactless_outlined, () => tr('html.open_simplygo', 'Open SimplyGo'), () => AppNav.open('simplygo'),
+        short: () => tr('settings.simplygo', 'SimplyGo'),
+        face: (size) => ClipOval(child: Image.asset('assets/images/simplygo.png', width: size, height: size, fit: BoxFit.cover, excludeFromSemantics: true))),
     TrayExtra('telegram', Icons.send_outlined, () => tr('html.singapore_bus_timings_on_telegram', 'Singapore Bus Timings on Telegram'),
-        () => _link('https://t.me/UwUsgbus_bot')),
+        () => _link('https://t.me/UwUsgbus_bot'), short: () => tr('settings.telegram_bot', 'Telegram bot')),
     TrayExtra('coffee', Icons.coffee_outlined, () => tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
         () => _link('https://donate.stripe.com/28o2akeAr3hv0DK6oo')),
     TrayExtra('guide', Icons.help_outline, () => tr('html.how_to_use_sg_bus', 'How to use SG Bus Timings'),
-        () => _link('https://guide.sgbus.uwuapps.org/')),
+        () => _link('https://guide.sgbus.uwuapps.org/'), short: () => tr('settings.guide', 'Guide')),
   ];
 
   static void _link(String url) => Native.call('SgBus', 'openLink', {'url': url}).catchError((_) => null);
@@ -115,6 +129,7 @@ class _EdgeTrayState extends State<EdgeTray> {
     final still = MediaQuery.disableAnimationsOf(context);
     final time = still ? Duration.zero : _time;
     const button = 48.0, gap = 8.0, edge = 12.0;
+    final wide = MediaQuery.sizeOf(context).width >= EdgeTray.wideFrom;
     final favCount = Favs.I.stops().length;
     var index = 0;
 
@@ -138,19 +153,38 @@ class _EdgeTrayState extends State<EdgeTray> {
       );
     }
 
-    Widget round(IconData icon, String label, VoidCallback onTap, {bool on = false, String? badge}) {
+    Widget round(IconData icon, String label, VoidCallback onTap, {bool on = false, String? badge, String? short, Widget Function(double size)? face}) {
       final fill = on ? sg.brand : (you ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong);
+      final ink = on ? sg.onBrand : sg.ink;
+      final picture = SizedBox(width: button, height: button, child: Center(child: face?.call(button) ?? Icon(icon, size: 22, color: ink)));
+      final ShapeBorder shape = you
+          ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(on ? 16 : 24))
+          : wide
+              ? StadiumBorder(side: BorderSide(color: sg.border))
+              : CircleBorder(side: BorderSide(color: sg.border));
       final b = Material(
         color: fill,
-        shape: you
-            ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(on ? 16 : 24))
-            : CircleBorder(side: BorderSide(color: sg.border)),
+        shape: shape,
         elevation: you ? 0 : 2,
         shadowColor: Colors.black26,
         child: InkWell(
-          customBorder: you ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(on ? 16 : 24)) : const CircleBorder(),
+          customBorder: shape,
           onTap: onTap,
-          child: SizedBox(width: button, height: button, child: Icon(icon, size: 22, color: on ? sg.onBrand : sg.ink)),
+          child: wide
+              ? SizedBox(
+                  width: EdgeTray.wideButton,
+                  height: button,
+                  child: Row(children: [
+                    picture,
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 14),
+                        child: Text(short ?? label, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: ink, fontSize: 14, fontWeight: on ? FontWeight.w700 : null)),
+                      ),
+                    ),
+                  ]),
+                )
+              : picture,
         ),
       );
       return Padding(
@@ -200,7 +234,7 @@ class _EdgeTrayState extends State<EdgeTray> {
           ]),
         ),
         if (extras.isNotEmpty) rule(),
-        for (final e in extras) round(e.icon, e.label(), e.open, badge: e.badge?.call()),
+        for (final e in extras) round(e.icon, e.label(), e.open, badge: e.badge?.call(), short: e.short?.call(), face: e.face),
         rule(),
         TourTarget(id: 'tray.settings', child: round(Icons.settings_outlined, tr('settings.settings', 'Settings'), () => AppNav.open('settings'))),
         round(Icons.palette_outlined, tr('theme.title', 'Theme'), () => AppNav.open('theme')),
@@ -252,7 +286,7 @@ class _EdgeTrayState extends State<EdgeTray> {
 
     // The page keeps clear of the open tray (the buttons, the edge and a gap), and follows it in
     // and out at the tray's pace.
-    final room = closed ? 0.0 : button + edge + gap;
+    final room = closed ? 0.0 : (wide ? EdgeTray.wideButton : button) + edge + gap;
     return Stack(
       children: [
         Positioned.fill(

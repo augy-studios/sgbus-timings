@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/nav.dart';
 import '../../data/eggs_data.dart';
+import '../../data/rewards.dart';
 import '../../data/store.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/colours.dart';
@@ -222,6 +223,18 @@ class _ThemeScreenState extends State<ThemeScreen> {
             child: Text(tr('colours.reset', 'Back to the usual colours')),
           ),
       ]),
+      // Only once every line's really been ridden, not for the egg alone.
+      if (Feats.done().contains('lines'))
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Center(
+            child: TextButton.icon(
+              onPressed: () => AppNav.open('celebrationAgain'),
+              icon: const Icon(Icons.celebration_outlined),
+              label: Text(tr('colours.replay', 'Watch the celebration again')),
+            ),
+          ),
+        ),
     ]);
   }
 }

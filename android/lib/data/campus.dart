@@ -66,6 +66,8 @@ class CampusRoute {
     required this.fareText,
     required this.access,
     required this.live,
+    this.place = const [],
+    this.kmh,
   });
   final String key; // "nus:A1"
   final String uni;
@@ -79,6 +81,10 @@ class CampusRoute {
   final String fareText;
   final String access; // public, guests, residents
   final Map? live; // { provider, stops: { id: param } }
+
+  /// A hotel's or a condo's own stops' keys: it's only for ways from or to them (data/nav_core.dart).
+  final List<String> place;
+  final num? kmh;
 
   bool get loop => ids.first == ids.last;
   bool get seasonal => timings.containsKey('term') || timings.containsKey('vacation');
@@ -346,6 +352,14 @@ class Campus {
           fareText: str(r['fareText']).isNotEmpty ? str(r['fareText']) : str(conf['fareText']),
           access: str(r['access']).isNotEmpty ? str(r['access']) : str(conf['access']).isNotEmpty ? str(conf['access']) : 'public',
           live: r['live'] is Map ? r['live'] as Map : null,
+          place: [
+            for (final p in ((r['place'] ?? conf['place']) as List? ?? const []))
+              if (resolve('$p', where) != null) resolve('$p', where)!,
+          ],
+          kmh: () {
+            final n = num.tryParse('${r['kmh'] ?? ''}');
+            return n == null || n == 0 ? null : n;
+          }(),
         );
         routes.add(route);
         for (var i = 0; i < keys.length; i++) {
@@ -584,6 +598,9 @@ class Campus {
     } catch (_) {}
     _modelFor(Stops.index);
   }
+
+  /// The files as they came, for the phone's own planning (data/nav_offline.dart).
+  static Map? get files => _files;
 
   /// For tests: the files as given.
   static void use(Map files) {

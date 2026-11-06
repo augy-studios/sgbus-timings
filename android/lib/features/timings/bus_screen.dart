@@ -2,18 +2,21 @@
 // via which landmarks, its operator and category, each direction as a tab, and every stop in
 // order, your favourite stops first in a section of their own. Opened from a stop on its route,
 // From <stop> shows the stops still ahead, "Here", "+1", "+2"..., and the stop it came from is
-// picked out in the full list.
+// picked out in the full list. Get Off Alert, then a stop tapped, starts a trip on this bus to it,
+// which alerts you two stops before you get off.
 import 'package:flutter/material.dart';
 
 import '../../app/links.dart';
 import '../../app/nav.dart';
 import '../../data/favs.dart';
+import '../../data/geo.dart';
 import '../../data/network.dart';
 import '../../data/stops.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/share.dart';
+import '../trips/trip.dart';
 import 'stop_screen.dart';
 
 class BusScreen extends StatefulWidget {
@@ -49,6 +52,34 @@ class _BusScreenState extends State<BusScreen> {
   late int _dir;
 
   String get no => widget.no;
+
+  /// Get Off Alert's on: a stop tapped is where you're getting off.
+  bool _picking = false;
+
+  /// A trip on this bus to `to`, from the stop it was opened from if that comes before it, or else
+  /// from the start of its route. A ride time from distance, at the planner's ~15 km/h.
+  void _startTrip(String to) {
+    final stops = BusNet.runStops(no, _dir);
+    final end = stops.indexOf(to);
+    if (end < 1) return;
+    final from = _from == null ? -1 : stops.indexOf(_from!);
+    final start = from != -1 && from < end ? from : 0;
+    final known = stops.sublist(start, end + 1).where((c) => Stops.of(c)?.lat != null).toList();
+    final points = [for (final c in known) [Stops.of(c)!.lat!, Stops.of(c)!.lng!]];
+    if (points.length < 2) return;
+    var metres = 0.0;
+    for (var i = 1; i < points.length; i++) {
+      metres += metresAB(points[i - 1], points[i]);
+    }
+    setState(() => _picking = false);
+    Trip.I.start(
+      title: tr('trip.busTo', 'Bus {no} to {stop}', {'no': no, 'stop': _name(to)}),
+      legs: [
+        TripLeg(kind: 'bus', label: tr('favs.bus', 'Bus {no}', {'no': no}), to: _name(to), points: points, names: [for (final c in known) _name(c)], codes: known, minutes: metres / 250, service: no, board: known.first, alight: to),
+      ],
+    );
+    AppNav.push(const TripScreen(), name: 'trip');
+  }
 
   @override
   void initState() {
@@ -113,7 +144,7 @@ class _BusScreenState extends State<BusScreen> {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => StopScreen.open(code, service: no, ctx: StopContext('service', service: no, dir: _dir), dir: _dir),
+          onTap: () => _picking ? _startTrip(code) : StopScreen.open(code, service: no, ctx: StopContext('service', service: no, dir: _dir), dir: _dir),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
             child: Row(children: [
@@ -193,6 +224,21 @@ class _BusScreenState extends State<BusScreen> {
               if ((info?.cat ?? '').isNotEmpty) _Meta(tr('route.meta.category', 'Category:'), info!.cat),
             ]),
           ),
+          const SizedBox(height: 12),
+          Tooltip(
+            message: tr('route.alert_me_two_stops_before', 'Alert me two stops before I get off'),
+            child: FilledButton.tonalIcon(
+              style: _picking ? FilledButton.styleFrom(backgroundColor: sg.brand, foregroundColor: sg.onBrand) : null,
+              onPressed: () => setState(() => _picking = !_picking),
+              icon: const Icon(Icons.notifications_active_outlined),
+              label: Text(tr('route.get_off_alert', 'Get Off Alert')),
+            ),
+          ),
+          if (_picking)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Semantics(liveRegion: true, child: Text(tr('route.tap_stop_app', "Tap the stop you're getting off at. The app alerts you two stops before it, even with the screen off."), style: TextStyle(color: sg.muted))),
+            ),
           const SizedBox(height: 12),
           if (_from != null)
             SegmentedButton<bool>(

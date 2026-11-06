@@ -84,20 +84,27 @@ The Edge Tray is the column of buttons down the side, as on the website: each
 page's button at the top, the one on show filled in, then the extras and
 Settings and Theme. Its tab tucks it away at the edge, and its buttons unroll
 one after another as it comes back. **Favourites** shows how many stops you've
-starred, and **uwuCoins** your balance.
+starred, and **uwuCoins**, the gold coin, your balance.
+
+On a wider screen, such as a tablet, each button says what it is beside its icon.
+
+<figure>
+<img src="/screenshots/android/tray-wide.png" alt="Glance on a tablet: the Edge Tray's buttons as pills with their names beside their icons: Glance, Bus timings, Favourites, Navigate, Service alerts, Your trips and Places, then Explorer, uwuCoins with the gold coin, SimplyGo with its logo, Telegram bot, Buy Augy a Coffee and Guide, then Settings and Theme." width="900" height="1200" loading="lazy">
+<figcaption>On a tablet, the Edge Tray names each button.</figcaption>
+</figure>
 
 ## Explorer and the live map
 
 [Explorer](explorer.md) and the [live map](live-map.md) are drawn by the app
-too, over OpenFreeMap's map with buildings that stand up in 3D when you tilt it
-with its 3D button. Drag with one finger or two to move the map, or hold the
-button with the four arrows and drag it, and the map slides that way until you
-let go. While it follows you, your dot stays in the middle of the screen, and
+too, over OpenFreeMap's map with buildings that stand up in 3D when you tilt it.
+Drag with one finger or two to move the map, which stops it following you; pinching
+to zoom doesn't. To change the angle, hold the button with the four arrows and drag
+it: up and down tilt the map, and left and right turn it. While it follows you, your dot stays in the middle of the screen, and
 Cycle it and Drive it show how fast you're going. Tap a stop for its buses, or a
 station for the doors to stand at on each platform.
 
 <figure>
-<img src="/screenshots/android/explorer.png" alt="Explorer round Bedok: stops as white dots ringed in green, and Bedok station's card open, towards Pasir Ris, with doors 7 and 18 for the escalator to the exit, door 12 for the lift, and where the door number is on the platform door." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/explorer.png" alt="Explorer round Bedok: the button with four arrows beside the side buttons, stops as white dots ringed in green, and Bedok station's card open, towards Pasir Ris, with doors 7 and 18 for the escalator to the exit, door 12 for the lift, and where the door number is on the platform door." width="412" height="892" loading="lazy">
 <figcaption>Bedok station's card in Explorer: which doors are nearest the way out.</figcaption>
 </figure>
 
@@ -109,12 +116,43 @@ station for the doors to stand at on each platform.
 **Save the map for offline** in Explorer keeps Singapore's map on the phone, so
 the live map shows the streets with no connection.
 
+With no connection, [Navigate](nav.md)'s **Bus and train** plans on the phone, from
+the bus routes, trains and shuttles the app keeps, even straight after opening it.
+Times are estimates, and it says so; it plans again when you reconnect. From, To and
+a stop on the way find stations and bus stops with no connection, but not addresses.
+
 ## Trips with the screen off
 
 A [trip](get-off-alert.md) in the app carries on with the phone locked or the app
 in the background. While it runs, an **On a trip** notification shows where you
 are on it, with **End trip** to stop it, and the Get Off Alert sounds and buzzes
-over the lock screen. The screen doesn't have to stay on.
+"OFF" in Morse code over the lock screen. The screen doesn't have to stay on.
+
+Tap the trip's bar at the top for its timeline: every stop on the way, with a blue
+dot gliding along the line as you move, and the stops you've passed greyed out.
+**Change my way** and **Back to Navigate** are at the top of it.
+
+<figure>
+<img src="/screenshots/android/trip.png" alt="A trip's timeline: EW Line to Raffles Place, a blue dot at Bedok on a line down the stations, Alert beside Bugis and Get off beside Raffles Place, with Change my way above and the bar saying 9 stops to go, about 25 minutes left." width="412" height="892" loading="lazy">
+<figcaption>A trip's timeline, with your dot on the line.</figcaption>
+</figure>
+
+To start one from a bus's route, tap **Get Off Alert** there, then the stop you're
+getting off at.
+
+<figure>
+<img src="/screenshots/android/bus.png" alt="Bus 14's route: its operator and stops, a Get Off Alert button, then Whole route and From Bedok Int, its two directions, and its stops in order." width="412" height="892" loading="lazy">
+<figcaption>A bus's route, with Get Off Alert under its details.</figcaption>
+</figure>
+
+**Your trips** keeps each trip by the week. Tap one for how long you waited and rode,
+with **Plan again**, **Share** and **Delete**; under them are your stats, Trip Mix and
+Trip Modes.
+
+<figure>
+<img src="/screenshots/android/trips.png" alt="Your trips: a week with one trip, Bus 9 and the EW Line to One Raffles Place, then Stats, Trip Mix with walking, waiting and riding, Trip Modes with SBS Transit and MRT, and Clear Your trips." width="412" height="892" loading="lazy">
+<figcaption>Your trips, with your stats under them.</figcaption>
+</figure>
 
 The notification's icon shows what you're on: a bus, a train in its line's
 colour, or walking, with the bus or line beside the app's name.
@@ -135,6 +173,36 @@ a trip in the background to save battery. The trip starts whichever you choose.
 In **Settings**, **Get Off Alert's sound** can be **Earphones only**: with
 earphones in, the beeps play just in them; with none, the phone only buzzes.
 Never out loud on a quiet bus.
+
+## Settings
+
+At the top of **Settings**, **Find a setting** lists the settings with every word you
+type, by name or by what they do: `morse`, `tray` or `bahasa`. Tap one to go straight
+to it. In **You**, **Choose your birthday** opens a calendar to pick the date from.
+
+<figure>
+<img src="/screenshots/android/settings-find.png" alt="Settings with alert typed into Find a setting: Edge Tray buttons, Get Off Alert on a trip, Get Off Alert's sound and other settings, each with its group under it." width="412" height="892" loading="lazy">
+<figcaption>Find a setting.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/settings-you.png" alt="Settings' You: Language, with its flag, your name, a Choose your birthday button with a cake on it, and Birthday confetti." width="412" height="892" loading="lazy">
+<figcaption>You, with Choose your birthday.</figcaption>
+</figure>
+
+## Report a bug
+
+In **Settings** > **Help and extras**, **Report a bug** sends a note to Augy with up to
+three pictures. **Add pictures** picks them from your phone. **Screenshot a page**
+puts the report away so you can go to the page you mean, anywhere in the app, with a
+floating **Screenshot this page** button. That takes the whole page, top to bottom, and
+brings you back to your report. The button isn't in the picture, and what you've typed
+is still there. A map may come out blank.
+
+<figure>
+<img src="/screenshots/android/bug.png" alt="Report a bug: What went wrong?, How to reach you (optional), then Pictures with Add pictures and Screenshot a page, what's sent with it, and Send." width="412" height="892" loading="lazy">
+<figcaption>Report a bug, with Screenshot a page.</figcaption>
+</figure>
 
 ## Back, and the size of the text
 
@@ -338,8 +406,9 @@ access only when you pick **Use this phone's calendar**.
 
 ## SimplyGo, sharing and links
 
-- The [SimplyGo](install.md#simplygo) button opens the SimplyGo app itself,
-  rather than its store page.
+- The [SimplyGo](install.md#simplygo) button, with SimplyGo's logo, opens the
+  SimplyGo app itself, on its own as if from its icon, so its NFC works as usual.
+  It opens the store page only if the app isn't installed.
 - A trip's **MyICA** button, on a trip to Tuas or Woodlands
   Checkpoint (see [Get Off Alert](get-off-alert.md)), opens MyICA Mobile itself
   too, or its Play Store page if it isn't installed.

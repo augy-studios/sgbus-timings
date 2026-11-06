@@ -18,6 +18,7 @@ package org.uwuapps.sgbus;
 
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -44,23 +45,35 @@ public class OpenAppActivity extends Activity {
         super.onCreate(savedInstanceState);
         Uri link = getIntent().getData();
         String pkg = link == null ? null : APPS.get(link.getLastPathSegment());
-        if (pkg != null) open(pkg);
+        if (pkg != null) launch(getApplicationContext(), pkg);
         finish();
     }
 
-    private void open(String pkg) {
-        Intent launch = getPackageManager().getLaunchIntentForPackage(pkg);
-        if (launch != null) {
-            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(launch);
+    /** The package of an app by its name in a link, or null. */
+    static String packageOf(String name) {
+        return APPS.get(name);
+    }
+
+    /**
+     * Opens an app as its icon on the home screen does, in a task of its own and with nothing of
+     * this app's behind it. From the application's context, so that Android doesn't count it as
+     * started from a screen of this one: SimplyGo's NFC needs to be the app in front, on its own.
+     */
+    static void launch(Context context, String pkg) {
+        Intent launch = context.getPackageManager().getLaunchIntentForPackage(pkg);
+        if (launch != null && launch.getComponent() != null) {
+            context.startActivity(new Intent(Intent.ACTION_MAIN)
+                    .addCategory(Intent.CATEGORY_LAUNCHER)
+                    .setComponent(launch.getComponent())
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED));
             return;
         }
         // Not installed: its store page, in the Play Store app where there is one.
         try {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg))
+            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + pkg))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         } catch (ActivityNotFoundException e) {
-            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + pkg))
+            context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=" + pkg))
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
     }

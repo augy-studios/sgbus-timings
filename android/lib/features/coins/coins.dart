@@ -16,6 +16,7 @@ import '../../data/rewards.dart';
 import '../../data/store.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
+import '../../widgets/coin_icon.dart';
 import '../../widgets/common.dart';
 import '../nav/doors.dart' show lineColour;
 import '../share/share_card.dart';
@@ -236,7 +237,7 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
                 SgCard(
                   child: Column(children: [
                     Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-                      const Icon(Icons.toll, color: Color(0xFFE0A100)),
+                      const CoinIcon(size: 28),
                       const SizedBox(width: 6),
                       TweenAnimationBuilder<double>(
                         tween: Tween(end: balance.toDouble()),

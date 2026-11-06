@@ -164,8 +164,17 @@ public class TripPlugin extends Plugin {
         JSObject out = new JSObject();
         out.put("shown", Notifications.post(getContext(), quiet ? Notifications.GET_OFF_QUIET : Notifications.GET_OFF, "get-off",
                 call.getString("title", "Get Off Alert"), call.getString("body", ""), null));
+        Notifications.buzz(getContext(), Notifications.OFF);
         if (quiet) EarBeep.beep(getContext());
         call.resolve(out);
+    }
+
+    // A buzz with no notification from here: "board", two short ones, for Get ready to board and
+    // the like.
+    @PluginMethod
+    public void buzz(PluginCall call) {
+        Notifications.buzz(getContext(), "get_off".equals(call.getString("what", "")) ? Notifications.OFF : Notifications.BOARD_BUZZ);
+        call.resolve();
     }
 
     @PluginMethod

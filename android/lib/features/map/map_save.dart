@@ -3,12 +3,20 @@
 // out to (9) to the closest OpenFreeMap goes (14, drawn closer in from those), with the style,
 // sprites and label fonts, so the live map shows the streets with no connection, on a trip or a
 // walk. MapLibre keeps it as an offline region (its own database, never trimmed), in the light
-// and the dark style; Remove deletes both. Kept as sgbus_map_saved: { at, ids, bytes }.
+// and the dark style; Remove deletes both. Kept as sgbus_map_saved: { at, ids, bytes, week, capped }.
+//
+// Within OpenFreeMap's terms for an app's offline download: one that comes to maxBytes stops there
+// and keeps what it has. Its tiles are at a new address every week (its TileJSON names them): the one
+// used is kept with the download, and once a newer one's out, the sheet says so and Update map fetches
+// that week's, keeping the old until the new one's in.
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:maplibre_gl/maplibre_gl.dart';
 
+import '../../api/net.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
@@ -22,6 +30,12 @@ class MapSave {
   static const box = [1.15, 103.55, 1.5, 104.1];
   static const minZoom = 9.0;
   static const maxZoom = 14.0;
+  static const tileJson = 'https://tiles.openfreemap.org/planet';
+
+  // OpenFreeMap's limit for one download, stopped this far short of it, as tiles already asked for
+  // are still coming in.
+  static const maxBytes = 50 * 1024 * 1024;
+  static const bytesMargin = 1024 * 1024;
 
   static Map<String, dynamic> get meta => Store.I.map(metaKey);
   static bool get saved => meta['at'] is num;
@@ -45,22 +59,69 @@ class _SaveSheetState extends State<_SaveSheet> {
   int _bytes = 0;
   String _message = '';
   bool _cancelled = false;
+  bool _updating = false;
+  bool _capped = false;
+  String? _week; // this week's tiles, as OpenFreeMap names them
+  bool _newer = false;
+  final List<int> _ids = [];
+  Completer<void>? _current;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkWeek();
+  }
+
+  static Future<String?> _thisWeek() async {
+    try {
+      final r = await http.get(Uri.parse(MapSave.tileJson)).timeout(const Duration(seconds: 15));
+      if (r.statusCode != 200) return null;
+      final tiles = (jsonDecode(r.body) as Map)['tiles'] as List?;
+      return tiles == null || tiles.isEmpty ? null : '${tiles.first}';
+    } catch (_) {
+      return null; // Offline: the map saved still works.
+    }
+  }
+
+  Future<void> _checkWeek() async {
+    if (!MapSave.saved || Net.off.value) return;
+    final week = await _thisWeek();
+    if (!mounted || week == null) return;
+    setState(() {
+      _week = week;
+      _newer = MapSave.meta['week'] != week;
+    });
+  }
+
+  // Stops what's under way at once, rather than when it would have finished.
+  Future<void> _cancel() async {
+    setState(() => _cancelled = true);
+    if (_current?.isCompleted == false) _current!.complete();
+  }
 
   String _mb(num bytes) => '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
 
   Future<void> _download() async {
+    if (Net.off.value) {
+      setState(() => _message = tr('mapSave.offline', 'Saving the map needs a connection.'));
+      return;
+    }
     setState(() {
       _progress = 0;
       _message = '';
       _cancelled = false;
+      _capped = false;
+      _updating = MapSave.saved;
       _bytes = 0;
     });
-    final ids = <int>[];
+    final ids = _ids..clear();
     try {
+      final week = _week ?? await _thisWeek();
       // Light and dark, one after the other: the second's tiles are the first's, so it's mostly
       // its style and sprites.
       for (final (k, style) in [LiveMap.styleLight, LiveMap.styleDark].indexed) {
-        final done = Completer<void>();
+        final done = _current = Completer<void>();
+        int? regionId;
         final region = await downloadOfflineRegion(
           OfflineRegionDefinition(
             bounds: LatLngBounds(southwest: LatLng(MapSave.box[0], MapSave.box[1]), northeast: LatLng(MapSave.box[2], MapSave.box[3])),
@@ -76,6 +137,12 @@ class _SaveSheetState extends State<_SaveSheet> {
                 _progress = (k + e.progress / 100) / 2;
                 _bytes = e.completedResourceSize;
               });
+              // At OpenFreeMap's limit: stopped there, keeping what it has.
+              if (e.completedResourceSize >= MapSave.maxBytes - MapSave.bytesMargin && !done.isCompleted) {
+                _capped = true;
+                if (regionId != null) pauseOfflineRegionDownload(regionId).catchError((_) {});
+                done.complete();
+              }
             } else if (e is Success) {
               if (!done.isCompleted) done.complete();
             } else if (e is Error) {
@@ -83,21 +150,26 @@ class _SaveSheetState extends State<_SaveSheet> {
             }
           },
         );
+        regionId = region.id;
         ids.add(region.id);
         await done.future;
-        if (_cancelled) break;
+        if (_cancelled || _capped) break;
       }
       if (_cancelled) {
         for (final id in ids) {
           await deleteOfflineRegion(id).catchError((_) {});
         }
-        _message = tr('mapSave.cancelled', 'Cancelled. Nothing was kept.');
+        _message = _updating ? tr('mapSave.updateCancelled', 'Update cancelled. The map saved before is still there.') : tr('mapSave.cancelled', 'Cancelled. Nothing was kept.');
       } else {
         // The old download's regions, once the new one's in.
         for (final id in (MapSave.meta['ids'] as List? ?? const [])) {
           if (!ids.contains(id)) await deleteOfflineRegion((id as num).toInt()).catchError((_) {});
         }
-        Store.I.putJson(MapSave.metaKey, {'at': When.nowMs(), 'ids': ids, 'bytes': _bytes});
+        Store.I.putJson(MapSave.metaKey, {'at': When.nowMs(), 'ids': ids, 'bytes': _bytes, 'week': week, if (_capped) 'capped': true});
+        _newer = false;
+        if (_capped) {
+          _message = tr('mapSave.capped', "The map came near {mb}, OpenFreeMap's limit for one download, so it stopped there: the closest-in view of some places isn't saved.", {'mb': _mb(MapSave.maxBytes)});
+        }
       }
     } catch (e) {
       _message = tr('mapSave.failed', "Couldn't save the map: {why}", {'why': '$e'});
@@ -124,11 +196,11 @@ class _SaveSheetState extends State<_SaveSheet> {
           Text(tr('html.singapore_s_map_offline', 'Singapore’s map, offline'), style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
           if (_progress != null) ...[
-            Text('${tr('mapSave.saving', 'Saving the map… {done} of {total}', {'done': (_progress! * 100).round(), 'total': 100})} · ${_mb(_bytes)}'),
+            Text('${_updating ? tr('mapSave.updating', 'Updating the map… {done} of {total}', {'done': (_progress! * 100).round(), 'total': 100}) : tr('mapSave.saving', 'Saving the map… {done} of {total}', {'done': (_progress! * 100).round(), 'total': 100})} · ${_mb(_bytes)}'),
             const SizedBox(height: 10),
             LinearProgressIndicator(value: _progress),
             const SizedBox(height: 10),
-            TextButton(onPressed: () => setState(() => _cancelled = true), child: Text(tr('common.cancel', 'Cancel'))),
+            TextButton(onPressed: _cancelled ? null : _cancel, child: Text(tr('common.cancel', 'Cancel'))),
           ] else if (MapSave.saved) ...[
             Row(children: [
               Icon(Icons.download_done, color: sg.ok),
@@ -140,6 +212,9 @@ class _SaveSheetState extends State<_SaveSheet> {
                 ])),
               ),
             ]),
+            if (m['capped'] == true && _message.isEmpty)
+              Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('mapSave.cappedNote', "It stopped at OpenFreeMap's {mb} limit, so the closest-in view of some places isn't saved.", {'mb': _mb(MapSave.maxBytes)}), style: TextStyle(color: sg.muted))),
+            if (_newer) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('mapSave.newer', 'OpenFreeMap has a newer map out. Update to get it; the one saved still works offline meanwhile.'), style: TextStyle(color: sg.muted))),
             if (_message.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_message, style: TextStyle(color: sg.muted))),
             const SizedBox(height: 12),
             Wrap(spacing: 8, children: [

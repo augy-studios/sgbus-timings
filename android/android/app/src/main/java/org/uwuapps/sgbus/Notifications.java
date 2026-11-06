@@ -148,6 +148,27 @@ final class Notifications {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
     }
 
+    /**
+     * Buzzes a pattern itself, with the app in front or not: whatever a phone or a channel made
+     * long ago does with a notification's vibration, the alert still says OFF. As an alarm, so
+     * that "touch feedback off" doesn't silence it.
+     */
+    @SuppressWarnings("deprecation") // Vibrator.vibrate(long[], int, AudioAttributes), before Android 8
+    static void buzz(Context context, long[] pattern) {
+        android.os.Vibrator vibrator = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                ? context.getSystemService(android.os.VibratorManager.class).getDefaultVibrator()
+                : (android.os.Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibrator == null || !vibrator.hasVibrator()) return;
+        android.media.AudioAttributes alarm = new android.media.AudioAttributes.Builder()
+                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                .build();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(android.os.VibrationEffect.createWaveform(pattern, -1), alarm);
+        } else {
+            vibrator.vibrate(pattern, -1, alarm);
+        }
+    }
+
     static boolean allowed(Context context) {
         return NotificationManagerCompat.from(context).areNotificationsEnabled();
     }

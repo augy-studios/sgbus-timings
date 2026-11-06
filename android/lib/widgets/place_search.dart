@@ -7,9 +7,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../api/api.dart';
+import '../api/net.dart';
 import '../data/location.dart';
 import '../data/recents.dart';
 import '../data/when.dart';
+import '../data/stations.dart';
+import '../data/search.dart';
 import '../data/stops.dart';
 import '../i18n/i18n.dart';
 import '../theme/theme.dart';
@@ -55,6 +58,8 @@ class _PlaceSheet extends StatefulWidget {
 }
 
 class _PlaceSheetState extends State<_PlaceSheet> {
+  static final _mapsLink = RegExp(r'https?://(maps\.app\.goo\.gl|goo\.gl/maps|(www\.)?google\.[a-z.]+/maps|maps\.google\.[a-z.]+)', caseSensitive: false);
+
   late final _q = TextEditingController(text: widget.query ?? '');
 
   @override
@@ -78,19 +83,82 @@ class _PlaceSheetState extends State<_PlaceSheet> {
       });
       return;
     }
-    _timer = Timer(const Duration(milliseconds: 250), () async {
+    // A Google Maps link is pasted whole, so it's read at once and, once placed, picked.
+    final link = _mapsLink.hasMatch(q);
+    // Offline, only what the phone has: stations and bus stops.
+    if (Net.off.value && !link) {
+      _token++;
+      _onPhone(q);
+      return;
+    }
+    if (link) {
+      setState(() {
+        _found = [];
+        _note = Net.off.value
+            ? tr('nav.gmapsOffline', 'Reading a Google Maps link needs a connection. Pick a stop, a station or one of your places.')
+            : tr('nav.gmapsReading', 'Reading the Google Maps link…');
+      });
+      if (Net.off.value) return;
+    }
+    _timer = Timer(link ? Duration.zero : const Duration(milliseconds: 250), () async {
       final mine = ++_token;
       try {
         final r = await Api.get('places', query: {'q': q});
         if (mine != _token || !mounted) return;
+        final found = [for (final p in (r as List? ?? const [])) if (p is Map) PlacePick.from(p)];
+        if (link && found.length == 1) {
+          Navigator.pop(context, found.first);
+          return;
+        }
         setState(() {
-          _found = [for (final p in (r as List? ?? const [])) if (p is Map) PlacePick.from(p)];
+          _found = found;
           _note = '';
         });
+      } on ApiError catch (e) {
+        // Coordinates or a plus code outside Singapore: said, rather than an empty list.
+        if (mine != _token || !mounted) return;
+        setState(() {
+          _found = [];
+          _note = link ? (e.message.isNotEmpty ? e.message : tr('nav.gmapsFailed', "Couldn't read that Google Maps link. Please try again.")) : (e.status == 422 ? e.message : '');
+        });
       } catch (_) {
-        // Offline or the search down: nothing listed, as on the site.
-        if (mine == _token && mounted) setState(() => _found = []);
+        if (mine != _token || !mounted) return;
+        if (link) {
+          setState(() {
+            _found = [];
+            _note = tr('nav.gmapsOfflineTry', "Couldn't read that Google Maps link. Check your connection and try again.");
+          });
+        } else {
+          // Not reached: what the phone has, as offline.
+          _onPhone(q);
+        }
       }
+    });
+  }
+
+  // Places with no /api/places to ask: MRT and LRT stations and bus stops, as it lists them, an exact
+  // stop code first. No addresses or buildings, which are OneMap's.
+  Future<void> _onPhone(String q) async {
+    await Stops.load();
+    await Stations.load().catchError((_) {});
+    if (!mounted) return;
+    final lower = q.toLowerCase();
+    final stations = (Stations.all ?? const <Station>[])
+        .where((s) => s.name.toLowerCase().contains(lower) || s.codes.any((c) => c.toLowerCase() == lower))
+        .take(4)
+        .map((s) => PlacePick(label: '${s.name} station', lat: s.lat, lng: s.lng, kind: 'station', sub: s.codes.join(' / '), code: s.codes.join('/')));
+    final stops = StopSearch.match(q, limit: 6).stops.map((h) => h.stop).where((s) => s.lat != null && s.lng != null).map((s) => PlacePick(
+          label: s.name.isEmpty ? s.code : s.name,
+          lat: s.lat!,
+          lng: s.lng!,
+          kind: 'stop',
+          sub: '${tr('favs.stop', 'Bus stop {code}', {'code': s.code})}${s.road.isEmpty ? '' : ' · ${s.road}'}',
+          code: s.code,
+        ));
+    final exact = stops.where((s) => s.code == lower);
+    setState(() {
+      _found = [...exact, ...stations, ...stops.where((s) => s.code != lower)];
+      _note = '';
     });
   }
 

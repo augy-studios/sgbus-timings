@@ -9,7 +9,7 @@ publish_to: 'none'
 # app, 2.0.0 to 2.3.1 (4 to 26) the Capacitor one, and from 2.4.0 (27) this Flutter one. The
 # watch app (android/wear/) reads it here too, and desktop/package.json's and cli/package.json's
 # versions are raised to the same.
-version: 2.4.1+28
+version: 2.4.2+29
 
 environment:
   sdk: ^3.13.0
@@ -28,6 +28,7 @@ dependencies:
   image: ^4.12.0
   intl: ^0.20.3
   maplibre_gl: ^0.28.0
+  path_provider: ^2.1.5
   material_color_utilities: ^0.13.0
   qr_flutter: ^4.1.0
   sensors_plus: ^7.1.1
@@ -47,6 +48,10 @@ flutter:
     - assets/i18n/
     # The few words only the app says (Back twice, Material You's switch).
     - assets/i18n_app/
+    # SimplyGo's logo on its Edge Tray button, as the site's.
+    - assets/images/simplygo.png
+    # The flags in the language list, drawn from the site's (flag-icons, MIT; js/lang-pick.js).
+    - assets/images/flags/
   fonts:
     # The site's font, for the usual look. Material You uses the phone's own.
     - family: Jua

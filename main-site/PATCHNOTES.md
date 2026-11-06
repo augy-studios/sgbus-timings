@@ -1,11 +1,46 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 6 November 2026**
+**Latest update: 7 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 7 November 2026: The Android app catches up with the website (2.4.2)
+
+### Android app 2.4.2
+
+- **A handle to tilt and turn** - The button with the four arrows moves beside the other map buttons and now changes the angle: hold it and drag up or down to tilt the map, or left or right to turn it. It no longer slides the map, and it takes the place of the 3D button.
+- **Two fingers move the map while it follows you** - A slow two-finger drag now pans the map and stops it following you, where it used to do nothing.
+- **Pinching keeps following** - Zooming with two fingers no longer stops the map following you.
+- **The trip's timeline** - Tap the trip's bar for every stop on the way, with a blue dot gliding along the line as you move and the page keeping up with it.
+- **The Get Off Alert buzzes OFF** - On a trip, the alert always buzzes "OFF" in Morse code, with the app open or not, and the bar says how many stops are left and the minutes to go.
+- **Get Off Alert from a bus's route** - Tap Get Off Alert on a route, then the stop you're getting off at.
+- **Your trips in full** - Trips by the week, each with how long you waited and rode, Plan again, Share and Delete, Trip Modes, and Clear Your trips.
+- **Find a setting** - A box at the top of Settings finds any setting by name or by what it does.
+- **Language, at once** - A new language shows straight away on every screen open, and the list has its flags.
+- **Birthday button** - Choose your birthday is now a proper button.
+- **Names beside the icons** - On a tablet, each Edge Tray button says what it is.
+- **The gold uwuCoin and SimplyGo's logo** - Back on their Edge Tray buttons.
+- **SimplyGo opens on its own** - As if from its own icon, not under SG Bus Timings, so its NFC works properly. MyICA too.
+- **Screenshot a page** - Report a bug now lets you go to the page you mean, anywhere in the app, and takes all of it, top to bottom, with what you've typed kept. The first box's label is no longer cut off.
+- **More on a trip** - Back to Navigate, the other buses that go straight there, which way round on the Circle Line, walking or cycling the rest when that's quicker, and a word when your location's weak or no other way is running.
+- **Google Maps links** - Paste one into From, To or a place, and it's read and picked straight away.
+- **Bus and train with no connection** - Navigate plans on your phone when you're offline, even straight after opening the app, with the same ways as the website, and plans again when you reconnect. From, To and a stop on the way find stations and bus stops offline too.
+- **Shuttle buses and the Causeway in Navigate** - A way's shuttle says what it costs, who may ride it and when to board, with its times a tap away, and a way across the Causeway has its immigration steps and the time they're counted as.
+- **A last bus lost on a trip** - The trip looks for another way from where your last ride ends, says what to do first in words, and switches by itself with Undo, or offers Navigate from here or See all ways when there's none.
+- **A faster way, with its reason** - On a ride it looks from your next stop, with the first bus by its live timing, says why (traffic, or a long wait), and sends a notification once.
+- **The saved map** - It says when OpenFreeMap has a newer map, Cancel stops a download straight away, an update cancelled keeps the map you had, and a download stops at OpenFreeMap's limit and keeps what it has.
+- **Share in Navigate** - Share my ETA, these directions, the start or the end, and a share card says straight away when you're offline.
+- **Bus only's stops** - Pick a stop near you or near a saved place, with those that have a bus straight there listed first and marked, and a bus opened from a route or a journey says how far it still has to go.
+- **Smaller things** - Select all for each kind in Sync, Watch the celebration again in Your colours, the tip about holding a button, and more stops on the tours.
+
+### Desktop app and Linux command line
+
+- No changes: they stay on 2.4.0.
 
 ---
 

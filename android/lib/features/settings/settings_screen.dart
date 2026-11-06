@@ -16,20 +16,53 @@ import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
+import 'settings_find.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
-  static void open([String? group]) {
+  static void open([String? group, String? setting]) {
     if (group == null) {
       AppNav.push(const SettingsScreen(), name: 'settings');
     } else {
-      AppNav.push(SettingsGroup(group: group), name: 'settings/$group');
+      AppNav.push(SettingsGroup(group: group, setting: setting), name: 'settings/$group');
+    }
+  }
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String _typed = '';
+
+  String _groupName(String id) => switch (id) {
+        'theme' => tr('theme.title', 'Theme'),
+        'you' => tr('settings.you', 'You'),
+        'pages' => tr('settings.pages_and_edge_tray', 'Pages and Edge Tray'),
+        'trips' => tr('settings.trips_and_alerts', 'Trips and alerts'),
+        'navigate' => tr('settings.navigate', 'Navigate'),
+        'help' => tr('settings.help_and_extras', 'Help and extras'),
+        'achievements' => tr('settings.achievements', 'Achievements'),
+        _ => tr('settings.sync', 'Sync'),
+      };
+
+  void _openFound(FoundSetting s) {
+    switch (s.group) {
+      case 'theme':
+        AppNav.open('theme');
+      case 'achievements':
+        AppNav.open('achievements');
+      case 'sync':
+        AppNav.open('sync');
+      default:
+        SettingsScreen.open(s.group, s.label());
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final found = SettingsFind.find(_typed, _groupName);
     final groups = [
       ('you', Icons.person_outline, tr('settings.you', 'You'), tr('settings.name_birthday_confetti_places_calendar', 'Language · Name · Birthday · Confetti · Places · Calendar')),
       ('pages', Icons.view_sidebar_outlined, tr('settings.pages_and_edge_tray', 'Pages and Edge Tray'),
@@ -44,6 +77,18 @@ class SettingsScreen extends StatelessWidget {
     return SgScaffold(
       title: tr('settings.settings', 'Settings'),
       body: ListView(padding: const EdgeInsets.fromLTRB(12, 0, 12, 24), children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+          child: TextField(
+            onChanged: (v) => setState(() => _typed = v),
+            decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: tr('settings.find_a_setting', 'Find a setting')),
+          ),
+        ),
+        if (_typed.trim().isNotEmpty) ...[
+          for (final s in found)
+            ListTile(title: Text(s.label()), subtitle: Text(_groupName(s.group)), trailing: const Icon(Icons.chevron_right), onTap: () => _openFound(s)),
+          if (found.isEmpty) EmptyNote(tr('settings.findNone', 'No setting by that name. Try a word such as tray, alert or sync.')),
+        ] else ...[
         ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: Text(tr('theme.title', 'Theme')),
@@ -65,6 +110,7 @@ class SettingsScreen extends StatelessWidget {
               }
             },
           ),
+        ],
       ]),
     );
   }
@@ -100,8 +146,11 @@ class Choice<T> extends StatelessWidget {
 }
 
 class SettingsGroup extends StatefulWidget {
-  const SettingsGroup({super.key, required this.group});
+  const SettingsGroup({super.key, required this.group, this.setting});
   final String group;
+
+  /// The setting found with Find a setting, by its name: scrolled to.
+  final String? setting;
 
   @override
   State<SettingsGroup> createState() => _SettingsGroupState();
@@ -110,7 +159,47 @@ class SettingsGroup extends StatefulWidget {
 class _SettingsGroupState extends State<SettingsGroup> {
   late final _name = TextEditingController(text: Store.I.get('sgbus_name') ?? '');
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.setting != null) WidgetsBinding.instance.addPostFrameCallback((_) => _showSetting());
+  }
+
+  // Scrolls to the words that name the setting found, wherever in the group they are.
+  void _showSetting() {
+    if (!mounted) return;
+    BuildContext? at;
+    void look(Element e) {
+      if (at != null) return;
+      final w = e.widget;
+      final words = w is Text ? w.data : (w is InputDecorator ? w.decoration.labelText : null);
+      if (words == widget.setting) {
+        at = e;
+        return;
+      }
+      e.visitChildren(look);
+    }
+
+    context.visitChildElements(look);
+    final found = at;
+    if (found != null) Scrollable.ensureVisible(found, alignment: 0.1, duration: const Duration(milliseconds: 250));
+  }
+
   void _set(String key, String? v) => setState(() => Store.I.put(key, v));
+
+  // In the site's order, each with its flag: the United Kingdom for English, China for Chinese,
+  // Malaysia for Malay and India for Tamil.
+  static final _listed = [
+    (I18n.langs.firstWhere((l) => l.code == 'en'), 'gb'),
+    (I18n.langs.firstWhere((l) => l.code == 'zh-SG'), 'cn'),
+    (I18n.langs.firstWhere((l) => l.code == 'ms'), 'my'),
+    (I18n.langs.firstWhere((l) => l.code == 'ta'), 'in'),
+  ];
+
+  static Widget _flag(String code) => ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: Image.asset('assets/images/flags/$code.png', width: 32, height: 24, fit: BoxFit.cover, excludeFromSemantics: true),
+      );
   String _onOff(String key, {String off = 'off'}) => Store.I.get(key) == off ? 'off' : 'on';
 
   List<(String, String)> get _onOffOptions => [('on', tr('settings.on', 'On')), ('off', tr('settings.off', 'Off'))];
@@ -120,11 +209,30 @@ class _SettingsGroupState extends State<SettingsGroup> {
       context: context,
       builder: (ctx) => SafeArea(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          for (final l in I18n.langs)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Align(alignment: Alignment.centerLeft, child: Text(tr('lang.title', 'Choose a language'), style: Theme.of(ctx).textTheme.titleMedium)),
+          ),
+          for (final l in _listed)
             ListTile(
-              title: Text(l.name),
-              trailing: I18n.I.lang == l.code ? const Icon(Icons.check) : null,
-              onTap: () => Navigator.pop(ctx, l.code),
+              leading: _flag(l.$2),
+              title: Text(l.$1.name),
+              trailing: I18n.I.lang == l.$1.code ? const Icon(Icons.check) : null,
+              onTap: () => Navigator.pop(ctx, l.$1.code),
+            ),
+          // Not English: a way to say a translation reads wrong, as an email to Augy.
+          if (I18n.I.lang != 'en')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+              child: Row(children: [
+                Flexible(child: Text(tr('lang.feedback.ask', 'Think a translation looks wrong?'), style: TextStyle(color: context.sg.muted, fontSize: 13))),
+                TextButton(
+                  onPressed: () => Native.call('SgBus', 'openLink', {
+                    'url': 'mailto:augy@augystudios.com?subject=${Uri.encodeComponent('SG Bus Timings translation (${I18n.I.current.name})')}',
+                  }).catchError((_) => null),
+                  child: Text(tr('lang.feedback.tell', 'Tell us.')),
+                ),
+              ]),
             ),
         ]),
       ),
@@ -143,6 +251,7 @@ class _SettingsGroupState extends State<SettingsGroup> {
         contentPadding: EdgeInsets.zero,
         title: Text(tr('settings.language', 'Language')),
         subtitle: Text(I18n.I.current.name),
+        leading: _flag(_listed.firstWhere((l) => l.$1.code == I18n.I.lang, orElse: () => _listed.first).$2),
         trailing: const Icon(Icons.chevron_right),
         onTap: _pickLanguage,
       ),
@@ -157,19 +266,22 @@ class _SettingsGroupState extends State<SettingsGroup> {
         Expanded(
           child: Text(tr('settings.birthday', 'Birthday'), style: Theme.of(context).textTheme.titleSmall),
         ),
-        TextButton(
-          onPressed: () async {
-            final now = DateTime.now();
-            final initial = DateTime.tryParse(birthday) ?? DateTime(now.year - 20, now.month, now.day);
-            final d = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(now.year - 130), lastDate: now);
-            if (d != null) {
-              _set('sgbus_birthday', '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
-            }
-          },
-          child: Text(birthday.isEmpty ? '—' : birthday),
-        ),
         if (birthday.isNotEmpty) TextButton(onPressed: () => _set('sgbus_birthday', null), child: Text(tr('settings.clear', 'Clear'))),
       ]),
+      const SizedBox(height: 4),
+      FilledButton.tonalIcon(
+        onPressed: () async {
+          final now = DateTime.now();
+          final initial = DateTime.tryParse(birthday) ?? DateTime(now.year - 20, now.month, now.day);
+          final d = await showDatePicker(context: context, initialDate: initial, firstDate: DateTime(now.year - 130), lastDate: now);
+          if (d != null) {
+            _set('sgbus_birthday', '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}');
+          }
+        },
+        icon: const Icon(Icons.cake_outlined),
+        label: Text(birthday.isEmpty ? tr('settings.birthday_pick', 'Choose your birthday') : birthday),
+      ),
+      const SizedBox(height: 6),
       Text(tr('settings.on_your_birthday_the_greeting', "On your birthday, the greeting wishes you a happy one, with your age if the year's set."),
           style: TextStyle(color: context.sg.muted, fontSize: 13)),
       Choice(
@@ -274,7 +386,7 @@ class _SettingsGroupState extends State<SettingsGroup> {
           value: _onOff('sgbus.getOffAlert'),
           options: _onOffOptions,
           onChanged: (v) => _set('sgbus.getOffAlert', v == 'on' ? null : 'off'),
-          note: tr('settings.two_stops_before_you_get', 'Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification. Keep the site open on a trip.'),
+          note: tr('settings.get_off_note_app', 'Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification, even with the screen off.'),
         ),
         if (Native.has('earphones'))
           Choice(
@@ -383,7 +495,14 @@ class _SettingsGroupState extends State<SettingsGroup> {
       'navigate' => (tr('settings.navigate', 'Navigate'), _navigate()),
       _ => (tr('settings.help_and_extras', 'Help and extras'), _help()),
     };
-    return SgScaffold(title: title, body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: body));
+    // All built at once, so that Find a setting can scroll to any of it.
+    return SgScaffold(
+      title: title,
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
+      ),
+    );
   }
 }
 

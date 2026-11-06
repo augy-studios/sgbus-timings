@@ -5,6 +5,7 @@ import 'package:sgbus_timings/features/favs/favs_page.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
 import 'package:sgbus_timings/features/map/live_map.dart';
+import 'package:sgbus_timings/features/misc/misc.dart';
 import 'package:sgbus_timings/data/doors.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -66,6 +67,13 @@ void main() {
     await shot(t, 'theme-dark', () => const ThemeScreen(), brightness: Brightness.dark);
     await shot(t, 'settings', () => const SettingsScreen());
     await shot(t, 'settings-pages', () => const SettingsGroup(group: 'pages'));
+    await shot(t, 'settings-you', () => const SettingsGroup(group: 'you'));
+    await shot(t, 'settings-find', () => const SettingsScreen(), then: (t) async {
+      await t.enterText(find.byType(TextField).first, 'alert');
+      await settle(t);
+    });
+    await shot(t, 'bug', () => const BugReport());
+    await shot(t, 'tray-wide', () => onPage('glance', const GlancePage()), size: const Size(900, 1200));
   });
 
   testWidgets('navigate', timeout: _t, (t) async {

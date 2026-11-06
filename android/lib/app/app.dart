@@ -30,7 +30,7 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     AppLook.I.addListener(_redraw);
-    I18n.I.addListener(_redraw);
+    I18n.I.addListener(_newLanguage);
     // Links the app's opened with, now and later, once the first frame's up.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _open = Native.on('SgBus', 'open', (d) {
@@ -54,7 +54,7 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     AppLook.I.removeListener(_redraw);
-    I18n.I.removeListener(_redraw);
+    I18n.I.removeListener(_newLanguage);
     _open?.cancel();
     _language?.cancel();
     super.dispose();
@@ -71,6 +71,18 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
   }
 
   void _redraw() => setState(() {});
+
+  // A new language reaches every screen that's open, not only the one on top: a screen asks for
+  // its words as it's built, and those under it wouldn't be built again till you came back in.
+  void _newLanguage() {
+    setState(() {});
+    void redo(Element e) {
+      e.markNeedsBuild();
+      e.visitChildren(redo);
+    }
+
+    (context as Element).visitChildren(redo);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +113,21 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
                 statusBarColor: Colors.transparent,
                 systemNavigationBarColor: Colors.transparent,
               ),
-              // The whole app, for a bug report's Screenshot this page; in picture-in-picture,
-              // what's wanted small (features/misc/extras.dart).
-              child: ValueListenableBuilder(
-                valueListenable: AppNav.pip,
-                builder: (context, small, _) => RepaintBoundary(key: AppNav.shotKey, child: (small ? AppNav.pipView?.call() : null) ?? child!),
-              ),
+              // The whole app, for a bug report's Screenshot a page, whose button floats over it
+              // and so stays out of the picture; in picture-in-picture, what's wanted small
+              // (features/misc/extras.dart).
+              child: Stack(children: [
+                Positioned.fill(
+                  child: ValueListenableBuilder(
+                    valueListenable: AppNav.pip,
+                    builder: (context, small, _) => RepaintBoundary(key: AppNav.shotKey, child: (small ? AppNav.pipView?.call() : null) ?? child!),
+                  ),
+                ),
+                ValueListenableBuilder(
+                  valueListenable: AppNav.shooting,
+                  builder: (context, on, _) => on && AppNav.shotBar != null ? AppNav.shotBar!() : const SizedBox.shrink(),
+                ),
+              ]),
             );
           },
           home: Shell(pages: widget.pages),

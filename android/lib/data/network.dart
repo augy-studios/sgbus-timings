@@ -2,12 +2,17 @@
 // each service calls at, in order, per direction, with first/last bus times. The route view,
 // the bus picker, the route planner and the first/last bus lines all read from here. Ported
 // from the site's js/network.js (BusNet), itself from the Telegram bot's bus_routes.py.
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 
 import '../api/api.dart';
 import '../i18n/i18n.dart';
 import 'geo.dart';
 import 'stops.dart';
+import 'package:path_provider/path_provider.dart';
+import 'nav_core.dart' show RouteRun, RouteService;
 
 class ServiceInfo {
   ServiceInfo(this.op, this.cat, this.loop, this.dirs);
@@ -135,15 +140,58 @@ class BusNet {
     ready = true;
   }
 
+  // The bus routes kept on the phone as they came, so that the planners work with no connection.
+  // In a file: they're megabytes, too much to load with the app's settings each time it opens.
+  static Future<File?> _keptFile() async {
+    try {
+      final dir = await getApplicationSupportDirectory();
+      return File('${dir.path}/bus-routes.json');
+    } catch (_) {
+      return null; // Tests and screenshots.
+    }
+  }
+
   static Future<void> load() => ready ? Future.value() : _loading ??= () async {
         try {
-          final payload = await Api.map('bus-routes');
-          index(payload);
+          final payload = await Api.get('bus-routes');
+          if (payload is! Map) throw const FormatException('bus-routes');
+          index(Map<String, dynamic>.from(payload));
+          if (Api.fake == null) {
+            unawaited(() async {
+              final f = await _keptFile();
+              await f?.writeAsString(jsonEncode(payload));
+            }().catchError((_) {}));
+          }
         } catch (e) {
+          // Not reached: the copy kept last time.
+          final kept = await _keptFile();
+          if (kept != null && await kept.exists()) {
+            try {
+              index(Map<String, dynamic>.from(jsonDecode(await kept.readAsString()) as Map));
+              return;
+            } catch (_) {
+              // Not readable: as if there were none.
+            }
+          }
           _loading = null;
           rethrow;
         }
       }();
+
+  /// What's needed to plan on the phone (data/nav_core.dart).
+  static Map<String, RouteService> forGraph() => {
+        for (final e in _runs.entries)
+          e.key: () {
+            final info = _services[e.key];
+            final dirs = info?.dirs.keys.toList() ?? <int>[];
+            dirs.sort((a, b) => '$a'.compareTo('$b'));
+            return RouteService(
+              dirs.isEmpty ? const [] : info!.dirs[dirs.first]!,
+              (info?.loop ?? '').isNotEmpty,
+              {for (final d in e.value.entries) d.key: RouteRun(d.value.stops, d.value.times)},
+            );
+          }(),
+      };
 
   static String stopName(String code) => Stops.of(code)?.name ?? code;
   static String stopLabel(String code) => Stops.of(code) != null ? '${Stops.of(code)!.name} ($code)' : code;

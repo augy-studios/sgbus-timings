@@ -7,6 +7,11 @@ class AppNav {
   AppNav._();
   static final navigatorKey = GlobalKey<NavigatorState>();
   static final shotKey = GlobalKey();
+
+  /// A bug report's Screenshot a page under way: the app's yours to go to the page you want, with
+  /// a button over it for taking it (features/misc/misc.dart).
+  static final shooting = ValueNotifier<bool>(false);
+  static Widget Function()? shotBar;
   static final messengerKey = GlobalKey<ScaffoldMessengerState>();
 
   static NavigatorState? get nav => navigatorKey.currentState;

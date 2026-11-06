@@ -85,11 +85,28 @@ void registerFeatures() {
   AppNav.register('startTrip', (a) {
     final n = NavState.I;
     final t = tripFromNav(a['option'] as Map<String, dynamic>, n.from, n.to);
-    if (t != null) Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null, via: n.via?.toJson());
+    if (t != null) {
+      Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null, via: n.via?.toJson(), origin: {
+        'kind': 'nav',
+        'from': n.from?.here == false ? n.from!.toJson() : null,
+        'to': n.to?.here == false ? n.to!.toJson() : null,
+        'via': n.via?.toJson(),
+      });
+    }
   });
   AppNav.register('startTripLegs', (a) {
     final end = a['end'] as String;
-    Trip.I.start(title: tr('trip.to', 'To {to}', {'to': Stops.nameOf(end)}), legs: tripFromLegs((a['legs'] as List).cast()));
+    Trip.I.start(title: tr('trip.to', 'To {to}', {'to': Stops.nameOf(end)}), legs: tripFromLegs((a['legs'] as List).cast()), origin: {'kind': 'route', 'start': a['start'], 'end': end});
+  });
+  AppNav.register('celebrationAgain', (_) => Celebration.open(tr('eggs.lines.text', 'You’ve ridden every MRT and LRT line.')));
+  // Back to Navigate: the screen a trip was started from.
+  AppNav.register('tripOrigin', (a) {
+    final o = a['origin'] as Map;
+    if (o['kind'] == 'route') {
+      openPlanner(start: o['start'] as String?, end: o['end'] as String?);
+    } else {
+      openNav(from: NavEnd.from(o['from']), to: NavEnd.from(o['to']), via: NavEnd.from(o['via']));
+    }
   });
   Alerts.listen();
   Alerts.startBar();

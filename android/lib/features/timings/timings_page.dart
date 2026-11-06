@@ -187,9 +187,9 @@ class _TimingsPageState extends State<TimingsPage> {
               prefixIcon: const Icon(Icons.search),
               suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (q.isNotEmpty) IconButton(tooltip: tr('settings.clear', 'Clear'), icon: const Icon(Icons.close), onPressed: _q.clear),
-                if (Native.has('listen')) IconButton(tooltip: tr('timings.search_by_voice', 'Search by voice'), icon: const Icon(Icons.mic_none), onPressed: _listen),
+                if (Native.has('listen')) TourTarget(id: 'timings.voice', child: IconButton(tooltip: tr('timings.search_by_voice', 'Search by voice'), icon: const Icon(Icons.mic_none), onPressed: _listen)),
                 if (Native.has('scan'))
-                  IconButton(tooltip: tr('timings.scan_a_stops_code', "Scan a stop's code"), icon: const Icon(Icons.photo_camera_outlined), onPressed: () => AppNav.open('scan')),
+                  TourTarget(id: 'timings.scan', child: IconButton(tooltip: tr('timings.scan_a_stops_code', "Scan a stop's code"), icon: const Icon(Icons.photo_camera_outlined), onPressed: () => AppNav.open('scan'))),
               ]),
             ),
           )),

@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../api/api.dart';
+import '../../api/net.dart';
 import '../../app/nav.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
@@ -59,6 +60,14 @@ class _ShareCardState extends State<ShareCard> {
   }
 
   Future<void> _make() async {
+    // Offline, no short link can be made: said at once, rather than after the fetch fails.
+    if (widget.made == null && Net.off.value) {
+      final nearby = (Native.has('sharetap') || Native.has('sharenearby')) && widget.kind != 'eta' && widget.kind != 'feat';
+      setState(() => _error = nearby
+          ? tr('share.offlineNearby', "You're offline, so there's no short link to send. Offline Sharing still sends it to a phone nearby.")
+          : tr('share.offline', "You're offline, so there's no short link to send. Try again when you reconnect."));
+      return;
+    }
     try {
       final body = widget.made != null ? await widget.made! : Map<String, dynamic>.from((await Api.post('share', {'kind': widget.kind, 'data': widget.data})) as Map);
       if (!mounted) return;
@@ -119,7 +128,7 @@ class _ShareCardState extends State<ShareCard> {
           const SizedBox(height: 10),
           if (_error != null) Text(_error!, style: TextStyle(color: sg.error)),
           if (_url != null) SelectableText(_url!, style: TextStyle(color: sg.brandInk)),
-          if (_url == null && _error == null) const LinearProgressIndicator(),
+          if (_url == null && _error == null) ...[Text(tr('share.making', 'Making a short link…'), style: TextStyle(color: sg.muted)), const SizedBox(height: 4), const LinearProgressIndicator()],
           const SizedBox(height: 12),
           Wrap(spacing: 8, runSpacing: 8, alignment: WrapAlignment.center, children: [
             Pill(icon: Icons.ios_share, label: tr('html.more', 'More'), onTap: _url == null ? null : () => _send()),

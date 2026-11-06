@@ -12,7 +12,10 @@ import '../../app/nav.dart';
 import '../../data/arrivals.dart';
 import '../../data/favs.dart';
 import '../../data/journeys.dart';
+import '../../data/location.dart';
 import '../../data/network.dart';
+import '../../data/places.dart';
+import '../../data/search.dart';
 import '../../data/stops.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
@@ -115,14 +118,59 @@ class _PlannerTabState extends State<PlannerTab> {
     if (mounted) setState(() {});
   }
 
+  // The buses straight between a stop and the other end already set, which mark it Direct.
+  Map<String, List<String>>? _directFor(String field, Iterable<String> codes) {
+    final other = field == 'start' ? p.end : p.start;
+    if (other == null || !BusNet.ready) return null;
+    final out = <String, List<String>>{};
+    for (final c in codes) {
+      final buses = field == 'start' ? Journeys.directServices(c, other) : Journeys.directServices(other, c);
+      if (buses.isNotEmpty) out[c] = buses;
+    }
+    return out;
+  }
+
+  String _directWay(String field) {
+    final other = field == 'start' ? p.end! : p.start!;
+    final name = Stops.nameOf(other).isEmpty ? other : Stops.nameOf(other);
+    return field == 'start' ? tr('planner.straightTo', 'straight to {stop}', {'stop': name}) : tr('planner.straightFrom', 'straight from {stop}', {'stop': name});
+  }
+
+  // Those with a direct bus first; otherwise in the order they came.
+  static List<String> _directFirst(List<String> codes, Map<String, List<String>>? direct) =>
+      direct == null ? codes : [...codes.where(direct.containsKey), ...codes.where((c) => !direct.containsKey(c))];
+
   Future<void> _pickStop(String field) async {
     final q = TextEditingController();
+    // Stops near you or a place, to pick from: the pin, or a saved place that isn't a stop.
+    String? nearTitle;
+    List<({Stop stop, double metres})> near = const [];
+    String nearNote = '';
     final code = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
-        final v = q.text.trim().toLowerCase();
-        final hits = v.isEmpty ? <Stop>[] : Stops.all.where((s) => s.code.startsWith(v) || s.find.contains(v)).take(30).toList();
+        final v = q.text.trim();
+        final hits = v.isEmpty ? <StopHit>[] : StopSearch.match(v, limit: 30).stops;
+        final hitCodes = [for (final h in hits) h.stop.code];
+        final direct = _directFor(field, hitCodes);
+        final sorted = _directFirst(hitCodes, direct);
+        final nearDirect = _directFor(field, near.map((n) => n.stop.code));
+        final nearCodes = _directFirst([for (final n in near) n.stop.code], nearDirect);
+
+        void offer(String title, double lat, double lng) {
+          near = Stops.near(lat, lng);
+          final d = _directFor(field, near.map((n) => n.stop.code));
+          nearNote = d == null
+              ? ''
+              : d.isEmpty
+                  ? tr('planner.theseNone', 'None of these has a bus {way}, so the planner will look for journeys with a change.', {'way': _directWay(field)})
+                  : d.length == 1
+                      ? tr('planner.theseOne', 'One of these has a bus {way}, listed first.', {'way': _directWay(field)})
+                      : tr('planner.theseMany', '{n} of these have a bus {way}, listed first.', {'n': d.length, 'way': _directWay(field)});
+          set(() => nearTitle = title);
+        }
+
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
           child: DraggableScrollableSheet(
@@ -135,8 +183,57 @@ class _PlannerTabState extends State<PlannerTab> {
                 onChanged: (_) => set(() {}),
                 decoration: InputDecoration(prefixIcon: const Icon(Icons.search), hintText: tr('timings.search_by_name_or_code', 'Search by name or code (e.g. Bedok Interchange or 84009)')),
               ),
-              if (v.isEmpty) StopRows(stops: [for (final f in Favs.I.stops()) StopRowItem(f.code)], onPick: (c) => Navigator.pop(ctx, c)),
-              StopRows(stops: [for (final s in hits) StopRowItem(s.code)], pin: false, onPick: (c) => Navigator.pop(ctx, c)),
+              if (v.isEmpty) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Wrap(spacing: 8, runSpacing: 6, children: [
+                    Pill(
+                      icon: Icons.my_location,
+                      label: field == 'start' ? tr('planner.pick_a_start_stop_near', 'Pick a start stop near me') : tr('planner.pick_an_end_stop_near', 'Pick an end stop near me'),
+                      onTap: () async {
+                        try {
+                          final fix = await Locate.here(toDo: tr('location.toFindStops', 'to find stops near you'));
+                          await Stops.load();
+                          offer(field == 'start' ? tr('planner.nearYouStart', 'Stops near you: pick the start') : tr('planner.nearYouEnd', 'Stops near you: pick the end'), fix.lat, fix.lng);
+                        } on LocationError catch (e) {
+                          AppNav.say(e.message);
+                        }
+                      },
+                    ),
+                    for (final place in Places.all())
+                      Pill(
+                        icon: place.icon,
+                        label: place.name,
+                        onTap: () {
+                          if (place.stop != null) return Navigator.pop(ctx, place.stop);
+                          offer(field == 'start' ? tr('planner.nearPlaceStart', 'Stops near {place}: pick the start', {'place': place.name}) : tr('planner.nearPlaceEnd', 'Stops near {place}: pick the end', {'place': place.name}), place.lat, place.lng);
+                        },
+                      ),
+                  ]),
+                ),
+                if (nearTitle != null) ...[
+                  SectionLabel(nearTitle!),
+                  if (nearNote.isNotEmpty) Text(nearNote, style: TextStyle(color: context.sg.muted, fontSize: 13)),
+                  StopRows(
+                    stops: [for (final c in nearCodes) StopRowItem(c, distance: near.firstWhere((n) => n.stop.code == c).metres)],
+                    pin: false,
+                    direct: nearDirect,
+                    onPick: (c) => Navigator.pop(ctx, c),
+                  ),
+                ] else if (Favs.I.stops().isNotEmpty)
+                  StopRows(stops: [for (final f in Favs.I.stops()) StopRowItem(f.code)], direct: _directFor(field, Favs.I.stops().map((f) => f.code)), onPick: (c) => Navigator.pop(ctx, c)),
+              ],
+              if (direct != null && direct.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    direct.length == 1
+                        ? tr('planner.directOne', 'One has a bus {way}, listed first.', {'way': _directWay(field)})
+                        : tr('planner.directMany', '{n} have a bus {way}, listed first.', {'n': direct.length, 'way': _directWay(field)}),
+                    style: TextStyle(color: context.sg.muted, fontSize: 13),
+                  ),
+                ),
+              if (v.isNotEmpty) StopRows(stops: [for (final c in sorted) StopRowItem(c)], pin: false, direct: direct, onPick: (c) => Navigator.pop(ctx, c)),
             ]),
           ),
         );
@@ -235,7 +332,7 @@ class _PlannerTabState extends State<PlannerTab> {
         if (clockText != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(clockText, style: TextStyle(color: sg.muted))),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 8, children: [
-          for (final no in list) Pill(label: no, icon: favs.contains(no) ? Icons.star_rounded : null, onTap: () => StopScreen.open(s, service: no, ctx: const StopContext('route'))),
+          for (final no in list) Pill(label: no, icon: favs.contains(no) ? Icons.star_rounded : null, onTap: () => StopScreen.open(s, service: no, ctx: StopContext('route', note: _routeNote(s, e, no)))),
         ]),
         ?idleNote,
         ?customsLine,
@@ -329,6 +426,29 @@ class _PlannerTabState extends State<PlannerTab> {
     );
   }
 
+  // How far a bus opened off a route still has to go.
+  String? _routeNote(String start, String end, String bus) {
+    final count = BusNet.stopsTo(bus, start, end);
+    if (count == null) return null;
+    final text = tr('planner.busStopsTo', 'Bus {no}: {stops} to {stop}', {'no': bus, 'stops': _stops(count.stops), 'stop': _stopText(end)});
+    final via = count.via;
+    return via == null ? text : tr('planner.viaTerminus', '{text}, going round via its terminus at {stop}', {'text': text, 'stop': Stops.nameOf(via).isEmpty ? via : Stops.nameOf(via)});
+  }
+
+  // And off a journey: the stops to where you get off, and what comes after that.
+  String? _journeyNote(List<Leg> legs, int index, String end) {
+    final details = legs.skip(index).map(Journeys.legDetails).toList();
+    if (details.any((d) => d == null)) return null;
+    final leg = legs[index];
+    final first = tr('planner.busStopsTo', 'Bus {no}: {stops} to {stop}', {'no': leg.bus, 'stops': _stops(details.first!.stops), 'stop': _stopText(leg.to)});
+    if (index + 1 < legs.length) {
+      final left = details.fold<int>(0, (a, d) => a + d!.stops);
+      return tr('planner.thenChange', '{first}, then change to {bus} · {stops} left in the journey', {'first': first, 'bus': legs[index + 1].bus, 'stops': _stops(left)});
+    }
+    if (leg.to != end) return tr('planner.thenWalk', '{first}, then a short walk to {stop}', {'first': first, 'stop': _stopText(end)});
+    return tr('planner.theEnd', '{first}, the end of your journey', {'first': first});
+  }
+
   List<Widget> _journey(List<Leg> legs) {
     final sg = context.sg;
     final s = p.start!, e = p.end!;
@@ -394,6 +514,7 @@ class _PlannerTabState extends State<PlannerTab> {
                 if (i > 0) const TextSpan(text: ' · '),
                 TextSpan(
                   text: Eta.text(etas[i] * 60000),
+                  semanticsLabel: t != null && etas[i] < t ? '${Eta.text(etas[i] * 60000)}, ${tr('planner.gone', 'Gone by the time you get there')}' : etas[i] == catchAt ? '${Eta.text(etas[i] * 60000)}, ${tr('planner.yours', "The one you'd catch")}' : null,
                   style: TextStyle(
                     decoration: t != null && etas[i] < t ? TextDecoration.lineThrough : null,
                     fontWeight: etas[i] == catchAt ? FontWeight.w800 : null,
@@ -406,7 +527,7 @@ class _PlannerTabState extends State<PlannerTab> {
             Text(tr('planner.allEarlier', "Every bus listed comes before you'd get here; yours is a later one."), style: TextStyle(color: sg.muted)),
           if (live && etas.isEmpty) Text(tr('planner.noLive', 'No live timings for this bus right now.'), style: TextStyle(color: sg.muted)),
           TextButton.icon(
-            onPressed: () => StopScreen.open(leg.from, service: leg.bus, ctx: const StopContext('journey')),
+            onPressed: () => StopScreen.open(leg.from, service: leg.bus, ctx: StopContext('journey', note: _journeyNote(legs, k, e))),
             icon: const Icon(Icons.directions_bus_outlined),
             label: Text(tr('planner.timingsAt', '{bus} timings at {stop}', {'bus': leg.bus, 'stop': Stops.nameOf(leg.from)})),
           ),
@@ -450,6 +571,7 @@ class _PlannerTabState extends State<PlannerTab> {
         ),
       const SizedBox(height: 8),
       ...steps,
+      if (live) Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(tr('planner.updated', 'Updated {time}', {'time': When.clock(When.nowMs())}), style: TextStyle(color: sg.muted, fontSize: 12))),
       Text(live ? Journeys.estimateNote() : '${tr('planner.clockNote', 'Times are rough estimates from distance. Clock times count an average wait for each bus.')} ${tr('planner.liveFrom', 'Live timings show here from half an hour before you set off.')}',
           style: TextStyle(color: sg.muted, fontSize: 12)),
     ];

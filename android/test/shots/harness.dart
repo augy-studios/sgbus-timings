@@ -62,7 +62,9 @@ Future<void> loadFonts() async {
   // The phone's own font in Material You ("sans-serif", Android's default), as stock Android's.
   await _font('sans-serif', roboto);
   // Android's own fallback (Noto) stood in for by DejaVu, for "→", "·" and the like.
-  await _font('Noto Sans', ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf']);
+  // On Windows, Segoe UI does.
+  final linux = File('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf').existsSync();
+  await _font('Noto Sans', linux ? ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'] : ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/segoeuib.ttf']);
   await _font('MaterialIcons', ['$mf/MaterialIcons-Regular.otf']);
 }
 
@@ -199,6 +201,13 @@ Future<void> shot(WidgetTester tester, String name, Widget Function() build,
   ));
   await settle(tester);
   if (then != null) await then(tester);
+  await settle(tester);
+  // Pictures read from the app's assets, which a test's frames don't wait for.
+  await tester.runAsync(() async {
+    for (final e in find.byType(Image).evaluate()) {
+      await precacheImage((e.widget as Image).image, e);
+    }
+  });
   await settle(tester);
   final boundary = key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
   final bytes = await tester.runAsync(() async {

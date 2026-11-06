@@ -6,16 +6,23 @@
 // for the Get Off Alert. Leave now, Leave at or Arrive by, up to a week ahead; Add a stop on the
 // way; walking, cycling or driving the whole way under the ways. Its tab beside Bus only (the
 // route planner, features/planner/).
+import 'dart:async';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../../api/api.dart';
+import '../../api/net.dart';
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';
 import '../../data/favs.dart';
 import '../../data/geo.dart';
 import '../../data/location.dart';
+import '../../data/nav_core.dart' show NavPoint;
+import '../../data/nav_offline.dart';
 import '../../data/network.dart';
 import '../../data/places.dart';
+import '../../data/stops.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
@@ -25,6 +32,7 @@ import '../../widgets/place_search.dart';
 import '../map/live_map.dart';
 import '../share/share_card.dart';
 import '../timings/stop_screen.dart';
+import '../trips/trip.dart';
 import 'when_picker.dart';
 import '../tour/tour.dart';
 
@@ -59,8 +67,57 @@ class NavEnd {
   }
 }
 
+/// Every way from one place to another: /api/nav's, or with no connection, or when it can't be
+/// reached, planned on the phone (data/nav_offline.dart), in the same shape with `offline` set.
+Future<Map<String, dynamic>> fetchWays(NavEnd from, NavEnd to, {NavEnd? via, WhenPick? when}) async {
+  Future<Map<String, dynamic>> onPhone() => NavOffline.plan(NavPoint(from.lat, from.lng), NavPoint(to.lat, to.lng), via: via == null ? null : NavPoint(via.lat, via.lng), when: when);
+  if (Net.off.value && Api.fake == null) return onPhone();
+  final customs = Store.I.get('sgbus_customs');
+  try {
+    return await Api.map(
+      'nav',
+      query: {
+        'from': from.coord(),
+        'to': to.coord(),
+        if (via != null) 'via': via.coord(),
+        if (when != null) 'when': when.mode,
+        if (when != null) 'at': when.at,
+        if (BusNet.openAccess) 'restricted': 1,
+        if (['15', '30', '45', '60'].contains(customs)) 'customs': customs,
+        if (Store.I.get('sgbus_bike') == 'on') 'bike': 1,
+        if (Store.I.get('sgbus_shuttles') == 'paid') 'shuttles': 'paid',
+      },
+    );
+  } on ApiError {
+    rethrow;
+  } catch (_) {
+    // Not reached at all: planned on the phone.
+    if (Api.fake != null) rethrow;
+    return onPhone();
+  }
+}
+
 class NavState extends ChangeNotifier {
-  NavState._();
+  NavState._() {
+    Net.off.addListener(_netChanged);
+  }
+
+  // Back online, ways planned on the phone are planned again, and a way open opens again from the
+  // new plan if it's still one of them. Gone offline, the phone's planner gets ready.
+  Future<void> _netChanged() async {
+    if (Net.off.value) {
+      unawaited(NavOffline.warm());
+      return;
+    }
+    if (!offline || from == null || to == null) return;
+    final was = option == null ? null : wayKey(option!);
+    await run();
+    final again = was == null ? null : options.where((o) => wayKey(o) == was).firstOrNull;
+    if (again != null) await open(again);
+  }
+
+  /// The ways on show were planned on the phone: their times are estimates.
+  bool offline = false;
   static final NavState I = NavState._();
 
   NavEnd? from;
@@ -112,22 +169,9 @@ class NavState extends ChangeNotifier {
     try {
       final a = await _resolve(from!);
       final b = await _resolve(to!);
-      final customs = Store.I.get('sgbus_customs');
-      final data = await Api.map(
-        'nav',
-        query: {
-          'from': a.coord(),
-          'to': b.coord(),
-          if (via != null) 'via': via!.coord(),
-          if (when != null) 'when': when!.mode,
-          if (when != null) 'at': when!.at,
-          if (BusNet.openAccess) 'restricted': 1,
-          if (['15', '30', '45', '60'].contains(customs)) 'customs': customs,
-          if (Store.I.get('sgbus_bike') == 'on') 'bike': 1,
-          if (Store.I.get('sgbus_shuttles') == 'paid') 'shuttles': 'paid',
-        },
-      );
+      final data = await fetchWays(a, b, via: via, when: when);
       if (token != _token) return;
+      offline = data['offline'] == true;
       options = [for (final o in (data['options'] as List? ?? const [])) Map<String, dynamic>.from(o as Map)];
       for (final o in options) {
         if (o['via'] is Map && via != null) (o['via'] as Map)['label'] = via!.label;
@@ -419,9 +463,13 @@ class _NavPageState extends State<NavPage> {
           padding: EdgeInsets.all(24),
           child: Center(child: CircularProgressIndicator()),
         ),
+        if (Net.off.value) Text(tr('nav.planningOffline', 'Planning by bus and train on your phone…'), textAlign: TextAlign.center, style: TextStyle(color: context.sg.muted)),
       ];
     }
     if (nav.error != null) return [EmptyNote(nav.error!, icon: Icons.error_outline)];
+    if (nav.options.isEmpty && Net.off.value) {
+      return [EmptyNote(nav.when != null ? tr('nav.noneAtTime', 'No way by bus or train running at that time was found between these two places. Try another time, or somewhere nearby.') : tr('nav.noneNow', 'No way by bus or train running right now was found between these two places. Try another time, or somewhere nearby.'))];
+    }
     if (nav.options.isEmpty) {
       return [
         EmptyNote(
@@ -434,6 +482,7 @@ class _NavPageState extends State<NavPage> {
     final n = nav.options.length;
     final best = nav.options.where((o) => o['walkOnly'] != true).map((o) => (o['minutes'] as num).toDouble()).fold(double.infinity, (a, b) => a < b ? a : b);
     return [
+      if (nav.offline) Padding(padding: const EdgeInsets.only(bottom: 6), child: _warn(tr('nav.plannedOffline', 'Planned offline: times are estimates.'))),
       Text(
         '${n == 1 ? tr('nav.waysOne', '1 way to get there') : tr('nav.waysMany', '{n} ways to get there', {'n': n})}'
         '${nav.when != null ? ', ${When.describe(nav.when).replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toLowerCase())}' : ''}'
@@ -480,14 +529,57 @@ class _NavPageState extends State<NavPage> {
           tr('nav.note.running', 'Only buses and trains running at the time are used, going by first and last bus times and train hours.'),
           if (nav.onemap) tr('nav.note.onemap', 'OneMap’s timetable-based estimate is shown where it rides the same way.'),
           if (nav.via != null) tr('nav.note.via', 'No time is counted at your stop: add what you’ll spend there.'),
+          if (nav.offline) tr('nav.note.offline', 'Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.'),
         ].join(' '),
         style: TextStyle(color: sg.muted, fontSize: 12),
       ),
+      if (_customsNote() != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(_customsNote()!, style: TextStyle(color: sg.muted, fontSize: 12))),
     ];
   }
 
+  // What a shuttle costs and who may ride it, in words: "Free", "S$2.50", "Hotel guests only".
+  String _shuttleTerms(Map c) {
+    final fare = c['fare'] == 'paid' ? ('${c['fareText'] ?? ''}'.isNotEmpty ? '${c['fareText']}' : tr('nav.shuttle.paid', 'Paid')) : tr('nav.shuttle.free', 'Free');
+    final who = c['access'] == 'guests' ? tr('nav.shuttle.guests', 'Hotel guests only') : c['access'] == 'residents' ? tr('nav.shuttle.residents', 'Residents only') : '';
+    return who.isEmpty ? fare : '$fare · $who';
+  }
+
+  // Ways across the Causeway count this for immigration: said under the ways.
+  String? _customsNote() {
+    final minutes = [
+      for (final o in nav.options)
+        for (final l in (o['legs'] as List).cast<Map>())
+          for (final c in (l['customs'] as List? ?? const []).cast<Map>()) (c['minutes'] as num).round(),
+    ];
+    if (minutes.isEmpty) return null;
+    final most = minutes.reduce(math.max), least = minutes.reduce(math.min);
+    return tr('nav.customsNote', 'Ways across the Causeway count ~{m} min to clear immigration at both checkpoints{byTime}. Your own time can be set in Settings.', {
+      'm': least == most ? most : tr('planner.clockRange', '{a} to {b}', {'a': least, 'b': most}),
+      'byTime': Store.I.get('sgbus_customs') == null ? tr('nav.byTimeThere', ', by the time of day you’d get there') : '',
+    });
+  }
+
+  // A bus leg's crossings of the Causeway: get off, through both checkpoints, on again.
+  List<Widget> _crossings(Map leg) => [
+        for (final c in (leg['customs'] as List? ?? const []).cast<Map>())
+          _step(
+            Icons.flag_outlined,
+            Text(() {
+              String stop(Object? code) => Stops.of('$code') != null ? '${Stops.of('$code')!.name} ($code)' : '$code';
+              final v = {'from': stop(c['from']), 'to': stop(c['to']), 'm': (c['minutes'] as num).round(), 'byTime': Store.I.get('sgbus_customs') == null ? tr('planner.byTimeOfDay', ', by the time of day') : ''};
+              return c['way'] == 'out'
+                  ? tr('planner.crossOut', "Get off at {from} and clear Singapore's immigration, ride any bus across to {to} and clear Malaysia's, then get on again: ~{m} min for both{byTime}.", v)
+                  : tr('planner.crossIn', "Get off at {from} and clear Malaysia's immigration, ride any bus across to {to} and clear Singapore's, then get on again: ~{m} min for both{byTime}.", v);
+            }()),
+          ),
+      ];
+
   Widget _chip(Map leg) {
     final sg = context.sg;
+    if (leg['campus'] is Map) {
+      final colour = hexColor('${(leg['campus'] as Map)['colour'] ?? ''}', sg.brandInk);
+      return Chip(avatar: CircleAvatar(backgroundColor: colour, radius: 6), label: Text('${leg['route']}'), visualDensity: VisualDensity.compact);
+    }
     if (leg['mode'] == 'bus') {
       return Chip(avatar: const Icon(Icons.directions_bus, size: 16), label: Text('${leg['route']}'), visualDensity: VisualDensity.compact);
     }
@@ -683,7 +775,7 @@ class _NavPageState extends State<NavPage> {
                           'min': ((leg['minutes'] as num?) ?? 0).round(),
                         }),
                 ),
-                if (nav.when != null && leg['board'] != null)
+                if ((nav.when != null || o['offline'] == true) && leg['board'] != null)
                   Text(
                     tr('nav.boardAround', 'Board around {time}.', {'time': When.clock(leaveMs + ((leg['board'] as num) * 60000).round())}),
                     style: TextStyle(color: sg.muted),
@@ -696,8 +788,37 @@ class _NavPageState extends State<NavPage> {
         );
         continue;
       }
+      // A shuttle: its timetable's average wait, and what it costs; no LTA timings.
+      if (leg['campus'] is Map) {
+        final c = leg['campus'] as Map;
+        final label = '${c['label'] ?? ''}'.isNotEmpty ? '${c['label']}' : tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': c['name'], 'route': leg['route']});
+        final from = leg['from'] as Map?;
+        steps.add(
+          _step(
+            Icons.airport_shuttle_outlined,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [_chip(leg), const SizedBox(width: 6), Flexible(child: Text(stopsMin, style: const TextStyle(fontWeight: FontWeight.w700)))]),
+                Text(tr('nav.busRideTowards', 'From {from} to {to}, towards {towards}', {'from': placeName(from), 'to': placeName(leg['to']), 'towards': leg['towards']})),
+                if (leg['board'] != null)
+                  Text(tr('nav.shuttle.board', 'Board around {time}, after the timetable’s average wait.', {'time': When.clock(leaveMs + ((leg['board'] as num) * 60000).round())}), style: TextStyle(color: sg.muted)),
+                Text('$label · ${_shuttleTerms(c)}', style: TextStyle(color: sg.muted)),
+                if (from?['code'] != null)
+                  TextButton.icon(
+                    onPressed: () => AppNav.open('campusStop', {'key': from?['code']}),
+                    icon: const Icon(Icons.schedule),
+                    label: Text(tr('nav.shuttle.times', 'Shuttle times at {stop}', {'stop': from?['name']})),
+                  ),
+              ],
+            ),
+          ),
+        );
+        steps.addAll(_crossings(leg));
+        continue;
+      }
       final t = nav.timings.containsKey(k) ? nav.timings[k] : (live ? const <int>[-1] : null);
-      final board = nav.when != null && leg['board'] != null
+      final board = (nav.when != null || o['offline'] == true) && leg['board'] != null
           ? tr('nav.boardAroundWait', 'Board around {time}, after an average wait.', {'time': When.clock(leaveMs + ((leg['board'] as num) * 60000).round())})
           : null;
       final from = leg['from'] as Map?;
@@ -754,6 +875,7 @@ class _NavPageState extends State<NavPage> {
           ),
         ),
       );
+      steps.addAll(_crossings(leg));
     }
     final tooLate = nav.when?.mode == 'arrive' && span.leave < When.nowMs() - 60000;
     return [
@@ -790,12 +912,15 @@ class _NavPageState extends State<NavPage> {
                 }),
           style: TextStyle(color: sg.muted),
         ),
+      if (o['offline'] == true) Padding(padding: const EdgeInsets.only(top: 4), child: _warn(tr('nav.plannedOffline', 'Planned offline: times are estimates.'))),
       const SizedBox(height: 8),
       ...steps,
       const SizedBox(height: 8),
       Text(
         live
             ? tr('nav.estimated_times.description', 'Train times are estimates from distance. Bus timings are live from LTA.')
+            : o['offline'] == true
+            ? tr('nav.estOffline', 'Times are estimates from distance, with an average wait to board. Live bus timings show here when you reconnect.')
             : tr(
                 'nav.estLater',
                 'Times are estimates from distance, with an average wait to board. Live bus timings show here from half an hour before you set off.',
@@ -808,6 +933,60 @@ class _NavPageState extends State<NavPage> {
   String _exitName(Object? p, Object? exit) {
     final name = placeName(p);
     return exit is Map && exit['name'] != null ? tr('nav.stationExit', '{station}, Exit {exit}', {'station': name, 'exit': exit['name']}) : name;
+  }
+
+  // Share: your ETA on a trip, these directions, or either end, as the site's menu has them.
+  void _shareMenu() {
+    final from = nav.from, to = nav.to;
+    void directions() {
+      ShareCard.show(
+        context,
+        ShareCard(
+          heading: tr('share.directions', 'Share these directions'),
+          name: '${tr('planner.fromTo', '{from} to {to}', {'from': from!.label, 'to': to!.label})}${nav.via != null ? tr('share.via', ', via {place}', {'place': nav.via!.label}) : ''}',
+          sub: When.describe(nav.when),
+          kind: 'directions',
+          data: {
+            'from': from.here ? 'here' : from.toJson(),
+            'to': to.here ? 'here' : to.toJson(),
+            'when': nav.when?.toJson(),
+            'way': nav.option == null ? null : wayKey(nav.option!),
+            'summary': nav.option == null ? '' : '~${nav.option!['minutes']} min · ${navMixText(nav.option!)}',
+            'path': null,
+            if (nav.via != null) 'via': nav.via!.toJson(),
+          },
+          text: tr('share.byBusTrain', '{ends}, by bus and train', {
+            'ends': tr('planner.fromTo', '{from} to {to}', {'from': from.label, 'to': to.label}),
+          }),
+        ),
+      );
+    }
+
+    final items = <(IconData, String, String, VoidCallback)>[
+      // Live progress needs a connection all the way, so offline it isn't offered.
+      if (Trip.I.active && !Net.off.value) (Icons.schedule, tr('trip.share_my_eta', 'Share my ETA'), tr('share.etaSub', 'Live progress, until you get there'), () => AppNav.open('tripShare')),
+      if (from != null && to != null) (Icons.route_outlined, tr('share.directions', 'Share these directions'), tr('planner.fromTo', '{from} to {to}', {'from': from.label, 'to': to.label}), directions),
+      if (from != null && !from.here) (Icons.place_outlined, tr('share.start', 'Share start'), from.label, () => ShareCard.place(context, label: from.label, lat: from.lat, lng: from.lng)),
+      if (to != null && !to.here) (Icons.flag_outlined, tr('share.end', 'Share end'), to.label, () => ShareCard.place(context, label: to.label, lat: to.lat, lng: to.lng)),
+    ];
+    if (items.length == 1) return items.first.$4();
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          for (final it in items)
+            ListTile(
+              leading: Icon(it.$1),
+              title: Text(it.$2),
+              subtitle: Text(it.$3),
+              onTap: () {
+                Navigator.pop(c);
+                it.$4();
+              },
+            ),
+        ]),
+      ),
+    );
   }
 
   Widget _step(IconData icon, Widget body) => Padding(
@@ -842,37 +1021,15 @@ class _NavPageState extends State<NavPage> {
               children: [
                 Expanded(child: Text(tr('tray.navigate', 'Navigate'), style: Theme.of(context).textTheme.headlineMedium)),
                 if (!busOnly) ...[
-                  IconButton(
+                  TourTarget(id: 'nav.save', child: IconButton(
                     tooltip: nav.isFav() ? tr('stop.saved', 'Saved') : tr('stop.save', 'Save'),
                     isSelected: nav.isFav(),
                     onPressed: nav.from == null || nav.to == null ? null : nav.toggleFav,
                     icon: Icon(nav.isFav() ? Icons.star_rounded : Icons.star_outline_rounded),
-                  ),
+                  )),
                   IconButton(
                     tooltip: tr('nav.share', 'Share'),
-                    onPressed: nav.from == null || nav.to == null
-                        ? null
-                        : () => ShareCard.show(
-                            context,
-                            ShareCard(
-                              heading: tr('share.directions', 'Share these directions'),
-                              name: tr('planner.fromTo', '{from} to {to}', {'from': nav.from!.label, 'to': nav.to!.label}),
-                              sub: When.describe(nav.when),
-                              kind: 'directions',
-                              data: {
-                                'from': nav.from!.here ? 'here' : nav.from!.toJson(),
-                                'to': nav.to!.here ? 'here' : nav.to!.toJson(),
-                                'when': nav.when?.toJson(),
-                                'way': nav.option == null ? null : wayKey(nav.option!),
-                                'summary': nav.option == null ? '' : '~${nav.option!['minutes']} min · ${navMixText(nav.option!)}',
-                                'path': null,
-                                if (nav.via != null) 'via': nav.via!.toJson(),
-                              },
-                              text: tr('share.byBusTrain', '{ends}, by bus and train', {
-                                'ends': tr('planner.fromTo', '{from} to {to}', {'from': nav.from!.label, 'to': nav.to!.label}),
-                              }),
-                            ),
-                          ),
+                    onPressed: nav.from == null && nav.to == null && !Trip.I.active ? null : _shareMenu,
                     icon: const Icon(Icons.share_outlined),
                   ),
                 ],

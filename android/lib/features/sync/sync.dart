@@ -965,6 +965,17 @@ class _SyncScreenState extends State<SyncScreen> {
       final rows = listed.where((f) => f.kind == k.kind).toList();
       if (rows.isEmpty) continue;
       out.add(SectionLabel(k.label()));
+      final free = [for (final f in rows) if (available.contains(f.key)) f.key];
+      if (free.length > 1) {
+        final all = free.every(picked.contains);
+        out.add(CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          tristate: true,
+          value: all ? true : (free.any(picked.contains) ? null : false),
+          onChanged: (v) => setState(() => all ? picked.removeAll(free) : picked.addAll(free)),
+          title: Text(tr('sync.selectAllOf', 'Select all: {kind}', {'kind': k.label()})),
+        ));
+      }
       for (final f in rows) {
         final done = !available.contains(f.key);
         final sub = _sub(f.kind, f.item);
