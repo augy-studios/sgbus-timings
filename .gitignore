@@ -1,6 +1,3 @@
-# Announcement drafts and their screenshots, kept locally.
-announcement/
-
 # Built installers, each version in a folder of its own (release/README.md). The APKs, the
 # command-line edition (its sgbus file and .deb, cli/build.mjs) and the README on publishing
 # them are committed. The desktop installers (around 100 MB each, past GitHub's file limit)
