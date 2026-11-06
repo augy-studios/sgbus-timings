@@ -2,7 +2,7 @@
 sgbus.uwuapps.org
 
 Android app:
-- Rebuilt as a real Android app: opens straight away, scrolls smoothly
+- Rebuilt from the ground up: opens straight away, scrolls smoothly
 - Everything you've saved comes across by itself
 - Material You by default: your phone's font and wallpaper colours
 - The UwU Apps theme is a switch away in Theme
