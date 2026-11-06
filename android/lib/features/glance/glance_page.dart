@@ -20,6 +20,7 @@ import '../../data/when.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
+import '../timings/greeting.dart';
 import '../timings/stop_screen.dart';
 import '../tour/tour.dart';
 
@@ -392,6 +393,8 @@ class _GlancePageState extends State<GlancePage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
           children: [
+            const Greeting(),
+            const SizedBox(height: 14),
             Row(children: [
               TourTarget(id: 'glance.source', child: ActionChip(
                 avatar: Icon(src?.icon ?? Icons.my_location, size: 18),

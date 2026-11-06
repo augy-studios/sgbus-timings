@@ -1,4 +1,4 @@
-// The greeting at the top of Bus timings (script.js's updateGreeting): Good Morning, Afternoon or
+// The greeting at the top of Glance and Bus timings (script.js's updateGreeting): Good Morning, Afternoon or
 // Evening with your name (sgbus_name), and on your birthday (sgbus_birthday) Happy 25th Birthday
 // over two lines, with "Made with ♥ by Augy" under it.
 import 'dart:async';
