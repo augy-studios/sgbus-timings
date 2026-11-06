@@ -23,7 +23,8 @@
 //
 // It opens at street level on you and keeps following; a drag stops that, Recentre goes back to
 // it, Overview shows the whole way. Your dot is MapLibre's own, its arrow turning with the
-// phone's compass; Turn the map with the way you face turns the map with it.
+// phone's compass; Turn the map with the way you face turns the map with it. Two fingers pan it
+// as one does, unless they go straight up or down, which tilts it (tilt_or_pan.dart).
 //
 // Where the platform's map can't be drawn (tests and the guide's screenshots), MapPreview draws
 // the same lines and dots on a plain ground, so every panel round it can still be seen.
@@ -53,6 +54,7 @@ import '../trips/trip.dart';
 import 'map_card.dart';
 import '../tour/tour.dart';
 import 'map_save.dart';
+import 'tilt_or_pan.dart';
 
 // ---------- what's drawn ----------
 
@@ -331,6 +333,7 @@ class _LiveMapState extends State<LiveMap> {
   bool following = true;
   bool turning = false;
   bool _located = false; // location allowed, so MapLibre draws your dot
+  final _fingers = TiltOrPan();
 
   String title = '';
   String sub = '';
@@ -477,6 +480,13 @@ class _LiveMapState extends State<LiveMap> {
 
   void _redrawPip() {
     if (mounted) setState(() {});
+  }
+
+  /// A finger on the map came down, moved or lifted: redrawn only if that changes whether it may tilt.
+  void _touched(void Function() change) {
+    final was = _fingers.tilt;
+    change();
+    if (_fingers.tilt != was) setState(() {});
   }
 
   void _inkChanged() {
@@ -1326,6 +1336,7 @@ class _LiveMapState extends State<LiveMap> {
             minMaxZoomPreference: const MinMaxZoomPreference(9, 19),
             cameraTargetBounds: CameraTargetBounds(LatLngBounds(southwest: const LatLng(0.9, 103.2), northeast: const LatLng(1.8, 104.5))),
             trackCameraPosition: true,
+            tiltGesturesEnabled: _fingers.tilt,
             compassEnabled: true,
             compassViewPosition: CompassViewPosition.topRight,
             compassViewMargins: const math.Point(16, 200),
@@ -1353,12 +1364,16 @@ class _LiveMapState extends State<LiveMap> {
     if (AppNav.pip.value) return Scaffold(body: map);
     return Scaffold(
       body: Stack(children: [
-        // A drag stops following you.
+        // A drag stops following you; the fingers on it say whether it may tilt.
         Positioned.fill(
           child: Listener(
+            onPointerDown: (e) => _touched(() => _fingers.down(e.pointer, e.position)),
             onPointerMove: (e) {
               if (following && e.delta.distance > 2 && mode != MapMode.traffic) _setFollowing(false);
+              _touched(() => _fingers.move(e.pointer, e.position));
             },
+            onPointerUp: (e) => _touched(() => _fingers.up(e.pointer)),
+            onPointerCancel: (e) => _touched(() => _fingers.up(e.pointer)),
             child: GestureDetector(
               behavior: HitTestBehavior.translucent,
               onTapUp: LiveMap.preview ? (d) => _previewTap(d.localPosition, size) : null,
