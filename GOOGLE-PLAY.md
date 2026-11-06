@@ -3,6 +3,11 @@
 A step-by-step guide for publishing the Android app on Google Play, written for this repo as it
 stands on 2.3.1, ahead of the 3.0.0 release.
 
+> **2.4.0 (November 2026):** the app is now Flutter, every screen in Dart, with the same
+> package, key and native plugins (`android/README.md`). Its version is `pubspec.yaml`'s; where a
+> step below names Capacitor's files (`capacitor.config.json`, `npx cap sync`), the Flutter app
+> has none, and the step is done.
+
 **Phone app only.** Augy has decided the Wear OS watch app stays off Google Play for now. It is
 built and shipped the way it is today, and section 8 says what adding it later would take.
 
@@ -64,13 +69,13 @@ Everything here was read from the repo.
 
 | Thing | Value | Where |
 |---|---|---|
-| Phone app id | `org.uwuapps.sgbus` | `android/capacitor.config.json`, `android/native/app/build.gradle` (`applicationId`, `namespace`) |
-| applicationIdSuffix / flavors | None. One variant, `release` | `android/native/app/build.gradle` |
-| Version | `versionName "2.3.1"`, `versionCode 26` | `android/native/app/build.gradle` |
-| minSdk | 24 (Android 7) | `android/native/variables.gradle` |
-| compileSdk / targetSdk | 36 / 36 | `android/native/variables.gradle` |
-| Build tools | Android Gradle Plugin 8.13.0, Capacitor 8.5.3, JDK 21+ | `android/native/build.gradle`, `android/package.json` |
-| What the app is | The live site `https://sgbus.uwuapps.org` in Capacitor's WebView, plus native plugins | `capacitor.config.json` (`server.url`) |
+| Phone app id | `org.uwuapps.sgbus` | `android/android/app/build.gradle` (`applicationId`, `namespace`) |
+| applicationIdSuffix / flavors | None. One variant, `release` | `android/android/app/build.gradle` |
+| Version | `2.4.0+27` (versionName 2.4.0, versionCode 27) | `android/pubspec.yaml` (`version:`) |
+| minSdk | 24 (Android 7) | `android/android/variables.gradle` |
+| compileSdk / targetSdk | 36 / 36 | `android/android/variables.gradle` |
+| Build tools | Flutter 3.47, Android Gradle Plugin 9.1.0, JDK 21+ | `android/android/settings.gradle`, `android/pubspec.yaml` |
+| What the app is | A Flutter app with every screen in Dart (`lib/`), the site's own API, plus native plugins | `android/README.md`, `android/PORTING.md` |
 | Signing | Release APKs signed with `android/android.keystore`, read through `android/keystore.properties`. Both are kept out of git, and are not opened or copied in this guide | `build.gradle` (`signingConfigs.release`), `android/.gitignore` |
 | Signing key fingerprint (public) | SHA-256 `4E:D5:3F:F1:...:76:CB:44:EB`; `build-apk.ps1` refuses any other key | `android/README.md` |
 | Push notifications | Firebase Cloud Messaging; `google-services.json` kept out of git | `android/FIREBASE-SETUP.md` |
@@ -210,7 +215,7 @@ Under Option 2 none of this is needed; it is the fallback if the key plan change
 
 | File | Change |
 |---|---|
-| `android/native/app/build.gradle` | `versionName "3.0.0"` and `versionCode 24` (or higher). **This is the one that matters on Play.** The GitHub watch APK reads both from here, so it follows by itself |
+| `android/android/app/build.gradle` | `versionName "3.0.0"` and `versionCode 24` (or higher). **This is the one that matters on Play.** The GitHub watch APK reads both from here, so it follows by itself |
 | `desktop/package.json` | `"version": "3.0.0"` |
 | `desktop/package-lock.json` | `"version"` at lines 3 and 9 (`npm install --package-lock-only` does it) |
 | `cli/package.json` | `"version": "3.0.0"`. `cli/build.mjs` stops the build if it differs from `desktop/package.json` |
@@ -264,7 +269,7 @@ built, check it has no `.so` files (section 9).
 
 ### Things Play will refuse in the Play build
 
-The manifest (`android/native/app/src/main/AndroidManifest.xml`) has four items that its own comments
+The manifest (`android/android/app/src/main/AndroidManifest.xml`) has four items that its own comments
 already call "not allowed on Google Play". The `play` flavor removes them.
 
 | Item | Why | What the Play build does instead |
@@ -323,7 +328,7 @@ The friend recommends flexible, checked on every open. That is what the sketch b
 Android's [build variants][variants] let one module build two products from the same code:
 
 ```groovy
-// android/native/app/build.gradle
+// android/android/app/build.gradle
 android {
     flavorDimensions = ["channel"]
     productFlavors {
@@ -352,7 +357,7 @@ removed by a variable, so the flavor's `src/play/AndroidManifest.xml` is needed 
 Files (all [Dev]):
 
 ```text
-android/native/app/src/
+android/android/app/src/
   main/                 everything shared (as today), minus UpdateActivity
   github/java/org/uwuapps/sgbus/UpdateActivity.java   moved here, unchanged
   github/java/org/uwuapps/sgbus/Channel.java          (below)
@@ -529,7 +534,7 @@ keep the package name and the key the same.
 Augy has decided: **the watch app is not going on Google Play for now.** Nothing in the other
 sections depends on it, and the Play build is the phone app alone.
 
-The watch app (`android/native/wear/`) is a small native Java app: a **Bus timings tile** and a
+The watch app (`android/android/wear/`) is a small native Java app: a **Bus timings tile** and a
 screen listing your favourite stops. Favourite stops come from the phone app over the Wearable
 Data Layer (`WearSync.java` to `FavouritesListener`).
 
@@ -543,8 +548,8 @@ Unchanged:
   Wi-Fi debugging (`docs-site/content/web/wear-os.md`, which says it "isn't on Google Play").
   That page stays as it is.
 - It has the phone's application id (`org.uwuapps.sgbus`), `versionName` and `versionCode`, read
-  from `android/native/app/build.gradle`, and is signed with the same key
-  (`android/native/wear/build.gradle`). It will be 3.0.0 with the phone app.
+  from `android/android/app/build.gradle`, and is signed with the same key
+  (`android/android/wear/build.gradle`). It will be 3.0.0 with the phone app.
 
 ### What to watch for
 
@@ -616,7 +621,7 @@ Signing:
   today (`build.gradle`, `signingConfigs.release`). **Use the new upload key** for the bundles
   (section 4): point the Play flavor at an `upload-keystore.properties` file so GitHub APKs
   keep using the old key. Never put either file in git or in this doc.
-- `google-services.json` must be in `android/native/app/` for the build, or the app builds
+- `google-services.json` must be in `android/android/app/` for the build, or the app builds
   without push and the Play build would ship with no notifications (`FIREBASE-SETUP.md`).
 - Check the bundle's certificate before uploading. `keytool -printcert -jarfile app-play-release.aab`
   prints the SHA-256 of the key that signed it: it should be the upload key's, not the old one.
@@ -807,7 +812,7 @@ Other answers:
 - **Site links.** Add the Play badge/link to the web app's "Get the Android app" bar
   (`main-site/js/app-update.js`, `offerApp()`) and the guide's `android-app.md`.
 - **Target API each year.** Google moves the requirement every August; raise `targetSdkVersion`
-  in `android/native/variables.gradle` and test, or updates stop being accepted ([target API][target]).
+  in `android/android/variables.gradle` and test, or updates stop being accepted ([target API][target]).
 - **Key upgrade.** Play can upgrade the app signing key once a year; if it does, update
   `assetlinks.json` with any new fingerprints.
 - **Pruning.** If the Play build is the main one, update `android/README.md`'s "If the app ever

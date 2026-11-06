@@ -32,7 +32,7 @@ It takes about 20 minutes, and covers four things:
 
 | What | Where it goes | Secret? |
 |---|---|---|
-| `google-services.json`, which tells the app which Firebase project it belongs to | `android/native/app/` | No, but kept out of git anyway |
+| `google-services.json`, which tells the app which Firebase project it belongs to | `android/android/app/` | No, but kept out of git anyway |
 | SG Bus Timings' service account key (`….json`), which lets this site's server send pushes | Vercel, as `FIREBASE_SERVICE_ACCOUNT` | **Yes.** Anyone with it can push to phones with any app in the UwU Apps project |
 | A webhook secret, which proves a "release published" call really came from GitHub | GitHub and Vercel, as `GITHUB_WEBHOOK_SECRET` | **Yes** |
 | A GitHub token (optional), which raises GitHub's rate limit for the release lookups | Vercel, as `GITHUB_TOKEN` | Yes, though it can do nothing but read |
@@ -83,7 +83,7 @@ Otherwise:
 5. **Download google-services.json**. Save it as
    `android\native\app\google-services.json` in this project (beside `build.gradle`).
 6. Click **Next** through the remaining steps without changing anything: the project already
-   has what they describe (`native/build.gradle` and `native/app/build.gradle` apply the
+   has what they describe (`android/build.gradle` and `android/app/build.gradle` apply the
    Google services plugin when the file is there).
 
 The file lists every app in the project registered so far; the build takes the entry for

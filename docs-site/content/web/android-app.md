@@ -1,11 +1,19 @@
 ---
 title: The Android app
-description: What only SG Bus Timings' Android app does: trips with the screen off, card value over NFC, reminders, Home and Work tiles, voice and camera search, Offline Sharing, notifications, your phone's calendar, opening SimplyGo, and updating itself.
+description: What only SG Bus Timings' Android app does: Material You, trips with the screen off, card value over NFC, reminders, Home and Work tiles, voice and camera search, Offline Sharing, notifications, your phone's calendar, opening SimplyGo, and updating itself.
 ---
 
-SG Bus Timings for Android is the web app with extras only an app can do. This
-page covers those extras; everything else works as the rest of this guide
-describes, and updates the moment the website does.
+SG Bus Timings for Android is an app of its own: from version 2.4.0 every
+screen is drawn by the app itself, rather than the website shown inside it, so
+it opens straight away, scrolls smoothly and looks the way Android's own apps
+do. It does everything the website does, as the rest of this guide describes,
+with the same words in the same four languages, and adds the extras on this
+page that only an app can do.
+
+<figure>
+<img src="/screenshots/android/glance.png" alt="The Android app's Glance in Material You: the next bus, 196 in 1 min, the weather, and two stops' next buses, with the Edge Tray's round buttons down the right." width="412" height="892" loading="lazy">
+<figcaption>Glance in the Android app, in Material You.</figcaption>
+</figure>
 
 ## Download and install it
 
@@ -33,6 +41,70 @@ version, for step 2 below, and **Not now** puts it away for a month.
 
 If Android says **App not installed**, an older copy made a different way is in
 the way. Uninstall SG Bus Timings, then install the file again.
+
+## Coming from version 2.3 or earlier
+
+Versions 2.0.0 to 2.3.1 showed the website inside the app. The first time
+2.4.0 opens, it brings everything they kept across by itself, once: your
+favourites and lists, places, past searches, trips, routines, reminders,
+uwuCoins, feats and Easter eggs, your calendar's link and every setting. A note
+at the bottom says so. There's nothing to do, and nothing to sync.
+
+## Material You and the UwU Apps theme
+
+The app has two looks, picked in **Theme** (the palette in the Edge Tray):
+
+- **Material You**, the one it opens in: the whole app drawn the way Android's
+  own apps are, in your phone's own fonts (Google Sans on a Pixel, your
+  maker's or the font you've chosen elsewhere) and the colours of your
+  wallpaper on Android 12 and later, solid cards, pill buttons and sheets that
+  slide up from the bottom. On older Android it's in the app's green.
+- **The UwU Apps theme**, with the switch off: the website's own look, with its
+  Jua font, see-through glass cards and the seven brand colours.
+
+<figure>
+<img src="/screenshots/android/theme.png" alt="The app's Theme: a Material You switch, on, with Turn off for the UwU Apps theme under it, then Mode, High contrast, and Your colours' colour wheel." width="412" height="892" loading="lazy">
+<figcaption>Theme, with the Material You switch at the top.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/glance-usual.png" alt="Glance in the UwU Apps theme: the same next bus and stops in the Jua font, on glass cards over a soft background." width="412" height="892" loading="lazy">
+<figcaption>The same Glance in the UwU Apps theme.</figcaption>
+</figure>
+
+**Mode** (light, dark, by the time of day, or your phone's setting) and
+**High contrast** work in both. [Your colours](secret-features.md), once an
+Easter egg has unlocked it, colours the UwU Apps theme; in Material You,
+**Colours** picks your wallpaper's (the default) or Your colours. Material You
+is the Android app's only: the website never has it.
+
+## The Edge Tray
+
+The Edge Tray is the column of buttons down the side, as on the website: each
+page's button at the top, the one on show filled in, then the extras and
+Settings and Theme. Its tab tucks it away at the edge, and its buttons unroll
+one after another as it comes back. **Favourites** shows how many stops you've
+starred, and **uwuCoins** your balance.
+
+## Explorer and the live map
+
+[Explorer](explorer.md) and the [live map](live-map.md) are drawn by the app
+too, over OpenFreeMap's map with buildings that stand up in 3D when you tilt it
+with two fingers. Tap a stop for its buses, or a station for the doors to stand
+at on each platform.
+
+<figure>
+<img src="/screenshots/android/explorer.png" alt="Explorer round Bedok: stops as white dots ringed in green, and Bedok station's card open, towards Pasir Ris, with doors 7 and 18 for the escalator to the exit, door 12 for the lift, and where the door number is on the platform door." width="412" height="892" loading="lazy">
+<figcaption>Bedok station's card in Explorer: which doors are nearest the way out.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/map-traffic.png" alt="Traffic on bus 14's way out of Bedok: its road orange where slow and green where clear, its stops as dots, and Slow in places on New Upper Changi Road and Bedok North Street 1." width="412" height="892" loading="lazy">
+<figcaption>The traffic on a bus's way, from LTA's live speeds.</figcaption>
+</figure>
+
+**Save the map for offline** in Explorer keeps Singapore's map on the phone, so
+the live map shows the streets with no connection.
 
 ## Trips with the screen off
 

@@ -7,7 +7,7 @@
 //
 //   2.0.0 and later  Capacitor. The site runs inside the app's own WebView, which injects
 //            window.Capacitor before the page's scripts, and calls go straight to the app's
-//            plugins (android/native/app/src/main/java/org/uwuapps/sgbus/*Plugin.java).
+//            plugins (android/android/app/src/main/java/org/uwuapps/sgbus/*Plugin.java).
 //   1.1.0 to 1.2.0  Bubblewrap, a Trusted Web Activity: the site runs in Chrome, and the app
 //            sends a hello as each page loads, over Chrome's postMessage for TWAs, with a port to
 //            answer on. Only the calendar, until it updates itself to 2.0.0 (js/app-update.js).

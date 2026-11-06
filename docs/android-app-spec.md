@@ -1,5 +1,9 @@
 # Android app: spec for wrapping an UwU Apps site in Capacitor
 
+> **Superseded in this repo from 2.4.0:** SG Bus Timings' Android app is now a Flutter app with
+> its own screens in Dart (`android/README.md`, `android/PORTING.md`). This spec still describes
+> how to wrap a website in Capacitor, as versions 2.0.0 to 2.3.1 did.
+
 An Android app that is the live website, running in [Capacitor](https://capacitorjs.com)'s
 WebView, plus a thin native layer for the things a web page can't do: notifications without
 Web Push, background work, widgets, Quick Settings tiles, the launcher icon, links that open in

@@ -1,25 +1,31 @@
 # SG Bus Timings for Android
 
-The Android app, `org.uwuapps.sgbus`: the web app at sgbus.uwuapps.org in
-[Capacitor](https://capacitorjs.com)'s WebView (`capacitor.config.json`, `server.url`). The
-site's own updates reach it at once, and the app only needs building again for its native
-parts. Those are what a web page can't do, which the page reaches through Capacitor's bridge
-(`main-site/js/app-bridge.js`).
+The Android app, `org.uwuapps.sgbus`. From 2.4.0 it's a Flutter app: every screen is drawn in
+Dart (`lib/`), with full parity with the web app at sgbus.uwuapps.org, whose JS
+(`main-site/js/`, `main-site/script.js`) and guide (`docs-site/content/web/`) are its spec.
+Each feature is ported with the site's storage keys, words (`assets/i18n/`, copied from the
+site by `tool/sync_i18n.dart`) and API calls; `PORTING.md` maps each part of the site to its
+Dart, and says what's left. The native parts (`android/app/src/main/java/org/uwuapps/sgbus/`)
+are the same plugins as before, reached over a method channel (`lib/native/native_bridge.dart`,
+`bridge/`), so the Java didn't need rewriting.
 
-From 2.0.0. Versions 1.0.0 to 1.2.0 were a Bubblewrap Trusted Web Activity: the site in
-Chrome. It's the same package and signing key, so 2.0.0 installs over them as an update, and
-1.2.0 offers it in its update bar. The site still answers 1.1.0 and 1.2.0's message channel
-until they've updated (`js/app-bridge.js`).
+Versions 2.0.0 to 2.3.1 were the site in Capacitor's WebView. 2.4.0 brings everything they kept
+(the WebView's `localStorage`) across on its first open (`lib/data/migrate.dart`,
+`MigratePlugin`), and the Android app's Material You look is on by default (Theme turns it off
+for the UwU Apps theme). Versions 1.0.0 to 1.2.0 were a Bubblewrap Trusted Web Activity. It's
+the same package and signing key throughout, so each installs over the last as an update.
 
 Shared as an APK file through GitHub Releases: see `release/README.md`. It updates itself
 from there.
 
 ## What it adds to the site
 
-| Feature | Native side (`native/app/src/main/java/org/uwuapps/sgbus/`) | Site side (`main-site/`) |
+The third column names the site's side; its Dart port is listed in `PORTING.md`.
+
+| Feature | Native side (`android/app/src/main/java/org/uwuapps/sgbus/`) | Site side (`main-site/`) |
 |---|---|---|
 | **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. From 2.0.8, walking or riding by your average speed (up to 10 km/h walking, a bus or train's 40 km/h or so riding), as the page can't count steps with the screen off. From 2.2.7, the notification shows the part you're on: a bus, a train or walking for its icon, tinted the line's colour on a train, and the bus or line ("Bus 174", "EW Line") by the app's name; an older app keeps its own icon | `TripPlugin`, `TripService` (a foreground service of the location type; `ic_trip_bus`, `ic_trip_train` and `ic_trip_walk` in `res/drawable/`), `Pace` | `js/trip.js` (`nativeLook`) |
-| **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | Capacitor's PushNotifications plugin, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
+| **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | `PushNotificationsPlugin`, `MessagingService`, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
 | **New versions as notifications** (2.1.1): "SG Bus Timings 2.1.1 is out" the moment a release is published, for phones that turned on **New versions of the app** in Service alerts. A GitHub webhook calls the site, which pushes to the FCM topic `sgbus-releases` the switch joins; tapping it opens `UpdateActivity`'s check for that version. Setup: `FIREBASE-SETUP.md` | `SgBusPlugin.releases` / `setReleases` (`firebase-messaging`), `Notifications` (`releases` channel), `MainActivity.onNewIntent`, `UpdateActivity.check` | `js/app-update.js`, `api/push/release.js`, `api/_lib/release.js`, `api/_push/fcm.js` (`sendToTopic`) |
 | **The phone's calendar**, for Navigate's Calendar tab | `PhoneCalendarPlugin`, `CalendarReader` | `js/calendar.js` |
 | **Card value**: an EZ-Link or NETS FlashPay card's stored value and recent rides over NFC, and from 2.0.8 Android offering the app when a card's held to the phone (`TECH_DISCOVERED`, `res/xml/nfc_tech.xml`), straight to it while it's open (foreground dispatch) | `CardPlugin`, `MainActivity` | `js/card.js` |
@@ -36,7 +42,7 @@ from there.
 | **Flag-down screen** (2.1.0): full brightness and a steady torch | `SgBusPlugin.flag` | `js/flag.js` |
 | **Get Off Alert in earphones only** (2.1.0): a sound-free channel, and the beeps on the media stream when earphones are in | `TripPlugin.alert` (`quiet`), `SgBusPlugin.audioOut` | `js/trip.js`, `js/reminders.js` |
 | **Battery optimisation**, asked once on the first trip (2.1.0) | `TripPlugin`, `SgBusPlugin.batteryIntent` | |
-| **Wear OS** (2.1.0): favourite stops handed to the watch app over the Wearable Data Layer | `WearSync`, and the watch app in `native/wear/` (its README) | `script.js` (`shareFavsWithWidgets`) |
+| **Wear OS** (2.1.0): favourite stops handed to the watch app over the Wearable Data Layer | `WearSync`, and the watch app in `android/wear/` (its README) | `script.js` (`shareFavsWithWidgets`) |
 | **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
 | **Opening MyICA Mobile** (2.2.1), from a trip to a checkpoint, for its immigration QR code | `OpenAppActivity` (`myica`), the `myica` feature | `js/trip.js` ("MyICA"), `js/network.js` (`ICA_CHECKPOINTS`) |
 | **Your phone's colours** (2.3.0), a secret on Android 12 and later: Material You's tonal palettes, read each time the app opens or comes back, for the page to make its whole theme from (the `phonecolours` feature) | `SgBusPlugin.phoneColours` | `js/colours.js` (`fromPhone`), `js/eggs.js` |
@@ -85,16 +91,17 @@ first read says "couldn't be read as an EZ-Link or NETS FlashPay card", the comm
 
 ```text
 android/
-  package.json, package-lock.json   Capacitor and its push plugin
-  capacitor.config.json             the site's address, and where the native project is
-  www/offline.html                  shown when the site can't load at all (first launch offline)
-  native/                           the Android Studio / Gradle project
-  build-apk.ps1                     builds the signed APK into release/<version>/
-  FIREBASE-SETUP.md                 setting up push notifications
+  pubspec.yaml                 the app's version, its packages and assets
+  lib/                         the app, in Dart: app/ (shell, Edge Tray, links), data/, features/,
+                               theme/, i18n/, native/, sync/, widgets/
+  assets/i18n/, i18n_app/      the site's words, and the app's own
+  test/                        unit tests (journeys, calendar, rewards, sync, words checked
+                               against the site) and test/shots/, the guide's screenshots
+  android/                     the Gradle project: app/ (the native plugins), wear/ (Wear OS)
+  build-apk.ps1                builds the signed APKs into release/<version>/
+  FIREBASE-SETUP.md            setting up push notifications
+  PORTING.md                   each part of the site and its Dart
 ```
-
-`npx cap sync android` (which the build script runs) copies `www/` and the config into
-`native/` and links the plugins from `node_modules`. What it writes is kept out of git.
 
 ## Build the APK
 
@@ -102,21 +109,24 @@ android/
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 ```
 
-It installs the packages if they're missing, syncs, builds with Gradle and checks the
-signature, then puts the APK in `release/<version>/sg-bus-timings-<version>.apk`. It needs a
-JDK 21 or later (it finds the newest under Program Files, or `JAVA_HOME`) and the Android SDK
-(`ANDROID_HOME`, or the one Bubblewrap left in `~/.bubblewrap`). Gradle fetches any SDK
-platform it's missing.
+It runs `flutter build apk` for the phone (ARM, 32 and 64 bit, in one APK, as the updater
+fetches one file) and Gradle for the watch, checks both signatures, then puts them in
+`release/<version>/`. It needs Flutter, a JDK 21 or later and the Android SDK.
 
-For a new version, raise `versionName` and `versionCode` in `native/app/build.gradle`; a phone
-only takes a higher `versionCode` as an update. Raise `desktop/package.json`'s `version` to the
-same: the apps share version numbers.
+On Linux or macOS, `flutter build apk --release --target-platform android-arm,android-arm64`
+here, and `android/gradlew :wear:assembleRelease`.
 
-Without `native/app/google-services.json` the app builds and works, but can't get
+For a new version, raise `version:` in `pubspec.yaml` (`2.4.0+27`: the name, and after the `+`
+the `versionCode`, which a phone only takes higher as an update); the watch reads it too. Raise
+`desktop/package.json`'s and `cli/package.json`'s `version` to the same: the apps share
+version numbers.
+
+Without `android/app/google-services.json` the app builds and works, but can't get
 notifications from the server. See `FIREBASE-SETUP.md`.
 
-To try changes on a phone over USB, open `native/` in Android Studio and run it, or
-`native\gradlew.bat installDebug` with the phone plugged in and USB debugging on.
+To try it on a phone over USB, `flutter run` with the phone plugged in and USB debugging on.
+`flutter test` runs the tests; `flutter test test/shots/` renders the guide's screenshots into
+`docs-site/public/screenshots/android/`, at 3x, from fixed data (`test/shots/harness.dart`).
 
 ## The signing key
 
@@ -162,21 +172,17 @@ do it after 30 minutes where One UI has it.
 
 ## Changing it
 
-- **The site's address, the user agent, the status bars**: `capacitor.config.json`, then
-  `npx cap sync android`.
-- **Permissions, activities, links**: `native/app/src/main/AndroidManifest.xml`.
-- **A new plugin of this app's own**: a `Plugin` class like `CardPlugin`, registered in
-  `MainActivity.onCreate`, called from the page with `AppBridge.call('Name', 'method', {...})`.
-- **A Capacitor plugin from npm**: `npm install` it here, then `npx cap sync android`; the page
-  reaches it the same way.
-- **Upgrading Capacitor**: raise all three `@capacitor/*` versions together, `npm install`,
-  `npx cap sync android`, and compare `native/` with a fresh `npx cap add android` for template
-  changes.
+- **A screen**: its feature in `lib/features/`, its way in registered in
+  `lib/features/registry.dart` (`AppNav.register`), the site's words through `tr()`.
+- **Permissions, activities, links**: `android/app/src/main/AndroidManifest.xml`.
+- **A native plugin of this app's own**: a `Plugin` class like `CardPlugin`, registered in
+  `MainActivity`, called from Dart with `Native.call('Name', 'method', {...})`.
+- **A Flutter package**: `flutter pub add` it; check what permissions its Android manifest adds.
 
 ### The updater's page
 
 `UpdateActivity` is the app's one screen in Material 3 (Material Components, `materialVersion`
-in `native/variables.gradle`): `UpdateTheme` in `res/values/update.xml` takes its colours from
+in `android/variables.gradle`): `UpdateTheme` in `res/values/update.xml` takes its colours from
 the wallpaper on Android 12 and later (`DynamicColors`), and before that from the tonal palette
 of the app's green, light and dark (`values-night/update.xml`). Its icons are the site's
 (`update_ic_*.xml`, from `main-site/js/icons.js`). The changelog is `main-site/api/app-release.js`'s
@@ -184,7 +190,7 @@ of the app's green, light and dark (`values-night/update.xml`). Its icons are th
 headings, so write the notes as `release/README.md` shows for them to show well. Material's
 progress bar has no wave for views, so `WavyProgressView` draws Material 3 Expressive's.
 
-To see each step on an emulator, a debuggable build (`gradlew assembleDebug`, never a release)
+To see each step on an emulator, a debuggable build (`flutter build apk --debug`, never a release)
 takes two extras: `org.uwuapps.sgbus.update.TEST_JSON`, a file in the app's cache to read in
 place of `/api/app-release`, and `org.uwuapps.sgbus.update.TEST_VERSION`, a version to be. For
 example, as 2.2.7 with 2.2.8 out, its JSON saved from the site with a 2.2.8 release added:

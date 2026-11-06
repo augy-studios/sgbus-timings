@@ -2,15 +2,16 @@
 #
 #     powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 #
-# Installs the Capacitor packages if they're missing, syncs them into the Android project
-# (native/), then Gradle builds the release APKs, the phone's (native/app/) and, from 2.1.0,
-# the Wear OS watch's (native/wear/), both signed with android.keystore using the passwords
-# in keystore.properties, and each signature is checked before they're copied out:
-# sg-bus-timings-<version>.apk and sg-bus-timings-<version>-watch.apk.
+# From 2.4.0 the app is Flutter (lib/, android/): `flutter build apk` builds the phone's app,
+# for ARM phones (32 and 64 bit, one APK, as the app's updater fetches the one file), then
+# Gradle the Wear OS watch's (android/wear/), both signed with android.keystore using the
+# passwords in keystore.properties, and each signature is checked before they're copied out:
+# sg-bus-timings-<version>.apk and sg-bus-timings-<version>-watch.apk. The version is
+# pubspec.yaml's.
 #
-# Needs a JDK 21 or later and the Android SDK. It finds them in JAVA_HOME and ANDROID_HOME if
-# they're set, or else the newest JDK under Program Files and the SDK Bubblewrap kept in
-# ~/.bubblewrap. Gradle fetches any SDK platform it's missing on the first build.
+# Needs Flutter on the PATH (or FLUTTER_ROOT), a JDK 21 or later and the Android SDK. It finds
+# the JDK and SDK in JAVA_HOME and ANDROID_HOME if they're set, or else the newest JDK under
+# Program Files and the SDK in %LOCALAPPDATA%\Android\Sdk.
 
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
@@ -44,25 +45,24 @@ if (-not $env:ANDROID_HOME) {
 }
 $buildTools = Get-ChildItem "$env:ANDROID_HOME\build-tools" -Directory | Sort-Object { [version]$_.Name } | Select-Object -Last 1
 
-$gradleFile = Get-Content "$here\native\app\build.gradle" -Raw
-$version = [regex]::Match($gradleFile, 'versionName "([^"]+)"').Groups[1].Value
+$pubspec = Get-Content "$here\pubspec.yaml" -Raw
+$version = [regex]::Match($pubspec, '(?m)^version:\s*([0-9.]+)').Groups[1].Value
+$flutter = if ($env:FLUTTER_ROOT) { "$env:FLUTTER_ROOT\bin\flutter.bat" } else { 'flutter' }
 Write-Host "Building SG Bus Timings $version for Android (JDK: $env:JAVA_HOME)..."
 
 Push-Location $here
 try {
-    if (-not (Test-Path "$here\node_modules\@capacitor\android")) {
-        & npm ci
-        if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
-    }
-    & npx cap sync android
-    if ($LASTEXITCODE -ne 0) { throw 'cap sync failed.' }
+    & $flutter pub get
+    if ($LASTEXITCODE -ne 0) { throw 'flutter pub get failed.' }
+    & $flutter build apk --release --target-platform android-arm,android-arm64
+    if ($LASTEXITCODE -ne 0) { throw 'flutter build apk failed. Its messages are above.' }
 } finally {
     Pop-Location
 }
 
-$gradle = Start-Process -FilePath "$here\native\gradlew.bat" -ArgumentList 'assembleRelease', '--no-daemon', '-q' `
-    -WorkingDirectory "$here\native" -NoNewWindow -Wait -PassThru
-if ($gradle.ExitCode -ne 0) { throw "Gradle failed (exit $($gradle.ExitCode)). Its messages are above." }
+$gradle = Start-Process -FilePath "$here\android\gradlew.bat" -ArgumentList ':wear:assembleRelease', '--no-daemon', '-q' `
+    -WorkingDirectory "$here\android" -NoNewWindow -Wait -PassThru
+if ($gradle.ExitCode -ne 0) { throw "Gradle failed for the watch app (exit $($gradle.ExitCode)). Its messages are above." }
 
 function Test-Signed($apk, $what) {
     if (-not (Test-Path $apk)) { throw "Gradle made no signed $what APK: is keystore.properties's storeFile right?" }
@@ -83,8 +83,8 @@ function Test-Signed($apk, $what) {
     }
 }
 
-$signed = "$here\native\app\build\outputs\apk\release\app-release.apk"
-$watch = "$here\native\wear\build\outputs\apk\release\wear-release.apk"
+$signed = "$here\build\app\outputs\flutter-apk\app-release.apk"
+$watch = "$here\build\wear\outputs\apk\release\wear-release.apk"
 Test-Signed $signed 'phone'
 Test-Signed $watch 'watch'
 
@@ -95,4 +95,4 @@ $watchDest = "$root\release\$version\sg-bus-timings-$version-watch.apk"
 Copy-Item $signed $dest -Force
 Copy-Item $watch $watchDest -Force
 Write-Host "Done: $dest"
-Write-Host "      $watchDest (Wear OS: see android/native/wear/README.md to install it on a watch)"
+Write-Host "      $watchDest (Wear OS: see android/android/wear/README.md to install it on a watch)"
