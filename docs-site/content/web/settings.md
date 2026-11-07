@@ -18,7 +18,7 @@ straight to one.
 
 | Setting | What it does |
 |---|---|
-| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. In the [Android app](android-app.md#the-apps-language), it's also the app's language in Android's own settings, and changes with it. In Chinese, Malay or Tamil, **Tell us** under the list emails Augy about a translation that looks wrong. |
+| **Language** | Opens **Choose a language**: **English**, **中文** (Chinese), **Bahasa Melayu** or **தமிழ்** (Tamil), each with a flag, and a tick on the one in use. Until you pick one, the app uses your phone's language if it's one of these, or English. Picking one opens the app again in it. Some parts, such as the live map and the share cards, are still in English. In the [Android app](../android/settings.md#the-apps-language), it's also the app's language in Android's own settings, and changes with it. In Chinese, Malay or Tamil, **Tell us** under the list emails Augy about a translation that looks wrong. |
 | **Your name, for the greeting** | The greeting at the top greets you by name: "Good Morning, Sam!" Leave it blank for no name. |
 | **Birthday** | On the day, the greeting becomes "Happy 28th Birthday, Sam!", on two lines so your whole name shows. The age comes from the year you were born. **Clear** removes it. |
 | **Birthday confetti** | **On** (the default) or **Off**: confetti each time you open the app on your birthday. |
@@ -39,9 +39,9 @@ straight to one.
 | **Cycling** | **No bike** (the default) or **I have a bike**. With a bike, [Navigate](nav.md#traffic-walking-and-cycling) also says how long cycling there takes, and a [trip](get-off-alert.md#a-faster-way) tells you when cycling the rest of the way is quicker. |
 | **Shuttle buses** | **Free only** (the default) or **Free and paid**: which [shuttle buses](timings.md#shuttle-buses) Navigate rides and Explorer shows. A hotel's or a condo's shuttle is only used to or from it. |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
-| **Picture-in-picture** | The [Android app](android-app.md#picture-in-picture) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
+| **Picture-in-picture** | The [Android app](../android/picture-in-picture.md) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
-| **Edge Tray buttons** | Turn off any of **[Explorer](explorer.md)**, **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee**, **Guide** and **[uwuCoins](uwucoins.md)** for a tidier tray, and in the [Android app](android-app.md#reminders), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
+| **Edge Tray buttons** | Turn off any of **[Explorer](explorer.md)**, **SimplyGo**, **Telegram bot**, **Buy Augy a Coffee**, **Guide** and **[uwuCoins](uwucoins.md)** for a tidier tray, and in the [Android app](../android/reminders.md), **Timings near a stop** and **Routines**. Each is on until you turn it off; tap again to bring it back. |
 | **Sync with another device** | See [Sync between devices](sync.md). |
 
 Changes save as you make them. There is no Save button.

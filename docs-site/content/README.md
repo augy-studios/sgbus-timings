@@ -1,6 +1,6 @@
 ---
 title: Welcome to SG Bus Timings
-description: How to use SG Bus Timings' web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.
+description: How to use SG Bus Timings' web app, Android app and Telegram bot for live bus arrivals, routes and journeys by bus and train.
 ---
 
 SG Bus Timings tells you when the next bus is coming. Pick a bus stop and you see
@@ -8,10 +8,11 @@ every service that calls there, the next three buses for each, how full they
 are and how far away. It also shows where a bus goes, and which buses get you
 from one stop to another, with a change or two if no single bus does.
 
-It comes in two forms, built on the same live data from LTA:
+It comes in three forms, built on the same live data from LTA:
 
 <div class="cards">
-<a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app, or as an app for Android, Windows and Linux.</span></a>
+<a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app, or as an app for Windows, Mac and Linux.</span></a>
+<a class="card-link glass" href="android/overview.md"><span class="card-icon" data-icon="info"></span><span class="card-title">The Android app</span><span class="card-text">An app of its own, with its own screens. Follows your trip with the screen off, and adds widgets, reminders, card value and Material You.</span></a>
 <a class="card-link glass" href="bot/start.md"><span class="card-icon" data-icon="send"></span><span class="card-title">The Telegram bot</span><span class="card-text">@UwUsgbus_bot. The same timings in a chat, plus routines and Service Alerts sent to you as they happen.</span></a>
 <a class="card-link glass" href="getting-started/reading-timings.md"><span class="card-icon" data-icon="clock"></span><span class="card-title">Reading bus timings</span><span class="card-text">What the colours, badges and distances next to each bus mean.</span></a>
 <a class="card-link glass" href="help/troubleshooting.md"><span class="card-icon" data-icon="info"></span><span class="card-title">Troubleshooting</span><span class="card-text">No timings, the wrong stop, location not working, or sync that will not connect.</span></a>
@@ -36,7 +37,7 @@ It comes in two forms, built on the same live data from LTA:
 
 ## How this guide is organised
 
-The web app and the bot each have two sections in the sidebar:
+The web app, the Android app and the bot each have two sections in the sidebar:
 
 - **Basics**: finding a stop or a bus, reading its timings, the stops near you,
   favourites and settings. Everything most people need, a tap or two away.
@@ -45,7 +46,7 @@ The web app and the bot each have two sections in the sidebar:
   routines, service alerts and syncing.
 
 Start with [Reading bus timings](getting-started/reading-timings.md): it explains
-what the colours and badges mean, in both.
+what the colours and badges mean, in all three.
 
 ## Quick start
 
@@ -58,6 +59,14 @@ what the colours and badges mean, in both.
    keep the stop in your favourites.
 
 Read more in [Find a bus stop](web/search.md).
+
+### On Android
+
+1. [Install the app](android/install.md), and open it.
+2. Tap the clock in the Edge Tray for **Bus timings**, then type a stop's name or code.
+3. Tap a stop for its next three buses, and **Save** to keep it in your favourites.
+
+Read more in [The Android app](android/overview.md).
 
 ### In Telegram
 

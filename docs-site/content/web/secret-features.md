@@ -14,7 +14,7 @@ your eggs**, says it's just been unlocked.
 
 > [!NOTE]
 > **Material You** used to be a secret too. From 5 November 2026 it isn't: it's a
-> feature of [the Android app](android-app.md#material-you-and-the-uwu-apps-theme), on by default from
+> feature of [the Android app](../android/theme.md), on by default from
 > 2.4.0, with its switch in Theme. It's the app drawn the way Android's own apps
 > are, in your phone's wallpaper colours. The website doesn't have it. The
 > greeting-and-Settings shortcut that unlocked it is gone too.

@@ -63,7 +63,7 @@ Choose the widget's size from its **…** menu. Small shows the next two buses,
 medium the next four, and large all of them, up to twelve.
 
 > [!NOTE]
-> **Android:** the [Android app](android-app.md#the-bus-timings-widget) has the
+> **Android:** the [Android app](../android/widgets-and-shortcuts.md#the-bus-timings-widget) has the
 > same widget for your home screen. **Windows, Mac and Linux:** the
 > [desktop app](desktop-app.md#bus-timings-widgets) has it as a small window on
 > your desktop. **iPhone:** a web app can't add widgets to your home screen. See

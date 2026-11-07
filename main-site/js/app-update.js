@@ -179,7 +179,7 @@
 
   const OFFER_KEY = 'sgbus_app_offer_at';
   const OFFER_AGAIN_MS = 30 * 86400000;
-  const GUIDE = 'https://guide.sgbus.uwuapps.org/web/android-app#download-and-install-it';
+  const GUIDE = 'https://guide.sgbus.uwuapps.org/android/install#download-and-install-it';
 
   async function offerApp() {
     if (!/Android/i.test(navigator.userAgent)) return;

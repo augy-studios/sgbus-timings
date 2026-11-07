@@ -130,7 +130,8 @@ class _BoardScreenState extends State<BoardScreen> {
               const Divider(color: Colors.white24),
               Expanded(
                 child: LayoutBuilder(builder: (context, box) {
-                  _perPage = (box.maxHeight / 64).floor().clamp(3, 100);
+                  // Room kept for the page number under the rows.
+                  _perPage = ((box.maxHeight - 24) / 64).floor().clamp(3, 100);
                   final pages = (_services.length / _perPage).ceil().clamp(1, 1000);
                   if (_page >= pages) _page = 0;
                   final rows = _services.skip(_page * _perPage).take(_perPage).toList();

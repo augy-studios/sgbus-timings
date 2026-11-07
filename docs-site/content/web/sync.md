@@ -84,7 +84,7 @@ Besides favourite stops, buses, routes and navs, the lists hold:
 - **Past searches**: the searches the other device doesn't have, each in its
   place by when it was searched, keeping the newest 50.
 - **Routines** and **Last bus reminders**, between two phones with the
-  [Android app](android-app.md#reminders). Each phone runs its own, so a routine
+  [Android app](../android/reminders.md). Each phone runs its own, so a routine
   copied to both notifies on both.
 - **Calendar**: your [calendar](calendar.md)'s link, replacing the calendar on
   the device it's copied to. A calendar imported from a file, or the phone's own

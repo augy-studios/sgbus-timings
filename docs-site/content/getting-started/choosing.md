@@ -39,6 +39,17 @@ each, so a stop starred in the app is not starred in the bot.
 - You would rather not sign in to anything. The app keeps everything in your
   browser.
 
+## Pick the Android app if
+
+- You're on an Android phone and want your trip followed with the screen off.
+- You want a [home screen widget](../android/widgets-and-shortcuts.md#the-bus-timings-widget),
+  [reminders](../android/reminders.md) with the app closed, or your
+  [card's value](../android/card-value.md).
+- You'd like it [in your wallpaper's colours](../android/theme.md), the way Android's own apps look.
+
+It's the web app's features in [an app of its own](../android/overview.md), with its own
+screens, and its own guide in the sidebar.
+
 ## Pick the Telegram bot if
 
 - You already have Telegram open all day.

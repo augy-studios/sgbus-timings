@@ -21,7 +21,6 @@ celebration without riding for them. They all start with `simulate`.
 | Chrome or Edge on a computer | Open sgbus.uwuapps.org, press **F12** (or **Ctrl+Shift+J**; **Cmd+Option+J** on a Mac), and pick **Console** |
 | Firefox on a computer | **Ctrl+Shift+K** (**Cmd+Option+K** on a Mac) |
 | Safari on a Mac | Turn on **Show features for web developers** in Safari's Settings, Advanced, then **Cmd+Option+C** |
-| The Android app | Turn on USB debugging on the phone, plug it into a computer, open `chrome://inspect` in Chrome there, and click **inspect** under the app |
 
 Type a command after the `>` and press **Enter**. The line under it starting
 with `<·` is what it answers. The first time you paste into Chrome's console,

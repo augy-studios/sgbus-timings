@@ -24,7 +24,7 @@ stays in that browser.
   [route planner](route-planner.md)), [**Service alerts**](service-alerts.md),
   [**Your trips**](trips.md) (the bar chart) and [**Places**](places.md) (the
   bookmark). Under a line, [**Explorer**](explorer.md) (the map), then, in the
-  [Android app](android-app.md#card-value) on a phone with
+  [Android app](../android/card-value.md) on a phone with
   NFC, **Card value** (the card), on a phone or tablet, [SimplyGo](#simplygo) (its own icon), the
   Telegram bot, a page to buy Augy a coffee, this guide (the question mark),
   [Settings](settings.md) (the gear) and the [theme picker](settings.md#themes).
@@ -84,11 +84,10 @@ has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 
 #### Or the Android app
 
-There's also an Android app (`sg-bus-timings-2.0.1.apk`): the same app, which
-also follows your trip with the screen off, reads your EZ-Link or NETS FlashPay
-card's value, reads your phone's calendar and opens SimplyGo itself. It's shared
-as a file rather than on Google Play for now. See
-[The Android app](android-app.md) to download and install it.
+There's also an Android app, with screens of its own, which also follows your
+trip with the screen off, reads your EZ-Link or NETS FlashPay card's value, reads
+your phone's calendar and opens SimplyGo itself. It's shared as a file rather than
+on Google Play for now. See [Install the app](../android/install.md).
 
 ### Windows, macOS, Linux and ChromeOS
 

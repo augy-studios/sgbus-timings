@@ -74,7 +74,24 @@ class Native {
   static bool has(String feature) => ((_info?['features'] as List?) ?? const []).contains(feature);
   static Map<String, dynamic>? get info => _info;
 
+  /// For the guide's screenshots: the features a phone has and the plugins' answers, so the
+  /// buttons and sheets that need them can be drawn. Null [answer] puts things back.
+  static void fake(List<String> features, Future<Map<String, dynamic>?> Function(String plugin, String method, Map<String, dynamic>? options)? answer) {
+    _info = answer == null ? null : {'features': features};
+    _fake = answer;
+  }
+
+  static Future<Map<String, dynamic>?> Function(String plugin, String method, Map<String, dynamic>? options)? _fake;
+
+  /// For the guide's screenshots: one of a plugin's events, as if the phone had sent it.
+  static void fakeEvent(String plugin, String event, Map<String, dynamic> data) {
+    for (final l in List.of(_listeners['$plugin.$event'] ?? const <NativeListener>[])) {
+      l._fn(data);
+    }
+  }
+
   static Future<Map<String, dynamic>?> call(String plugin, String method, [Map<String, dynamic>? options]) async {
+    if (_fake != null) return _fake!(plugin, method, options);
     if (!available) throw NativeError('Not in the app', code: 'unavailable');
     try {
       final json = await _channel.invokeMethod<String>('call', {

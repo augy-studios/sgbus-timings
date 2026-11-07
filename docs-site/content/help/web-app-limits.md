@@ -6,7 +6,11 @@ description: Home screen widgets on Android and iPhone, and location while the a
 SG Bus Timings is a web app: it runs in your browser, or installed from it, rather
 than coming from the Play Store or App Store. That keeps it free, quick to update
 and the same on every phone, but phones only allow a web app so much. Two things
-come up often, and **neither can be done**, so please don't suggest them:
+come up often, and **neither can be done**, so please don't suggest them.
+
+The [Android app](../android/overview.md) can do both: it has a
+[home screen widget](../android/widgets-and-shortcuts.md#the-bus-timings-widget), and
+[follows trips with the screen off](../android/get-off-alert.md#with-the-screen-off).
 
 ## Home screen widgets on Android and iPhone
 

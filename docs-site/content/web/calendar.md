@@ -13,7 +13,7 @@ show in [Navigate](nav.md). Tap one for the way there, arriving by its start.
 
 ## Your phone's calendar
 
-In the [Android app](android-app.md), the app can read your phone's own
+In the [Android app](../android/overview.md), the app can read your phone's own
 calendar: every calendar on the phone, Google, Outlook, Samsung and the rest,
 with nothing to paste.
 
@@ -25,7 +25,7 @@ with nothing to paste.
 3. Your events with a location show, and are read fresh each time you open the
    tab.
 
-Your events stay on the phone: the app hands them straight to the page. As with
+Your events stay on the phone. As with
 a link, only each event's location is looked up, to find the place.
 
 Refused the prompt? Tap **Allow calendar access** again. After a second refusal

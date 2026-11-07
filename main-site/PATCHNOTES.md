@@ -9,6 +9,17 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 7 November 2026: The Android app gets its own guide (2.4.4)
+
+### Guide
+
+- **A section for the Android app** - The app has its own screens, so the guide has its own pages for it, under Android app: basics and Android app: advanced, with pictures of the app itself. The old page's addresses take you there.
+
+### Android app 2.4.4
+
+- **The Guide button** - Opens the app's own section of the guide.
+- **The departures board's page number** - No longer cut off at the foot of the screen on a phone held upright.
+
 ## 7 November 2026: Explorer's stops and stations open again (2.4.3)
 
 ### Android app 2.4.3

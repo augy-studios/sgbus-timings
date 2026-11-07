@@ -1,6 +1,7 @@
 # SG Bus Timings Guide
 
-How to use the [web app](../main-site/) and the [Telegram bot](../telegram-bot/),
+How to use the [web app](../main-site/), the [Android app](../android/) and the
+[Telegram bot](../telegram-bot/),
 at [guide.sgbus.uwuapps.org](https://guide.sgbus.uwuapps.org).
 
 Laid out like GitBook (sidebar, page, "On this page", previous and next, search
@@ -59,6 +60,12 @@ the shuttles along their roads from the live site's `/api/road`. Explorer's offl
 (`explorer-offline-3d.png`) is the light zoom 16 view from
 `SCALE=3 SHOTS=<folder> node ../scripts/map-save-3d-test.cjs`, the map saved and the
 connection cut for real.
+
+The Android app's (`public/screenshots/android/`, `android/` in `content/`) are drawn by
+Flutter's own test renderer from fixed data, so they come out the same whenever they're
+taken: from `android/`, `flutter test test/shots/`, or `SHOTS=stop,board flutter test
+test/shots/` for only those. `shots_test.dart` has the pages, and `guide_test.dart` the
+sheets and whatever needs the phone's own parts, with `Native.fake` standing in for them.
 
 The command line's (`cli-*.png`, `web/linux-cli.md`) are its real output drawn as a terminal,
 from the built file: `node ../cli/build.mjs`, then `node screenshots/cli-shots.cjs`.

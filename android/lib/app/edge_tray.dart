@@ -76,7 +76,7 @@ class EdgeTray extends StatefulWidget {
     TrayExtra('coffee', Icons.coffee_outlined, () => tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
         () => _link('https://donate.stripe.com/28o2akeAr3hv0DK6oo')),
     TrayExtra('guide', Icons.help_outline, () => tr('html.how_to_use_sg_bus', 'How to use SG Bus Timings'),
-        () => _link('https://guide.sgbus.uwuapps.org/'), short: () => tr('settings.guide', 'Guide')),
+        () => _link('https://guide.sgbus.uwuapps.org/android/overview'), short: () => tr('settings.guide', 'Guide')),
   ];
 
   static void _link(String url) => Native.call('SgBus', 'openLink', {'url': url}).catchError((_) => null);

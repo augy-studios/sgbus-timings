@@ -25,7 +25,7 @@ const SITE = {
   origin: "https://guide.sgbus.uwuapps.org",
   app: "https://sgbus.uwuapps.org",
   bot: "https://t.me/UwUsgbus_bot",
-  description: "How to use SG Bus Timings' web app and Telegram bot for live bus arrivals, routes and journeys by bus and train.",
+  description: "How to use SG Bus Timings' web app, Android app and Telegram bot for live bus arrivals, routes and journeys by bus and train.",
 };
 
 // Keep in sync with APP_KEY in public/js/theme.js.

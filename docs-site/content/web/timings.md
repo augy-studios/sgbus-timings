@@ -80,7 +80,7 @@ Under each service's three buses is its first and last bus at this stop
 today, using the weekday, Saturday or Sunday timetable as fits. A service that
 does not run today says so instead.
 
-In the [Android app](android-app.md#reminders), a bell beside it sets a
+In the [Android app](../android/reminders.md), a bell beside it sets a
 reminder 20 minutes before that last bus, every day.
 
 ## Notes on some stops

@@ -66,6 +66,10 @@ Future<void> loadFonts() async {
   final linux = File('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf').existsSync();
   await _font('Noto Sans', linux ? ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'] : ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/segoeuib.ttf']);
   await _font('MaterialIcons', ['$mf/MaterialIcons-Regular.otf']);
+  // What a screen with no font of its own falls back to on a phone: its default, and the terminal's
+  // monospace, for which Consolas stands in on Windows.
+  await _font('FlutterTest', roboto);
+  await _font('monospace', [linux ? '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf' : 'C:/Windows/Fonts/consola.ttf']);
 }
 
 /// A seeded random, so made-up timings are the same every time.
@@ -173,7 +177,7 @@ Future<void> settle(WidgetTester tester) async {
 
 /// Takes one shot of a widget as the app would show it, in a look and mode.
 Future<void> shot(WidgetTester tester, String name, Widget Function() build,
-    {bool material = true, Brightness brightness = Brightness.light, Future<void> Function(WidgetTester t)? then, Size size = shotSize}) async {
+    {bool material = true, Brightness brightness = Brightness.light, Future<void> Function(WidgetTester t)? then, Size size = shotSize, bool withNav = false}) async {
   if (!want(name)) return;
   AppLook.I.materialYou = material;
   // Material You's colours from a wallpaper of the site's green, as a phone would have them.
@@ -183,6 +187,8 @@ Future<void> shot(WidgetTester tester, String name, Widget Function() build,
   tester.view.devicePixelRatio = shotRatio;
   addTearDown(tester.view.reset);
   final key = GlobalKey();
+  // Nothing kept from the shot before: the navigator's key would carry its screens over.
+  await tester.pumpWidget(const SizedBox.shrink());
   await tester.pumpWidget(RepaintBoundary(
     key: key,
     child: MediaQuery(
@@ -191,6 +197,9 @@ Future<void> shot(WidgetTester tester, String name, Widget Function() build,
         data: AppLook.I.theme(brightness),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          // Sheets and tours open through AppNav, as in the app.
+          navigatorKey: withNav ? AppNav.navigatorKey : null,
+          scaffoldMessengerKey: withNav ? AppNav.messengerKey : null,
           theme: AppLook.I.theme(Brightness.light),
           darkTheme: AppLook.I.theme(Brightness.dark),
           themeMode: brightness == Brightness.dark ? ThemeMode.dark : ThemeMode.light,

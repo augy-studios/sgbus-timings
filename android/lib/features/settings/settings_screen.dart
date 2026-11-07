@@ -481,7 +481,7 @@ class _SettingsGroupState extends State<SettingsGroup> {
           contentPadding: EdgeInsets.zero,
           title: Text(tr('settings.guide', 'Guide')),
           subtitle: const Text('guide.sgbus.uwuapps.org'),
-          onTap: () => Native.call('SgBus', 'openLink', {'url': 'https://guide.sgbus.uwuapps.org/'}).catchError((_) => null),
+          onTap: () => Native.call('SgBus', 'openLink', {'url': 'https://guide.sgbus.uwuapps.org/android/overview'}).catchError((_) => null),
         ),
         ?BugReportEntry.build?.call(context),
       ];

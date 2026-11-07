@@ -97,7 +97,7 @@ It saves to the app's own lists, so the app and the terminal always agree:
   its events, from a linked file or the phone's calendar too.
 - `settings` changes Settings' pins, **Restricted areas** and **Immigration time**.
 
-**Routines** are set here only in the [Android app](android-app.md), which sends
+**Routines** are set here only in the [Android app](../android/overview.md), which sends
 them with the app closed. A browser can't send them, so there it says so.
 Updating is the app's own job too: `update` points you to the
 [update bar](updates.md).

@@ -90,7 +90,7 @@ times.
 
 Hands full? The **microphone** in the search box searches by voice: say a stop's
 name, its code ("eight four zero zero nine") or a bus ("bus twenty-two"). It's
-there in the [Android app](android-app.md#search-by-voice-and-scan-a-stop), and
+there in the [Android app](../android/search.md#say-it-or-scan-it), and
 in browsers that can listen, such as Chrome, which asks to use the microphone.
 
 In the Android app, the **camera** beside it reads the code off a stop's pole:

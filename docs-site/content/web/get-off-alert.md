@@ -39,7 +39,7 @@ bar shows the trip on the [live map](live-map.md).
 On a phone, a trip to Tuas or Woodlands Checkpoint, or across the Causeway, has
 a **MyICA** button on the bar, for ICA's MyICA Mobile app and its immigration QR
 code. It opens the app's Play Store or App Store page, which says **Open** once
-it's installed; in the [Android app](android-app.md#simplygo-sharing-and-links)
+it's installed; in the [Android app](../android/widgets-and-shortcuts.md#simplygo-and-myica)
 it opens MyICA itself.
 
 A ride across the Causeway is followed in three parts: to Woodlands Checkpoint,
@@ -143,7 +143,7 @@ train on your way. It lists each bus or train still ahead on your trip, such as
 Either way, the live map opens on the way there, and the bar says what changed,
 with **Undo**. Closing it instead leaves the trip as it was.
 
-The site has to be open on screen to ask. In the [Android app](android-app.md)
+The site has to be open on screen to ask. In the [Android app](../android/overview.md)
 with the screen off, it asks when you next open the app.
 
 There's no alert on a walk. The trip ends when you reach where you're going.
@@ -355,7 +355,7 @@ too.
 
 ## In the Android app
 
-In the [Android app](android-app.md), the trip carries on with the screen off or
+In the [Android app](../android/overview.md), the trip carries on with the screen off or
 the app in the background: the app keeps your location coming, shows "On a
 trip" in a notification with **End trip** on it, and the alert sounds over the
 lock screen. The screen doesn't need to stay on. Swiping the app away ends that,

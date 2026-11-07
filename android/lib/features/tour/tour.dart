@@ -195,6 +195,9 @@ class Tours {
   }
 }
 
+/// For screenshots: the first open's choice.
+Widget firstRunPreview() => const _FirstRun();
+
 class _FirstRun extends StatefulWidget {
   const _FirstRun();
 

@@ -134,10 +134,10 @@ To place each event, its location (not its name or time) is searched for the way
 place typed into Navigate is. Which place each location matched is remembered in
 your browser.
 
-In the [Android app](../web/android-app.md), **Use this phone's calendar** reads
+In the [Android app](../android/overview.md), **Use this phone's calendar** reads
 your phone's own calendar instead, with Android's calendar permission, which it
 asks for only when you choose it. The app reads the next two weeks' events with a
-location each time the Calendar tab opens, and hands them straight to the page:
+location each time the Calendar tab opens, and uses them there:
 they aren't sent to SG Bus Timings' server or kept by the app. Locations are
 looked up as above. Turn the permission off in Android's settings for the app,
 or pick **Remove calendar**, to stop it.
@@ -154,13 +154,13 @@ website's map.
 
 ### The Android app
 
-The [Android app](../web/android-app.md) shows the website, so everything on this
-page applies to it the same way. It keeps its own storage, not
-Chrome's. On its own it reads nothing about you. It opens SimplyGo when you tap
-that button, and reads your calendar only as above.
+The [Android app](../android/overview.md) is an app of its own that asks the same
+servers for the same things, so everything on this page applies to it the same
+way. It keeps its own storage, not Chrome's. On its own it reads nothing about you.
+It opens SimplyGo when you tap that button, and reads your calendar only as above.
 
-On a trip it keeps your location coming with the screen off, for the trip in the
-page only: it isn't sent anywhere the website wouldn't send it.
+On a trip it keeps your location coming with the screen off, for the trip only: it
+isn't sent anywhere the website wouldn't send it.
 
 **Card value** reads the value, expiry and number of the card you hold to the
 phone, shows them, and forgets them. Nothing is written to the card, and nothing

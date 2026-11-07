@@ -16,8 +16,6 @@ than about three taps to reach goes under Advanced.
 ## Web app: basics
 
 * [Open and install the app](web/install.md)
-* [The Android app](web/android-app.md)
-* [Wear OS watches](web/wear-os.md)
 * [Windows, Mac and Linux apps](web/desktop-app.md)
 * [The command line on Linux](web/linux-cli.md)
 * [Your main screen](web/main-screen.md)
@@ -54,6 +52,43 @@ than about three taps to reach goes under Advanced.
 * [Easter eggs](web/easter-eggs.md)
 * [Secret features](web/secret-features.md)
 * [Console commands](web/console.md)
+
+## Android app: basics
+
+* [The Android app](android/overview.md)
+* [Install the app](android/install.md)
+* [Your main screen](android/main-screen.md)
+* [Find a bus stop](android/search.md)
+* [Live timings](android/timings.md)
+* [Bus routes](android/bus-routes.md)
+* [Favourites](android/favourites.md)
+* [Settings](android/settings.md)
+* [Material You and themes](android/theme.md)
+* [Weather and air quality](android/weather.md)
+* [Updates and offline use](android/updates.md)
+* [Wear OS watches](android/wear-os.md)
+
+## Android app: advanced
+
+* [Navigate by bus and train](android/nav.md)
+* [Navigate by bus only](android/route-planner.md)
+* [Live map](android/live-map.md)
+* [Explorer](android/explorer.md)
+* [Places](android/places.md)
+* [Past searches](android/past-searches.md)
+* [Calendar](android/calendar.md)
+* [Get Off Alert](android/get-off-alert.md)
+* [Your trips and stats](android/trips.md)
+* [Reminders](android/reminders.md)
+* [uwuCoins](android/uwucoins.md)
+* [Service alerts](android/service-alerts.md)
+* [Sync between devices](android/sync.md)
+* [Widgets and shortcuts](android/widgets-and-shortcuts.md)
+* [Card value](android/card-value.md)
+* [Sharing and NFC stickers](android/sharing.md)
+* [Picture-in-picture](android/picture-in-picture.md)
+* [The sgbus terminal](android/terminal.md)
+* [What the app asks for](android/permissions.md)
 
 ## Telegram bot: basics
 
