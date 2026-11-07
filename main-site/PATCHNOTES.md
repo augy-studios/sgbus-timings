@@ -14,6 +14,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Desktop apps
 
 - **Make it yours** - The first time 2.4.8 opens, a window sets your language, whether it starts when you sign in, light or dark, and your brand colour, all in one place. It's in the tray's menu whenever you want it again.
+- **Updates with apt** - On Debian, Ubuntu, Mint and 64-bit Raspberry Pi OS, the app and the command line can now install and update from their own apt repository: see the guide.
 
 ### Everywhere: new names for the first open
 

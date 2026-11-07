@@ -57,6 +57,27 @@ first: `libfuse2t64` on Debian 13 and Ubuntu 24.04 and later.
 Rather have it in a terminal, or on a server without a desktop? See
 [the command line on Linux](linux-cli.md).
 
+### Install and update it with apt
+
+On Debian, Ubuntu, Mint or 64-bit Raspberry Pi OS, you can add the app's own apt repository instead
+of downloading each new `.deb`:
+
+```bash
+sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://augy-studios.github.io/sgbus-timings/sgbus-timings.gpg | sudo tee /etc/apt/keyrings/sgbus-timings.gpg > /dev/null
+echo "deb [signed-by=/etc/apt/keyrings/sgbus-timings.gpg] https://augy-studios.github.io/sgbus-timings stable main" | sudo tee /etc/apt/sources.list.d/sgbus-timings.list
+sudo apt update
+sudo apt install sgbus-timings-desktop
+```
+
+After that, `sudo apt update && sudo apt upgrade` brings each new version with your other updates.
+An app already installed from a downloaded `.deb` is the same package, so adding the repository is
+enough for it to update. To take the repository away again:
+
+```bash
+sudo rm /etc/apt/sources.list.d/sgbus-timings.list /etc/apt/keyrings/sgbus-timings.gpg
+```
+
 ## Make it yours
 
 <figure>
@@ -177,7 +198,9 @@ The tray's menu and the title bar still offer the update.
   update**, which shows the small window saying **Installing update...** as it
   goes. If you don't, it updates the next time you quit.
 - Installed with the `.msi`, `.deb` or `.rpm`: a notification says there's a new version;
-  click it to download the new installer, and install it over the old one.
+  click it to download the new installer, and install it over the old one. With the
+  [apt repository](#install-and-update-it-with-apt) added, `sudo apt update && sudo apt upgrade`
+  brings it instead.
 
 Your favourites and settings stay.
 
