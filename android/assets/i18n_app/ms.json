@@ -27,5 +27,6 @@
   "terminal.ctrlC": "Hentikannya, atau kosongkan baris",
   "terminal.clear": "Kosongkan skrin",
   "tour.terminal.2app": "Jawapan dipaparkan di sini. ^C menghentikan yang sentiasa dikemas kini, atau mengosongkan baris; tekan dan tahan untuk memilih teks dan menyalinnya.",
-  "tour.terminal.3app": "exit, Kembali atau ini menutupnya. Tetapan, Bantuan dan tambahan membukanya semula."
+  "tour.terminal.3app": "exit, Kembali atau ini menutupnya. Tetapan, Bantuan dan tambahan membukanya semula.",
+  "map.estimated": "Tiada GPS di sini, jadi ini anggaran."
 }

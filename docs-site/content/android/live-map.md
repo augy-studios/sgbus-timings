@@ -31,6 +31,24 @@ along an expressway.
 The first time, Android asks for your location: allow it. Without it, the map still shows where you're
 going, but can't follow you.
 
+## Off the route
+
+Leave the route on a walk, a ride or a drive, and after a few steps the app finds the way from where you are,
+in the map and on a trip's walking, cycling or driving parts alike. A drive goes by which way you're heading,
+so it carries on from the road you're on, such as the KPE, rather than a street above it.
+
+## In a tunnel, or with weak GPS
+
+When the GPS stops, as it does in the KPE and MCE tunnels, your dot keeps going along your route, paler, and
+the bar at the foot says **No GPS here, so this is an estimate.** The next turn, the distance and the arrival
+time keep going with it. As soon as the GPS is back, your dot goes to where you really are, and the app finds
+a new way if you've left the route.
+
+The estimate starts from how fast you were going. The phone's accelerometer then tells when you've stopped, as
+in a jam, and when you pull away, and allows for braking once it's learned which way the phone faces. It's only
+ever an estimate, and it runs while the app is open. It never says you've arrived, and it never sets off a
+[Get Off Alert](get-off-alert.md). Trains follow their track by the time each ride should take.
+
 ## Move the map
 
 - **Drag** with one finger, or two going the same way, to move it. That stops it following you.

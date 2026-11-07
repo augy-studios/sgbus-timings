@@ -1,6 +1,6 @@
 // A walking route, for the live map (js/map.js): GET /api/walk?from=lat,lng&to=lat,lng, or a
 // cycling one with &mode=cycle, or a driving one with &mode=drive (a trip switched to it,
-// js/trip.js).
+// js/trip.js). A drive under way adds &heading=degrees, the way it's going, to start on that road.
 //
 // Answers { distance (metres), minutes, path: [[lat, lng], ...], steps: [{ text, at: [lat,
 // lng], distance }], source, roadside?, expressway? }, from OneMap's router, or OSRM's, or a
@@ -38,7 +38,9 @@ export default async function handler(req, res) {
   }
 
   const mode = ["cycle", "drive"].includes(req.query.mode) ? req.query.mode : "walk";
-  const out = await footRoute(from, to, { mode });
+  const h = Number(req.query.heading);
+  const heading = req.query.heading != null && Number.isFinite(h) && h >= 0 && h <= 360 ? Math.round(h) % 360 : null;
+  const out = await footRoute(from, to, { mode, heading });
   // A real route is the same tomorrow; a straight line is only kept a minute, to try again.
   res.setHeader("Cache-Control", out.source === "line" ? "public, s-maxage=60" : "public, s-maxage=86400, stale-while-revalidate=604800");
   return res.status(200).json(out);

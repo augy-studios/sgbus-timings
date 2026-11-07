@@ -125,6 +125,7 @@ class _WeatherButtonState extends State<WeatherButton> {
         child: Pill(
           icon: Weather.wmoIcon((d?['now'] as Map?)?['code'] ?? (d?['today'] as Map?)?['code']),
           label: text,
+          wrap: true,
           onTap: () {
             Weather.loadIfStale();
             showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => const WeatherSheet());

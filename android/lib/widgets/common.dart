@@ -53,16 +53,21 @@ class SectionLabel extends StatelessWidget {
 }
 
 class Pill extends StatelessWidget {
-  const Pill({super.key, required this.label, this.icon, this.onTap, this.on = false, this.tooltip});
+  const Pill({super.key, required this.label, this.icon, this.onTap, this.on = false, this.tooltip, this.wrap = false});
   final String label;
   final IconData? icon;
   final VoidCallback? onTap;
   final bool on;
   final String? tooltip;
 
+  /// Long words go onto more lines rather than off the end. Not in a row that scrolls sideways,
+  /// where there's no end to wrap at.
+  final bool wrap;
+
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
+    final words = Text(label, style: TextStyle(color: on ? sg.onBrand : sg.ink, fontSize: 14));
     final btn = Material(
       color: on ? sg.brand : (context.materialYou ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong),
       shape: StadiumBorder(side: context.materialYou ? BorderSide.none : BorderSide(color: sg.border)),
@@ -73,7 +78,7 @@ class Pill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             if (icon != null) ...[Icon(icon, size: 18, color: on ? sg.onBrand : sg.ink), const SizedBox(width: 6)],
-            Text(label, style: TextStyle(color: on ? sg.onBrand : sg.ink, fontSize: 14)),
+            if (wrap) Flexible(child: words) else words,
           ]),
         ),
       ),

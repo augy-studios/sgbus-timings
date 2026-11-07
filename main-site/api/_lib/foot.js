@@ -19,6 +19,11 @@
 // you indoors, more likely than on a road. With no walking route at all, the car router's
 // walked. Never along an expressway, where no one may walk: `expressway` says that's why the
 // walk stops short.
+//
+// A drive under way says which way it's going (`heading`, degrees), and goes to OSRM first, which
+// can start on the road going that way. OneMap takes no heading and starts on the nearest road,
+// which from a tunnel is a street overhead: from the KPE under Stadium Walk, that's up on Stadium
+// Walk, not on to the ECP or the MCE.
 
 import { walkRoute } from "./onemap.js";
 
@@ -41,6 +46,9 @@ const GAP_M = 40;
 const NEARER_M = 20;
 const ROAD_FACTOR = 3;
 const ROAD_EXTRA_M = 300;
+// How far from the fix the road going that way can be, and how far off that way it can point.
+const HEADING_RADIUS_M = 50;
+const HEADING_TOLERANCE = 45;
 const EXPRESSWAY_RE = /expressway|\b(PIE|CTE|AYE|ECP|KJE|KPE|MCE|SLE|TPE|BKE|NSC)\b/i;
 
 export function metres(a, b) {
@@ -125,8 +133,9 @@ function fromOsrm(data, mode) {
 }
 
 // `mode` "road" is the car router's roads, walked: its steps' road names come too, as `roads`.
-async function osrm(from, to, mode) {
-  const r = await fetch(`${OSRM[mode]}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true`, {
+async function osrm(from, to, mode, heading = null) {
+  const start = heading == null ? "" : `&bearings=${heading},${HEADING_TOLERANCE};&radiuses=${HEADING_RADIUS_M};`;
+  const r = await fetch(`${OSRM[mode]}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&steps=true${start}`, {
     headers: { "user-agent": "sgbus-timings (https://sgbus.uwuapps.org)" },
     signal: AbortSignal.timeout(8000),
   });
@@ -175,10 +184,18 @@ export function straight(from, to, mode = "walk") {
   };
 }
 
-export async function footRoute(from, to, { mode = "walk" } = {}) {
+export async function footRoute(from, to, { mode = "walk", heading = null } = {}) {
   let route = null;
+  if (mode === "drive" && heading != null) {
+    try {
+      route = await osrm(from, to, mode, heading);
+    } catch (err) {
+      // No road going that way near enough: as if it hadn't said.
+      console.warn(`[${mode}] OSRM with a heading: ${err.message}`);
+    }
+  }
   try {
-    route = fromOneMap(await walkRoute(from, to, mode), mode);
+    route ||= fromOneMap(await walkRoute(from, to, mode), mode);
   } catch (err) {
     console.warn(`[${mode}] OneMap: ${err.message}`);
   }

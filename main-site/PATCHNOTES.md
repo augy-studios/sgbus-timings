@@ -9,6 +9,16 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 7 November 2026: Tunnels and driving on the Android app's map (2.4.5)
+
+### Android app 2.4.5
+
+- **Through tunnels** - When the GPS stops, your dot keeps going along your route from how fast you were going, slowing for jams and braking by the phone's accelerometer, and says it's an estimate until the GPS is back.
+- **A drive's own route on a trip** - A trip switched to driving or cycling shows the way by road or by bike, in place of the walking route it showed.
+- **Directions from where you are** - Off the route on a trip's walk, ride or drive, the way is found again from where you are, with the next turn at the foot of the map.
+- **Stays on the expressway** - A drive already under way goes by which way you're heading, so it carries on along the KPE or MCE rather than starting from a street above the tunnel.
+- **Glance fits on a narrow screen** - With the Edge Tray out, the weather no longer runs off the side, "Tiba" stays on one line, and the note on what the times mean has a line of its own when there's no room for it.
+
 ## 7 November 2026: The Android app gets its own guide (2.4.4)
 
 ### Guide

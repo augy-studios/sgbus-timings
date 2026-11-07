@@ -29,6 +29,12 @@
 // and stops the pan until they lift, so it's off, and a handle tilts and turns it instead
 // (orbit_handle.dart).
 //
+// When the fixes stop, in a tunnel or anywhere else, your dot carries on along your route on a walk,
+// a ride, a drive or a bus, from your last speed (dead_reckon.dart), and says it's an estimate,
+// until a good fix puts it right. It's the map's and its directions' only: a trip's alert and its
+// coins go by real fixes. Off the route, a walk, a ride or a drive is planned again from where you
+// are; a drive goes by which way you're heading, as a road above a tunnel is no use to one in it.
+//
 // Where the platform's map can't be drawn (tests and the guide's screenshots), MapPreview draws
 // the same lines and dots on a plain ground, so every panel round it can still be seen.
 import 'dart:async';
@@ -36,6 +42,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 
 import '../../api/api.dart';
 import '../../api/net.dart';
@@ -55,6 +62,7 @@ import '../nav/doors.dart' show lineColour;
 import '../nav/nav_page.dart';
 import '../timings/stop_screen.dart';
 import '../trips/trip.dart';
+import 'dead_reckon.dart';
 import 'map_card.dart';
 import '../tour/tour.dart';
 import 'map_save.dart';
@@ -377,6 +385,16 @@ class _LiveMapState extends State<LiveMap> {
   int? _kmh; // how fast you're going, on a ride or a drive
   Timer? _speedStale;
 
+  // With no fixes: how far you've gone, where along the route that puts you.
+  final _reckon = DeadReckon();
+  StreamSubscription<UserAccelerometerEvent>? _motion;
+  Timer? _reckonTimer;
+  Fix? _goodFix;
+  List<double>? _estAt;
+  List<List<double>>? _estPath;
+  double _estBase = 0;
+  MapDot? _estDot;
+
   String title = '';
   String sub = '';
   String step = '';
@@ -396,6 +414,8 @@ class _LiveMapState extends State<LiveMap> {
   int _builtLeg = -1;
   List<TripLeg>? _builtLegs;
   ({List<List<double>> path, List<int> stops})? _tripTrack;
+  MapLine? _tripLine; // the part you're on, as it's drawn
+  Map<String, dynamic>? _footRoute; // on a walk, ride or drive part: /api/walk's, and `total`
 
   // Someone's shared trip.
   MapLine? _themPath;
@@ -409,6 +429,12 @@ class _LiveMapState extends State<LiveMap> {
   static const _rerouteMs = 20000;
   static const _arriveM = 25.0;
   static const _roughM = 200.0;
+  // How near the route your last fix has to be for the estimate to follow it, and how far short
+  // of the end it stops: only a real fix says you've arrived.
+  static const _estNearM = 80.0;
+  static const _estShortM = 60.0;
+  // Moving at this, m/s, a fix's heading is the way you're going.
+  static const _headingMs = 3.0;
   int _drawnAt = 0;
 
   MapMode get mode => widget.mode;
@@ -426,6 +452,8 @@ class _LiveMapState extends State<LiveMap> {
   @override
   void dispose() {
     if (LiveMap._open == this) LiveMap._open = null;
+    _motion?.cancel();
+    _reckonTimer?.cancel();
     LiveMap._leftFrom = _leavingFrom;
     _watch?.cancel();
     _tripTimer?.cancel();
@@ -452,11 +480,13 @@ class _LiveMapState extends State<LiveMap> {
         step = tr('map.finding', 'Finding where you are…');
         _walkFrom = widget.from;
         _watchMe();
+        _startReckoning();
         if (_walkFrom != null) _route(_walkFrom!);
       case MapMode.trip:
         title = Trip.I.title.isEmpty ? tr('map.yourTrip', 'Your trip') : Trip.I.title;
         await Stations.load().catchError((_) {});
         _watchMe();
+        _startReckoning();
         _drawTrip(true);
         _tripTimer = Timer.periodic(const Duration(seconds: 5), (_) => _drawTrip(false));
         Trip.I.addListener(_tripChanged);
@@ -829,6 +859,11 @@ class _LiveMapState extends State<LiveMap> {
   }
 
   void _onFix(Fix f) {
+    _reckon.fix(speed: f.speed, accuracy: f.accuracy, at: When.nowMs());
+    if ((f.accuracy ?? 0) <= DeadReckon.goodFixM) {
+      _goodFix = f;
+      if (_estAt != null) _endEstimate();
+    }
     if ((f.accuracy ?? 0) > _roughM && here != null) return;
     final first = here == null;
     here = f;
@@ -839,11 +874,14 @@ class _LiveMapState extends State<LiveMap> {
     _drawMe();
     if (first && following && mode != MapMode.traffic && mode != MapMode.follow) {
       _jump(LatLng(f.lat, f.lng), mode == MapMode.explore ? LiveMap.exploreZoom : LiveMap.streetZoom);
-    } else if (following && mode != MapMode.traffic && _tracking == MyLocationTrackingMode.none) {
+    } else if (following && _estAt == null && mode != MapMode.traffic && _tracking == MyLocationTrackingMode.none) {
       _keepInView(LatLng(f.lat, f.lng));
     }
     if (mode == MapMode.walk) _onWalkFix();
-    if (mode == MapMode.trip) _drawTrip(false);
+    if (mode == MapMode.trip) {
+      _checkFootRoute(f);
+      _drawTrip(false);
+    }
   }
 
   // Your own dot where MapLibre can't draw its puck: in MapPreview, or before location's allowed.
@@ -877,8 +915,9 @@ class _LiveMapState extends State<LiveMap> {
   void _setFollowing(bool on) {
     following = on;
     if (!on && turning) _setTurning(false);
-    if (on && here != null) {
-      _jump(LatLng(here!.lat, here!.lng), mode == MapMode.explore ? LiveMap.exploreZoom + 1 : LiveMap.streetZoom, animate: true);
+    final me = _me;
+    if (on && me != null) {
+      _jump(LatLng(me.lat, me.lng), mode == MapMode.explore ? LiveMap.exploreZoom + 1 : LiveMap.streetZoom, animate: true);
     } else {
       _track();
     }
@@ -897,7 +936,7 @@ class _LiveMapState extends State<LiveMap> {
   }
 
   MyLocationTrackingMode get _tracking {
-    if (!_located || LiveMap.preview || mode == MapMode.follow) return MyLocationTrackingMode.none;
+    if (!_located || _estAt != null || LiveMap.preview || mode == MapMode.follow) return MyLocationTrackingMode.none;
     if (turning) return MyLocationTrackingMode.trackingCompass;
     return following && mode != MapMode.traffic ? MyLocationTrackingMode.tracking : MyLocationTrackingMode.none;
   }
@@ -927,6 +966,108 @@ class _LiveMapState extends State<LiveMap> {
     if (_steering == 0 && (following || turning)) _setFollowing(false);
   }
 
+  // ---------- with no fixes ----------
+
+  /// Where you are: the estimate while there is one, or the last fix.
+  Fix? get _me => _estAt != null ? Fix(_estAt![0], _estAt![1], accuracy: 20) : here;
+
+  void _startReckoning() {
+    if (LiveMap.preview) return;
+    try {
+      _motion = userAccelerometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(
+        (e) => _reckon.motion(e.x, e.y, e.z, When.nowMs()),
+        onError: (_) {},
+      );
+    } catch (_) {
+      // No accelerometer: the estimate carries on at your last speed.
+    }
+    _reckonTimer = Timer.periodic(const Duration(seconds: 1), (_) => _reckonTick());
+  }
+
+  /// The route you're on, if the estimate has one to follow: not a train, which the trip's own
+  /// track and clock follow, nor a straight line that isn't a route at all.
+  List<List<double>>? _followPath() {
+    if (mode == MapMode.walk) {
+      final w = walk;
+      return w == null || w['source'] == 'line' ? null : w['path'] as List<List<double>>;
+    }
+    if (mode != MapMode.trip) return null;
+    final t = Trip.I;
+    final leg = t.current;
+    if (!t.active || leg == null) return null;
+    final foot = _footRoute;
+    if (foot != null) return foot['source'] == 'line' ? null : foot['path'] as List<List<double>>;
+    if (leg.kind == 'bus' && t.boarded) {
+      final road = _tripLine?.points;
+      // Its stops alone aren't its road: only once /api/road has drawn it.
+      return road != null && road.length > leg.points.length ? road : null;
+    }
+    return null;
+  }
+
+  void _reckonTick() {
+    if (!mounted) return;
+    _reckon.advance(When.nowMs());
+    final fix = _goodFix;
+    final path = _reckon.lost ? _followPath() : null;
+    if (path == null || fix == null) {
+      if (_estAt != null) _endEstimate();
+      return;
+    }
+    if (!identical(path, _estPath)) {
+      final near = nearestOn(path, _estAt ?? [fix.lat, fix.lng]);
+      if (near.m > _estNearM) {
+        if (_estAt != null) _endEstimate();
+        return;
+      }
+      _estBase = near.along - (_estAt == null ? 0 : _reckon.travelled);
+      _estPath = path;
+    }
+    final along = math.min(_estBase + _reckon.travelled, math.max(0.0, lengthOf(path) - _estShortM));
+    _showEstimate(pointAlong(path, along, metresAB));
+  }
+
+  void _showEstimate(List<double> at) {
+    if (_estAt == null) {
+      // MapLibre's dot stays at the last fix, so this one stands in for it. Taking its tracking
+      // off isn't a drag: _steering says so until the fixes are back.
+      _steering++;
+      _map?.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
+      _estDot = ink.dot('est', at, radius: 8, fill: LiveMap.meColour, fillOpacity: 0.6, label: tr('map.estimated', 'No GPS here, so this is an estimate.'), z: 9);
+    } else {
+      _estDot!.at = at;
+      ink.changed();
+    }
+    _estAt = at;
+    if (following) _keepInView(LatLng(at[0], at[1]));
+    if (_showsSpeed) _kmh = (_reckon.speed * 3.6).round();
+    if (mode == MapMode.walk) _onWalkFix();
+    if (mode == MapMode.trip) _drawTrip(false);
+    setState(() {});
+  }
+
+  void _endEstimate() {
+    _estAt = null;
+    _estPath = null;
+    _estDot = null;
+    ink.clear('est');
+    _steering--;
+    if (!mounted) return;
+    setState(() {});
+    // Once MapLibre's dot is back, for it to track.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _track();
+    });
+  }
+
+  /// The way you're heading, on a drive, for planning from where you are: to the nearest 15
+  /// degrees, so that routes from much the same place share the server's cache.
+  int? _driveHeading(Fix? f) {
+    final h = f?.heading;
+    if (f == null || h == null || h.isNaN || h < 0 || (f.speed ?? 0) < _headingMs || (f.accuracy ?? 999) > DeadReckon.goodFixM) return null;
+    return ((h / 15).round() * 15) % 360;
+  }
+
   // ---------- how fast ----------
 
   bool get _showsSpeed => mode == MapMode.walk && (widget.cycle || widget.drive);
@@ -948,11 +1089,11 @@ class _LiveMapState extends State<LiveMap> {
 
   static String _key(double lat, double lng) => '${lat.toStringAsFixed(5)},${lng.toStringAsFixed(5)}';
 
-  static Future<Map<String, dynamic>> fetchWalk(({double lat, double lng}) from, ({double lat, double lng}) to, {bool cycle = false, bool drive = false}) async {
+  static Future<Map<String, dynamic>> fetchWalk(({double lat, double lng}) from, ({double lat, double lng}) to, {bool cycle = false, bool drive = false, int? heading}) async {
     final by = drive ? 'drive' : cycle ? 'cycle' : '';
-    final k = '${_key(from.lat, from.lng)}>${_key(to.lat, to.lng)}>$by';
+    final k = '${_key(from.lat, from.lng)}>${_key(to.lat, to.lng)}>$by>${heading ?? ''}';
     if (_routes.containsKey(k)) return _routes[k]!;
-    final r = await Api.map('walk', query: {'from': _key(from.lat, from.lng), 'to': _key(to.lat, to.lng), if (by.isNotEmpty) 'mode': by});
+    final r = await Api.map('walk', query: {'from': _key(from.lat, from.lng), 'to': _key(to.lat, to.lng), if (by.isNotEmpty) 'mode': by, if (heading != null && drive) 'heading': heading});
     return _routes[k] = r;
   }
 
@@ -995,7 +1136,7 @@ class _LiveMapState extends State<LiveMap> {
     _walkAsked = When.nowMs();
     final p = widget.place!;
     try {
-      final got = await fetchWalk(from, (lat: p.lat, lng: p.lng), cycle: widget.cycle, drive: widget.drive);
+      final got = await fetchWalk(from, (lat: p.lat, lng: p.lng), cycle: widget.cycle, drive: widget.drive, heading: widget.drive ? _driveHeading(here) : null);
       if (!mounted) return;
       final path = pathOf(got['path']);
       walk = {...got, 'path': path, 'total': lengthOf(path)};
@@ -1032,7 +1173,7 @@ class _LiveMapState extends State<LiveMap> {
   }
 
   void _onWalkFix() {
-    final f = here;
+    final f = _me;
     if (f == null) return;
     final me = [f.lat, f.lng];
     final w = walk;
@@ -1065,17 +1206,19 @@ class _LiveMapState extends State<LiveMap> {
     final remaining = math.max(0.0, total - near.along);
     final mins = math.max(1, (remaining / math.max(1, total) * ((w['minutes'] as num?) ?? 1)).round());
     sub = '${distText(remaining)} · $mins min · ${tr('map.arrive', 'arrive {time}', {'time': When.clock(When.nowMs() + mins * 60000)})}';
-    String? next;
-    for (final s in (w['steps'] as List? ?? const [])) {
+    step = _nextTurn(w, near.along) ?? tr('map.ahead', '{place} is {d} ahead', {'place': p.label, 'd': distText(left)});
+    setState(() {});
+  }
+
+  /// The next turn on a route, from this far along it.
+  String? _nextTurn(Map<String, dynamic> route, double along) {
+    final path = route['path'] as List<List<double>>;
+    for (final s in (route['steps'] as List? ?? const [])) {
       if (s is! Map || s['at'] is! List) continue;
       final at = nearestOn(path, [(s['at'][0] as num).toDouble(), (s['at'][1] as num).toDouble()]);
-      if (at.along > near.along + 5) {
-        next = tr('map.inDist', 'In {d}: {step}', {'d': distText(at.along - near.along), 'step': s['text']});
-        break;
-      }
+      if (at.along > along + 5) return tr('map.inDist', 'In {d}: {step}', {'d': distText(at.along - along), 'step': s['text']});
     }
-    step = next ?? tr('map.ahead', '{place} is {d} ahead', {'place': p.label, 'd': distText(left)});
-    setState(() {});
+    return null;
   }
 
   // ---------- a trip ----------
@@ -1101,7 +1244,7 @@ class _LiveMapState extends State<LiveMap> {
 
   Color _legColour(TripLeg leg, bool done) {
     if (done) return LiveMap.doneColour;
-    if (leg.kind == 'walk') return LiveMap.walkColour;
+    if (leg.kind == 'walk') return leg.foot == 'drive' ? LiveMap.driveColour : leg.foot == 'cycle' ? LiveMap.cycleColour : LiveMap.walkColour;
     if (leg.color != null) return hexColor(leg.color!);
     if (leg.kind == 'train') return lineColour(leg.route ?? leg.label.split(' ').first);
     return LiveMap.busColour;
@@ -1118,12 +1261,24 @@ class _LiveMapState extends State<LiveMap> {
     return [pts[i][0] + (pts[j][0] - pts[i][0]) * f, pts[i][1] + (pts[j][1] - pts[i][1]) * f];
   }
 
+  /// How far along the part you're on, by its route, if that's known: the estimate, or your fix.
+  double? _routeShare() {
+    final me = _me;
+    final path = _estPath ?? _footRoute?['path'] as List<List<double>>?;
+    if (me == null || path == null) return null;
+    final total = lengthOf(path);
+    return total <= 0 ? null : (nearestOn(path, [me.lat, me.lng]).along / total).clamp(0.0, 1.0);
+  }
+
   double _minutesLeft() {
     final t = Trip.I;
+    final share = _routeShare();
     var left = 0.0;
     for (var i = t.leg; i < t.legs.length; i++) {
       final l = t.legs[i];
-      if (i == t.leg && l.points.length > 1) {
+      if (i == t.leg && share != null) {
+        left += ((_footRoute?['minutes'] as num?)?.toDouble() ?? l.minutes) * (1 - share);
+      } else if (i == t.leg && l.points.length > 1) {
         left += l.minutes * (1 - (t.pos / (l.points.length - 1)).clamp(0.0, 1.0));
       } else {
         left += l.minutes + l.wait;
@@ -1146,6 +1301,9 @@ class _LiveMapState extends State<LiveMap> {
       _builtLeg = t.leg;
       _builtLegs = t.legs;
       _tripTrack = null;
+      _tripLine = null;
+      _footRoute = null;
+      _offRoute = 0;
       ink
         ..clear('lines')
         ..clear('stops')
@@ -1154,7 +1312,9 @@ class _LiveMapState extends State<LiveMap> {
       for (final (i, leg) in t.legs.indexed) {
         final done = i < t.leg;
         final colour = _legColour(leg, done);
-        final line = ink.line('lines', leg.points, color: colour, width: leg.kind == 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95, dash: leg.kind == 'walk', z: done ? 0 : 1);
+        final onFoot = leg.kind == 'walk' && leg.foot == 'walk';
+        final line = ink.line('lines', leg.points, color: colour, width: onFoot ? 4 : 6, opacity: done ? 0.6 : 0.95, dash: onFoot, z: done ? 0 : 1);
+        if (i == t.leg) _tripLine = line;
         if (leg.kind == 'train') {
           RailTracks.path(leg.route ?? leg.label.split(' ').first, leg.points).then((track) {
             if (track == null || !mounted || _builtLeg != built) return;
@@ -1172,14 +1332,8 @@ class _LiveMapState extends State<LiveMap> {
           }).catchError((_) {});
         }
         if (leg.kind == 'walk') {
-          final end = leg.points.last;
           final from = i == t.leg && here != null ? (lat: here!.lat, lng: here!.lng) : (lat: leg.points.first[0], lng: leg.points.first[1]);
-          fetchWalk(from, (lat: end[0], lng: end[1])).then((r) {
-            final path = pathOf(r['path']);
-            if (path.length < 2 || !mounted || _builtLeg != built) return;
-            line.points = path;
-            ink.changed();
-          }).catchError((_) {});
+          _fetchFoot(i, leg, line, from);
         }
         if (leg.kind != 'walk' && !done) {
           for (var k = 1; k < leg.points.length - 1; k++) {
@@ -1206,6 +1360,13 @@ class _LiveMapState extends State<LiveMap> {
       if (fit && here == null) _jump(LatLng(_tripAt()[0], _tripAt()[1]), LiveMap.streetZoom - 1);
     }
     step = t.barText();
+    // On a walk, ride or drive, the next turn says more than how long is left, which is above it.
+    final foot = _footRoute;
+    final me = _me;
+    if (foot != null && me != null) {
+      final near = nearestOn(foot['path'] as List<List<double>>, [me.lat, me.lng]);
+      if (near.m <= _estNearM) step = _nextTurn(foot, near.along) ?? step;
+    }
     final mins = math.max(0, _minutesLeft().round());
     sub = t.arrived ? tr('share.view.arrived', 'Arrived') : tr('map.minsLeft', '{m} min left · arrive {time}', {'m': mins, 'time': When.clock(When.nowMs() + mins * 60000)});
     if (here == null) {
@@ -1213,6 +1374,47 @@ class _LiveMapState extends State<LiveMap> {
       ink.dot('me', _tripAt(), fill: LiveMap.meColour, fillOpacity: 0.7, z: 9);
     }
     if (mounted) setState(() {});
+  }
+
+  /// The route of a trip's walk, ride or drive, on its line, and kept if it's the part you're on.
+  void _fetchFoot(int i, TripLeg leg, MapLine line, ({double lat, double lng}) from, {int? heading}) {
+    final built = _builtLeg;
+    final legs = _builtLegs;
+    final end = leg.points.last;
+    if (i == built) _walkAsked = When.nowMs();
+    fetchWalk(from, (lat: end[0], lng: end[1]), cycle: leg.foot == 'cycle', drive: leg.foot == 'drive', heading: heading).then((r) {
+      final path = pathOf(r['path']);
+      if (path.length < 2 || !mounted || _builtLeg != built || !identical(_builtLegs, legs)) return;
+      line.points = path;
+      if (i == built) {
+        _footRoute = {...r, 'path': path, 'total': lengthOf(path)};
+        _drawTrip(false);
+      }
+      ink.changed();
+    }).catchError((_) {});
+  }
+
+  /// Off the route of the walk, ride or drive you're on: planned again from where you are.
+  void _checkFootRoute(Fix f) {
+    final t = Trip.I;
+    final leg = t.current;
+    final line = _tripLine;
+    if (!t.active || leg == null || leg.ride || line == null) return;
+    final acc = f.accuracy ?? 20;
+    final path = _footRoute?['path'] as List<List<double>>?;
+    // Nothing yet, and the leg's first ask has had its time: from here, this time.
+    if (path == null) {
+      if (When.nowMs() - _walkAsked > _rerouteMs) _fetchFoot(t.leg, leg, line, (lat: f.lat, lng: f.lng), heading: leg.foot == 'drive' ? _driveHeading(f) : null);
+      return;
+    }
+    if (nearestOn(path, [f.lat, f.lng]).m <= _offRouteM + math.min(acc, 50)) {
+      _offRoute = 0;
+      return;
+    }
+    if (++_offRoute >= _offRouteFixes && When.nowMs() - _walkAsked > _rerouteMs && acc < 60) {
+      _offRoute = 0;
+      _fetchFoot(t.leg, leg, line, (lat: f.lat, lng: f.lng), heading: leg.foot == 'drive' ? _driveHeading(f) : null);
+    }
   }
 
   // ---------- someone's shared trip ----------
@@ -1509,7 +1711,7 @@ class _LiveMapState extends State<LiveMap> {
             compassEnabled: true,
             compassViewPosition: CompassViewPosition.topRight,
             compassViewMargins: const math.Point(16, 200),
-            myLocationEnabled: _located,
+            myLocationEnabled: _located && _estAt == null,
             myLocationRenderMode: _located ? MyLocationRenderMode.compass : MyLocationRenderMode.normal,
             onCameraTrackingDismissed: _trackingDismissed,
             attributionButtonPosition: AttributionButtonPosition.bottomLeft,
@@ -1658,7 +1860,7 @@ class _LiveMapState extends State<LiveMap> {
             onDirections: (label, lat, lng) => _leaveBy(() => openNav(from: NavEnd.parse('here'), to: NavEnd(label, lat, lng))),
           ),
         // How it's going, at the foot: the next turn, the trip's status, the traffic.
-        if (step.isNotEmpty || note.isNotEmpty)
+        if (step.isNotEmpty || note.isNotEmpty || _estAt != null)
           Positioned(
             left: 12,
             right: 12,
@@ -1671,6 +1873,7 @@ class _LiveMapState extends State<LiveMap> {
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   if (step.isNotEmpty) Text(step, style: Theme.of(context).textTheme.titleMedium),
+                  if (_estAt != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(tr('map.estimated', 'No GPS here, so this is an estimate.'), style: TextStyle(color: sg.muted))),
                   if (note.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(note, style: TextStyle(color: sg.warn))),
                 ]),
               ),

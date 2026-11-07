@@ -27,5 +27,6 @@
   "terminal.ctrlC": "Stop it, or clear the line",
   "terminal.clear": "Clear the screen",
   "tour.terminal.2app": "The answers show here. ^C stops one that keeps updating, or clears the line; press and hold to select text and copy it.",
-  "tour.terminal.3app": "exit, Back or this closes it. Settings, Help and extras opens it again."
+  "tour.terminal.3app": "exit, Back or this closes it. Settings, Help and extras opens it again.",
+  "map.estimated": "No GPS here, so this is an estimate."
 }

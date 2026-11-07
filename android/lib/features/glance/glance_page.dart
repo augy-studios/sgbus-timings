@@ -363,13 +363,20 @@ class _GlancePageState extends State<GlancePage> {
                       for (var i = 0; i < 3; i++)
                         SizedBox(
                           width: Eta.clockTimes ? 52 : 36,
-                          child: Text(
-                            i < r.times.length ? _timeCell(r.times[i]) : '',
-                            textAlign: TextAlign.end,
-                            style: TextStyle(
-                              fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w500,
-                              fontSize: i == 0 ? 17 : 15,
-                              color: i < r.times.length && r.times[i] < 60000 ? sg.ok : (i == 0 ? sg.ink : sg.muted),
+                          // Smaller rather than broken in two, where a language's "Arr" is long.
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              i < r.times.length ? _timeCell(r.times[i]) : '',
+                              textAlign: TextAlign.end,
+                              maxLines: 1,
+                              softWrap: false,
+                              style: TextStyle(
+                                fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w500,
+                                fontSize: i == 0 ? 17 : 15,
+                                color: i < r.times.length && r.times[i] < 60000 ? sg.ok : (i == 0 ? sg.ink : sg.muted),
+                              ),
                             ),
                           ),
                         ),
@@ -395,38 +402,40 @@ class _GlancePageState extends State<GlancePage> {
           children: [
             const Greeting(),
             const SizedBox(height: 14),
-            Row(children: [
-              TourTarget(id: 'glance.source', child: ActionChip(
-                avatar: Icon(src?.icon ?? Icons.my_location, size: 18),
-                label: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Text(src?.name ?? tr('glance.source.near', 'Nearby')),
-                  const Icon(Icons.arrow_drop_down, size: 18),
-                ]),
-                onPressed: _pickSource,
-              )),
-              const SizedBox(width: 6),
-              IconButton.filledTonal(
-                tooltip: tr('glance.refresh', 'Refresh'),
-                onPressed: _busy
-                    ? null
-                    : () async {
-                        setState(() => _busy = true);
-                        _since = 0;
-                        try {
-                          await _refresh();
-                        } finally {
-                          if (mounted) setState(() => _busy = false);
-                        }
-                      },
-                icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh),
-              ),
-              const SizedBox(width: 6),
-              if (_fetchedAt != 0)
-                Flexible(
-                  child: Text(Eta.clockTimes ? tr('glance.byClock', 'Clock times') : tr('glance.inMinutes', 'Times in minutes'),
-                      style: TextStyle(color: sg.muted, fontSize: 13), overflow: TextOverflow.ellipsis),
+            // The chip and its refresh, and what the times are on the same line if there's room for
+            // it, or on the next: squeezed in beside them, it's a letter or two.
+            LayoutBuilder(
+              builder: (context, box) => Wrap(spacing: 6, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: [
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxWidth: box.maxWidth - 54),
+                  child: TourTarget(id: 'glance.source', child: ActionChip(
+                    avatar: Icon(src?.icon ?? Icons.my_location, size: 18),
+                    label: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Flexible(child: Text(src?.name ?? tr('glance.source.near', 'Nearby'), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      const Icon(Icons.arrow_drop_down, size: 18),
+                    ]),
+                    onPressed: _pickSource,
+                  )),
                 ),
-            ]),
+                IconButton.filledTonal(
+                  tooltip: tr('glance.refresh', 'Refresh'),
+                  onPressed: _busy
+                      ? null
+                      : () async {
+                          setState(() => _busy = true);
+                          _since = 0;
+                          try {
+                            await _refresh();
+                          } finally {
+                            if (mounted) setState(() => _busy = false);
+                          }
+                        },
+                  icon: _busy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh),
+                ),
+                if (_fetchedAt != 0)
+                  Text(Eta.clockTimes ? tr('glance.byClock', 'Clock times') : tr('glance.inMinutes', 'Times in minutes'), style: TextStyle(color: sg.muted, fontSize: 13)),
+              ]),
+            ),
             const SizedBox(height: 14),
             TourTarget(id: 'glance.hero', child: SgCard(padding: const EdgeInsets.all(18), child: _hero(src))),
             if (GlancePage.weather != null) Padding(padding: const EdgeInsets.only(top: 10), child: GlancePage.weather!(context)),
