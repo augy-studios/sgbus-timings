@@ -1915,9 +1915,9 @@ class _LiveMapState extends State<LiveMap> {
 
   Widget _face(IconData icon, String label, {bool on = false, VoidCallback? onTap}) {
     final sg = context.sg;
-    final face = SizedBox(width: 48, height: 48, child: Icon(icon, color: on ? sg.onBrand : sg.ink, semanticLabel: label));
+    final face = SizedBox(width: 48, height: 48, child: Icon(icon, color: on ? sg.onTray : sg.ink, semanticLabel: label));
     return Material(
-      color: on ? sg.brand : sg.surfaceStrong,
+      color: on ? sg.tray : sg.surfaceStrong,
       elevation: _lift,
       shape: LiveMap.preview ? CircleBorder(side: BorderSide(color: sg.border)) : const CircleBorder(),
       child: onTap == null ? face : InkWell(customBorder: const CircleBorder(), onTap: onTap, child: face),

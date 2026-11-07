@@ -105,7 +105,7 @@ bottom, the map says which roads are slowest, and how long ago LTA's traffic was
 
 When someone shares their ETA with you, their link opens **Live progress**: when they'll arrive, which bus
 or train they're on, and their stops ahead, updating by itself. **Live map** shows their dot moving along
-their trip.
+their trip, and **Directions there** plans your own way to where they're going.
 
 ## Offline
 

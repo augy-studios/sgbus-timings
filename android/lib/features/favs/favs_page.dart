@@ -5,6 +5,8 @@
 // show is the one Glance shows too.
 import 'package:flutter/material.dart';
 
+import '../../api/net.dart';
+import '../tour/tour.dart';
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';
 import '../../data/favs.dart';
@@ -160,20 +162,30 @@ class _FavsPageState extends State<FavsPage> {
           deleteButtonTooltipMessage: removeLabel,
         );
 
-    Widget group(String label, List<Widget> chips) => chips.isEmpty
-        ? const SizedBox.shrink()
-        : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SectionLabel(label),
-            Wrap(spacing: 8, runSpacing: 8, children: chips),
-          ]);
+    Widget group(String label, List<Widget> chips, {String? tour}) {
+      if (chips.isEmpty) return const SizedBox.shrink();
+      final g = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        SectionLabel(label),
+        Wrap(spacing: 8, runSpacing: 8, children: chips),
+      ]);
+      return tour == null ? g : TourTarget(id: tour, child: g);
+    }
 
     return SafeArea(
-      bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
           Text(tr('favs.title', 'Favourites'), style: Theme.of(context).textTheme.headlineMedium),
           const SizedBox(height: 10),
+          ValueListenableBuilder<bool>(
+            valueListenable: Net.off,
+            builder: (context, off, _) => !off
+                ? const SizedBox.shrink()
+                : Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(tr('favs.offline', 'You’re offline. A stop’s timings come back when you reconnect; a bus’s route and your bus-only routes open without a connection.'), style: TextStyle(color: context.sg.muted, fontSize: 13)),
+                  ),
+          ),
           // ---- the lists' tabs ----
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -226,7 +238,7 @@ class _FavsPageState extends State<FavsPage> {
                   onRemove: () => list != null ? _listOut(list, ['stop:${f.code}']) : Favs.I.removeStop(f.code),
                 ),
             ]),
-            group(tr('favs.group.buses', 'Buses'), [
+            group(tr('favs.group.buses', 'Buses'), tour: 'favs.buses', [
               for (final no in buses)
                 chip(
                   code: no,
@@ -256,7 +268,7 @@ class _FavsPageState extends State<FavsPage> {
                   onRemove: () => Favs.I.setRoutes([...routes]..removeAt(i)),
                 ),
             ]),
-            group(tr('favs.group.navs', 'Navs'), [
+            group(tr('favs.group.navs', 'Navs'), tour: 'favs.navs', [
               for (var i = 0; i < navs.length; i++)
                 chip(
                   name: navLabel(navs[i]),
@@ -265,12 +277,12 @@ class _FavsPageState extends State<FavsPage> {
                 ),
             ]),
             if (shown == 0)
-              EmptyNote(
+              TourTarget(id: 'favs.empty', child: EmptyNote(
                 list != null
                     ? tr('favs.lists.empty', 'Nothing in {name} yet. Choose what’s in it from your favourites.', {'name': list.name})
                     : tr('favs.empty', 'No favourites yet. Star a stop’s timings, a bus at a stop or on its route, or a nav (bus and train, or bus only).'),
                 icon: Icons.star_outline_rounded,
-              ),
+              )),
           ],
         ],
       ),

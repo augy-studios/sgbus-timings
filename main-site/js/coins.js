@@ -13,7 +13,8 @@
 // A feat is worth Eggs.FEAT_COINS, once.
 //
 // The wheel: SPIN_COST a spin, and SLOTS, each as likely as the others. The egg slot gives an egg
-// not found yet, at random (Eggs.found); once every egg's found, it's coins instead.
+// not found yet, at random (Eggs.found); once every egg's found, it's coins instead. While GTA VI's
+// colours are the wheel's to give (js/gta6.js), it gives those first.
 //
 // Kept under KEY as { balance, log: [{ at, n, why, trip?, feat? }] (the last LOG_MAX), spins }:
 // this phone's, not synced, as the rides they're for are. The Edge Tray's coin button
@@ -174,7 +175,8 @@
   // ---------- the wheel ----------
 
   const eggsLeft = () => (window.Eggs ? Eggs.all.filter((id) => !Eggs.list().includes(id)) : []);
-  const slotNow = (s) => (s.egg && !eggsLeft().length ? { coins: EGG_GONE_COINS } : s);
+  const gta6Due = () => !!window.Gta6?.due();
+  const slotNow = (s) => (s.egg && !eggsLeft().length && !gta6Due() ? { coins: EGG_GONE_COINS } : s);
 
   let spinning = false;
   let turned = 0;
@@ -196,6 +198,10 @@
     const slot = slotNow(SLOTS[index]);
     let egg = null;
     let got = null;
+    if (slot.egg && gta6Due()) {
+      Gta6.claim('wheel');
+      return { index, slot, gta6: true, egg, got };
+    }
     if (slot.egg) {
       const left = eggsLeft();
       egg = left[Math.floor(Math.random() * left.length)];
@@ -222,7 +228,7 @@
       const [x0, y0] = pt(a0, r);
       const [x1, y1] = pt(a1, r);
       const [tx, ty] = pt((i / n) * 2 * Math.PI, r * 0.66);
-      const label = s.egg ? '🥚' : String(s.coins);
+      const label = s.egg ? (gta6Due() ? '🎨' : '🥚') : String(s.coins);
       return `<path d="M${r},${r} L${x0.toFixed(2)},${y0.toFixed(2)} A${r},${r} 0 0 1 ${x1.toFixed(2)},${y1.toFixed(2)} Z" class="coinSlice ${s.egg ? 'egg' : i % 2 ? 'odd' : 'even'}"/>` +
         `<text x="${tx.toFixed(2)}" y="${ty.toFixed(2)}" transform="rotate(${(i * 360) / n} ${tx.toFixed(2)} ${ty.toFixed(2)})" class="coinSliceText">${label}</text>`;
     }).join('')}<circle cx="100" cy="100" r="16" class="coinHub"/></svg>`;
@@ -241,6 +247,7 @@
     $('coinNeed').textContent = tr('coins.need', '{n} more uwuCoins for a spin.', { n: SPIN_COST - v.balance });
     const feats = window.Eggs?.feats() || [];
     const eggs = window.Eggs?.list() || [];
+    $('coinGta6').hidden = !gta6Due();
     $('coinFeats').textContent = `${tr('eggs.featCount', '{n} of {all} feats done', { n: feats.length, all: window.Eggs?.all.length || 6 })} · ${tr('eggs.count', '{n} of {all} Easter eggs found', { n: eggs.length, all: window.Eggs?.all.length || 6 })}`;
   }
 
@@ -276,7 +283,10 @@
   function result(r) {
     const out = $('coinResult');
     out.hidden = false;
-    if (r.slot.egg) {
+    if (r.gta6) {
+      out.innerHTML = `<strong>${esc(tr('coins.wonGta6', 'GTA VI’s colours!'))}</strong> ${esc(tr('coins.wonGta6More', 'They’re yours to keep. Pick them in Theme.'))}`;
+      window.Confetti?.burst?.();
+    } else if (r.slot.egg) {
       out.innerHTML = `<strong>${esc(tr('coins.wonEgg', 'An Easter egg: {name}!', { name: Eggs.name(r.egg) }))}</strong> ${esc(Eggs.prizeText(r.egg, r.got))}`;
       window.Confetti?.burst?.();
     } else {

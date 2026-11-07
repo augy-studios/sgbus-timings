@@ -99,6 +99,10 @@ yet, or more coins, up to 150. Once you've found every egg, its slice is coins
 too. Under the wheel, how many feats you've done and eggs you've found, and
 **See your achievements**.
 
+If you didn't set [GTA VI's colours](settings.md#brand-colour) before 26 November, the egg
+slice shows a palette and wins them first, before any more eggs, and stays that prize
+until you've won it.
+
 ## Achievements
 
 <figure>

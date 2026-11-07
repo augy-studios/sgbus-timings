@@ -27,9 +27,13 @@ package org.uwuapps.sgbus;
 
 import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
+import android.app.RemoteAction;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.graphics.drawable.Icon;
 import android.net.Uri;
 import android.nfc.NdefMessage;
 import android.nfc.NdefRecord;
@@ -168,13 +172,27 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
     // While a trip runs or the live map is open, leaving the app shrinks it into a small window
     // showing just that (main-site/js/pip.js asks for it through SgBusPlugin.pip). Android 12
     // and later do it themselves (auto-enter); before that, onUserLeaveHint does.
+    //
+    // On a trip of more than one part, the window has previous and next buttons, as a video's
+    // does (RemoteAction), each greyed where there's no part to go to. A tap comes back through
+    // PipAction and SgBusPlugin to the trip (lib/features/misc/extras.dart).
 
     private boolean mAutoPip;
     private Rational mPipRatio = new Rational(16, 9);
+    private boolean mPipParts;
+    private boolean mPipPrev;
+    private boolean mPipNext;
+    private String mPipPrevLabel = "";
+    private String mPipNextLabel = "";
 
-    void setAutoPip(boolean auto, Rational ratio) {
+    void setAutoPip(boolean auto, Rational ratio, boolean parts, boolean prev, boolean next, String prevLabel, String nextLabel) {
         mAutoPip = auto;
         if (ratio != null) mPipRatio = ratio;
+        mPipParts = parts;
+        mPipPrev = prev;
+        mPipNext = next;
+        if (prevLabel != null) mPipPrevLabel = prevLabel;
+        if (nextLabel != null) mPipNextLabel = nextLabel;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) setPictureInPictureParams(pipParams());
     }
 
@@ -192,7 +210,31 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
     private PictureInPictureParams pipParams() {
         PictureInPictureParams.Builder b = new PictureInPictureParams.Builder().setAspectRatio(mPipRatio);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) b.setAutoEnterEnabled(mAutoPip).setSeamlessResizeEnabled(true);
+        // Set every time, empty with none: the window keeps the last ones otherwise.
+        java.util.List<RemoteAction> actions = new java.util.ArrayList<>();
+        if (mPipParts) {
+            actions.add(pipAction("prev", R.drawable.ic_pip_prev, mPipPrevLabel, mPipPrev, 1));
+            actions.add(pipAction("next", R.drawable.ic_pip_next, mPipNextLabel, mPipNext, 2));
+        }
+        b.setActions(actions);
         return b.build();
+    }
+
+    @androidx.annotation.RequiresApi(Build.VERSION_CODES.O)
+    private RemoteAction pipAction(String what, int icon, String label, boolean enabled, int code) {
+        Intent intent = new Intent(this, PipAction.class).putExtra("action", what);
+        PendingIntent tap = PendingIntent.getBroadcast(this, code, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        RemoteAction action = new RemoteAction(Icon.createWithResource(this, icon), label, label, tap);
+        action.setEnabled(enabled);
+        return action;
+    }
+
+    /** A button in the small window, on to the trip. */
+    public static class PipAction extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            SgBusPlugin.onPipAction(intent.getStringExtra("action"));
+        }
     }
 
     @Override

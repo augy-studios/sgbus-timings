@@ -31,6 +31,9 @@ Tap the gold coin, or open [Settings](settings.md#help-and-extras), **Help and e
 lands on one of eight slices at random: an **Easter egg** you haven't found yet, or more coins. Once you've found every egg, its slice
 is coins too.
 
+If you didn't set [GTA VI's colours](theme.md#gta-vi-colours) before 26 November, the egg slice shows a palette and wins them first, before
+any more eggs, and stays that prize until you've won it.
+
 ## Hide them
 
 On the same screen:

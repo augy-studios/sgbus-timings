@@ -706,7 +706,7 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
       'legStartedAt': t.legStartedAt,
       'seenAt': t.lastFixAt > 0 ? t.lastFixAt : t.legStartedAt,
       'anchor': null,
-      'realignedAt': 0,
+      'realignedAt': t.realignedAt,
       'movedAt': t.movedAt,
       'clockRuns': t.current?.kind != 'bus' || t.boarded,
       'fixAt': t.lastFixAt,

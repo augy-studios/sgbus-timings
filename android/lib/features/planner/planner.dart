@@ -8,6 +8,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../app/links.dart';
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';
 import '../../data/favs.dart';
@@ -22,6 +23,7 @@ import '../../data/when.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
+import '../../widgets/share.dart';
 import '../../widgets/stop_rows.dart';
 import '../nav/when_picker.dart';
 import '../timings/stop_screen.dart';
@@ -101,11 +103,19 @@ class PlannerTab extends StatefulWidget {
 class _PlannerTabState extends State<PlannerTab> {
   PlannerState get p => PlannerState.I;
   List<Map<String, dynamic>?>? _live; // per leg, the bus's timings at its stop
+  List<Leg>? _liveFor; // the journey they're for
 
   @override
   void initState() {
     super.initState();
     p.addListener(_redraw);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _journeyTimings());
+  }
+
+  /// A journey opened from elsewhere (Back to Navigate), or this tab new with one open: its timings.
+  void _journeyTimings() {
+    final j = p.journey;
+    if (mounted && j != null && !identical(j, _liveFor)) _openJourney(j);
   }
 
   @override
@@ -115,7 +125,9 @@ class _PlannerTabState extends State<PlannerTab> {
   }
 
   void _redraw() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    setState(() {});
+    if (p.journey != null && !identical(p.journey, _liveFor)) WidgetsBinding.instance.addPostFrameCallback((_) => _journeyTimings());
   }
 
   // The buses straight between a stop and the other end already set, which mark it Direct.
@@ -200,11 +212,17 @@ class _PlannerTabState extends State<PlannerTab> {
                         }
                       },
                     ),
-                    for (final place in Places.all())
+                    for (final place in Places.all(unset: true))
                       Pill(
                         icon: place.icon,
                         label: place.name,
+                        unset: place.unset,
+                        tooltip: place.unset ? tr('nav.setInPlaces', 'Set your {place} in Places', {'place': place.name.toLowerCase()}) : null,
                         onTap: () {
+                          if (place.unset) {
+                            NavSwitch.setPlace?.call(ctx, place);
+                            return;
+                          }
                           if (place.stop != null) return Navigator.pop(ctx, place.stop);
                           offer(field == 'start' ? tr('planner.nearPlaceStart', 'Stops near {place}: pick the start', {'place': place.name}) : tr('planner.nearPlaceEnd', 'Stops near {place}: pick the end', {'place': place.name}), place.lat, place.lng);
                         },
@@ -251,6 +269,7 @@ class _PlannerTabState extends State<PlannerTab> {
 
   Future<void> _openJourney(List<Leg> legs) async {
     p.journey = legs;
+    _liveFor = legs;
     _live = null;
     p.changed();
     final clock = Journeys.journeyClock(legs, p.start!, p.end!);
@@ -265,6 +284,19 @@ class _PlannerTabState extends State<PlannerTab> {
               return s == null ? null : {'etas': [for (final b in s.buses) if (b?.etaMs != null) b!.etaMs! / 60000]};
             }()
         ]);
+  }
+
+  void _share() {
+    String name(String code) => Stops.nameOf(code).isEmpty ? code : Stops.nameOf(code);
+    final s = p.start, e = p.end;
+    final title = s != null && e != null
+        ? tr('planner.fromTo', '{from} to {to}', {'from': name(s), 'to': name(e)})
+        : e != null
+            ? tr('trip.to', 'To {to}', {'to': name(e)})
+            : s != null
+                ? tr('route.from', 'From {stop}', {'stop': name(s)})
+                : tr('planner.shareTitle', 'Navigate by bus only');
+    shareLink(context, Links.route(s, e, p.when), title);
   }
 
   Widget _endField(String field) {
@@ -479,7 +511,7 @@ class _PlannerTabState extends State<PlannerTab> {
     Widget step(IconData icon, Widget body) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            CircleAvatar(radius: 17, backgroundColor: sg.brand, child: Icon(icon, size: 18, color: sg.onBrand)),
+            CircleAvatar(radius: 17, backgroundColor: sg.badge, child: Icon(icon, size: 18, color: sg.onBadge)),
             const SizedBox(width: 10),
             Expanded(child: SgCard(padding: const EdgeInsets.all(12), child: body)),
           ]),
@@ -601,6 +633,7 @@ class _PlannerTabState extends State<PlannerTab> {
                 icon: Icon(p.isFav() ? Icons.star_rounded : Icons.star_outline_rounded),
                 onPressed: p.toggleFav,
               ),
+            IconButton(tooltip: tr('planner.share_this_route', 'Share this route'), icon: const Icon(Icons.share_outlined), onPressed: _share),
           ]),
           _endField('end'),
           const SizedBox(height: 10),
@@ -615,13 +648,38 @@ class _PlannerTabState extends State<PlannerTab> {
 }
 
 /// Opens Bus only with its ends, from a link or a saved route.
-void openPlanner({String? start, String? end, WhenPick? when}) {
+void openPlanner({String? start, String? end, WhenPick? when, List<Leg>? journey}) {
   final p = PlannerState.I;
   p.start = start;
   p.end = end;
   p.when = when;
-  p.journey = null;
+  p.journey = journey;
   Store.I.put('sgbus_nav_mode', 'bus');
   AppNav.showPage('nav');
   unawaited(p.search());
+}
+
+/// What Bus only hands on: Places' form, for Home or Work tapped while it isn't set.
+class NavSwitch {
+  NavSwitch._();
+  static void Function(BuildContext context, Place place)? setPlace;
+}
+
+/// The Bus only tab as it is, for a trip started from it to come back to.
+Map<String, Object?> plannerOrigin(List<Leg> legs) {
+  final p = PlannerState.I;
+  return {'kind': 'route', 'start': p.start, 'end': p.end, 'journey': [for (final l in legs) l.toJson()], 'when': p.when?.toJson()};
+}
+
+/// Back to Navigate, from a trip on Bus only: its journey as it was, if the trip kept one. A time
+/// that has passed is left out, so it plans for now.
+void reopenPlanner(Map o) {
+  final picked = WhenPick.fromJson(o['when']);
+  final legs = [for (final l in (o['journey'] as List? ?? const [])) Leg.fromJson(l)].whereType<Leg>().toList();
+  openPlanner(
+    start: o['start'] as String?,
+    end: o['end'] as String?,
+    when: picked != null && When.problem(picked) == null ? picked : null,
+    journey: legs.isEmpty ? null : legs,
+  );
 }

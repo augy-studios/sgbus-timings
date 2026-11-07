@@ -4,11 +4,12 @@
 //            fonts (Google Sans on a Pixel, the maker's or the person's chosen font elsewhere),
 //            solid tonal cards, pill buttons, sheets from the bottom, and the colours of the
 //            phone's wallpaper on Android 12 and later (the app's green tonal palette before
-//            that). Your colours' one colour only when picked for it (app.youColours = "yours").
+//            that). Your colours' one colour or GTA VI's only when picked for it (app.youColours =
+//            "yours" or "gta-6").
 //            Only in the Android app, and no longer an Easter egg's secret: off is
 //            APP_LOOK_KEY = "usual".
 //   The UwU Apps theme  the site's: Jua, see-through glass cards on a soft background, in one
-//            of the seven brand colours (sgbus.colorTheme) or Your colours (sgbus_colours).
+//            of the eight brand colours (sgbus.colorTheme) or Your colours (sgbus_colours).
 //
 // Either way light, dark or by the clock (sgbus.mode: light 09:00 to 18:00), and High contrast
 // (sgbus_contrast: the phone's setting, on or off). Every screen takes its colours from
@@ -20,6 +21,7 @@ import 'package:dynamic_color/dynamic_color.dart' show DynamicColorPlugin;
 import 'package:flutter/material.dart';
 import 'package:material_color_utilities/material_color_utilities.dart' show CorePalette, Scheme;
 
+import '../data/gta6.dart';
 import '../data/store.dart';
 import '../native/native_bridge.dart';
 
@@ -42,6 +44,7 @@ class SgColors extends ThemeExtension<SgColors> {
     required this.error,
     required this.tones,
     required this.glass,
+    this.accents,
   });
 
   final Color bg;
@@ -59,6 +62,30 @@ class SgColors extends ThemeExtension<SgColors> {
   final Color error;
   final List<Color> tones; // the ways a bus goes at a stop it calls at both ways
   final bool glass; // the UwU Apps theme's see-through cards
+  final SgAccents? accents; // GTA VI's other colours; every other theme has the one brand colour
+
+  // A colour to each kind of thing, which in every theme but GTA VI is the brand colour.
+  Color get pick => accents?.pick ?? brand; // what's picked
+  Color get onPick => accents?.onPick ?? onBrand;
+  Color get tray => accents?.tray ?? brand; // the page you're on, and what's switched on
+  Color get onTray => accents?.onTray ?? onBrand;
+  Color get bar => accents?.bar ?? brand; // the bars across the top
+  Color get onBar => accents?.onBar ?? onBrand;
+  Color get badge => accents?.badge ?? brand; // codes and round icons
+  Color get onBadge => accents?.onBadge ?? onBrand;
+  Color get heading => accents?.heading ?? muted; // section labels
+
+  /// A bus number's colour, the same for that bus wherever it's shown.
+  Color busInk(String no) {
+    final inks = accents?.inks;
+    return inks == null ? ink : inks[no.codeUnits.fold<int>(0, (a, b) => a + b) % inks.length];
+  }
+
+  /// A slice of the wheel: its colour and the colour on it, or null for the theme's own.
+  (Color, Color)? slice(int i) {
+    final all = accents?.slices;
+    return all == null ? null : all[i % all.length];
+  }
 
   /// A load's colour: SEA, SDA, LSD.
   Color load(String? l) => switch ((l ?? '').toUpperCase()) {
@@ -69,10 +96,10 @@ class SgColors extends ThemeExtension<SgColors> {
       };
 
   @override
-  SgColors copyWith({Color? brand}) => SgColors(
+  SgColors copyWith({Color? brand, Color? onBrand, Color? brandInk, SgAccents? accents}) => SgColors(
         bg: bg, surface: surface, surfaceStrong: surfaceStrong, border: border, ink: ink, muted: muted,
-        brand: brand ?? this.brand, onBrand: onBrand, brandInk: brandInk, ok: ok, warn: warn, busy: busy,
-        error: error, tones: tones, glass: glass,
+        brand: brand ?? this.brand, onBrand: onBrand ?? this.onBrand, brandInk: brandInk ?? this.brandInk, ok: ok, warn: warn, busy: busy,
+        error: error, tones: tones, glass: glass, accents: accents ?? this.accents,
       );
 
   @override
@@ -86,8 +113,35 @@ class SgColors extends ThemeExtension<SgColors> {
       busy: l(busy, other.busy), error: l(error, other.error),
       tones: [for (var i = 0; i < tones.length; i++) l(tones[i], other.tones[i])],
       glass: t < 0.5 ? glass : other.glass,
+      accents: t < 0.5 ? accents : other.accents,
     );
   }
+}
+
+/// GTA VI's colours beyond its pink, a colour to each kind of thing (AppLook._gta6Dress).
+@immutable
+class SgAccents {
+  const SgAccents({required this.heading, required this.inks});
+  static const _on = Color(0xFF1D0030);
+  static const _white = Colors.white;
+
+  Color get pick => const Color(0xFFE6953E);
+  Color get onPick => _on;
+  Color get tray => const Color(0xFFFFBC24);
+  Color get onTray => _on;
+  Color get bar => const Color(0xFF2B60DA);
+  Color get onBar => _white;
+  Color get badge => const Color(0xFFBC0082);
+  Color get onBadge => _white;
+  final Color heading;
+  final List<Color> inks;
+  List<(Color, Color)> get slices => const [
+        (Color(0xFFFF2B90), _on),
+        (Color(0xFF2B60DA), _white),
+        (Color(0xFFE6953E), _on),
+        (Color(0xFFBC0082), _white),
+        (Color(0xFFFFBC24), _on),
+      ];
 }
 
 extension SgTheme on BuildContext {
@@ -96,10 +150,11 @@ extension SgTheme on BuildContext {
 }
 
 class BrandSwatch {
-  const BrandSwatch(this.id, this.hex, this.label);
+  const BrandSwatch(this.id, this.hex, this.label, {this.dot});
   final String id;
   final int hex;
   final String Function() label;
+  final List<Color>? dot; // its dot's colours, top to bottom, where it isn't just the one
 }
 
 Color hexColor(String s, [Color fallback = const Color(0xFFCCFFCC)]) {
@@ -127,7 +182,16 @@ class AppLook extends ChangeNotifier {
     BrandSwatch('not-green-4', 0xFFFFCCFF, _ng4),
     BrandSwatch('not-green-5', 0xFFCCFFFF, _ng5),
     BrandSwatch('really-light-green', 0xFFFFFFFF, _rl),
+    BrandSwatch(gta6, 0xFFFF2B90, _gta6, dot: [Color(0xFF2B60DA), Color(0xFFFF2B90), Color(0xFFE6953E)]),
   ];
+
+  /// GTA VI, for its release on 19 November 2026, set in time or won on the wheel (data/gta6.dart):
+  /// the colours of the game's logo, as style.css has them, more than the other swatches' tint.
+  static const gta6 = 'gta-6';
+  static const _gta6Tokens = {
+    'light': {'--bg': '#fff0f7', '--ink': '#1d0030', '--muted': '#66406f', '--brand': '#ff2b90', '--on-brand': '#1d0030', '--brand-ink': '#bc0082'},
+    'dark': {'--bg': '#1d0030', '--ink': '#fff4fa', '--muted': '#d9c2de', '--brand': '#ff2b90', '--on-brand': '#1d0030', '--brand-ink': '#ff7ccb'},
+  };
   static String _classic() => 'Classic';
   static String _ng1() => 'Not green 1';
   static String _ng2() => 'Not green 2';
@@ -135,6 +199,7 @@ class AppLook extends ChangeNotifier {
   static String _ng4() => 'Not green 4';
   static String _ng5() => 'Not green 5';
   static String _rl() => 'Really really light green';
+  static String _gta6() => 'GTA VI';
 
   /// The phone's wallpaper colours (Android 12 and later), once read.
   ColorScheme? phoneLight;
@@ -145,11 +210,18 @@ class AppLook extends ChangeNotifier {
   String phoneBodyFont = 'sans-serif';
   String phoneHeadFont = 'sans-serif';
 
-  /// In Material You: the wallpaper's colours ("phone", the default) or Your colours ("yours").
+  /// In Material You: the wallpaper's colours ("phone", the default), Your colours ("yours") or
+  /// GTA VI's ("gta-6").
   static const youColoursKey = 'app.youColours';
-  bool get youUseYours => Store.I.get(youColoursKey) == 'yours' && yourColours != null;
-  set youUseYours(bool on) {
-    Store.I.put(youColoursKey, on ? 'yours' : null);
+  String get youColours {
+    final v = Store.I.get(youColoursKey);
+    if (v == 'yours' && yourColours != null) return v!;
+    return v == gta6 && Gta6.canPick ? gta6 : 'phone';
+  }
+
+  set youColours(String v) {
+    if (v == gta6 && !Gta6.pick()) return;
+    Store.I.put(youColoursKey, v == 'phone' ? null : v);
     notifyListeners();
   }
 
@@ -162,9 +234,14 @@ class AppLook extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get swatchId => Store.I.get(colorKey) ?? 'classic';
+  String get swatchId {
+    final v = Store.I.get(colorKey) ?? 'classic';
+    return v == gta6 && !Gta6.canPick ? 'classic' : v;
+  }
+
+  // Locked, as when Sync brings it from another device: Classic instead.
   set swatchId(String id) {
-    Store.I.put(colorKey, id);
+    Store.I.put(colorKey, id == gta6 && !Gta6.pick() ? 'classic' : id);
     notifyListeners();
   }
 
@@ -219,8 +296,63 @@ class AppLook extends ChangeNotifier {
     return Color(swatches.firstWhere((s) => s.id == swatchId, orElse: () => swatches.first).hex);
   }
 
-  ThemeData theme(Brightness b, {bool contrast = false}) =>
-      materialYou ? _material(b, contrast) : _usual(b, contrast);
+  ThemeData theme(Brightness b, {bool contrast = false}) {
+    final t = materialYou ? _material(b, contrast) : _usual(b, contrast);
+    return isGta6 && !contrast ? _gta6Dress(t, b) : t;
+  }
+
+  /// GTA VI's colours are what's showing.
+  bool get isGta6 => materialYou ? youColours == gta6 : yourColours == null && swatchId == gta6;
+
+  // GTA VI uses every colour of the logo, a colour to each kind of thing, as style.css has it: pink
+  // for the main buttons, orange for what's picked, yellow for what's switched on, blue for the
+  // bars and icons, magenta for codes, and the bus numbers going through them. The status colours
+  // (ok, warn, busy, error, the tones) keep their meaning. Not over High contrast or Your colours.
+  ThemeData _gta6Dress(ThemeData t, Brightness b) {
+    final dark = b == Brightness.dark;
+    final sg = t.extension<SgColors>()!;
+    const pink = Color(0xFFFF2B90), orange = Color(0xFFE6953E), yellow = Color(0xFFFFBC24), on = Color(0xFF1D0030);
+    final blueInk = dark ? const Color(0xFF8FB0FF) : const Color(0xFF2B60DA);
+    final orangeInk = dark ? yellow : const Color(0xFF9A5206);
+    final pinkInk = dark ? const Color(0xFFFF7CCB) : const Color(0xFFBC0082);
+    final accents = SgAccents(
+      heading: dark ? yellow : const Color(0xFF2B60DA),
+      inks: dark
+          ? const [Color(0xFFFF7CCB), Color(0xFF8FB0FF), yellow, Color(0xFFF0AA5C)]
+          : const [Color(0xFFBC0082), Color(0xFF2B60DA), Color(0xFF9A5206), Color(0xFF6D016D)],
+    );
+    return t.copyWith(
+      extensions: [sg.copyWith(brand: pink, onBrand: on, brandInk: pinkInk, accents: accents)],
+      colorScheme: t.colorScheme.copyWith(
+        primary: pinkInk,
+        primaryContainer: pink,
+        onPrimaryContainer: on,
+        secondary: blueInk,
+        tertiary: orangeInk,
+        secondaryContainer: orange,
+        onSecondaryContainer: on,
+        tertiaryContainer: yellow,
+        onTertiaryContainer: on,
+      ),
+      appBarTheme: t.appBarTheme.copyWith(foregroundColor: pinkInk),
+      iconTheme: t.iconTheme.copyWith(color: blueInk),
+      listTileTheme: t.listTileTheme.copyWith(iconColor: pinkInk),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: pink, foregroundColor: on)),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(foregroundColor: blueInk, side: BorderSide(color: blueInk))),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: orangeInk)),
+      iconButtonTheme: IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: blueInk)),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(selectedBackgroundColor: orange, selectedForegroundColor: on),
+      ),
+      switchTheme: SwitchThemeData(
+        trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? yellow : null),
+        thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? on : null),
+      ),
+      sliderTheme: t.sliderTheme.copyWith(activeTrackColor: orange, thumbColor: pink, inactiveTrackColor: blueInk.withValues(alpha: .3)),
+      progressIndicatorTheme: t.progressIndicatorTheme.copyWith(color: blueInk),
+      floatingActionButtonTheme: t.floatingActionButtonTheme.copyWith(backgroundColor: yellow, foregroundColor: on),
+    );
+  }
 
   // ---------- Material You ----------
 
@@ -229,8 +361,10 @@ class AppLook extends ChangeNotifier {
   ThemeData _material(Brightness b, bool contrast) {
     final yc = yourColours;
     ColorScheme scheme;
-    if (yc != null && youUseYours) {
+    if (yc != null && youColours == 'yours') {
       scheme = ColorScheme.fromSeed(seedColor: hexColor(yc['base'] as String), brightness: b);
+    } else if (youColours == gta6) {
+      scheme = _gta6Scheme(b);
     } else {
       final phone = b == Brightness.dark ? phoneDark : phoneLight;
       scheme = phone ?? ColorScheme.fromSeed(seedColor: _seed, brightness: b);
@@ -302,6 +436,20 @@ class AppLook extends ChangeNotifier {
     );
   }
 
+  // The logo's pink as it is, and at night its violet for the surfaces, not a dark pink.
+  static ColorScheme _gta6Scheme(Brightness b) {
+    final s = ColorScheme.fromSeed(seedColor: const Color(0xFFFF2B90), brightness: b, dynamicSchemeVariant: DynamicSchemeVariant.fidelity);
+    if (b == Brightness.light) return s;
+    return s.copyWith(
+      surface: const Color(0xFF1D0030),
+      surfaceContainerLowest: const Color(0xFF160026),
+      surfaceContainerLow: const Color(0xFF250339),
+      surfaceContainer: const Color(0xFF2C0646),
+      surfaceContainerHigh: const Color(0xFF350054),
+      surfaceContainerHighest: const Color(0xFF420D63),
+    );
+  }
+
   // ---------- the UwU Apps theme ----------
 
   Color _token(Map<String, dynamic>? tokens, String name, Color fallback) {
@@ -316,7 +464,11 @@ class AppLook extends ChangeNotifier {
   ThemeData _usual(Brightness b, bool contrast) {
     final dark = b == Brightness.dark;
     final yc = yourColours;
-    final tokens = yc == null ? null : (yc[dark ? 'dark' : 'light'] as Map?)?.cast<String, dynamic>();
+    final tokens = yc != null
+        ? (yc[dark ? 'dark' : 'light'] as Map?)?.cast<String, dynamic>()
+        : swatchId == gta6
+            ? _gta6Tokens[dark ? 'dark' : 'light']
+            : null;
     final brand = brandColor(tokens);
     var sg = SgColors(
       bg: _token(tokens, '--bg', dark ? const Color(0xFF0C100E) : const Color(0xFFEEF2F0)),

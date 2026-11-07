@@ -26,7 +26,7 @@
 // Back to the usual colours takes them away.
 //
 // Window.Colours = { paint(saved), contrast(a, b), derive(base, mode), fromPhone(palettes, mode),
-// problems(tokens), open(), usePhone(), phoneOn(), stopPhone() }. Plain script: exports go on window.
+// problems(tokens), open(), usePhone(), phoneOn(), stopPhone(), clear() }. Plain script: exports go on window.
 (function () {
   const CONTRAST_KEY = 'sgbus_contrast';
   const COLOURS_KEY = 'sgbus_colours';
@@ -463,5 +463,5 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
   else init();
 
-  window.Colours = { paint, contrast, derive, fromPhone, problems, open, usePhone, phoneOn, stopPhone };
+  window.Colours = { paint, contrast, derive, fromPhone, problems, open, usePhone, phoneOn, stopPhone, clear: () => keep(null) };
 })();

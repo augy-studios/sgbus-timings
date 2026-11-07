@@ -4,8 +4,13 @@
 // shrinks it into a small window over other apps instead of hiding it, tall for the map and
 // wide for the trip's line of text, and while it's small only that shows. The app does the
 // shrinking (MainActivity, SgBusPlugin.pip); this says when it's wanted, checked every
-// checkMs, and sent only when the answer changes. Settings' Picture-in-picture turns it off
-// (sgbus_pip).
+// checkMs and as the trip changes, and sent only when the answer changes. Settings'
+// Picture-in-picture turns it off (sgbus_pip).
+//
+// On a trip by bus or train of more than one part, the small window has previous and next buttons,
+// as a video's does, for the part before and the next, the trip bar's Back and Next (Android draws
+// them, over the window, when it's tapped). Greyed at the first part and the last: Next on the last
+// would end the trip.
 //
 // Shake to refresh (js/shake.js): a firm shake refreshes the stop's timings on screen, for a
 // hand that's holding on to a pole. Several sharp swings back and forth within a second: the
@@ -27,15 +32,19 @@ import 'package:sensors_plus/sensors_plus.dart';
 import '../../api/net.dart';
 import '../../app/edge_tray.dart';
 import '../../app/nav.dart';
+import '../../data/gta6.dart';
 import '../../data/store.dart';
+import '../../data/when.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../map/live_map.dart';
+import '../tour/tour.dart';
 import '../trips/trip.dart';
 
 void registerExtras() {
   Pip.start();
+  Gta6Offer.start();
   Shake.start();
   Donate.start();
 }
@@ -53,6 +62,8 @@ class Pip {
   static void start() {
     if (!Native.has('pip')) return;
     Native.on('SgBus', 'pip', (d) => AppNav.pip.value = d['active'] == true);
+    Native.on('SgBus', 'pipAction', (d) => act('${d['action']}'));
+    Trip.I.addListener(check);
     AppNav.pipView = () => LiveMap.isOpen || !Trip.I.active ? null : const _TripSmall();
     Timer.periodic(const Duration(milliseconds: checkMs), (_) => check());
     check();
@@ -60,14 +71,33 @@ class Pip {
 
   static Map<String, Object> wanted() {
     if (!enabled) return {'auto': false};
-    if (LiveMap.isOpen) return {'auto': true, 'ratio': [3, 4]};
-    if (Trip.I.active) return {'auto': true, 'ratio': [16, 9]};
+    final p = parts();
+    if (LiveMap.isOpen) return {'auto': true, 'ratio': [3, 4], 'parts': ?p};
+    if (Trip.I.active) return {'auto': true, 'ratio': [16, 9], 'parts': ?p};
     return {'auto': false};
+  }
+
+  /// The window's buttons, on a trip by bus or train of more than one part; null for none.
+  static Map<String, Object>? parts() {
+    final t = Trip.I;
+    if (!t.active || t.legs.length < 2 || !t.legs.any((l) => l.ride)) return null;
+    return {
+      'prev': t.leg > 0,
+      'next': t.leg < t.legs.length - 1,
+      'prevLabel': tr('trip.back_to_the_part_before', 'Back to the part before'),
+      'nextLabel': tr('trip.on_to_the_next_part', 'On to the next part'),
+    };
+  }
+
+  /// A button in the small window.
+  static void act(String action) {
+    if (action == 'prev') Trip.I.step(-1);
+    if (action == 'next') Trip.I.step(1);
   }
 
   static void check() {
     final w = wanted();
-    final key = '${w['auto']}${w['ratio']}';
+    final key = '${w['auto']}${w['ratio']}${w['parts']}';
     if (key == _sent) return;
     _sent = key;
     Native.call('SgBus', 'pip', w).catchError((_) {
@@ -88,17 +118,17 @@ class _TripSmall extends StatelessWidget {
           final sg = context.sg;
           final t = Trip.I;
           return Material(
-            color: sg.brand,
+            color: sg.bar,
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Row(children: [
                 Icon(t.current?.kind == 'train' ? Icons.directions_subway_filled : t.current?.kind == 'walk' ? Icons.directions_walk : Icons.directions_bus,
-                    color: sg.onBrand, size: 28),
+                    color: sg.onBar, size: 28),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.onBrand, fontWeight: FontWeight.w700)),
-                    Text(t.barText(), maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.onBrand)),
+                    Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.onBar, fontWeight: FontWeight.w700)),
+                    Text(t.barText(), maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.onBar)),
                   ]),
                 ),
               ]),
@@ -164,6 +194,88 @@ class Shake {
 }
 
 // ---------- asking for a coffee ----------
+
+/// GTA VI's colours, offered once, the first time the app opens with them in it (the site's
+/// js/gta6.js): never over anything else (first open's choice, the welcome, a window, a trip, the
+/// live map), so it's tried every tryMs until it's quiet. Not once they're theirs, nor after
+/// Gta6.until.
+class Gta6Offer {
+  Gta6Offer._();
+  static const tryMs = 3000;
+
+  static bool get due => Gta6.open && !Gta6.owned && Store.I.get(Gta6.offerKey) == null;
+
+  static bool quiet() {
+    if (Store.I.get('sgbus_first_run') == 'ask' || Tours.running) return false;
+    if (Trip.I.active || LiveMap.isOpen) return false;
+    final shown = WidgetsBinding.instance.lifecycleState;
+    if (shown != null && shown != AppLifecycleState.resumed) return false;
+    return !(AppNav.nav?.canPop() ?? true);
+  }
+
+  static void start() {
+    if (!due) return;
+    Timer.periodic(const Duration(milliseconds: tryMs), (timer) {
+      if (!due || (quiet() && show())) timer.cancel();
+    });
+  }
+
+  static bool show() {
+    final context = AppNav.context;
+    if (context == null) return false;
+    Store.I.put(Gta6.offerKey, '${When.nowMs()}');
+    showDialog<void>(context: context, builder: (_) => const Gta6Window());
+    return true;
+  }
+
+  /// In Material You, its choice under Colours. In the UwU Apps theme, its brand colour, which
+  /// Your colours stand over, so they go.
+  static void set() {
+    final look = AppLook.I;
+    if (look.materialYou) {
+      look.youColours = AppLook.gta6;
+    } else {
+      Store.I.remove(AppLook.coloursKey);
+      look.swatchId = AppLook.gta6;
+    }
+  }
+}
+
+class Gta6Window extends StatelessWidget {
+  const Gta6Window({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final replaces = !AppLook.I.materialYou && AppLook.I.yourColours != null;
+    return AlertDialog(
+      title: Text(tr('gta6.title', 'GTA VI’s colours')),
+      content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          height: 10,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            gradient: const LinearGradient(colors: [Color(0xFF2B60DA), Color(0xFFFF2B90), Color(0xFFE6953E)]),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Text(tr('gta6.text', 'To celebrate the game’s release on 19 November, there’s a new theme in its logo’s pink, blue, orange, yellow and violet.')),
+        const SizedBox(height: 8),
+        Text(tr('gta6.keep', 'Set it before 26 November and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.')),
+        if (replaces) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('gta6.replace', 'This replaces Your colours. You can pick them again any time.'))),
+      ]),
+      actions: [
+        TextButton(onPressed: () => Navigator.of(context).pop(), child: Text(tr('gta6.later', 'Not now'))),
+        FilledButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            Gta6Offer.set();
+          },
+          child: Text(tr('gta6.set', 'Set it')),
+        ),
+      ],
+    );
+  }
+}
 
 class Donate {
   Donate._();

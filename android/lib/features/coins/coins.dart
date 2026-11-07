@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/nav.dart';
 import '../../data/eggs_data.dart';
+import '../../data/gta6.dart';
 import '../../data/rail_tracks.dart';
 import '../../data/rewards.dart';
 import '../../data/store.dart';
@@ -200,7 +201,11 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
     setState(() {
       _spinning = false;
       _held = 0;
-      if (r.egg != null) {
+      if (r.gta6) {
+        _result = tr('coins.wonGta6', 'GTA VI’s colours!');
+        _resultMore = tr('coins.wonGta6More', 'They’re yours to keep. Pick them in Theme.');
+        _confetti = true;
+      } else if (r.egg != null) {
         _result = tr('coins.wonEgg', 'An Easter egg: {name}!', {'name': _eggName(r.egg!)});
         final lines = <String>[];
         if (r.got?.secrets.isNotEmpty == true) {
@@ -294,6 +299,7 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
                       ),
                   ]),
                 ),
+                if (Gta6.due) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('coins.gta6Due', 'The egg slice wins GTA VI’s colours first.'), style: const TextStyle(fontWeight: FontWeight.w600))),
                 const SizedBox(height: 8),
                 Text(
                     '${tr('eggs.featCount', '{n} of {all} feats done', {'n': Feats.done().length, 'all': EggsData.all.length})} · ${tr('eggs.count', '{n} of {all} Easter eggs found', {'n': Feats.eggs().length, 'all': EggsData.all.length})}',
@@ -347,11 +353,10 @@ class _WheelPainter extends CustomPainter {
     for (var i = 0; i < n; i++) {
       final coins = Coins.slotNow(i);
       final start = (i / n) * 2 * math.pi - math.pi / n - math.pi / 2;
+      final slice = sg.slice(i);
       final fill = coins == null
           ? const Color(0xFFF2B31B)
-          : i.isOdd
-              ? sg.brand
-              : sg.surfaceStrong;
+          : slice?.$1 ?? (i.isOdd ? sg.brand : sg.surfaceStrong);
       canvas.drawArc(Rect.fromCircle(center: c, radius: r), start, 2 * math.pi / n, true, Paint()..color = fill);
       canvas.drawArc(Rect.fromCircle(center: c, radius: r), start, 2 * math.pi / n, true, Paint()
         ..color = sg.border
@@ -364,8 +369,8 @@ class _WheelPainter extends CustomPainter {
       canvas.rotate(a + math.pi / 2);
       final tp = TextPainter(
         text: TextSpan(
-          text: coins == null ? '🥚' : '$coins',
-          style: TextStyle(color: coins == null ? Colors.black : (i.isOdd ? sg.onBrand : sg.ink), fontSize: 20, fontWeight: FontWeight.w800),
+          text: coins == null ? (Gta6.due ? '🎨' : '🥚') : '$coins',
+          style: TextStyle(color: coins == null ? Colors.black : slice?.$2 ?? (i.isOdd ? sg.onBrand : sg.ink), fontSize: 20, fontWeight: FontWeight.w800),
         ),
         textDirection: TextDirection.ltr,
       )..layout();

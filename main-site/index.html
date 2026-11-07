@@ -905,6 +905,7 @@
                     <p id="coinNeed" class="mode-note" hidden></p>
                     <p id="coinResult" class="mode-note coinResult" role="status" hidden></p>
                     <p class="mode-note" data-i18n="coins.how">Every spin wins something: an Easter egg you haven&rsquo;t found, with a secret or a colour preset, or more coins. Coins come from trips taken with the Get Off Alert to the end: more for longer trips, changes, and each bus and train operator and line you ride with. Each feat gives 100 more.</p>
+                    <p id="coinGta6" class="mode-note" data-i18n="coins.gta6Due" hidden>The egg slice wins GTA VI’s colours first.</p>
                     <p id="coinFeats" class="mode-note"></p>
                     <button id="coinAchievements" class="iconBtn settingsWide" type="button"><span data-icon="star"></span> <span data-i18n="achievements.see">See your achievements</span></button>
                 </section>
@@ -1364,6 +1365,26 @@
         </form>
     </div>
 
+    <!-- GTA VI's colours, offered once: js/gta6.js -->
+    <div id="gta6Modal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="gta6Title" aria-describedby="gta6Text">
+            <div class="modal-head">
+                <h2 id="gta6Title" data-i18n="gta6.title">GTA VI’s colours</h2>
+                <button class="icon-btn small" type="button" data-close-modal="gta6Modal" data-i18n-aria-label="donate.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div class="gta6Strip" aria-hidden="true"></div>
+            <p id="gta6Text" class="mode-note donateText" data-i18n="gta6.text">To celebrate the game’s release on 19 November, there’s a new theme in its logo’s pink, blue, orange, yellow and violet.</p>
+            <p class="mode-note donateText" data-i18n="gta6.keep">Set it before 26 November and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.</p>
+            <p id="gta6Replace" class="mode-note donateText" data-i18n="gta6.replace" hidden>This replaces Your colours. You can pick them again any time.</p>
+            <div class="tripActions">
+                <button id="gta6Set" class="btn" type="button" data-i18n="gta6.set">Set it</button>
+                <button id="gta6Later" class="iconBtn" type="button" data-i18n="gta6.later">Not now</button>
+            </div>
+        </div>
+    </div>
+
     <!-- The first open's choice, Minimal or Full, before the welcome: js/first-run.js -->
     <div id="firstRunModal" class="modal-backdrop hidden">
         <form class="modal glass" id="firstRunForm" role="dialog" aria-modal="true" aria-labelledby="firstRunTitle" aria-describedby="firstRunNote">
@@ -1605,6 +1626,7 @@
     <script src="/js/icons.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/confetti.js"></script>
+    <script src="/js/gta6.js"></script>
     <script src="/js/theme.js"></script>
     <script src="/js/telegram.js"></script>
     <script src="/js/when.js"></script>

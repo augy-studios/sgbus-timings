@@ -649,7 +649,6 @@ class _AlertsPageState extends State<AlertsPage> {
     final off = tr('alerts.off', 'Off');
     final at = d?['fetchedAt'] is num ? DateTime.fromMillisecondsSinceEpoch((d!['fetchedAt'] as num).toInt(), isUtc: true).add(const Duration(hours: 8)) : null;
     return SafeArea(
-      bottom: false,
       child: RefreshIndicator(
         onRefresh: _load,
         child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [

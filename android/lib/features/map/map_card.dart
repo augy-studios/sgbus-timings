@@ -183,8 +183,8 @@ class _MapCardBubbleState extends State<MapCardBubble> {
         Container(
           margin: const EdgeInsets.only(top: 8, right: 10),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          decoration: BoxDecoration(color: sg.brand, borderRadius: BorderRadius.circular(8)),
-          child: Text(code, style: TextStyle(color: sg.onBrand, fontWeight: FontWeight.w700)),
+          decoration: BoxDecoration(color: sg.badge, borderRadius: BorderRadius.circular(8)),
+          child: Text(code, style: TextStyle(color: sg.onBadge, fontWeight: FontWeight.w700)),
         ),
         Expanded(
           child: Padding(

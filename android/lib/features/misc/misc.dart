@@ -132,13 +132,13 @@ class AppUpdateBar extends StatelessWidget {
             container: true,
             label: tr('appUpdate.label', 'App update'),
             child: Material(
-              color: sg.brand,
+              color: sg.bar,
               child: SafeArea(
                 bottom: false,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(16, 6, 8, 6),
                   child: Row(children: [
-                    Expanded(child: Text(tr('appUpdate.out', 'Version {v} of the Android app is out.', {'v': latest['version']}), style: TextStyle(color: sg.onBrand))),
+                    Expanded(child: Text(tr('appUpdate.out', 'Version {v} of the Android app is out.', {'v': latest['version']}), style: TextStyle(color: sg.onBar))),
                     FilledButton(
                       onPressed: () => Native.call('SgBus', 'openLink', {'url': self ? _updateLink : '${latest['page']}'}).catchError((_) => null),
                       child: Text(self ? tr('appUpdate.update', 'Update') : tr('appUpdate.download', 'Download')),
@@ -148,7 +148,7 @@ class AppUpdateBar extends StatelessWidget {
                         AppUpdate.dismissed = true;
                         AppUpdate.latest.value = null;
                       },
-                      child: Text(tr('appUpdate.notNow', 'Not now'), style: TextStyle(color: sg.onBrand)),
+                      child: Text(tr('appUpdate.notNow', 'Not now'), style: TextStyle(color: sg.onBar)),
                     ),
                   ]),
                 ),

@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../data/places.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
@@ -213,7 +214,8 @@ class _TripsPageState extends State<TripsPage> {
     final open = _open == id;
     final started = _num(t['startedAt']).toInt();
     final legs = ((t['legs'] as List?) ?? const []).whereType<Map>().toList();
-    final to = (t['to'] as Map?)?['label'] ?? (legs.isEmpty ? '' : legs.last['to']);
+    // A trip that ended at Home, Work or one of your places says so.
+    final to = Places.nameNear(t['to']) ?? (t['to'] as Map?)?['label'] ?? (legs.isEmpty ? '' : legs.last['to']);
     return InkWell(
       onTap: () => setState(() => _open = open ? null : id),
       child: Padding(
@@ -292,11 +294,11 @@ class _TripsPageState extends State<TripsPage> {
           TextButton(onPressed: () => setState(() => _all = !_all), child: Text(_all ? tr('history.fewer', 'Fewer trips') : tr('history.all', 'All trips ({n})', {'n': trips.length}))),
         if (trips.isNotEmpty) ...[
           SectionLabel(tr('history.stats', 'Stats')),
-          Text(
+          TourTarget(id: 'trips.since', child: Text(
             tr('history.since', '{trips} and {rides} since {date}, about {d} on the move.', {'trips': _trips(trips.length), 'rides': _rides(rides), 'date': _day(_num(trips.last['startedAt']).toInt()), 'd': _dur(total)}),
             style: TextStyle(color: sg.muted),
-          ),
-          SectionLabel(tr('history.mix', 'Trip Mix')),
+          )),
+          TourTarget(id: 'trips.stats', child: SectionLabel(tr('history.mix', 'Trip Mix'))),
           SgCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               if (total > 0)

@@ -122,7 +122,7 @@ class _RecentsPanelState extends State<RecentsPanel> {
             label: label,
             child: IconButton(
               isSelected: _tab == id,
-              style: IconButton.styleFrom(backgroundColor: _tab == id ? sg.brand : null, foregroundColor: _tab == id ? sg.onBrand : sg.muted),
+              style: IconButton.styleFrom(backgroundColor: _tab == id ? sg.tray : null, foregroundColor: _tab == id ? sg.onTray : sg.muted),
               onPressed: () => setState(() => _tab = id),
               icon: Icon(icon),
             ),

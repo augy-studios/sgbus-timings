@@ -154,8 +154,8 @@ class _EdgeTrayState extends State<EdgeTray> {
     }
 
     Widget round(IconData icon, String label, VoidCallback onTap, {bool on = false, String? badge, String? short, Widget Function(double size)? face}) {
-      final fill = on ? sg.brand : (you ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong);
-      final ink = on ? sg.onBrand : sg.ink;
+      final fill = on ? sg.tray : (you ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong);
+      final ink = on ? sg.onTray : sg.ink;
       final picture = SizedBox(width: button, height: button, child: Center(child: face?.call(button) ?? Icon(icon, size: 22, color: ink)));
       final ShapeBorder shape = you
           ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(on ? 16 : 24))

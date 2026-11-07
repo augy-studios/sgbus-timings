@@ -7,12 +7,14 @@
 // way; walking, cycling or driving the whole way under the ways. Its tab beside Bus only (the
 // route planner, features/planner/).
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 import '../../api/api.dart';
 import '../../api/net.dart';
+import '../../app/links.dart';
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';
 import '../../data/favs.dart';
@@ -26,6 +28,7 @@ import '../../data/stops.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
+import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/place_search.dart';
@@ -45,6 +48,10 @@ class NavEnd {
   final bool here;
 
   Map<String, Object?> toJson() => {'label': label, 'lat': lat, 'lng': lng};
+
+  /// As a trip keeps where it was started from: Your location stays that, not a point.
+  Map<String, Object?> keepJson() => {...toJson(), if (here) 'here': true};
+  static NavEnd? fromKept(Object? j) => j is Map && j['here'] == true ? NavEnd.parse('here') : from(j);
   static NavEnd? from(Object? j) =>
       j is Map && j['lat'] is num && j['lng'] is num ? NavEnd('${j['label'] ?? ''}', (j['lat'] as num).toDouble(), (j['lng'] as num).toDouble()) : null;
 
@@ -148,8 +155,9 @@ class NavState extends ChangeNotifier {
     return NavEnd(tr('nav.yourLocation', 'Your location'), fix.lat, fix.lng, here: true);
   }
 
-  Future<void> run() async {
-    option = null;
+  /// Plans the ways. With [keep], that way stays open while they come in, not the list of them.
+  Future<void> run({Map<String, dynamic>? keep}) async {
+    option = keep;
     if (from == null || to == null) {
       options = [];
       notifyListeners();
@@ -309,6 +317,10 @@ class NavPage extends StatefulWidget {
 
   /// The tab beside Bus and train: the route planner (features/planner/).
   static Widget Function()? busOnly;
+  /// The tab changed: your ends go with you where they can (features/planner, switchNavMode).
+  static void Function(String mode)? switched;
+  /// Home or Work tapped while it isn't set: Places' form for it.
+  static void Function(BuildContext context, Place place)? setPlace;
   static const modeKey = 'sgbus_nav_mode';
 
   @override
@@ -401,8 +413,8 @@ class _NavPageState extends State<NavPage> {
   }
 
   Widget _savedPlaces(String which) {
-    final places = Places.all();
-    if (places.isEmpty) return const SizedBox.shrink();
+    // Home and Work always, muted while they aren't set: tapped, they ask where.
+    final places = Places.all(unset: true);
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: SingleChildScrollView(
@@ -428,7 +440,13 @@ class _NavPageState extends State<NavPage> {
                 child: Pill(
                   icon: p.icon,
                   label: p.name,
+                  unset: p.unset,
+                  tooltip: p.unset ? tr('nav.setInPlaces', 'Set your {place} in Places', {'place': p.name.toLowerCase()}) : null,
                   onTap: () {
+                    if (p.unset) {
+                      NavPage.setPlace?.call(context, p);
+                      return;
+                    }
                     final e = NavEnd(p.name, p.lat, p.lng);
                     if (which == 'from') {
                       nav.from = e;
@@ -720,19 +738,20 @@ class _NavPageState extends State<NavPage> {
                   final start = point(leg['from'] ?? (k > 0 ? legs[k - 1]['to'] : null), leg['fromExit']) ??
                       (nav.from == null || nav.from!.here ? null : {'lat': nav.from!.lat, 'lng': nav.from!.lng});
                   if (end?['lat'] is! num) return null;
-                  return Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: () => LiveMap.walkTo(
-                        lat: (end!['lat'] as num).toDouble(),
-                        lng: (end['lng'] as num).toDouble(),
-                        label: to,
-                        from: start?['lat'] is num ? (lat: (start!['lat'] as num).toDouble(), lng: (start['lng'] as num).toDouble()) : null,
-                      ),
+                  final endLat = (end!['lat'] as num).toDouble(), endLng = (end['lng'] as num).toDouble();
+                  final startAt = start?['lat'] is num ? (lat: (start!['lat'] as num).toDouble(), lng: (start['lng'] as num).toDouble()) : null;
+                  return Wrap(spacing: 4, children: [
+                    TextButton.icon(
+                      onPressed: () => LiveMap.walkTo(lat: endLat, lng: endLng, label: to, from: startAt),
                       icon: const Icon(Icons.map_outlined),
                       label: Text(tr('trip.live_map', 'Live map')),
                     ),
-                  );
+                    TextButton.icon(
+                      onPressed: () => Native.call('SgBus', 'openLink', {'url': Links.citymapper(endLat, endLng, to, from: startAt)}).catchError((_) => null),
+                      icon: const Icon(Icons.directions),
+                      label: const Text('Citymapper'),
+                    ),
+                  ]);
                 }(),
               ],
             ),
@@ -997,8 +1016,8 @@ class _NavPageState extends State<NavPage> {
         Container(
           width: 34,
           height: 34,
-          decoration: BoxDecoration(color: context.sg.brand, shape: BoxShape.circle),
-          child: Icon(icon, size: 18, color: context.sg.onBrand),
+          decoration: BoxDecoration(color: context.sg.badge, shape: BoxShape.circle),
+          child: Icon(icon, size: 18, color: context.sg.onBadge),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -1012,7 +1031,6 @@ class _NavPageState extends State<NavPage> {
   Widget build(BuildContext context) {
     final busOnly = _mode == 'bus';
     return SafeArea(
-      bottom: false,
       child: Column(
         children: [
           Padding(
@@ -1047,7 +1065,10 @@ class _NavPageState extends State<NavPage> {
                     ButtonSegment(value: 'bus', label: Text(tr('nav.bus_only', 'Bus only'))),
                   ],
                   selected: {_mode},
-                  onSelectionChanged: (s) => setState(() => Store.I.put(NavPage.modeKey, s.first)),
+                  onSelectionChanged: (s) {
+                    setState(() => Store.I.put(NavPage.modeKey, s.first));
+                    NavPage.switched?.call(s.first);
+                  },
                 )),
               ),
             ),
@@ -1118,6 +1139,55 @@ class _NavPageState extends State<NavPage> {
 class TrainDoors {
   TrainDoors._();
   static Widget? Function(BuildContext context, Map leg, Map? next)? build;
+}
+
+/// Navigate as it is, for a trip started from it to come back to (reopenNav): its ends, its stop,
+/// its time, and the way open, by its key and as it was in case it's gone from the next plan.
+Map<String, Object?> navOrigin(Map<String, dynamic> option) {
+  final n = NavState.I;
+  Object? kept;
+  try {
+    kept = jsonDecode(jsonEncode(option));
+  } catch (_) {
+    // Not a way that can be kept: planned again, by its key.
+  }
+  return {
+    'kind': 'nav',
+    'from': n.from?.keepJson(),
+    'to': n.to?.keepJson(),
+    'via': n.via?.toJson(),
+    'when': n.when?.toJson(),
+    'way': wayKey(option),
+    'option': kept,
+  };
+}
+
+/// Back to Navigate, from a trip (the site's openTripOrigin, js/nav.js): the way the trip was started
+/// from, not the list of ways. If Navigate still has it open, it's as it was left. Otherwise that way
+/// opens at once and the ways are planned again behind it, for its live timings if it's still one of
+/// them; if it isn't, it stays as you picked it, and All ways has the rest. A time that has passed is
+/// left out, so it plans for now. A trip from before it kept its way opens on the list.
+void reopenNav(Map o) {
+  final n = NavState.I;
+  final from = NavEnd.fromKept(o['from']), to = NavEnd.fromKept(o['to']), via = NavEnd.from(o['via']);
+  final picked = WhenPick.fromJson(o['when']);
+  final way = o['way'] as String?;
+  bool same(NavEnd? a, NavEnd? b) => (a == null && b == null) || (a != null && b != null && a.here == b.here && (a.here || (a.label == b.label && a.coord() == b.coord())));
+  final open = n.option;
+  final kept = way != null && open != null && wayKey(open) == way && same(n.from, from) && same(n.to, to) && same(n.via, via) && n.when?.at == picked?.at && n.when?.mode == picked?.mode;
+  Store.I.put(NavPage.modeKey, null);
+  AppNav.showPage('nav');
+  if (kept) return;
+  n.from = from;
+  n.to = to;
+  n.via = via;
+  n.when = picked != null && When.problem(picked) == null ? picked : null;
+  final saved = o['option'] is Map ? Map<String, dynamic>.from(o['option'] as Map) : null;
+  n.run(keep: saved).then((_) {
+    if (way == null || !identical(n.option, saved)) return;
+    final again = n.options.where((w) => wayKey(w) == way).firstOrNull ?? saved;
+    if (again != null) n.open(again);
+  });
 }
 
 /// Opens Navigate with its ends, from a link, a place or a saved nav.

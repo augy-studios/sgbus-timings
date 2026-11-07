@@ -23,8 +23,9 @@ well, and any place rather than a stop, use [Bus and train](nav.md).
    - or tap one of your favourite stops, listed there.
 3. Do the same in **To**.
 
-The swap button between the two ends turns the route around, and the star beside it, once both
-are set, saves it to [Favourites](favourites.md).
+The swap button between the two ends turns the route around. The star beside it, once both
+are set, saves it to [Favourites](favourites.md), and **Share** sends a link to it, with the time
+if you picked one.
 
 ### Direct buses to the other end
 

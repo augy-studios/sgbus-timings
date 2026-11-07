@@ -17,12 +17,14 @@
 // Coins: a trip taken with the Get Off Alert to the end, with a real ride on it, earns 5, and 1
 // for every 2 km ridden (up to 30), 3 a change, 4 for each bus operator and train operator, 2 for
 // each line. The wheel: 100 a spin, eight slots alike, one an egg not found yet (80 coins once
-// every egg's found). sgbus_coins: { balance, log, spins }.
+// every egg's found, unless GTA VI's colours are still the wheel's to give, which come before any
+// more eggs: data/gta6.dart). sgbus_coins: { balance, log, spins }.
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 
 import 'geo.dart';
+import 'gta6.dart';
 import 'network.dart';
 import 'store.dart';
 import 'when.dart';
@@ -573,12 +575,12 @@ class Coins {
   static List<String> eggsLeft() => Feats.ids.where((id) => !Feats.eggs().contains(id)).toList();
 
   /// A slot as it is now: the egg's coins once every egg's found.
-  static int? slotNow(int i) => slots[i] == null && eggsLeft().isEmpty ? eggGoneCoins : slots[i];
+  static int? slotNow(int i) => slots[i] == null && eggsLeft().isEmpty && !Gta6.due ? eggGoneCoins : slots[i];
 
   static final _rnd = math.Random();
 
   /// A spin: the coins taken, a slot picked, and what it won given; null without enough coins.
-  static ({int index, int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got})? spin() {
+  static ({int index, int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6})? spin() {
     final v = _read();
     if ((v['balance'] as int) < spinCost) return null;
     v['balance'] = (v['balance'] as int) - spinCost;
@@ -587,16 +589,21 @@ class Coins {
     _write(v);
     final index = _rnd.nextInt(slots.length);
     final coins = slotNow(index);
+    if (coins == null && Gta6.due) {
+      Gta6.claim('wheel');
+      Rewards.I.changed();
+      return (index: index, coins: null, egg: null, got: null, gta6: true);
+    }
     if (coins == null) {
       final left = eggsLeft();
       final egg = left[_rnd.nextInt(left.length)];
-      return (index: index, coins: null, egg: egg, got: Feats.found(egg));
+      return (index: index, coins: null, egg: egg, got: Feats.found(egg), gta6: false);
     }
     final w = _read();
     w['balance'] = (w['balance'] as int) + coins;
     (w['log'] as List).insert(0, {'at': When.nowMs(), 'n': coins, 'why': 'wheel'});
     _write(w);
-    return (index: index, coins: coins, egg: null, got: null);
+    return (index: index, coins: coins, egg: null, got: null, gta6: false);
   }
 
   @visibleForTesting

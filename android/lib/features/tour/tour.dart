@@ -66,6 +66,7 @@ class Tours {
   static const pagesKey = 'sgbus_tours';
   static const firstRunKey = 'sgbus_first_run';
   static bool _running = false;
+  static bool get running => _running;
 
   static String _pageList() => Pages.tabs().map((p) => p.label()).join(', ');
 
@@ -73,6 +74,7 @@ class Tours {
     'glance': [
       (target: 'glance.hero', text: () => tr('tour.glance.1', 'Your next bus, big enough to read on the move. Tap it for all its times.')),
       (target: 'glance.source', text: () => tr('tour.glance.2', 'Pick whose buses: your saved stops, the ones nearby, or the ones near Home or Work.')),
+      (target: 'glance.weather', text: () => tr('tour.timings.5', 'Today’s weather and air, before you head out.')),
       (target: 'glance.stops', text: () => tr('tour.glance.3', 'Each bus on one line, with its next three times. Tap one for the full timings, and the star there saves the stop. Star a bus, and only your buses show here.')),
       (target: 'tray.pages', text: () => tr('tour.glance.4', 'Each page has its button at the top of the Edge Tray: {pages}. Press and hold a button to see what it does.', {'pages': _pageList()})),
       (target: 'tray.settings', text: () => tr('tour.glance.5', 'In Settings, Pages and Edge Tray has Custom home, the page the app opens on, and Help and extras has Show me around, for any page’s tour again.')),
@@ -85,6 +87,9 @@ class Tours {
     ],
     'favs': [
       (target: 'favs.list', text: () => tr('tour.favs.1', 'Every stop you’ve starred. Tap one for its timings.')),
+      (target: 'favs.buses', text: () => tr('tour.favs.2', 'Buses you’ve starred. Glance shows only these at your stops.')),
+      (target: 'favs.navs', text: () => tr('tour.favs.3', 'Journeys you’ve saved in Navigate, ready to plan again in a tap.')),
+      (target: 'favs.empty', text: () => tr('tour.favs.4', 'Nothing here yet. Tap the star on a stop, a bus or a journey in Navigate, and it shows here.')),
     ],
     'nav': [
       (target: 'nav.modes', text: () => tr('tour.nav.1', 'Bus and train plans with the MRT too; Bus only keeps to buses, stop to stop.')),
@@ -99,11 +104,14 @@ class Tours {
     ],
     'trips': [
       (target: 'trips.empty', text: () => tr('tour.trips.1', 'Each trip you take with Start trip shows here. Start one from a way in Navigate, or a bus’s route.')),
+      (target: 'trips.since', text: () => tr('tour.trips.2', 'How many trips and rides you’ve taken, and how long on the move.')),
+      (target: 'trips.stats', text: () => tr('tour.trips.3', 'How your time splits between walking, waiting and riding, and the buses and lines you ride most.')),
       (target: 'trips.list', text: () => tr('tour.trips.4', 'Each trip, by week. Tap one for its rides and times, to take it again or share it.')),
     ],
     'places': [
       (target: 'places.add', text: () => tr('tour.places.3', 'Add a place: the gym, school, a friend’s. Each one shows under From and To in Navigate, and on Glance.')),
       (target: 'places.list', text: () => tr('tour.places.1', 'Home, Work and your own places. Tap one for the way there from where you are.')),
+      (target: 'places.more', text: () => tr('tour.places.2', 'The dots edit, share or delete it.')),
     ],
     'terminal': [
       (target: 'terminal.prompt', text: () => tr('tour.terminal.1', 'Type a command, as on the Linux command line: a stop like 84009, a stop’s name, nav home work, favs. Tab finishes a word, and Up brings back the last one.')),

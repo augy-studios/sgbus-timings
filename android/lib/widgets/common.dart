@@ -45,7 +45,7 @@ class SectionLabel extends StatelessWidget {
         child: Row(children: [
           Expanded(
             child: Text(text,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: context.sg.muted, fontWeight: FontWeight.w600)),
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(color: context.sg.heading, fontWeight: FontWeight.w600)),
           ),
           ?trailing,
         ]),
@@ -53,7 +53,7 @@ class SectionLabel extends StatelessWidget {
 }
 
 class Pill extends StatelessWidget {
-  const Pill({super.key, required this.label, this.icon, this.onTap, this.on = false, this.tooltip, this.wrap = false});
+  const Pill({super.key, required this.label, this.icon, this.onTap, this.on = false, this.tooltip, this.wrap = false, this.unset = false});
   final String label;
   final IconData? icon;
   final VoidCallback? onTap;
@@ -64,20 +64,24 @@ class Pill extends StatelessWidget {
   /// where there's no end to wrap at.
   final bool wrap;
 
+  /// Something still to set, such as Home: muted and edged, and tapped, it asks.
+  final bool unset;
+
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
-    final words = Text(label, style: TextStyle(color: on ? sg.onBrand : sg.ink, fontSize: 14));
+    final ink = on ? sg.onPick : unset ? sg.muted : sg.ink;
+    final words = Text(label, style: TextStyle(color: ink, fontSize: 14));
     final btn = Material(
-      color: on ? sg.brand : (context.materialYou ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong),
-      shape: StadiumBorder(side: context.materialYou ? BorderSide.none : BorderSide(color: sg.border)),
+      color: unset ? Colors.transparent : on ? sg.pick : (context.materialYou ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong),
+      shape: StadiumBorder(side: context.materialYou && !unset ? BorderSide.none : BorderSide(color: sg.border)),
       child: InkWell(
         customBorder: const StadiumBorder(),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
-            if (icon != null) ...[Icon(icon, size: 18, color: on ? sg.onBrand : sg.ink), const SizedBox(width: 6)],
+            if (icon != null) ...[Icon(icon, size: 18, color: ink), const SizedBox(width: 6)],
             if (wrap) Flexible(child: words) else words,
           ]),
         ),
@@ -115,7 +119,7 @@ class BusBadge extends StatelessWidget {
     final sg = context.sg;
     return Row(mainAxisSize: MainAxisSize.min, children: [
       if (fav) Icon(Icons.star_rounded, size: size * 0.8, color: sg.warn),
-      Text(no, style: TextStyle(fontSize: size, fontWeight: FontWeight.w700, color: tone ?? sg.ink, height: 1.1)),
+      Text(no, style: TextStyle(fontSize: size, fontWeight: FontWeight.w700, color: tone ?? sg.busInk(no), height: 1.1)),
     ]);
   }
 }

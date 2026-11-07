@@ -169,8 +169,8 @@ full size, where every line can be read.
 ## Themes
 
 <figure>
-<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark and Time-based modes, and seven brand colour swatches." width="440" height="446" loading="lazy">
-<figcaption>The theme picker: a mode, and one of seven colours.</figcaption>
+<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark and Time-based modes, eight brand colour swatches with GTA VI last, its note saying to set it before 26 November, and High contrast." width="420" height="644" loading="lazy">
+<figcaption>The theme picker: a mode, and one of eight colours.</figcaption>
 </figure>
 
 Tap the sun or moon button at the bottom of the Edge Tray to open the theme picker.
@@ -186,7 +186,7 @@ Choices apply at once and are remembered on this device.
 
 ### Brand colour
 
-Seven colours tint the page, the buttons and the highlights:
+Eight colours tint the page, the buttons and the highlights:
 
 | Colour | Swatch |
 |---|---|
@@ -197,9 +197,19 @@ Seven colours tint the page, the buttons and the highlights:
 | Not green 4 | Pale pink |
 | Not green 5 | Pale cyan |
 | Really really light green | White |
+| GTA VI | Pink, blue, orange, yellow and violet |
 
 Every colour works in both light and dark mode, and text stays readable in all
-fourteen combinations.
+sixteen combinations.
+
+**GTA VI** celebrates the game's release on 19 November 2026 with the colours of its logo: it goes
+further than a tint, with a colour to each kind of thing: pink main buttons, orange for what's
+picked, blue for what's switched on, bus numbers going through them all, and a violet page in dark
+mode. Arrival times keep their usual colours. A window offers it once when the app
+opens. Set it at least once before 26 November, Singapore time, and it's yours to keep, even if you
+change colours later. After that it's locked until you win it on the
+[uwuCoins wheel](uwucoins.md#spin-the-wheel). It's kept on each device, so set it on each one you
+use. SG Bus Timings isn't connected with Rockstar Games.
 
 ### High contrast
 

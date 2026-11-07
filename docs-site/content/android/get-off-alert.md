@@ -33,8 +33,8 @@ Its buttons:
 | Button | What it does |
 |---|---|
 | Tap the bar | Opens the [trip's screen](#the-timeline). |
-| **Back to the part before** | Takes it back a part, with its alert ready to go off again. Your location then puts you where you really are. |
-| **On to the next part** | Moves it on by hand. |
+| **Back to the part before** | Takes it back to where you'd got to on that part, or its start if you'd finished it, with its alert ready to go off again. Your location then puts you where you really are. |
+| **On to the next part** | Moves it on by hand. It's grey on the last part, where **End the trip** finishes it. |
 | **End the trip**, the cross | Stops it. |
 
 ## The timeline
@@ -92,12 +92,25 @@ trip back up, as long as it was still going in the last 3 hours.
 - **Walking or riding**: up to about 10 km/h is walking; a bus or train's speed, about 40 km/h on average, is riding.
   So walking to your stop never counts as boarding, and once you're riding, 150 m down your bus's route is enough.
 - **Waiting at the stop**: the trip stays there until your location shows you moving along the bus's route, so a long
-  wait inside an interchange never counts as riding.
-- **Underground**, where GPS gives out, it goes by how long each ride should take.
+  wait inside an interchange never counts as riding. With no GPS while you wait, it checks the bus's live timing and holds
+  until that bus is due.
+- **Along the bus's road**: it follows the road the bus takes, not a straight line from stop to stop, so a long stretch
+  with no stops, like an expressway, still counts the stops you pass.
+- **Underground**, where GPS gives out, it goes by how long each ride should take, and no further than your last good
+  location allows.
+- **A stray location**: no location moves you further than a bus or train could have gone by then.
+- **Never got on after all?** If it took you as on the bus and then sees you standing at your first stop, it goes back to
+  waiting for the bus.
+- **Already on your next ride?** If your location shows you on the next bus or train, down its route and past its first
+  stop, the trip moves on to it by itself, even if it never saw you reach the end of the part before. It doesn't while you're
+  walking or still on the ride you were on, and it waits until you've gone down the next route, so a train beside a bus's road
+  doesn't count.
 - **In the wrong place?** If the trip has you somewhere you aren't, it notices from your location and moves back. An
   alert that went off too early goes off again at the right stop.
 
-A trip across the Causeway is followed in parts, so the alert tells you to get off at each checkpoint for immigration.
+A ride across the Causeway is followed in three parts: to Woodlands Checkpoint, across to the Johor Bahru checkpoint, and
+on, or the other way round. The alert tells you to get off at each for immigration, and the time to clear counts as the wait
+before you get on again: see [Immigration time](settings.md#navigate).
 
 ## Waiting for the bus
 
@@ -129,8 +142,9 @@ first. Tap one and the trip changes from there, with **Undo** to put it back.
 
 ### Back to Navigate
 
-A trip started from Navigate has **Back to Navigate** beside **Change my way**. It opens Navigate as it was when you started,
-with the way you picked open, while the trip carries on.
+A trip started from Navigate has **Back to Navigate** beside **Change my way**. It opens the way you picked, part by part, as it
+was when you started, on Bus and train or Bus only, with its live timings brought up to date. **All ways** goes on to the rest. The
+trip carries on. A time you picked that has passed is left out, so it plans for now.
 
 ### Cycling or driving instead
 

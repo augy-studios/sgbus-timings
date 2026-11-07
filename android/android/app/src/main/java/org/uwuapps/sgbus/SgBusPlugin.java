@@ -13,7 +13,9 @@
  *                            settings without it: { on, settings } (2.2.0)
  *   pip({ auto, ratio })     whether leaving the app now shrinks it into picture-in-picture,
  *                            and its shape as [width, height] (MainActivity); "pip" events
- *                            say { active } as it goes in and out
+ *                            say { active } as it goes in and out. With parts: { prev, next,
+ *                            prevLabel, nextLabel }, the small window has previous and next
+ *                            buttons; a tap is a "pipAction" event, { action }
  *   setFavourites({ stops })  the favourite stops, [{ code, name }], for the widget's setup
  *                            (WidgetStore)
  *   share({ title, text, url })  Android's share sheet, as navigator.share is in Chrome: the
@@ -508,6 +510,14 @@ public class SgBusPlugin extends Plugin {
         plugin.notifyListeners("pip", out);
     }
 
+    static void onPipAction(String action) {
+        SgBusPlugin plugin = sPlugin.get();
+        if (plugin == null || action == null) return;
+        JSObject out = new JSObject();
+        out.put("action", action);
+        plugin.notifyListeners("pipAction", out);
+    }
+
     @PluginMethod
     public void pip(PluginCall call) {
         boolean auto = Boolean.TRUE.equals(call.getBoolean("auto", false));
@@ -523,8 +533,14 @@ public class SgBusPlugin extends Plugin {
             // No shape: the last one stands.
         }
         android.util.Rational shape = ratio;
+        JSObject parts = call.getObject("parts");
+        boolean hasParts = parts != null && parts.has("prev");
+        boolean prev = hasParts && parts.optBoolean("prev");
+        boolean next = hasParts && parts.optBoolean("next");
+        String prevLabel = hasParts ? parts.optString("prevLabel") : null;
+        String nextLabel = hasParts ? parts.optString("nextLabel") : null;
         getActivity().runOnUiThread(() -> {
-            if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).setAutoPip(auto, shape);
+            if (getActivity() instanceof MainActivity) ((MainActivity) getActivity()).setAutoPip(auto, shape, hasParts, prev, next, prevLabel, nextLabel);
             call.resolve();
         });
     }

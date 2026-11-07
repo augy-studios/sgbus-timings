@@ -391,7 +391,6 @@ class _GlancePageState extends State<GlancePage> {
       }
     }
     return SafeArea(
-      bottom: false,
       child: RefreshIndicator(
         onRefresh: () async {
           _since = 0;
@@ -438,7 +437,7 @@ class _GlancePageState extends State<GlancePage> {
             ),
             const SizedBox(height: 14),
             TourTarget(id: 'glance.hero', child: SgCard(padding: const EdgeInsets.all(18), child: _hero(src))),
-            if (GlancePage.weather != null) Padding(padding: const EdgeInsets.only(top: 10), child: GlancePage.weather!(context)),
+            if (GlancePage.weather != null) Padding(padding: const EdgeInsets.only(top: 10), child: TourTarget(id: 'glance.weather', child: GlancePage.weather!(context))),
             if (cards.isNotEmpty) TourTarget(id: 'glance.stops', child: cards.first),
             ...cards.skip(1),
             if (_fetchedAt != 0 && cards.isEmpty && only)

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/nav.dart';
 import '../../data/eggs_data.dart';
+import '../../data/gta6.dart';
 import '../../data/rewards.dart';
 import '../../data/store.dart';
 import '../../i18n/i18n.dart';
@@ -54,14 +55,19 @@ class _ThemeScreenState extends State<ThemeScreen> {
             subtitle: Text(tr('theme.materialYouNote', 'Turn off for the UwU Apps theme.')),
           ),
         ),
-        // ---- Material You's colours: the wallpaper's, unless Your colours are picked for it ----
-        if (look.materialYou && yc != null)
+        // ---- Material You's colours: the wallpaper's, unless GTA VI's or Your colours are picked ----
+        if (look.materialYou)
           Choice(
             label: tr('theme.youColours', 'Colours'),
-            value: look.youUseYours ? 'yours' : 'phone',
-            options: [('phone', tr('theme.youColours.phone', 'Your phone’s')), ('yours', tr('theme.youColours.yours', 'Your colours'))],
-            onChanged: (v) => setState(() => look.youUseYours = v == 'yours'),
+            value: look.youColours,
+            options: [
+              ('phone', tr('theme.youColours.phone', 'Your phone’s')),
+              if (Gta6.canPick) (AppLook.gta6, tr('theme.gta6', 'GTA VI')),
+              if (yc != null) ('yours', tr('theme.youColours.yours', 'Your colours')),
+            ],
+            onChanged: (v) => setState(() => look.youColours = v),
           ),
+        if (look.materialYou) ..._gta6Note(sg),
         // ---- light or dark ----
         Choice(
           label: tr('theme.mode', 'Mode'),
@@ -84,27 +90,33 @@ class _ThemeScreenState extends State<ThemeScreen> {
           else
             Wrap(spacing: 10, runSpacing: 10, children: [
               for (final s in AppLook.swatches)
+                if (s.id != AppLook.gta6 || Gta6.canPick || Coins.shown)
                 Tooltip(
                   message: s.id == 'classic'
                       ? tr('theme.classic', 'Classic')
                       : s.id == 'really-light-green'
                           ? tr('theme.reallyLight', 'Really really light green')
-                          : tr('theme.notGreen', 'Not green {n}', {'n': s.id.split('-').last}),
+                          : s.id == AppLook.gta6
+                              ? tr('theme.gta6', 'GTA VI')
+                              : tr('theme.notGreen', 'Not green {n}', {'n': s.id.split('-').last}),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: () => setState(() => look.swatchId = s.id),
+                    onTap: () => s.id == AppLook.gta6 && !Gta6.canPick ? AppNav.open('coins') : setState(() => look.swatchId = s.id),
                     child: Container(
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
                         color: Color(s.hex),
+                        gradient: s.dot == null ? null : LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: s.dot!),
                         shape: BoxShape.circle,
                         border: Border.all(color: look.swatchId == s.id ? sg.ink : sg.border, width: look.swatchId == s.id ? 3 : 1),
                       ),
+                      child: s.id == AppLook.gta6 && !Gta6.canPick ? const Icon(Icons.lock_outline, color: Colors.white, size: 20) : null,
                     ),
                   ),
                 ),
             ]),
+          if (yc == null) ..._gta6Note(sg),
           const SizedBox(height: 8),
         ],
         // ---- High contrast ----
@@ -133,6 +145,26 @@ class _ThemeScreenState extends State<ThemeScreen> {
         ],
       ]),
     );
+  }
+
+  // How to keep GTA VI's colours, or where to win them. Nothing once they're theirs.
+  List<Widget> _gta6Note(SgColors sg) {
+    if (Gta6.owned) return const [];
+    if (Gta6.open) {
+      return [
+        Padding(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          child: Text(tr('gta6.setNote', 'Set GTA VI before 26 November to keep it for good.'), style: TextStyle(color: sg.muted, fontSize: 13)),
+        ),
+      ];
+    }
+    if (!Coins.shown) return const [];
+    return [
+      Row(children: [
+        Expanded(child: Text(tr('gta6.locked', 'Win GTA VI on the uwuCoins wheel.'), style: TextStyle(color: sg.muted, fontSize: 13))),
+        TextButton(onPressed: () => AppNav.open('coins'), child: Text(tr('coins.spinGo', 'Spin the wheel'))),
+      ]),
+    ];
   }
 
   Widget _yourColours(Map<String, dynamic>? yc) {

@@ -9,6 +9,30 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 7 November 2026: GTA VI colours, and the Android app catches up with the website on trips (2.4.6)
+
+### Website and Android app
+
+- **GTA VI colours** - To celebrate the game's release on 19 November, a new theme in its logo's pink, blue, orange, yellow and violet, with a colour to each kind of thing, and a violet page in dark mode. A window offers it once. Set it at least once before 26 November and it's yours to keep. After that, it's won on the uwuCoins wheel. It's a Brand colour in Theme, and in the app's Material You it's under Colours.
+
+### Android app
+
+- **Back to Navigate** - On a trip, it opens the way you picked, on Bus and train or Bus only, not the list of ways, and keeps Your location if you started from it.
+- **On to your next ride by itself** - If your location shows you already on the next bus or train, the trip moves on to it, even if it never saw you reach the end of the part before, as the website does.
+- **Trips follow you more closely** - Waiting at the stop no longer counts as riding, and with no GPS the trip holds until your bus is due. It follows the bus's real road, puts itself right when your location shows it's wrong, ignores a stray location further on than a bus could have gone, and goes back to waiting if it took you as on a bus you never boarded.
+- **Back on the trip bar** - Goes back to where you'd got to on that part, not its start.
+- **Previous and next in the small window** - On a trip by bus or train with more than one part, picture-in-picture has previous and next buttons, like a video's, to move between parts.
+- **Next can't end your trip** - On the last part, Next is grey, on the trip bar and in the small window.
+- **Across the Causeway** - A ride across is followed in parts, so the alert tells you to get off at each checkpoint, and the time to clear counts as the wait.
+- **Citymapper** - A stop's Directions opens into Live map and Citymapper, and a walk in Navigate has both.
+- **Share on Bus only** - Sends a link to the route, with the time if you picked one.
+- **Navigate's tabs keep your ends** - A place becomes the bus stop at it, or the nearest within 150 m, and the time comes too.
+- **Set Home and Work from Navigate** - Until they're set, their buttons show paler under each end, and tapping one asks where it is.
+- **Directions there** - On someone's live progress, plans your own way to where they're going.
+- **To Home** - A trip in Your trips that ended at Home, Work or one of your places says so.
+- **Smaller things** - The incoming buses' heading and note, the tours' missing steps, an offline note in Favourites, and a word when a way can't be followed as a trip.
+- **Clear of the navigation bar, everywhere** - Glance, Bus timings, Favourites, Navigate, Service alerts and Places no longer run under Android's buttons either.
+
 ## 7 November 2026: Tunnels and driving on the Android app's map (2.4.5)
 
 ### Android app 2.4.5

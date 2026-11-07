@@ -13,8 +13,9 @@ description: Every trip taken with the Get Off Alert in the Android app, by the 
 
 ## Your trips
 
-Trips are grouped by the week. Each shows when it started, a chip for each bus or train you rode, and where it went. **All
-trips** lists every one, and **Fewer trips** folds them again.
+Trips are grouped by the week. Each shows when it started, a chip for each bus or train you rode, and where it went. A trip
+that ended at Home, Work or one of your [places](places.md) says so: **To Home**. **All trips** lists every one, and **Fewer
+trips** folds them again.
 
 A trip is kept once you've got on at least one bus or train. One you end partway keeps the rides you took, and says so.
 

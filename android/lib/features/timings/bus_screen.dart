@@ -228,7 +228,7 @@ class _BusScreenState extends State<BusScreen> {
           Tooltip(
             message: tr('route.alert_me_two_stops_before', 'Alert me two stops before I get off'),
             child: FilledButton.tonalIcon(
-              style: _picking ? FilledButton.styleFrom(backgroundColor: sg.brand, foregroundColor: sg.onBrand) : null,
+              style: _picking ? FilledButton.styleFrom(backgroundColor: sg.pick, foregroundColor: sg.onPick) : null,
               onPressed: () => setState(() => _picking = !_picking),
               icon: const Icon(Icons.notifications_active_outlined),
               label: Text(tr('route.get_off_alert', 'Get Off Alert')),

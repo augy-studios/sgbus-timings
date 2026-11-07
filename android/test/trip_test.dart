@@ -13,6 +13,8 @@ void main() {
     Store.memory();
     Native.available = false;
     Locate.fake = const Fix(1.30, 103.80);
+    var now = DateTime.utc(2026, 10, 7, 1);
+    When.now = () => now;
     // Six stops, about 400 m apart, along a straight road.
     final pts = [for (var i = 0; i < 6; i++) [1.30 + i * 0.0036, 103.80]];
     await Trip.I.start(title: 'To Stop 6', legs: [
@@ -23,8 +25,10 @@ void main() {
     Trip.I.onFix(Fix(pts[1][0], pts[1][1], accuracy: 10));
     expect(Trip.I.boarded, isTrue, reason: 'well along the ride');
     expect(Trip.I.alerted, isEmpty);
+    now = now.add(const Duration(minutes: 2));
     Trip.I.onFix(Fix(pts[3][0] + 0.0004, pts[3][1], accuracy: 10));
     expect(Trip.I.alerted, contains(0), reason: 'two stops before getting off');
+    now = now.add(const Duration(minutes: 2));
     Trip.I.onFix(Fix(pts[5][0], pts[5][1], accuracy: 10));
     await Future<void>.delayed(Duration.zero);
     expect(Trip.I.active, isFalse, reason: 'arrived');

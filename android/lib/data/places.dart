@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
+import 'geo.dart';
 import 'store.dart';
 
 class Place {
@@ -49,6 +50,22 @@ class Places {
   static void setCustom(List<Map<String, dynamic>> list) => Store.I.putJson(key, list.take(maxPlaces).toList());
 
   static String newId() => '${DateTime.now().millisecondsSinceEpoch.toRadixString(36)}${math.Random().nextInt(1 << 24).toRadixString(36)}';
+
+  /// The name of the saved place within [within] metres of a point, nearest first, or null.
+  static String? nameNear(Object? point, {double within = 150}) {
+    if (point is! Map || !_isPoint(point)) return null;
+    final at = [(point['lat'] as num).toDouble(), (point['lng'] as num).toDouble()];
+    String? best;
+    var bestM = within;
+    for (final p in all()) {
+      final m = metresAB(at, [p.lat, p.lng]);
+      if (m <= bestM) {
+        best = p.name;
+        bestM = m;
+      }
+    }
+    return best;
+  }
 
   /// Home, Work and the rest, in that order; with `unset`, Home and Work even while they aren't set.
   static List<Place> all({bool unset = false}) {

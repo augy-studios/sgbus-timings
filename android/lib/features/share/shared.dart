@@ -182,6 +182,15 @@ class _EtaViewState extends State<EtaView> {
             padding: const EdgeInsets.only(top: 8),
             child: FilledButton.tonalIcon(onPressed: () => LiveMap.follow(_d), icon: const Icon(Icons.map_outlined), label: Text(tr('trip.live_map', 'Live map'))),
           ),
+        if (NavEnd.from(_d['to']) != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: FilledButton.tonalIcon(
+              onPressed: () => openNav(from: NavEnd.parse('here'), to: NavEnd.from(_d['to'])),
+              icon: const Icon(Icons.directions),
+              label: Text(tr('html.directions_there', 'Directions there')),
+            ),
+          ),
         if (timeline?['legs'] is List)
           for (final (k, l) in (timeline!['legs'] as List).whereType<Map>().indexed) ...[
             SectionLabel('${l['label']} · ${tr('share.view.to', 'to {to}', {'to': l['to']})}'),

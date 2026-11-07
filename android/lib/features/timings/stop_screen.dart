@@ -73,6 +73,7 @@ class _StopScreenState extends State<StopScreen> {
   bool _loading = true;
   late String? _service = widget.service;
   bool _expanded = false;
+  bool _directionsOpen = false; // Directions, opened into the live map and Citymapper
   final Set<String> _refreshing = {};
   int _seq = 0;
 
@@ -259,8 +260,16 @@ class _StopScreenState extends State<StopScreen> {
                   onTap: () => AppNav.open('bus', {'no': _service, 'fromStop': code, 'onward': true, 'dir': widget.dir}),
                 ),
               Pill(icon: Icons.directions_bus_outlined, label: tr('stop.tool.pick', 'Pick a bus'), onTap: _pickBus),
-              if (stop?.lat != null)
-                Pill(icon: Icons.directions_walk, label: tr('stop.tool.directions', 'Directions'), onTap: () => AppNav.open('walkTo', {'code': code})),
+              if (stop?.lat != null && !_directionsOpen)
+                Pill(icon: Icons.directions_walk, label: tr('stop.tool.directions', 'Directions'), onTap: () => setState(() => _directionsOpen = true)),
+              if (stop?.lat != null && _directionsOpen) ...[
+                Pill(icon: Icons.map_outlined, label: tr('trip.live_map', 'Live map'), onTap: () => AppNav.open('walkTo', {'code': code})),
+                Pill(
+                  icon: Icons.directions,
+                  label: 'Citymapper',
+                  onTap: () => Native.call('SgBus', 'openLink', {'url': Links.citymapper(stop!.lat!, stop.lng!, stop.name, road: stop.road)}).catchError((_) => null),
+                ),
+              ],
               Pill(icon: Icons.schedule, label: tr('stop.tool.board', 'Board'), onTap: () => AppNav.open('board', {'code': code})),
               if (Native.has('sticker'))
                 Pill(icon: Icons.nfc, label: tr('offline.sticker', 'NFC sticker'), onTap: () => AppNav.open('sticker', {'url': Links.stop(code), 'label': name})),
@@ -360,7 +369,8 @@ class _IncomingBar extends StatelessWidget {
     final sg = context.sg;
     final items = [for (final s in svcs) if (s.next?.etaMs != null) s]..sort((a, b) => a.next!.etaMs!.compareTo(b.next!.etaMs!));
     if (items.isEmpty) return const SizedBox.shrink();
-    return SizedBox(
+    final small = TextStyle(color: sg.muted, fontSize: 12);
+    final row = SizedBox(
       height: 84,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
@@ -385,7 +395,7 @@ class _IncomingBar extends StatelessWidget {
               ),
               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                 Text(label, style: TextStyle(color: sg.load(s.next!.load), fontWeight: FontWeight.w700)),
-                Text(s.serviceNo, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+                Text(s.serviceNo, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: sg.busInk(s.serviceNo))),
                 if (way != null) Text(way.short, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: tone)),
               ]),
             ),
@@ -393,6 +403,11 @@ class _IncomingBar extends StatelessWidget {
         },
       ),
     );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(tr('stop.incoming_buses', 'INCOMING BUSES'), style: small.copyWith(fontWeight: FontWeight.w700))),
+      row,
+      Padding(padding: const EdgeInsets.only(top: 4), child: Text(tr('stop.buses_might_not_arrive_in', '*buses might not arrive in exact order'), style: small)),
+    ]);
   }
 }
 

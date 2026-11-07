@@ -170,7 +170,6 @@ class _TimingsPageState extends State<TimingsPage> {
     final campus = searching && Campus.ready ? Campus.search(q) : null;
 
     return SafeArea(
-      bottom: false,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

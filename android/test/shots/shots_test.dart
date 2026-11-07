@@ -18,9 +18,11 @@ import 'package:sgbus_timings/data/location.dart';
 import 'package:sgbus_timings/data/store.dart';
 import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';
+import 'package:sgbus_timings/features/misc/extras.dart';
 import 'package:sgbus_timings/features/settings/theme_screen.dart';
 import 'package:sgbus_timings/features/timings/bus_screen.dart';
 import 'package:sgbus_timings/features/timings/stop_screen.dart';
+import 'package:sgbus_timings/theme/theme.dart';
 import 'package:sgbus_timings/features/timings/timings_page.dart';
 
 import 'harness.dart';
@@ -65,6 +67,13 @@ void main() {
     await shot(t, 'theme', () => const ThemeScreen());
     await shot(t, 'theme-usual', () => const ThemeScreen(), material: false);
     await shot(t, 'theme-dark', () => const ThemeScreen(), brightness: Brightness.dark);
+    AppLook.I.youColours = AppLook.gta6;
+    await shot(t, 'theme-gta6', () => const ThemeScreen(), brightness: Brightness.dark);
+    AppLook.I.youColours = 'phone';
+    AppLook.I.swatchId = AppLook.gta6;
+    await shot(t, 'stop-gta6-usual', () => const StopScreen(code: '84009'), material: false, brightness: Brightness.dark);
+    AppLook.I.swatchId = 'classic';
+    await shot(t, 'gta6-offer', () => const Scaffold(body: Gta6Window()));
     await shot(t, 'settings', () => const SettingsScreen());
     await shot(t, 'settings-pages', () => const SettingsGroup(group: 'pages'));
     await shot(t, 'settings-you', () => const SettingsGroup(group: 'you'));

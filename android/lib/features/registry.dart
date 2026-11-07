@@ -1,7 +1,10 @@
 // Every feature's way in: the Edge Tray's pages, and what each of the app's links and buttons
 // opens (app/nav.dart's AppNav.open), so a link from anywhere lands the same way.
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../data/geo.dart';
 import '../app/nav.dart';
 import '../app/shell.dart';
 import 'alerts/alerts.dart';
@@ -53,7 +56,57 @@ Map<String, Widget Function()> pages() => {
       'places': () => const TourTarget(id: 'places.list', child: PlacesPage()),
     };
 
+/// The nearest bus stop to a place within [_nearStopM], or null.
+const _nearStopM = 150.0;
+String? stopNearPlace(NavEnd? place) {
+  if (place == null || place.here) return null;
+  String? best;
+  var bestM = _nearStopM;
+  for (final s in Stops.all) {
+    if (s.lat == null || s.lng == null) continue;
+    final m = metresBetween(place.lat, place.lng, s.lat!, s.lng!);
+    if (m < bestM) {
+      best = s.code;
+      bestM = m;
+    }
+  }
+  return best;
+}
+
+/// Navigate's tab changed: your two ends go with you where they can, as does the time. A stop stays
+/// that stop, and a place becomes the bus stop at it or the nearest within 150 m. An end that can't
+/// come leaves what that tab had.
+void switchNavMode(String mode) {
+  final n = NavState.I;
+  final p = PlannerState.I;
+  if (mode == 'bus') {
+    final a = stopNearPlace(n.from), b = stopNearPlace(n.to);
+    if (a == null && b == null && n.when == null) return;
+    if (a != null) p.start = a;
+    if (b != null) p.end = b;
+    p.when = n.when;
+    p.journey = null;
+    unawaited(p.search());
+  } else {
+    NavEnd? placeOf(String? code) {
+      final s = code == null ? null : Stops.of(code);
+      return s?.lat == null ? null : NavEnd(Stops.nameOf(code!).isEmpty ? code : Stops.nameOf(code), s!.lat!, s.lng!);
+    }
+
+    final a = placeOf(p.start), b = placeOf(p.end);
+    if (a == null && b == null && p.when == null) return;
+    if (a != null) n.from = a;
+    if (b != null) n.to = b;
+    n.when = p.when;
+    n.via = null;
+    unawaited(n.run());
+  }
+}
+
 void registerFeatures() {
+  NavPage.switched = switchNavMode;
+  NavPage.setPlace = (c, p) => editPlace(c, p);
+  NavSwitch.setPlace = (c, p) => editPlace(c, p);
   LiveMap.register();
   AppNav.register('calendarSettings', (_) => CalendarSettings.open());
   hookDoors();
@@ -85,28 +138,21 @@ void registerFeatures() {
   AppNav.register('startTrip', (a) {
     final n = NavState.I;
     final t = tripFromNav(a['option'] as Map<String, dynamic>, n.from, n.to);
-    if (t != null) {
-      Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null, via: n.via?.toJson(), origin: {
-        'kind': 'nav',
-        'from': n.from?.here == false ? n.from!.toJson() : null,
-        'to': n.to?.here == false ? n.to!.toJson() : null,
-        'via': n.via?.toJson(),
-      });
+    if (t == null) {
+      AppNav.say(tr('nav.cantFollow', "This way can't be followed as a trip. Try another way."));
+    } else {
+      Trip.I.start(title: t.title, legs: t.legs, from: n.from?.here == false ? n.from!.toJson() : null, to: n.to?.here == false ? n.to!.toJson() : null, via: n.via?.toJson(), origin: navOrigin(a['option'] as Map<String, dynamic>));
     }
   });
   AppNav.register('startTripLegs', (a) {
     final end = a['end'] as String;
-    Trip.I.start(title: tr('trip.to', 'To {to}', {'to': Stops.nameOf(end)}), legs: tripFromLegs((a['legs'] as List).cast()), origin: {'kind': 'route', 'start': a['start'], 'end': end});
+    Trip.I.start(title: tr('trip.to', 'To {to}', {'to': Stops.nameOf(end)}), legs: tripFromLegs((a['legs'] as List).cast()), origin: plannerOrigin((a['legs'] as List).cast()));
   });
   AppNav.register('celebrationAgain', (_) => Celebration.open(tr('eggs.lines.text', 'You’ve ridden every MRT and LRT line.')));
   // Back to Navigate: the screen a trip was started from.
   AppNav.register('tripOrigin', (a) {
     final o = a['origin'] as Map;
-    if (o['kind'] == 'route') {
-      openPlanner(start: o['start'] as String?, end: o['end'] as String?);
-    } else {
-      openNav(from: NavEnd.from(o['from']), to: NavEnd.from(o['to']), via: NavEnd.from(o['via']));
-    }
+    o['kind'] == 'route' ? reopenPlanner(o) : reopenNav(o);
   });
   Alerts.listen();
   Alerts.startBar();

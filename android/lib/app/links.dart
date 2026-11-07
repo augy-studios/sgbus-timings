@@ -61,5 +61,14 @@ class Links {
   // ---------- addresses to share ----------
 
   static String stop(String code) => '$site/#$code';
+
+  /// Directions in Citymapper: its app where it's installed, its website otherwise. It has no mode in
+  /// its links, and offers walking among its own. Without [from], from where you are.
+  static String citymapper(double lat, double lng, String name, {String? road, ({double lat, double lng})? from}) => 'https://citymapper.com/directions?endcoord=$lat%2C$lng&endname=${Uri.encodeComponent(name)}'
+      '${road != null && road.isNotEmpty ? '&endaddress=${Uri.encodeComponent(road)}' : ''}'
+      '${from != null ? '&startcoord=${from.lat}%2C${from.lng}' : ''}';
+
+  /// Navigate's Bus only, with what's set of it.
+  static String route(String? start, String? end, WhenPick? when) => start == null && end == null && when == null ? '$site/#route' : '$site/#route/${start ?? '-'}/${end ?? '-'}${When.hashPart(when)}';
   static String bus(String no) => '$site/#bus/$no';
 }

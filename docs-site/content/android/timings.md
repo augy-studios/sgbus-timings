@@ -19,7 +19,7 @@ badges, read [Reading bus timings](../getting-started/reading-timings.md) first.
 | **Share**, at the top | Shares a link to the stop. |
 | **Save** | Adds the stop to your [favourites](favourites.md). It turns into **Saved**; tap again to remove it. |
 | [**Pick a bus**](#pick-a-bus) | Narrows the stop to one bus. |
-| **Directions** | Walks you to the stop on the [live map](live-map.md#walk-to-a-stop-or-place), turn by turn. |
+| **Directions** | Opens into **Live map**, which walks you to the stop [turn by turn](live-map.md#walk-to-a-stop-or-place), and **Citymapper**, for the way there in Citymapper's app or website. |
 | [**Board**](#the-departures-board) | The stop's departures board, full screen. |
 | **NFC sticker** | Writes the stop onto a [sticker](sharing.md#nfc-stickers), on a phone with NFC. |
 
@@ -47,9 +47,9 @@ A star before the bus's number means it's one of your
 
 ## Incoming buses
 
-The row of boxes above the cards is the next bus of every service, soonest first,
-coloured by how full it is. Swipe it sideways for the rest. It's the quickest way to
-answer "which bus comes first?"
+**Incoming buses**, the row of boxes above the cards, is the next bus of every service,
+soonest first, coloured by how full it is. Swipe it sideways for the rest. It's the quickest
+way to answer "which bus comes first?", though buses might not arrive in exactly that order.
 
 ## Clock times
 

@@ -17,6 +17,9 @@ The two tabs at the top are **Bus and train**, this page, and
 [**Bus only**](route-planner.md), between two bus stops. The Edge Tray's arrowhead opens on
 whichever you used last.
 
+Switching tab keeps your two ends where it can: a stop stays that stop, and a place becomes the
+bus stop at it, or the nearest one within 150 m. The time you picked comes too.
+
 ## Set where you're going
 
 <figure>
@@ -30,7 +33,8 @@ whichever you used last.
 2. Do the same in **To**.
 
 Under each end, **Your location**, **Home**, **Work** and your other
-[places](places.md) set it with one tap. Swipe the row sideways for the rest. The **swap
+[places](places.md) set it with one tap. Swipe the row sideways for the rest. Until Home or
+Work is set, its button is paler and edged, and tapping it asks where it is. The **swap
 button** between the two ends turns the journey around.
 
 Before you type, the sheet also has your [past searches](past-searches.md), your saved
@@ -131,7 +135,8 @@ connection first, so it can keep what it needs.
 Tap a way to see it part by part:
 
 - **Walks**, with the distance and roughly how long. **Live map** opens the walk on the
-  [live map](live-map.md). A walk to or from a station says [which exit](#the-nearest-exit).
+  [live map](live-map.md), and **Citymapper** in Citymapper's app or website. A walk to or from a
+  station says [which exit](#the-nearest-exit).
 - **Trains**, with the line, the direction to take, how many stops, and where to get off, with
   [which door to stand at](#which-door-to-stand-at).
 - **Buses**, with how many stops and where to get off, and the **live timings** of that bus at

@@ -31,29 +31,8 @@ class _PlacesPageState extends State<PlacesPage> {
   }
 
   Future<void> _edit([Place? p]) async {
-    final fixed = p != null && (p.key == 'home' || p.key == 'work');
-    final result = await showModalBottomSheet<({PlacePick place, String name})>(
-      context: context,
-      isScrollControlled: true,
-      builder: (_) => _PlaceForm(place: p, fixed: fixed),
-    );
-    if (result == null) return;
-    final clean = result.place.toJson();
-    if (fixed) {
-      Places.setFixed(p.key, clean);
-    } else {
-      final list = Places.custom();
-      final id = p?.id;
-      final i = list.indexWhere((x) => x['id'] == id);
-      final item = {'id': id ?? Places.newId(), 'name': result.name.trim().length > 40 ? result.name.trim().substring(0, 40) : result.name.trim(), ...clean};
-      if (i >= 0) {
-        list[i] = item;
-      } else {
-        list.add(item);
-      }
-      Places.setCustom(list);
-    }
-    setState(() {});
+    await editPlace(context, p);
+    if (mounted) setState(() {});
   }
 
   Future<void> _delete(Place p) async {
@@ -84,7 +63,6 @@ class _PlacesPageState extends State<PlacesPage> {
     final sg = context.sg;
     final all = Places.all(unset: true);
     return SafeArea(
-      bottom: false,
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
         Text(tr('panel.places', 'Places'), style: Theme.of(context).textTheme.headlineMedium),
         const SizedBox(height: 6),
@@ -105,7 +83,7 @@ class _PlacesPageState extends State<PlacesPage> {
                 onTap: p.unset ? () => _edit(p) : () => AppNav.open('navAt', {'from': 'here', 'to': {'label': p.name, 'lat': p.lat, 'lng': p.lng}}),
                 trailing: p.unset
                     ? null
-                    : PopupMenuButton<String>(
+                    : TourTarget(id: p.key == all.firstWhere((x) => !x.unset).key ? 'places.more' : 'places.more.${p.key}', child: PopupMenuButton<String>(
                         tooltip: tr('cal.moreFor', 'More for {title}', {'title': p.name}),
                         onSelected: (v) {
                           if (v == 'edit') _edit(p);
@@ -120,7 +98,7 @@ class _PlacesPageState extends State<PlacesPage> {
                             PopupMenuItem(value: 'delete', child: Text(fixed ? tr('places.clear', 'Clear') : tr('history.delete', 'Delete'))),
                           ];
                         },
-                      ),
+                      )),
               ),
             ),
           ),
@@ -136,6 +114,32 @@ class _PlacesPageState extends State<PlacesPage> {
     );
   }
 }
+
+/// Places' form, for a place or a new one, from Places or from Home or Work tapped elsewhere.
+Future<void> editPlace(BuildContext context, [Place? p]) async {
+    final fixed = p != null && (p.key == 'home' || p.key == 'work');
+    final result = await showModalBottomSheet<({PlacePick place, String name})>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => _PlaceForm(place: p, fixed: fixed),
+    );
+    if (result == null) return;
+    final clean = result.place.toJson();
+    if (fixed) {
+      Places.setFixed(p.key, clean);
+    } else {
+      final list = Places.custom();
+      final id = p?.id;
+      final i = list.indexWhere((x) => x['id'] == id);
+      final item = {'id': id ?? Places.newId(), 'name': result.name.trim().length > 40 ? result.name.trim().substring(0, 40) : result.name.trim(), ...clean};
+      if (i >= 0) {
+        list[i] = item;
+      } else {
+        list.add(item);
+      }
+      Places.setCustom(list);
+    }
+  }
 
 class _PlaceForm extends StatefulWidget {
   const _PlaceForm({this.place, required this.fixed});

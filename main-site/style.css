@@ -52,7 +52,7 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     }
 }
 
-/* ---- brand colour tokens (7 swatches) ---- */
+/* ---- brand colour tokens (8 swatches) ---- */
 :root,
 :root[data-color-theme="classic"] {
     --brand: #ccffcc;
@@ -64,6 +64,7 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
 :root[data-color-theme="not-green-4"] { --brand: #ffccff; --brand-rgb: 255, 204, 255; }
 :root[data-color-theme="not-green-5"] { --brand: #ccffff; --brand-rgb: 204, 255, 255; }
 :root[data-color-theme="really-light-green"] { --brand: #ffffff; --brand-rgb: 255, 255, 255; }
+:root[data-color-theme="gta-6"] { --brand: #ff2b90; --brand-rgb: 255, 43, 144; }
 
 /* ---- light / dark surface tokens ---- */
 :root,
@@ -115,6 +116,25 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     /* Secondary text on --surface-strong. Plain --muted only reaches 3.6:1
        there in dark mode, since the strong surface lightens the backdrop. */
     --muted-strong: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+/* GTA VI, the one swatch that isn't pale: the colours of the game's logo, more than a tint. In dark
+   mode a mix of its pink over the violet is too dark for --on-brand, so the fills are solid. High
+   contrast keeps its own tokens. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]) { --on-brand: #1d0030; }
+:root[data-color-theme="gta-6"][data-mode="light"]:not([data-contrast="more"]) {
+    --bg: #fff0f7;
+    --ink: #1d0030;
+    --muted: #66406f;
+    --brand-ink: #bc0082;
+}
+:root[data-color-theme="gta-6"][data-mode="dark"]:not([data-contrast="more"]) {
+    --bg: #1d0030;
+    --ink: #fff4fa;
+    --muted: #d9c2de;
+    --brand-ink: #ff7ccb;
+    --brand-fill: #ff2b90;
+    --brand-fill-strong: #ff4cb9;
 }
 
 /* High contrast (help desk #6, js/colours.js): the phone's setting (prefers-contrast: more), or
@@ -372,11 +392,24 @@ body.modal-open { overflow: hidden; }
         0 0 0 2px var(--swatch-color),
         0 0 0 3px color-mix(in srgb, var(--ink) 50%, transparent);
 }
+.swatch-note {
+    display: block;
+    margin-top: 2px;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+.swatch.locked .swatch-dot { opacity: 0.45; }
+.gta6Strip {
+    height: 10px;
+    margin-bottom: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #2b60da, #ff2b90, #e6953e);
+}
 .swatch-dot {
     width: 20px;
     height: 20px;
     border-radius: 50%;
-    background: var(--swatch-color);
+    background: var(--swatch-dot, var(--swatch-color));
     border: 1px solid color-mix(in srgb, var(--ink) 30%, transparent);
     flex-shrink: 0;
 }
@@ -4278,3 +4311,72 @@ body.coins-hidden #coinsBtn { display: none !important; }
 .bugShot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .bugShotX { position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; line-height: 24px; padding: 0; cursor: pointer; }
 .bugShotBtns { flex-wrap: wrap; gap: 8px; }
+
+/* GTA VI uses every colour of the logo, a colour to each kind of thing: pink for the main buttons,
+   orange for what's picked, yellow under a finger, blue for what's switched on, magenta for buses
+   and chips, and the bus numbers and Edge Tray buttons going through them. Each sets the tokens the
+   rule that paints it reads, so nothing here repeats how it's drawn. The status colours (--ok,
+   --warn, --busy, --error, the tones) keep their meaning. Not over High contrast or Your colours. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) body {
+    background-image: linear-gradient(165deg, #fff0f7, #fff4e3 55%, #eaf0ff);
+    background-attachment: fixed;
+}
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] body { background-image: linear-gradient(165deg, #1d0030, #350054 60%, #5a0160); }
+
+/* Pink: the main buttons. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .btn { --brand-fill: #ff2b90; --brand-fill-strong: #ff4cb9; }
+/* Orange: what's picked. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.tab.active, .mode-btn.active, .recentTab.active, .glass-btn[role="tab"][aria-selected="true"], .glanceMenuItem.active, .firstRunOption:has(input:checked), .swatch.active) {
+    --brand-fill: #e6953e;
+    --brand-fill-strong: #f0aa5c;
+}
+/* Yellow: under a finger. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.chip:hover, .acItem:hover, .acItem.acActive, .routeStop:hover, .shareMenuItem:hover, .shareTarget:hover, .langRow:hover, .recentMain:hover, .calSetup:hover, .tripChangeWay:hover, .tlChange:hover, .iconBtn:hover, .viewRouteBtn:hover) {
+    --brand-fill: #ffbc24;
+    --brand-fill-strong: #ffcb57;
+}
+/* Blue, with white on it: what's switched on, and codes to read. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.iconBtn.on, .favListTools [aria-pressed="true"], .mapFab[aria-pressed="true"], .lastBusBell.on, .searchExtra.listening, .syncCode, .mcCode, .tlTag, .tripSwitched, .routeStop.me) {
+    --brand-fill: #2b60da;
+    --brand-fill-strong: #2e49bf;
+    --on-brand: #ffffff;
+}
+/* Magenta, with white on it: buses and chips. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.busBtn, .busChip, .wxBar span, .shareBand, .tripBar.alerting) {
+    --brand-fill: #bc0082;
+    --brand-fill-strong: #a30071;
+    --on-brand: #ffffff;
+}
+/* The bars and panels' tints, each its own. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .incomingBar { --brand: #2b60da; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.update-notice, .app-update-notice, .offline-notice) { --brand: #e6953e; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .plannerSection .acList { --brand: #2b60da; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .navSection .acList { --brand: #ffbc24; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .placesSection .acList { --brand: #e6953e; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.tripRowMain:hover, .placeMain:hover) { --brand: #ffbc24; }
+/* The bus numbers, going through the colours. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.svc:nth-child(4n+1) .svcNo, .incomingBusItem:nth-child(4n+1) .incomingBusNo) { --brand-fill-strong: #ff2b90; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.svc:nth-child(4n+2) .svcNo, .incomingBusItem:nth-child(4n+2) .incomingBusNo) { --brand-fill-strong: #2b60da; --on-brand: #ffffff; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.svc:nth-child(4n+3) .svcNo, .incomingBusItem:nth-child(4n+3) .incomingBusNo) { --brand-fill-strong: #e6953e; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.svc:nth-child(4n) .svcNo, .incomingBusItem:nth-child(4n) .incomingBusNo) { --brand-fill-strong: #ffbc24; }
+/* The wheel's slices, and their numbers. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice.even, :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice.odd { fill: #ff2b90; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice:nth-of-type(5n+3) { fill: #2b60da; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice:nth-of-type(5n+4) { fill: #e6953e; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice:nth-of-type(5n) { fill: #bc0082; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice:nth-of-type(5n+1):not(.egg) { fill: #ffbc24; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSliceText { fill: #1d0030; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice:nth-of-type(5n+3) + .coinSliceText, :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice:nth-of-type(5n) + .coinSliceText { fill: #ffffff; }
+/* Headings and the Edge Tray's buttons, in the colours that read on the page. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .modal-head h2 { color: #2b60da; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .modal-head h2 { color: #ffbc24; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn:nth-child(5n+1) { color: #bc0082; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn:nth-child(5n+2) { color: #2b60da; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn:nth-child(5n+3) { color: #9a5206; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn:nth-child(5n+4) { color: #6d016d; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn:nth-child(5n) { color: #2e49bf; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n+1) { color: #ff7ccb; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n+2) { color: #8fb0ff; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n+3) { color: #ffbc24; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n+4) { color: #f0aa5c; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n) { color: #d98be0; }
