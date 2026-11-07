@@ -209,6 +209,28 @@ class _Note extends StatelessWidget {
   }
 }
 
+/// On a Google Play build, exact alarms are the person's to allow (app/src/play/AndroidManifest.xml):
+/// the reminders still come without them, but Android can hold them back. GitHub's APK has them
+/// from install, so this never shows there.
+class _AlarmsNote extends StatelessWidget {
+  const _AlarmsNote();
+
+  @override
+  Widget build(BuildContext context) {
+    if (Reminders.status?['exactAlarms'] != false) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(children: [
+        Expanded(child: Text(tr('reminders.exactAlarms', 'Android may deliver these reminders late. To get them on time, allow Alarms & reminders for SG Bus Timings.'))),
+        TextButton(
+          onPressed: () => Native.call('Reminders', 'openAlarms').catchError((_) => null),
+          child: Text(tr('reminders.exactAlarmsAllow', 'Allow')),
+        ),
+      ]),
+    );
+  }
+}
+
 class _Bell extends StatelessWidget {
   const _Bell({required this.no, required this.code});
   final String no;
@@ -280,6 +302,7 @@ class _RemindersSettingsState extends State<_RemindersSettings> with WidgetsBind
           if (off && (list.isNotEmpty || s['leaveTime'] == true || s['onABus'] == true))
             _Note(tr('reminders.noNotifications', 'Notifications are off for SG Bus Timings, so these reminders can’t show.'), settings: true),
           _Note(_error),
+          if (list.isNotEmpty || s?['leaveTime'] == true || Reminders.routines().isNotEmpty) const _AlarmsNote(),
           if (Native.has('leavetime'))
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -290,6 +313,16 @@ class _RemindersSettingsState extends State<_RemindersSettings> with WidgetsBind
                 final e = await Reminders.setSwitch('leaveTime', v);
                 if (mounted) setState(() => _error = e ?? '');
               },
+            ),
+          // Without Home, and with the phone not saying where it is, Time to leave has nowhere to
+          // plan from, and no notification comes (LeaveTime.java).
+          if (Native.has('leavetime') && s?['leaveTime'] == true && Store.I.get('sgbus_home') == null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: Row(children: [
+                Expanded(child: Text(tr('reminders.leaveTimeHome', "Time to leave plans from Home when this phone can't say where you are. Save Home in Places so it always has somewhere to start."))),
+                TextButton(onPressed: () => AppNav.showPage('places'), child: Text(tr('settings.open_places', 'Open Places'))),
+              ]),
             ),
           if (Native.has('onabus'))
             SwitchListTile(
@@ -410,7 +443,7 @@ class RoutinesScreen extends StatefulWidget {
   State<RoutinesScreen> createState() => _RoutinesScreenState();
 }
 
-class _RoutinesScreenState extends State<RoutinesScreen> {
+class _RoutinesScreenState extends State<RoutinesScreen> with WidgetsBindingObserver {
   String? _editing;
   String? _code;
   final _buses = TextEditingController();
@@ -422,6 +455,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _reset();
     Reminders.refresh().then((_) {
       final s = Reminders.status;
@@ -429,6 +463,18 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
         setState(() => _note = tr('reminders.noNotifications', 'Notifications are off for SG Bus Timings, so these reminders can’t show.'));
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // Back from Android's Alarms & reminders: the note goes once it's allowed.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) Reminders.refresh();
   }
 
   List<({String code, String name})> _options(Map? r) {
@@ -491,6 +537,7 @@ class _RoutinesScreenState extends State<RoutinesScreen> {
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
               Text(tr('routine.description', 'A stop’s next buses as a notification at a time you set, on the days you pick: your stop at 7:45 on weekdays, say.'), style: TextStyle(color: sg.muted)),
               if (_note.isNotEmpty) _Note(_note, settings: true),
+              const _AlarmsNote(),
               const SizedBox(height: 8),
               if (list.isEmpty) EmptyNote(tr('settings.last_bus_reminders.no_buses', 'None yet.')),
               for (final (i, r) in list.indexed)

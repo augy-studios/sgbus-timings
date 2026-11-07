@@ -16,6 +16,8 @@ Tap **Timings near a stop**, the ringing bell in the Edge Tray, tick some of you
 quiet notification shows its next buses, refreshed every minute until you leave. It needs location **All the time**, as it's watched with the app closed. If it
 isn't allowed, the screen says so, with **Open settings**.
 
+Timings near a stop is in the app from GitHub, not the one from Google Play.
+
 ## Routines
 
 <figure>
@@ -41,14 +43,21 @@ about.
 
 In [Settings](settings.md#trips-and-alerts), **Trips and alerts**. For events in your phone's calendar with a place, a notification when it's time to set off by bus
 and train to get there on time, with the way to go. It plans from where you are, or, when the phone won't say with the app closed, from Home in
-[Places](places.md). It needs **Calendar**.
+[Places](places.md). With no Home saved and the phone not saying where you are, there's nowhere to plan from, so no notification comes, and Settings asks you to save
+Home. It needs **Calendar**.
 
 ## "On a bus?"
 
 In [Settings](settings.md#trips-and-alerts), **Trips and alerts**. When the phone notices you're riding and no trip is running, a quiet notification offers to start
 one, for the [Get Off Alert](get-off-alert.md). It can't tell a bus from a car, so it only offers, at most once every two hours. It needs **Physical activity**.
+It's in the app from GitHub, not the one from Google Play.
 
 ## If they don't show
 
 If notifications are off for the app, the screens say so: turn them on in Android's settings for the app. Either button can be turned off in
 [Settings](settings.md#pages-and-edge-tray), **Edge Tray buttons**.
+
+## If they come late
+
+In the app from Google Play, routines, last bus reminders and Time to leave come on time only if you allow **Alarms & reminders** for it. Without that they still come,
+but Android can hold them back, by up to an hour or more when the phone's saving battery. If it isn't allowed, Routines and Settings say so, with **Allow**.

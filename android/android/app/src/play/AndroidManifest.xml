@@ -1,10 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- A Google Play build only (build-apk.ps1 -Aab, app/build.gradle's sgbusPlay): Play updates the app
-     and doesn't allow it to update itself, so the updater and its permission come out. The APK on
-     GitHub keeps them. -->
+<!-- A Google Play build only (build-apk.ps1 -Aab, app/build.gradle's sgbusPlay). The APK on GitHub
+     keeps everything removed here.
+     The updater: Play updates the app and doesn't allow it to update itself.
+     USE_EXACT_ALARM: Play allows it only for alarm clock and calendar apps. SCHEDULE_EXACT_ALARM,
+     which the person allows in Android's Alarms & reminders, takes its place on every Android.
+     Background location, activity recognition and battery optimisation: Play allows them only for
+     uses this app doesn't have, so Timings near a stop and "On a bus?" stay on GitHub's APK
+     (playBuild in lib/native/native_bridge.dart). -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" tools:node="remove" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:remove="android:maxSdkVersion" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" tools:node="remove" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" tools:node="remove" />
+    <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" tools:node="remove" />
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
     <application>
         <activity android:name=".UpdateActivity" tools:node="remove" />
         <receiver android:name=".UpdateActivity$InstallStatus" tools:node="remove" />

@@ -119,7 +119,9 @@ public class TripPlugin extends Plugin {
 
     @PermissionCallback
     private void afterNotifications(PluginCall call) {
-        if (!hasBackground() && firstTime(ASKED_BACKGROUND)) {
+        // Not in a Google Play build's manifest: a trip works without it.
+        if (!hasBackground() && SgBusPlugin.declares(getContext(), Manifest.permission.ACCESS_BACKGROUND_LOCATION)
+                && firstTime(ASKED_BACKGROUND)) {
             requestPermissionForAlias("background", call, "afterBackground");
             return;
         }
@@ -136,7 +138,10 @@ public class TripPlugin extends Plugin {
         // Once, on the first trip: Android's own yes/no to leaving the app out of battery
         // optimisation, which some phones (Xiaomi, Samsung, Oppo) use to stop a trip in the
         // background (2.1.0). The trip starts either way.
-        if (!SgBusPlugin.batteryFree(getContext()) && firstTime(ASKED_BATTERY)) {
+        // A Google Play build can't ask this, and doesn't open Android's list unasked.
+        if (!SgBusPlugin.batteryFree(getContext())
+                && SgBusPlugin.declares(getContext(), Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                && firstTime(ASKED_BATTERY)) {
             try {
                 getActivity().startActivity(SgBusPlugin.batteryIntent(getContext()));
             } catch (android.content.ActivityNotFoundException ignored) {

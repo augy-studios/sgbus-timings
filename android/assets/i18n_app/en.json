@@ -28,5 +28,8 @@
   "terminal.clear": "Clear the screen",
   "tour.terminal.2app": "The answers show here. ^C stops one that keeps updating, or clears the line; press and hold to select text and copy it.",
   "tour.terminal.3app": "exit, Back or this closes it. Settings, Help and extras opens it again.",
-  "map.estimated": "No GPS here, so this is an estimate."
+  "map.estimated": "No GPS here, so this is an estimate.",
+  "reminders.exactAlarms": "Android may deliver these reminders late. To get them on time, allow Alarms & reminders for SG Bus Timings.",
+  "reminders.exactAlarmsAllow": "Allow",
+  "reminders.leaveTimeHome": "Time to leave plans from Home when this phone can't say where you are. Save Home in Places so it always has somewhere to start."
 }

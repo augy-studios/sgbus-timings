@@ -76,9 +76,19 @@ running in it. The website and PWA lose nothing.
 The Google Play build (`powershell -ExecutionPolicy Bypass -File android\build-apk.ps1 -Aab`, into
 `release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity` and
 `REQUEST_INSTALL_PACKAGES`, as Play updates apps itself: `app/src/play/AndroidManifest.xml`, and
-`playBuild` in `lib/native/native_bridge.dart` for the update bar and buttons. It keeps every other
-permission, so Play Console needs its declarations for background location and the foreground
-service, and a reason for `USE_EXACT_ALARM`. It's signed with `android.keystore`. If Play App Signing
+`playBuild` in `lib/native/native_bridge.dart` for the update bar and buttons. The same manifest
+removes what Play keeps for other kinds of app, and `build-apk.ps1 -Aab` refuses a bundle that still
+has them:
+
+| Permission | On Google Play instead |
+|---|---|
+| `USE_EXACT_ALARM` | `SCHEDULE_EXACT_ALARM`, which the person allows in Android's Alarms & reminders. Without it, routines, last bus and Time to leave still come, but Android can deliver them late |
+| `ACCESS_BACKGROUND_LOCATION` | No Timings near a stop. Trips carry on through their foreground service, and Time to leave plans from Home when the phone can't say where it is |
+| `ACTIVITY_RECOGNITION` | No "On a bus?" |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | A trip doesn't ask; Android's own list stays a button away |
+
+Play Console still needs its declaration for the foreground service. It's signed with
+`android.keystore`. If Play App Signing
 re-signs it with Google's key, add that key's SHA-256 (Play Console, **App signing**) to
 `main-site/.well-known/assetlinks.json`, or links won't open the app for anyone who installed it
 from Play.

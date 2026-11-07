@@ -28,5 +28,8 @@
   "terminal.clear": "Kosongkan skrin",
   "tour.terminal.2app": "Jawapan dipaparkan di sini. ^C menghentikan yang sentiasa dikemas kini, atau mengosongkan baris; tekan dan tahan untuk memilih teks dan menyalinnya.",
   "tour.terminal.3app": "exit, Kembali atau ini menutupnya. Tetapan, Bantuan dan tambahan membukanya semula.",
-  "map.estimated": "Tiada GPS di sini, jadi ini anggaran."
+  "map.estimated": "Tiada GPS di sini, jadi ini anggaran.",
+  "reminders.exactAlarms": "Android mungkin menghantar peringatan ini lewat. Untuk menerimanya tepat pada masanya, benarkan Penggera & peringatan untuk SG Bus Timings.",
+  "reminders.exactAlarmsAllow": "Benarkan",
+  "reminders.leaveTimeHome": "Masa untuk bertolak merancang dari Rumah apabila telefon ini tidak dapat menentukan lokasi anda. Simpan Rumah dalam Tempat supaya ia sentiasa ada titik permulaan."
 }

@@ -28,5 +28,8 @@
   "terminal.clear": "清屏",
   "tour.terminal.2app": "结果显示在这里。^C 停止持续更新的命令，或清除这一行；长按可选中文字并复制。",
   "tour.terminal.3app": "输入 exit、按返回或点这里关闭。设置里的“帮助和更多”可以再次打开。",
-  "map.estimated": "这里没有 GPS，所以这是估算的位置。"
+  "map.estimated": "这里没有 GPS，所以这是估算的位置。",
+  "reminders.exactAlarms": "Android 可能会延迟发送这些提醒。如需准时收到，请允许 SG Bus Timings 使用“闹钟和提醒”。",
+  "reminders.exactAlarmsAllow": "允许",
+  "reminders.leaveTimeHome": "手机无法确定你的位置时，“出发时间”会从“家”开始规划。请在“地点”中保存“家”，让它始终有出发点。"
 }

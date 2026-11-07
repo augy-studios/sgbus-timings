@@ -98,6 +98,10 @@ if ($Aab) {
         $zip.Dispose()
     }
     if ($manifest -match 'REQUEST_INSTALL_PACKAGES|UpdateActivity') { throw 'The bundle still has the updater in its manifest.' }
+    # Nor the permissions Play keeps for other kinds of app (app/src/play/AndroidManifest.xml).
+    foreach ($permission in 'USE_EXACT_ALARM', 'ACCESS_BACKGROUND_LOCATION', 'ACTIVITY_RECOGNITION', 'REQUEST_IGNORE_BATTERY_OPTIMIZATIONS') {
+        if ($manifest -match $permission) { throw "The bundle still has $permission in its manifest." }
+    }
     foreach ($lib in 'libflutter', 'libapp') {
         if (-not ($entries -match "^BUNDLE-METADATA/com\.android\.tools\.build\.debugsymbols/.*/$lib\.so\.(sym|dbg)$")) {
             throw "The bundle's $lib.so hasn't had its debug symbols stripped."

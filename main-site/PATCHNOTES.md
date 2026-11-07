@@ -1,11 +1,21 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 7 November 2026**
+**Latest update: 8 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 8 November 2026: The Android app on Google Play
+
+### Android app
+
+- **The Google Play version** - Google allows some permissions only for other kinds of app, so this version has no Timings near a stop or "On a bus?", and a trip doesn't ask about battery optimisation. The app from GitHub keeps them all.
+- **Reminders on time, on Google Play** - Routines and Settings offer to allow Alarms & reminders, so routines, last bus reminders and Time to leave come on time. Without it they still come, but Android can deliver them late.
+- **Time to leave needs somewhere to start** - In both versions, with Time to leave on and no Home saved, Settings now says so, with a button to Places. Without Home, and with the phone not saying where you are, no notification could come.
 
 ---
 

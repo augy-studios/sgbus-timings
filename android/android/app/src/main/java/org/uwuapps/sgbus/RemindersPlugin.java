@@ -15,6 +15,7 @@
  *                            Rejects "permission" { need: "activity" }
  *   routines({ list })       the routines, [{ id, code, name, buses, time, days }] (Routines):
  *                            notifications (2.2.0)
+ *   openAlarms()             Android's Alarms & reminders, for exact alarms on a Google Play build
  *
  * A notifications permission that's refused doesn't stop any of them being turned on; status()
  * says, and the page says so.
@@ -22,7 +23,13 @@
 package org.uwuapps.sgbus;
 
 import android.Manifest;
+import android.app.AlarmManager;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 
 import org.uwuapps.sgbus.bridge.JSArray;
 import org.uwuapps.sgbus.bridge.JSObject;
@@ -84,7 +91,28 @@ public class RemindersPlugin extends Plugin {
         out.put("notifications", Notifications.allowed(getContext()));
         out.put("calendar", CalendarReader.allowed(getContext()));
         out.put("activity", OnABus.allowed(getContext()));
+        out.put("exactAlarms", exactAlarms());
         call.resolve(out);
+    }
+
+    private boolean exactAlarms() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+        AlarmManager am = (AlarmManager) getContext().getSystemService(Context.ALARM_SERVICE);
+        return am != null && am.canScheduleExactAlarms();
+    }
+
+    @PluginMethod
+    public void openAlarms(PluginCall call) {
+        Uri app = Uri.fromParts("package", getContext().getPackageName(), null);
+        Intent intent = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                ? new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, app)
+                : new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app);
+        try {
+            getActivity().startActivity(intent);
+        } catch (ActivityNotFoundException e) {
+            getActivity().startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, app));
+        }
+        call.resolve();
     }
 
     private void needs(PluginCall call, String need) {

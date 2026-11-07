@@ -8,6 +8,11 @@ stands on 2.4.0, ahead of the 3.0.0 release.
 > step below names Capacitor's files (`capacitor.config.json`, `npx cap sync`), the Flutter app
 > has none, and the step is done.
 
+> **8 November 2026:** decisions D5 and D6 are made. The Play build (`android/README.md`) leaves out
+> background location, exact alarms by `USE_EXACT_ALARM` (it asks for `SCHEDULE_EXACT_ALARM` instead,
+> unlike D6's first choice), activity recognition and battery optimisation. Where section 6 or 11.4
+> differs, that's the current state.
+
 **Phone app only.** Augy has decided the Wear OS watch app stays off Google Play for now. It is
 built and shipped the way it is today, and section 8 says what adding it later would take.
 

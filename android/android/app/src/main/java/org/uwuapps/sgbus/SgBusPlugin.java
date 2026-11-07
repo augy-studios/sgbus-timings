@@ -622,10 +622,24 @@ public class SgBusPlugin extends Plugin {
     @SuppressLint("BatteryLife") // a sideloaded app following trips in the background, not on Play
     static Intent batteryIntent(Context context) {
         PowerManager pm = context.getSystemService(PowerManager.class);
-        if (pm != null && pm.isIgnoringBatteryOptimizations(context.getPackageName())) {
+        // A Google Play build can't ask directly (app/src/play/AndroidManifest.xml): Android's list.
+        if ((pm != null && pm.isIgnoringBatteryOptimizations(context.getPackageName()))
+                || !declares(context, android.Manifest.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)) {
             return new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
         }
         return new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:" + context.getPackageName()));
+    }
+
+    // Whether this build's manifest has a permission: a Google Play build has fewer.
+    static boolean declares(Context context, String permission) {
+        try {
+            String[] all = context.getPackageManager()
+                    .getPackageInfo(context.getPackageName(), PackageManager.GET_PERMISSIONS).requestedPermissions;
+            if (all != null) for (String p : all) if (permission.equals(p)) return true;
+        } catch (PackageManager.NameNotFoundException ignored) {
+            // This app, so it's there.
+        }
+        return false;
     }
 
     static boolean batteryFree(Context context) {
