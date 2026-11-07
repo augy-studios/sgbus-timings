@@ -165,7 +165,7 @@ class _PlaceSheetState extends State<_PlaceSheet> {
   Future<void> _useHere() async {
     setState(() => _locating = true);
     try {
-      final fix = await Locate.here(toDo: tr('location.toSaveHere', 'to save where you are'));
+      final fix = await Locate.here(toDo: () => tr('location.toSaveHere', 'to save where you are'));
       await Stops.load();
       final near = Stops.near(fix.lat, fix.lng, limit: 1);
       final label = near.isEmpty ? tr('map.pinned', 'Pinned place') : tr('history.near', 'Near {stop}', {'stop': near.first.stop.name});

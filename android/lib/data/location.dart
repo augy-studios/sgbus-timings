@@ -7,10 +7,14 @@ import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
 import 'store.dart';
 
+/// Worded as it's shown, not as it happens: a page keeps showing it, and it has to follow the language
+/// (bug report 20261107-NQCT).
 class LocationError implements Exception {
-  LocationError(this.message, {this.denied = false});
-  final String message;
+  LocationError(this._words, {this.denied = false});
+  LocationError.noFix() : this(() => tr('glance.locationRetrievalFail', "Couldn't get your location. Check that Location is turned on for this device, then try again."));
+  final String Function() _words;
   final bool denied;
+  String get message => _words();
   @override
   String toString() => message;
 }
@@ -29,6 +33,7 @@ class Locate {
 
   /// For tests and screenshots: where the phone is.
   static Fix? fake;
+  static LocationError? fakeError;
   static Fix? last;
   static int lastAt = 0;
 
@@ -37,17 +42,18 @@ class Locate {
   static bool get asked => Store.I.get(askedKey) == '1';
 
   static Future<bool> allowed() async {
-    if (fake != null) return true;
+    if (fake != null || fakeError != null) return true;
     final p = await Geolocator.checkPermission();
     return p == LocationPermission.always || p == LocationPermission.whileInUse;
   }
 
   /// Where the phone is. `ask` is a tap's: it may ask for the permission and to turn Location on;
   /// otherwise it only looks if both are already so. `toDo` ends the sentence on what it's for.
-  static Future<Fix> here({bool ask = true, String? toDo, Duration maxAge = const Duration(seconds: 30)}) async {
+  static Future<Fix> here({bool ask = true, String Function()? toDo, Duration maxAge = const Duration(seconds: 30)}) async {
+    if (fakeError != null) throw fakeError!;
     if (fake != null) return fake!;
     if (last != null && DateTime.now().millisecondsSinceEpoch - lastAt < maxAge.inMilliseconds) return last!;
-    final why = toDo ?? tr('location.toFindStops', 'to find stops near you');
+    final why = toDo ?? () => tr('location.toFindStops', 'to find stops near you');
     var perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied && ask) perm = await Geolocator.requestPermission();
     if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
@@ -55,7 +61,7 @@ class Locate {
         // Android won't ask again: its settings are the only way.
         Native.call('SgBus', 'openSettings', {'what': 'app'}).catchError((_) => null);
       }
-      throw LocationError(tr('glance.locationBlocked', 'Location access is turned off for this site. Allow it in your browser {toDo}.', {'toDo': why}), denied: true);
+      throw LocationError(() => tr('glance.locationBlocked', 'Location access is turned off for this site. Allow it in your browser {toDo}.', {'toDo': why()}), denied: true);
     }
     if (!await Geolocator.isLocationServiceEnabled()) {
       var on = false;
@@ -66,7 +72,7 @@ class Locate {
           on = false;
         }
       }
-      if (!on) throw LocationError(tr('glance.locationRetrievalFail', "Couldn't get your location. Check that Location is turned on for this device, then try again."));
+      if (!on) throw LocationError.noFix();
     }
     try {
       final p = await Geolocator.getCurrentPosition(
@@ -77,7 +83,7 @@ class Locate {
       lastAt = DateTime.now().millisecondsSinceEpoch;
       return last!;
     } catch (_) {
-      throw LocationError(tr('glance.locationRetrievalFail', "Couldn't get your location. Check that Location is turned on for this device, then try again."));
+      throw LocationError.noFix();
     }
   }
 

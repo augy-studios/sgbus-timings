@@ -138,7 +138,9 @@ class NavState extends ChangeNotifier {
   bool traffic = false;
   bool onemap = false;
   bool busy = false;
-  String? error;
+  // Worded as it's shown, so it follows the language.
+  String Function()? _error;
+  String? get error => _error?.call();
   int _token = 0;
   final Map<int, List<int>?> timings = {};
 
@@ -151,7 +153,7 @@ class NavState extends ChangeNotifier {
 
   Future<NavEnd> _resolve(NavEnd e) async {
     if (!e.here) return e;
-    final fix = await Locate.here(toDo: tr('location.toStartHere', 'to start from where you are'));
+    final fix = await Locate.here(toDo: () => tr('location.toStartHere', 'to start from where you are'));
     return NavEnd(tr('nav.yourLocation', 'Your location'), fix.lat, fix.lng, here: true);
   }
 
@@ -165,14 +167,14 @@ class NavState extends ChangeNotifier {
     }
     final late = When.problem(when);
     if (late != null) {
-      error = late;
+      _error = () => When.problem(when) ?? late;
       options = [];
       notifyListeners();
       return;
     }
     final token = ++_token;
     busy = true;
-    error = null;
+    _error = null;
     notifyListeners();
     try {
       final a = await _resolve(from!);
@@ -188,11 +190,11 @@ class NavState extends ChangeNotifier {
       traffic = data['traffic'] != null;
       onemap = data['onemap'] == true;
     } on LocationError catch (e) {
-      if (token == _token) error = e.message;
+      if (token == _token) _error = () => e.message;
     } on ApiError catch (e) {
-      if (token == _token) error = e.message;
+      if (token == _token) _error = () => e.message;
     } catch (_) {
-      if (token == _token) error = tr('nav.planFailed', "Couldn't plan that right now.");
+      if (token == _token) _error = () => tr('nav.planFailed', "Couldn't plan that right now.");
     } finally {
       if (token == _token) {
         busy = false;

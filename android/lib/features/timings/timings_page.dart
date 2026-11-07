@@ -42,7 +42,7 @@ class _TimingsPageState extends State<TimingsPage> {
   final _q = TextEditingController();
   final _focus = FocusNode();
   List<StopRowItem>? _near;
-  String _nearError = '';
+  LocationError? _nearError;
   bool _nearBusy = false;
   int _nearAt = 0;
   int _nearSeq = 0;
@@ -79,16 +79,16 @@ class _TimingsPageState extends State<TimingsPage> {
     final seq = ++_nearSeq;
     setState(() {
       _nearBusy = true;
-      _nearError = '';
+      _nearError = null;
     });
     try {
       await Stops.load();
-      final fix = await Locate.here(ask: ask, toDo: tr('location.toFindStops', 'to find stops near you'));
+      final fix = await Locate.here(ask: ask, toDo: () => tr('location.toFindStops', 'to find stops near you'));
       if (seq != _nearSeq) return;
       _near = [for (final n in Stops.near(fix.lat, fix.lng)) StopRowItem(n.stop.code, distance: n.metres)];
       _nearAt = DateTime.now().millisecondsSinceEpoch;
     } on LocationError catch (e) {
-      if (seq == _nearSeq) _nearError = e.message;
+      if (seq == _nearSeq) _nearError = e;
     } finally {
       if (seq == _nearSeq && mounted) setState(() => _nearBusy = false);
     }
@@ -271,7 +271,7 @@ class _TimingsPageState extends State<TimingsPage> {
             const SizedBox(height: 8),
             TourTarget(id: 'timings.near', child: SectionLabel(
               tr('timings.stops_near_me', 'Stops near me'),
-              trailing: (_near != null || _nearError.isNotEmpty)
+              trailing: (_near != null || _nearError != null)
                   ? IconButton(
                       tooltip: tr('glance.refresh', 'Refresh'),
                       icon: _nearBusy ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.my_location),
@@ -282,9 +282,9 @@ class _TimingsPageState extends State<TimingsPage> {
             SgCard(
               child: _nearBusy && _near == null
                   ? EmptyNote(tr('timings.finding_stops_near_you', 'Finding stops near you…'))
-                  : _nearError.isNotEmpty
+                  : _nearError != null
                       ? Column(children: [
-                          Text(_nearError, style: TextStyle(color: sg.muted)),
+                          Text(_nearError!.message, style: TextStyle(color: sg.muted)),
                           const SizedBox(height: 10),
                           FilledButton.icon(onPressed: () => _showNear(ask: true), icon: const Icon(Icons.my_location), label: Text(tr('common.tryAgain', 'Try again'))),
                         ])

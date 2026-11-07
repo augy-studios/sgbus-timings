@@ -9,6 +9,13 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 7 November 2026: Glance and languages on the Android app (2.4.7)
+
+### Android app
+
+- **Location messages follow your language** - Switching language and back no longer leaves "Couldn't get your location" in the other language, in Bus timings, Glance or Navigate.
+- **Arriving fits in Tamil** - On Glance, the big "Arriving" gets smaller rather than breaking in the middle of the word.
+
 ## 7 November 2026: GTA VI colours, and the Android app catches up with the website on trips (2.4.6)
 
 ### Website and Android app

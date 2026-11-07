@@ -846,7 +846,7 @@ class _LiveMapState extends State<LiveMap> {
   Future<void> _watchMe() async {
     try {
       if (!await Locate.allowed()) {
-        await Locate.here(toDo: tr('map.locate', 'show where you are on the map'));
+        await Locate.here(toDo: () => tr('map.locate', 'show where you are on the map'));
       }
     } catch (_) {
       // No location: the map without you.

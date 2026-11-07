@@ -204,7 +204,7 @@ class _PlannerTabState extends State<PlannerTab> {
                       label: field == 'start' ? tr('planner.pick_a_start_stop_near', 'Pick a start stop near me') : tr('planner.pick_an_end_stop_near', 'Pick an end stop near me'),
                       onTap: () async {
                         try {
-                          final fix = await Locate.here(toDo: tr('location.toFindStops', 'to find stops near you'));
+                          final fix = await Locate.here(toDo: () => tr('location.toFindStops', 'to find stops near you'));
                           await Stops.load();
                           offer(field == 'start' ? tr('planner.nearYouStart', 'Stops near you: pick the start') : tr('planner.nearYouEnd', 'Stops near you: pick the end'), fix.lat, fix.lng);
                         } on LocationError catch (e) {

@@ -1,10 +1,11 @@
-// Glance with the Edge Tray out, on a narrow phone, in Bahasa Melayu (bug report 20261107-T2G5): the
-// weather button stays inside the page, and "Tiba" on one line. With the real fonts: a layout that
-// doesn't fit is what's being looked for.
+// Glance with the Edge Tray out, on a narrow phone, in Bahasa Melayu and Tamil (bug reports
+// 20261107-T2G5, ZFTN and A3Q2): the weather button stays inside the page, and "Arr" and "Arriving"
+// each on one line. With the real fonts: a layout that doesn't fit is what's being looked for.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
+import 'package:sgbus_timings/i18n/i18n.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/theme/theme.dart';
 
@@ -19,9 +20,15 @@ const _state = {
 void main() {
   setUpAll(loadFonts);
 
-  for (final (name, size, scale) in [('a narrow phone', const Size(360, 800), 1.0), ('larger text', const Size(390, 844), 1.3)]) {
+  for (final (name, lang, size, scale) in [
+    ('a narrow phone', 'ms', const Size(360, 800), 1.0),
+    ('larger text', 'ms', const Size(390, 844), 1.3),
+    ('a narrow phone, in Tamil', 'ta', const Size(360, 800), 1.0),
+    ('the smallest phone, in Tamil', 'ta', const Size(320, 800), 1.0),
+    ('larger text, in Tamil', 'ta', const Size(360, 800), 1.3),
+  ]) {
     testWidgets('Glance fits on $name', (t) async {
-      await t.runAsync(() => stillData(state: _state, lang: 'ms'));
+      await t.runAsync(() => stillData(state: _state, lang: lang));
       GlancePage.weather = (_) => const WeatherButton();
       final answer = Api.fake!;
       // A bus under a minute away, for "Tiba".
@@ -55,13 +62,17 @@ void main() {
       expect(label.right, lessThanOrEqualTo(button.right + 0.5), reason: 'the words stay in the button');
       expect(button.right, lessThanOrEqualTo(page.right + 0.5), reason: 'the button stays on the page');
 
-      final tiba = find.text('Tiba');
-      expect(tiba, findsWidgets);
-      for (final e in tiba.evaluate()) {
-        final style = (e.widget as Text).style;
-        final box = e.findRenderObject()! as RenderBox;
-        final oneLine = (style?.fontSize ?? 14) * scale * 1.6;
-        expect(box.size.height, lessThanOrEqualTo(oneLine), reason: '"Tiba" on one line');
+      for (final words in [tr('glance.arr', 'Arr'), tr('glance.arriving', 'Arriving')]) {
+        final found = find.text(words);
+        expect(found, findsWidgets, reason: words);
+        for (final e in found.evaluate()) {
+          final style = (e.widget as Text).style;
+          final box = e.findRenderObject()! as RenderBox;
+          final oneLine = (style?.fontSize ?? 14) * scale * 1.6;
+          expect(box.size.height, lessThanOrEqualTo(oneLine), reason: '"$words" on one line');
+          final shown = t.getRect(find.byWidget(e.widget).first);
+          expect(shown.right, lessThanOrEqualTo(page.right + 0.5), reason: '"$words" stays on the page');
+        }
       }
     });
   }

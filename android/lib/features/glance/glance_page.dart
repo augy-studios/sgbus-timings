@@ -59,7 +59,7 @@ class _GlancePageState extends State<GlancePage> {
   final Map<String, List<ServiceArrivals>> _arrivals = {};
   int _fetchedAt = 0;
   bool _needsLocation = false;
-  String? _failed;
+  LocationError? _failed;
   int _token = 0;
   Timer? _tick;
   int _since = 0;
@@ -180,7 +180,7 @@ class _GlancePageState extends State<GlancePage> {
     } on LocationError catch (e) {
       if (mine != _token) return;
       _stops = [];
-      _failed = e.message;
+      _failed = e;
     }
     if (mounted) setState(() {});
     final results = await Future.wait(_stops.map((s) => Arrivals.fetch(s.code).then<Arrivals?>((a) => a).catchError((_) => null)));
@@ -283,7 +283,7 @@ class _GlancePageState extends State<GlancePage> {
             FilledButton.icon(onPressed: () => _refresh(ask: true), icon: const Icon(Icons.my_location), label: Text(tr('glance.useLocation', 'Use my location'))),
           ],
         ]);
-    if (_failed != null) return say(_failed!, locate: src?.key == 'near');
+    if (_failed != null) return say(_failed!.message, locate: src?.key == 'near');
     if (_needsLocation) return say(tr('glance.seeAround', 'See the buses at the stops around you.'), locate: true);
     if (src == null || _stops.isEmpty) {
       return say(src?.place != null
@@ -315,7 +315,12 @@ class _GlancePageState extends State<GlancePage> {
           style: TextStyle(color: sg.muted, fontWeight: FontWeight.w600),
         ),
         Text(bus.no, style: TextStyle(fontSize: 72, fontWeight: FontWeight.w800, height: 1.05, color: sg.ink)),
-        Text(when, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: bus.ms < 60000 ? sg.ok : sg.brandInk)),
+        // Smaller rather than broken in two, where a language's "Arriving" is one long word.
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: AlignmentDirectional.centerStart,
+          child: Text(when, maxLines: 1, softWrap: false, style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: bus.ms < 60000 ? sg.ok : sg.brandInk)),
+        ),
         const SizedBox(height: 4),
         Text(walk.isEmpty ? where : '$where · $walk', style: TextStyle(color: sg.muted, fontSize: 15)),
       ]),
