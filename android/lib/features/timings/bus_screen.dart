@@ -205,7 +205,7 @@ class _BusScreenState extends State<BusScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+        padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.paddingOf(context).bottom),
         children: [
           SgCard(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

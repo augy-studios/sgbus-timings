@@ -127,6 +127,8 @@ class SgScaffold extends StatelessWidget {
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: Text(title), actions: actions),
         floatingActionButton: floating,
-        body: body,
+        // Android draws the app behind its navigation bar, and a list given its own padding
+        // doesn't leave room for the bar by itself.
+        body: SafeArea(top: false, child: body),
       );
 }

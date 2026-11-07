@@ -353,7 +353,7 @@ Future<void> showStopList(BuildContext context, String title, List<StopRowItem> 
     builder: (ctx) => DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.7,
-      builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [
+      builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.paddingOf(ctx).bottom), children: [
         Text(title, style: Theme.of(ctx).textTheme.titleLarge),
         if (note.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 6), child: Text(note)),
         const SizedBox(height: 8),

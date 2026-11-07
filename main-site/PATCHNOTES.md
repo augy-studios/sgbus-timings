@@ -9,6 +9,16 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 7 November 2026: Explorer's stops and stations open again (2.4.3)
+
+### Android app 2.4.3
+
+- **Tap a stop or station in Explorer** - Tapping a bus stop or an MRT or LRT station did nothing. Its card now opens on the dot, as on the website, and the stops and stations on a trip or a walk open theirs too.
+- **Easier to tap** - A tap counts within a finger's width of a dot, and goes to a station first, then the stop nearest it.
+- **Back where you left it** - Leave Explorer by a card's Show bus timings or Directions and it opens on that stop or station again, card and all. Show bus timings now closes the map, and stays on the map when you're offline.
+- **More room in Navigate** - The swap button now sits between From and To, on Bus only too, so the boxes and your places get the full width.
+- **Clear of the navigation bar** - Settings and other pages, and the sheets that pull up, no longer run under Android's buttons at the bottom of the screen.
+
 ## 7 November 2026: The Android app catches up with the website (2.4.2)
 
 ### Android app 2.4.2

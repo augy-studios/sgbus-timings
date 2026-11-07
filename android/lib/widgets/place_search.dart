@@ -185,7 +185,7 @@ class _PlaceSheetState extends State<_PlaceSheet> {
       child: DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.8,
-        builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 0, 16, 24), children: [
+        builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.paddingOf(ctx).bottom), children: [
           if (widget.title != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(widget.title!, style: Theme.of(context).textTheme.titleLarge)),
           TextField(
             controller: _q,

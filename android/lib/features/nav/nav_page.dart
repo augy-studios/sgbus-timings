@@ -1060,30 +1060,28 @@ class _NavPageState extends State<NavPage> {
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
                       children: [
                         if (nav.option == null) ...[
-                          TourTarget(id: 'nav.fields', child: Row(
+                          // The two ends stack, with the swap button between them and the width
+                          // all theirs, as the site's do on a phone.
+                          TourTarget(id: 'nav.fields', child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              Expanded(
-                                child: Column(
-                                  children: [
-                                    _end('from', nav.from, tr('nav.from', 'From')),
-                                    _savedPlaces('from'),
-                                    const SizedBox(height: 8),
-                                    if (nav.via != null || nav.viaOpen) ...[_end('via', nav.via, tr('settings.stop', 'Stop')), const SizedBox(height: 8)],
-                                    _end('to', nav.to, tr('nav.to', 'To')),
-                                    _savedPlaces('to'),
-                                  ],
+                              _end('from', nav.from, tr('nav.from', 'From')),
+                              _savedPlaces('from'),
+                              if (nav.via != null || nav.viaOpen) ...[const SizedBox(height: 8), _end('via', nav.via, tr('settings.stop', 'Stop'))],
+                              Center(
+                                child: IconButton(
+                                  tooltip: tr('nav.swap_start_and_end', 'Swap start and end'),
+                                  icon: const Icon(Icons.swap_vert),
+                                  onPressed: () {
+                                    final t = nav.from;
+                                    nav.from = nav.to;
+                                    nav.to = t;
+                                    nav.run();
+                                  },
                                 ),
                               ),
-                              IconButton(
-                                tooltip: tr('nav.swap_start_and_end', 'Swap start and end'),
-                                icon: const Icon(Icons.swap_vert),
-                                onPressed: () {
-                                  final t = nav.from;
-                                  nav.from = nav.to;
-                                  nav.to = t;
-                                  nav.run();
-                                },
-                              ),
+                              _end('to', nav.to, tr('nav.to', 'To')),
+                              _savedPlaces('to'),
                             ],
                           )),
                           if (nav.via == null && !nav.viaOpen)

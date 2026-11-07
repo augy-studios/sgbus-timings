@@ -38,6 +38,7 @@ import 'package:flutter/material.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 import '../../api/api.dart';
+import '../../api/net.dart';
 import '../../app/nav.dart';
 import '../../data/campus.dart';
 import '../../data/geo.dart';
@@ -103,6 +104,28 @@ class MapPoi {
   final MapPick pick;
   final Color? color;
   final List<Color> colors; // an interchange's lines
+}
+
+/// What a tap at [lat], [lng] opens, of the dots within a finger's width of it: a dot that says
+/// what it is, then a station, then the stop nearest the tap, an LTA one or a campus one, as a
+/// campus stop can be across the road from an LTA one. Null for none of those.
+MapPick? tappedPick(Iterable<MapDot> dots, Iterable<MapPoi> pois, double lat, double lng) {
+  for (final d in dots) {
+    if (d.pick != null) return d.pick;
+  }
+  for (final p in pois) {
+    if (p.kind == 'station') return p.pick;
+  }
+  MapPick? nearest;
+  var best = double.infinity;
+  for (final p in pois) {
+    final m = metresBetween(lat, lng, p.lat, p.lng);
+    if (m < best) {
+      best = m;
+      nearest = p.pick;
+    }
+  }
+  return nearest;
 }
 
 /// What a dot is, for its card.
@@ -253,6 +276,10 @@ class LiveMap extends StatefulWidget {
   static _LiveMapState? _open;
   static bool get isOpen => _open != null;
 
+  /// The stop or station Explorer was left from by its card's Show bus timings or Directions: it
+  /// opens on that one again, card and all. Closing the map any other way forgets it.
+  static MapPick? _leftFrom;
+
   static Future<void> _push(LiveMap m) async {
     if (_open != null) Navigator.of(_open!.context).pop();
     await AppNav.push(m, name: 'map');
@@ -399,6 +426,7 @@ class _LiveMapState extends State<LiveMap> {
   @override
   void dispose() {
     if (LiveMap._open == this) LiveMap._open = null;
+    LiveMap._leftFrom = _leavingFrom;
     _watch?.cancel();
     _tripTimer?.cancel();
     _flush?.cancel();
@@ -577,12 +605,15 @@ class _LiveMapState extends State<LiveMap> {
         enableInteraction: false);
     await m.addLineLayer('sg-shuttle', 'sg-shuttle', LineLayerProperties(lineColor: ['get', 'color'], lineWidth: shuttleWidth(0), lineCap: 'round', lineJoin: 'round'), enableInteraction: false);
     List<Object> grow(double z0, double small, double big) => ['interpolate', ['linear'], ['zoom'], z0, small, 18, big];
+    // Not interactive, though they're what's tapped: the plugin sends a tap on an interactive
+    // layer's feature to onFeatureTapped instead of onMapClick, and _onTap is onMapClick's.
     await m.addCircleLayer(
       'sg-poi',
       'sg-poi-stop',
       CircleLayerProperties(circleRadius: grow(LiveMap.stopZoom, 3.5, 7), circleColor: '#ffffff', circleStrokeColor: '#1f9d55', circleStrokeWidth: grow(LiveMap.stopZoom, 2, 3)),
       minzoom: LiveMap.stopZoom,
       filter: ['==', ['get', 'kind'], 'stop'],
+      enableInteraction: false,
     );
     await m.addCircleLayer(
       'sg-poi',
@@ -595,6 +626,7 @@ class _LiveMapState extends State<LiveMap> {
       ),
       minzoom: LiveMap.campusZoom,
       filter: ['==', ['get', 'kind'], 'campus'],
+      enableInteraction: false,
     );
     await m.addCircleLayer(
       'sg-poi',
@@ -607,6 +639,7 @@ class _LiveMapState extends State<LiveMap> {
       ),
       minzoom: LiveMap.stationZoom,
       filter: ['==', ['get', 'kind'], 'station'],
+      enableInteraction: false,
     );
     await m.addFillLayer('sg-fill', 'sg-fill', const FillLayerProperties(fillColor: ['get', 'fill'], fillOpacity: ['get', 'opacity']), enableInteraction: false);
     for (final dash in [false, true]) {
@@ -637,9 +670,15 @@ class _LiveMapState extends State<LiveMap> {
         circleStrokeWidth: ['get', 'weight'],
         circleSortKey: ['get', 'z'],
       ),
+      enableInteraction: false,
     );
     await _push();
     _track();
+    // Explorer back on its card before the map was ready to go there.
+    if (card != null) {
+      _jump(_centre, _zoom);
+      _placeCard();
+    }
   }
 
   Future<void> _push() async {
@@ -693,28 +732,48 @@ class _LiveMapState extends State<LiveMap> {
   }
 
   List<MapDot> _dotsPushed = [];
+  MapPick? _leavingFrom;
 
   Future<void> _onTap(math.Point<double> point, LatLng at) async {
     final m = _map;
     if (m == null) return;
-    final hits = await m.queryRenderedFeatures(point, ['sg-dot', 'sg-poi-station', 'sg-poi-stop', 'sg-poi-campus'], null);
+    // A finger's width round the tap, as the dots are small.
+    const pad = 10.0;
+    final hits = await m.queryRenderedFeaturesInRect(
+      Rect.fromLTRB(point.x - pad, point.y - pad, point.x + pad, point.y + pad),
+      ['sg-dot', 'sg-poi-station', 'sg-poi-stop', 'sg-poi-campus'],
+      null,
+    );
+    if (!mounted) return;
+    final dots = <MapDot>[];
+    final pois = <MapPoi>[];
     for (final h in hits) {
-      final layer = '${(h as Map)['layer']?['id'] ?? ''}';
-      final props = (h['properties'] as Map?) ?? const {};
+      final props = ((h as Map)['properties'] as Map?) ?? const {};
       final i = (props['i'] as num?)?.toInt();
       if (i == null) continue;
-      if (props.containsKey('kind') || layer.startsWith('sg-poi')) {
-        if (i < ink.pois.length) return _openCard(ink.pois[i].pick);
+      if (props.containsKey('kind')) {
+        if (i < ink.pois.length) pois.add(ink.pois[i]);
       } else if (i < _dotsPushed.length) {
-        final d = _dotsPushed[i];
-        if (d.pick != null) return _openCard(d.pick!);
-        if (d.label != null) {
-          AppNav.say(d.label!);
-          return;
-        }
+        dots.add(_dotsPushed[i]);
       }
     }
+    final pick = tappedPick(dots, pois, at.latitude, at.longitude);
+    if (pick != null) return _openCard(pick);
+    final label = dots.where((d) => d.label != null).firstOrNull?.label;
+    if (label != null) {
+      AppNav.say(label);
+      return;
+    }
     _closeCard();
+  }
+
+  /// Leaving by a card's Show bus timings or Directions: the map goes first, so whatever [then]
+  /// opens comes after it, and Explorer keeps its stop or station for next time (dispose). Not
+  /// maybePop: it waits a moment, and gives up if [then] has opened a screen by then.
+  void _leaveBy(VoidCallback then) {
+    _leavingFrom = mode == MapMode.explore ? card : null;
+    Navigator.of(context).pop();
+    then();
   }
 
   void _openCard(MapPick pick) {
@@ -735,9 +794,7 @@ class _LiveMapState extends State<LiveMap> {
     if (_map != null && !LiveMap.preview) {
       final s = await _map!.toScreenLocation(LatLng(at[0], at[1]));
       if (!mounted) return;
-      final ratio = MediaQuery.devicePixelRatioOf(context);
-      // Android hands back pixels.
-      p = Offset(s.x.toDouble() / ratio, s.y.toDouble() / ratio);
+      p = Offset(s.x.toDouble(), s.y.toDouble());
     } else {
       p = MapPreview.toScreen(at, _centre, _zoom, MediaQuery.sizeOf(context));
     }
@@ -780,7 +837,7 @@ class _LiveMapState extends State<LiveMap> {
     if (!first && now - _drawnAt < _drawMs) return;
     _drawnAt = now;
     _drawMe();
-    if (first && mode != MapMode.traffic && mode != MapMode.follow) {
+    if (first && following && mode != MapMode.traffic && mode != MapMode.follow) {
       _jump(LatLng(f.lat, f.lng), mode == MapMode.explore ? LiveMap.exploreZoom : LiveMap.streetZoom);
     } else if (following && mode != MapMode.traffic && _tracking == MyLocationTrackingMode.none) {
       _keepInView(LatLng(f.lat, f.lng));
@@ -1251,6 +1308,14 @@ class _LiveMapState extends State<LiveMap> {
     }
     ink.pois = pois;
     ink.changed();
+    // Back from Bus timings or Navigate: on the stop or station it was left from, card open.
+    final back = LiveMap._leftFrom;
+    final at = back == null ? null : _cardLatLng(back);
+    if (back != null && at != null) {
+      _setFollowing(false);
+      _jump(LatLng(at[0], at[1]), LiveMap.exploreZoom + 1);
+      _openCard(back);
+    }
     _shuttles();
   }
 
@@ -1586,13 +1651,11 @@ class _LiveMapState extends State<LiveMap> {
             topLimit: top + 90,
             onClose: _closeCard,
             onTimings: (code, service) {
-              Navigator.of(context).maybePop();
-              StopScreen.open(code, service: service);
+              // Offline, Bus timings is away, so a tap stays on the map.
+              if (Net.blocked()) return;
+              _leaveBy(() => StopScreen.open(code, service: service));
             },
-            onDirections: (label, lat, lng) {
-              Navigator.of(context).maybePop();
-              openNav(from: NavEnd.parse('here'), to: NavEnd(label, lat, lng));
-            },
+            onDirections: (label, lat, lng) => _leaveBy(() => openNav(from: NavEnd.parse('here'), to: NavEnd(label, lat, lng))),
           ),
         // How it's going, at the foot: the next turn, the trip's status, the traffic.
         if (step.isNotEmpty || note.isNotEmpty)

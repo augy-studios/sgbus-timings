@@ -224,7 +224,7 @@ class _StopScreenState extends State<StopScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+          padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.paddingOf(context).bottom),
           children: [
             if (widget.ctx?.note != null) Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(widget.ctx!.note!, style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w600))),
             // ---- the stop ----

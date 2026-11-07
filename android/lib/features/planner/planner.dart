@@ -176,7 +176,7 @@ class _PlannerTabState extends State<PlannerTab> {
           child: DraggableScrollableSheet(
             expand: false,
             initialChildSize: 0.8,
-            builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), children: [
+            builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.paddingOf(ctx).bottom), children: [
               TextField(
                 controller: q,
                 autofocus: true,
@@ -582,27 +582,27 @@ class _PlannerTabState extends State<PlannerTab> {
         if (p.journey != null)
           ..._journey(p.journey!)
         else ...[
-          Row(children: [
-            Expanded(child: Column(children: [_endField('start'), const SizedBox(height: 8), _endField('end')])),
-            Column(children: [
+          // The two ends stack, with the buttons between them and the width all theirs.
+          _endField('start'),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            IconButton(
+              tooltip: tr('nav.swap_start_and_end', 'Swap start and end'),
+              icon: const Icon(Icons.swap_vert),
+              onPressed: () {
+                final t = p.start;
+                p.start = p.end;
+                p.end = t;
+                p.search();
+              },
+            ),
+            if (p.start != null && p.end != null && p.start != p.end)
               IconButton(
-                tooltip: tr('nav.swap_start_and_end', 'Swap start and end'),
-                icon: const Icon(Icons.swap_vert),
-                onPressed: () {
-                  final t = p.start;
-                  p.start = p.end;
-                  p.end = t;
-                  p.search();
-                },
+                tooltip: p.isFav() ? tr('stop.saved', 'Saved') : tr('planner.saveRoute', 'Save route'),
+                icon: Icon(p.isFav() ? Icons.star_rounded : Icons.star_outline_rounded),
+                onPressed: p.toggleFav,
               ),
-              if (p.start != null && p.end != null && p.start != p.end)
-                IconButton(
-                  tooltip: p.isFav() ? tr('stop.saved', 'Saved') : tr('planner.saveRoute', 'Save route'),
-                  icon: Icon(p.isFav() ? Icons.star_rounded : Icons.star_outline_rounded),
-                  onPressed: p.toggleFav,
-                ),
-            ]),
           ]),
+          _endField('end'),
           const SizedBox(height: 10),
           WhenPicker(value: p.when, onChanged: (w) {
             p.when = w;

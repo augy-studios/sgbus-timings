@@ -325,7 +325,7 @@ class _WeatherSheetState extends State<WeatherSheet> {
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.75,
-      builder: (ctx, scroll) => ListView(controller: scroll, padding: const EdgeInsets.fromLTRB(20, 0, 20, 24), children: [
+      builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 0, 20, 24 + MediaQuery.paddingOf(ctx).bottom), children: [
         Text(tr('timings.weather', 'Weather'), style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
         ...kids,

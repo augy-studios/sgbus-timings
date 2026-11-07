@@ -283,7 +283,6 @@ class _TripsPageState extends State<TripsPage> {
     }
     final total = walk + wait + ride;
     return SafeArea(
-      bottom: false,
       child: ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 32), children: [
         Text(tr('panel.trips', 'Your trips'), style: Theme.of(context).textTheme.headlineMedium),
         if (Trip.I.active) Padding(padding: const EdgeInsets.only(top: 8), child: SgCard(child: Text('${tr('trip.trip_in_progress', 'Trip in progress')}: ${Trip.I.barText()}'))),

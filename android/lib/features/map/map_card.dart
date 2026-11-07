@@ -14,6 +14,7 @@
 // timings above it.
 import 'package:flutter/material.dart';
 
+import '../../api/net.dart';
 import '../../data/campus.dart';
 import '../../data/arrivals.dart';
 import '../../data/doors.dart';
@@ -236,7 +237,8 @@ class _MapCardBubbleState extends State<MapCardBubble> {
         ),
       // Shuttle buses here too, live where they're seen.
       CampusList(stopKey: code, card: false),
-      _button(Icons.schedule, tr('mapCard.showTimings', 'Show bus timings'), () => widget.onTimings(code, null)),
+      // Offline, Bus timings is away.
+      if (!Net.off.value) _button(Icons.schedule, tr('mapCard.showTimings', 'Show bus timings'), () => widget.onTimings(code, null)),
       if (s?.lat != null) _button(Icons.directions, tr('stop.tool.directions', 'Directions'), () => widget.onDirections(s!.name, s.lat!, s.lng!)),
     ]);
   }

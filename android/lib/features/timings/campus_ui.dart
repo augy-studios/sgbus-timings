@@ -179,7 +179,7 @@ class _CampusStopScreenState extends State<CampusStopScreen> {
         title: Text(s.name, overflow: TextOverflow.ellipsis),
         actions: [IconButton(tooltip: tr('stop.refresh', 'Refresh'), onPressed: () => setState(() => _round++), icon: const Icon(Icons.refresh))],
       ),
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
+      body: ListView(padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.paddingOf(context).bottom), children: [
         SgCard(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(Campus.uniName(s.uni), style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 1)),
@@ -231,7 +231,7 @@ class CampusRouteScreen extends StatelessWidget {
     final now = Campus.describe(Campus.status(r, 0, When.nowMs()), Campus.nameIn(r));
     return Scaffold(
       appBar: AppBar(title: Text(tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': Campus.uniName(r.uni), 'route': r.code}), overflow: TextOverflow.ellipsis)),
-      body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
+      body: ListView(padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.paddingOf(context).bottom), children: [
         SgCard(
           child: Row(children: [
             CampusBadge(r, size: 16),
