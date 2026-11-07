@@ -31,5 +31,8 @@
   "map.estimated": "Tiada GPS di sini, jadi ini anggaran.",
   "reminders.exactAlarms": "Android mungkin menghantar peringatan ini lewat. Untuk menerimanya tepat pada masanya, benarkan Penggera & peringatan untuk SG Bus Timings.",
   "reminders.exactAlarmsAllow": "Benarkan",
-  "reminders.leaveTimeHome": "Masa untuk bertolak merancang dari Rumah apabila telefon ini tidak dapat menentukan lokasi anda. Simpan Rumah dalam Tempat supaya ia sentiasa ada titik permulaan."
+  "reminders.leaveTimeHome": "Masa untuk bertolak merancang dari Rumah apabila telefon ini tidak dapat menentukan lokasi anda. Simpan Rumah dalam Tempat supaya ia sentiasa ada titik permulaan.",
+  "trip.chipStop": "1 hentian",
+  "trip.chipStops": "{n} hentian",
+  "trip.chipMin": "{m} min"
 }

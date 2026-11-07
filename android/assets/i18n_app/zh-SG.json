@@ -31,5 +31,8 @@
   "map.estimated": "这里没有 GPS，所以这是估算的位置。",
   "reminders.exactAlarms": "Android 可能会延迟发送这些提醒。如需准时收到，请允许 SG Bus Timings 使用“闹钟和提醒”。",
   "reminders.exactAlarmsAllow": "允许",
-  "reminders.leaveTimeHome": "手机无法确定你的位置时，“出发时间”会从“家”开始规划。请在“地点”中保存“家”，让它始终有出发点。"
+  "reminders.leaveTimeHome": "手机无法确定你的位置时，“出发时间”会从“家”开始规划。请在“地点”中保存“家”，让它始终有出发点。",
+  "trip.chipStop": "1 站",
+  "trip.chipStops": "{n} 站",
+  "trip.chipMin": "{m} 分钟"
 }

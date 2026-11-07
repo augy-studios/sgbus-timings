@@ -59,6 +59,8 @@
          and Time to leave on time to the minute (USE_EXACT_ALARM, granted at install; not
          allowed on Google Play for an app like this one, like REQUEST_INSTALL_PACKAGES); "On a
          bus?" by Play services' activity recognition, which asks for Physical activity. -->
+    <!-- A trip's notification as a Live Update, on Android 16 and later (TripService). -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />

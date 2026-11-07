@@ -31,5 +31,8 @@
   "map.estimated": "No GPS here, so this is an estimate.",
   "reminders.exactAlarms": "Android may deliver these reminders late. To get them on time, allow Alarms & reminders for SG Bus Timings.",
   "reminders.exactAlarmsAllow": "Allow",
-  "reminders.leaveTimeHome": "Time to leave plans from Home when this phone can't say where you are. Save Home in Places so it always has somewhere to start."
+  "reminders.leaveTimeHome": "Time to leave plans from Home when this phone can't say where you are. Save Home in Places so it always has somewhere to start.",
+  "trip.chipStop": "1 stop",
+  "trip.chipStops": "{n} stops",
+  "trip.chipMin": "{m} min"
 }

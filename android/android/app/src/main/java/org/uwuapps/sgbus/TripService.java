@@ -13,6 +13,10 @@
  *
  * Swiping the app away ends it (stopWithTask in AndroidManifest.xml): the page that follows
  * the trip is gone then, and the server carries on with the alert (api/push/trip-poll.js).
+ *
+ * On Android 16 and later the notification is a Live Update: a bar of the whole trip, a coloured
+ * segment for each part with what you're on moving along it and a marker for each alert still to
+ * come (lib/features/trips/trip_progress.dart), and a chip in the status bar. Before that, a plain bar.
  */
 package org.uwuapps.sgbus;
 
@@ -23,14 +27,17 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
+import android.graphics.drawable.Icon;
 import android.location.Location;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
 import androidx.core.content.ContextCompat;
@@ -41,6 +48,13 @@ import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.Priority;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class TripService extends Service {
     static final String ACTION_START = "org.uwuapps.sgbus.trip.START";
@@ -53,8 +67,15 @@ public class TripService extends Service {
     static final String EXTRA_ICON = "icon";
     static final String EXTRA_COLOR = "color";
     static final String EXTRA_SUB = "sub";
+    // The status bar chip's few words, and the bar as JSON (lib/features/trips/trip_progress.dart).
+    static final String EXTRA_CHIP = "chip";
+    static final String EXTRA_PROGRESS = "progress";
 
     private static final int NOTIFICATION_ID = 7001;
+    // What you're on, moving along the bar: dark on its colours, as the icons themselves are white.
+    private static final int TRACKER_COLOUR = 0xFF121815;
+    // Notification.EXTRA_REQUEST_PROMOTED_ONGOING, which SDK 36 itself doesn't name yet.
+    private static final String EXTRA_REQUEST_PROMOTED = "android.requestPromotedOngoing";
     // Twenty fixes a second, as fast as the GPS will give them, so the trip follows the bus
     // closely along its road (js/trip.js); most phones' GPS gives one to ten a second at most.
     private static final long FIX_MS = 50;
@@ -73,6 +94,8 @@ public class TripService extends Service {
     private String mIcon = null;
     private Integer mColor = null;
     private String mSub = null;
+    private String mChip = null;
+    private JSONObject mProgress = null;
 
     private final LocationCallback mCallback = new LocationCallback() {
         @Override
@@ -98,19 +121,21 @@ public class TripService extends Service {
         return sPace;
     }
 
-    static void start(Context context, String title, String text, String icon, String color, String sub) {
+    static void start(Context context, String title, String text, String icon, String color, String sub, String chip, String progress) {
         Intent intent = new Intent(context, TripService.class).setAction(sRunning ? ACTION_UPDATE : ACTION_START)
                 .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_TEXT, text)
-                .putExtra(EXTRA_ICON, icon).putExtra(EXTRA_COLOR, color).putExtra(EXTRA_SUB, sub);
+                .putExtra(EXTRA_ICON, icon).putExtra(EXTRA_COLOR, color).putExtra(EXTRA_SUB, sub)
+                .putExtra(EXTRA_CHIP, chip).putExtra(EXTRA_PROGRESS, progress);
         if (sRunning) context.startService(intent);
         else ContextCompat.startForegroundService(context, intent);
     }
 
-    static void update(Context context, String title, String text, String icon, String color, String sub) {
+    static void update(Context context, String title, String text, String icon, String color, String sub, String chip, String progress) {
         if (!sRunning) return;
         context.startService(new Intent(context, TripService.class).setAction(ACTION_UPDATE)
                 .putExtra(EXTRA_TITLE, title).putExtra(EXTRA_TEXT, text)
-                .putExtra(EXTRA_ICON, icon).putExtra(EXTRA_COLOR, color).putExtra(EXTRA_SUB, sub));
+                .putExtra(EXTRA_ICON, icon).putExtra(EXTRA_COLOR, color).putExtra(EXTRA_SUB, sub)
+                .putExtra(EXTRA_CHIP, chip).putExtra(EXTRA_PROGRESS, progress));
     }
 
     static void stop(Context context) {
@@ -130,6 +155,15 @@ public class TripService extends Service {
             if (intent.getStringExtra(EXTRA_TEXT) != null) mText = intent.getStringExtra(EXTRA_TEXT);
             if (intent.getStringExtra(EXTRA_ICON) != null) mIcon = intent.getStringExtra(EXTRA_ICON);
             if (intent.getStringExtra(EXTRA_SUB) != null) mSub = intent.getStringExtra(EXTRA_SUB);
+            if (intent.getStringExtra(EXTRA_CHIP) != null) mChip = intent.getStringExtra(EXTRA_CHIP);
+            String progress = intent.getStringExtra(EXTRA_PROGRESS);
+            if (progress != null) {
+                try {
+                    mProgress = new JSONObject(progress);
+                } catch (JSONException e) {
+                    mProgress = null;
+                }
+            }
             String color = intent.getStringExtra(EXTRA_COLOR);
             if (color != null) {
                 try {
@@ -194,7 +228,9 @@ public class TripService extends Service {
         PendingIntent end = PendingIntent.getService(this, 1,
                 new Intent(this, TripService.class).setAction(ACTION_END),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) return liveUpdate(end);
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, Notifications.TRIP);
+        if (mProgress != null && mProgress.has("at")) builder.setProgress(barLength(), mProgress.optInt("at"), false);
         // Tinted the line's colour where Android tints a notification's icon and name.
         if (mColor != null) builder.setColor(mColor);
         if (mSub != null && !mSub.isEmpty()) builder.setSubText(mSub);
@@ -210,6 +246,74 @@ public class TripService extends Service {
                 .setContentIntent(Notifications.open(this, null, NOTIFICATION_ID))
                 .addAction(0, "End trip", end)
                 .build();
+    }
+
+    // Android 16 and later: promoted to the top of the notifications and the lock screen, with a
+    // chip in the status bar, unless the person has turned Live Updates off for the app.
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    private Notification liveUpdate(PendingIntent end) {
+        Notification.Builder builder = new Notification.Builder(this, Notifications.TRIP)
+                .setSmallIcon(icon())
+                .setContentTitle(mTitle)
+                .setContentText(mText)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .setCategory(Notification.CATEGORY_NAVIGATION)
+                .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+                .setContentIntent(Notifications.open(this, null, NOTIFICATION_ID))
+                .addAction(new Notification.Action.Builder((Icon) null, "End trip", end).build());
+        if (mColor != null) builder.setColor(mColor);
+        if (mSub != null && !mSub.isEmpty()) builder.setSubText(mSub);
+        if (mChip != null && !mChip.isEmpty()) builder.setShortCriticalText(mChip);
+        if (mProgress != null && mProgress.has("at")) builder.setStyle(progressStyle());
+        Bundle promoted = new Bundle();
+        promoted.putBoolean(EXTRA_REQUEST_PROMOTED, true);
+        builder.addExtras(promoted);
+        return builder.build();
+    }
+
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
+    private Notification.ProgressStyle progressStyle() {
+        List<Notification.ProgressStyle.Segment> segments = new ArrayList<>();
+        JSONArray parts = mProgress.optJSONArray("segments");
+        for (int i = 0; parts != null && i < parts.length(); i++) {
+            JSONObject part = parts.optJSONObject(i);
+            if (part == null || part.optInt("length") <= 0) continue;
+            segments.add(new Notification.ProgressStyle.Segment(part.optInt("length")).setColor(colour(part.optString("color"))));
+        }
+        List<Notification.ProgressStyle.Point> points = new ArrayList<>();
+        JSONArray marks = mProgress.optJSONArray("points");
+        for (int i = 0; marks != null && i < marks.length(); i++) {
+            JSONObject mark = marks.optJSONObject(i);
+            if (mark == null) continue;
+            points.add(new Notification.ProgressStyle.Point(mark.optInt("at")).setColor(colour(mark.optString("color"))));
+        }
+        Icon tracker = Icon.createWithResource(this, icon());
+        tracker.setTint(TRACKER_COLOUR);
+        return new Notification.ProgressStyle()
+                .setStyledByProgress(true)
+                .setProgressSegments(segments)
+                .setProgressPoints(points)
+                .setProgress(mProgress.optInt("at"))
+                .setProgressTrackerIcon(tracker);
+    }
+
+    private int barLength() {
+        int length = 0;
+        JSONArray parts = mProgress.optJSONArray("segments");
+        for (int i = 0; parts != null && i < parts.length(); i++) {
+            JSONObject part = parts.optJSONObject(i);
+            if (part != null) length += part.optInt("length");
+        }
+        return length;
+    }
+
+    private static int colour(String hex) {
+        try {
+            return android.graphics.Color.parseColor(hex);
+        } catch (IllegalArgumentException e) {
+            return android.graphics.Color.GRAY;
+        }
     }
 
     @Override

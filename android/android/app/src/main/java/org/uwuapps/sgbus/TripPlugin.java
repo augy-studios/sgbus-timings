@@ -149,14 +149,16 @@ public class TripPlugin extends Plugin {
             }
         }
         TripService.start(getContext(), call.getString("title", "On a trip"), call.getString("text", ""),
-                call.getString("icon"), call.getString("color"), call.getString("sub"));
+                call.getString("icon"), call.getString("color"), call.getString("sub"),
+                call.getString("chip"), call.getString("progress"));
         call.resolve(status());
     }
 
     @PluginMethod
     public void update(PluginCall call) {
         TripService.update(getContext(), call.getString("title", "On a trip"), call.getString("text", ""),
-                call.getString("icon"), call.getString("color"), call.getString("sub"));
+                call.getString("icon"), call.getString("color"), call.getString("sub"),
+                call.getString("chip"), call.getString("progress"));
         call.resolve();
     }
 

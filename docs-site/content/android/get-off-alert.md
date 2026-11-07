@@ -81,6 +81,11 @@ runs, an **On a trip** notification shows where you are on it, with **End trip**
 over the lock screen. The notification's icon shows what you're on: a bus, a train in its line's colour, or walking,
 with the bus or line beside the app's name.
 
+It also has a bar of your whole trip: a segment for each part, in its colour, with a marker for each alert still to
+come. On Android 16 and later that's a Live Update, near the top of your notifications and lock screen, with what
+you're on moving along the bar, and the stops or minutes left in a chip in the status bar. You can turn Live Updates
+off for the app in Android's settings.
+
 Leave the app and the trip shrinks to a small window: see [Picture-in-picture](picture-in-picture.md).
 
 Swiping the app away from your recent apps ends that, and the server's alert takes over if you've allowed

@@ -22,6 +22,7 @@
 // Trips come from Navigate (tripFromNav) and the route planner, and end as you arrive or with End
 // trip; each is kept for Your trips under sgbus_trips, as the site keeps them.
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -44,6 +45,7 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
 import 'trip_change.dart';
+import 'trip_progress.dart';
 import 'trip_timeline.dart';
 import 'trip_watch.dart';
 
@@ -342,7 +344,9 @@ class Trip extends ChangeNotifier {
       });
       _end = Native.on('Trip', 'end', (_) => stop(record: true));
       try {
-        await Native.call('Trip', 'start', {'title': title, 'text': _barText()});
+        final note = _note();
+        _noteSaid = jsonEncode(note);
+        await Native.call('Trip', 'start', note);
       } on NativeError catch (e) {
         AppNav.say(e.message);
       }
@@ -1238,8 +1242,34 @@ class Trip extends ChangeNotifier {
 
   void _changed() {
     _save();
-    if (Native.has('trip')) Native.call('Trip', 'update', {'title': title, 'text': _barText()}).catchError((_) => null);
+    if (Native.has('trip')) {
+      // Only when it says something new: fixes come many times a second.
+      final note = _note();
+      final said = jsonEncode(note);
+      if (said != _noteSaid) {
+        _noteSaid = said;
+        Native.call('Trip', 'update', note).catchError((_) => null);
+      }
+    }
     notifyListeners();
+  }
+
+  /// What the trip's notification last said.
+  String? _noteSaid;
+
+  /// The trip's notification (TripService.java): its words, what you're on, and its bar (trip_progress.dart).
+  Map<String, Object?> _note() {
+    final l = current;
+    if (l == null) return {'title': title, 'text': _barText()};
+    return {
+      'title': title,
+      'text': _barText(),
+      'icon': l.kind,
+      'color': TripProgress.colourOf(l),
+      'sub': l.ride ? _rideName(l) : '',
+      'chip': TripProgress.chip(leg: l, boarded: boarded, stopsLeft: stopsLeft(), minutesLeft: minutesLeft(), last: leg == legs.length - 1),
+      'progress': jsonEncode(TripProgress.progress(legs, leg, pos, alertStops: alertStops, alerts: enabled, alerted: alerted)),
+    };
   }
 
   String _barText() {

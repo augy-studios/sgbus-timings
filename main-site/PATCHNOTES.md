@@ -9,10 +9,12 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 8 November 2026: The Android app on Google Play
+## 8 November 2026: The Android app on Google Play, and your trip as a Live Update (2.4.8)
 
 ### Android app
 
+- **Your trip at a glance** - A trip's notification now has a bar of the whole trip: a segment for each part in its colour, and a marker for each alert still to come. On Android 16 and later it's a Live Update, near the top of your notifications and lock screen, with what you're on moving along the bar, and the stops or minutes left in the status bar.
+- **What you're on** - The notification's icon, colour and name follow the bus, train or walk you're on again.
 - **The Google Play version** - Google allows some permissions only for other kinds of app, so this version has no Timings near a stop or "On a bus?", and a trip doesn't ask about battery optimisation. The app from GitHub keeps them all.
 - **Reminders on time, on Google Play** - Routines and Settings offer to allow Alarms & reminders, so routines, last bus reminders and Time to leave come on time. Without it they still come, but Android can deliver them late.
 - **Time to leave needs somewhere to start** - In both versions, with Time to leave on and no Home saved, Settings now says so, with a button to Places. Without Home, and with the phone not saying where you are, no notification could come.
