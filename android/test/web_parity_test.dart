@@ -10,6 +10,7 @@ import 'package:sgbus_timings/features/nav/nav_page.dart';
 import 'package:sgbus_timings/features/planner/planner.dart';
 import 'package:sgbus_timings/features/registry.dart';
 import 'package:sgbus_timings/features/timings/stop_screen.dart';
+import 'package:sgbus_timings/features/tour/tour.dart';
 import 'package:sgbus_timings/theme/theme.dart';
 
 import 'shots/harness.dart';
@@ -92,6 +93,21 @@ void main() {
       expect(all.map((p) => p.key), ['home', 'work']);
       expect(all.every((p) => p.unset), isTrue);
     });
+  });
+
+  testWidgets('the first open’s choice has the website’s names', (t) async {
+    await t.runAsync(() => stillData());
+    t.view.physicalSize = const Size(412, 892) * 3;
+    t.view.devicePixelRatio = 3;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(MaterialApp(theme: AppLook.I.theme(Brightness.light), home: Scaffold(body: firstRunPreview())));
+    await t.pump();
+    for (final name in ['Simple (Lite)', 'Normal', 'Advanced Super App']) {
+      expect(find.text(name), findsOneWidget, reason: name);
+    }
+    for (final old in ['Minimal', 'Standard', 'Full']) {
+      expect(find.text(old), findsNothing, reason: old);
+    }
   });
 
   testWidgets('a stop: Directions opens into the live map and Citymapper, and the bar has its note', (t) async {

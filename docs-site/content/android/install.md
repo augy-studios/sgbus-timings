@@ -34,7 +34,7 @@ If Android says **App not installed**, an older copy made a different way is in
 the way. Uninstall SG Bus Timings, then install the file again.
 
 The first time it opens, the app asks how much to start with: see
-[Minimal, Standard or Full](main-screen.md#minimal-standard-or-full).
+[Simple (Lite), Normal or Advanced Super App](main-screen.md#simple-lite-normal-or-advanced-super-app).
 
 ## Coming from version 2.3 or earlier
 

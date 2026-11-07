@@ -9,9 +9,16 @@
 # sg-bus-timings-<version>.apk and sg-bus-timings-<version>-watch.apk. The version is
 # pubspec.yaml's.
 #
+# With -Aab, instead: the Android App Bundle for Google Play, sg-bus-timings-<version>.aab, kept out
+# of git as the APKs are. It's the phone's app only, signed with the same key, and with no updater of
+# its own, as Play doesn't allow one: its manifest (android/app/src/play/) and SGBUS_PLAY take it
+# out, and that's checked here. Build the APKs first: a bundle doesn't replace them.
+#
 # Needs Flutter on the PATH (or FLUTTER_ROOT), a JDK 21 or later and the Android SDK. It finds
 # the JDK and SDK in JAVA_HOME and ANDROID_HOME if they're set, or else the newest JDK under
 # Program Files and the SDK in %LOCALAPPDATA%\Android\Sdk.
+
+param([switch]$Aab)
 
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
@@ -49,6 +56,59 @@ $pubspec = Get-Content "$here\pubspec.yaml" -Raw
 $version = [regex]::Match($pubspec, '(?m)^version:\s*([0-9.]+)').Groups[1].Value
 $flutter = if ($env:FLUTTER_ROOT) { "$env:FLUTTER_ROOT\bin\flutter.bat" } else { 'flutter' }
 Write-Host "Building SG Bus Timings $version for Android (JDK: $env:JAVA_HOME)..."
+
+if ($Aab) {
+    # Never an old one: with nothing changed, Gradle wouldn't write it again.
+    $bundle = "$here\build\app\outputs\bundle\release\app-release.aab"
+    Remove-Item $bundle -Force -ErrorAction SilentlyContinue
+    $flutterFailed = $false
+    Push-Location $here
+    try {
+        & $flutter pub get
+        if ($LASTEXITCODE -ne 0) { throw 'flutter pub get failed.' }
+        & $flutter build appbundle --release --target-platform android-arm,android-arm64 --dart-define=SGBUS_PLAY=true --android-project-arg=sgbusPlay=true
+        $flutterFailed = $LASTEXITCODE -ne 0
+    } finally {
+        Pop-Location
+    }
+    # Flutter's last step looks for debug symbols with apkanalyzer, from the SDK's cmdline-tools, and
+    # says it failed if that isn't installed. So a failure counts only if a bundle wasn't just made,
+    # or if the same look, at what's stripped into the bundle's metadata, finds them missing.
+    if (-not (Test-Path $bundle)) {
+        if ($flutterFailed) { throw 'flutter build appbundle failed. Its messages are above.' }
+        throw 'Gradle made no bundle.'
+    }
+    # The same key as every version before.
+    $ErrorActionPreference = 'Continue'
+    $certs = & "$env:JAVA_HOME\bin\keytool.exe" -printcert -jarfile $bundle 2>&1 | Out-String
+    $ErrorActionPreference = 'Stop'
+    if ($certs -notmatch 'SHA256:\s*4E:D5:3F:F1:F4:CB:4E:5E:A7:CB:C1:28:46:48:F6:2E:B3:90:47:EB:C2:9B:25:20:F5:7D:FE:5B:76:CB:44:EB') {
+        throw "The bundle isn't signed with the app's key: is keystore.properties right?"
+    }
+    # And nothing of the updater left in what Play reads.
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = [IO.Compression.ZipFile]::OpenRead($bundle)
+    try {
+        $stream = $zip.GetEntry('base/manifest/AndroidManifest.xml').Open()
+        $reader = New-Object IO.StreamReader($stream, [Text.Encoding]::GetEncoding(28591))
+        $manifest = $reader.ReadToEnd()
+        $reader.Dispose()
+        $entries = @($zip.Entries | ForEach-Object { $_.FullName })
+    } finally {
+        $zip.Dispose()
+    }
+    if ($manifest -match 'REQUEST_INSTALL_PACKAGES|UpdateActivity') { throw 'The bundle still has the updater in its manifest.' }
+    foreach ($lib in 'libflutter', 'libapp') {
+        if (-not ($entries -match "^BUNDLE-METADATA/com\.android\.tools\.build\.debugsymbols/.*/$lib\.so\.(sym|dbg)$")) {
+            throw "The bundle's $lib.so hasn't had its debug symbols stripped."
+        }
+    }
+    New-Item -ItemType Directory -Force "$root\release\$version" | Out-Null
+    $out = "$root\release\$version\sg-bus-timings-$version.aab"
+    Copy-Item $bundle $out -Force
+    Write-Host "Done: $out"
+    return
+}
 
 Push-Location $here
 try {

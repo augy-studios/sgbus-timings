@@ -38,11 +38,11 @@ Your favourites and settings stay when you update.
 
 ### Website and desktop apps
 - **Phone's setting**: a fourth choice under **Mode** in Theme, as the Android app has, following your device's light or dark as it changes.
-- **New names for the first open**: Minimal, Standard and Full are now **Simple (Lite)**, **Normal** and **Advanced Super App**.
 - **Asked in every language**: new visitors whose browser isn't in English are now asked how much to start with, as everyone else is.
 - **GTA VI's Edge Tray**: the page you're on now reads clearly, its icon dark on orange.
 
 ### Everywhere
+- **New names for the first open**: Minimal, Standard and Full are now **Simple (Lite)**, **Normal** and **Advanced Super App**.
 - **The magic cup**: changing the language now takes a sip from Singapore's famous language-changing cup. It spins in 3D with the tea swishing around it, for about a second, and the whole app comes back in the new language.
 
 ### Everywhere with uwuCoins (website, desktop and Android)

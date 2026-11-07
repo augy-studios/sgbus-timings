@@ -1,7 +1,4 @@
 {
-  "app.firstRun.minimal": "Minimal",
-  "app.firstRun.standard": "Standard",
-  "app.firstRun.full": "Full",
   "nav.offlineNoStops": "The bus stops aren't saved on this phone yet. Open the app once with a connection.",
   "nav.offlineNoRoutes": "The bus routes aren't saved on this phone yet. Open the app once with a connection, then Bus and train plans offline.",
   "route.tap_stop_app": "Tap the stop you're getting off at. The app alerts you two stops before it, even with the screen off.",

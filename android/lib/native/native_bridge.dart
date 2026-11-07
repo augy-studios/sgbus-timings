@@ -32,6 +32,10 @@ class NativeListener {
   void cancel() => Native._remove(this);
 }
 
+/// A Google Play build (build-apk.ps1 -Aab): Play updates it, so it has no updater of its own.
+const playBuild = bool.fromEnvironment('SGBUS_PLAY');
+const _notOnPlay = {'update', 'checkupdate', 'releases'};
+
 class Native {
   Native._();
 
@@ -71,7 +75,7 @@ class Native {
   }
 
   /// What this build and phone can do, as SgBusPlugin.info lists it.
-  static bool has(String feature) => ((_info?['features'] as List?) ?? const []).contains(feature);
+  static bool has(String feature) => !(playBuild && _notOnPlay.contains(feature)) && ((_info?['features'] as List?) ?? const []).contains(feature);
   static Map<String, dynamic>? get info => _info;
 
   /// For the guide's screenshots: the features a phone has and the plugins' answers, so the

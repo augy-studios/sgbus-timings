@@ -73,9 +73,15 @@ running in it. The website and PWA lose nothing.
 | NFC | Not asked: Android grants it | `CardPlugin` |
 | Install unknown apps | First update | `UpdateActivity` |
 
-If the app ever goes on Google Play, that build has to drop `UpdateActivity` and
-`REQUEST_INSTALL_PACKAGES` (Play updates apps itself), and would need Play's declaration for
-background location.
+The Google Play build (`powershell -ExecutionPolicy Bypass -File android\build-apk.ps1 -Aab`, into
+`release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity` and
+`REQUEST_INSTALL_PACKAGES`, as Play updates apps itself: `app/src/play/AndroidManifest.xml`, and
+`playBuild` in `lib/native/native_bridge.dart` for the update bar and buttons. It keeps every other
+permission, so Play Console needs its declarations for background location and the foreground
+service, and a reason for `USE_EXACT_ALARM`. It's signed with `android.keystore`. If Play App Signing
+re-signs it with Google's key, add that key's SHA-256 (Play Console, **App signing**) to
+`main-site/.well-known/assetlinks.json`, or links won't open the app for anyone who installed it
+from Play.
 
 ### Card value
 

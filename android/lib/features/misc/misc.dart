@@ -49,6 +49,7 @@ void registerMisc() {
     TimingsPage.askNear.value++;
   });
   AppNav.register('appUpdate', (a) {
+    if (playBuild) return;
     if (a['version'] != null) {
       AppUpdate.check(version: '${a['version']}');
     } else {
@@ -73,15 +74,18 @@ void registerMisc() {
   }
   // What Bus and train needs to plan with no connection, kept while there is one.
   Timer(const Duration(seconds: 8), () => NavOffline.keepReady());
-  Shell.top.add(() => const AppUpdateBar());
-  AppUpdate.check();
+  // On Google Play, Play says when there's a new version, and updates it.
+  if (!playBuild) {
+    Shell.top.add(() => const AppUpdateBar());
+    AppUpdate.check();
+  }
   WidgetsBinding.instance.addObserver(_Resume());
 }
 
 class _Resume extends WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && When.nowMs() - AppUpdate._checkedAt > 6 * 3600 * 1000) AppUpdate.check();
+    if (!playBuild && state == AppLifecycleState.resumed && When.nowMs() - AppUpdate._checkedAt > 6 * 3600 * 1000) AppUpdate.check();
   }
 }
 

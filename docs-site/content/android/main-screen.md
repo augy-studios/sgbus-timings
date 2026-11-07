@@ -7,21 +7,21 @@ The app opens on **Glance**: the next bus in big letters, and your stops' buses
 under it. Everything else is a page in the **Edge Tray**, the column of round
 buttons down the side.
 
-## Minimal, Standard or Full
+## Simple (Lite), Normal or Advanced Super App
 
 <figure>
-<img src="/screenshots/android/first-run.png" alt="Welcome to SG Bus Timings: Start with everything, most of it, or just the essentials? Minimal, Standard, which is picked, and Full, each saying what it leaves out, a note that this can be changed in Settings, Edge Tray buttons, and a Start button." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/first-run.png" alt="Welcome to SG Bus Timings: Start with everything, most of it, or just the essentials? Simple (Lite), Normal, which is picked, and Advanced Super App, each saying what it leaves out, a note that this can be changed in Settings, Edge Tray buttons, and a Start button." width="412" height="892" loading="lazy">
 <figcaption>The first time the app opens.</figcaption>
 </figure>
 
 The first time the app opens, it asks how much to start with:
 
-- **Minimal**: just Bus timings, Favourites, Navigate and Places. The rest is
+- **Simple (Lite)**: just Bus timings, Favourites, Navigate and Places. The rest is
   switched off.
-- **Standard**: everything but a few extras. The Edge Tray has no uwuCoins, Buy
+- **Normal**: everything but a few extras. The Edge Tray has no uwuCoins, Buy
   Augy a Coffee, Receive nearby, Telegram bot or Card value buttons.
-- **Full**: everything on: Glance, Service alerts, Your trips and every Edge Tray
-  button. Putting the window away without **Start** is Full.
+- **Advanced Super App**: everything on: Glance, Service alerts, Your trips and every Edge Tray
+  button. Putting the window away without **Start** is the same as picking this.
 
 Change any of it later in [Settings](settings.md), **Pages and Edge Tray**,
 **Edge Tray buttons**.

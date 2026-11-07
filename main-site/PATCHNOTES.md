@@ -15,10 +15,13 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 - **Make it yours** - The first time 2.4.8 opens, a window sets your language, whether it starts when you sign in, light or dark, and your brand colour, all in one place. It's in the tray's menu whenever you want it again.
 
+### Everywhere: new names for the first open
+
+- **Simple (Lite), Normal and Advanced Super App** - Minimal, Standard and Full have new names, on new installs of every version with a first-open choice.
+
 ### Website and desktop apps
 
 - **Phone's setting** - A fourth choice under Mode in Theme, as the Android app has, following your device's light or dark as it changes.
-- **New names for the first open** - Minimal, Standard and Full are now Simple (Lite), Normal and Advanced Super App.
 - **Asked in every language** - New visitors whose browser isn't in English are now asked how much to start with, as everyone else is.
 - **GTA VI's Edge Tray** - The page you're on now reads clearly, its icon dark on orange.
 

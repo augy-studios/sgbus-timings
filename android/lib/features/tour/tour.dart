@@ -1,7 +1,7 @@
 // The first open's choice and the tours (the site's js/first-run.js and js/tour.js).
 //
 // First run: someone new (nothing of the app's kept, the WebView app's included) is asked once,
-// Minimal (the essentials only), Standard (most of it) or Full (everything on); put away
+// Simple (Lite) (the essentials only), Normal (most of it) or Advanced Super App (everything on); put away
 // without Start is Full. sgbus_first_run: "ask" until asked, "done" after.
 //
 // Tours: a few steps over a page, each a spotlight on the real thing with a line saying what it
@@ -233,10 +233,10 @@ class _FirstRunState extends State<_FirstRun> {
           onChanged: (v) => setState(() => _pick = v ?? _pick),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(tr('html.start_with_how_much', 'Start with everything, most of it, or just the essentials?')),
-            option('minimal', tr('app.firstRun.minimal', 'Minimal'), tr('html.just_bus_timings_favourites_navigate', 'Just Bus timings, Favourites, Navigate and Places. The rest is switched off.')),
-            option('standard', tr('app.firstRun.standard', 'Standard'),
+            option('minimal', tr('html.minimal', 'Simple (Lite)'), tr('html.just_bus_timings_favourites_navigate', 'Just Bus timings, Favourites, Navigate and Places. The rest is switched off.')),
+            option('standard', tr('html.standard', 'Normal'),
                 tr('html.standard_what', 'Everything but a few extras: no uwuCoins, Buy Augy a Coffee, Receive nearby, Telegram bot or Card value buttons in the Edge Tray.')),
-            option('full', tr('app.firstRun.full', 'Full'), tr('html.everything_on_glance_service_alerts', 'Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.')),
+            option('full', tr('html.full_2', 'Advanced Super App'), tr('html.everything_on_glance_service_alerts', 'Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.')),
             Text(tr('html.you_can_change_this_any', 'You can change this any time in Settings, Edge Tray buttons.'), style: TextStyle(color: sg.muted, fontSize: 13)),
           ]),
         ),

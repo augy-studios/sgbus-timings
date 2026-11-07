@@ -43,6 +43,9 @@ project root:
 powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
 ```
 
+The Android App Bundle for Google Play, which stays here and never goes on a GitHub release:
+`powershell -ExecutionPolicy Bypass -File android\build-apk.ps1 -Aab` (`android/README.md`).
+
 The desktop ones (Windows, Linux and macOS) build on GitHub (`desktop/README.md`, "Build
 it"): run **Build desktop apps** with the new tag, such as `android-v2.0.3`, and they land on
 a draft release of that tag, ready for the APK. Or publish the release first, and they're
