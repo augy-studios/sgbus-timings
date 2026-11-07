@@ -7,6 +7,7 @@ number:
 release/2.0.0/
   sg-bus-timings-2.0.0.apk                 Android     android\build-apk.ps1
   sg-bus-timings-2.1.0-watch.apk           Wear OS     the same, from 2.1.0, built with the phone's
+  sg-bus-timings-2.4.8-mapping.txt         Android     the same, for reading the APK's crashes; not uploaded
   sg-bus-timings-2.0.0-setup.exe           Windows     GitHub Actions: Build desktop apps
   sg-bus-timings-2.0.0.msi                 Windows     the same (or desktop: npm run build:win)
   sg-bus-timings-2.0.0-amd64.deb           Linux       the same (or desktop/build-linux.sh)

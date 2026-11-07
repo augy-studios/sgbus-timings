@@ -107,6 +107,10 @@ if ($Aab) {
             throw "The bundle's $lib.so hasn't had its debug symbols stripped."
         }
     }
+    # R8 ran, and Play gets its mapping, to read crashes and measure the code's optimisation.
+    if (-not ($entries -contains 'BUNDLE-METADATA/com.android.tools.build.obfuscation/proguard.map')) {
+        throw "The bundle has no R8 mapping: is minifyEnabled still on in app/build.gradle?"
+    }
     New-Item -ItemType Directory -Force "$root\release\$version" | Out-Null
     $out = "$root\release\$version\sg-bus-timings-$version.aab"
     Copy-Item $bundle $out -Force
@@ -158,5 +162,7 @@ $dest = "$root\release\$version\sg-bus-timings-$version.apk"
 $watchDest = "$root\release\$version\sg-bus-timings-$version-watch.apk"
 Copy-Item $signed $dest -Force
 Copy-Item $watch $watchDest -Force
+# What puts the names back in this APK's crashes, as R8 renames them. For here only, never the release.
+Copy-Item "$here\build\app\outputs\mapping\release\mapping.txt" "$root\release\$version\sg-bus-timings-$version-mapping.txt" -Force
 Write-Host "Done: $dest"
 Write-Host "      $watchDest (Wear OS: see android/android/wear/README.md to install it on a watch)"

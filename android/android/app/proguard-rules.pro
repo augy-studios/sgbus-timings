@@ -1,21 +1,26 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# What R8 mustn't rename or remove in a release build. Libraries bring their own rules; these are
+# for what this app looks up by name.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# The bridge (bridge/Bridge.java) makes each plugin from its class and reads @AppPlugin off it, then
+# finds its methods by their annotations and their names: the Dart side's Native.call names a
+# @PluginMethod, and requestPermissionForAlias and startActivityForResult name a callback.
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault
+-keep @interface org.uwuapps.sgbus.bridge.* { *; }
+-keep class * extends org.uwuapps.sgbus.bridge.Plugin {
+    <init>();
+}
+-keepclassmembers class org.uwuapps.sgbus.bridge.Plugin {
+    @org.uwuapps.sgbus.bridge.PluginMethod <methods>;
+    @org.uwuapps.sgbus.bridge.PermissionCallback <methods>;
+    @org.uwuapps.sgbus.bridge.ActivityCallback <methods>;
+}
+-keepclassmembers class * extends org.uwuapps.sgbus.bridge.Plugin {
+    @org.uwuapps.sgbus.bridge.PluginMethod <methods>;
+    @org.uwuapps.sgbus.bridge.PermissionCallback <methods>;
+    @org.uwuapps.sgbus.bridge.ActivityCallback <methods>;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
-
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Readable line numbers in a crash, once its names are put back with the build's mapping.txt: Play
+# has it from the bundle, and build-apk.ps1 keeps the APK's in release/<version>/.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile

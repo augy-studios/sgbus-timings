@@ -129,6 +129,14 @@ It runs `flutter build apk` for the phone (ARM, 32 and 64 bit, in one APK, as th
 fetches one file) and Gradle for the watch, checks both signatures, then puts them in
 `release/<version>/`. It needs Flutter, a JDK 21 or later and the Android SDK.
 
+A release build of the phone's app goes through R8, which shrinks and renames its Java, as Google
+Play's DEX code optimisation check wants. What's looked up by name stays out of that:
+`android/app/proguard-rules.pro` keeps every plugin and its annotated methods, so a new plugin or
+`@PluginMethod` needs no new rule, but anything else found by reflection does. Try a change like
+that on a release build, as a debug one isn't shrunk. A crash's names come back with that build's
+`mapping.txt`: Play gets it inside the bundle, and the APK's is kept beside it in
+`release/<version>/`.
+
 On Linux or macOS, `flutter build apk --release --target-platform android-arm,android-arm64`
 here, and `android/gradlew :wear:assembleRelease`.
 

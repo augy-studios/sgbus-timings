@@ -17,6 +17,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **What you're on** - The notification's icon, colour and name follow the bus, train or walk you're on again.
 - **The Google Play version** - Google allows some permissions only for other kinds of app, so this version has no Timings near a stop or "On a bus?", and a trip doesn't ask about battery optimisation. The app from GitHub keeps them all.
 - **Reminders on time, on Google Play** - Routines and Settings offer to allow Alarms & reminders, so routines, last bus reminders and Time to leave come on time. Without it they still come, but Android can deliver them late.
+- **A smaller app** - The Android app's code is shrunk for release, so it takes less room on your phone and loads less on opening.
 - **Time to leave needs somewhere to start** - In both versions, with Time to leave on and no Home saved, Settings now says so, with a button to Places. Without Home, and with the phone not saying where you are, no notification could come.
 
 ---

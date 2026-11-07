@@ -41,8 +41,11 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled = false
+            // R8, which Google Play measures (DEX code optimisation). What it mustn't rename is
+            // in proguard-rules.pro. Resources stay as they are: SgBusPlugin looks some up by name.
+            minifyEnabled = true
             shrinkResources = false
+            proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
             signingConfig = keystoreProps.storeFile ? signingConfigs.release : signingConfigs.debug
         }
     }
