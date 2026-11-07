@@ -37,7 +37,14 @@ GitHub Actions builds them all (`.github/workflows/build-desktop.yml`, see "Buil
   runs, the page checks `/api/service-alerts` every minute, by the same rules as the server
   (`main-site/js/alerts.js`, "the desktop app"), and hands what's new to the app to show
   (`preload.js`, `main.js`). Clicking one opens Service alerts.
-- **Starts when you sign in**, maximised, from the first run; the tray's menu turns it off.
+- **Make it yours** (`setup.js`, `setup.html`): the first window, once, for a new install or the
+  first version with it, and from the tray's menu after that: language, starting when you sign
+  in, following the system's light or dark or a theme of your own, and the brand colour. It reads
+  and sets the site's own settings through the page (`js/i18n.js`, `js/theme.js`, `js/gta6.js`),
+  so they stay one set, and `pendingLook` in `settings.json` holds them until the site's there.
+  Closing it changes nothing. Its words are its own, in the site's four languages.
+- **Starts when you sign in**, maximised, from the first run; Make it yours or the tray's menu
+  turns it off.
 - **Opens maximised**, unless it was last closed un-maximised.
 - **Bus timings widgets** (`widgets.js`): small frameless windows on the desktop, each showing
   a stop's timings from `main-site/widget.html`, resizable, optionally on top, restored where
@@ -108,15 +115,15 @@ page reaches it as `sgbusDesktop.locate`, and `main-site/js/desktop-location.js`
 
 GitHub builds every one of them, each on its own system (`.github/workflows/build-desktop.yml`):
 
-- **Every push that changes `desktop/`** builds them. The files are on the run's page, under
-  **Artifacts** (Actions > Build desktop apps > the run), for 30 days.
-- **To add them to a release**: Actions > **Build desktop apps** > **Run workflow**, on
+- **Publishing a release** builds them from the release's tag and adds them straight to it,
+  unless they're on it already. A push builds nothing.
+- **To add them to a release by hand**: Actions > **Build desktop apps** > **Run workflow**, on
   `main`, with the release's tag (such as `android-v2.0.3`). The files are added to that
   release, replacing any of the same name. With no release of that tag yet, a **draft**
   release is made for them: add the APK, write what's new, and publish it. Nobody's app sees a
   draft, so nothing updates until then.
-- **Publishing a release** builds them from the release's tag and adds them there by itself,
-  unless they're on it already.
+- **To try a build without a release**: the same, with the tag left empty. The files are on the
+  run's page, under **Artifacts**, for 30 days.
 
 To build them yourself instead, on Windows, in PowerShell:
 

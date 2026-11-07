@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<!-- Make it yours (setup.js): the first window of a new install or of the first version with it, and
+     from the tray's menu after that. Language, starting when you sign in, light or dark, and the
+     brand colour, shown here as they're picked and given to the site on Get started. It reaches the
+     app only through setup-preload.js's window.sgbusSetup. Its words are its own, in the site's four
+     languages, as the site isn't open behind it yet. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Welcome to SG Bus Timings</title>
+<style>
+  :root {
+    color-scheme: light;
+    --accent: #ccffcc;
+    --on-accent: #121815;
+    --bg: #f4f7f5;
+    --row: #ffffff;
+    --tile: #eef2f0;
+    --edge: rgba(18, 24, 21, 0.1);
+    --ink: #121815;
+    --muted: #5b665f;
+  }
+  :root[data-mode="dark"] {
+    color-scheme: dark;
+    --bg: #171c19;
+    --row: #202622;
+    --tile: #2b322d;
+    --edge: rgba(255, 255, 255, 0.1);
+    --ink: #eef2ef;
+    --muted: #a9b5ae;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: grid; grid-template-columns: minmax(250px, 34%) 1fr;
+    background: var(--bg); color: var(--ink);
+    font: 15px/1.4 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "Ubuntu", "Cantarell", "Nirmala UI", "Microsoft YaHei", sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+  aside {
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 32px;
+    background: linear-gradient(165deg, var(--accent), color-mix(in srgb, var(--accent) 92%, #000));
+    color: var(--on-accent);
+    transition: background 0.2s ease;
+  }
+  aside::before, aside::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.22); }
+  aside::before { width: 260px; height: 260px; top: -110px; right: -90px; }
+  aside::after { width: 170px; height: 170px; bottom: -60px; left: -60px; }
+  aside > * { position: relative; }
+  .logo { width: 72px; height: 72px; border-radius: 20px; margin-bottom: 18px; }
+  h1 { margin: 0 0 10px; font-size: 26px; line-height: 1.2; }
+  .tag { margin: 0 0 22px; }
+  aside ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  aside li { display: flex; align-items: center; gap: 12px; font-weight: 600; }
+  svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  main { display: flex; flex-direction: column; min-width: 0; padding: 30px 36px 24px; overflow-y: auto; }
+  h2 { margin: 0; font-size: 26px; }
+  .sub { margin: 4px 0 18px; color: var(--muted); }
+  .rows { display: grid; gap: 8px; }
+  .row { display: flex; align-items: center; gap: 14px; min-height: 62px; padding: 10px 14px; background: var(--row); border: 1px solid var(--edge); border-radius: 10px; }
+  .row[hidden] { display: none; }
+  .tile { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 8px; background: var(--tile); }
+  .name { flex: 1; min-width: 0; font-weight: 600; }
+  .name small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
+  select {
+    width: 210px; max-width: 45%; height: 38px; padding: 0 10px;
+    color: var(--ink); background: var(--tile); border: 1px solid var(--edge); border-radius: 6px; font: inherit;
+  }
+  select:disabled { opacity: 0.55; }
+  .switch { position: relative; width: 46px; height: 24px; flex: none; }
+  .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+  .switch i { position: absolute; inset: 0; border-radius: 12px; border: 1px solid var(--muted); pointer-events: none; transition: background-color 0.15s ease; }
+  .switch i::after { content: ""; position: absolute; top: 4px; left: 4px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: transform 0.15s ease; }
+  .switch input:checked + i { background: var(--ink); border-color: var(--ink); }
+  .switch input:checked + i::after { transform: translateX(22px); background: var(--row); }
+  .switch input:focus-visible + i, select:focus-visible, button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .swatches { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 60%; }
+  .swatch {
+    position: relative; width: 28px; height: 28px; padding: 0; border-radius: 50%;
+    background: var(--c); border: 1px solid var(--edge); cursor: pointer;
+  }
+  .swatch[aria-checked="true"] { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--ink); }
+  .swatch:disabled { opacity: 0.4; cursor: not-allowed; }
+  .swatch:disabled::after { content: "\1F512"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; }
+  footer { display: flex; align-items: center; gap: 16px; margin-top: auto; padding-top: 18px; }
+  footer p { flex: 1; margin: 0; font-size: 13px; color: var(--muted); }
+  #go {
+    display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px;
+    color: var(--on-accent); background: var(--accent); border: 1px solid var(--edge); border-radius: 8px;
+    font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  #go:hover { filter: brightness(0.94); }
+  @media (max-width: 760px) { body { grid-template-columns: 1fr; } aside { display: none; } }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+  <aside>
+    <img class="logo" src="build/icon.png" alt="">
+    <h1 data-t="welcome"></h1>
+    <p class="tag" data-t="tag"></p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span data-t="timings"></span></li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 12 12 21 3 12z"/><path d="M9 14v-2a1 1 0 0 1 1-1h5m-2-2 2 2-2 2"/></svg><span data-t="navigate"></span></li>
+      <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4m0 3v.01"/></svg><span data-t="alerts"></span></li>
+    </ul>
+  </aside>
+  <main>
+    <h2 data-t="title"></h2>
+    <p class="sub" data-t="sub"></p>
+    <div class="rows">
+      <div class="row">
+        <div class="tile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
+        <label class="name" for="lang" data-t="language"></label>
+        <select id="lang">
+          <option value="auto" data-t="auto"></option>
+          <option value="en">English</option>
+          <option value="zh-SG">中文</option>
+          <option value="ms">Bahasa Melayu</option>
+          <option value="ta">தமிழ்</option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="tile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v9"/><path d="M7 6.5a8 8 0 1 0 10 0"/></svg></div>
+        <label class="name" for="start" data-t="start"></label>
+        <span class="switch"><input id="start" type="checkbox" role="switch"><i></i></span>
+      </div>
+      <div class="row">
+        <div class="tile"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg></div>
+        <label class="name" for="follow" data-t="follow"></label>
+        <span class="switch"><input id="follow" type="checkbox" role="switch"><i></i></span>
+      </div>
+      <div class="row">
+        <div class="tile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg></div>
+        <label class="name" for="mode" data-t="theme"></label>
+        <select id="mode">
+          <option value="light" data-t="light"></option>
+          <option value="dark" data-t="dark"></option>
+          <option value="time" data-t="time"></option>
+        </select>
+      </div>
+      <div class="row">
+        <div class="tile"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1.5 0 2-1 2-2s-1-2 0-3 2-1 3-1h1a3 3 0 0 0 3-3c0-5-4-9-9-9z"/><circle cx="8" cy="11" r="1"/><circle cx="12" cy="8" r="1"/><circle cx="16" cy="11" r="1"/></svg></div>
+        <div class="name" id="colourName"><span data-t="colour"></span><small id="colourNote"></small></div>
+        <div class="swatches" id="swatches" role="radiogroup" aria-labelledby="colourName"></div>
+      </div>
+    </div>
+    <footer>
+      <p data-t="foot"></p>
+      <button id="go" type="button"><span data-t="go"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+    </footer>
+  </main>
+  <script>
+    const WORDS = {
+      en: {
+        welcome: 'Welcome to SG Bus Timings', tag: 'Live bus arrivals, trips and alerts, your way.', timings: 'Bus timings', navigate: 'Navigate', alerts: 'Service alerts',
+        title: 'Make SG Bus Timings yours', sub: 'Choose how the app should look and feel.', language: 'Language', auto: 'Automatic',
+        start: 'Start when I sign in', follow: 'Follow system theme', theme: 'Theme', light: 'Light', dark: 'Dark', time: 'Time-based', colour: 'Brand colour',
+        yours: 'Your colours are on, so the brand colours wait until you turn them off.', foot: 'You can change these any time, from Make it yours in the tray’s menu.', go: 'Get started',
+      },
+      ms: {
+        welcome: 'Selamat datang ke SG Bus Timings', tag: 'Ketibaan bas, perjalanan dan amaran secara langsung, mengikut cara anda.', timings: 'Waktu bas', navigate: 'Navigasi', alerts: 'Amaran perkhidmatan',
+        title: 'Jadikan SG Bus Timings milik anda', sub: 'Pilih rupa dan rasa aplikasi ini.', language: 'Bahasa', auto: 'Automatik',
+        start: 'Mula apabila saya log masuk', follow: 'Ikut tema sistem', theme: 'Tema', light: 'Cerah', dark: 'Gelap', time: 'Ikut masa', colour: 'Warna jenama',
+        yours: 'Warna anda sedang digunakan, jadi warna jenama menunggu sehingga anda mematikannya.', foot: 'Anda boleh menukar semua ini bila-bila masa, daripada menu dulang.', go: 'Mulakan',
+      },
+      ta: {
+        welcome: 'SG Bus Timings-க்கு வரவேற்கிறோம்', tag: 'நேரடி பேருந்து வருகைகள், பயணங்கள் மற்றும் எச்சரிக்கைகள், உங்கள் விருப்பப்படி.', timings: 'பேருந்து நேரங்கள்', navigate: 'வழிகாட்டல்', alerts: 'சேவை எச்சரிக்கைகள்',
+        title: 'SG Bus Timings-ஐ உங்களுடையதாக்குங்கள்', sub: 'செயலி எப்படி இருக்க வேண்டும் என்பதைத் தேர்ந்தெடுங்கள்.', language: 'மொழி', auto: 'தானியங்கி',
+        start: 'நான் உள்நுழையும்போது தொடங்கு', follow: 'கணினியின் தீமைப் பின்பற்று', theme: 'தீம்', light: 'வெளிர்', dark: 'இருண்ட', time: 'நேரத்தைப் பொறுத்து', colour: 'முதன்மை வண்ணம்',
+        yours: 'உங்கள் வண்ணங்கள் இயக்கத்தில் உள்ளன, அவற்றை அணைக்கும் வரை முதன்மை வண்ணங்கள் காத்திருக்கும்.', foot: 'இவற்றை எப்போது வேண்டுமானாலும் தட்டு மெனுவிலிருந்து மாற்றலாம்.', go: 'தொடங்கு',
+      },
+      'zh-SG': {
+        welcome: '欢迎使用 SG Bus Timings', tag: '实时巴士到站、行程和通告，随你所愿。', timings: '巴士时刻', navigate: '导航', alerts: '服务通告',
+        title: '打造你的 SG Bus Timings', sub: '选择应用的外观和感觉。', language: '语言', auto: '自动',
+        start: '登录时启动', follow: '跟随系统主题', theme: '主题', light: '浅色', dark: '深色', time: '按时间', colour: '主题色',
+        yours: '“你的颜色”已开启，关闭后才会使用主题色。', foot: '你可以随时在托盘菜单中更改这些设置。', go: '开始使用',
+      },
+    };
+    const $ = (id) => document.getElementById(id);
+    const dark = matchMedia('(prefers-color-scheme: dark)');
+    const state = { lang: 'auto', mode: 'light', color: 'classic', start: true, colors: [], yours: false };
+    const touched = new Set();
+
+    const langNow = () => {
+      if (state.lang !== 'auto') return state.lang;
+      const code = (navigator.language || 'en').toLowerCase();
+      if (code.startsWith('zh')) return 'zh-SG';
+      return ['ms', 'ta'].find((c) => code.split('-')[0] === c) || 'en';
+    };
+
+    function paintMode() {
+      const hour = new Date().getHours();
+      const on = state.mode === 'phone' ? dark.matches : state.mode === 'time' ? hour < 9 || hour >= 18 : state.mode === 'dark';
+      document.documentElement.dataset.mode = on ? 'dark' : 'light';
+    }
+
+    function paintColour() {
+      const now = state.colors.find((c) => c.id === state.color) || state.colors[0];
+      if (!now) return;
+      document.documentElement.style.setProperty('--accent', state.yours ? '#ccffcc' : now.hex);
+      document.documentElement.style.setProperty('--on-accent', now.on || '#121815');
+    }
+
+    function render() {
+      const code = langNow();
+      const words = WORDS[code];
+      document.documentElement.lang = code === 'zh-SG' ? 'zh-Hans-SG' : code;
+      document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = words[el.dataset.t]; });
+      document.title = words.welcome;
+      $('lang').value = state.lang;
+      $('start').checked = state.start;
+      $('follow').checked = state.mode === 'phone';
+      $('mode').disabled = state.mode === 'phone';
+      if (state.mode !== 'phone') $('mode').value = state.mode;
+      const box = $('swatches');
+      box.hidden = state.yours;
+      $('colourNote').textContent = state.yours ? words.yours : (state.colors.find((c) => c.id === state.color)?.label || '');
+      box.textContent = '';
+      for (const c of state.colors) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'swatch';
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-checked', String(c.id === state.color));
+        b.setAttribute('aria-label', c.label);
+        b.title = c.label;
+        b.style.setProperty('--c', c.dot || c.hex);
+        b.disabled = !!c.locked;
+        b.addEventListener('click', () => {
+          state.color = c.id;
+          touched.add('color');
+          render();
+          box.querySelector('[aria-checked="true"]')?.focus();
+        });
+        box.append(b);
+      }
+      paintMode();
+      paintColour();
+    }
+
+    $('lang').addEventListener('change', (e) => { state.lang = e.target.value; touched.add('lang'); render(); });
+    $('start').addEventListener('change', (e) => { state.start = e.target.checked; touched.add('start'); render(); });
+    $('follow').addEventListener('change', (e) => { state.mode = e.target.checked ? 'phone' : $('mode').value; touched.add('mode'); render(); });
+    $('mode').addEventListener('change', (e) => { state.mode = e.target.value; touched.add('mode'); render(); });
+    dark.addEventListener('change', paintMode);
+    $('go').addEventListener('click', () => window.sgbusSetup.finish({ lang: state.lang, mode: state.mode, color: state.color, start: state.start }));
+
+    // Up at once with the app's defaults, then what's kept as it comes, the site perhaps still
+    // loading, leaving alone anything already changed here.
+    render();
+    window.sgbusSetup.get().then((kept) => {
+      for (const [key, value] of Object.entries(kept)) {
+        if (!touched.has(key)) state[key] = value;
+      }
+      render();
+    });
+  </script>
+</body>
+</html>

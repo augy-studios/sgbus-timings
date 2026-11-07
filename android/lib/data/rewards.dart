@@ -472,7 +472,8 @@ class Coins {
   static const key = 'sgbus_coins';
   static const shownKey = 'sgbus_coins_shown';
   static const popsKey = 'sgbus_coins_pops';
-  static const _logMax = 100;
+  // Enough for History (features/coins/coins.dart) to be every coin in and out.
+  static const _logMax = 2000;
   static const _finish = 5, _kmPerCoin = 2, _kmCoinsMax = 30, _perChange = 3, _perOperator = 4, _perLine = 2;
   static const spinCost = 100;
   static const eggGoneCoins = 80;
@@ -564,10 +565,17 @@ class Coins {
 
   static Set<String> tripsPaid() => {for (final e in log) if (e['trip'] is String) e['trip'] as String};
 
-  static void tripDone(String tripId, List<Map> legs, List<Map?> seen) {
+  static void tripDone(String tripId, List<Map> legs, List<Map?> seen, {String? name}) {
     if (tripsPaid().contains(tripId)) return;
     final got = forTrip(legs, seen);
-    if (got != null) add(got.n, info: {'why': 'trip', 'trip': tripId});
+    if (got != null) add(got.n, info: {'why': 'trip', 'trip': tripId, if (name != null && name.isNotEmpty) 'name': name, 'parts': got.parts});
+  }
+
+  /// A prize that isn't coins, for History: nothing in or out, but it's what the spin bought.
+  static void _prize(Map<String, Object?> info) {
+    final v = _read();
+    (v['log'] as List).insert(0, {'at': When.nowMs(), 'n': 0, ...info});
+    _write(v);
   }
 
   // ---------- the wheel ----------
@@ -591,13 +599,15 @@ class Coins {
     final coins = slotNow(index);
     if (coins == null && Gta6.due) {
       Gta6.claim('wheel');
-      Rewards.I.changed();
+      _prize({'why': 'gta6'});
       return (index: index, coins: null, egg: null, got: null, gta6: true);
     }
     if (coins == null) {
       final left = eggsLeft();
       final egg = left[_rnd.nextInt(left.length)];
-      return (index: index, coins: null, egg: egg, got: Feats.found(egg), gta6: false);
+      final got = Feats.found(egg);
+      _prize({'why': 'egg', 'egg': egg});
+      return (index: index, coins: null, egg: egg, got: got, gta6: false);
     }
     final w = _read();
     w['balance'] = (w['balance'] as int) + coins;

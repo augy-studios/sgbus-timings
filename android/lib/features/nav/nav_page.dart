@@ -1061,15 +1061,13 @@ class _NavPageState extends State<NavPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                 width: double.infinity,
-                child: TourTarget(id: 'nav.modes', child: SegmentedButton<String>(
-                  segments: [
-                    ButtonSegment(value: 'all', label: Text(tr('nav.bus_and_train', 'Bus and train'))),
-                    ButtonSegment(value: 'bus', label: Text(tr('nav.bus_only', 'Bus only'))),
-                  ],
-                  selected: {_mode},
-                  onSelectionChanged: (s) {
-                    setState(() => Store.I.put(NavPage.modeKey, s.first));
-                    NavPage.switched?.call(s.first);
+                child: TourTarget(id: 'nav.modes', child: FitSegments<String>(
+                  showSelectedIcon: true,
+                  options: [('all', tr('nav.bus_and_train', 'Bus and train')), ('bus', tr('nav.bus_only', 'Bus only'))],
+                  selected: _mode,
+                  onChanged: (mode) {
+                    setState(() => Store.I.put(NavPage.modeKey, mode));
+                    NavPage.switched?.call(mode);
                   },
                 )),
               ),

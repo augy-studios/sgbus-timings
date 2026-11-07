@@ -19,6 +19,7 @@ import 'package:sgbus_timings/features/coins/coins.dart';
 import 'package:sgbus_timings/features/favs/favs_page.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
 import 'package:sgbus_timings/features/map/live_map.dart';
+import 'package:sgbus_timings/features/misc/magic_cup.dart';
 import 'package:sgbus_timings/features/misc/misc.dart';
 import 'package:sgbus_timings/features/nav/nav_page.dart';
 import 'package:sgbus_timings/features/places/places_page.dart';
@@ -239,6 +240,29 @@ void main() {
   testWidgets('guide: more', timeout: _t, (t) async {
     await _ready(t, {'sgbus_coins': '{"balance":250,"log":[],"spins":0}'});
     await shot(t, 'coins', () => const CoinsScreen());
+    // GTA VI's colours, not set in time: the wheel's to give.
+    When.now = () => DateTime.utc(2026, 11, 25, 16);
+    await shot(t, 'coins-gta6', () => const CoinsScreen());
+    When.now = () => stillAt;
+    final ms = stillAt.millisecondsSinceEpoch;
+    const hour = 3600000;
+    Store.I.putJson('sgbus_coins', {
+      'balance': 250,
+      'spins': 2,
+      'log': [
+        {'at': ms - hour, 'n': 50, 'why': 'wheel'},
+        {'at': ms - hour - 5000, 'n': -100, 'why': 'spin'},
+        {'at': ms - 3 * hour, 'n': 28, 'why': 'trip', 'trip': 't2', 'name': 'To One Raffles Place', 'parts': {'finish': 5, 'km': 9, 'changes': 3, 'busOps': 4, 'trainOps': 4, 'lines': 3}},
+        {'at': ms - 26 * hour, 'n': 0, 'why': 'egg', 'egg': 'ktm'},
+        {'at': ms - 26 * hour - 5000, 'n': -100, 'why': 'spin'},
+        {'at': ms - 27 * hour, 'n': 100, 'why': 'feat', 'feat': 'ktm'},
+        {'at': ms - 50 * hour, 'n': 22, 'why': 'trip', 'trip': 't1', 'name': 'To Bedok Mall', 'parts': {'finish': 5, 'km': 11, 'busOps': 4, 'lines': 2}},
+        {'at': ms - 200 * hour, 'n': 250, 'why': 'past', 'trips': 13},
+      ],
+    });
+    await shot(t, 'coins-history', () => const CoinsHistory());
+    await t.runAsync(() => MagicCup.warm());
+    await shot(t, 'magic-cup', () => const Scaffold(body: Center(child: MagicCupView(value: 0.31, name: 'Bahasa Melayu'))), brightness: Brightness.dark);
     await shot(t, 'achievements', () => const AchievementsScreen());
     await shot(t, 'team', () => const TeamScreen());
     await shot(t, 'sync', () => const SyncScreen());

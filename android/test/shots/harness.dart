@@ -72,6 +72,40 @@ Future<void> loadFonts() async {
   await _font('monospace', [linux ? '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf' : 'C:/Windows/Fonts/consola.ttf']);
 }
 
+/// Real Tamil letters for tests that measure them, as the phone's own font has them and the fonts
+/// above don't: TAMIL_FONT names a .ttf. Without it, they're measured as blank boxes.
+Future<void> loadTamil() async {
+  final path = Platform.environment['TAMIL_FONT'];
+  if (path != null && File(path).existsSync()) await _font('TamilTest', [path]);
+}
+
+ThemeData withTamil(ThemeData t) {
+  const fallback = ['Roboto', 'Noto Sans', 'TamilTest'];
+  return t.copyWith(
+    textTheme: t.textTheme.apply(fontFamilyFallback: fallback),
+    primaryTextTheme: t.primaryTextTheme.apply(fontFamilyFallback: fallback),
+  );
+}
+
+/// No line in this text ends in the middle of a word.
+void expectNoWordBroken(RenderParagraph p) {
+  final text = p.text.toPlainText();
+  final breaks = RegExp(r'[\s\-\u2E80-\u9FFF\uF900-\uFAFF]');
+  final painter = TextPainter(text: p.text, textDirection: p.textDirection, textAlign: p.textAlign, textScaler: p.textScaler)..layout(maxWidth: p.size.width);
+  var at = 0;
+  while (at < text.length) {
+    final end = painter.getLineBoundary(TextPosition(offset: at)).end;
+    if (end >= text.length || end <= at) break;
+    final clean = breaks.hasMatch(text[end - 1]) || breaks.hasMatch(text[end]);
+    if (!clean) {
+      painter.dispose();
+      throw TestFailure('"$text" breaks mid-word: "${text.substring(at, end)}"');
+    }
+    at = end + (text[end].trim().isEmpty ? 1 : 0);
+  }
+  painter.dispose();
+}
+
 /// A seeded random, so made-up timings are the same every time.
 int _seed(String s) => s.codeUnits.fold(7, (a, c) => (a * 31 + c) & 0x7fffffff);
 

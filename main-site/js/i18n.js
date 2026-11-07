@@ -33,7 +33,7 @@
   // The words' revision, set by scripts/i18n-check.mjs --write from every language's file: a
   // copy kept from another revision is old, and the file's fetched there and then instead, so
   // words added or changed in an update are never shown in English, or as they were, first.
-  var WORDS_REV = "e2db94699471";
+  var WORDS_REV = "efbf3bd627de";
   // { code: its name in itself }. Add a language here and its i18n/<code>.json.
   var LANGUAGES = { en: "English", "zh-SG": "中文", ms: "Bahasa Melayu", ta: "தமிழ்" };
   // data-title is a Settings group's heading (script.js).
@@ -153,10 +153,11 @@
     store(LANG_KEY, code);
     store(WORDS_KEY, null);
     var told = window.AppBridge && window.AppBridge.tellLanguage ? window.AppBridge.tellLanguage(code) : null;
-    if (!told || typeof told.then !== "function") return location.reload();
+    // The magic cup (js/magic-cup.js), as the page goes.
+    var cup = window.MagicCup ? window.MagicCup.play(code) : null;
     var gone = false;
     var go = function () { if (!gone) { gone = true; location.reload(); } };
-    told.then(go, go);
+    Promise.all([told, cup]).then(go, go);
     setTimeout(go, TELL_MS);
   }
 
@@ -167,7 +168,9 @@
     leaving = true;
     store(LANG_KEY, null);
     store(WORDS_KEY, null);
-    location.reload();
+    var go = function () { location.reload(); };
+    if (window.MagicCup) window.MagicCup.play(pick()).then(go, go);
+    else go();
   }
 
   words = load(lang);

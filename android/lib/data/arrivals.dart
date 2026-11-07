@@ -198,6 +198,19 @@ class Eta {
   /// As Settings' Bus times has it: the clock time, or how long till it comes.
   static String text(num? ms) => ms == null ? '-' : (clockTimes ? clock(ms) : mins(ms));
 
+  /// As text, for a narrow column: where it has to go onto two lines, only between the minutes and
+  /// the seconds, never between a number and its unit (bug report 20261107-XPZU).
+  static String wrapped(num? ms) {
+    if (ms == null || clockTimes) return text(ms);
+    final sec = (ms / 1000).round().clamp(0, 1 << 31);
+    final m = sec ~/ 60, s = sec % 60;
+    String keep(String words) => words.replaceAll(' ', '\u00A0');
+    final secs = keep(tr('time.secs', '{s}s', {'s': s}));
+    if (m == 0) return secs;
+    final minutes = keep(m > 1 ? tr('time.mins', '{m} mins', {'m': m}) : tr('time.min', '{m} min', {'m': m}));
+    return s == 0 ? minutes : '$minutes $secs';
+  }
+
   /// Whole minutes, as Glance and the board count: "Arr" under a minute.
   static String short(num? ms) {
     if (ms == null) return '-';

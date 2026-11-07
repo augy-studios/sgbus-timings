@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/when.dart';
+import '../../widgets/common.dart';
 import '../../i18n/i18n.dart';
 
 class WhenPicker extends StatelessWidget {
@@ -32,16 +33,14 @@ class WhenPicker extends StatelessWidget {
     final w = value;
     final ymd = w?.at.split('T').first;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      SegmentedButton<String>(
-        showSelectedIcon: false,
-        segments: [
-          ButtonSegment(value: 'now', label: Text(tr('nav.leave_now', 'Leave now'))),
-          ButtonSegment(value: 'leave', label: Text(tr('nav.leave_at', 'Leave at'))),
-          ButtonSegment(value: 'arrive', label: Text(tr('nav.arrive_by', 'Arrive by'))),
+      FitSegments<String>(
+        options: [
+          ('now', tr('nav.leave_now', 'Leave now')),
+          ('leave', tr('nav.leave_at', 'Leave at')),
+          ('arrive', tr('nav.arrive_by', 'Arrive by')),
         ],
-        selected: {_mode},
-        onSelectionChanged: (s) {
-          final mode = s.first;
+        selected: _mode,
+        onChanged: (mode) {
           if (mode == 'now') return onChanged(null);
           final keep = w != null && When.problem(WhenPick(mode, w.at)) == null;
           onChanged(WhenPick(mode, keep ? w.at : When.msToAt(When.firstPick(mode))));

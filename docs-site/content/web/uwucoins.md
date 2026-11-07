@@ -41,7 +41,7 @@ it away.
 
 Two switches in Settings' **Help and extras**:
 
-- **Show uwuCoins** off hides them everywhere: the wheel, the coin in the Edge
+- **Show uwuCoins** off hides them everywhere: the wheel and its History, the coin in the Edge
   Tray and its switch, the coins in a feat's window and Achievements, and every
   pop-up. Trips and feats still earn them while they're hidden, so they're all
   there when you turn it back on. Feats are still said and listed, without the
@@ -49,7 +49,7 @@ Two switches in Settings' **Help and extras**:
 - **Coin pop-ups** off stops the coin floating up after a trip, and the window
   for coins from past trips. The coins still come in.
 
-Minimal and Standard, the first time the app opens, start with the pop-ups off.
+Simple (Lite) and Normal, the first time the app opens, start with the pop-ups off.
 
 ## Trips from before uwuCoins
 
@@ -89,7 +89,7 @@ never counted twice, and nor are trips another device syncs to this one later.
 ## Spin the wheel
 
 <figure>
-<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 100, then how it works, 1 of 9 feats done and 1 of 9 Easter eggs found, and See your achievements." width="358" height="515" loading="lazy">
+<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 100, then how it works, 1 of 9 feats done and 1 of 9 Easter eggs found, and See your achievements, and History." width="382" height="570" loading="lazy">
 <figcaption>The wheel, in Settings' Help and extras.</figcaption>
 </figure>
 
@@ -102,6 +102,28 @@ too. Under the wheel, how many feats you've done and eggs you've found, and
 If you didn't set [GTA VI's colours](settings.md#brand-colour) before 26 November, the egg
 slice shows a palette and wins them first, before any more eggs, and stays that prize
 until you've won it.
+
+<figure>
+<img src="/screenshots/web/gta6-wheel.png" alt="The uwuCoins wheel with a palette on its egg slice, under the pointer, then Spin for 100, how a spin works, and The egg slice wins GTA VI's colours first." width="382" height="598" loading="lazy">
+<figcaption>The wheel with GTA VI's colours to win.</figcaption>
+</figure>
+
+## History
+
+<figure>
+<img src="/screenshots/web/coins-history.png" alt="History under the wheel: All, Earned and Spent, Earned 450, Spent 200, then by the day: Won on the wheel +50, A spin of the wheel minus 100, Trip: To One Raffles Place +28 with what made it up, Won on the wheel: Down the old railway, an Easter egg, Feat: Down the old railway +100, and Trips from before uwuCoins +250, 13 trips." width="382" height="727" loading="lazy">
+<figcaption>Every coin in and out, and where it came from.</figcaption>
+</figure>
+
+**History**, under the wheel, lists every coin in and out, newest first, with the day and time:
+
+- **Trip**: which trip, and what made up its coins: getting there, the distance, changes, operators and lines.
+- **Feat**: which one, and your team run if it did it with you.
+- **Trips from before uwuCoins**: how many, and what they earned.
+- **A spin of the wheel**: the 100 it cost.
+- **Won on the wheel**: the coins, Easter egg or colours it won.
+
+**All**, **Earned** and **Spent** narrow the list, and it says how much you've earned and spent. It keeps your last 2,000, on this device, as your coins are. A trip with no name kept and no longer in [Your trips](trips.md) says **A trip**.
 
 ## Achievements
 

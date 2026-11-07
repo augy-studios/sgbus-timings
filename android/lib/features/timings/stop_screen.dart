@@ -455,8 +455,11 @@ class ServiceCard extends StatelessWidget {
           child: Semantics(
             label: '${Eta.text(bus.etaMs)}${words.isEmpty ? '' : ', $words'}',
             excludeSemantics: true,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(Eta.text(bus.etaMs),
+            // A gap before the next bus's column, however long the words.
+            child: Padding(
+              padding: const EdgeInsetsDirectional.only(end: 8),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(Eta.wrapped(bus.etaMs),
                   style: TextStyle(
                       fontSize: 17, fontWeight: FontWeight.w700, color: sg.load(bus.load), fontStyle: bus.rough ? FontStyle.italic : FontStyle.normal)),
               const SizedBox(height: 4),
@@ -472,7 +475,8 @@ class ServiceCard extends StatelessWidget {
                           : tr('stop.dist.straight', 'In a straight line'),
                 ),
               ]),
-            ]),
+              ]),
+            ),
           ),
         ),
       );
@@ -553,7 +557,8 @@ class _Badge extends StatelessWidget {
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
         if (icon != null) Icon(icon, size: 12, color: sg.muted),
-        Text(text, style: TextStyle(fontSize: 11, color: sg.muted)),
+        // Onto a second line rather than into the next bus's column.
+        Flexible(child: Text(text, style: TextStyle(fontSize: 11, color: sg.muted))),
       ]),
     );
     return tooltip == null ? b : Tooltip(message: tooltip!, child: b);

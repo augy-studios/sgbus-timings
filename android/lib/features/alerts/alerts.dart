@@ -632,12 +632,7 @@ class _AlertsPageState extends State<AlertsPage> {
           const SizedBox(height: 6),
           SizedBox(
             width: double.infinity,
-            child: SegmentedButton<String>(
-              showSelectedIcon: false,
-              segments: [for (final o in options) ButtonSegment(value: o.$1, label: Text(o.$2, textAlign: TextAlign.center))],
-              selected: {_modes[kind] ?? 'off'},
-              onSelectionChanged: (s) => _setMode(kind, s.first),
-            ),
+            child: FitSegments<String>(options: options, selected: _modes[kind] ?? 'off', onChanged: (v) => _setMode(kind, v)),
           ),
         ]),
       );

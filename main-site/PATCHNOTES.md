@@ -9,6 +9,32 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 7 November 2026: Make the desktop app yours, and long words on the Android app (2.4.8)
+
+### Desktop apps
+
+- **Make it yours** - The first time 2.4.8 opens, a window sets your language, whether it starts when you sign in, light or dark, and your brand colour, all in one place. It's in the tray's menu whenever you want it again.
+
+### Website and desktop apps
+
+- **Phone's setting** - A fourth choice under Mode in Theme, as the Android app has, following your device's light or dark as it changes.
+- **New names for the first open** - Minimal, Standard and Full are now Simple (Lite), Normal and Advanced Super App.
+- **Asked in every language** - New visitors whose browser isn't in English are now asked how much to start with, as everyone else is.
+- **GTA VI's Edge Tray** - The page you're on now reads clearly, its icon dark on orange.
+
+### Everywhere
+
+- **The magic cup** - Changing the language now takes a sip from Singapore's famous language-changing cup: it spins in 3D with the tea swishing around it, for about a second, and the whole app comes back in the new language.
+
+### Everywhere with uwuCoins
+
+- **uwuCoins history** - Under the wheel, History lists every coin in and out and where it came from: which trip and what made up its coins, which feat, each spin and what it won, with All, Earned and Spent. It now keeps your last 2,000, where it kept 100.
+
+### Android app
+
+- **A stop's bus cards** - There's a gap between the buses, a long time goes onto a second line only between its minutes and seconds, and a long wheelchair label wraps rather than running into the next bus, in every language.
+- **Choices that fit** - Where a language's words don't fit side by side, as in Tamil, choices such as Service alerts' and Settings' stack one under another rather than breaking in the middle of a word.
+
 ## 7 November 2026: Glance and languages on the Android app (2.4.7)
 
 ### Android app

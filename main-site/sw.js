@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v158";
+const VERSION = "v159";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -43,6 +43,9 @@ const ASSETS = [
   "/js/desktop-location.js",
   "/js/geo-retry.js",
   "/js/gta6.js",
+  // The magic cup, as the language changes (js/magic-cup.js).
+  "/js/magic-cup.js",
+  "/magic-cup-texture.png",
   "/js/theme.js",
   "/js/when.js",
   "/js/network.js",

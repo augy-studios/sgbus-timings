@@ -1,4 +1,7 @@
 {
+  "app.firstRun.minimal": "Minimum",
+  "app.firstRun.standard": "Standard",
+  "app.firstRun.full": "Penuh",
   "nav.offlineNoStops": "Perhentian bas belum disimpan pada telefon ini. Buka aplikasi sekali dengan sambungan.",
   "nav.offlineNoRoutes": "Laluan bas belum disimpan pada telefon ini. Buka aplikasi sekali dengan sambungan, kemudian Bas dan kereta api boleh merancang di luar talian.",
   "route.tap_stop_app": "Ketik perhentian tempat anda turun. Aplikasi akan memberi amaran dua perhentian sebelumnya, walaupun skrin dimatikan.",

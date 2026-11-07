@@ -929,13 +929,11 @@ class _SyncScreenState extends State<SyncScreen> {
     final picked = _picked[_tab]!;
     final out = <Widget>[
       const SizedBox(height: 12),
-      SegmentedButton<String>(
-        segments: [
-          ButtonSegment(value: 'import', label: Text(tr('settings.import', 'Import'))),
-          ButtonSegment(value: 'export', label: Text(tr('settings.export', 'Export'))),
-        ],
-        selected: {_tab},
-        onSelectionChanged: (s) => setState(() => _tab = s.first),
+      FitSegments<String>(
+        showSelectedIcon: true,
+        options: [('import', tr('settings.import', 'Import')), ('export', tr('settings.export', 'Export'))],
+        selected: _tab,
+        onChanged: (v) => setState(() => _tab = v),
       ),
       const SizedBox(height: 8),
       Text(

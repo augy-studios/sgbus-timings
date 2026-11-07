@@ -17,6 +17,7 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import 'settings_find.dart';
+import '../misc/magic_cup.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -133,12 +134,7 @@ class Choice<T> extends StatelessWidget {
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
-            child: SegmentedButton<T>(
-              showSelectedIcon: false,
-              segments: [for (final o in options) ButtonSegment(value: o.$1, label: Text(o.$2, textAlign: TextAlign.center))],
-              selected: {value},
-              onSelectionChanged: (s) => onChanged(s.first),
-            ),
+            child: FitSegments<T>(options: options, selected: value, onChanged: onChanged),
           ),
           if (note != null) Padding(padding: const EdgeInsets.only(top: 6), child: Text(note!, style: TextStyle(color: context.sg.muted, fontSize: 13))),
         ]),
@@ -238,7 +234,9 @@ class _SettingsGroupState extends State<SettingsGroup> {
       ),
     );
     if (pick == null) return;
-    await I18n.I.use(pick);
+    // Behind the magic cup, which takes under a second.
+    await MagicCup.run(name: [for (final l in I18n.langs) if (l.code == pick) l.name].firstOrNull, change: () => I18n.I.use(pick));
+    if (!mounted) return;
     // The app's own language follows (Android's per-app languages, SgBusPlugin.setLanguage).
     if (Native.has('applang')) Native.call('SgBus', 'setLanguage', {'lang': pick}).catchError((_) => null);
     setState(() {});

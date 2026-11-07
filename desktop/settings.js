@@ -4,8 +4,9 @@
 // time. Nothing secret is ever kept here. Its own file so links.js, the same in every UwU
 // desktop app, can reach it.
 //
-// Keys: bounds, maximized, trayHintShown, loginChosen, updateNotices (main.js); widgets
-// (widgets.js); trayStop, favourites (glance.js); linkHandoff (links.js).
+// Keys: bounds, maximized, trayHintShown, loginChosen, updateNotices (main.js); setupDone,
+// pendingLook (setup.js); widgets (widgets.js); trayStop, favourites (glance.js); linkHandoff
+// (links.js).
 
 const fs = require('node:fs');
 const path = require('node:path');

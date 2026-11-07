@@ -16,9 +16,16 @@
 // not found yet, at random (Eggs.found); once every egg's found, it's coins instead. While GTA VI's
 // colours are the wheel's to give (js/gta6.js), it gives those first.
 //
-// Kept under KEY as { balance, log: [{ at, n, why, trip?, feat? }] (the last LOG_MAX), spins }:
-// this phone's, not synced, as the rides they're for are. The Edge Tray's coin button
-// (#coinsBtn, data-tray-extra="coins") says the balance and opens the wheel.
+// Kept under KEY as { balance, log: [{ at, n, why, ... }] (the last LOG_MAX), spins }: this phone's,
+// not synced, as the rides they're for are. The Edge Tray's coin button (#coinsBtn,
+// data-tray-extra="coins") says the balance and opens the wheel.
+//
+// The log is History, under the wheel (renderHistory): every coin in and out and where it came
+// from. why, and what comes with it:
+//   trip      trip (its id), name, parts (forTrip's)   feat      feat, team?, past?
+//   past      trips (how many)                         spin      a spin paid for
+//   wheel     coins won on the wheel                   egg, gta6 a prize won there: n 0, egg
+//   simulated from the console
 //
 // Window.Coins = { balance(), add(n, { why }, { quiet }), tripDone(trip), forTrip(trip),
 // forPast(trip), tripsPaid(), spin(), open(), shown(), pops(), setShown(on), setPops(on) }. Trips from before uwuCoins get theirs once, by
@@ -27,7 +34,8 @@
 // window.
 (function () {
   const KEY = 'sgbus_coins';
-  const LOG_MAX = 100;
+  const LOG_MAX = 2000;
+  const HISTORY_PAGE = 50;
   const FINISH = 5;
   const KM_PER_COIN = 2;
   const KM_COINS_MAX = 30;
@@ -169,7 +177,7 @@
   function tripDone(trip) {
     if (!trip?.tripId || read().log.some((e) => e.trip === trip.tripId)) return;
     const got = forTrip(trip);
-    if (got) add(got.n, { why: 'trip', trip: trip.tripId });
+    if (got) add(got.n, { why: 'trip', trip: trip.tripId, ...(trip.title && { name: trip.title }), parts: got.parts });
   }
 
   // ---------- the wheel ----------
@@ -184,6 +192,13 @@
   // count doesn't give the prize away while it turns.
   let holding = false;
   let held = 0;
+
+  // A prize that isn't coins, for History: nothing in or out, but it's what the spin bought.
+  function prize(info) {
+    const v = read();
+    v.log.unshift({ at: Date.now(), n: 0, ...info });
+    write(v);
+  }
 
   // A spin: the coins taken, a slot picked, and what it won given. Returns { slot, egg, got } or
   // null without enough coins.
@@ -200,12 +215,14 @@
     let got = null;
     if (slot.egg && gta6Due()) {
       Gta6.claim('wheel');
+      prize({ why: 'gta6' });
       return { index, slot, gta6: true, egg, got };
     }
     if (slot.egg) {
       const left = eggsLeft();
       egg = left[Math.floor(Math.random() * left.length)];
       got = Eggs.found(egg);
+      prize({ why: 'egg', egg });
     } else {
       const w = read();
       if (holding) held = slot.coins;
@@ -249,6 +266,91 @@
     const eggs = window.Eggs?.list() || [];
     $('coinGta6').hidden = !gta6Due();
     $('coinFeats').textContent = `${tr('eggs.featCount', '{n} of {all} feats done', { n: feats.length, all: window.Eggs?.all.length || 6 })} · ${tr('eggs.count', '{n} of {all} Easter eggs found', { n: eggs.length, all: window.Eggs?.all.length || 6 })}`;
+    renderHistory();
+  }
+
+  // ---------- History ----------
+
+  // Where a trip's name is, if the log hasn't one: Your trips (js/history.js), while it's there.
+  function tripName(e) {
+    if (e.name) return e.name;
+    try {
+      const t = JSON.parse(localStorage.getItem('sgbus_trips') || '[]').find((x) => x.id === e.trip);
+      return t?.title || t?.to?.label || '';
+    } catch { return ''; }
+  }
+
+  function partsWords(parts) {
+    const part = {
+      finish: (n) => tr('coins.part.finish', '{n} for getting there', { n }),
+      km: (n) => tr('coins.part.km', '{n} for the distance', { n }),
+      changes: (n) => tr('coins.part.changes', '{n} for changes', { n }),
+      busOps: (n) => tr('coins.part.busOps', '{n} for bus operators', { n }),
+      trainOps: (n) => tr('coins.part.trainOps', '{n} for train operators', { n }),
+      lines: (n) => tr('coins.part.lines', '{n} for lines', { n }),
+    };
+    return Object.entries(parts || {}).filter(([k, n]) => part[k] && n > 0).map(([k, n]) => part[k](n)).join(' · ');
+  }
+
+  // What an entry of the log was, and a line more on where it came from.
+  function entryWords(e) {
+    switch (e.why) {
+      case 'trip': {
+        const name = tripName(e);
+        return { what: name ? tr('coins.log.trip', 'Trip: {name}', { name }) : tr('coins.log.aTrip', 'A trip'), more: partsWords(e.parts) };
+      }
+      case 'feat':
+        return {
+          what: tr('coins.log.feat', 'Feat: {name}', { name: window.Eggs?.name(e.feat) || e.feat }),
+          more: e.team ? tr('achievements.withTeam', 'Done with your team run, {team}', { team: e.team }) : e.past ? tr('coins.log.pastTrip', 'From a trip before uwuCoins') : '',
+        };
+      case 'past':
+        return { what: tr('coins.log.past', 'Trips from before uwuCoins'), more: e.trips ? tr('coins.log.pastN', '{n} trips', { n: e.trips }) : '' };
+      case 'spin': return { what: tr('coins.log.spin', 'A spin of the wheel'), more: '' };
+      case 'wheel': return { what: tr('coins.log.wheel', 'Won on the wheel'), more: '' };
+      case 'egg': return { what: tr('coins.log.egg', 'Won on the wheel: {name}', { name: window.Eggs?.name(e.egg) || e.egg }), more: tr('coins.log.eggNote', 'An Easter egg') };
+      case 'gta6': return { what: tr('coins.log.gta6', 'Won on the wheel: GTA VI’s colours'), more: '' };
+      case 'simulated': return { what: tr('coins.log.simulated', 'Added from the console'), more: '' };
+      default: return { what: tr('coins.log.other', 'uwuCoins'), more: '' };
+    }
+  }
+
+  let historyFilter = 'all';
+  let historyShown = HISTORY_PAGE;
+  const SG = 'Asia/Singapore';
+  const locale = () => (window.I18n?.lang?.() === 'zh-SG' ? 'zh-SG' : window.I18n?.lang?.() === 'en' ? 'en-SG' : window.I18n?.lang?.() || 'en-SG');
+
+  // Newest first, by the day in Singapore. Not while a spin's going: it'd give the prize away.
+  function renderHistory() {
+    const box = $('coinHistory');
+    if (!box?.open || spinning || holding) return;
+    const log = read().log.filter((e) => e && typeof e.n === 'number');
+    const earned = log.reduce((sum, e) => sum + Math.max(0, e.n), 0);
+    const spent = log.reduce((sum, e) => sum + Math.max(0, -e.n), 0);
+    $('coinTotals').textContent = tr('coins.history.totals', 'Earned {earned} · Spent {spent}', { earned, spent });
+    box.querySelectorAll('[data-coin-filter]').forEach((b) => {
+      const on = b.dataset.coinFilter === historyFilter;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    const wanted = log.filter((e) => (historyFilter === 'earned' ? e.n >= 0 : historyFilter === 'spent' ? e.n < 0 : true));
+    const day = new Intl.DateTimeFormat(locale(), { timeZone: SG, weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const time = new Intl.DateTimeFormat('en-GB', { timeZone: SG, hour: '2-digit', minute: '2-digit' });
+    let last = '';
+    let html = '';
+    for (const e of wanted.slice(0, historyShown)) {
+      const on = day.format(e.at);
+      if (on !== last) {
+        html += `<p class="coinDay">${esc(on)}</p>`;
+        last = on;
+      }
+      const { what, more } = entryWords(e);
+      const amount = e.n > 0 ? `+${e.n}` : e.n < 0 ? `−${-e.n}` : e.why === 'gta6' ? '🎨' : '🥚';
+      html += `<div class="coinRow"><div class="coinRowWhat"><strong>${esc(what)}</strong>${more ? `<span>${esc(more)}</span>` : ''}</div>` +
+        `<div class="coinRowSide"><strong class="${e.n > 0 ? 'coinIn' : e.n < 0 ? 'coinOut' : ''}">${esc(amount)}</strong><span>${esc(time.format(e.at))}</span></div></div>`;
+    }
+    $('coinLog').innerHTML = html || `<p class="mode-note">${esc(tr('coins.history.none', 'Nothing yet. A trip taken with the Get Off Alert to the end earns your first uwuCoins.'))}</p>`;
+    $('coinMore').hidden = wanted.length <= historyShown;
   }
 
   // The balance, in the Edge Tray's coin and above the wheel: counting up to `n` when coins come
@@ -351,6 +453,18 @@
     // Achievements, Settings' group of their own (js/eggs.js).
     $('coinAchievements')?.addEventListener('click', () => window.openSettingsGroup?.('achievements'));
     $('coinsBtn')?.addEventListener('click', open);
+    $('coinHistory')?.addEventListener('toggle', renderHistory);
+    $('coinHistory')?.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-coin-filter]');
+      if (!b) return;
+      historyFilter = b.dataset.coinFilter;
+      historyShown = HISTORY_PAGE;
+      renderHistory();
+    });
+    $('coinMore')?.addEventListener('click', () => {
+      historyShown += HISTORY_PAGE;
+      renderHistory();
+    });
     document.querySelectorAll('[data-coins-show]').forEach((b) => b.addEventListener('click', () => setShown(b.dataset.coinsShow === 'on')));
     document.querySelectorAll('[data-coins-pops]').forEach((b) => b.addEventListener('click', () => setPops(b.dataset.coinsPops === 'on')));
     applyShown();
@@ -385,5 +499,5 @@
     return `${next} uwuCoins`;
   };
 
-  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, shown, pops, setShown, setPops, SPIN_COST };
+  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, shown, pops, setShown, setPops, entryWords, SPIN_COST };
 })();

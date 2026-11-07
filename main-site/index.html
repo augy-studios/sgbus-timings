@@ -29,7 +29,18 @@
             if (m === "time") {
                 var h = new Date().getHours();
                 m = h >= 9 && h < 18 ? "light" : "dark";
+            } else if (m === "phone") {
+                m = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
             }
+
+            // Just opened again in a new language, behind the magic cup (js/magic-cup.js): in from
+            // the page's colour, not all at once.
+            try {
+                if (sessionStorage.getItem("sgbus_cup_out")) {
+                    sessionStorage.removeItem("sgbus_cup_out");
+                    document.documentElement.setAttribute("data-cup-out", "");
+                }
+            } catch (e) { /* it just doesn't fade in */ }
 
             var c = localStorage.getItem(k + ".colorTheme") || "classic";
             document.documentElement.setAttribute("data-mode", m);
@@ -895,7 +906,7 @@
                 </div>
                 <!-- uwuCoins and the wheel (js/coins.js): coins from trips and feats, a spin for an Easter egg or more coins -->
                 <section id="coinsBox" class="coinsBox coinsOnly" aria-labelledby="coinsTitle">
-                    <p class="modal-section-label" id="coinsTitle" data-short="uwuCoins" data-i18n-data-short="coins.title" data-find="coins uwucoins wheel spin easter eggs feats"><span data-icon="coin"></span> <span data-i18n="coins.title">uwuCoins</span></p>
+                    <p class="modal-section-label" id="coinsTitle" data-short="uwuCoins" data-i18n-data-short="coins.title" data-find="coins uwucoins wheel spin easter eggs feats history transactions earned spent"><span data-icon="coin"></span> <span data-i18n="coins.title">uwuCoins</span></p>
                     <p class="coinBalance"><span data-coins-balance>0</span> <span data-i18n="coins.unit">uwuCoins</span></p>
                     <div class="coinWheelWrap">
                         <span class="coinPointer" aria-hidden="true"></span>
@@ -908,6 +919,17 @@
                     <p id="coinGta6" class="mode-note" data-i18n="coins.gta6Due" hidden>The egg slice wins GTA VI’s colours first.</p>
                     <p id="coinFeats" class="mode-note"></p>
                     <button id="coinAchievements" class="iconBtn settingsWide" type="button"><span data-icon="star"></span> <span data-i18n="achievements.see">See your achievements</span></button>
+                    <details id="coinHistory" class="coinHistory">
+                        <summary data-i18n="coins.history">History</summary>
+                        <div class="mode-toggle coinFilter" role="group" data-i18n-aria-label="coins.history" aria-label="History">
+                            <button class="mode-btn" type="button" data-coin-filter="all" aria-pressed="true" data-i18n="coins.history.all">All</button>
+                            <button class="mode-btn" type="button" data-coin-filter="earned" aria-pressed="false" data-i18n="coins.history.earned">Earned</button>
+                            <button class="mode-btn" type="button" data-coin-filter="spent" aria-pressed="false" data-i18n="coins.history.spent">Spent</button>
+                        </div>
+                        <p id="coinTotals" class="mode-note"></p>
+                        <div id="coinLog" class="coinLog"></div>
+                        <button id="coinMore" class="iconBtn settingsWide" type="button" data-i18n="coins.history.more" hidden>Show more</button>
+                    </details>
                 </section>
                 <!-- What went wrong, sent to Augy on Telegram (js/bug-report.js, api/bug-report.js) -->
                 <p class="modal-section-label" data-find="bug problem broken feedback wrong error" data-i18n="settings.report_a_bug">Report a bug</p>
@@ -1395,17 +1417,17 @@
                 <legend data-i18n="html.start_with_how_much" class="modal-section-label">Start with everything, most of it, or just the essentials?</legend>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="minimal" />
-                    <span data-i18n="html.minimal" class="firstRunName">Minimal</span>
+                    <span data-i18n="html.minimal" class="firstRunName">Simple (Lite)</span>
                     <span data-i18n="html.just_bus_timings_favourites_navigate" class="firstRunWhat">Just Bus timings, Favourites, Navigate and Places. The rest is switched off.</span>
                 </label>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="standard" />
-                    <span data-i18n="html.standard" class="firstRunName">Standard</span>
+                    <span data-i18n="html.standard" class="firstRunName">Normal</span>
                     <span data-i18n="html.standard_what" class="firstRunWhat">Everything but a few extras: no uwuCoins, Buy Augy a Coffee, Receive nearby, Telegram bot or Card value buttons in the Edge Tray.</span>
                 </label>
                 <label class="firstRunOption">
                     <input type="radio" name="firstRun" value="full" checked />
-                    <span data-i18n="html.full_2" class="firstRunName">Full</span>
+                    <span data-i18n="html.full_2" class="firstRunName">Advanced Super App</span>
                     <span data-i18n="html.everything_on_glance_service_alerts" class="firstRunWhat">Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.</span>
                 </label>
             </fieldset>
@@ -1427,7 +1449,8 @@
             <div class="mode-toggle" id="modeToggle">
                 <button class="mode-btn" type="button" data-mode="light" aria-pressed="false"><span data-icon="sun"></span><span data-i18n="theme.light">Light</span></button>
                 <button class="mode-btn" type="button" data-mode="dark" aria-pressed="false"><span data-icon="moon"></span><span data-i18n="theme.dark">Dark</span></button>
-                <button class="mode-btn mode-btn-wide" type="button" data-mode="time" aria-pressed="false"><span data-icon="clock"></span><span data-i18n="theme.time">Time-based</span></button>
+                <button class="mode-btn" type="button" data-mode="time" aria-pressed="false"><span data-icon="clock"></span><span data-i18n="theme.time">Time-based</span></button>
+                <button class="mode-btn" type="button" data-mode="phone" aria-pressed="false"><span data-i18n="theme.contrast.auto">Phone’s setting</span></button>
             </div>
             <p class="mode-note" id="modeNote" hidden></p>
             <p class="modal-section-label brandLabel" data-i18n="theme.brand">Brand colour</p>
@@ -1626,6 +1649,7 @@
     <script src="/js/icons.js"></script>
     <script src="/js/ui.js"></script>
     <script src="/js/confetti.js"></script>
+    <script src="/js/magic-cup.js"></script>
     <script src="/js/gta6.js"></script>
     <script src="/js/theme.js"></script>
     <script src="/js/telegram.js"></script>

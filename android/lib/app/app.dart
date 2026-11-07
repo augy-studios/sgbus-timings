@@ -12,6 +12,7 @@ import '../theme/theme.dart';
 import 'links.dart';
 import 'nav.dart';
 import 'shell.dart';
+import '../features/misc/magic_cup.dart';
 
 class SgBusApp extends StatefulWidget {
   const SgBusApp({super.key, required this.pages});
@@ -41,10 +42,12 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
       _language = Native.on('SgBus', 'language', (d) {
         final tag = d['lang'] is String ? d['lang'] as String : '';
         if (tag.isEmpty) {
-          if (I18n.I.chosen != null) I18n.I.unset();
+          if (I18n.I.chosen != null) MagicCup.run(change: () async => I18n.I.unset());
         } else {
           final code = I18n.match(tag);
-          if (code != null && code != I18n.I.lang) I18n.I.use(code);
+          if (code != null && code != I18n.I.lang) {
+            MagicCup.run(name: [for (final l in I18n.langs) if (l.code == code) l.name].firstOrNull, change: () => I18n.I.use(code));
+          }
         }
       });
     });

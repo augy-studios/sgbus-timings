@@ -57,6 +57,8 @@
   }
 
   function open() {
+    // The magic cup, ready for a language being picked.
+    window.MagicCup?.warm();
     render();
     window.openModal(ID);
     // The one in use has the focus, rather than the window.

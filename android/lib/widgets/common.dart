@@ -91,6 +91,65 @@ class Pill extends StatelessWidget {
   }
 }
 
+/// Choices as a segmented button: side by side while each one's words fit in its share of the row,
+/// and one under another where they don't, as in Tamil, rather than broken letter by letter and cut
+/// off (bug reports 20261107-RUHF and FYAG).
+class FitSegments<T> extends StatelessWidget {
+  const FitSegments({super.key, required this.options, required this.selected, required this.onChanged, this.showSelectedIcon = false});
+  final List<(T, String)> options;
+  final T selected;
+  final void Function(T) onChanged;
+  final bool showSelectedIcon;
+
+  // A segment's padding and edge, and its tick when it has one.
+  static const _edges = 26.0;
+  static const _tick = 26.0;
+  static const maxLines = 3;
+
+  // What can't be broken across lines: a word, up to a hyphen. Chinese breaks between any two letters.
+  static final _unbroken = RegExp(r'[^\s\-\u2E80-\u9FFF\uF900-\uFAFF]+-?');
+
+  /// Whether these words fit side by side in this width: no word wider than its share, nor more
+  /// than maxLines lines of them.
+  static bool fits(BuildContext context, double width, Iterable<String> labels, {bool tick = false}) {
+    final all = labels.toList();
+    final room = width / all.length - _edges - (tick ? _tick : 0);
+    if (room <= 0) return false;
+    final style = DefaultTextStyle.of(context).style.merge(Theme.of(context).textTheme.labelLarge);
+    final scaler = MediaQuery.textScalerOf(context);
+    final direction = Directionality.of(context);
+    double widthOf(String words) {
+      final p = TextPainter(text: TextSpan(text: words, style: style), textDirection: direction, textScaler: scaler)..layout();
+      final w = p.width;
+      p.dispose();
+      return w;
+    }
+
+    for (final label in all) {
+      if (_unbroken.allMatches(label).any((m) => widthOf(m[0]!) > room)) return false;
+      final p = TextPainter(text: TextSpan(text: label, style: style), textDirection: direction, textScaler: scaler)..layout(maxWidth: room);
+      final lines = p.computeLineMetrics().length;
+      p.dispose();
+      if (lines > maxLines) return false;
+    }
+    return true;
+  }
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+        builder: (context, box) {
+          final side = fits(context, box.maxWidth, options.map((o) => o.$2), tick: showSelectedIcon);
+          return SegmentedButton<T>(
+            direction: side ? Axis.horizontal : Axis.vertical,
+            showSelectedIcon: showSelectedIcon,
+            segments: [for (final o in options) ButtonSegment(value: o.$1, label: Text(o.$2, textAlign: TextAlign.center))],
+            selected: {selected},
+            onSelectionChanged: (s) => onChanged(s.first),
+          );
+        },
+      );
+}
+
 class EmptyNote extends StatelessWidget {
   const EmptyNote(this.text, {super.key, this.icon});
   final String text;

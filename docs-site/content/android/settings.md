@@ -125,6 +125,13 @@ It's the same language as **Language** in the app's Settings, whichever you chan
   its widget and its update page are in it too.
 - **System default** in Android's settings puts the app back on your phone's language.
 
+Changing it takes a sip from Singapore's famous language-changing cup: it spins for under a second with the tea swishing around it, and the whole app changes behind it. With animations off in Android's settings, the language just changes.
+
+<figure>
+<img src="/screenshots/android/magic-cup.png" alt="A blue and white porcelain cup painted with flowers, tea swirling inside it, in the middle of the screen over the words Bahasa Melayu." width="412" height="892" loading="lazy">
+<figcaption>One sip, one new language.</figcaption>
+</figure>
+
 On Android 12 and older, Android has no setting for it: the app's own **Language** sets both.
 
 The app's text also follows your phone's font size (your phone's **Settings**, **Display**,

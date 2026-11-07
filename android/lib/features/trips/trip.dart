@@ -422,7 +422,7 @@ class Trip extends ChangeNotifier {
 
   void _rewards() {
     final legsJson = [for (final l in legs) l.toJson()];
-    Coins.tripDone(id!, legsJson, seen);
+    Coins.tripDone(id!, legsJson, seen, name: title);
     final last = legs.last.points.last;
     final v = via;
     Feats.tripDone(

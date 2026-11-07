@@ -20,7 +20,8 @@
 // - a stop's next buses in the tray (the macOS menu bar, and its Dock badge), and favourite
 //   stops in the Windows Jump List, the taskbar thumbnail's buttons and the macOS Dock menu
 //   (glance.js);
-// - on Linux, your location, which Chromium can't find there by itself (location.js).
+// - on Linux, your location, which Chromium can't find there by itself (location.js);
+// - Make it yours, its first window, and from the tray's menu after that (setup.js).
 //
 // The page talks to this only through preload.js's window.sgbusDesktop, and only from the
 // site's own origin. Nothing here holds a key or a secret.
@@ -36,6 +37,7 @@ const widgets = require('./widgets');
 const glance = require('./glance');
 const location = require('./location');
 const links = require('./links');
+const setup = require('./setup');
 const { readSettings, writeSettings } = require('./settings');
 
 const SITE = 'https://sgbus.uwuapps.org';
@@ -231,9 +233,13 @@ function createWindow() {
     if (isMainFrame && code !== -3 && isSite(url)) page.loadFile(path.join(__dirname, 'offline.html'));
   });
 
+  // Make it yours comes first, the once; the window then, unless a link's brought it up already.
   win.once('ready-to-show', () => {
-    firstShow();
+    if (setup.due()) setup.open(() => { if (!shown) firstShow(); });
+    else firstShow();
   });
+  // What Make it yours picked goes to the site once it's there.
+  page.on('did-finish-load', () => setup.applyPending());
   // Typing goes to the site, not the title bar.
   win.on('focus', () => page.focus());
 
@@ -362,6 +368,7 @@ function createTray() {
     { label: 'Service alerts', click: () => showWindow('#alerts') },
     { label: 'Navigate', click: () => showWindow('#nav') },
     { label: 'Add a Bus timings widget', click: () => widgets.add() },
+    { label: 'Make it yours...', click: () => setup.open() },
     { type: 'separator' },
     updater.checkItem(),
     {
@@ -619,6 +626,12 @@ if (!app.requestSingleInstanceLock()) {
     // The small window first, as Discord's: an update found now is downloaded and installed
     // before the app opens, unless Later (updater.js, startup).
     await updater.startup();
+    setup.init({
+      readSettings, writeSettings, isSite, startsAtLogin,
+      page: () => page,
+      setStartAtLogin: (on) => { if (app.isPackaged) setStartAtLogin(on); },
+      refreshTrayMenu: () => refreshTrayMenu(),
+    });
     createWindow();
     // Before the tray, whose menu asks it for its lines, and before the page can send it
     // favourites; the countdown starts once the tray's there.

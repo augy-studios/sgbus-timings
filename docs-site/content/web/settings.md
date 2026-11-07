@@ -166,10 +166,19 @@ full size, where every line can be read.
 - If it can't be sent from the app, it says so and offers **Email it instead**,
   with your words filled in.
 
+## The magic cup
+
+<figure>
+<img src="/screenshots/web/magic-cup.png" alt="A blue and white porcelain cup painted with tembusu flowers, tea swirling inside it, turning in the middle of the screen over the words Bahasa Melayu." width="412" height="500" loading="lazy">
+<figcaption>One sip, one new language.</figcaption>
+</figure>
+
+Changing the language takes a sip from Singapore's famous language-changing cup. It spins in the middle of the screen with the tea swishing around it, and the whole app comes back in the new language, all within about a second. With reduced motion on in your device's settings, it stands still and the language changes straight away.
+
 ## Themes
 
 <figure>
-<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark and Time-based modes, eight brand colour swatches with GTA VI last, its note saying to set it before 26 November, and High contrast." width="420" height="644" loading="lazy">
+<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark, Time-based and Phone's setting modes, eight brand colour swatches with GTA VI last, its note saying to set it before 26 November, and High contrast." width="420" height="647" loading="lazy">
 <figcaption>The theme picker: a mode, and one of eight colours.</figcaption>
 </figure>
 
@@ -183,6 +192,8 @@ Choices apply at once and are remembered on this device.
 - **Time-based** follows your device's clock: light from 09:00, dark from 18:00.
   An app left open across either time switches by itself. The picker says which
   of the two it is in right now.
+- **Phone's setting** follows your phone's or computer's own light or dark, and
+  changes as it does.
 
 ### Brand colour
 
@@ -210,6 +221,31 @@ opens. Set it at least once before 26 November, Singapore time, and it's yours t
 change colours later. After that it's locked until you win it on the
 [uwuCoins wheel](uwucoins.md#spin-the-wheel). It's kept on each device, so set it on each one you
 use. SG Bus Timings isn't connected with Rockstar Games.
+
+<figure>
+<img src="/screenshots/web/gta6-offer.png" alt="A window titled GTA VI's colours: a strip running from blue through pink to orange, what the theme is, how to keep it by setting it before 26 November, and buttons for Set it and Not now." width="420" height="299" loading="lazy">
+<figcaption>The window that offers it, once.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/gta6-home-light.png" alt="The home page in GTA VI's colours in light mode: a pale pink page, a hot pink Use my location button, and the Edge Tray's buttons in blue, orange, magenta and violet." width="412" height="892" loading="lazy">
+<figcaption>GTA VI in light mode.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/gta6-home-dark.png" alt="The same page in dark mode: a deep violet page, a hot pink Use my location button, the page you're on in orange, and the Edge Tray's other buttons in pink, blue and yellow." width="412" height="892" loading="lazy">
+<figcaption>GTA VI in dark mode.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/gta6-theme.png" alt="The Theme window in GTA VI's colours, dark: orange on the picked mode and on Phone's setting, and GTA VI picked among the eight brand colours." width="420" height="605" loading="lazy">
+<figcaption>The theme picker with GTA VI on.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/gta6-locked.png" alt="The brand colours after 26 November, not set in time: GTA VI's dot faded, and under its name, Win GTA VI on the uwuCoins wheel." width="382" height="219" loading="lazy">
+<figcaption>Not set in time: it's won on the wheel. Tap it to go there.</figcaption>
+</figure>
 
 ### High contrast
 

@@ -52,10 +52,12 @@
   }
 
   /* Mode preference and mode are different things. The preference is what the
-     person chose and can be "time"; the mode is what the document is in and
-     is only ever light or dark. */
+     person chose and can be "time", or "phone" for the device's own setting,
+     as the Android app has it; the mode is what the document is in and is only
+     ever light or dark. */
 
-  const MODE_PREFERENCES = ["light", "dark", "time"];
+  const MODE_PREFERENCES = ["light", "dark", "time", "phone"];
+  const DEVICE_DARK = window.matchMedia?.("(prefers-color-scheme: dark)");
 
   /* The daylight window. Duplicated in the pre-paint script in index.html's
      head, which has to resolve this before first paint and cannot import
@@ -75,6 +77,7 @@
 
   function resolveMode(preference) {
     if (preference === "time") return isDaylightHours() ? "light" : "dark";
+    if (preference === "phone") return DEVICE_DARK?.matches ? "dark" : "light";
     return preference === "dark" ? "dark" : "light";
   }
 
@@ -173,6 +176,14 @@
 
     scheduleModeCheck();
   }
+
+  // The device going light or dark while the page is open.
+  DEVICE_DARK?.addEventListener?.("change", () => {
+    if (getModePreference() !== "phone") return;
+    const resolved = resolveMode("phone");
+    document.documentElement.setAttribute("data-mode", resolved);
+    document.dispatchEvent(new CustomEvent("uwu:modechange", { detail: { mode: resolved, preference: "phone" } }));
+  });
 
   function initTheme() {
     migrateLegacyTheme();

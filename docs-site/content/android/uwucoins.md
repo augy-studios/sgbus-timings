@@ -7,7 +7,7 @@ Every trip you take with the [Get Off Alert](get-off-alert.md) earns **uwuCoins*
 wins something.
 
 <figure>
-<img src="/screenshots/android/coins.png" alt="uwuCoins: a balance of 250, the wheel with eight slices, a Spin for 100 button, how many feats and Easter eggs are done, what a spin wins, See your achievements, and switches for Show uwuCoins and Coin pop-ups." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/coins.png" alt="uwuCoins: a balance of 250, the wheel with eight slices, a Spin for 100 button, how many feats and Easter eggs are done, what a spin wins, See your achievements, History, and switches for Show uwuCoins and Coin pop-ups." width="412" height="892" loading="lazy">
 <figcaption>The wheel, from the gold coin in the Edge Tray.</figcaption>
 </figure>
 
@@ -33,6 +33,28 @@ is coins too.
 
 If you didn't set [GTA VI's colours](theme.md#gta-vi-colours) before 26 November, the egg slice shows a palette and wins them first, before
 any more eggs, and stays that prize until you've won it.
+
+<figure>
+<img src="/screenshots/android/coins-gta6.png" alt="uwuCoins with a palette on the wheel's egg slice, and under it, The egg slice wins GTA VI's colours first." width="412" height="892" loading="lazy">
+<figcaption>The wheel with GTA VI's colours to win.</figcaption>
+</figure>
+
+## History
+
+<figure>
+<img src="/screenshots/android/coins-history.png" alt="History: All, Earned and Spent, Earned 450, Spent 200, then by the day: Won on the wheel +50, A spin of the wheel minus 100, Trip: To One Raffles Place +28 with what made it up, Won on the wheel: Down the old railway, Feat: Down the old railway +100, and Trips from before uwuCoins +250, 13 trips." width="412" height="892" loading="lazy">
+<figcaption>Every coin in and out, and where it came from.</figcaption>
+</figure>
+
+**History**, on the wheel's screen, lists every coin in and out, newest first, with the day and time:
+
+- **Trip**: which trip, and what made up its coins: getting there, the distance, changes, operators and lines.
+- **Feat**: which one, and your team run if it did it with you.
+- **Trips from before uwuCoins**: how many, and what they earned.
+- **A spin of the wheel**: the 100 it cost.
+- **Won on the wheel**: the coins, Easter egg or colours it won.
+
+**All**, **Earned** and **Spent** narrow the list, and it says how much you've earned and spent. It keeps your last 2,000, on this phone, as your coins are. A trip with no name kept and no longer in [Your trips](trips.md) says **A trip**.
 
 ## Hide them
 

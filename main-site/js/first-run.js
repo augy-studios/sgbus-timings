@@ -1,6 +1,7 @@
-// The first open's choice (help desk #3): Minimal, the essentials only; Standard, most of it; or
-// Full, everything on, as the app has always opened. Asked once, in a window before the welcome
-// (js/tour.js), so the welcome then shows only what's on.
+// The first open's choice (help desk #3): Simple (Lite), the essentials only; Normal, most of it; or
+// Advanced Super App, everything on, as the app has always opened (their values, here and in
+// index.html: minimal, standard, full). Asked once, in a window before the welcome (js/tour.js),
+// so the welcome then shows only what's on.
 //
 // - Minimal turns off Glance, Service alerts and Your trips (js/main-screen.js, setShown) and
 //   every optional Edge Tray button (script.js, setTrayExtra): the same switches as Settings,
@@ -26,7 +27,9 @@
   try {
     state = localStorage.getItem(KEY);
     if (!state) {
-      state = Object.keys(localStorage).some((k) => k.startsWith('sgbus')) ? 'done' : 'ask';
+      // Not the words js/i18n.js has just kept, in any language but English, before this runs:
+      // they say nothing of having been here, and nobody with another language was ever asked.
+      state = Object.keys(localStorage).some((k) => k.startsWith('sgbus') && k !== 'sgbus_lang_words') ? 'done' : 'ask';
       if (state === 'ask') localStorage.setItem(KEY, state);
     }
   } catch { state = 'done'; }

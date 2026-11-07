@@ -4159,6 +4159,48 @@ body.touring { overflow: hidden; }
     border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 20px solid var(--ink);
 }
 .coinResult { font-size: 0.95rem; color: var(--ink); }
+/* The magic cup, as the language changes (js/magic-cup.js). */
+#magicCup {
+    position: fixed; inset: 0; z-index: 100000;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    animation: cupIn 0.1s ease-out both;
+}
+.cupStage { position: relative; width: 200px; height: 200px; }
+.cupStage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.cupFlat {
+    position: absolute; left: 52px; top: 36px; width: 96px; height: 128px;
+    border-radius: 12px 12px 36px 36px / 8px 8px 30px 30px;
+    background-size: auto 100%;
+    animation: cupSlide 0.3s linear infinite;
+}
+.cupFlat::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, rgba(11, 27, 58, 0.45), rgba(255, 255, 255, 0.25) 35%, rgba(11, 27, 58, 0) 55%, rgba(11, 27, 58, 0.5)); }
+.cupIn3d .cupFlat { display: none; }
+.cupWords { margin: 0; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+@keyframes cupIn { from { opacity: 0; } }
+@keyframes cupSlide { to { background-position-x: -256px; } }
+@keyframes cupOut { to { opacity: 0; } }
+:root[data-cup-out]::after {
+    content: ""; position: fixed; inset: 0; z-index: 100000; pointer-events: none;
+    background: var(--bg);
+    animation: cupOut 0.15s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) { .cupFlat { animation: none; } }
+
+/* History, under the wheel (js/coins.js, renderHistory). */
+.coinHistory { margin-top: 10px; }
+.coinHistory > summary { padding: 10px 2px; font-weight: 700; color: var(--ink); cursor: pointer; }
+.coinFilter { grid-template-columns: repeat(3, 1fr); }
+.coinDay { margin: 14px 0 4px; font-size: 0.8rem; font-weight: 700; color: var(--muted); }
+.coinRow { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--surface-border); }
+.coinRowWhat { min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+.coinRowWhat strong { display: block; font-weight: 600; }
+.coinRowWhat span, .coinRowSide span { display: block; margin-top: 1px; font-size: 0.8rem; color: var(--muted); }
+.coinRowSide { flex: none; text-align: right; font-variant-numeric: tabular-nums; }
+.coinIn { color: var(--ok); }
+.coinOut { color: var(--error); }
+#coinMore { margin-top: 10px; }
 .coinToast {
     position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); z-index: 90; transform: translateX(-50%);
     display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px;
@@ -4380,3 +4422,5 @@ body.coins-hidden #coinsBtn { display: none !important; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n+3) { color: #ffbc24; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n+4) { color: #f0aa5c; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n) { color: #d98be0; }
+/* The page you're on has its orange, and the text that reads on it, not its place's colour. */
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn[role="tab"][aria-selected="true"]:nth-child(n) { color: var(--on-brand); }

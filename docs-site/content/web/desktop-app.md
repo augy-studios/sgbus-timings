@@ -57,12 +57,33 @@ first: `libfuse2t64` on Debian 13 and Ubuntu 24.04 and later.
 Rather have it in a terminal, or on a server without a desktop? See
 [the command line on Linux](linux-cli.md).
 
+## Make it yours
+
+<figure>
+<img src="/screenshots/web/desktop-setup.png" alt="The Make SG Bus Timings yours window: a green welcome panel on the left with Bus timings, Navigate and Service alerts, and on the right rows for Language, Start when I sign in, Follow system theme, Theme and Brand colour, with Get started at the bottom." width="940" height="660" loading="lazy">
+<figcaption>The first window the app opens with.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/desktop-setup-dark.png" alt="The same window with Theme set to Dark and GTA VI as the brand colour: a hot pink welcome panel and a dark settings side, with a hot pink Get started button." width="940" height="660" loading="lazy">
+<figcaption>It shows each choice as you pick it.</figcaption>
+</figure>
+
+The first time the app opens, whether you've just installed it or updated to a version with this window, it lets you set it up in one go:
+
+- **Language**, or **Automatic** for your computer's.
+- **Start when I sign in**.
+- **Follow system theme**, for your computer's light or dark, or a **Theme** of your own: **Light**, **Dark** or **Time-based**.
+- **Brand colour**, one of the [theme picker's](settings.md#brand-colour). With [Your colours](secret-features.md) on, they wait until you turn those off.
+
+The window shows each choice as you pick it, and **Get started** opens the app with them. Closing it changes nothing. To see it again, right-click the tray's bus and pick **Make it yours...**.
+
 ## The tray
 
 Closing the window doesn't quit the app: it keeps running in the tray (the bus
 by the clock on Windows), so [Service alerts](service-alerts.md) still reach you.
 Click the bus to bring the window back. Right-click it for **Service alerts**,
-**Navigate**, **Start when I sign in**, and **Quit**, which closes it for good.
+**Navigate**, **Make it yours...**, **Start when I sign in**, and **Quit**, which closes it for good.
 
 ### A stop's buses in the tray
 

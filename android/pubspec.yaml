@@ -9,7 +9,7 @@ publish_to: 'none'
 # app, 2.0.0 to 2.3.1 (4 to 26) the Capacitor one, and from 2.4.0 (27) this Flutter one. The
 # watch app (android/wear/) reads it here too, and desktop/package.json's and cli/package.json's
 # versions are raised to the same.
-version: 2.4.7+34
+version: 2.4.8+35
 
 environment:
   sdk: ^3.13.0
@@ -52,6 +52,8 @@ flutter:
     - assets/images/simplygo.png
     # The flags in the language list, drawn from the site's (flag-icons, MIT; js/lang-pick.js).
     - assets/images/flags/
+    # The magic cup's pattern, as the site's (features/misc/magic_cup.dart).
+    - assets/images/magic-cup-texture.png
   fonts:
     # The site's font, for the usual look. Material You uses the phone's own.
     - family: Jua

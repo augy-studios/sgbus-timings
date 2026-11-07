@@ -16,6 +16,7 @@
     (function () {
       var m = localStorage.getItem('sgbus.mode') || 'light';
       if (m === 'time') { var h = new Date().getHours(); m = h >= 9 && h < 18 ? 'light' : 'dark'; }
+      else if (m === 'phone') m = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       document.documentElement.setAttribute('data-mode', m);
     })();
   </script>

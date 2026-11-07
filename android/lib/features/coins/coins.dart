@@ -15,6 +15,7 @@ import '../../data/gta6.dart';
 import '../../data/rail_tracks.dart';
 import '../../data/rewards.dart';
 import '../../data/store.dart';
+import '../../data/when.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/coin_icon.dart';
@@ -312,7 +313,11 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
                 const SizedBox(height: 8),
                 Align(
                   alignment: AlignmentDirectional.centerStart,
-                  child: OutlinedButton.icon(onPressed: AchievementsScreen.open, icon: const Icon(Icons.emoji_events_outlined), label: Text(tr('achievements.see', 'See your achievements'))),
+                  child: Wrap(spacing: 8, runSpacing: 8, children: [
+                    OutlinedButton.icon(onPressed: AchievementsScreen.open, icon: const Icon(Icons.emoji_events_outlined), label: Text(tr('achievements.see', 'See your achievements'))),
+                    // Not while a spin's going: it'd give the prize away.
+                    OutlinedButton.icon(onPressed: _spinning ? null : CoinsHistory.open, icon: const Icon(Icons.receipt_long_outlined), label: Text(tr('coins.history', 'History'))),
+                  ]),
                 ),
                 const SizedBox(height: 8),
                 SgCard(
@@ -335,6 +340,154 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
               ]),
               if (_confetti) const Positioned.fill(child: IgnorePointer(child: Confetti())),
             ]),
+          );
+        },
+      );
+}
+
+// ---------- History ----------
+
+/// What an entry of the log was, and a line more on where it came from (the site's entryWords).
+({String what, String more}) coinEntryWords(Map e) {
+  switch (e['why']) {
+    case 'trip':
+      var name = '${e['name'] ?? ''}';
+      if (name.isEmpty) {
+        // Where a trip's name is, if the log hasn't one: Your trips, while it's there.
+        final t = Store.I.list('sgbus_trips').whereType<Map>().where((x) => x['id'] == e['trip']).firstOrNull;
+        name = '${t?['title'] ?? ''}';
+        if (name.isEmpty) name = '${(t?['to'] as Map?)?['label'] ?? ''}';
+      }
+      final parts = (e['parts'] as Map?) ?? const {};
+      String part(String key, String word) => (parts[key] as num? ?? 0) > 0 ? word : '';
+      final n = {for (final k in parts.keys) '$k': parts[k]};
+      return (
+        what: name.isNotEmpty ? tr('coins.log.trip', 'Trip: {name}', {'name': name}) : tr('coins.log.aTrip', 'A trip'),
+        more: [
+          part('finish', tr('coins.part.finish', '{n} for getting there', {'n': n['finish']})),
+          part('km', tr('coins.part.km', '{n} for the distance', {'n': n['km']})),
+          part('changes', tr('coins.part.changes', '{n} for changes', {'n': n['changes']})),
+          part('busOps', tr('coins.part.busOps', '{n} for bus operators', {'n': n['busOps']})),
+          part('trainOps', tr('coins.part.trainOps', '{n} for train operators', {'n': n['trainOps']})),
+          part('lines', tr('coins.part.lines', '{n} for lines', {'n': n['lines']})),
+        ].where((w) => w.isNotEmpty).join(' · '),
+      );
+    case 'feat':
+      final team = e['team'] as String?;
+      return (
+        what: tr('coins.log.feat', 'Feat: {name}', {'name': _eggName('${e['feat']}')}),
+        more: team != null
+            ? tr('achievements.withTeam', 'Done with your team run, {team}', {'team': team})
+            : e['past'] == true
+                ? tr('coins.log.pastTrip', 'From a trip before uwuCoins')
+                : '',
+      );
+    case 'past':
+      return (what: tr('coins.log.past', 'Trips from before uwuCoins'), more: e['trips'] != null ? tr('coins.log.pastN', '{n} trips', {'n': e['trips']}) : '');
+    case 'spin':
+      return (what: tr('coins.log.spin', 'A spin of the wheel'), more: '');
+    case 'wheel':
+      return (what: tr('coins.log.wheel', 'Won on the wheel'), more: '');
+    case 'egg':
+      return (what: tr('coins.log.egg', 'Won on the wheel: {name}', {'name': _eggName('${e['egg']}')}), more: tr('coins.log.eggNote', 'An Easter egg'));
+    case 'gta6':
+      return (what: tr('coins.log.gta6', 'Won on the wheel: GTA VI’s colours'), more: '');
+    case 'simulated':
+      return (what: tr('coins.log.simulated', 'Added from the console'), more: '');
+    default:
+      return (what: tr('coins.log.other', 'uwuCoins'), more: '');
+  }
+}
+
+/// Every coin in and out and where it came from, newest first, by the day in Singapore.
+class CoinsHistory extends StatefulWidget {
+  const CoinsHistory({super.key});
+  static Future<void> open() => AppNav.push(const CoinsHistory(), name: 'coinsHistory');
+
+  @override
+  State<CoinsHistory> createState() => _CoinsHistoryState();
+}
+
+class _CoinsHistoryState extends State<CoinsHistory> {
+  String _filter = 'all';
+
+  String _day(int at) {
+    final label = When.dayLabel(at);
+    final year = When.sgClock(at).year;
+    final words = '${label[0].toUpperCase()}${label.substring(1)}';
+    return year == When.sgClock(When.nowMs()).year ? words : '$words $year';
+  }
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: Rewards.I,
+        builder: (context, _) {
+          final sg = context.sg;
+          final log = Coins.log.where((e) => e['n'] is num).toList();
+          num earned = 0, spent = 0;
+          for (final e in log) {
+            final n = e['n'] as num;
+            if (n > 0) earned += n;
+            if (n < 0) spent -= n;
+          }
+          final wanted = log.where((e) => _filter == 'earned' ? (e['n'] as num) >= 0 : _filter == 'spent' ? (e['n'] as num) < 0 : true).toList();
+          // The day's heading before its first entry.
+          final rows = <Object>[];
+          String? last;
+          for (final e in wanted) {
+            final at = ((e['at'] as num?) ?? 0).toInt();
+            final ymd = When.sgClock(at).ymd;
+            if (ymd != last) rows.add(_day(at));
+            last = ymd;
+            rows.add(e);
+          }
+          return SgScaffold(
+            title: tr('coins.history', 'History'),
+            body: ListView.builder(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+              itemCount: rows.length + 1,
+              itemBuilder: (context, i) {
+                if (i == 0) {
+                  return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Wrap(spacing: 8, runSpacing: 8, children: [
+                      for (final (id, word) in [('all', tr('coins.history.all', 'All')), ('earned', tr('coins.history.earned', 'Earned')), ('spent', tr('coins.history.spent', 'Spent'))])
+                        Pill(label: word, on: _filter == id, onTap: () => setState(() => _filter = id)),
+                    ]),
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(tr('coins.history.totals', 'Earned {earned} · Spent {spent}', {'earned': earned, 'spent': spent}), style: TextStyle(color: sg.muted)),
+                    ),
+                    if (rows.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Text(tr('coins.history.none', 'Nothing yet. A trip taken with the Get Off Alert to the end earns your first uwuCoins.'), style: TextStyle(color: sg.muted)),
+                      ),
+                  ]);
+                }
+                final row = rows[i - 1];
+                if (row is String) return SectionLabel(row);
+                final e = row as Map;
+                final n = e['n'] as num;
+                final words = coinEntryWords(e);
+                final amount = n > 0 ? '+${n.toInt()}' : n < 0 ? '−${(-n).toInt()}' : e['why'] == 'gta6' ? '🎨' : '🥚';
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(words.what, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        if (words.more.isNotEmpty) Text(words.more, style: TextStyle(color: sg.muted, fontSize: 13)),
+                      ]),
+                    ),
+                    const SizedBox(width: 12),
+                    Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                      Text(amount, style: TextStyle(fontWeight: FontWeight.w700, color: n > 0 ? sg.ok : n < 0 ? sg.error : sg.ink)),
+                      Text(When.clock(((e['at'] as num?) ?? 0).toInt()), style: TextStyle(color: sg.muted, fontSize: 13)),
+                    ]),
+                  ]),
+                );
+              },
+            ),
           );
         },
       );

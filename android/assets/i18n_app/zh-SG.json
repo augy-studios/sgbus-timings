@@ -1,4 +1,7 @@
 {
+  "app.firstRun.minimal": "精简",
+  "app.firstRun.standard": "标准",
+  "app.firstRun.full": "完整",
   "nav.offlineNoStops": "这部手机还未保存巴士站。请在有网络时打开应用一次。",
   "nav.offlineNoRoutes": "这部手机还未保存巴士路线。请在有网络时打开应用一次，之后巴士和地铁便可离线规划。",
   "route.tap_stop_app": "点按你要下车的车站。即使屏幕关闭，应用也会在到站前两站提醒你。",

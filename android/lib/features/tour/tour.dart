@@ -233,10 +233,10 @@ class _FirstRunState extends State<_FirstRun> {
           onChanged: (v) => setState(() => _pick = v ?? _pick),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(tr('html.start_with_how_much', 'Start with everything, most of it, or just the essentials?')),
-            option('minimal', tr('html.minimal', 'Minimal'), tr('html.just_bus_timings_favourites_navigate', 'Just Bus timings, Favourites, Navigate and Places. The rest is switched off.')),
-            option('standard', tr('html.standard', 'Standard'),
+            option('minimal', tr('app.firstRun.minimal', 'Minimal'), tr('html.just_bus_timings_favourites_navigate', 'Just Bus timings, Favourites, Navigate and Places. The rest is switched off.')),
+            option('standard', tr('app.firstRun.standard', 'Standard'),
                 tr('html.standard_what', 'Everything but a few extras: no uwuCoins, Buy Augy a Coffee, Receive nearby, Telegram bot or Card value buttons in the Edge Tray.')),
-            option('full', tr('html.full_2', 'Full'), tr('html.everything_on_glance_service_alerts', 'Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.')),
+            option('full', tr('app.firstRun.full', 'Full'), tr('html.everything_on_glance_service_alerts', 'Everything on: Glance, Service alerts, Your trips and every Edge Tray button too.')),
             Text(tr('html.you_can_change_this_any', 'You can change this any time in Settings, Edge Tray buttons.'), style: TextStyle(color: sg.muted, fontSize: 13)),
           ]),
         ),
