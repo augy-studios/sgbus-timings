@@ -106,7 +106,7 @@ class _ShareCardState extends State<ShareCard> {
     final sg = context.sg;
     final image = _id == null ? null : (widget.kind == 'feat' ? '${Api.site}/api/feat-card?id=$_id' : '${Api.site}/api/share-map?id=$_id');
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Text(widget.heading, style: TextStyle(color: sg.muted)),

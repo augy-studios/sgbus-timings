@@ -167,7 +167,7 @@ class _StopScreenState extends State<StopScreen> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(tr('stop.tool.pick', 'Pick a bus'), style: Theme.of(ctx).textTheme.titleLarge),

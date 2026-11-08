@@ -5,6 +5,10 @@ description: How the Android app updates itself, how to hear about new versions,
 
 ## Update it
 
+The app from Google Play updates through Google Play, like any other app, and has no bar,
+update page or **Check for app updates** of its own. The rest of this section is for the app
+from GitHub.
+
 <figure>
 <img src="/screenshots/android/update-bar.png" alt="A green bar across the top of Glance: Version 9.9.9 of the Android app is out, with Update and Not now." width="412" height="892" loading="lazy">
 <figcaption>The bar a new version brings.</figcaption>

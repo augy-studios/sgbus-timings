@@ -993,8 +993,9 @@ class _NavPageState extends State<NavPage> {
     if (items.length == 1) return items.first.$4();
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (c) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           for (final it in items)
             ListTile(
               leading: Icon(it.$1),
@@ -1005,7 +1006,7 @@ class _NavPageState extends State<NavPage> {
                 it.$4();
               },
             ),
-        ]),
+        ])),
       ),
     );
   }
@@ -1088,7 +1089,19 @@ class _NavPageState extends State<NavPage> {
                             children: [
                               _end('from', nav.from, tr('nav.from', 'From')),
                               _savedPlaces('from'),
-                              if (nav.via != null || nav.viaOpen) ...[const SizedBox(height: 8), _end('via', nav.via, tr('settings.stop', 'Stop'))],
+                              // The stop on the way, between the ends in the order it's ridden, as
+                              // the site has it on a phone: Add a stop until there's one.
+                              if (nav.via != null || nav.viaOpen)
+                                ...[const SizedBox(height: 8), _end('via', nav.via, tr('settings.stop', 'Stop'))]
+                              else
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: TextButton.icon(
+                                    onPressed: () => _setEnd('via'),
+                                    icon: const Icon(Icons.add_location_alt_outlined),
+                                    label: Text(tr('nav.add_a_stop', 'Add a stop')),
+                                  ),
+                                ),
                               Center(
                                 child: IconButton(
                                   tooltip: tr('nav.swap_start_and_end', 'Swap start and end'),
@@ -1105,15 +1118,7 @@ class _NavPageState extends State<NavPage> {
                               _savedPlaces('to'),
                             ],
                           )),
-                          if (nav.via == null && !nav.viaOpen)
-                            Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton.icon(
-                                onPressed: () => _setEnd('via'),
-                                icon: const Icon(Icons.add_location_alt_outlined),
-                                label: Text(tr('nav.add_a_stop', 'Add a stop')),
-                              ),
-                            ),
+                          const SizedBox(height: 8),
                           TourTarget(id: 'nav.when', child: WhenPicker(
                             value: nav.when,
                             onChanged: (w) {

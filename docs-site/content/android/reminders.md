@@ -43,7 +43,7 @@ about.
 
 In [Settings](settings.md#trips-and-alerts), **Trips and alerts**. For events in your phone's calendar with a place, a notification when it's time to set off by bus
 and train to get there on time, with the way to go. It plans from where you are, or, when the phone won't say with the app closed, from Home in
-[Places](places.md). With no Home saved and the phone not saying where you are, there's nowhere to plan from, so no notification comes, and Settings asks you to save
+[Places](places.md). The app from Google Play never has your location with the app closed, so it plans from Home then. With no Home saved and the phone not saying where you are, there's nowhere to plan from, so no notification comes, and Settings asks you to save
 Home. It needs **Calendar**.
 
 ## "On a bus?"

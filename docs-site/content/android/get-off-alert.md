@@ -15,9 +15,10 @@ each change and your stop. Every trip is kept in [Your trips](trips.md).
 - **A bus's route**: tap **Get Off Alert**, then the stop you're getting off at. See
   [Bus routes](bus-routes.md#alert-me-to-get-off).
 
-The first time, Android asks for your location and for notifications; allow both. It also asks, once, to
-leave the app out of battery optimisation. Some phones (Xiaomi, Samsung, Oppo and others) otherwise stop a
-trip in the background to save battery. The trip starts whichever you choose.
+The first time, Android asks for your location and for notifications; allow both. The app from GitHub
+also asks, once, to leave the app out of battery optimisation. Some phones (Xiaomi, Samsung, Oppo and others)
+otherwise stop a trip in the background to save battery. The trip starts whichever you choose. The app from
+Google Play doesn't ask: if your phone stops trips, turn battery optimisation off for the app in Android's settings.
 
 ## The trip bar
 

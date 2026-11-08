@@ -247,8 +247,9 @@ class _GlancePageState extends State<GlancePage> {
     final now = _chosen()?.key;
     final pick = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           for (final s in _sources())
             ListTile(
               leading: Icon(s.icon),
@@ -257,7 +258,7 @@ class _GlancePageState extends State<GlancePage> {
               trailing: s.key == now ? const Icon(Icons.check) : null,
               onTap: () => Navigator.pop(ctx, s.key),
             ),
-        ]),
+        ])),
       ),
     );
     if (pick == null) return;

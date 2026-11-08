@@ -86,8 +86,8 @@ has [shortcuts and, on Windows, a widget](shortcuts-and-widgets.md).
 
 There's also an Android app, with screens of its own, which also follows your
 trip with the screen off, reads your EZ-Link or NETS FlashPay card's value, reads
-your phone's calendar and opens SimplyGo itself. It's shared as a file rather than
-on Google Play for now. See [Install the app](../android/install.md).
+your phone's calendar and opens SimplyGo itself. It comes as a file from GitHub, or
+from Google Play. See [Install the app](../android/install.md).
 
 ### Windows, macOS, Linux and ChromeOS
 

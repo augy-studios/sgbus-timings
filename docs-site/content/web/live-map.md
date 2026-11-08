@@ -121,6 +121,8 @@ doors for each platform, as in [Explorer](explorer.md).
 Wherever the site says a bus is slowed by traffic, in [Navigate](nav.md) or on
 the [trip bar](get-off-alert.md#traffic-on-the-way), tap it to see why: the
 bus's road on the map, along the roads it takes, coloured by LTA's live speeds.
+Once the speeds are in, the map closes in on the slow and jammed stretches and
+any accidents or breakdowns.
 
 - **Green**: moving freely.
 - **Orange**: slow.

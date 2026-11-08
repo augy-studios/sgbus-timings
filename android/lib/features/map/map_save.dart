@@ -190,7 +190,7 @@ class _SaveSheetState extends State<_SaveSheet> {
     final sg = context.sg;
     final m = MapSave.meta;
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
         child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(tr('html.singapore_s_map_offline', 'Singapore’s map, offline'), style: Theme.of(context).textTheme.titleLarge),

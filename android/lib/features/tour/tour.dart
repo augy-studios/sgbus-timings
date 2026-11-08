@@ -258,41 +258,74 @@ class _TourOverlayState extends State<_TourOverlay> {
   int _i = 0;
 
   @override
+  void initState() {
+    super.initState();
+    _reveal();
+  }
+
+  void _next() {
+    setState(() => _i++);
+    _reveal();
+  }
+
+  // A step's thing can be further down a page than the screen shows (Service alerts' Notify me,
+  // under the alerts and the newsfeed): scrolled into view first, then lit where it ends up.
+  Future<void> _reveal() async {
+    final target = TourTarget._keys[widget.steps[_i].target]?.currentContext;
+    if (target == null) return;
+    await Scrollable.ensureVisible(target, alignment: 0.3, duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     final s = widget.steps[_i];
     final size = MediaQuery.sizeOf(context);
+    // Clear of the status bar, the navigation bar and a tablet's taskbar, which the route is
+    // drawn under.
+    final pad = MediaQuery.paddingOf(context);
     final rect = (TourTarget.rectOf(s.target) ?? Rect.fromCenter(center: size.center(Offset.zero), width: 0, height: 0)).inflate(8);
     final last = _i == widget.steps.length - 1;
     final below = rect.center.dy < size.height / 2;
     final sg = context.sg;
+    double within(double v, double low, double high) => v.clamp(low, high < low ? low : high);
+    // On a wide screen, a card no wider than it needs, under its thing rather than across the
+    // whole screen (the site's .tourCard has max-width: 460px).
+    final across = size.width <= 0 ? 0.0 : (rect.center.dx / size.width * 2 - 1).clamp(-1.0, 1.0);
     return Material(
       type: MaterialType.transparency,
       child: Stack(children: [
         Positioned.fill(child: CustomPaint(painter: _Spot(rect))),
         Positioned(
-          left: 16,
-          right: 16,
-          top: below ? (rect.bottom + 16).clamp(0, size.height - 220) : null,
-          bottom: below ? null : (size.height - rect.top + 16).clamp(0, size.height - 220),
-          child: Semantics(
-            liveRegion: true,
-            child: Material(
-              color: sg.surfaceStrong,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
-                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  Text(s.text(), style: const TextStyle(fontSize: 16)),
-                  Row(children: [
-                    Text('${_i + 1} / ${widget.steps.length}', style: TextStyle(color: sg.muted)),
-                    const Spacer(),
-                    if (!last) TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('tour.skip', 'Skip'))),
-                    FilledButton(
-                      onPressed: () => last ? Navigator.pop(context) : setState(() => _i++),
-                      child: Text(last ? tr('common.done', 'Done') : tr('trip.next', 'Next')),
-                    ),
-                  ]),
-                ]),
+          left: pad.left + 16,
+          right: pad.right + 16,
+          top: below ? within(rect.bottom + 16, pad.top + 16, size.height - pad.bottom - 220) : null,
+          bottom: below ? null : within(size.height - rect.top + 16, pad.bottom + 16, size.height - pad.top - 220),
+          child: Align(
+            alignment: Alignment(across, 0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Semantics(
+                liveRegion: true,
+                child: Material(
+                  color: sg.surfaceStrong,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 8, 8),
+                    child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                      Text(s.text(), style: const TextStyle(fontSize: 16)),
+                      Row(children: [
+                        Text('${_i + 1} / ${widget.steps.length}', style: TextStyle(color: sg.muted)),
+                        const Spacer(),
+                        if (!last) TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('tour.skip', 'Skip'))),
+                        FilledButton(
+                          onPressed: () => last ? Navigator.pop(context) : _next(),
+                          child: Text(last ? tr('common.done', 'Done') : tr('trip.next', 'Next')),
+                        ),
+                      ]),
+                    ]),
+                  ),
+                ),
               ),
             ),
           ),

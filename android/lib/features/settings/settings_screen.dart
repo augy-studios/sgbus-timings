@@ -201,10 +201,12 @@ class _SettingsGroupState extends State<SettingsGroup> {
   List<(String, String)> get _onOffOptions => [('on', tr('settings.on', 'On')), ('off', tr('settings.off', 'Off'))];
 
   Future<void> _pickLanguage() async {
+    // As tall as it needs, and scrolling past that: on a phone on its side, four languages don't fit.
     final pick = await showModalBottomSheet<String>(
       context: context,
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
+        child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
             child: Align(alignment: Alignment.centerLeft, child: Text(tr('lang.title', 'Choose a language'), style: Theme.of(ctx).textTheme.titleMedium)),
@@ -230,7 +232,7 @@ class _SettingsGroupState extends State<SettingsGroup> {
                 ),
               ]),
             ),
-        ]),
+        ])),
       ),
     );
     if (pick == null) return;

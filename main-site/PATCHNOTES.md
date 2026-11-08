@@ -1,11 +1,28 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 8 November 2026**
+**Latest update: 9 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/UwUsgbus_bot**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 9 November 2026: Fixes for tablets, phones on their side, and traffic on the map (2.4.9)
+
+### Everywhere
+
+- **Straight to the traffic** - **See it on the map**, under a ride with traffic in Navigate or on a trip, now closes in on the jammed and slow stretches and any incidents, once LTA's traffic is in. In the Android app it opened on all of Singapore instead of the ride.
+
+### Android app
+
+- **Doors that fit** - Where a change has more doors to use than fit beside their words, as at Bishan for the Circle Line, they now go onto a second line instead of running off the edge.
+- **Tours you can see** - A page's tour scrolls to what it's showing you, as Service alerts' Notify me further down, and keeps its card clear of the status bar, the navigation bar and a tablet's taskbar. On a tablet the card sits under what it points at, no wider than it needs.
+- **The Edge Tray on its side** - With the phone turned sideways, the Edge Tray keeps clear of the navigation bar and the camera, so no button is half under them.
+- **Confetti that clears** - After a spin or a celebration, all the confetti falls off the screen and fades away, as on the website, instead of some of it stopping halfway and staying.
+- **Add a stop between the ends** - In Navigate, Add a stop sits between From and To, where the stop comes in the journey, as on the website.
+- **Every language, sideways** - With the phone turned sideways, the language list scrolls to Bahasa Melayu and Tamil. Glance's choice of stops, Explorer's Layers, Share, Pick a bus, Change here and saving the map scroll too when they don't fit.
 
 ---
 

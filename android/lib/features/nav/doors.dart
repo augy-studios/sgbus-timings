@@ -158,13 +158,22 @@ class DoorRowView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
-    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-      Icon(icon, size: 24, color: sg.brandInk),
-      const SizedBox(width: 10),
-      Wrap(spacing: 8, runSpacing: 8, children: [for (final n in doors) DoorChip(n, line: line)]),
-      const SizedBox(width: 10),
-      Expanded(child: Text(where, style: TextStyle(fontSize: 13, color: sg.muted))),
-    ]);
+    // A Wrap in a Row is offered unbounded width and never wraps, so the doors would run off the
+    // panel's edge; cap it at what's left after the icon and room for the words (the site's grid
+    // does the same with its auto column), but never narrower than one door.
+    return LayoutBuilder(builder: (context, box) {
+      final room = box.maxWidth.isFinite ? box.maxWidth - 24 - 10 - 10 - 72 : double.infinity;
+      return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+        Icon(icon, size: 24, color: sg.brandInk),
+        const SizedBox(width: 10),
+        ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: room < 54 ? 54 : room),
+          child: Wrap(spacing: 8, runSpacing: 8, children: [for (final n in doors) DoorChip(n, line: line)]),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Text(where, style: TextStyle(fontSize: 13, color: sg.muted))),
+      ]);
+    });
   }
 }
 

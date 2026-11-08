@@ -9,7 +9,7 @@ train or both, including the walk at each end.
 ## Bus and train, or Bus only
 
 <figure>
-<img src="/screenshots/android/nav-empty.png" alt="Navigate with nothing set: tabs for Bus and train, picked, and Bus only; From, with Your location, Home and Work under it; the swap button; To, with the same buttons; Add a stop; and Leave now, Leave at and Arrive by." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/nav-empty.png" alt="Navigate with nothing set: tabs for Bus and train, picked, and Bus only; From, with Your location, Home and Work under it; Add a stop; the swap button; To, with the same buttons; and Leave now, Leave at and Arrive by." width="412" height="892" loading="lazy">
 <figcaption>Navigate, with the swap button between its two ends.</figcaption>
 </figure>
 
@@ -54,7 +54,7 @@ A bus stop is found however you'd [search](search.md) for it, the words in any o
 
 ### A stop on the way
 
-**Add a stop**, under **To**, adds somewhere to stop between the two ends, with a cross to
+**Add a stop**, between **From** and **To**, adds somewhere to stop between the two ends, with a cross to
 take it off. Your time there isn't counted, so add what you'll spend there.
 
 ### Across the Causeway

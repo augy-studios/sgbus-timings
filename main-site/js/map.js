@@ -1119,6 +1119,14 @@
     }
     const said = (inc) => (typeof incidentText === 'function' ? incidentText(inc) : inc.message);
     for (const inc of t.incidents || []) flag([inc.lat, inc.lng], said(inc), TRAFFIC_COLOURS.jammed);
+    // Where the traffic is: the jammed and slow stretches and the incidents, which the map then
+    // closes in on. All clear, it stays on the whole way.
+    const hot = [];
+    t.flows.forEach((f, i) => {
+      if (trafficClass(f) !== 'clear' && i < way.length) hot.push(way[i], way[Math.min(i + 1, way.length - 1)]);
+    });
+    for (const inc of t.incidents || []) if (typeof inc.lat === 'number' && typeof inc.lng === 'number') hot.push([inc.lat, inc.lng]);
+    if (hot.length) ink.fit(hot, { top: 90, left: 30, right: 70, bottom: 150 }, STREET_ZOOM - 1);
     const ago = Math.max(0, Math.round((Date.now() - t.at) / 60000));
     $('#mapSub').textContent = ago < 1 ? I18n.t("map.trafficNow", "LTA's live traffic, just now") : I18n.t("map.trafficAgo", "LTA's live traffic, {m} min ago", { m: ago });
     const jammed = t.flows.filter((f) => f < JAM_FLOW).length;

@@ -116,7 +116,7 @@ class TripChange {
       context: context,
       isScrollControlled: true,
       builder: (context) => SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           child: ValueListenableBuilder(
             valueListenable: ways,

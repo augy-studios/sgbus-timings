@@ -284,9 +284,13 @@ class _EdgeTrayState extends State<EdgeTray> {
       ),
     );
 
-    // The page keeps clear of the open tray (the buttons, the edge and a gap), and follows it in
-    // and out at the tray's pace.
-    final room = closed ? 0.0 : (wide ? EdgeTray.wideButton : button) + edge + gap;
+    // In landscape the navigation bar or the camera's cutout can be down the tray's side: the
+    // tray sits inside it, not under it.
+    final side = left ? pad.left : pad.right;
+    // The page keeps clear of the open tray (the buttons, the edge, a gap and that inset), and
+    // follows it in and out at the tray's pace. While it's open the page's own SafeArea needn't
+    // keep clear of the inset too; tucked away, it does.
+    final room = closed ? 0.0 : (wide ? EdgeTray.wideButton : button) + edge + gap + side;
     return Stack(
       children: [
         Positioned.fill(
@@ -294,14 +298,19 @@ class _EdgeTrayState extends State<EdgeTray> {
             duration: time,
             curve: _ease,
             padding: EdgeInsets.only(left: left ? room : 0, right: left ? 0 : room),
-            child: widget.child,
+            child: MediaQuery.removePadding(
+              context: context,
+              removeLeft: left && !closed,
+              removeRight: !left && !closed,
+              child: widget.child,
+            ),
           ),
         ),
         Positioned(
           top: pad.top + 12,
           bottom: pad.bottom + 12,
-          left: left ? 0 : null,
-          right: left ? null : 0,
+          left: left ? side : null,
+          right: left ? null : side,
           child: Row(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,

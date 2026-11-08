@@ -524,8 +524,20 @@ class _LiveMapState extends State<LiveMap> {
     if (mounted) setState(() {});
   }
 
+  // A fit asked for before the map was made (the traffic map's, a frame after it opens, often
+  // is): kept, and done once it's made, or the map stays on all of Singapore.
+  (List<List<double>>, double)? _pendingFit;
+
+  void _mapMade(MapLibreMapController c) {
+    _map = c;
+    final p = _pendingFit;
+    _pendingFit = null;
+    if (p != null) _fit(p.$1, pad: p.$2);
+  }
+
   void _fit(List<List<double>> pts, {double pad = 60}) {
     if (pts.isEmpty) return;
+    if (_map == null && !LiveMap.preview) _pendingFit = (pts, pad);
     var s = pts.first[0], n = s, w = pts.first[1], e = w;
     for (final p in pts) {
       s = math.min(s, p[0]);
@@ -533,6 +545,11 @@ class _LiveMapState extends State<LiveMap> {
       w = math.min(w, p[1]);
       e = math.max(e, p[1]);
     }
+    // At least a street's worth (about 200 m) across: one incident alone isn't zoomed to the
+    // closest the map goes (the site's fit stops at a street's zoom).
+    const least = 0.0018;
+    if (n - s < least) (s, n) = ((s + n - least) / 2, (s + n + least) / 2);
+    if (e - w < least) (w, e) = ((w + e - least) / 2, (w + e + least) / 2);
     _centre = LatLng((s + n) / 2, (w + e) / 2);
     // About the zoom that fits it, for MapPreview: metres per point at zoom z are
     // 40075016 cos(lat) / (512 * 2^z), the bounds padded for the bars above and below.
@@ -1572,6 +1589,7 @@ class _LiveMapState extends State<LiveMap> {
   void _openLayers() {
     showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (context) => StatefulBuilder(
         builder: (context, set) {
           final off = _layersOff();
@@ -1584,7 +1602,7 @@ class _LiveMapState extends State<LiveMap> {
                 },
               );
           return SafeArea(
-            child: Padding(
+            child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(tr('layers.title', 'Layers'), style: Theme.of(context).textTheme.titleLarge),
@@ -1657,9 +1675,19 @@ class _LiveMapState extends State<LiveMap> {
     }
 
     final incidents = [for (final inc in (t['incidents'] as List? ?? const [])) if (inc is Map) inc];
+    // Where the traffic is: the jammed and slow stretches and the incidents, which the map then
+    // closes in on. All clear, it stays on the whole way.
+    final hot = <List<double>>[
+      for (var i = 0; i < flows.length && i < way.length; i++)
+        if (cls(flows[i]) != 'clear') ...[way[i], way[math.min(i + 1, way.length - 1)]],
+    ];
     for (final inc in incidents) {
-      if (inc['lat'] is num) _flag([(inc['lat'] as num).toDouble(), (inc['lng'] as num).toDouble()], said(inc), colour: LiveMap.jammed);
+      if (inc['lat'] is! num || inc['lng'] is! num) continue;
+      final at = [(inc['lat'] as num).toDouble(), (inc['lng'] as num).toDouble()];
+      _flag(at, said(inc), colour: LiveMap.jammed);
+      hot.add(at);
     }
+    if (hot.isNotEmpty) _fit(hot, pad: 80);
     final ago = math.max(0, ((When.nowMs() - (t['at'] as num)) / 60000).round());
     sub = ago < 1 ? tr('map.trafficNow', "LTA's live traffic, just now") : tr('map.trafficAgo', "LTA's live traffic, {m} min ago", {'m': ago});
     final jammed = flows.where((f) => f < 0.4).length;
@@ -1715,7 +1743,7 @@ class _LiveMapState extends State<LiveMap> {
             myLocationRenderMode: _located ? MyLocationRenderMode.compass : MyLocationRenderMode.normal,
             onCameraTrackingDismissed: _trackingDismissed,
             attributionButtonPosition: AttributionButtonPosition.bottomLeft,
-            onMapCreated: (c) => _map = c,
+            onMapCreated: _mapMade,
             onStyleLoadedCallback: _onStyle,
             onMapClick: _onTap,
             onCameraMove: (p) {

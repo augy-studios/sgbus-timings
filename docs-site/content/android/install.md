@@ -3,8 +3,32 @@ title: Install the app
 description: Download SG Bus Timings for Android, install it, and bring across what you've saved from an older version or Chrome.
 ---
 
-The app is shared as a file rather than on Google Play, for now. It runs on
-Android 7.0 or newer.
+The app comes as a file from GitHub, or from Google Play. It runs on Android 7.0
+or newer.
+
+## GitHub or Google Play
+
+Both are the same app, with the same screens, and either one brings across what
+you've saved. Google allows a few permissions only for other kinds of app, so the
+app from Google Play uses your location only while you're using it: with the app
+open, or a trip running. It never asks for location **All the time**, and goes
+without four things:
+
+| In the app from GitHub | In the app from Google Play |
+|---|---|
+| [Timings near a stop](reminders.md#timings-near-a-stop), as you walk up to a favourite stop, which needs location with the app closed | Not there. Open the stop, or put it on a [widget](widgets-and-shortcuts.md#the-bus-timings-widget) |
+| ["On a bus?"](reminders.md#on-a-bus), offering a trip when the phone notices you're riding | Not there. Start the trip yourself from Navigate or a bus's route |
+| On your first trip, an offer to leave the app out of battery optimisation | Not asked. Turn it off yourself in Android's settings for the app if your phone stops trips |
+| Routines, last bus reminders and Time to leave on time by themselves | On time once you allow **Alarms & reminders**: see [If they come late](reminders.md#if-they-come-late) |
+
+None of these changes much day to day. Timings, Navigate, trips with the screen
+off and the Get Off Alert, widgets, card value and everything else are in both. A
+trip follows you with the screen off in either, as its notification counts as using
+the app. With the app closed, the app from Google Play plans
+[Time to leave](reminders.md#time-to-leave) from Home in [Places](places.md).
+
+Updates differ too: the app from GitHub [updates itself](updates.md), and the one
+from Google Play updates through Google Play, like any other app.
 
 ## Download and install it
 

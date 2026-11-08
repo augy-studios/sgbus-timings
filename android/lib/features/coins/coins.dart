@@ -648,7 +648,13 @@ class Confetti extends StatefulWidget {
 }
 
 class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin {
-  late final _anim = AnimationController(vsync: this, duration: Duration(seconds: widget.seconds))..forward();
+  // Done, it's gone, whatever is showing it (the site's tidy() removes its canvas).
+  bool _done = false;
+  late final _anim = AnimationController(vsync: this, duration: Duration(seconds: widget.seconds))
+    ..addStatusListener((s) {
+      if (s == AnimationStatus.completed && mounted) setState(() => _done = true);
+    })
+    ..forward();
   final _bits = List.generate(140, (i) {
     final r = math.Random(i * 7919);
     return (x: r.nextDouble(), delay: r.nextDouble() * 0.35, speed: 0.6 + r.nextDouble() * 0.8, sway: r.nextDouble() * 2 * math.pi, spin: r.nextDouble() * 6, colour: _colours[i % _colours.length], w: 6 + r.nextDouble() * 6);
@@ -662,7 +668,8 @@ class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(animation: _anim, builder: (_, _) => CustomPaint(size: Size.infinite, painter: _ConfettiPainter(_bits, _anim.value)));
+  Widget build(BuildContext context) =>
+      _done ? const SizedBox.shrink() : AnimatedBuilder(animation: _anim, builder: (_, _) => CustomPaint(size: Size.infinite, painter: _ConfettiPainter(_bits, _anim.value)));
 }
 
 class _ConfettiPainter extends CustomPainter {
@@ -672,15 +679,21 @@ class _ConfettiPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // All of it fades over the last quarter, as the site's does over its last second.
+    final fade = ((1 - t) / 0.25).clamp(0.0, 1.0);
+    if (fade <= 0) return;
     for (final b in bits) {
-      final p = ((t - b.delay) / (1 - b.delay)).clamp(0.0, 1.0);
-      if (p <= 0) continue;
-      final y = -20 + p * b.speed * (size.height + 60);
+      // Each piece falls the whole height, top to past the bottom, the faster ones sooner: a
+      // slow one stopped short used to stay mid-screen once the time was up.
+      final life = (1 - b.delay) / math.max(1.0, b.speed);
+      final p = (t - b.delay) / life;
+      if (p <= 0 || p >= 1) continue;
+      final y = -20 + p * (size.height + 60);
       final x = b.x * size.width + math.sin(b.sway + p * 8) * 24;
       canvas.save();
       canvas.translate(x, y);
       canvas.rotate(b.spin * p * 6);
-      canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: b.w, height: b.w * 0.45), Paint()..color = b.colour.withValues(alpha: (1 - p * 0.6)));
+      canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: b.w, height: b.w * 0.45), Paint()..color = b.colour.withValues(alpha: (1 - p * 0.6) * fade));
       canvas.restore();
     }
   }
