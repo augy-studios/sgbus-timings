@@ -52,7 +52,8 @@ from ..flows import end_flow, get_flow, set_flow
 from ..nav_view import build_mynavs_view
 from ..navs import toggle_favourite_nav
 from ..route_drafts import get_route_draft
-from ..when import describe, quick
+from ..when import describe, picked
+from ..when_view import build_day_picker, build_hour_picker, build_minute_picker
 from ..when_view import build_when_menu
 from .settings import FLOW_PREFIX as SETTINGS_FLOW_PREFIX
 from .settings import build_settings_view, save_place, start_edit_birthday, start_edit_name, start_edit_place
@@ -216,9 +217,23 @@ def register_callbacks(client):
                 await event.answer()
                 return
 
+            # 📅 Pick a day and time: the day, the hour, then the minutes, which sets it.
+            if action in ("route_when_day", "route_when_hour", "route_when_minute", "nav_when_day", "nav_when_hour", "nav_when_minute"):
+                prefix, step = action.split("_when_")
+                back = ROUTE_WHEN_BACK if prefix == "route" else NAV_WHEN_BACK
+                base = {k: v for k, v in payload.items() if k not in ("mode", "day", "hour")}
+                if step == "day":
+                    rich, buttons = build_day_picker(prefix, base, payload["mode"], back)
+                elif step == "hour":
+                    rich, buttons = build_hour_picker(prefix, base, payload["mode"], payload["day"], back)
+                else:
+                    rich, buttons = build_minute_picker(prefix, base, payload["mode"], payload["day"], payload["hour"], back)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer()
+                return
+
             if action == "route_when_set":
-                pick = payload.get("pick")
-                when = quick(pick["mode"], pick["minutes"]) if pick else None
+                when = picked(payload.get("pick"))
                 route = {k: v for k, v in payload.items() if k not in ("pick", "when")}
                 if when:
                     route["when"] = when
@@ -598,8 +613,7 @@ def register_callbacks(client):
 
             if action in ("nav_when_set", "nav_back"):
                 if action == "nav_when_set":
-                    pick = payload.get("pick")
-                    when = quick(pick["mode"], pick["minutes"]) if pick else None
+                    when = picked(payload.get("pick"))
                 else:
                     when = payload.get("when")
                 await event.answer(describe(when) if action == "nav_when_set" else None)

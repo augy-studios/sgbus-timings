@@ -58,8 +58,10 @@ Every other place saved in [/places](places.md) follows as a button too, such as
 The panel starts at **🕒 Leave now**. Tap it, then **Leave at…** or **Arrive
 by…**, and send the time: `8:30`, `8.30pm` or `2030`, or with a day, `tmr 8am` or
 `sat 9:15`, up to a week ahead. A time with no day that has already passed today
-means tomorrow. Or tap one of **In 15 min**, **In 30 min**, **In 1 h** or **In 2
-h**. **Leave now** on the same menu goes back.
+means tomorrow. Or tap a quick one, from **In 5 min** to **In 3 h**, or
+**📅 Pick a day and time**: tap the day (today to a week ahead), then the hour, then
+the minutes, in fives. Only times still to come are offered. **Leave now** on the
+same menu goes back.
 
 With a time picked, each way shows when you'd set off and get in, as **08:30 →
 09:05**; for Arrive by, a way you'd have had to leave on already says **too

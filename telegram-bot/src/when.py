@@ -248,6 +248,43 @@ def parse_typed(text: str, mode: str) -> "dict | None":
     return {"mode": mode, "at": dt_to_at(moment)}
 
 
+def picked(pick: "dict | None") -> "dict | None":
+    """A pick from the time picker's buttons (when_view.py): {"mode", "minutes"} for one some
+    minutes on, worked out when it's tapped; {"mode", "at"} for a day and time picked; None for
+    Leave now."""
+    if not pick:
+        return None
+    if pick.get("at"):
+        return {"mode": pick["mode"], "at": pick["at"]}
+    return quick(pick["mode"], pick["minutes"])
+
+
+def pick_days() -> list:
+    """The days a time can be picked on: today and the week ahead, as "2026-11-10"."""
+    today = now().date()
+    return [(today + timedelta(days=k)).isoformat() for k in range(DAYS_AHEAD + 1)]
+
+
+def _day_start(day: str) -> datetime:
+    return datetime.strptime(day, "%Y-%m-%d").replace(tzinfo=SG)
+
+
+def pick_hours(day: str) -> list:
+    """The hours on `day` with a five minutes still to come in them, and before a week from now."""
+    start, soon, latest = _day_start(day), now(), now() + timedelta(days=DAYS_AHEAD)
+    return [h for h in range(24) if start + timedelta(hours=h, minutes=55) >= soon and start + timedelta(hours=h) <= latest]
+
+
+def pick_minutes(day: str, hour: int) -> list:
+    """The minutes of that hour, in fives, still to come and before a week from now."""
+    start, soon, latest = _day_start(day) + timedelta(hours=hour), now(), now() + timedelta(days=DAYS_AHEAD)
+    return [m for m in range(0, 60, 5) if soon <= start + timedelta(minutes=m) <= latest]
+
+
+def at_of(day: str, hour: int, minute: int) -> str:
+    return f"{day}T{hour:02d}:{minute:02d}"
+
+
 def quick(mode: str, minutes: int) -> dict:
     """A picked time this many minutes on, rounded up to the next five."""
     moment = now() + timedelta(minutes=minutes)

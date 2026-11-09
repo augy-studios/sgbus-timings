@@ -52,8 +52,10 @@ the right way counts, the same rule as the list of buses below.
 The panel starts at **🕒 Leave now**. Tap it, then **Leave at…** or **Arrive
 by…**, and send the time: `8:30`, `8.30pm` or `2030`, or with a day, `tmr 8am` or
 `sat 9:15`, up to a week ahead. A time with no day that has already passed today
-means tomorrow. Or tap one of **In 15 min**, **In 30 min**, **In 1 h** or **In 2
-h**. **Leave now** on the same menu goes back.
+means tomorrow. Or tap a quick one, from **In 5 min** to **In 3 h**, or
+**📅 Pick a day and time**: tap the day (today to a week ahead), then the hour, then
+the minutes, in fives. Only times still to come are offered. **Leave now** on the
+same menu goes back.
 
 Only buses running at that time are offered, for Leave now as well: a bus counts
 as running between its first and last bus at your stop, for that day of the week,
