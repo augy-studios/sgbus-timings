@@ -136,6 +136,8 @@ def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(204)
     # The way the trip really goes (route_shapes.py): the site's real tracks, a road that bends,
     # and a footpath.
+    if url.path == '/api/mrt-doors':
+        return httpx.Response(200, content=open(os.path.join(ROOT, 'scripts', 'fixtures', 'mrt-doors-2026-11-10.json'), 'rb').read())
     if url.path == '/data/rail-tracks.json':
         return httpx.Response(200, content=open(os.path.join(ROOT, 'main-site', 'data', 'rail-tracks.json'), 'rb').read())
     if url.path == '/api/road':
@@ -178,6 +180,8 @@ async def main():
        and 'sgbus.test%2Feta%2Fabcde12345' in share['url'], share['url'])
     ok('Refresh and End trip', [b['text'] for b in kb[1]] == ['🔄 Refresh', '🏁 End trip'] and all(b['callback_data'].startswith('b:') for b in kb[1]))
     ok('the widget\'s caption', 'Your trip to One Raffles Place' in sent[0][4]['caption'])
+    stored = json.loads(bot_trips.get_trip(eta_id)['parts_json'])
+    ok('the train part knows its doors (mrt_doors.py)', stored[2].get('y', '').startswith('Getting off at Raffles Place: door') and 'y' not in stored[1], stored[2])
     ok('the apps fetch its state every 15 s', any(c[4].get('cache_time') == 15 for c in tg('editSharedWidgetData')))
 
     # ---------- the way it really goes ----------

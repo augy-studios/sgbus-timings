@@ -32,7 +32,11 @@ The card shows:
   still to come. Tap a part to see where it goes; tap it again to go back to the
   part you're on.
 - **The part you're on**: the bus, train or walk, where it goes, and the stops
-  left.
+  left. On an MRT or LRT train, 🚪 which **door numbers** to stand at for the
+  escalators, lift and stairs where you get off, or for your next train if you
+  change there, or that it's a change across the platform; and where the number
+  is on the platform door. As in [the web app](../web/nav.md), for the stations
+  that have them so far.
 - **When it was last updated.** If it's been more than five minutes, it says
   when it last heard instead.
 

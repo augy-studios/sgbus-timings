@@ -4,7 +4,7 @@ Chat state {"o":1} is the person on the trip, with "c": the uwuCoins the trip ea
 they've got there (bot_trips.py, _settle), counted up once. Tap the time to switch between minutes and a clock,
 a part of the bar to see that part, and the map to close in on where they are, and back. The map
 is the route on a dot grid, as map_data in trip_widget.py packs it: a widget can't load map tiles.
-Sent without these comments (trip_widget.py). -->
+On a train, "y" says which doors to stand at (mrt_doors.py). Sent without these comments. -->
 <style>
 body{margin:0;padding:10px 14px max(10px,env(safe-area-inset-bottom))}
 p{margin:0 0 4px}
@@ -34,6 +34,7 @@ p{margin:0 0 4px}
 @keyframes pl{to{transform:scale(1.8);opacity:0}}
 @media (prefers-reduced-motion:reduce){.me::after{display:none}}
 .pin{font-size:20px;transform:translate(-50%,-90%)}
+.dr{margin:6px 0 2px;padding:6px 8px;border-radius:8px;font-size:.88em;background:var(--tg-theme-secondary-bg-color)}
 .cn{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-weight:700;font-size:1.1em;font-variant-numeric:tabular-nums}
 .cn svg{width:22px;height:22px}
 .z{position:absolute;right:8px;top:6px;padding:1px 7px;border-radius:8px;font-size:.72em;background:var(--tg-theme-bg-color);color:var(--tg-theme-hint-color)}
@@ -111,6 +112,7 @@ A.innerHTML=map()+'<p class="h">'+E(who)+(D.t?' to '+E(D.t):'')+'</p>'
 +'<div class="big"><span id="m">'+E(big)+'</span><span class="h">'+E(sub)+'</span></div>'
 +(D.c>1?'<div class="bar">'+bar+'</div>':'')
 +(D.x?'':line(sel==null?Math.min(D.i,D.c-1):sel))
++(D.y&&!D.e&&!D.x&&(sel==null||sel===D.i)?'<p class="dr">🚪 '+E(D.y)+'</p>':'')
 +(D.e&&cd().c?'<p class="cn">'+COIN+'+<span id="cc">0</span> uwuCoins</p>':'')
 +'<p class="h">'+(old?'Last heard from at ':'Updated ')+at(D.u)+'</p>';
 coinsUp();

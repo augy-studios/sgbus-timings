@@ -15,7 +15,8 @@
 //   1. The person on the trip: Your trip to …, the minutes, a bar of the parts with the one
 //      they're on lit, that part's stops left, Part 2 of 4, Updated …
 //   2. Tapping the minutes shows the time, and back; tapping a part shows it, and back.
-//   3. A newer state from the bot redraws it; an older one is ignored.
+//   3. A newer state from the bot redraws it; an older one is ignored. On a train, the doors to
+//      stand at (telegram-bot/src/mrt_doors.py), not while another part's looked at.
 //   4. Following someone's trip: Sam's trip; arrived, sharing stopped and the link gone.
 //   5. Not heard from in a while: Last heard from at …; no state yet: Getting the trip.
 //   6. Fits: no sideways overflow from 200 to 600 px wide, under 560 px tall at 320, in both
@@ -107,7 +108,7 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
   const parts = [
     { kind: 'walk', label: 'Walk', to: 'Bedok Int (84031)' },
     { kind: 'bus', label: 'Bus 28', to: 'Paya Lebar Stn Exit D (81111)' },
-    { kind: 'train', label: 'EW Line', to: 'Raffles Place station' },
+    { kind: 'train', label: 'EW Line', to: 'Raffles Place station', y: 'Getting off at Raffles Place: door 10 or 15 for the escalators; door 4 for the lift. The door number is on the panel above the doors.' },
     { kind: 'walk', label: 'Walk', to: 'One Raffles Place' },
   ];
   // The trip's parts on the map: a walk to the stop, the bus along the road, the train, a walk.
@@ -197,6 +198,10 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     // ---------- 3. the bot's changes ----------
     await own.evaluate((d) => window.__push(d), D[1]);
     t = await text(own);
+    ok('3. on the train: the doors to stand at', (await own.textContent('.dr').catch(() => '')).startsWith('🚪 Getting off at Raffles Place: door 10 or 15'));
+    await own.click('.bar [data-i="3"]');
+    ok('3. not while looking at another part', (await own.$('.dr')) === null);
+    await own.click('.bar [data-i="3"]');
     ok('3. a newer state redraws it', t.includes('9 min') && t.includes('EW Line to Raffles Place station · 3 stops left') && t.includes('Part 3 of 4'), t);
     await own.evaluate((d) => window.__push(d), D[2]);
     ok('3. an older one is ignored', (await text(own)).includes('Part 3 of 4'));

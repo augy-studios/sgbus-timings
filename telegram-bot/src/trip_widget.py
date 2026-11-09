@@ -57,6 +57,7 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
     p   the parts as [kind, label, end] from part o on, as far as they're known
     u   when the link was last updated (unix seconds)
     e   1 once they've arrived, x 1 once they stopped sharing, 2 once the link's gone
+    y   on a train: which doors to stand at for where they get off, or their change (mrt_doors.py)
 
     m v j q w h the map (map_data, below)
 
@@ -85,6 +86,10 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
     else:
         tl = (eta.get("timeline") or {}).get("legs") or []
         d["o"], src = i, [(p.get("kind"), p.get("label"), p.get("to")) for p in tl]
+    # Where to stand on the train they're on (mrt_doors.py), from the bot's own trip's parts.
+    tip = (parts[i].get("y") if parts and 0 <= i < len(parts) else None) if not eta.get("ended") else None
+    if tip:
+        d["y"] = _cut(tip, 220)
     if eta.get("ended"):
         d["e"] = 1
     if gone:

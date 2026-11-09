@@ -34,7 +34,7 @@ from .db import db
 from .http_client import shared_client
 from .nav_view import _place_name
 from .route_shapes import colour_of, shapes_for_link, shapes_for_trip
-from . import coins, feats, rides
+from . import coins, feats, mrt_doors, rides
 from .trip_widget import OWNER_CHAT_DATA, caption, public_data, widget_html
 
 # As the site's api/_push/trip.js: the Get Off Alert comes this many stops before the stop.
@@ -133,6 +133,26 @@ def trip_parts(option: dict, start: dict, end: dict) -> list:
     if len(parts) > 12:
         raise TripError("This way has too many parts to follow as a trip.")
     return parts
+
+
+async def door_tips(option: dict, parts: list) -> list:
+    """Where to stand on each part's train, for the widget (mrt_doors.py): a tip for each train
+    part, as the web app gives it for the ride and the one after it; None for the rest, or
+    where the station isn't known."""
+    tips = [None] * len(parts)
+    try:
+        if not await mrt_doors.load():
+            return tips
+        src = option.get("legs") or []
+        rides = [k for k, l in enumerate(src) if l.get("mode") in ("bus", "train") and len(l.get("path") or []) >= 2]
+        trains = [j for j, p in enumerate(parts) if p["kind"] == "train"]
+        on = [k for k in rides if src[k]["mode"] == "train"]
+        for j, k in zip(trains, on):
+            nxt = next((src[r] for r in rides if r > k), None)
+            tips[j] = mrt_doors.tip(src[k], nxt)
+    except Exception as err:  # the doors are a nicety: the trip goes on without them
+        print(f"[bot_trips] doors: {err}")
+    return tips
 
 
 def first_eta(name: str, end: dict, parts: list, minutes: float, now: int) -> dict:
@@ -302,6 +322,10 @@ async def start_trip(chat_id: int, name: str, start: dict, end: dict, option: di
         raise TripError("Live trips aren't available right now. Please try again later.")
 
     widget_parts = [{"kind": p["kind"], "label": p["label"], "to": p["to"]} for p in parts]
+    # Each train part's doors (mrt_doors.py), shown while you're on it.
+    for part, tip in zip(widget_parts, await door_tips(option, parts)):
+        if tip:
+            part["y"] = tip
     with db:
         db.execute(
             """INSERT INTO trip_widgets (eta_id, owner_chat, secret, device_id, parts_json, last_json, trip_json, created_at, updated_at)
