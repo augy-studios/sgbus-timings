@@ -23,7 +23,7 @@ The name is the one in [Settings](settings.md#you), if you set one.
 
 Whoever opens it sees it update by itself. It keeps going with the screen off. It ends when you arrive or end the trip, or when you tap **Stop sharing my ETA** on its card.
 
-Open someone else's, and **Live progress** shows when they'll arrive and their stops ahead, with **Live map** for their dot moving along their trip and **Directions there** to plan your own way there.
+Open someone else's, and **Live progress** shows when they'll arrive and their stops ahead, with **Live map** for their dot moving along their trip, **Follow in Telegram** for their trip as a live card in the [Telegram bot](../bot/trips.md#follow-someones-trip) until they arrive, and **Directions there** to plan your own way there.
 
 ## Offline Sharing
 

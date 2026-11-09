@@ -987,6 +987,7 @@
   "html.ez_link_and_nets_flashpay": "EZ-Link 和 NETS FlashPay 卡。不会写入卡片，读到的内容只留在这部手机上。",
   "html.flag_down_a_bus": "招停巴士",
   "html.follow_on_the_map": "在地图上跟随",
+  "html.follow_in_telegram": "在 Telegram 中跟随",
   "html.full": "满座",
   "html.full_2": "高级超级应用",
   "html.google_calendar": "Google 日历",

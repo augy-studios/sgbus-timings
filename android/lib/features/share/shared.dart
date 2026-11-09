@@ -21,6 +21,7 @@ import '../../app/nav.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
+import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../../widgets/place_search.dart';
@@ -74,6 +75,10 @@ Future<void> openShared(String id) async {
 }
 
 // ---------- someone's live progress ----------
+
+// The Telegram bot, which follows a shared trip as a live widget in your own chat with it.
+const tripBot = 'sgbus_app';
+String telegramLink(String id) => 'https://t.me/$tripBot?start=eta_$id';
 
 class EtaView extends StatefulWidget {
   const EtaView({super.key, required this.id, required this.first, required this.updatedAt});
@@ -181,6 +186,18 @@ class _EtaViewState extends State<EtaView> {
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: FilledButton.tonalIcon(onPressed: () => LiveMap.follow(_d), icon: const Icon(Icons.map_outlined), label: Text(tr('trip.live_map', 'Live map'))),
+          ),
+        // Their trip as a live widget in the Telegram bot (telegram-bot/src/bot_trips.py), as the
+        // website's Follow in Telegram (js/share.js): until it's over.
+        if (live)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: FilledButton.tonalIcon(
+              key: const ValueKey('etaTelegram'),
+              onPressed: () => Native.call('SgBus', 'openLink', {'url': telegramLink(widget.id)}).catchError((_) => null),
+              icon: const Icon(Icons.send_outlined),
+              label: Text(tr('html.follow_in_telegram', 'Follow in Telegram')),
+            ),
           ),
         if (NavEnd.from(_d['to']) != null)
           Padding(

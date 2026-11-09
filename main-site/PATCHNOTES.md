@@ -9,6 +9,15 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 9 November 2026: Follow in Telegram, and the new bot, on the Android app (2.4.10)
+
+### Android app
+
+- **Follow in Telegram** - A trip someone shares live has Follow in Telegram under it, as on the website, opening it as a live card in the Telegram bot.
+- **The new bot** - The Edge Tray's Telegram bot, Sync with the Telegram bot and the terminal's help go to @sgbus_app. Syncing with the bot from the app works again.
+
+---
+
 ## 9 November 2026: Live trips in the Telegram bot, and the bot's new name
 
 ### Telegram bot
