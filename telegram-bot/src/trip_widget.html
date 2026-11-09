@@ -4,7 +4,8 @@ Chat state {"o":1} is the person on the trip, with "c": the uwuCoins the trip ea
 they've got there (bot_trips.py, _settle), counted up once. Tap the time to switch between minutes and a clock,
 a part of the bar to see that part, and the map to close in on where they are, and back. The map
 is the route on a dot grid, as map_data in trip_widget.py packs it: a widget can't load map tiles.
-On a train, "y" says which doors to stand at (mrt_doors.py). Sent without these comments. -->
+On a train, "y" says which doors to stand at (mrt_doors.py), and a train still to come has its
+own, shown when it's tapped on the bar. Sent without these comments. -->
 <style>
 body{margin:0;padding:10px 14px max(10px,env(safe-area-inset-bottom))}
 p{margin:0 0 4px}
@@ -96,6 +97,7 @@ return '<div class="map" id="map"><svg width="100%" height="'+ch+'" preserveAspe
 +(w?'<b class="me" style="'+pc(w)+'">'+(IC[D.k]||'📍')+'</b>':'')
 +(z?'<span class="z">Tap for the whole way</span>':'')+'</div>';
 }
+function doors(i){const y=i===D.i?D.y:((D.p||[])[i-(D.o||0)]||[])[3];return y?'<p class="dr">🚪 '+E(y)+'</p>':''}
 function render(){
 if(!D){A.innerHTML='<p class="h">Trip</p><p>Getting the trip…</p>';return}
 const now=Date.now()/1000,who=own()?'Your trip':D.n?D.n+'’s trip':'A shared trip';
@@ -112,7 +114,7 @@ A.innerHTML=map()+'<p class="h">'+E(who)+(D.t?' to '+E(D.t):'')+'</p>'
 +'<div class="big"><span id="m">'+E(big)+'</span><span class="h">'+E(sub)+'</span></div>'
 +(D.c>1?'<div class="bar">'+bar+'</div>':'')
 +(D.x?'':line(sel==null?Math.min(D.i,D.c-1):sel))
-+(D.y&&!D.e&&!D.x&&(sel==null||sel===D.i)?'<p class="dr">🚪 '+E(D.y)+'</p>':'')
++(D.e||D.x?'':doors(sel==null?D.i:sel))
 +(D.e&&cd().c?'<p class="cn">'+COIN+'+<span id="cc">0</span> uwuCoins</p>':'')
 +'<p class="h">'+(old?'Last heard from at ':'Updated ')+at(D.u)+'</p>';
 coinsUp();

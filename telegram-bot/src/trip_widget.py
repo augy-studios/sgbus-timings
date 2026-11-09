@@ -54,7 +54,8 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
     r   revision, raised on every change, so the widget never goes back to an older one
     n   the sharer's name, t where they're going, a their arrival (unix seconds)
     i   the part they're on, c how many parts, k l d s that part's kind, label, end and stops left
-    p   the parts as [kind, label, end] from part o on, as far as they're known
+    p   the parts as [kind, label, end] from part o on, as far as they're known, and a train
+        still to come with its doors as a fourth, as y has them
     u   when the link was last updated (unix seconds)
     e   1 once they've arrived, x 1 once they stopped sharing, 2 once the link's gone
     y   on a train: which doors to stand at for where they get off, or their change (mrt_doors.py)
@@ -103,16 +104,23 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
         here, mine, current = None, False, None
     else:
         (here, mine), current = where_now(eta, updated_ms if gone else None), i if routes and len(routes) == d["c"] else None
-    # The parts as long as they fit, with the map: the map's points fewer first, then the parts'
-    # ends shortened, then left off, then the map dropped, then fewer parts.
-    for end_len in (60, 36, 20, 0):
-        d["p"] = [[KINDS.get(k, "b"), _cut(l, 30), _cut(t, end_len) if end_len else ""] for k, l, t in src[:12]]
-        for most in MAP_POINTS:
-            m = map_data(route, here, end, most, current, snap=not mine) or {}
-            if len(_dump({**d, **m}).encode("utf-8")) <= DATA_LIMIT:
-                return _dump({**d, **m})
-        if len(_dump(d).encode("utf-8")) <= DATA_LIMIT and end_len == 0:
-            return _dump(d)
+    # The doors of each train still to come, to see them ahead (tapping it on the bar), nearest
+    # first. The one they're on is y.
+    later = [j for j in range(i + 1, len(parts or [])) if parts[j].get("y")] if parts and not eta.get("ended") else []
+    # The parts as long as they fit, with the map and the doors: the map's points fewer first,
+    # then the parts' ends shortened, then the doors of the trains furthest off left off, then
+    # the parts' ends left off, then the map dropped, then fewer parts.
+    for keep in range(len(later), -1, -1):
+        ahead = set(later[:keep])
+        for end_len in (60, 36, 20, 0) if keep == 0 else (60, 36):
+            d["p"] = [[KINDS.get(k, "b"), _cut(l, 30), _cut(t, end_len) if end_len else ""] + ([_cut(parts[j]["y"], 220)] if j in ahead else [])
+                      for j, (k, l, t) in enumerate(src[:12])]
+            for most in MAP_POINTS:
+                m = map_data(route, here, end, most, current, snap=not mine) or {}
+                if len(_dump({**d, **m}).encode("utf-8")) <= DATA_LIMIT:
+                    return _dump({**d, **m})
+            if len(_dump(d).encode("utf-8")) <= DATA_LIMIT and end_len == 0:
+                return _dump(d)
     while d["p"] and len(_dump(d).encode("utf-8")) > DATA_LIMIT:
         d["p"].pop()
     out = _dump(d)

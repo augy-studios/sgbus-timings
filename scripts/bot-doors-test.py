@@ -71,7 +71,14 @@ parts = [{'kind': 'walk', 'label': 'Walk', 'to': 'Paya Lebar'}, {'kind': 'train'
 eta = lambda i, **x: {'name': 'Sam', 'to': {'label': 'One Raffles Place', 'lat': 1.284, 'lng': 103.851}, 'arriveAt': 1, 'legIndex': i, 'legCount': 2,
                       'leg': {'label': parts[i]['label'], 'to': parts[i]['to'], 'stopsLeft': 3, 'kind': parts[i]['kind']}, **x}
 ok('on the train: its doors in the widget', json.loads(public_data(eta(1), 1, 0, parts)).get('y', '').startswith('Getting off at Raffles Place: door 10'))
-ok('walking to it: not yet', 'y' not in json.loads(public_data(eta(0), 1, 0, parts)))
+walking = json.loads(public_data(eta(0), 1, 0, parts))
+ok('walking to it: its doors there to see ahead, on its part', 'y' not in walking and walking['p'][1][3].startswith('Getting off at Raffles Place'))
+ok('a train already ridden carries none', all(len(p) == 3 for p in json.loads(public_data(eta(1), 1, 0, parts))['p']))
+many = [{'kind': 'train', 'label': f'{c} Line', 'to': 'Somewhere far along the line ' * 2, 'y': ('Changing at Somewhere for the Downtown Line: door 1 or 2 for the escalators; door 3 for the lift. The door number is at the top right of each door.')} for c in ['EW', 'NS', 'DT', 'CC', 'NE', 'TE']]
+long_eta = {**eta(0), 'legCount': 6, 'leg': {'label': 'EW Line', 'to': 'x', 'stopsLeft': 3, 'kind': 'train'}}
+packed = public_data(long_eta, 1, 0, many)
+kept = [j for j, p in enumerate(json.loads(packed)['p']) if len(p) == 4]
+ok("six trains: inside 1024 bytes, the nearest trains' doors kept first", len(packed.encode()) <= 1024 and kept == list(range(1, 1 + len(kept))) and json.loads(packed).get('y'), (len(packed.encode()), kept))
 ok('arrived: no more', 'y' not in json.loads(public_data(eta(1, ended=True), 1, 0, parts)))
 
 print('\n%d failed' % fails if fails else '\nAll passed'); sys.exit(1 if fails else 0)

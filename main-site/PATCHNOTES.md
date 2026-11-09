@@ -18,7 +18,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Feats** - The nine feats, from your own rides and trips, each worth 100 uwuCoins once. /achievements says how far along you are.
 - **Team runs** - /team Night Owls starts one, and /team with a code, or a team link, joins it, with phones and Telegram chats in the same team. The team's card shows each feat and who's in it, updated for all of you at once.
 - **uwuCoins in /sync** - Taking another device's uwuCoins adds them to yours.
-- **Doors on the train** - On a live trip's MRT or LRT ride, the card says which door numbers to stand at for the escalators, lift and stairs where you get off, or for your next train, as Navigate does.
+- **Doors on the train** - On a live trip's MRT or LRT ride, the card says which door numbers to stand at for the escalators, lift and stairs where you get off, or for your next train, as Navigate does. Tap a train still to come for its doors ahead of time.
 
 ### Web app
 

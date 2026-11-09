@@ -189,6 +189,7 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     await own.click('.bar [data-i="2"]');
     t = await text(own);
     ok('2. tap a part: that part', t.includes('EW Line to Raffles Place station') && t.includes('later') && t.includes('Part 3 of 4') && !t.includes('stops left'), t);
+    ok('2. a train still to come, tapped: its doors, ahead of time', (await own.textContent('.dr').catch(() => '')).startsWith('🚪 Getting off at Raffles Place'));
     ok('2. picked on the bar', (await own.evaluate(() => document.querySelector('.bar [data-i="2"]').className)).includes('s'));
     await own.click('.bar [data-i="0"]');
     ok('2. a part done says so', (await text(own)).includes('done'));
