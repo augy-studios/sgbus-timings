@@ -66,6 +66,17 @@ ok('changes across the platform said', any(t and 'across the platform' in t for 
 ok('changes at the same station said', any(t and t.startswith('Changing at') for t in ours))
 ok('where the number is said', any(t and 'The door number is' in t for t in ours))
 
+# ---------- to draw (compact) ----------
+pl = {'kind': 'station', 'name': 'Paya Lebar', 'code': 'EW8'}
+rp = {'kind': 'station', 'name': 'Raffles Place', 'code': 'EW14'}
+c = mrt_doors.compact({'mode': 'train', 'route': 'EW', 'from': pl, 'to': rp})
+ok("to draw: the heading, each row's doors and words, where the number is", c and c[0] == 'Getting off at Raffles Place' and c[1] == 0
+   and c[2][0] == [[10, 15], 'escalators'] and c[3] == 'Door number: on the panel above the doors', c)
+x = mrt_doors.compact({'mode': 'train', 'route': 'EW', 'from': pl, 'to': rp}, {'mode': 'train', 'route': 'NS', 'name': 'North South Line', 'from': rp, 'to': {'name': 'Marina Bay', 'code': 'NS27'}})
+ok('to draw: a change across the platform', x and x[1] == '⇄ Change across the platform to the North South Line' and x[2] == [], x)
+same = [mrt_doors.compact(l, n) for l, n in legs]
+ok('to draw: every ride with doors in words has them to draw too', all((a is None) == (b is None) for a, b in zip(ours, same)))
+
 # ---------- in the widget ----------
 parts = [{'kind': 'walk', 'label': 'Walk', 'to': 'Paya Lebar'}, {'kind': 'train', 'label': 'EW Line', 'to': 'Raffles Place', 'y': 'Getting off at Raffles Place: door 10 or 15 for the escalators.'}]
 eta = lambda i, **x: {'name': 'Sam', 'to': {'label': 'One Raffles Place', 'lat': 1.284, 'lng': 103.851}, 'arriveAt': 1, 'legIndex': i, 'legCount': 2,

@@ -4,8 +4,10 @@ Chat state {"o":1} is the person on the trip, with "c": the uwuCoins the trip ea
 they've got there (bot_trips.py, _settle), counted up once. Tap the time to switch between minutes and a clock,
 a part of the bar to see that part, and the map to close in on where they are, and back. The map
 is the route on a dot grid, as map_data in trip_widget.py packs it: a widget can't load map tiles.
-On a train, "y" says which doors to stand at (mrt_doors.py), and a train still to come has its
-own, shown when it's tapped on the bar. Sent without these comments. -->
+On a train, "y" says which doors to stand at (mrt_doors.py, compact), each door drawn as the web
+app's door chip (js/nav.js, doorsPanel): a platform door with a band in the line's colour and
+its number. A train still to come has its own, shown when it's tapped on the bar. Sent without
+these comments. -->
 <style>
 body{margin:0;padding:10px 14px max(10px,env(safe-area-inset-bottom))}
 p{margin:0 0 4px}
@@ -36,8 +38,13 @@ p{margin:0 0 4px}
 @media (prefers-reduced-motion:reduce){.me::after{display:none}}
 .pin{font-size:20px;transform:translate(-50%,-90%)}
 .dr{margin:6px 0 2px;padding:6px 8px;border-radius:8px;font-size:.88em;background:var(--tg-theme-secondary-bg-color)}
+.dr>b{display:block}
+.dw{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:5px 0}
+.dr small{color:var(--tg-theme-hint-color)}
+.dc{display:inline-flex;flex-direction:column;align-items:center;min-width:42px;border:2px solid var(--tg-theme-hint-color);border-radius:7px 7px 3px 3px;overflow:hidden;background:linear-gradient(90deg,transparent calc(50% - 1px),#8885 0 calc(50% + 1px),transparent 0),var(--tg-theme-bg-color)}
+.dc i{align-self:stretch;font:normal 700 .6em system-ui;letter-spacing:.06em;color:#fff;text-align:center}
+.dc b{margin:4px 4px 5px;padding:0 6px 1px;border-radius:5px;background:var(--tg-theme-secondary-bg-color);font-size:1.15em}
 .cn{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-weight:700;font-size:1.1em;font-variant-numeric:tabular-nums}
-.cn svg{width:22px;height:22px}
 .z{position:absolute;right:8px;top:6px;padding:1px 7px;border-radius:8px;font-size:.72em;background:var(--tg-theme-bg-color);color:var(--tg-theme-hint-color)}
 </style>
 <div id="a"></div>
@@ -50,7 +57,7 @@ const E=(s)=>String(s==null?'':s).replace(/[&<>"]/g,(c)=>'&#'+c.charCodeAt(0)+';
 const at=(s)=>new Date(s*1000).toLocaleTimeString(navigator.language||'en-SG',{timeZone:'Asia/Singapore',hour:'2-digit',minute:'2-digit'});
 function cd(){try{return JSON.parse(W.chatData)||{}}catch(e){return {}}}
 function own(){return cd().o===1}
-const COIN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#f5c542" stroke="#b8860b" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7.2" font-weight="800" fill="#7a5200">uwu</text></svg>';
+const COIN='🪙';
 function coinsUp(){
 const c=cd().c,el=document.getElementById('cc');
 if(!c||!el)return;
@@ -97,7 +104,12 @@ return '<div class="map" id="map"><svg width="100%" height="'+ch+'" preserveAspe
 +(w?'<b class="me" style="'+pc(w)+'">'+(IC[D.k]||'📍')+'</b>':'')
 +(z?'<span class="z">Tap for the whole way</span>':'')+'</div>';
 }
-function doors(i){const y=i===D.i?D.y:((D.p||[])[i-(D.o||0)]||[])[3];return y?'<p class="dr">🚪 '+E(y)+'</p>':''}
+function doors(i){
+const y=i===D.i?D.y:((D.p||[])[i-(D.o||0)]||[])[3];
+if(!y||!y.map)return '';
+const col=LC[(D.q||[])[i]]||'#748477';
+return '<div class="dr"><b>🚪 '+E(y[0])+'</b>'+(y[1]?E(y[1]):y[2].map((r)=>'<div class="dw">'+r[0].map((n)=>'<span class="dc"><i style="background:'+col+'">DOOR</i><b>'+n+'</b></span>').join('')+'<small>'+E(r[1])+'</small></div>').join('')+'<small>'+E(y[3])+'</small>')+'</div>';
+}
 function render(){
 if(!D){A.innerHTML='<p class="h">Trip</p><p>Getting the trip…</p>';return}
 const now=Date.now()/1000,who=own()?'Your trip':D.n?D.n+'’s trip':'A shared trip';

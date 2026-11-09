@@ -151,6 +151,24 @@ def plan(leg: dict, nxt: "dict | None" = None) -> "dict | None":
     return {"station": a["n"], "change": (change["name"] if change["fs"] else "") if change else None, "rows": rows, "numberAt": _number_at(a)}
 
 
+def compact(leg: dict, nxt: "dict | None" = None) -> "list | None":
+    """The doors for the trip widget to draw, as the web app's door panel (js/nav.js,
+    doorsPanel): [heading, the change across the platform in words or 0, rows, where the
+    number is in words or ""], each row [[doors], what they're for: "escalators to Jewel"].
+    None where it isn't known."""
+    p = plan(leg, nxt)
+    if not p:
+        return None
+    if p.get("cross"):
+        return [f"At {p['station']}", f"⇄ Change across the platform to the {p['cross']}", [], ""]
+    head = (f"Changing at {p['station']} for the {p['change']}" if p["change"]
+            else f"Changing at {p['station']}" if p["change"] is not None
+            else f"Getting off at {p['station']}")
+    rows = [[r["doors"][:6], WHAT.get(r["t"], r["t"]) + (f" to {_and(r['places'])}"[:44] if r["places"] else "")] for r in p["rows"][:5]]
+    at = f"Door number: {NUMBER_AT[p['numberAt']]}" if p.get("numberAt") in NUMBER_AT else ""
+    return [head, 0, rows, at]
+
+
 def _and(xs: list) -> str:
     return xs[0] if len(xs) < 2 else ", ".join(xs[:-1]) + " and " + xs[-1]
 

@@ -58,7 +58,8 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
         still to come with its doors as a fourth, as y has them
     u   when the link was last updated (unix seconds)
     e   1 once they've arrived, x 1 once they stopped sharing, 2 once the link's gone
-    y   on a train: which doors to stand at for where they get off, or their change (mrt_doors.py)
+    y   on a train: which doors to stand at for where they get off, or their change, as
+        mrt_doors.compact gives them to draw (a sentence, on a trip from before that)
 
     m v j q w h the map (map_data, below)
 
@@ -90,7 +91,7 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
     # Where to stand on the train they're on (mrt_doors.py), from the bot's own trip's parts.
     tip = (parts[i].get("y") if parts and 0 <= i < len(parts) else None) if not eta.get("ended") else None
     if tip:
-        d["y"] = _cut(tip, 220)
+        d["y"] = _cut(tip, 220) if isinstance(tip, str) else tip
     if eta.get("ended"):
         d["e"] = 1
     if gone:
@@ -113,7 +114,7 @@ def public_data(eta: dict, rev: int, updated_ms: int, parts: "list | None" = Non
     for keep in range(len(later), -1, -1):
         ahead = set(later[:keep])
         for end_len in (60, 36, 20, 0) if keep == 0 else (60, 36):
-            d["p"] = [[KINDS.get(k, "b"), _cut(l, 30), _cut(t, end_len) if end_len else ""] + ([_cut(parts[j]["y"], 220)] if j in ahead else [])
+            d["p"] = [[KINDS.get(k, "b"), _cut(l, 30), _cut(t, end_len) if end_len else ""] + ([parts[j]["y"] if isinstance(parts[j]["y"], list) else _cut(parts[j]["y"], 220)] if j in ahead else [])
                       for j, (k, l, t) in enumerate(src[:12])]
             for most in MAP_POINTS:
                 m = map_data(route, here, end, most, current, snap=not mine) or {}

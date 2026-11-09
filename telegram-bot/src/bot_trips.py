@@ -149,7 +149,7 @@ async def door_tips(option: dict, parts: list) -> list:
         on = [k for k in rides if src[k]["mode"] == "train"]
         for j, k in zip(trains, on):
             nxt = next((src[r] for r in rides if r > k), None)
-            tips[j] = mrt_doors.tip(src[k], nxt)
+            tips[j] = mrt_doors.compact(src[k], nxt)
     except Exception as err:  # the doors are a nicety: the trip goes on without them
         print(f"[bot_trips] doors: {err}")
     return tips

@@ -32,7 +32,8 @@ The card shows:
   still to come. Tap a part to see where it goes; tap it again to go back to the
   part you're on.
 - **The part you're on**: the bus, train or walk, where it goes, and the stops
-  left. On an MRT or LRT train, 🚪 which **door numbers** to stand at for the
+  left. On an MRT or LRT train, 🚪 which **door numbers** to stand at, each
+  drawn as a platform door in the line's colour, for the
   escalators, lift and stairs where you get off, or for your next train if you
   change there, or that it's a change across the platform; and where the number
   is on the platform door. Tap a train part still to come on the bar to see its

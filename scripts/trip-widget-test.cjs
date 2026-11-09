@@ -108,7 +108,8 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
   const parts = [
     { kind: 'walk', label: 'Walk', to: 'Bedok Int (84031)' },
     { kind: 'bus', label: 'Bus 28', to: 'Paya Lebar Stn Exit D (81111)' },
-    { kind: 'train', label: 'EW Line', to: 'Raffles Place station', y: 'Getting off at Raffles Place: door 10 or 15 for the escalators; door 4 for the lift. The door number is on the panel above the doors.' },
+    // Its doors as the bot sends them (mrt_doors.py, compact).
+    { kind: 'train', label: 'EW Line', to: 'Raffles Place station', y: ['Getting off at Raffles Place', 0, [[[10, 15], 'escalators to Raffles Place'], [[4], 'lift']], 'Door number: on the panel above the doors'] },
     { kind: 'walk', label: 'Walk', to: 'One Raffles Place' },
   ];
   // The trip's parts on the map: a walk to the stop, the bus along the road, the train, a walk.
@@ -130,7 +131,7 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
   const shapes = routes.map((p, k) => (k === 2 ? { c: 'EW', rail: p } : { c: ['w', 'b', 'EW', 'w'][k], p }));
   const cases = [
     { eta: eta(), rev: 2, updated: now, parts, shapes },                                      // 0 on the bus
-    { eta: eta({ leg: { label: 'EW Line', to: 'Raffles Place station', stopsLeft: 3, kind: 'train' }, legIndex: 2, arriveAt: now + 9 * 60000 }), rev: 3, updated: now, parts }, // 1 newer
+    { eta: eta({ leg: { label: 'EW Line', to: 'Raffles Place station', stopsLeft: 3, kind: 'train' }, legIndex: 2, arriveAt: now + 9 * 60000 }), rev: 3, updated: now, parts, shapes }, // 1 newer
     { eta: eta({ legIndex: 0 }), rev: 1, updated: now, parts },                               // 2 older
     { eta: eta({ ended: true, arriveAt: now }), rev: 4, updated: now, parts, shapes },        // 3 arrived
     { eta: eta({ stopped: true }), rev: 4, updated: now, parts },                             // 4 stopped
@@ -189,7 +190,7 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     await own.click('.bar [data-i="2"]');
     t = await text(own);
     ok('2. tap a part: that part', t.includes('EW Line to Raffles Place station') && t.includes('later') && t.includes('Part 3 of 4') && !t.includes('stops left'), t);
-    ok('2. a train still to come, tapped: its doors, ahead of time', (await own.textContent('.dr').catch(() => '')).startsWith('🚪 Getting off at Raffles Place'));
+    ok('2. a train still to come, tapped: its doors, ahead of time', (await own.textContent('.dr b').catch(() => '')) === '🚪 Getting off at Raffles Place');
     ok('2. picked on the bar', (await own.evaluate(() => document.querySelector('.bar [data-i="2"]').className)).includes('s'));
     await own.click('.bar [data-i="0"]');
     ok('2. a part done says so', (await text(own)).includes('done'));
@@ -199,7 +200,18 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     // ---------- 3. the bot's changes ----------
     await own.evaluate((d) => window.__push(d), D[1]);
     t = await text(own);
-    ok('3. on the train: the doors to stand at', (await own.textContent('.dr').catch(() => '')).startsWith('🚪 Getting off at Raffles Place: door 10 or 15'));
+    const drawn = await own.evaluate(() => {
+      const box = document.querySelector('.dr');
+      return box && {
+        head: box.querySelector('b').textContent,
+        chips: [...box.querySelectorAll('.dc')].map((c) => [c.querySelector('i').textContent, c.querySelector('b').textContent, getComputedStyle(c.querySelector('i')).backgroundColor]),
+        words: [...box.querySelectorAll('small')].map((x) => x.textContent),
+      };
+    });
+    ok('3. on the train: the doors to stand at, each a platform door with its number', drawn && drawn.head === '🚪 Getting off at Raffles Place'
+      && JSON.stringify(drawn.chips.map((c) => c[1])) === '["10","15","4"]' && drawn.chips.every((c) => c[0] === 'DOOR'), JSON.stringify(drawn));
+    ok("3. in the East West Line's green", drawn && drawn.chips.every((c) => c[2] === 'rgb(0, 150, 69)'), JSON.stringify(drawn && drawn.chips));
+    ok('3. what each is for, and where the number is', drawn && JSON.stringify(drawn.words) === '["escalators to Raffles Place","lift","Door number: on the panel above the doors"]', JSON.stringify(drawn && drawn.words));
     await own.click('.bar [data-i="3"]');
     ok('3. not while looking at another part', (await own.$('.dr')) === null);
     await own.click('.bar [data-i="3"]');

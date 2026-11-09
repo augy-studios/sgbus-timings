@@ -509,7 +509,8 @@ track (`data/rail-tracks.json`, cut as `js/rail-tracks.js` does) or the footpath
 trains their line's), drawn on a dot grid as a widget can't load map tiles, with
 `trip_widget.py` packing the simplified way into the widget's state, when you'll
 arrive, a bar of the trip's parts with the one you're on lit, and how many stops
-are left, and on a train which door numbers to stand at (`src/mrt_doors.py`, the
+are left, and on a train which door numbers to stand at, drawn as the web's door
+chips (`src/mrt_doors.py`, the
 web app's `js/mrt-doors.js` in Python, from the site's `/api/mrt-doors`). Tap the
 time to switch between minutes and a clock, or a part of the bar to see that part. The bot sends a **🔔 Get Off Alert** two stops before you get off.
 **📤 Share this trip** sends a `t.me/<bot>?start=eta_<id>` link, with the web

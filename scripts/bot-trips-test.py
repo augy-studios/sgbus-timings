@@ -181,7 +181,7 @@ async def main():
     ok('Refresh and End trip', [b['text'] for b in kb[1]] == ['🔄 Refresh', '🏁 End trip'] and all(b['callback_data'].startswith('b:') for b in kb[1]))
     ok('the widget\'s caption', 'Your trip to One Raffles Place' in sent[0][4]['caption'])
     stored = json.loads(bot_trips.get_trip(eta_id)['parts_json'])
-    ok('the train part knows its doors (mrt_doors.py)', stored[2].get('y', '').startswith('Getting off at Raffles Place: door') and 'y' not in stored[1], stored[2])
+    ok('the train part knows its doors, to draw (mrt_doors.py)', stored[2].get('y', [''])[0] == 'Getting off at Raffles Place' and stored[2]['y'][2][0][0] and 'y' not in stored[1], stored[2])
     ok('the apps fetch its state every 15 s', any(c[4].get('cache_time') == 15 for c in tg('editSharedWidgetData')))
 
     # ---------- the way it really goes ----------
