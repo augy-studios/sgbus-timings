@@ -444,4 +444,13 @@ db.executescript(
     """
 )
 
+# Which widget code each card was sent with (trip_widget.py, code_version), so a card running older
+# code is replaced with a fresh one (upgrade.py); and each wheel's last state, to carry over.
+for _table, _cols in (("trip_widgets", ("code_ver TEXT",)), ("team_widgets", ("code_ver TEXT",)), ("coin_widgets", ("code_ver TEXT", "state TEXT"))):
+    _have = {row["name"] for row in db.execute(f"PRAGMA table_info({_table})").fetchall()}
+    for _col in _cols:
+        if _col.split()[0] not in _have:
+            with db:
+                db.execute(f"ALTER TABLE {_table} ADD COLUMN {_col}")
+
 db.commit()

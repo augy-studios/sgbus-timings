@@ -11,7 +11,7 @@ from urllib.parse import quote
 from . import bot_api, feats, teams
 from .buttons import make_button
 from .db import db
-from .trip_widget import html_of
+from .trip_widget import code_version, html_of
 
 _bot = "sgbus_app"
 _task = None
@@ -73,9 +73,10 @@ async def show(chat_id: int) -> bool:
         msg = await bot_api.send_widget(chat_id, html_of("team_widget.html"), public_data=_dump({"r": rev, **data}), caption=caption,
                                         buttons=buttons(team_id, team["name"]))
         with db:
-            db.execute("""INSERT INTO team_widgets (team_id, widget_id, state, rev) VALUES (?, ?, ?, ?)
-                          ON CONFLICT(team_id) DO UPDATE SET widget_id = excluded.widget_id, state = excluded.state, rev = excluded.rev""",
-                       (team_id, msg["widget"]["id"], _dump(data), rev))
+            db.execute("""INSERT INTO team_widgets (team_id, widget_id, state, rev, code_ver) VALUES (?, ?, ?, ?, ?)
+                          ON CONFLICT(team_id) DO UPDATE SET widget_id = excluded.widget_id, state = excluded.state, rev = excluded.rev,
+                          code_ver = excluded.code_ver""",
+                       (team_id, msg["widget"]["id"], _dump(data), rev, code_version("team_widget.html")))
     with db:
         db.execute("""INSERT INTO team_widget_messages (team_id, chat_id, message_id) VALUES (?, ?, ?)
                       ON CONFLICT(team_id, chat_id) DO UPDATE SET message_id = excluded.message_id""", (team_id, chat_id, msg["message_id"]))

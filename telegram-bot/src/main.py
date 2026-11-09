@@ -140,6 +140,9 @@ async def main() -> None:
     start_scheduler()
     await start_trip_loop(client)
     await start_team_loop(client)
+    # Cards sent before this update, in the newest look (upgrade.py).
+    from .upgrade import upgrade_all
+    asyncio.get_event_loop().create_task(upgrade_all())
     print("Bot started.")
     try:
         await client.run_until_disconnected()

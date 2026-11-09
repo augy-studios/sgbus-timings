@@ -60,20 +60,32 @@ def keyboard(rows: "list | None") -> "dict | None":
 
 
 async def send_widget(chat_id: int, html: str, *, public_data: str, chat_data: "str | None" = None,
-                      caption: str = "", buttons=None, shared: bool = True) -> dict:
-    """A new widget message; with `shared`, a new shared widget, its id at result["widget"]["id"]."""
+                      caption: str = "", buttons=None, shared: bool = True, silent: bool = False) -> dict:
+    """A new widget message; with `shared`, a new shared widget, its id at result["widget"]["id"].
+    `silent`: no sound with it, for a card sent again in a newer look (upgrade.py)."""
     return await call("sendWidget", {
         "chat_id": chat_id, "html": html, "public_data": public_data, "chat_data": chat_data,
         "caption": caption or None, "is_shared": shared or None, "reply_markup": keyboard(buttons),
+        "disable_notification": silent or None,
     })
 
 
 async def send_shared_widget(chat_id: int, widget_id: str, *, chat_data: "str | None" = None,
-                             caption: str = "", buttons=None) -> dict:
+                             caption: str = "", buttons=None, silent: bool = False) -> dict:
     return await call("sendSharedWidget", {
         "chat_id": chat_id, "widget_id": widget_id, "chat_data": chat_data,
-        "caption": caption or None, "reply_markup": keyboard(buttons),
+        "caption": caption or None, "reply_markup": keyboard(buttons), "disable_notification": silent or None,
     })
+
+
+async def delete_message(chat_id: int, message_id: int) -> bool:
+    """A message of the bot's taken away. False when Telegram won't (past 48 hours in a private
+    chat, or gone already)."""
+    try:
+        await call("deleteMessage", {"chat_id": chat_id, "message_id": message_id})
+        return True
+    except BotApiError:
+        return False
 
 
 async def edit_shared_widget_data(widget_id: str, public_data: str, cache_time: "int | None" = None) -> None:

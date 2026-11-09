@@ -29,6 +29,13 @@ def html_of(name: str) -> str:
     return "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
 
+def code_version(name: str) -> str:
+    """A widget's code as sent, in 12 characters: a card sent with other code is out of date
+    (upgrade.py), as Telegram never changes a sent widget's code."""
+    import hashlib
+    return hashlib.sha256(html_of(name).encode("utf-8")).hexdigest()[:12]
+
+
 def widget_html() -> str:
     """trip_widget.html as sent."""
     return html_of("trip_widget.html")

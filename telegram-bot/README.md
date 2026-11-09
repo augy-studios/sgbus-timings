@@ -568,6 +568,12 @@ own as each phone's are:
 
 Egg links need `migrations/0004_share_links_egg.sql` run on the site's Supabase.
 
+**Cards after an update.** Telegram fixes a widget's code once it's sent, so each card
+keeps which code it was sent with (`trip_widget.code_version`). When the bot starts,
+every live trip, team run and uwuCoins wheel whose card has older code gets a fresh one,
+sent silently, and the old message is deleted, or left without its buttons past
+Telegram's 48 hours (`src/upgrade.py`). `/trip` does the same for one trip.
+
 ### Settings
 
 `/settings` shows every custom setting the bot keeps for you, and whether

@@ -8,9 +8,10 @@ import time
 from . import bot_api, coins, feats
 from .buttons import make_button
 from .db import db
-from .trip_widget import html_of
+from .trip_widget import code_version, html_of
 
 SPIN_GAP_MS = 6000
+CAPTION = "🪙 Your uwuCoins: spin the wheel for an Easter egg or more coins."
 
 
 def _buttons() -> list:
@@ -24,17 +25,27 @@ def _state(rev: int, bal: int, **spun) -> str:
     return json.dumps({"r": rev, "b": bal, "s": -1, **spun}, separators=(",", ":"))
 
 
+def _keep(chat_id: int, message_id: int, rev: int, state: str, spun_at: "int | None" = None, sent: bool = False) -> None:
+    """The chat's wheel as it is: its message, revision and state, and, when it's newly sent, the
+    code it was sent with (upgrade.py)."""
+    with db:
+        db.execute("""INSERT INTO coin_widgets (chat_id, message_id, rev, state, code_ver) VALUES (?, ?, ?, ?, ?)
+                      ON CONFLICT(chat_id) DO UPDATE SET message_id = excluded.message_id, rev = excluded.rev, state = excluded.state""",
+                   (chat_id, message_id, rev, state, code_version("coins_widget.html")))
+        if sent:
+            db.execute("UPDATE coin_widgets SET code_ver = ? WHERE chat_id = ?", (code_version("coins_widget.html"), chat_id))
+        if spun_at is not None:
+            db.execute("UPDATE coin_widgets SET spun_at = ? WHERE chat_id = ?", (spun_at, chat_id))
+
+
 async def send_wheel(chat_id: int) -> None:
     """A new wheel in the chat, with the balance as it is."""
     row = db.execute("SELECT rev FROM coin_widgets WHERE chat_id = ?", (chat_id,)).fetchone()
     rev = (row["rev"] if row else 0) + 1
-    msg = await bot_api.send_widget(chat_id, html_of("coins_widget.html"), public_data="", chat_data=_state(rev, coins.balance(chat_id)),
-                                    caption="🪙 Your uwuCoins: spin the wheel for an Easter egg or more coins.",
-                                    buttons=_buttons(), shared=False)
-    with db:
-        db.execute("""INSERT INTO coin_widgets (chat_id, message_id, rev) VALUES (?, ?, ?)
-                      ON CONFLICT(chat_id) DO UPDATE SET message_id = excluded.message_id, rev = excluded.rev""",
-                   (chat_id, msg["message_id"], rev))
+    state = _state(rev, coins.balance(chat_id))
+    msg = await bot_api.send_widget(chat_id, html_of("coins_widget.html"), public_data="", chat_data=state,
+                                    caption=CAPTION, buttons=_buttons(), shared=False)
+    _keep(chat_id, msg["message_id"], rev, state, sent=True)
 
 
 async def update_wheel(chat_id: int) -> None:
@@ -43,10 +54,10 @@ async def update_wheel(chat_id: int) -> None:
     if not row:
         return
     rev = row["rev"] + 1
+    state = _state(rev, coins.balance(chat_id))
     try:
-        await bot_api.edit_message_widget_data(chat_id, row["message_id"], _state(rev, coins.balance(chat_id)))
-        with db:
-            db.execute("UPDATE coin_widgets SET rev = ? WHERE chat_id = ?", (rev, chat_id))
+        await bot_api.edit_message_widget_data(chat_id, row["message_id"], state)
+        _keep(chat_id, row["message_id"], rev, state)
     except bot_api.BotApiError as err:
         print(f"[coins] wheel in {chat_id} not updated: {err}")
 
@@ -65,16 +76,12 @@ async def spin(chat_id: int) -> dict:
         if not row:
             raise bot_api.BotApiError("editMessageWidgetData", "no wheel yet")
         await bot_api.edit_message_widget_data(chat_id, row["message_id"], data)
-        with db:
-            db.execute("UPDATE coin_widgets SET rev = ?, spun_at = ? WHERE chat_id = ?", (rev, now, chat_id))
+        _keep(chat_id, row["message_id"], rev, data, spun_at=now)
     except bot_api.BotApiError:
         # The wheel's gone (deleted, or never sent): a new one, turning.
         msg = await bot_api.send_widget(chat_id, html_of("coins_widget.html"), public_data="", chat_data=data,
-                                        caption="🪙 Your uwuCoins wheel.", buttons=_buttons(), shared=False)
-        with db:
-            db.execute("""INSERT INTO coin_widgets (chat_id, message_id, rev, spun_at) VALUES (?, ?, ?, ?)
-                          ON CONFLICT(chat_id) DO UPDATE SET message_id = excluded.message_id, rev = excluded.rev, spun_at = excluded.spun_at""",
-                       (chat_id, msg["message_id"], rev, now))
+                                        caption=CAPTION, buttons=_buttons(), shared=False)
+        _keep(chat_id, msg["message_id"], rev, data, spun_at=now, sent=True)
     text = f"+{got['coins']} uwuCoins!" if got["coins"] else "An Easter egg!"
     return {"text": text, "link": got["link"]}
 

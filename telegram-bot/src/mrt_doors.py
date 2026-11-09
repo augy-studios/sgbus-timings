@@ -164,9 +164,30 @@ def compact(leg: dict, nxt: "dict | None" = None) -> "list | None":
     head = (f"Changing at {p['station']} for the {p['change']}" if p["change"]
             else f"Changing at {p['station']}" if p["change"] is not None
             else f"Getting off at {p['station']}")
-    rows = [[r["doors"][:6], WHAT.get(r["t"], r["t"]) + (f" to {_and(r['places'])}"[:44] if r["places"] else "")] for r in p["rows"][:5]]
+    rows = [[r["doors"][:6], (WHAT.get(r["t"], r["t"]) + (f" to {_and(r['places'])}" if r["places"] else ""))[:44]] for r in p["rows"][:5]]
     at = f"Door number: {NUMBER_AT[p['numberAt']]}" if p.get("numberAt") in NUMBER_AT else ""
     return [head, 0, rows, at]
+
+
+def from_tip(text: str) -> "list | None":
+    """A tip (tip, as trips from before the doors were drawn kept them) read back into what
+    compact gives: the bot wrote it, so it reads back exactly. None for anything else."""
+    import re
+    if not isinstance(text, str):
+        return text if isinstance(text, list) else None
+    m = re.fullmatch(r"At (.+), change across the platform to the (.+)\.", text)
+    if m:
+        return [f"At {m[1]}", f"⇄ Change across the platform to the {m[2]}", [], ""]
+    m = re.fullmatch(r"(.+?): (.+?)\.(?: The door number is (.+)\.)?", text)
+    if not m:
+        return None
+    rows = []
+    for part in m[2].split("; "):
+        r = re.fullmatch(r"door ([\d ]+(?:or [\d ]+)*) for the (.+)", part)
+        if not r:
+            return None
+        rows.append([[int(n) for n in re.findall(r"\d+", r[1])][:6], r[2][:44]])
+    return [m[1], 0, rows[:5], f"Door number: {m[3]}" if m[3] else ""]
 
 
 def _and(xs: list) -> str:

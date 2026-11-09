@@ -110,6 +110,10 @@ def register_trips(client):
         if not row:
             await event.respond("You're not on a trip. Plan the way with /nav, pick a way, then tap ▶️ Start trip.")
             return
+        # A card from before the bot's last update: a fresh one, for everyone with it (upgrade.py).
+        from ..upgrade import upgrade_trip
+        if await upgrade_trip(row["eta_id"]):
+            return
         await follow_link(client, event, row["eta_id"])
 
 

@@ -35,7 +35,7 @@ from .http_client import shared_client
 from .nav_view import _place_name
 from .route_shapes import colour_of, shapes_for_link, shapes_for_trip
 from . import coins, feats, mrt_doors, rides
-from .trip_widget import OWNER_CHAT_DATA, caption, public_data, widget_html
+from .trip_widget import OWNER_CHAT_DATA, caption, code_version, public_data, widget_html
 
 # As the site's api/_push/trip.js: the Get Off Alert comes this many stops before the stop.
 ALERT_STOPS = 2
@@ -349,7 +349,8 @@ async def start_trip(chat_id: int, name: str, start: dict, end: dict, option: di
         raise TripError("Couldn't show the trip here. Live trips need an up-to-date Telegram app, in your own chat with the bot.") from err
     widget_id = msg["widget"]["id"]
     with db:
-        db.execute("UPDATE trip_widgets SET widget_id = ?, state = ?, rev = 1 WHERE eta_id = ?", (widget_id, state, eta_id))
+        db.execute("UPDATE trip_widgets SET widget_id = ?, state = ?, rev = 1, code_ver = ? WHERE eta_id = ?",
+                   (widget_id, state, code_version("trip_widget.html"), eta_id))
     _save_message(eta_id, chat_id, msg["message_id"], True)
     _shape_later(eta_id, shapes_for_trip(parts))
     await _set_cache_time(widget_id, _data(eta, row, 1, now))
@@ -400,8 +401,8 @@ async def follow(chat_id: int, eta_id: str) -> FollowAnswer:
             buttons=follower_buttons(eta_id),
         )
         with db:
-            db.execute("UPDATE trip_widgets SET widget_id = ?, state = ?, rev = 1 WHERE eta_id = ?",
-                       (msg["widget"]["id"], _state(eta, row, updated), eta_id))
+            db.execute("UPDATE trip_widgets SET widget_id = ?, state = ?, rev = 1, code_ver = ? WHERE eta_id = ?",
+                       (msg["widget"]["id"], _state(eta, row, updated), code_version("trip_widget.html"), eta_id))
         _save_message(eta_id, chat_id, msg["message_id"], False)
         _shape_later(eta_id, shapes_for_link(eta))
         await _set_cache_time(msg["widget"]["id"], public_data(eta, 1, updated))
