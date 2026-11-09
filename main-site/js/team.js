@@ -359,6 +359,8 @@
       return;
     }
     const team = cached();
+    // The same team in the Telegram bot (telegram-bot/src/teams.py).
+    if ($('teamTelegram')) $('teamTelegram').href = `https://t.me/sgbus_app?start=team_${me.id}`;
     $('teamHead').innerHTML = `<strong>${esc(me.name)}</strong> · ${esc(tr('team.codeIs', 'Code {code}', { code: me.id }))}`;
     if (!team || !window.Eggs) {
       $('teamMembers').textContent = me.member.name;

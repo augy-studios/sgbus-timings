@@ -553,6 +553,13 @@ class _TeamScreenState extends State<TeamScreen> with WidgetsBindingObserver {
               const SizedBox(height: 12),
               Wrap(spacing: 8, runSpacing: 8, children: [
                 FilledButton.tonalIcon(onPressed: () => _invite(me), icon: const Icon(Icons.person_add_alt), label: Text(tr('team.invite', 'Invite to the team'))),
+                // The same team in the Telegram bot (telegram-bot/src/teams.py).
+                FilledButton.tonalIcon(
+                  key: const ValueKey('teamTelegram'),
+                  onPressed: () => Native.call('SgBus', 'openLink', {'url': 'https://t.me/sgbus_app?start=team_${me['id']}'}).catchError((_) => null),
+                  icon: const Icon(Icons.send_outlined),
+                  label: Text(tr('team.telegram', 'Join in Telegram')),
+                ),
                 TextButton.icon(
                   onPressed: () async {
                     final yes = await showDialog<bool>(

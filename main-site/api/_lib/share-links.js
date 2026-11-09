@@ -9,6 +9,10 @@
 //                           far along you are, updated by the sharer's app as it goes.
 //   feat        /feat/<id>  A feat done, or Achievements as a whole (js/eggs.js): a card for
 //                           socials (api/feat-card.js) of which feats, by whom, and when.
+//   egg         /egg/<id>   An Easter egg won on the Telegram bot's uwuCoins wheel
+//                           (telegram-bot/src/coins.py): opened, it's used up (used_at), once
+//                           for everyone (redeemEgg), and that device gets the wheel's egg
+//                           slot's prize (js/coins.js). Only the bot makes them. They don't expire.
 //
 // The id is ten letters and digits. A place or directions link is the same link every time
 // the same thing is shared (dedupe_key); an ETA link is new each time, and only the app that
@@ -22,7 +26,7 @@ import { createHash, randomBytes } from 'node:crypto';
 import { rest } from './supabase.js';
 
 const TABLE = 'share_links';
-export const PATHS = { place: 'go', directions: 'trip', eta: 'eta', feat: 'feat' };
+export const PATHS = { place: 'go', directions: 'trip', eta: 'eta', feat: 'feat', egg: 'egg' };
 const ID_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
 const ID_RE = /^[a-z0-9]{10}$/;
 
@@ -110,6 +114,7 @@ export function parseLink(kind, data, now = Date.now()) {
   }
   if (kind === 'eta') return parseEta(data, now);
   if (kind === 'feat') return parseFeat(data, now);
+  if (kind === 'egg') return {};
   throw new ValidationError('bad kind');
 }
 
@@ -235,6 +240,8 @@ function parseEta(data, now) {
 // A link for this, made now or the one made before for the same thing. Answers { id } and,
 // for an ETA link, the secret its updates need.
 export async function createLink(kind, data, now = Date.now()) {
+  // A new egg every time: each is one prize.
+  if (kind === 'egg') return { id: await insert({ kind, data: {} }) };
   if (kind === 'eta') {
     // Tidied as new ones are made, so the table doesn't fill with trips long over.
     await rest(`${TABLE}?expires_at=lt.${new Date(now).toISOString()}`, { method: 'DELETE', prefer: 'return=minimal' }).catch((err) => console.warn(err));
@@ -279,11 +286,24 @@ const etaExpiry = (data, now) => new Date(now + (data.ended ? ETA_ENDED_TTL_MS :
 
 // The link, or null when there's none or it has expired.
 export async function getLink(id, now = Date.now()) {
-  const rows = await rest(`${TABLE}?id=eq.${id}&select=kind,data,updated_at,expires_at&limit=1`);
+  const rows = await rest(`${TABLE}?id=eq.${id}&select=kind,data,updated_at,expires_at,used_at&limit=1`);
   const row = rows?.[0];
   if (!row) return null;
   if (row.expires_at && Date.parse(row.expires_at) < now) return null;
-  return { id, kind: row.kind, data: row.data, updatedAt: Date.parse(row.updated_at) };
+  // An egg says whether it's been opened, never what it gave.
+  const data = row.kind === 'egg' ? { used: !!row.used_at } : row.data;
+  return { id, kind: row.kind, data, updatedAt: Date.parse(row.updated_at) };
+}
+
+// An egg link opened: used up, once for everyone. True for the one that opened it, false if
+// it was opened already, or there's none.
+export async function redeemEgg(id, now = Date.now()) {
+  const rows = await rest(`${TABLE}?id=eq.${id}&kind=eq.egg&used_at=is.null&select=id`, {
+    method: 'PATCH',
+    body: { used_at: new Date(now).toISOString(), updated_at: new Date(now).toISOString() },
+    prefer: 'return=representation',
+  });
+  return Array.isArray(rows) && rows.length > 0;
 }
 
 // An ETA link's new progress. Says whether it was updated: false for a wrong secret, a link
@@ -361,6 +381,11 @@ export function describeLink(link) {
     };
   }
   if (kind === 'feat') return describeFeat(data);
+  if (kind === 'egg') {
+    return data.used
+      ? { title: 'An Easter egg, already opened', description: 'Won on the SG Bus Timings uwuCoins wheel in Telegram.' }
+      : { title: 'An Easter egg to open', description: 'Won on the SG Bus Timings uwuCoins wheel in Telegram. Open it once, on the website or in the app.' };
+  }
   const who = data.name || 'Someone';
   if (data.stopped) return { title: `${who} stopped sharing their trip to ${data.to.label}`, description: 'Live progress on SG Bus Timings.' };
   return {

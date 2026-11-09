@@ -6,6 +6,7 @@ from ..mini_app import open_button
 from ..reply import send_rich_message
 from .sync import begin as begin_sync
 from .trips import follow_link
+from .coins import join_team
 
 ABOUT = """\
 # SG Bus Timings
@@ -20,7 +21,8 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Just send your location (no command needed) to find the nearest bus stops
 - Build a route between two bus stops to see every bus that runs the whole way without a change
 - Navigate between any two places by bus and train, with every mix of the two to choose from
-- Start a trip on the way you pick: a live card of when you'll arrive, a Get Off Alert before your stop, and a link to share so others can follow along
+- Earn uwuCoins for trips with a real ride, spin the wheel for Easter eggs, do the feats, and speedrun them as a team
+- Start a trip on the way you pick: a live card of when you'll arrive, a Get Off Alert before your stop, kept exact by your location, and a link to share so others can follow along
 - Save places (home, work and your own, named as you like) and share them as links
 - Link your calendar to plan the way to each event, arriving on time
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
@@ -46,6 +48,9 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /nav - get from any place to any other by bus and train
 - /mynavs - view your favourite navs
 - /trip - your trip right now, live
+- /coins - your uwuCoins and the wheel
+- /achievements - the feats, and how far along you are
+- /team - start or join a team run, or see yours
 - /favouritepref - choose whether favourites pin to the top or bottom
 - /addroutine - set up a routine that sends you a bus stop's timings on a schedule
 - /routines - view, edit, or delete your routines
@@ -77,6 +82,10 @@ def register_start(client):
         # /eta page, links here as t.me/<bot>?start=eta_<id>.
         if param.lower().startswith("eta_"):
             await follow_link(client, event, param[4:].lower())
+            return
+        # A team run's invite (team_view.py, and the web app's team page): t.me/<bot>?start=team_<code>.
+        if param.lower().startswith("team_"):
+            await join_team(client, event, param[5:].lower())
             return
         me = await client.get_me()
         username = escape_md(me.username) if me.username else "this bot"

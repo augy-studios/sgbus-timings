@@ -18,6 +18,7 @@ import 'package:http/http.dart' as http;
 
 import '../../api/api.dart';
 import '../../app/nav.dart';
+import '../../data/rewards.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
@@ -71,7 +72,43 @@ Future<void> openShared(String id) async {
       AppNav.push(EtaView(id: id, first: data, updatedAt: (got['updatedAt'] as num?)?.toInt() ?? When.nowMs()), name: 'eta');
     case 'feat':
       showSharedFeat(data);
+    case 'egg':
+      await _openEgg(id, data);
   }
+}
+
+// An Easter egg link from the Telegram bot's uwuCoins wheel (/egg/<id>): used up on the server, once
+// for everyone, then the wheel's egg slot's prize here (Coins.eggLinkPrize), said in a window.
+Future<void> _openEgg(String id, Map<String, dynamic> data) async {
+  final gone = tr('coins.egg.gone', 'This Easter egg link has been used, or doesn’t exist.');
+  if (data['used'] == true) {
+    AppNav.say(gone);
+    return;
+  }
+  try {
+    await Api.post('share', {'action': 'redeem', 'id': id});
+  } on ApiError catch (e) {
+    AppNav.say(e.status == 409 ? gone : e.message);
+    return;
+  } catch (_) {
+    AppNav.say(tr('share.wentWrong', 'Something went wrong. Please try again.'));
+    return;
+  }
+  final (title, more) = eggLinkWords(Coins.eggLinkPrize());
+  final context = AppNav.navigatorKey.currentContext;
+  if (context == null || !context.mounted) {
+    AppNav.say(title);
+    return;
+  }
+  await showDialog<void>(
+    context: context,
+    builder: (c) => AlertDialog(
+      key: const ValueKey('eggLinkPrize'),
+      title: Text(title),
+      content: more.isEmpty ? null : Text(more),
+      actions: [TextButton(onPressed: () => Navigator.pop(c), child: Text(tr('bug.close', 'Close')))],
+    ),
+  );
 }
 
 // ---------- someone's live progress ----------

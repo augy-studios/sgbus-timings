@@ -42,6 +42,7 @@ from ..saved_places import is_kind as is_place_kind
 from .calendar import handle_calendar_callback
 from .places import handle_places_callback
 from .trips import handle_trip_callback
+from .coins import handle_coin_callback
 from .routines import build_routine_detail_view, build_routine_edit_menu_view, build_routines_view, start_field_edit
 from .servicealerts import fetch_alerts_now
 from .nav import WHEN_BACK as NAV_WHEN_BACK
@@ -101,6 +102,9 @@ def register_callbacks(client):
                 return
             if action.startswith("trip_"):
                 await handle_trip_callback(client, event, action, payload)
+                return
+            if action.startswith(("coin_", "team_")):
+                await handle_coin_callback(client, event, action, payload)
                 return
 
             if action in ("stop", "refresh", "navigate"):

@@ -13,7 +13,9 @@ but every short link answers "Sharing is not set up yet.", and Team run "Team ru
    which lets the table keep feat links too, and
    [`migrations/0003_team_runs.sql`](../migrations/0003_team_runs.sql), which makes the
    `team_runs`, `team_members` and `team_events` tables for Achievements' **Team run**
-   (`api/team.js`), the same way.
+   (`api/team.js`), the same way, and
+   [`migrations/0004_share_links_egg.sql`](../migrations/0004_share_links_egg.sql), which
+   lets the table keep the Telegram bot's Easter egg links, each opened once (`used_at`).
 3. In **Project Settings → API**, copy the project URL and the `service_role` key
    (or a newer `sb_secret_…` key).
 4. In the Vercel project's **Settings → Environment Variables**, set:

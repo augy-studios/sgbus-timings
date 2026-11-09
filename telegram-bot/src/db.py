@@ -350,5 +350,98 @@ db.executescript(
     );
     """
 )
+# Your location on a trip (bot_trips.py, apply_fix): the trip as the site follows it, so a fix can
+# put it right; when a location was last asked for with a button; and when the last one came.
+_trip_columns = {row["name"] for row in db.execute("PRAGMA table_info(trip_widgets)").fetchall()}
+# And the way it really goes, for the widget's map (route_shapes.py).
+for _col in ("trip_json TEXT", "asked_at INTEGER NOT NULL DEFAULT 0", "fix_at INTEGER NOT NULL DEFAULT 0", "shapes_json TEXT"):
+    if _col.split()[0] not in _trip_columns:
+        with db:
+            db.execute(f"ALTER TABLE trip_widgets ADD COLUMN {_col}")
+# What was seen of each ride on a trip, to judge whether it was really taken (rides.py).
+if "seen_json" not in {row["name"] for row in db.execute("PRAGMA table_info(trip_widgets)").fetchall()}:
+    with db:
+        db.execute("ALTER TABLE trip_widgets ADD COLUMN seen_json TEXT")
+        db.execute("ALTER TABLE trip_widgets ADD COLUMN paid INTEGER NOT NULL DEFAULT 0")
+
+# uwuCoins, feats and team runs, each chat's own, as the web app keeps them on each phone:
+#   coin_log      every coin in and out (coins.py): the balance is their sum
+#   rides         each ride judged real (rides.py), by line or bus, for the feats
+#   feat_marks    First to last's stops and Ends of the island's stations (feats.py)
+#   feats         the feats done, and the team run each was done with, if any
+#   coin_widgets  each chat's uwuCoins wheel (coins_view.py)
+#   team_members  the team run a chat is in (teams.py), with its member's secret
+#   team_outbox   rides and trips not yet taken by the team's server
+#   team_widgets  each team's shared widget, and team_widget_messages each chat's message of it
+db.executescript(
+    """
+    CREATE TABLE IF NOT EXISTS coin_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL,
+        at INTEGER NOT NULL,
+        n INTEGER NOT NULL,
+        why TEXT NOT NULL,
+        info_json TEXT
+    );
+    CREATE INDEX IF NOT EXISTS coin_log_chat ON coin_log (chat_id, at);
+    CREATE TABLE IF NOT EXISTS rides (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL,
+        at INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        line TEXT,
+        bus TEXT,
+        trip TEXT
+    );
+    CREATE INDEX IF NOT EXISTS rides_chat ON rides (chat_id);
+    CREATE TABLE IF NOT EXISTS feat_marks (
+        chat_id INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        code TEXT NOT NULL,
+        at INTEGER NOT NULL,
+        PRIMARY KEY (chat_id, kind, code)
+    );
+    CREATE TABLE IF NOT EXISTS feats (
+        chat_id INTEGER NOT NULL,
+        feat TEXT NOT NULL,
+        at INTEGER NOT NULL,
+        team TEXT,
+        PRIMARY KEY (chat_id, feat)
+    );
+    CREATE TABLE IF NOT EXISTS coin_widgets (
+        chat_id INTEGER PRIMARY KEY,
+        message_id INTEGER NOT NULL,
+        rev INTEGER NOT NULL DEFAULT 0,
+        spun_at INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS team_members (
+        chat_id INTEGER PRIMARY KEY,
+        team_id TEXT NOT NULL,
+        team_name TEXT NOT NULL,
+        member_id TEXT NOT NULL,
+        secret TEXT NOT NULL,
+        joined_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS team_outbox (
+        eid TEXT PRIMARY KEY,
+        chat_id INTEGER NOT NULL,
+        kind TEXT NOT NULL,
+        data_json TEXT NOT NULL,
+        at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS team_widgets (
+        team_id TEXT PRIMARY KEY,
+        widget_id TEXT,
+        state TEXT,
+        rev INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE TABLE IF NOT EXISTS team_widget_messages (
+        team_id TEXT NOT NULL,
+        chat_id INTEGER NOT NULL,
+        message_id INTEGER NOT NULL,
+        PRIMARY KEY (team_id, chat_id)
+    );
+    """
+)
 
 db.commit()

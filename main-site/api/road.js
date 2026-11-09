@@ -76,7 +76,10 @@ export default async function handler(req, res) {
   const points = parsePoints(req.query.points);
   if (!points) return res.status(400).json({ error: `points must be 2 to ${MAX_POINTS} lat,lng pairs in Singapore, split by ;` });
 
-  if (storeConfigured()) {
+  // Not the Telegram bot's, which draws each live trip's map along the roads from its one address
+  // (telegram-bot/src/route_shapes.py).
+  const bot = Boolean(process.env.BOT_API_TOKEN) && req.headers.authorization === `Bearer ${process.env.BOT_API_TOKEN}`;
+  if (!bot && storeConfigured()) {
     const ip = req.headers["x-real-ip"] || String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
     try {
       if (await rateLimited(`road:${ip}`, RATE_LIMIT)) return res.status(429).json({ error: "Too many requests. Try again in a minute." });

@@ -22,6 +22,9 @@
 //      colour schemes, with the palette's colours, and no errors.
 //   7. The web app: a live shared trip has Follow in Telegram, to t.me/sgbus_app?start=eta_<id>;
 //      an ended one doesn't.
+//   8. The map: the route drawn, each part in its colour (a bus blue, a train its line's, a walk
+//      dotted) and gone over up to where they are, the changes, the end, and them; tapping it closes in on them, and again shows the whole way;
+//      arrived, the flag at the end; a web share's path as one line; none once the link's gone.
 const path = require('path');
 const fs = require('fs');
 const { execFileSync } = require('child_process');
@@ -60,9 +63,17 @@ import json, sys
 sys.path.insert(0, ${JSON.stringify(path.join(ROOT, 'telegram-bot'))})
 from src.trip_widget import widget_html, public_data, OWNER_CHAT_DATA
 cases = json.loads(sys.stdin.read())
+# A train part given as its stations ("rail") is cut from the real tracks, as route_shapes.py cuts it.
+import asyncio
+from src import route_shapes
+route_shapes._tracks = {k: [route_shapes._prepare(p) for p in v] for k, v in json.load(open(${JSON.stringify(path.join(SITE, 'data', 'rail-tracks.json'))}))["lines"].items()}
+for c in cases:
+    for sh in c.get("shapes") or []:
+        if sh.get("rail"):
+            sh["p"] = asyncio.run(route_shapes.rail_path(sh["c"], sh.pop("rail")))
 print(json.dumps({"html": widget_html(), "owner": OWNER_CHAT_DATA,
-  "data": [public_data(c["eta"], c["rev"], c["updated"], c.get("parts"), gone=c.get("gone", False)) for c in cases]}))`;
-  return JSON.parse(execFileSync(python(), ['-c', code], { input: JSON.stringify(cases), env: { ...process.env, PYTHONIOENCODING: 'utf-8' } }).toString('utf8'));
+  "data": [public_data(c["eta"], c["rev"], c["updated"], c.get("parts"), gone=c.get("gone", False), routes=c.get("shapes")) for c in cases]}))`;
+  return JSON.parse(execFileSync(python(), ['-c', code], { input: JSON.stringify(cases), env: { BOT_TOKEN: '1:test', API_ID: '1', API_HASH: 'test', LTA_ACCOUNT_KEY: 'test', ...process.env, PYTHONIOENCODING: 'utf-8' } }).toString('utf8'));
 }
 
 const PALETTE = {
@@ -99,18 +110,34 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     { kind: 'train', label: 'EW Line', to: 'Raffles Place station' },
     { kind: 'walk', label: 'Walk', to: 'One Raffles Place' },
   ];
+  // The trip's parts on the map: a walk to the stop, the bus along the road, the train, a walk.
+  const line = (a, b, n, bend = 0) => Array.from({ length: n }, (_, i) => [a[0] + (b[0] - a[0]) * i / (n - 1) + Math.sin(Math.PI * i / (n - 1)) * bend, a[1] + (b[1] - a[1]) * i / (n - 1)]);
+  // Paya Lebar to Raffles Place on the East West Line, station by station.
+  const stations = [[1.318, 103.893], [1.3164, 103.8829], [1.3115, 103.8714], [1.3073, 103.863], [1.3008, 103.8559], [1.2931, 103.852], [1.284, 103.8515]];
+  const routes = [
+    [[1.3248, 103.9294], [1.3247, 103.929]],
+    line([1.3247, 103.929], [1.318, 103.893], 30, 0.004),
+    stations,
+    [[1.2838, 103.8517], [1.2842, 103.8513]],
+  ];
   const eta = (extra = {}) => ({
     name: 'Sam', to: { label: 'One Raffles Place', lat: 1.2842, lng: 103.8513 }, arriveAt: now + 24 * 60000,
-    leg: { label: 'Bus 28', to: 'Paya Lebar Stn Exit D (81111)', stopsLeft: 6, kind: 'bus' }, legIndex: 1, legCount: 4, ...extra,
+    leg: { label: 'Bus 28', to: 'Paya Lebar Stn Exit D (81111)', stopsLeft: 6, kind: 'bus' }, legIndex: 1, legCount: 4,
+    at: routes[1][20], path: routes.flat(), ...extra,
   });
+  // As the bot keeps them (route_shapes.py): each part's colour, and its way.
+  const shapes = routes.map((p, k) => (k === 2 ? { c: 'EW', rail: p } : { c: ['w', 'b', 'EW', 'w'][k], p }));
   const cases = [
-    { eta: eta(), rev: 2, updated: now, parts },                                              // 0 on the bus
+    { eta: eta(), rev: 2, updated: now, parts, shapes },                                      // 0 on the bus
     { eta: eta({ leg: { label: 'EW Line', to: 'Raffles Place station', stopsLeft: 3, kind: 'train' }, legIndex: 2, arriveAt: now + 9 * 60000 }), rev: 3, updated: now, parts }, // 1 newer
     { eta: eta({ legIndex: 0 }), rev: 1, updated: now, parts },                               // 2 older
-    { eta: eta({ ended: true, arriveAt: now }), rev: 4, updated: now, parts },                // 3 arrived
+    { eta: eta({ ended: true, arriveAt: now }), rev: 4, updated: now, parts, shapes },        // 3 arrived
     { eta: eta({ stopped: true }), rev: 4, updated: now, parts },                             // 4 stopped
     { eta: eta(), rev: 4, updated: now, parts, gone: true },                                  // 5 gone
     { eta: eta(), rev: 2, updated: now - 12 * 60000, parts },                                 // 6 not heard from
+    // 7 their own location, fresh, a little off the line; 8 a web share, its path as one line
+    { eta: eta({ me: { lat: routes[1][10][0] + 0.0004, lng: routes[1][10][1], accuracy: 10, t: now } }), rev: 2, updated: now, parts, shapes },
+    { eta: eta({ timeline: { pos: 1, legs: [{ kind: 'bus', label: 'Bus 28', to: 'Paya Lebar', names: [] }] } }), rev: 2, updated: now },
   ];
   const bot = fromBot(cases);
   const D = bot.data;
@@ -127,7 +154,8 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
       await p.waitForFunction(() => window.__ready);
       return p;
     };
-    const text = (p) => p.evaluate(() => document.getElementById('a').innerText.replace(/\s+/g, ' ').trim());
+    // The card's words, the map left out (8. checks it).
+    const text = (p) => p.evaluate(() => [...document.getElementById('a').children].filter((e) => e.id !== 'map').map((e) => e.innerText).join(' ').replace(/\s+/g, ' ').trim());
 
     // ---------- 1. the person on the trip ----------
     const own = await widget('light', bot.owner, D[0]);
@@ -142,7 +170,7 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     if (process.env.SHOTS) {
       const out = path.join(ROOT, 'docs-site/public/screenshots/bot/trip-widget.png');
       fs.mkdirSync(path.dirname(out), { recursive: true });
-      const shot = await browser.newContext({ viewport: { width: 400, height: 400 }, deviceScaleFactor: 3 });
+      const shot = await browser.newContext({ viewport: { width: 400, height: 600 }, deviceScaleFactor: 3 });
       const s = await shot.newPage();
       await s.setContent(page(bot.html, 'light', bot.owner, D[0]));
       await s.waitForFunction(() => window.__ready);
@@ -251,6 +279,68 @@ window.__push = (data) => { TelegramWidget.publicData = data; (window.__handlers
     await site.waitForFunction(() => document.getElementById('etaHead').textContent.includes('has arrived'));
     ok('7. not once they\'ve arrived', await site.evaluate(() => document.getElementById('etaTelegram').hidden));
     await web.close();
+
+    // ---------- 8. the map ----------
+    const ctx = await browser.newContext({ viewport: { width: 360, height: 700 } });
+    const show = async (scheme, chatData, data) => {
+      const p = await ctx.newPage();
+      p.on('pageerror', (e) => errors.push(String(e.message)));
+      await p.setContent(page(bot.html, scheme, chatData, data));
+      await p.waitForFunction(() => window.__ready);
+      return p;
+    };
+    const look = (p) => p.evaluate(() => {
+      const m = document.getElementById('map');
+      if (!m) return null;
+      const box = m.getBoundingClientRect();
+      const at = (sel) => { const e = m.querySelector(sel); if (!e) return null; const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2 - box.left, y: r.top + r.height / 2 - box.top, text: e.textContent }; };
+      return {
+        h: Math.round(box.height), w: Math.round(box.width),
+        gone: m.querySelectorAll('polyline.g').length, ahead: m.querySelectorAll('polyline.r').length, walks: m.querySelectorAll('polyline.w').length,
+        colours: [...m.querySelectorAll('polyline.r')].map((e) => e.getAttribute('stroke')),
+        dots: m.querySelectorAll('circle').length, me: at('.me'), pin: at('.pin'), zoom: m.querySelector('.z')?.textContent || null,
+      };
+    });
+    const inside = (pt, m) => pt && pt.x >= 0 && pt.x <= m.w && pt.y >= 0 && pt.y <= m.h;
+    const mapped = await show('light', bot.owner, D[0]);
+    let m = await look(mapped);
+    ok('8. a map, 140 px high, as wide as the card', m && m.h === 140 && m.w > 300, JSON.stringify(m));
+    ok('8. gone over: the first walk and the bus so far', m && m.gone === 2, JSON.stringify(m));
+    ok('8. ahead: the rest of the bus in blue, the East West Line in green', m && JSON.stringify(m.colours) === '["#2f7dff","#009645"]', JSON.stringify(m && m.colours));
+    ok('8. and the last walk, dotted', m && m.walks === 1, JSON.stringify(m));
+    ok('8. the start and the three changes', m && m.dots === 4, m && m.dots);
+    ok('8. them, on the bus, and the end, inside the map', m && m.me?.text === '🚌' && inside(m.me, m) && m.pin?.text === '📍' && inside(m.pin, m), JSON.stringify(m));
+    ok('8. they\'re short of the end', m && Math.hypot(m.me.x - m.pin.x, m.me.y - m.pin.y) > 40);
+    const wide = m;
+    await mapped.click('#map');
+    m = await look(mapped);
+    ok('8. tap: closer in, on them', m.zoom === 'Tap for the whole way' && Math.abs(m.me.x - m.w / 2) < 3 && Math.abs(m.me.y - m.h / 2) < 3, JSON.stringify(m));
+    ok('8. the end is off the close-up', !inside(m.pin, m) || Math.hypot(m.pin.x - m.me.x, m.pin.y - m.me.y) > Math.hypot(wide.pin.x - wide.me.x, wide.pin.y - wide.me.y) * 1.5);
+    await mapped.click('#map');
+    ok('8. tap again: the whole way', (await look(mapped)).zoom === null);
+    await mapped.close();
+
+    const mine = await show('dark', bot.owner, D[7]);
+    const withMe = await look(mine);
+    ok('8. their own location, when they share it, where the map puts them', withMe && withMe.me && JSON.stringify(withMe.me) !== JSON.stringify(wide.me), JSON.stringify(withMe));
+    await mine.close();
+
+    const there = await show('light', null, D[3]);
+    m = await look(there);
+    ok('8. arrived: the flag at the end, all of it gone over, no marker', m && m.pin.text === '🏁' && !m.me && m.ahead === 0 && m.walks === 0 && m.gone === 4, JSON.stringify(m));
+    await there.close();
+
+    const webShare = await show('light', null, D[8]);
+    m = await look(webShare);
+    ok('8. a web share: its path, in blue, with no changes marked', m && m.ahead === 1 && m.colours[0] === '#2f7dff' && m.dots === 1 && m.me, JSON.stringify(m));
+    await webShare.close();
+
+    const ended = await show('light', null, D[5]);
+    ok('8. no map once the link\'s gone', (await look(ended)) === null);
+    await ended.close();
+
+    for (const d of D) ok(`8. state within 1024 bytes (${Buffer.byteLength(d)})`, Buffer.byteLength(d) <= 1024);
+    await ctx.close();
 
     ok('no errors', errors.length === 0, errors.join(' | '));
   } finally {

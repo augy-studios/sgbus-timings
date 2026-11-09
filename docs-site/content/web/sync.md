@@ -86,6 +86,9 @@ Besides favourite stops, buses, routes and navs, the lists hold:
 - **Routines** and **Last bus reminders**, between two phones with the
   [Android app](../android/reminders.md). Each phone runs its own, so a routine
   copied to both notifies on both.
+- **uwuCoins**: this device's balance. Taking another device's, or the
+  [Telegram bot's](../bot/coins.md#with-sync), adds it to yours; taken again
+  later, it's added again.
 - **Calendar**: your [calendar](calendar.md)'s link, replacing the calendar on
   the device it's copied to. A calendar imported from a file, or the phone's own
   calendar in the Android app, stays on its device.

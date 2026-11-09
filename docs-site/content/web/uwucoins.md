@@ -108,6 +108,14 @@ until you've won it.
 <figcaption>The wheel with GTA VI's colours to win.</figcaption>
 </figure>
 
+### An Easter egg link from Telegram
+
+The [Telegram bot's wheel](../bot/coins.md#easter-egg-links) gives its egg as a
+link. Open it here and it's used up, once for everyone, and this device gets the
+egg slice's prize: GTA VI's colours while the wheel has them to give, otherwise
+an egg you haven't found, or 80 uwuCoins once you've found them all. A link
+someone's already opened says so.
+
 ## History
 
 <figure>

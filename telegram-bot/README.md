@@ -54,6 +54,9 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/nav` | Starts a flow to get from any place to any other by bus and train, listing every worthwhile mix of the two |
 | `/mynavs` | Lists your favourite navs as paginated buttons; tap one to plan it again |
 | `/trip` | Shows the trip you're on again, as its live widget |
+| `/coins` | Your uwuCoins, as a wheel widget with **Spin for 100** under it |
+| `/achievements` | The nine feats, done or how far along |
+| `/team` | `/team <name>` starts a team run, `/team <code>` joins one; alone, shows yours |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop, buses) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
@@ -499,7 +502,12 @@ it's boarded, and a **🚏** button opening that stop's timings for the bus.
 ### Live trips
 
 **▶️ Start trip**, under a way that sets off now or soon, starts a live trip of
-it, shown as a Telegram widget (Bot API 10.4) that updates by itself: when you'll
+it, shown as a Telegram widget (Bot API 10.4) that updates by itself: a map of the
+way with where you are: each part along the road (the site's `/api/road`), the
+track (`data/rail-tracks.json`, cut as `js/rail-tracks.js` does) or the footpaths
+(`/api/walk`), worked out once by `src/route_shapes.py`, in its colour (buses blue,
+trains their line's), drawn on a dot grid as a widget can't load map tiles, with
+`trip_widget.py` packing the simplified way into the widget's state, when you'll
 arrive, a bar of the trip's parts with the one you're on lit, and how many stops
 are left. Tap the time to switch between minutes and a clock, or a part of the bar
 to see that part. The bot sends a **🔔 Get Off Alert** two stops before you get off.
@@ -510,6 +518,15 @@ when you've arrived. **🏁 End trip** ends it, and `/trip` shows it again.
 
 A trip shared live from the web app opens here too, from **Follow in Telegram**
 on its `/eta` page.
+
+On Start trip, the bot asks for your location: Telegram's live location for the
+whole trip, or a **📍 Send my location** button to put it right once (offered again
+on Refresh when there's been no location for a few minutes). Each location is
+placed on the trip's parts as the site places a bus (`alongLeg`), sent to the site
+as a hand-moved place with a fresh fix (`movedAt`, `fixAt`), and written to the
+ETA link at once with the real position (`me`), for followers' live map. While
+fixes keep coming the site leaves the trip to them; after, its cron carries on
+from the last one. A location off the trip only moves the dot.
 
 How it works: each trip is the site's live ETA link (`api/_lib/share-links.js`).
 For a trip started here, the bot gives the site the trip to follow
@@ -522,6 +539,32 @@ widget types yet, so widgets go through the HTTP Bot API (`src/bot_api.py`) with
 the same `BOT_TOKEN`, and their buttons come back to Telethon as ordinary
 callbacks. Widgets go only to private chats, as Telegram allows in production.
 Needs `BOT_API_TOKEN`, as `/nav` does.
+
+### uwuCoins, feats and team runs
+
+The web app's uwuCoins, feats and team runs, by the same rules and numbers
+(`main-site/js/coins.js`, `js/eggs.js`, `js/rides.js`, `js/team.js`), each chat's
+own as each phone's are:
+
+- **Rides** (`src/rides.py`): each location on a live trip goes towards judging
+  its rides as the web app does (seen at the start, at the end, in a believable
+  time, and for a bus along the way); each is judged as the trip moves on from it.
+- **uwuCoins** (`src/coins.py`): a trip got to the end of with a real ride earns
+  the web app's amounts, counted up on its card (the widget's chat state `c`); each
+  feat 100. `/coins` sends a static wheel widget (`src/coins_widget.html`): **Spin**
+  is an inline button, the bot picks the slot and sets the widget's chat state, and
+  the wheel turns onto it while the balance counts up. The egg slot makes an Easter
+  egg link (the site's share links, kind `egg`, `/egg/<id>`), opened once on the
+  website or in the Android app for the web wheel's egg prize.
+- **Feats** (`src/feats.py`): the nine, from the chat's real rides and trips.
+- **Team runs** (`src/teams.py`, `src/team_view.py`): the same team server as the
+  web app (`api/team.js`), so phones and chats share a team. Rides and trips go
+  through an outbox; every `teams.REFRESH_S` the bot folds each team's events as
+  `js/team.js` does, gives each chat in it the feats it's done, and edits the team's
+  shared widget (`src/team_widget.html`).
+- **Sync**: `/sync` offers the balance (kind `coins`); taking another's adds it.
+
+Egg links need `migrations/0004_share_links_egg.sql` run on the site's Supabase.
 
 ### Settings
 
@@ -679,6 +722,13 @@ telegram-bot/
     bot_trips.py           live trips: Start trip, following a trip's link, its widget kept up to date, the Get Off Alert
     trip_widget.py         the trip widget's state from a live ETA link, and its HTML (trip_widget.html)
     bot_api.py             the HTTP Bot API, for widgets, which Telethon can't send yet
+    route_shapes.py        the way a trip really goes, for its map: roads, rails and footpaths
+    rides.py               rides judged real from a trip's locations, as js/rides.js
+    coins.py               uwuCoins: a trip's, the wheel, egg links
+    feats.py               the nine feats, as js/eggs.js
+    teams.py               team runs: the team server, the outbox, the fold (js/team.js)
+    coins_view.py          /coins's wheel widget (coins_widget.html), /achievements
+    team_view.py           a team's shared widget (team_widget.html), kept up to date
     service_alerts.py      Service Alerts subscriptions (SQLite), and what changed in LTA's train alerts and traffic incidents since the last poll
     service_alerts_view.py builds /alerts, the /sub reply and its mode buttons, and the updates sent to subscribers
     mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
@@ -693,7 +743,8 @@ telegram-bot/
       addroutine.py, routines.py, newroute.py, favroutes.py,
       setname.py, settings.py, search.py, callbacks.py, inline.py,
       servicealerts.py (/alerts, /sub, /unsub, and the poll that sends updates),
-      nav.py (/nav, /mynavs), trips.py (Start trip, /trip, trip links)
+      nav.py (/nav, /mynavs), trips.py (Start trip, /trip, trip links),
+      coins.py (/coins, /achievements, /team and their buttons)
   data/                   SQLite database + Telethon session file (gitignored)
 ```
 

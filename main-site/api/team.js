@@ -34,7 +34,9 @@ export default async function handler(req, res) {
       return res.status(405).json({ error: 'method not allowed' });
     }
 
-    if (storeConfigured() && (await rateLimited(`team:${ip}`, RATE_LIMIT))) {
+    // Not the Telegram bot's, whose team runs all come from its one address (telegram-bot/src/teams.py).
+    const bot = Boolean(process.env.BOT_API_TOKEN) && req.headers.authorization === `Bearer ${process.env.BOT_API_TOKEN}`;
+    if (!bot && storeConfigured() && (await rateLimited(`team:${ip}`, RATE_LIMIT))) {
       return res.status(429).json({ error: 'Too many at once. Try again in a minute.' });
     }
 

@@ -1796,5 +1796,12 @@
   "trip.legTo": "前往 {to}",
   "trip.rideAcw": "{ride}（逆时针）",
   "trip.rideCw": "{ride}（顺时针）",
-  "trip.rideTo": "{ride} 前往 {to}"
+  "trip.rideTo": "{ride} 前往 {to}",
+  "sync.kind.coins": "uwuCoins",
+  "sync.coinsN": "{n} 个 uwuCoins",
+  "sync.coinsSub": "接收后会加到你的余额",
+  "coins.log.sync": "通过同步添加",
+  "coins.log.eggLink": "来自复活节彩蛋链接",
+  "coins.egg.gone": "这个复活节彩蛋链接已被使用，或不存在。",
+  "team.telegram": "在 Telegram 中加入"
 }

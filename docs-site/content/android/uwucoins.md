@@ -77,6 +77,11 @@ shows you took them, so these can be fewer than the rides in [Your trips](trips.
 
 Ride every MRT and LRT line for the celebration: the whole network in its lines' colours, turning slowly, with a gold trophy and confetti.
 
+### An Easter egg link from Telegram
+
+The [Telegram bot's wheel](../bot/coins.md#easter-egg-links) gives its egg as a link. Tap it and the app opens it: it's used up, once for
+everyone, and you get the egg slice's prize, as a spin would give it.
+
 ## Team run
 
 <figure>
@@ -92,4 +97,4 @@ everyone gets each feat the team does, with its 100 uwuCoins.
    the link you were sent.
 
 Hand a trip on by starting yours where a teammate's ended, within 30 minutes, and it counts as the one trip: **Continue from there** plans the
-way. **Leave the team run** leaves it, and the feats you've had stay yours. A team run ends 14 days after its last ride.
+way. **Join in Telegram** opens the same team in the [Telegram bot](../bot/coins.md#team-runs). **Leave the team run** leaves it, and the feats you've had stay yours. A team run ends 14 days after its last ride.

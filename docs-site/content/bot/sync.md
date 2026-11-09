@@ -33,6 +33,7 @@ Whenever something's sent to it, the bot says what it saved, such as
 - Your [calendar](calendar.md)'s link, which replaces the one on the other side
 - Where favourites pin, [top or bottom](favourites.md#top-or-bottom)
 - Whether you have a bike, for [cycling in /nav](settings.md#cycling)
+- Your [uwuCoins](coins.md#with-sync): taking the other side's adds them to yours
 
 Copying only adds: nothing is removed. Your name, birthday, calendar link, pin
 and cycling settings replace the other side's when you copy them.

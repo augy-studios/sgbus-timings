@@ -1796,5 +1796,12 @@
   "trip.legTo": "ke {to}",
   "trip.rideAcw": "{ride} (lawan arah jam)",
   "trip.rideCw": "{ride} (ikut arah jam)",
-  "trip.rideTo": "{ride} ke {to}"
+  "trip.rideTo": "{ride} ke {to}",
+  "sync.kind.coins": "uwuCoins",
+  "sync.coinsN": "{n} uwuCoins",
+  "sync.coinsSub": "Mengambilnya menambahkannya kepada milik anda",
+  "coins.log.sync": "Ditambah melalui penyegerakan",
+  "coins.log.eggLink": "Daripada pautan telur Easter",
+  "coins.egg.gone": "Pautan telur Easter ini telah digunakan, atau tidak wujud.",
+  "team.telegram": "Sertai di Telegram"
 }

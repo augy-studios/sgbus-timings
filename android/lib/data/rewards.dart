@@ -616,6 +616,43 @@ class Coins {
     return (index: index, coins: coins, egg: null, got: null, gta6: false);
   }
 
+  // ---------- sync, and the Telegram bot's Easter egg links ----------
+
+  static const idKey = 'sgbus_coins_id';
+
+  /// This phone's own id for sync (features/sync/sync.dart, kind coins), as js/coins.js's syncId.
+  static String get syncId {
+    var id = Store.I.get(idKey);
+    if (id == null || id.isEmpty) {
+      id = 'a-${_rnd.nextInt(1 << 30).toRadixString(36)}${When.nowMs().toRadixString(36)}';
+      Store.I.put(idKey, id);
+    }
+    return id;
+  }
+
+  /// This phone's balance for sync: taking it adds it to the other side's.
+  static List<Map<String, Object>> syncList() => balance > 0 ? [{'id': syncId, 'balance': balance}] : [];
+
+  /// An Easter egg link opened here, once it's used up on the server (features/share/shared.dart):
+  /// the wheel's egg slot's prize, as js/coins.js's redeemEgg: GTA VI's colours while they're
+  /// due, else an egg not found yet, else [eggGoneCoins].
+  static ({int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6}) eggLinkPrize() {
+    if (Gta6.due) {
+      Gta6.claim('egglink');
+      _prize({'why': 'gta6'});
+      return (coins: null, egg: null, got: null, gta6: true);
+    }
+    final left = eggsLeft();
+    if (left.isNotEmpty) {
+      final egg = left[_rnd.nextInt(left.length)];
+      final got = Feats.found(egg);
+      _prize({'why': 'egg', 'egg': egg});
+      return (coins: null, egg: egg, got: got, gta6: false);
+    }
+    add(eggGoneCoins, info: {'why': 'egglink'}, quiet: true);
+    return (coins: eggGoneCoins, egg: null, got: null, gta6: false);
+  }
+
   @visibleForTesting
   static void setBalance(int n) {
     final v = _read()..['balance'] = n;

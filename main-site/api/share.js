@@ -1,12 +1,14 @@
 // Navigate's short share links (api/_lib/share-links.js), from js/share.js.
 //
-//   POST  { kind, data }            → { id, path, secret? }  a link, made or found again
+//   POST  { kind, data }            → { id, path, secret? }  a link, made or found again; an
+//                                    egg only from the Telegram bot (BOT_API_TOKEN)
+//   POST  { action: 'redeem', id }  → { ok } or 409  an egg link opened, once for everyone
 //   GET   ?id=                      → { kind, data, updatedAt }  what a link holds
 //   PATCH ?id=  { secret, data }    → 204  an ETA link's new progress
 
 import { rateLimited, storeConfigured } from './_push/store.js';
 import { supabaseConfigured } from './_lib/supabase.js';
-import { PATHS, ValidationError, createLink, getLink, isLinkId, parseLink, updateEta } from './_lib/share-links.js';
+import { PATHS, ValidationError, createLink, getLink, isLinkId, parseLink, redeemEgg, updateEta } from './_lib/share-links.js';
 
 const RATE_LIMIT = 60; // writes per IP per minute
 
@@ -32,8 +34,15 @@ export default async function handler(req, res) {
       return res.status(429).json({ error: 'Too many shares at once. Try again in a minute.' });
     }
 
+    if (req.method === 'POST' && req.body?.action === 'redeem') {
+      if (!isLinkId(req.body.id)) return res.status(400).json({ error: 'That isn’t a share link.' });
+      if (!(await redeemEgg(req.body.id))) return res.status(409).json({ error: 'This Easter egg link has been used, or doesn’t exist.' });
+      return res.status(200).json({ ok: true });
+    }
+
     if (req.method === 'POST') {
       const { kind } = req.body || {};
+      if (kind === 'egg' && !bot) return res.status(403).json({ error: 'Easter egg links come from the Telegram bot.' });
       if (!PATHS[kind]) return res.status(400).json({ error: 'bad kind' });
       const data = parseLink(kind, req.body.data);
       const { id, secret } = await createLink(kind, data);

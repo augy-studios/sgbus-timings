@@ -53,6 +53,9 @@ myroutes - view your favourite routes
 nav - get from any place to any other by bus and train
 mynavs - view your favourite navs
 trip - your trip right now, live
+coins - your uwuCoins and the wheel
+achievements - the feats, and how far along you are
+team - start or join a team run, or see yours
 alerts - train service alerts and traffic incidents right now
 sub - get train service and traffic alerts, all or disruptions only
 unsub - stop train service and traffic alerts

@@ -75,6 +75,10 @@ const FAV_KINDS = [
   // Settings, as { field, value }, each one as your name is (SYNC_SETTINGS below). Only those
   // changed from how they start, so taking another device's never just undoes a choice.
   { kind: 'setting', list: 'settings', label: I18n.t('settings.settings', 'Settings'), key: (s) => `setting:${s.field}=${s.value}` },
+  // uwuCoins (js/coins.js): this device's balance, as { id, balance }, `id` this device's own
+  // (Coins.syncId). Taking it adds that balance to yours (Augy, 10 November 2026): taken again
+  // later, it's added again. The bot's /coins is the same.
+  { kind: 'coins', list: 'coins', label: I18n.t('sync.kind.coins', 'uwuCoins'), key: (c) => `coins:${c.id}=${c.balance}` },
 ];
 
 // What a device from before `kinds` keeps.
@@ -218,7 +222,7 @@ function ownSettings() {
 // The kinds this device keeps, for the other side to offer only those.
 function ownKinds() {
   return [
-    ...LEGACY_KINDS, 'calendar', 'stopbus', 'favlist',
+    ...LEGACY_KINDS, 'calendar', 'stopbus', 'favlist', 'coins',
     ...(Reminders.has('routines') ? ['routine'] : []),
     ...(Reminders.has('lastbus') ? ['lastbus'] : []),
     ...Object.keys(SYNC_SETTINGS).filter(settingHere).map((field) => `setting:${field}`),
@@ -369,7 +373,7 @@ function ownFavs() {
     stopBuses: LS.getFavStopBuses(), favLists: LS.getFavLists().map((l) => ({ name: l.name, items: l.items })),
     places: Places.syncList(), trips: TripHistory.list().slice(0, SYNC_MAX_ITEMS), searches: Recents.syncList(),
     routines: Reminders.syncRoutines(), lastbus: Reminders.syncLastBus(), calendar: Calendar.syncList(),
-    settings: ownSettings(),
+    settings: ownSettings(), coins: window.Coins?.syncList() || [],
   };
 }
 
@@ -456,6 +460,10 @@ function cleanFavs(raw) {
     settings: list(raw.settings)
       .filter((s) => settingOk(s?.field, s?.value) && once(`setting:${s.field}`))
       .map((s) => ({ field: s.field, value: s.value })),
+    coins: list(raw.coins)
+      .filter((c) => typeof c?.id === 'string' && /^[\w-]{4,40}$/.test(c.id) && Number.isInteger(c.balance) && c.balance > 0 && c.balance <= 1e7)
+      .slice(0, 1)
+      .map((c) => ({ id: c.id, balance: c.balance })),
   };
 }
 
@@ -493,6 +501,13 @@ function mergeFavs(favs) {
     }
     if (kind === 'calendar') {
       added += Calendar.mergeSync(item.url);
+      continue;
+    }
+    if (kind === 'coins') {
+      if (window.Coins && item.id !== Coins.syncId()) {
+        Coins.add(item.balance, { why: 'sync' });
+        added++;
+      }
       continue;
     }
     if (kind === 'setting') {
@@ -969,6 +984,7 @@ function favTitle(kind, item) {
   if (kind === 'routine') return I18n.t('sync.routineAt', '{time} at {stop}', { time: `${item.time.slice(0, 2)}:${item.time.slice(2)}`, stop: nameOf(item.code) || item.name || item.code });
   if (kind === 'lastbus') return I18n.t('sync.lastAt', 'Last {no} at {stop}', { no: item.service, stop: nameOf(item.code) || item.name || item.code });
   if (kind === 'calendar') return I18n.t('sync.calendarLink', 'Your calendar’s link');
+  if (kind === 'coins') return I18n.t('sync.coinsN', '{n} uwuCoins', { n: item.balance });
   if (kind === 'setting') return SYNC_SETTINGS[item.field].label;
   return `${nameOf(item.start) || item.startName || item.start} → ${nameOf(item.end) || item.endName || item.end}`;
 }
@@ -1003,6 +1019,7 @@ function favSubtitle(kind, item) {
   if (kind === 'lastbus') return item.code;
   // Enough of the link to tell which, not the private part.
   if (kind === 'calendar') return item.url.replace(/^(\w+:\/\/[^/]+).*$/, '$1/…');
+  if (kind === 'coins') return I18n.t('sync.coinsSub', 'Taking them adds them to yours');
   if (kind === 'setting') return SYNC_SETTINGS[item.field].text(item.value);
   return `${item.start} → ${item.end}`;
 }

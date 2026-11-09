@@ -181,6 +181,9 @@ railway**. Achievements shows the others **Continue from there** while
 there's time, which plans from where they got to. Your own two trips back to
 back aren't one; the hand-off has to be to someone else.
 
+In the [Telegram bot](../bot/coins.md#team-runs) too: **Join in Telegram**,
+under the team, opens the same team there.
+
 The same checks as ever apply: only rides your phone's location shows you
 took count. A feat the team did before you joined isn't yours. Leaving keeps
 the feats you've had from it. A team run ends 14 days after its last ride.

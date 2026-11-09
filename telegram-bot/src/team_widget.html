@@ -1,0 +1,51 @@
+<!-- A team run's widget (telegram-bot/src/team_view.py): one shared widget per team, the same for
+every chat in it, its shared state {"r": revision, "n": the team's name, "m": its members' names,
+"h": [have, need] for each feat in FEATS' order (the long way round in minutes), "k": rides,
+"o": [who, unix seconds] for the latest trip that can still be handed on, "x": 1 once it's
+ended}, as teams.py's fold works it out. Tap a feat for what it asks. Sent without comments. -->
+<style>
+body{margin:0;padding:10px 14px max(10px,env(safe-area-inset-bottom))}
+p{margin:0 0 4px}
+.h{color:var(--tg-theme-hint-color);font-size:.85em}
+.t{font-size:1.25em;font-weight:700}
+.ms{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 8px}
+.ms span{padding:1px 8px;border-radius:10px;font-size:.8em;background:var(--tg-theme-secondary-bg-color)}
+.f{padding:5px 0;border-top:1px solid var(--tg-theme-section-separator-color,rgba(128,128,128,.2))}
+.r{display:flex;align-items:center;gap:8px}
+.r b{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r small{color:var(--tg-theme-hint-color);font-variant-numeric:tabular-nums}
+.bar{height:5px;border-radius:3px;margin-top:4px;background:var(--tg-theme-secondary-bg-color);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--tg-theme-button-color)}
+.ok .bar i{background:#2ea043}
+.g{margin-top:4px}
+.ho{margin:8px 0 2px;padding:6px 8px;border-radius:8px;background:var(--tg-theme-secondary-bg-color);font-size:.9em}
+</style>
+<div id="a"></div>
+<script>
+const W=window.TelegramWidget||{},A=document.getElementById('a');
+const F=[['🚇','Every line ridden','Ride every MRT and LRT line.'],['📈','12, 34, 56, 78, 90','Ride buses 12, 34, 56, 78 and 90.'],['📉','9, 87, 65, 43, 21','Ride buses 9, 87, 65, 43 and 21.'],['🔁','There and back again','Go somewhere by way of a stop, and come back to where you started. Trips handed on count as one.'],['⏳','The long way round','Take a trip of over three hours, handed on between you.'],['🚂','Down the old railway','Travel between two places on the old KTM railway line.'],['🔢','First to last','Get on or off a bus at stop 01012 and at stop 99189.'],['💯','100 rides','Take 100 rides on buses and trains between you.'],['🧭','Ends of the island','Get off a train at Tuas Link, Woodlands North, Punggol Coast and Changi Airport.']];
+let D=null,R=-1,open=-1;
+const E=(s)=>String(s==null?'':s).replace(/[&<>"]/g,(c)=>'&#'+c.charCodeAt(0)+';');
+const at=(s)=>new Date(s*1000).toLocaleTimeString(navigator.language||'en-SG',{timeZone:'Asia/Singapore',hour:'2-digit',minute:'2-digit'});
+function load(){let d=null;try{d=JSON.parse(W.publicData)}catch(e){}if(d&&d.r>=R){D=d;R=d.r}}
+function render(){
+if(!D){A.innerHTML='<p class="h">Team run</p><p>Getting the team…</p>';return}
+if(D.x){A.innerHTML='<p class="t">'+E(D.n)+'</p><p class="h">This team run has ended.</p>';return}
+const h=D.h||[],n=h.filter((x)=>x&&x[0]>=x[1]).length;
+let html='<p class="t">👥 '+E(D.n)+'</p><p class="h">'+n+' of '+F.length+' feats · '+(D.k||0)+' ride'+(D.k===1?'':'s')+'</p>'
++'<div class="ms">'+(D.m||[]).map((m)=>'<span>'+E(m)+'</span>').join('')+'</div>';
+if(D.o)html+='<p class="ho">↪ '+E(D.o[0])+'’s trip ended at '+at(D.o[1])+'. Carry on from there by '+at(D.o[1]+1800)+' and it counts as one trip.</p>';
+F.forEach((f,i)=>{
+const x=h[i]||[0,1],ok=x[0]>=x[1],pc=Math.min(100,x[1]?x[0]/x[1]*100:0);
+const shown=i===4?Math.floor(x[0]/60)+'h '+x[0]%60+'m of 3h':x[0]+'/'+x[1];
+html+='<div class="f'+(ok?' ok':'')+'" data-i="'+i+'"><div class="r"><span>'+f[0]+'</span><b>'+E(f[1])+'</b><small>'+(ok?'✓ Done':shown)+'</small></div><div class="bar"><i style="width:'+pc+'%"></i></div>'
++(open===i?'<p class="h g">'+E(f[2])+'</p>':'')+'</div>';
+});
+A.innerHTML=html;
+}
+A.addEventListener('click',(e)=>{const f=e.target.closest('[data-i]');if(!f)return;const i=+f.dataset.i;open=open===i?-1:i;if(W.HapticFeedback)W.HapticFeedback.selectionChanged();render()});
+load();render();
+if(W.onEvent){W.onEvent('publicDataChanged',()=>{load();render()});W.onEvent('activated',render)}
+if(W.watchPublicData)W.watchPublicData();
+if(W.ready)W.ready();
+</script>

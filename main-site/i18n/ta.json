@@ -1796,5 +1796,12 @@
   "trip.legTo": "{to} வரை",
   "trip.rideAcw": "{ride} (எதிர் கடிகாரத் திசை)",
   "trip.rideCw": "{ride} (கடிகாரத் திசை)",
-  "trip.rideTo": "{ride}, {to} வரை"
+  "trip.rideTo": "{ride}, {to} வரை",
+  "sync.kind.coins": "uwuCoins",
+  "sync.coinsN": "{n} uwuCoins",
+  "sync.coinsSub": "எடுத்தால் உங்களுடையதுடன் சேரும்",
+  "coins.log.sync": "ஒத்திசைவால் சேர்க்கப்பட்டது",
+  "coins.log.eggLink": "ஈஸ்டர் முட்டை இணைப்பிலிருந்து",
+  "coins.egg.gone": "இந்த ஈஸ்டர் முட்டை இணைப்பு ஏற்கெனவே பயன்படுத்தப்பட்டது, அல்லது இல்லை.",
+  "team.telegram": "Telegram-இல் சேருங்கள்"
 }

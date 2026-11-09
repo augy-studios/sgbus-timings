@@ -28,7 +28,9 @@
 //   simulated from the console
 //
 // Window.Coins = { balance(), add(n, { why }, { quiet }), tripDone(trip), forTrip(trip),
-// forPast(trip), tripsPaid(), spin(), open(), shown(), pops(), setShown(on), setPops(on) }. Trips from before uwuCoins get theirs once, by
+// forPast(trip), tripsPaid(), spin(), open(), shown(), pops(), setShown(on), setPops(on), syncId(),
+// syncList(), redeemEgg(id) }. syncId and syncList are for sync (js/sync.js), redeemEgg for the
+// Telegram bot's Easter egg links (js/share.js). Trips from before uwuCoins get theirs once, by
 // js/retrofit.js (forPast).
 // The console's simulateCoins(n) gives coins for a look (below). Plain script: exports go on
 // window.
@@ -311,6 +313,8 @@
       case 'egg': return { what: tr('coins.log.egg', 'Won on the wheel: {name}', { name: window.Eggs?.name(e.egg) || e.egg }), more: tr('coins.log.eggNote', 'An Easter egg') };
       case 'gta6': return { what: tr('coins.log.gta6', 'Won on the wheel: GTA VI’s colours'), more: '' };
       case 'simulated': return { what: tr('coins.log.simulated', 'Added from the console'), more: '' };
+      case 'sync': return { what: tr('coins.log.sync', 'Added by sync'), more: '' };
+      case 'egglink': return { what: tr('coins.log.eggLink', 'From an Easter egg link'), more: '' };
       default: return { what: tr('coins.log.other', 'uwuCoins'), more: '' };
     }
   }
@@ -499,5 +503,48 @@
     return `${next} uwuCoins`;
   };
 
-  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, shown, pops, setShown, setPops, entryWords, SPIN_COST };
+  // ---------- sync, and Easter egg links ----------
+
+  // This device's own id for sync (js/sync.js, kind coins), so it never takes its own balance.
+  const ID_KEY = 'sgbus_coins_id';
+  function syncId() {
+    let id = null;
+    try { id = localStorage.getItem(ID_KEY); } catch { /* new each visit */ }
+    if (!id) {
+      id = `w-${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;
+      try { localStorage.setItem(ID_KEY, id); } catch { /* new each visit */ }
+    }
+    return id;
+  }
+  const syncList = () => (balance() > 0 ? [{ id: syncId(), balance: balance() }] : []);
+
+  // An Easter egg link from the Telegram bot's wheel (/egg/<id>, api/share.js kind egg), opened
+  // here: used up on the server, once for everyone, then this device gets the egg slot's prize,
+  // as a spin would give it (slotNow): GTA VI's colours while they're due, else an egg not found
+  // yet, else EGG_GONE_COINS. Shown in the wheel's result.
+  async function redeemEgg(id) {
+    const r = await fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'redeem', id }) });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) return { error: body.error || tr('coins.egg.gone', 'This Easter egg link has been used, or doesn’t exist.') };
+    let out;
+    if (gta6Due()) {
+      Gta6.claim('egglink');
+      prize({ why: 'gta6' });
+      out = { gta6: true, slot: { egg: true } };
+    } else if (eggsLeft().length) {
+      const left = eggsLeft();
+      const egg = left[Math.floor(Math.random() * left.length)];
+      const got = Eggs.found(egg);
+      prize({ why: 'egg', egg });
+      out = { egg, got, slot: { egg: true } };
+    } else {
+      add(EGG_GONE_COINS, { why: 'egglink' }, { quiet: true });
+      out = { slot: { coins: EGG_GONE_COINS } };
+    }
+    open();
+    setTimeout(() => result(out), 300);
+    return out;
+  }
+
+  window.Coins = { balance, add, tripDone, forTrip, forPast, tripsPaid, spin, open, shown, pops, setShown, setPops, entryWords, syncId, syncList, redeemEgg, SPIN_COST };
 })();

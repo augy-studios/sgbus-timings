@@ -45,7 +45,8 @@ OPTION = {
          'from': {'kind': 'stop', 'code': '84031', 'name': 'Bedok Int', 'lat': 1.3247, 'lng': 103.9290},
          'to': {'kind': 'stop', 'code': '81111', 'name': 'Paya Lebar Stn Exit D', 'lat': 1.3180, 'lng': 103.8930}},
         {'mode': 'walk', 'metres': 40, 'minutes': 1},
-        {'mode': 'train', 'route': 'EW', 'minutes': 14, 'wait': 2, 'stops': 6, 'path': line([1.3180, 103.8930], [1.2840, 103.8515], 7),
+        # Paya Lebar, Aljunied, Kallang, Lavender, Bugis, City Hall, Raffles Place.
+        {'mode': 'train', 'route': 'EW', 'minutes': 14, 'wait': 2, 'stops': 6, 'path': [[1.3180, 103.8930], [1.3164, 103.8829], [1.3115, 103.8714], [1.3073, 103.8630], [1.3008, 103.8559], [1.2931, 103.8520], [1.2840, 103.8515]],
          'from': {'kind': 'station', 'name': 'Paya Lebar', 'lat': 1.3180, 'lng': 103.8930},
          'to': {'kind': 'station', 'name': 'Raffles Place', 'lat': 1.2840, 'lng': 103.8515}},
         {'mode': 'walk', 'metres': 120, 'minutes': 2, 'fromExit': {'name': 'B', 'lat': 1.2838, 'lng': 103.8517}},
@@ -124,14 +125,26 @@ def handler(request: httpx.Request) -> httpx.Response:
             return httpx.Response(200, json={'ok': True, 'result': {'message_id': next_message[0], 'widget': {'id': wid}}})
         return httpx.Response(200, json={'ok': True, 'result': True})
     if url.path == '/api/share' and request.method == 'POST':
-        links['abcde12345'] = {'kind': 'eta', 'data': body['data'], 'updatedAt': int(time.time() * 1000)}
-        return httpx.Response(200, json={'id': 'abcde12345', 'path': '/eta/abcde12345', 'secret': 'c2VjcmV0c2VjcmV0'})
+        new_id = 'abcde12345' if 'abcde12345' not in links else f'trip{len(links):06d}'
+        links[new_id] = {'kind': 'eta', 'data': body['data'], 'updatedAt': int(time.time() * 1000)}
+        return httpx.Response(200, json={'id': new_id, 'path': f'/eta/{new_id}', 'secret': 'c2VjcmV0c2VjcmV0'})
     if url.path == '/api/share' and request.method == 'GET':
         got = links.get(url.params['id'])
         return httpx.Response(200, json=got) if got else httpx.Response(404, json={'error': 'gone'})
     if url.path == '/api/share' and request.method == 'PATCH':
         links[url.params['id']]['data'] = body['data']
         return httpx.Response(204)
+    # The way the trip really goes (route_shapes.py): the site's real tracks, a road that bends,
+    # and a footpath.
+    if url.path == '/data/rail-tracks.json':
+        return httpx.Response(200, content=open(os.path.join(ROOT, 'main-site', 'data', 'rail-tracks.json'), 'rb').read())
+    if url.path == '/api/road':
+        pts = [list(map(float, q.split(','))) for q in url.params['points'].split(';')]
+        bent = [p for a, b in zip(pts, pts[1:]) for p in (a, [(a[0] + b[0]) / 2 + 0.001, (a[1] + b[1]) / 2])] + [pts[-1]]
+        return httpx.Response(200, json={'path': bent, 'source': 'osm'})
+    if url.path == '/api/walk':
+        a, b = [list(map(float, url.params[k].split(','))) for k in ('from', 'to')]
+        return httpx.Response(200, json={'path': [a, [a[0], b[1]], b], 'source': 'onemap'})
     if url.path.startswith('/api/push/trips/'):
         return httpx.Response(200 if request.method == 'PUT' else 204, json={'tripId': 'x'})
     return httpx.Response(404)
@@ -152,7 +165,7 @@ async def main():
     OWNER, FRIEND, WEB = 11, 22, 33
 
     eta_id = await bot_trips.start_trip(OWNER, 'Sam', START, END, OPTION)
-    site = [c for c in calls if c[1] == 'sgbus.test']
+    site = [c for c in calls if c[1] == 'sgbus.test' and c[0] in ('POST', 'PUT')]
     ok('the ETA link, then the trip for the site to follow', [(c[0], c[2].split('/tg-')[0]) for c in site] == [('POST', '/api/share'), ('PUT', '/api/push/trips')], [(c[0], c[2]) for c in site])
     ok('with the bot\'s token', all(c[5] == 'Bearer bot-secret' for c in site))
     put = site[1][4]
@@ -167,6 +180,24 @@ async def main():
     ok('the widget\'s caption', 'Your trip to One Raffles Place' in sent[0][4]['caption'])
     ok('the apps fetch its state every 15 s', any(c[4].get('cache_time') == 15 for c in tg('editSharedWidgetData')))
 
+    # ---------- the way it really goes ----------
+    await asyncio.gather(*list(bot_trips._shaping))
+    shapes = json.loads(bot_trips.get_trip(eta_id)['shapes_json'] or 'null')
+    ok('each part\'s colour: walk, bus, East West Line, walk', shapes and [x['c'] for x in shapes] == ['w', 'b', 'EW', 'w'], shapes and [x['c'] for x in shapes])
+    ok('the bus along the road', shapes and len(shapes[1]['p']) == 2 * len(parts[1]['points']) - 1)
+    ok('the walk along the footpath', shapes and len(shapes[0]['p']) == 3)
+    from src.route_shapes import _metres
+    rail = shapes[2]['p'] if shapes else []
+    straight = sum(_metres(a, b) for a, b in zip(parts[2]['points'], parts[2]['points'][1:]))
+    along = sum(_metres(a, b) for a, b in zip(rail, rail[1:]))
+    ok('the train along the East West Line\'s track, not straight', len(rail) > len(parts[2]['points']) and along > straight * 1.01, (len(rail), round(along), round(straight)))
+    ok('from station to station', rail and _metres(rail[0], [1.3180, 103.8930]) < 1 and _metres(rail[-1], [1.2840, 103.8515]) < 1)
+    drawn = json.loads(tg('editSharedWidgetData')[-1][4]['public_data'])
+    ok('the widget redrawn with them', drawn.get('q') == ['w', 'b', 'EW', 'w'] and len(drawn.get('j', [])) == 3 and len(drawn['m']) // 4 <= 64, drawn.get('q'))
+    from src.route_shapes import shapes_for_link
+    link_shapes = await shapes_for_link({'path': [p for x in parts for p in x['points']], 'trains': [{'leg': 2, 'route': 'EW', 'points': parts[2]['points']}]})
+    ok('a web share: its train on the rails, the rest by road', link_shapes and [x['c'] for x in link_shapes] == ['b', 'EW', 'b'], link_shapes and [x['c'] for x in link_shapes])
+
     # A friend opens the shared link.
     answer = await bot_trips.follow(FRIEND, eta_id)
     again = tg('sendSharedWidget')
@@ -180,12 +211,61 @@ async def main():
     ok('no edit when nothing changed', len(tg('editSharedWidgetData')) == edits)
 
     # On the bus, two stops from the stop: one edit for everyone, and the Get Off Alert, once.
+    rev = bot_trips.get_trip(eta_id)['rev']
     links[eta_id] = {'kind': 'eta', 'updatedAt': int(time.time() * 1000) + 600000, 'data': {**moved, 'leg': {**moved['leg'], 'stopsLeft': 2}}}
     await bot_trips.refresh(eta_id, client)
     await bot_trips.refresh(eta_id, client)
     new = tg('editSharedWidgetData')[edits:]
-    ok('one edit, a new revision', len(new) == 1 and json.loads(new[0][4]['public_data'])['r'] == 2 and json.loads(new[0][4]['public_data'])['s'] == 2)
+    ok('one edit, a new revision', len(new) == 1 and json.loads(new[0][4]['public_data'])['r'] == rev + 1 and json.loads(new[0][4]['public_data'])['s'] == 2)
     ok('the Get Off Alert, once, to the person on the trip', client.sent == [(OWNER, '🔔 Get off in 2 stops, at Paya Lebar Stn Exit D (81111), to change.')], client.sent)
+
+    # ---------- your location ----------
+    legs = json.loads(bot_trips.get_trip(eta_id)['trip_json'])['legs']
+    mid = [1.32135, 103.911]
+    spot = bot_trips.locate(legs, 1, mid)
+    ok('a point halfway along the bus: the bus, halfway', spot and spot[0] == 1 and abs(spot[1] - 4.5) < 0.2, spot)
+    ok('at the stop you get off: the next part, from its start', bot_trips.locate(legs, 1, [1.3180, 103.8930]) == (2, 0.0))
+    ok('back a part, when the clock had them too far on', bot_trips.locate(legs, 2, mid)[0] == 1)
+    ok('off the trip: nowhere on it', bot_trips.locate(legs, 1, [1.40, 103.70]) is None)
+
+    ok('a location nobody asked for is not the trip\'s', bot_trips.wants_location(OWNER, live=False) is None)
+    ok('a live location is, while a trip\'s on', bot_trips.wants_location(OWNER, live=True) is not None)
+    ok('a friend\'s live location isn\'t', bot_trips.wants_location(FRIEND, live=True) is None)
+    bot_trips.mark_asked(eta_id)
+    row = bot_trips.wants_location(OWNER, live=False)
+    ok('one sent after the bot asked is', row is not None)
+
+    first = json.loads(row['trip_json'])
+    edits = len(tg('editSharedWidgetData'))
+    calls_before = len(calls)
+    got = await bot_trips.apply_fix(row, *mid, accuracy=12, client=client)
+    ok('the fix: on the bus, halfway', got['on'] and got['eta']['legIndex'] == 1 and got['eta']['leg']['stopsLeft'] == 5, got)
+    put = next(c for c in calls[calls_before:] if c[0] == 'PUT')
+    patch = next(c for c in calls[calls_before:] if c[0] == 'PATCH')
+    ok('the link has where they really are', patch[4]['data']['me']['lat'] == mid[0] and patch[4]['data']['me']['accuracy'] == 12)
+    ok('the widget, at once', len(tg('editSharedWidgetData')) == edits + 1 and json.loads(tg('editSharedWidgetData')[-1][4]['public_data'])['s'] == 5)
+    ok('the button\'s ask is used up', bot_trips.wants_location(OWNER, live=False) is None)
+    served = node('''
+import { parseTrip } from "./main-site/api/_push/validate.js";
+import { merge } from "./main-site/api/push/trips/[id].js";
+import { live } from "./main-site/api/_push/trip.js";
+import { parseLink } from "./main-site/api/_lib/share-links.js";
+const { first, fix, eta } = JSON.parse(await new Promise((r) => { let s = ""; process.stdin.on("data", (d) => (s += d)); process.stdin.on("end", () => r(s)); }));
+const now = fix.seenAt;
+// The site had moved the trip on to the train by its clock; the fix puts it back on the bus.
+const old = { ...parseTrip(first, now, { fromBot: true }), leg: 2, at: 0, pos: 0 };
+const m = merge(old, parseTrip(fix, now, { fromBot: true }), now);
+const link = parseLink("eta", eta, now);
+console.log(JSON.stringify({ leg: m.leg, pos: m.pos, live: live(m, now), me: link.me }));
+''', {'first': first, 'fix': put[4], 'eta': patch[4]['data']})
+    ok('the site takes the fix over its clock, even back a part', served and served['leg'] == 1 and abs(served['pos'] - 4.5) < 0.2, served)
+    ok('and leaves the trip to the fixes for now', served and served['live'] is True)
+    ok('the link keeps the dot', served and served['me'] and served['me']['accuracy'] == 12, served)
+    ok('live location: not again within 15 s', await bot_trips.apply_fix(bot_trips.get_trip(eta_id), *mid, live=True, client=client) is None)
+    calls_before = len(calls)
+    off = await bot_trips.apply_fix(bot_trips.get_trip(eta_id), 1.40, 103.70, client=client)
+    ok('off the trip: the trip stays, only the dot moves', off == {'on': False} and not any(c[0] == 'PUT' for c in calls[calls_before:])
+       and next(c for c in calls[calls_before:] if c[0] == 'PATCH')[4]['data']['me']['lat'] == 1.40)
 
     # Someone opens a trip the web app shares.
     links['webtrip001'] = {'kind': 'eta', 'updatedAt': NOW, 'data': web_eta}
@@ -221,6 +301,41 @@ async def main():
     await bot_trips.poll(client)
     ok('a web share whose link went: ended', bot_trips.get_trip('webtrip001')['status'] == 'ended'
        and json.loads(tg('editSharedWidgetData')[-1][4]['public_data']).get('x') == 2)
+
+    # ---------- a trip ridden for real: its uwuCoins ----------
+    from src import coins
+    from src.db import db
+    RIDER = 77
+    clock = [int(time.time() * 1000)]
+    real_now = bot_trips._now_ms
+    bot_trips._now_ms = lambda: clock[0]
+    trip_id = await bot_trips.start_trip(RIDER, 'Rin', START, END, OPTION)
+    await asyncio.gather(*list(bot_trips._shaping))
+    legs = json.loads(bot_trips.get_trip(trip_id)['trip_json'])['legs']
+    bus_pts = legs[1]['points']
+    # At the stop, then along the road, then off at the end, in about the time it takes.
+    for k, p in enumerate([bus_pts[0], bus_pts[3], bus_pts[6], bus_pts[-1]]):
+        clock[0] += 5 * 60000 if k else 0
+        await bot_trips.apply_fix(bot_trips.get_trip(trip_id), *p, accuracy=15, client=client)
+    seen = json.loads(bot_trips.get_trip(trip_id)['seen_json'])
+    ok('each location towards judging the bus', seen[1] and seen[1]['startAt'] and seen[1]['endAt'] and len(seen[1]['along']) >= 2, seen[1] if len(seen) > 1 else seen)
+    # The site's cron gets them there.
+    links[trip_id] = {'kind': 'eta', 'updatedAt': clock[0], 'data': {**links[trip_id]['data'], 'ended': True, 'legIndex': 3}}
+    await bot_trips.refresh(trip_id, client)
+    paid = [r for r in coins.log(RIDER, 10) if r['why'] == 'trip']
+    ok('got there with a real ride: the trip\'s uwuCoins, once', len(paid) == 1 and paid[0]['n'] >= coins.FINISH and paid[0]['info']['trip'] == trip_id, paid)
+    ok('the bus kept as a real ride', db.execute('SELECT bus FROM rides WHERE chat_id = ?', (RIDER,)).fetchone()['bus'] == '28')
+    mine = [c for c in tg('editMessageWidgetData') if c[4]['chat_id'] == RIDER]
+    ok('the card counts them up', mine and json.loads(mine[-1][4]['chat_data']) == {'o': 1, 'c': paid[0]['n']})
+    ok('and the chat\'s told', any(c == RIDER and f"+{paid[0]['n']} uwuCoins" in t for c, t in client.sent))
+    await bot_trips.refresh(trip_id, client)
+    ok('not paid twice', len([r for r in coins.log(RIDER, 10) if r['why'] == 'trip']) == 1)
+    # Ended by hand far from the end, with no ride seen: no coins.
+    QUITTER = 78
+    quit_id = await bot_trips.start_trip(QUITTER, 'Q', START, END, OPTION)
+    await bot_trips.end_trip(quit_id, QUITTER, client)
+    ok('a trip ended with no real ride: no coins', coins.balance(QUITTER) == 0)
+    bot_trips._now_ms = real_now
 
 asyncio.run(main())
 print('\n%d failed' % fails if fails else '\nAll passed'); sys.exit(1 if fails else 0)

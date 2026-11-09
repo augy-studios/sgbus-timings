@@ -22,6 +22,7 @@ import '../../api/api.dart';
 import '../../app/nav.dart';
 import '../../app/pages.dart';
 import '../../data/calendar.dart';
+import '../../data/rewards.dart';
 import '../../data/favs.dart';
 import '../../data/network.dart';
 import '../../data/places.dart';
@@ -84,6 +85,9 @@ final _kinds = <_Kind>[
   _Kind('calendar', 'calendar', () => tr('settings.calendar', 'Calendar'),
       (c) => 'calendar:${'${(c as Map)['url']}'.replaceFirst(RegExp(r'^webcals?://', caseSensitive: false), 'https://')}'),
   _Kind('setting', 'settings', () => tr('settings.settings', 'Settings'), (s) => 'setting:${(s as Map)['field']}=${s['value']}'),
+  // uwuCoins: this phone's balance, as { id, balance }; taking it adds it to yours, as on the web
+  // (js/sync.js, kind coins) and in the bot's /sync.
+  _Kind('coins', 'coins', () => tr('sync.kind.coins', 'uwuCoins'), (c) => 'coins:${(c as Map)['id']}=${c['balance']}'),
 ];
 
 const _legacyKinds = ['profile', 'stop', 'bus', 'route', 'nav', 'place', 'trip', 'search'];
@@ -185,7 +189,7 @@ List<Map<String, String>> _ownSettings() => [
     ];
 
 List<String> _ownKinds() => [
-      ..._legacyKinds, 'calendar', 'stopbus', 'favlist',
+      ..._legacyKinds, 'calendar', 'stopbus', 'favlist', 'coins',
       if (Native.has('routines')) 'routine',
       if (Native.has('lastbus')) 'lastbus',
       for (final f in _settings.keys) if (_here(f)) 'setting:$f',
@@ -224,6 +228,7 @@ Map<String, List<Object?>> ownFavs() {
     'lastbus': Reminders.syncLastBus(),
     'calendar': Calendar.syncList(),
     'settings': _ownSettings(),
+    'coins': Coins.syncList(),
   };
 }
 
@@ -333,6 +338,11 @@ Map<String, List<Object?>>? cleanFavs(Object? raw) {
       for (final s in list(raw['settings']).whereType<Map>())
         if (_settingOk(s['field'], s['value']) && once('setting:${s['field']}')) {'field': s['field'], 'value': s['value']},
     ],
+    'coins': [
+      for (final c in list(raw['coins']).whereType<Map>())
+        if (c['id'] is String && RegExp(r'^[\w-]{4,40}$').hasMatch(c['id'] as String) && c['balance'] is int && (c['balance'] as int) > 0 && (c['balance'] as int) <= 10000000)
+          {'id': c['id'], 'balance': c['balance']},
+    ].take(1).toList(),
   };
 }
 
@@ -399,6 +409,11 @@ int mergeFavs(Map<String, List<Object?>> favs) {
         lastbus.add(item as Map);
       case 'calendar':
         added += Calendar.mergeSync('${(item as Map)['url']}');
+      case 'coins':
+        if ((item as Map)['id'] != Coins.syncId) {
+          Coins.add(item['balance'] as int, info: {'why': 'sync'});
+          added++;
+        }
       case 'setting':
         _settings['${(item as Map)['field']}']!.set('${item['value']}');
         added++;
@@ -794,6 +809,7 @@ class _SyncScreenState extends State<SyncScreen> {
       'routine' => tr('sync.routineAt', '{time} at {stop}', {'time': '${'${m['time']}'.substring(0, 2)}:${'${m['time']}'.substring(2)}', 'stop': nameOf(m['code'], m['name'])}),
       'lastbus' => tr('sync.lastAt', 'Last {no} at {stop}', {'no': m['service'], 'stop': nameOf(m['code'], m['name'])}),
       'calendar' => tr('sync.calendarLink', 'Your calendar’s link'),
+      'coins' => tr('sync.coinsN', '{n} uwuCoins', {'n': m['balance']}),
       'setting' => _settings['${m['field']}']?.label() ?? '${m['field']}',
       _ => '${nameOf(m['start'], m['startName'])} → ${nameOf(m['end'], m['endName'])}',
     };
@@ -818,6 +834,7 @@ class _SyncScreenState extends State<SyncScreen> {
       'routine' => '${Reminders.daysText([for (final d in m['days'] as List) (d as num).toInt()])} · ${(m['buses'] as List).isNotEmpty ? tr('favs.bus', 'Bus {no}', {'no': (m['buses'] as List).join(', ')}) : tr('sync.everyBus', 'Every bus')}',
       'lastbus' => '${m['code']}',
       'calendar' => '${m['url']}'.replaceFirst(RegExp(r'^(\w+://[^/]+).*$'), r'$1/…'),
+      'coins' => tr('sync.coinsSub', 'Taking them adds them to yours'),
       'setting' => _settings['${m['field']}']?.text?.call('${m['value']}') ?? '${m['value']}',
       _ => '${m['start']} → ${m['end']}',
     };

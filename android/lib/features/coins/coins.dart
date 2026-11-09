@@ -25,6 +25,25 @@ import '../share/share_card.dart';
 
 String _eggName(String id) => EggsData.byId(id)?.name() ?? id;
 
+/// What an Easter egg link gave, in words (features/share/shared.dart): (title, more).
+(String, String) eggLinkWords(({int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6}) r) {
+  if (r.gta6) return (tr('coins.wonGta6', 'GTA VI’s colours!'), tr('coins.wonGta6More', 'They’re yours to keep. Pick them in Theme.'));
+  if (r.egg != null) {
+    final lines = <String>[];
+    if (r.got?.secrets.isNotEmpty == true) {
+      lines.add(tr('eggs.unlockedSecret', 'You’ve unlocked a secret: {what}', {'what': tr('eggs.got.colours', 'Your colours: pick one colour, and the app makes the whole theme from it.')}));
+    }
+    final preset = r.got?.preset;
+    if (preset != null) {
+      lines.add(Feats.coloursUnlocked
+          ? tr('eggs.gotPreset', 'Your colours has a new preset: {name}.', {'name': preset.name()})
+          : tr('eggs.presetLater', 'It also comes with a preset, {name}, for when Your colours is unlocked.', {'name': preset.name()}));
+    }
+    return (tr('coins.wonEgg', 'An Easter egg: {name}!', {'name': _eggName(r.egg!)}), lines.join(' '));
+  }
+  return (tr('coins.wonCoins', '{n} uwuCoins!', {'n': r.coins}), '');
+}
+
 /// The ways in, and the windows the rules ask for.
 void registerCoins() {
   AppNav.register('coins', (_) => CoinsScreen.open());
@@ -394,6 +413,10 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
       return (what: tr('coins.log.gta6', 'Won on the wheel: GTA VI’s colours'), more: '');
     case 'simulated':
       return (what: tr('coins.log.simulated', 'Added from the console'), more: '');
+    case 'sync':
+      return (what: tr('coins.log.sync', 'Added by sync'), more: '');
+    case 'egglink':
+      return (what: tr('coins.log.eggLink', 'From an Easter egg link'), more: '');
     default:
       return (what: tr('coins.log.other', 'uwuCoins'), more: '');
   }

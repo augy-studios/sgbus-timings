@@ -521,6 +521,14 @@
     if (kind === 'place') openNavAt('here', data);
     else if (kind === 'directions') openNavAt(data.from, data.to, data.when, data.way, data.via || null);
     else if (kind === 'eta') openEtaView(id, { data, updatedAt: got.updatedAt });
+    else if (kind === 'egg') {
+      if (location.hash.startsWith('#share/')) history.replaceState(null, '', location.pathname);
+      if (data?.used) alert(I18n.t('coins.egg.gone', 'This Easter egg link has been used, or doesn’t exist.'));
+      else {
+        const got = await window.Coins?.redeemEgg(id);
+        if (got?.error) alert(got.error);
+      }
+    }
     else if (kind === 'feat') {
       // The address put away before the window opens, not after: its step (js/ui.js) goes on top
       // of this one, and closing it steps back here. Still at #share/<id>, that step back was a

@@ -85,6 +85,15 @@ async def edit_shared_widget_data(widget_id: str, public_data: str, cache_time: 
             raise
 
 
+async def edit_message_widget_data(chat_id: int, message_id: int, chat_data: "str | None" = None, public_data: "str | None" = None) -> None:
+    """One message's widget state: its chat state, or a static widget's shared state."""
+    try:
+        await call("editMessageWidgetData", {"chat_id": chat_id, "message_id": message_id, "chat_data": chat_data, "public_data": public_data})
+    except BotApiError as err:
+        if not not_modified(err):
+            raise
+
+
 async def edit_buttons(chat_id: int, message_id: int, buttons=None) -> None:
     """A widget message's buttons changed, or taken away with None."""
     try:

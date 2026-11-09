@@ -1,0 +1,69 @@
+<!-- The uwuCoins wheel (telegram-bot/src/coins_view.py): one widget for each chat, its chat state
+{"r": revision, "b": balance, "f": the balance before the last spin's win, "s": the slot it
+stopped on (-1 for none yet), "w": coins won (0 for the egg), "t": when (unix seconds)}. The
+bot spins (coins.py, Spin under the widget) and sets the state; the wheel turns onto the slot
+and the balance counts up, as the web app's wheel does (main-site/js/coins.js). Slots as SLOTS
+there. Sent without these comments. -->
+<style>
+body{margin:0;padding:12px 14px max(12px,env(safe-area-inset-bottom));text-align:center}
+.wr{position:relative;width:200px;max-width:70vw;margin:4px auto 10px}
+.wr svg{display:block;width:100%;height:auto}
+#g{transform-origin:100px 100px}
+.sl{stroke:#b8860b;stroke-width:.8}
+.tx{font:800 14px system-ui,sans-serif;fill:#3d2900;text-anchor:middle;dominant-baseline:middle}
+.pt{position:absolute;left:50%;top:-6px;width:0;height:0;margin-left:-11px;border:11px solid transparent;border-top:18px solid var(--tg-theme-destructive-text-color,#e53935)}
+.bal{display:flex;align-items:center;justify-content:center;gap:8px;font-size:2em;font-weight:800;font-variant-numeric:tabular-nums}
+.bal svg{width:30px;height:30px}
+.h{color:var(--tg-theme-hint-color);font-size:.88em;margin:4px 0 0}
+.won{font-weight:700;margin:6px 0 0}
+</style>
+<div class="wr"><div class="pt"></div><svg viewBox="0 0 200 200"><g id="g"></g><circle cx="100" cy="100" r="16" fill="#b8860b"/></svg></div>
+<div class="bal"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#f5c542" stroke="#b8860b" stroke-width="1.5"/><circle cx="12" cy="12" r="7.6" fill="none" stroke="#d9a520"/><text x="12" y="14.6" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7.2" font-weight="800" fill="#7a5200">uwu</text></svg><span id="b">0</span></div>
+<p class="won" id="w"></p>
+<p class="h" id="n"></p>
+<script>
+const W=window.TelegramWidget||{},SL=['🥚',20,50,30,70,40,150,60],N=SL.length,COST=100,MS=5000;
+const $=(i)=>document.getElementById(i);
+let S={r:-1,b:0},turned=0,busy=false;
+try{turned=+localStorage.getItem('a')||0}catch(e){}
+const still=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
+let svg='';
+const pt=(a,d)=>[100+d*Math.sin(a),100-d*Math.cos(a)];
+for(let i=0;i<N;i++){
+const a0=(i/N)*2*Math.PI-Math.PI/N,a1=((i+1)/N)*2*Math.PI-Math.PI/N,[x0,y0]=pt(a0,100),[x1,y1]=pt(a1,100),[tx,ty]=pt((i/N)*2*Math.PI,66);
+svg+='<path class="sl" fill="'+(i?i%2?'#f5c542':'#ffe9a8':'#fff6dc')+'" d="M100,100 L'+x0.toFixed(2)+','+y0.toFixed(2)+' A100,100 0 0 1 '+x1.toFixed(2)+','+y1.toFixed(2)+' Z"/>'
++'<text class="tx" x="'+tx.toFixed(2)+'" y="'+ty.toFixed(2)+'" transform="rotate('+i*360/N+' '+tx.toFixed(2)+' '+ty.toFixed(2)+')">'+SL[i]+'</text>';
+}
+$('g').innerHTML=svg;
+const turn=(deg,ms)=>{const g=$('g');g.style.transition=ms?'transform '+ms+'ms cubic-bezier(0.2,0.7,0.1,1)':'none';g.style.transform='rotate('+deg+'deg)'};
+turn(turned,0);
+function count(from,to){
+const el=$('b');
+if(still()||to<=from){el.textContent=to;return}
+const t0=Date.now();
+const step=()=>{const t=Math.min(1,(Date.now()-t0)/1000);el.textContent=Math.round(from+(to-from)*(1-(1-t)**3));if(t<1)requestAnimationFrame(step)};
+step();
+}
+function words(){
+$('n').textContent=S.b>=COST?'Spin for '+COST+' with the button below.':(COST-S.b)+' more uwuCoins for a spin. Trips with a real ride earn them.';
+}
+function won(){$('w').textContent=S.s>=0&&S.t?(S.w?'+'+S.w+' uwuCoins!':'🥚 An Easter egg! Its link is in the chat.'):''}
+function load(){
+let d=null;try{d=JSON.parse(W.chatData)}catch(e){}
+if(!d||d.r<=S.r)return;
+S=d;
+let seen=-1;try{seen=+localStorage.getItem('r')}catch(e){}
+const fresh=d.s>=0&&d.t&&Date.now()/1000-d.t<60&&seen<d.r;
+try{localStorage.setItem('r',d.r)}catch(e){}
+if(!fresh||busy){$('b').textContent=d.b;won();words();return}
+busy=true;$('w').textContent='';$('b').textContent=d.f;words();
+const slice=360/N,at=d.s*slice+(Math.random()-.5)*slice*.7;
+turned+=(still()?0:6*360)+((((-turned-at)%360)+360)%360);
+turn(turned,still()?0:MS);
+try{localStorage.setItem('a',turned%360)}catch(e){}
+setTimeout(()=>{busy=false;won();count(d.f,d.b);words();if(W.HapticFeedback)W.HapticFeedback.notificationOccurred('success')},still()?50:MS+100);
+}
+load();if(S.r<0){$('b').textContent=0;words()}
+if(W.onEvent)W.onEvent('chatDataChanged',load);
+if(W.ready)W.ready();
+</script>

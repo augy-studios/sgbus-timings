@@ -23,6 +23,13 @@ import httpx
 
 from .bus_stops import get_bus_stop_by_code
 from .calendar_events import get_link, set_link
+from .coins import add as add_coins
+from .coins import balance as coin_balance
+
+
+def coins_sync_id(chat_id: int) -> str:
+    """The chat's own id for uwuCoins in sync, so it never takes its own balance back."""
+    return f"tg-{chat_id}"
 from .config import config
 from .favourite_buses import add_favourite_bus, is_favourite_bus, list_favourite_buses
 from .favourite_prefs import get_pref, set_pref
@@ -46,7 +53,7 @@ from .user_settings import (
 # What the bot keeps, as js/sync.js names them. No trips, past searches or last bus
 # reminders, and of the settings only where favourites pin, whether you have a bike and how
 # bus times show.
-KINDS = ["profile", "stop", "bus", "route", "nav", "place", "routine", "calendar", "setting:pin.stop", "setting:pin.bus", "setting:bike", "setting:bus.times"]
+KINDS = ["profile", "stop", "bus", "route", "nav", "place", "routine", "calendar", "coins", "setting:pin.stop", "setting:pin.bus", "setting:bike", "setting:bus.times"]
 
 # The sync code, as js/p2p.js makes them.
 CODE_RE = re.compile(r"^[BCDFGHJKLMNPQRSTVWXYZ23456789]{6}$")
@@ -120,6 +127,9 @@ def own_favs(chat_id: int) -> dict:
             for r in list_routines(chat_id)
         ],
         "calendar": [{"url": link["url"]}] if link else [],
+        # uwuCoins (coins.py): the balance, as { id, balance }; taking it adds it to the other's
+        # (js/sync.js, kind coins).
+        "coins": [{"id": coins_sync_id(chat_id), "balance": b}] if (b := coin_balance(chat_id)) > 0 else [],
         # As on the web: only a setting changed from how it starts.
         "settings": [{"field": f"pin.{kind}", "value": "bottom"} for kind in ("stop", "bus") if get_pref(chat_id, kind) == "bottom"]
         + ([{"field": "bike", "value": "on"}] if get_has_bike(chat_id) else [])
@@ -240,6 +250,13 @@ def merge(chat_id: int, favs: dict) -> dict:
         add_routine(chat_id, hour, minute, ",".join(str(d) for d in sorted(set(days))), code, _stop_name(code, r.get("name")), join_services(sorted(set(buses))))
         room -= 1
         count("routine")
+
+    # Another's uwuCoins, added to this chat's (Augy, 10 November 2026: taken again, added again).
+    for c in _list(favs, "coins")[:1]:
+        if (isinstance(c, dict) and isinstance(c.get("id"), str) and c["id"] != coins_sync_id(chat_id)
+                and isinstance(c.get("balance"), int) and 0 < c["balance"] <= 10_000_000):
+            add_coins(chat_id, c["balance"], "sync", {"from": c["id"][:40]})
+            count("uwuCoins")
 
     # Only its form here: fetch_calendar checks where it goes each time it's read, without
     # this holding the bot up looking the host up.

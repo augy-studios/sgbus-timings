@@ -1,11 +1,33 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 9 November 2026**
+**Latest update: 10 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 10 November 2026: uwuCoins, feats and team runs in Telegram (2.4.11)
+
+### Telegram bot
+
+- **uwuCoins** - Live trips earn uwuCoins once you get there with a ride your location shows was real, by the web app's own amounts, and the trip's card counts them up as you arrive. /coins has your wheel: Spin for 100, and it turns onto what you won while your balance counts up. History lists every coin in and out.
+- **Easter egg links** - The wheel's egg slice gives a link. Open it on the website or in the Android app and that phone gets the egg slice's prize. Each link works once, for whoever opens it first, and doesn't expire.
+- **Feats** - The nine feats, from your own rides and trips, each worth 100 uwuCoins once. /achievements says how far along you are.
+- **Team runs** - /team Night Owls starts one, and /team with a code, or a team link, joins it, with phones and Telegram chats in the same team. The team's card shows each feat and who's in it, updated for all of you at once.
+- **uwuCoins in /sync** - Taking another device's uwuCoins adds them to yours.
+
+### Web app
+
+- **Easter egg links** - An egg link from the Telegram bot's wheel opens here for the egg slice's prize: GTA VI's colours once they're the wheel's to give, otherwise an egg you haven't found, or 80 uwuCoins.
+- **uwuCoins in sync** - Sync offers your uwuCoins, and taking another device's or the bot's adds them to yours.
+- **Join in Telegram** - A team run has Join in Telegram, for the same team in the bot.
+
+### Android app
+
+- **Easter egg links, uwuCoins in sync, and Join in Telegram**, as on the website.
 
 ---
 
@@ -22,7 +44,8 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ### Telegram bot
 
-- **Start trip** - Under a way in /nav that sets off now or soon, Start trip gives you a live card that keeps itself up to date: when you'll arrive, the trip's parts with the one you're on lit, and the stops left. Tap the time for a clock, or a part to see it. A Get Off Alert comes two stops before you get off, and /trip shows the card again.
+- **Start trip** - Under a way in /nav that sets off now or soon, Start trip gives you a live card that keeps itself up to date: a map of the way along its roads and tracks, each bus in blue and each train in its line's colour, with where you are (tap it to close in), when you'll arrive, the trip's parts with the one you're on lit, and the stops left. Tap the time for a clock, or a part to see it. A Get Off Alert comes two stops before you get off, and /trip shows the card again.
+- **Your location, for an exact trip** - Starting a trip, the bot asks for your location: share your live location and the trip follows you all the way, or tap Send my location to put it right once, offered again on Refresh. Anyone following sees where you really are on the map.
 - **Share your trip** - Share this trip sends a link. Whoever opens it gets the same live card in their own chat with the bot, and a message when you've arrived. Anyone not on Telegram gets the web link too.
 - **@sgbus_app** - The bot is now [@sgbus_app](https://t.me/sgbus_app). Used @UwUsgbus_bot? Tap Start on @sgbus_app.
 

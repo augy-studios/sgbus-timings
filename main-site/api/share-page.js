@@ -1,4 +1,4 @@
-// What a share link opens: /go/<id>, /trip/<id>, /eta/<id> and /feat/<id> come here
+// What a share link opens: /go/<id>, /trip/<id>, /eta/<id>, /feat/<id> and /egg/<id> come here
 // (vercel.json). A chat app reading it for a preview gets the link's title, a line about it
 // and its map, or for a feat its card (api/feat-card.js); a person is sent straight on to the
 // app, at #share/<id>, which shows the place, the directions, the live progress or the feat
@@ -107,10 +107,10 @@ export default async function handler(req, res) {
     : { title: 'SG Bus Timings', description: 'Live bus arrivals, routes and directions by bus and train in Singapore.' };
   const { title, description } = about;
   const feat = link?.kind === 'feat';
-  const image = !link ? `${origin}/sgbusicon1.png`
+  const image = !link || link.kind === 'egg' ? `${origin}/sgbusicon1.png`
     : feat ? `${origin}/api/feat-card?id=${id}`
     : `${origin}/api/share-map?id=${id}${link.kind === 'eta' ? `&v=${link.updatedAt}` : ''}`;
-  const [imageW, imageH] = feat ? [CARD_W, CARD_H] : [512, 256];
+  const [imageW, imageH] = feat ? [CARD_W, CARD_H] : link?.kind === 'egg' || !link ? [512, 512] : [512, 256];
 
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', link?.kind === 'eta' || !link ? 'no-store' : 'public, max-age=300, s-maxage=86400');

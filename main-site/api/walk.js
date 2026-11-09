@@ -30,7 +30,10 @@ export default async function handler(req, res) {
   const to = parsePoint(req.query.to);
   if (!from || !to) return res.status(400).json({ error: "from and to must be lat,lng in Singapore" });
 
-  if (storeConfigured()) {
+  // Not the Telegram bot's, which draws each live trip's map along the walks from its one address
+  // (telegram-bot/src/route_shapes.py).
+  const bot = Boolean(process.env.BOT_API_TOKEN) && req.headers.authorization === `Bearer ${process.env.BOT_API_TOKEN}`;
+  if (!bot && storeConfigured()) {
     const ip = req.headers["x-real-ip"] || String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || "unknown";
     try {
       if (await rateLimited(`walk:${ip}`, RATE_LIMIT)) return res.status(429).json({ error: "Too many requests. Try again in a minute." });

@@ -32,7 +32,9 @@ from .handlers.setname import register_setname
 from .handlers.settings import register_settings
 from .handlers.start import register_start
 from .handlers.sync import register_sync
-from .handlers.trips import register_trips
+from .handlers.trips import register_trip_location, register_trips
+from .handlers.coins import register_coins
+from .team_view import start_team_loop, stop_team_loop
 from .handlers.unfavbus import register_unfavbus
 from .handlers.unfavstop import register_unfavstop
 from .reply import send_rich_message
@@ -66,6 +68,8 @@ async def main() -> None:
     await setup_mini_app(client)
 
     register_start(client)
+    # Before every other location handler: a location for the trip you're on (handlers/trips.py).
+    register_trip_location(client)
     # Both interceptors it carries have to come before the handler they take a message off:
     # the text one before register_search, the location one before register_nearme.
     register_newroute(client)
@@ -87,6 +91,7 @@ async def main() -> None:
     register_servicealerts(client)
     register_sync(client)
     register_trips(client)
+    register_coins(client)
     register_flow_control(client)
     register_callbacks(client)
     register_inline(client)
@@ -134,12 +139,14 @@ async def main() -> None:
 
     start_scheduler()
     await start_trip_loop(client)
+    await start_team_loop(client)
     print("Bot started.")
     try:
         await client.run_until_disconnected()
     finally:
         stop_scheduler()
         stop_trip_loop()
+        stop_team_loop()
 
 
 async def _refresh_stops_job() -> None:

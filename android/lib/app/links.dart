@@ -18,7 +18,7 @@ class Links {
     final u = Uri.tryParse(url);
     if (u == null) return false;
     if (u.host.isNotEmpty && u.host != 'sgbus.uwuapps.org') return false;
-    final short = RegExp(r'^/(?:go|trip|eta|feat)/([a-z0-9]{10})$').firstMatch(u.path);
+    final short = RegExp(r'^/(?:go|trip|eta|feat|egg)/([a-z0-9]{10})$').firstMatch(u.path);
     if (short != null) return AppNav.open('share', {'id': short[1]});
     // Something shared into the app: Navigate's To.
     final shared = ['title', 'text', 'url'].map((k) => u.queryParameters[k]?.trim()).whereType<String>().where((s) => s.isNotEmpty).toList();

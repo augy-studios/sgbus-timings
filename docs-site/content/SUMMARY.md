@@ -106,6 +106,7 @@ than about three taps to reach goes under Advanced.
 * [Routes and journeys](bot/routes.md)
 * [Navigate with /nav](bot/nav.md)
 * [Live trips](bot/trips.md)
+* [uwuCoins, feats and team runs](bot/coins.md)
 * [Places with /places](bot/places.md)
 * [Calendar with /calendar](bot/calendar.md)
 * [Routines](bot/routines.md)

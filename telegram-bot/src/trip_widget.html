@@ -1,7 +1,10 @@
 <!-- A trip's live widget (telegram-bot/src/trip_widget.py, bot_trips.py): one shared widget per
 trip, its shared state the trip's progress, as the bot reads it from the trip's live ETA link.
-Chat state {"o":1} is the person on the trip. Tap the time to switch between minutes and a clock,
-and a part of the bar to see that part. Sent without these comments (trip_widget.py). -->
+Chat state {"o":1} is the person on the trip, with "c": the uwuCoins the trip earned once
+they've got there (bot_trips.py, _settle), counted up once. Tap the time to switch between minutes and a clock,
+a part of the bar to see that part, and the map to close in on where they are, and back. The map
+is the route on a dot grid, as map_data in trip_widget.py packs it: a widget can't load map tiles.
+Sent without these comments (trip_widget.py). -->
 <style>
 body{margin:0;padding:10px 14px max(10px,env(safe-area-inset-bottom))}
 p{margin:0 0 4px}
@@ -19,14 +22,42 @@ p{margin:0 0 4px}
 .t{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;font-size:.75em;background:var(--tg-theme-secondary-bg-color);color:var(--tg-theme-hint-color)}
 .end #m{color:var(--tg-theme-accent-text-color)}
 .st{color:var(--tg-theme-destructive-text-color)}
+.map{position:relative;height:140px;margin:0 0 8px;border-radius:12px;overflow:hidden;background:radial-gradient(rgba(128,128,128,.3) 1px,transparent 1.6px) 0 0/12px 12px,var(--tg-theme-secondary-bg-color)}
+.map svg{display:block}
+.map polyline{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.map .g{stroke:#9aa7a0}
+.map .w{stroke:var(--tg-theme-hint-color)}
+.map circle{fill:var(--tg-theme-bg-color);stroke:var(--tg-theme-hint-color)}
+.me,.pin{position:absolute;font-style:normal;font-weight:400;line-height:1;transform:translate(-50%,-50%)}
+.me{width:28px;height:28px;border-radius:50%;font-size:15px;display:flex;align-items:center;justify-content:center;background:var(--tg-theme-bg-color);box-shadow:0 0 0 3px var(--tg-theme-button-color)}
+.me::after{content:'';position:absolute;top:-3px;left:-3px;right:-3px;bottom:-3px;border-radius:50%;box-shadow:0 0 0 3px var(--tg-theme-button-color);animation:pl 2s ease-out infinite}
+@keyframes pl{to{transform:scale(1.8);opacity:0}}
+@media (prefers-reduced-motion:reduce){.me::after{display:none}}
+.pin{font-size:20px;transform:translate(-50%,-90%)}
+.cn{display:flex;align-items:center;gap:6px;margin:6px 0 2px;font-weight:700;font-size:1.1em;font-variant-numeric:tabular-nums}
+.cn svg{width:22px;height:22px}
+.z{position:absolute;right:8px;top:6px;padding:1px 7px;border-radius:8px;font-size:.72em;background:var(--tg-theme-bg-color);color:var(--tg-theme-hint-color)}
 </style>
 <div id="a"></div>
 <script>
 const W=window.TelegramWidget||{},A=document.getElementById('a'),IC={b:'🚌',t:'🚆',w:'🚶'};
-let D=null,R=-1,sel=null,clk=false;
+let D=null,R=-1,sel=null,clk=false,Z=false;
+const B='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_',dc=(s,i)=>B.indexOf(s[i])*64+B.indexOf(s[i+1]);
+const LC={b:'#2f7dff',t:'#7a4fd6',EW:'#009645',CG:'#009645',NS:'#d42e12',NE:'#9900aa',CC:'#fa9e0d',CE:'#fa9e0d',DT:'#005ec4',TE:'#9d5b25',BP:'#748477',SE:'#748477',SW:'#748477',PE:'#748477',PW:'#748477',SK:'#748477',PG:'#748477'};
 const E=(s)=>String(s==null?'':s).replace(/[&<>"]/g,(c)=>'&#'+c.charCodeAt(0)+';');
 const at=(s)=>new Date(s*1000).toLocaleTimeString(navigator.language||'en-SG',{timeZone:'Asia/Singapore',hour:'2-digit',minute:'2-digit'});
-function own(){try{return JSON.parse(W.chatData).o===1}catch(e){return false}}
+function cd(){try{return JSON.parse(W.chatData)||{}}catch(e){return {}}}
+function own(){return cd().o===1}
+const COIN='<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5" fill="#f5c542" stroke="#b8860b" stroke-width="1.5"/><text x="12" y="15" text-anchor="middle" font-family="system-ui,sans-serif" font-size="7.2" font-weight="800" fill="#7a5200">uwu</text></svg>';
+function coinsUp(){
+const c=cd().c,el=document.getElementById('cc');
+if(!c||!el)return;
+let did=false;try{did=localStorage.getItem('c')==String(c)}catch(e){}
+if(did||matchMedia('(prefers-reduced-motion: reduce)').matches){el.textContent=c;return}
+try{localStorage.setItem('c',c)}catch(e){}
+const t0=Date.now(),step=()=>{const t=Math.min(1,(Date.now()-t0)/1200);el.textContent=Math.round(c*(1-(1-t)**3));if(t<1)requestAnimationFrame(step)};
+step();
+}
 function load(){let d=null;try{d=JSON.parse(W.publicData)}catch(e){}if(d&&d.r>=R){D=d;R=d.r}}
 function part(i){const o=D.o||0,q=(D.p||[])[i-o];if(i===D.i)return{k:D.k,l:D.l,d:D.d};return q?{k:q[0],l:q[1],d:q[2]}:null}
 function line(i){
@@ -36,6 +67,33 @@ let s='';
 if(i===D.i&&!D.e&&!D.x){if(q.k!=='w'&&D.s!=null)s=' · '+D.s+' stop'+(D.s===1?'':'s')+' left';if(D.s===0&&q.k!=='w')s=' · get off here'}
 const tag=D.e?'':i<D.i?'done':i>D.i?'later':'now';
 return '<p class="p">'+(IC[q.k]||'')+' <b>'+E(q.l)+'</b>'+(q.d?' to '+E(q.d):'')+E(s)+(tag?'<span class="t">'+tag+'</span>':'')+'</p>'+(n?'<p class="h">'+n+'</p>':'');
+}
+function map(){
+if(!D.m||D.x===2)return '';
+const P=[];for(let i=0;i+3<D.m.length;i+=4)P.push([dc(D.m,i),dc(D.m,i+2)]);
+if(P.length<2)return '';
+const w=D.w&&!D.e?[dc(D.w,0),dc(D.w,2)]:null,cw=A.clientWidth||300,ch=140,z=Z&&w;
+const sz=Math.max(D.v[0],D.v[1],1)*.3;
+let cx=z?w[0]:D.v[0]/2,cy=z?w[1]:D.v[1]/2,bw=Math.max(z?sz:D.v[0],1)*1.25,bh=Math.max(z?sz:D.v[1],1)*1.25;
+if(bw/bh<cw/ch)bw=bh*cw/ch;else bh=bw*ch/cw;
+const x0=cx-bw/2,y0=cy-bh/2,u=bw/cw;
+const h=w&&D.h!=null?D.h:D.e?P.length-1:-1,S=[0].concat(D.j||[]),Q=D.q||[];
+const pl=(a,c,sw,da,col)=>a.length>1?'<polyline class="'+c+'"'+(col?' stroke="'+col+'"':'')+' stroke-width="'+sw*u+'"'+(da?' stroke-dasharray="'+da[0]*u+' '+da[1]*u+'"':'')+' points="'+a.map((p)=>p[0]+','+p[1]).join(' ')+'"/>':'';
+const dot=(p,r,col)=>'<circle cx="'+p[0]+'" cy="'+p[1]+'" r="'+r*u+'" stroke-width="'+2*u+'"'+(col?' style="stroke:'+col+'"':'')+'/>';
+const pc=(p)=>'left:'+(p[0]-x0)/bw*100+'%;top:'+(p[1]-y0)/bh*100+'%';
+let lines='',dots='';
+S.forEach((a,k)=>{
+const b=k+1<S.length?S[k+1]:P.length-1,c=Q[k]||'b',walk=c==='w',col=walk?'':LC[c]||LC.b,seg=P.slice(a,b+1);
+let done=[],ahead=seg;
+if(b<=h){done=seg;ahead=[]}else if(a<=h){done=P.slice(a,h+1).concat(w?[w]:[]);ahead=(w?[w]:[]).concat(P.slice(h+1,b+1))}
+lines+=pl(done,'g',3,[2,6])+(walk?pl(ahead,'w',3,[1,5]):pl(ahead,'r',4.5,0,col));
+if(k)dots+=dot(P[a],3.5,b<=h?'':col);
+});
+return '<div class="map" id="map"><svg width="100%" height="'+ch+'" preserveAspectRatio="none" viewBox="'+x0+' '+y0+' '+bw+' '+bh+'">'
++lines+dots+dot(P[0],3)+'</svg>'
++'<b class="pin" style="'+pc(P[P.length-1])+'">'+(D.e?'🏁':'📍')+'</b>'
++(w?'<b class="me" style="'+pc(w)+'">'+(IC[D.k]||'📍')+'</b>':'')
++(z?'<span class="z">Tap for the whole way</span>':'')+'</div>';
 }
 function render(){
 if(!D){A.innerHTML='<p class="h">Trip</p><p>Getting the trip…</p>';return}
@@ -49,16 +107,19 @@ let bar='';
 for(let i=0;i<D.c;i++)bar+='<div data-i="'+i+'" class="'+(D.e||i<D.i?'d':i===D.i?'c':'')+(i===sel?' s':'')+'"><i></i></div>';
 const old=!D.e&&!D.x&&now-D.u>300;
 A.className=cls;
-A.innerHTML='<p class="h">'+E(who)+(D.t?' to '+E(D.t):'')+'</p>'
+A.innerHTML=map()+'<p class="h">'+E(who)+(D.t?' to '+E(D.t):'')+'</p>'
 +'<div class="big"><span id="m">'+E(big)+'</span><span class="h">'+E(sub)+'</span></div>'
 +(D.c>1?'<div class="bar">'+bar+'</div>':'')
 +(D.x?'':line(sel==null?Math.min(D.i,D.c-1):sel))
++(D.e&&cd().c?'<p class="cn">'+COIN+'+<span id="cc">0</span> uwuCoins</p>':'')
 +'<p class="h">'+(old?'Last heard from at ':'Updated ')+at(D.u)+'</p>';
+coinsUp();
 }
 A.addEventListener('click',(e)=>{
 const seg=e.target.closest('[data-i]');
 if(seg){const i=+seg.dataset.i;sel=sel===i||i===D.i?null:i}
 else if(e.target.closest('#m')&&D&&!D.e&&!D.x)clk=!clk;
+else if(e.target.closest('#map')&&D.w&&!D.e)Z=!Z;
 else return;
 if(W.HapticFeedback)W.HapticFeedback.selectionChanged();
 render();
