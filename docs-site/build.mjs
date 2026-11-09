@@ -24,7 +24,7 @@ const SITE = {
   short: "SG Bus Timings",
   origin: "https://guide.sgbus.uwuapps.org",
   app: "https://sgbus.uwuapps.org",
-  bot: "https://t.me/UwUsgbus_bot",
+  bot: "https://t.me/sgbus_app",
   description: "How to use SG Bus Timings' web app, Android app and Telegram bot for live bus arrivals, routes and journeys by bus and train.",
 };
 
@@ -379,7 +379,7 @@ function layout({ page, groups, buildId, bodyHtml, toc, noindex = false }) {
         ${sidebarHtml(groups, page.file)}
         <div class="sidebar-foot">
           <a class="nav-link" href="${SITE.app}" target="_blank" rel="noopener noreferrer"><span data-icon="external"></span>sgbus.uwuapps.org</a>
-          <a class="nav-link" href="${SITE.bot}" target="_blank" rel="noopener noreferrer"><span data-icon="external"></span>@UwUsgbus_bot</a>
+          <a class="nav-link" href="${SITE.bot}" target="_blank" rel="noopener noreferrer"><span data-icon="external"></span>@sgbus_app</a>
         </div>
       </nav>
     </aside>

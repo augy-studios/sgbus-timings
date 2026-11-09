@@ -13,7 +13,7 @@ It comes in three forms, built on the same live data from LTA:
 <div class="cards">
 <a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app, or as an app for Windows, Mac and Linux.</span></a>
 <a class="card-link glass" href="android/overview.md"><span class="card-icon" data-icon="info"></span><span class="card-title">The Android app</span><span class="card-text">An app of its own, with its own screens. Follows your trip with the screen off, and adds widgets, reminders, card value and Material You.</span></a>
-<a class="card-link glass" href="bot/start.md"><span class="card-icon" data-icon="send"></span><span class="card-title">The Telegram bot</span><span class="card-text">@UwUsgbus_bot. The same timings in a chat, plus routines and Service Alerts sent to you as they happen.</span></a>
+<a class="card-link glass" href="bot/start.md"><span class="card-icon" data-icon="send"></span><span class="card-title">The Telegram bot</span><span class="card-text">@sgbus_app. The same timings in a chat, plus routines and Service Alerts sent to you as they happen.</span></a>
 <a class="card-link glass" href="getting-started/reading-timings.md"><span class="card-icon" data-icon="clock"></span><span class="card-title">Reading bus timings</span><span class="card-text">What the colours, badges and distances next to each bus mean.</span></a>
 <a class="card-link glass" href="help/troubleshooting.md"><span class="card-icon" data-icon="info"></span><span class="card-title">Troubleshooting</span><span class="card-text">No timings, the wrong stop, location not working, or sync that will not connect.</span></a>
 </div>
@@ -70,7 +70,7 @@ Read more in [The Android app](android/overview.md).
 
 ### In Telegram
 
-1. Open [@UwUsgbus_bot](https://t.me/UwUsgbus_bot) and tap **Start**.
+1. Open [@sgbus_app](https://t.me/sgbus_app) and tap **Start**.
 2. Send it a stop code (`84009`), part of a stop's name (`bedok`), or a bus
    number (`22`).
 3. Tap **Refresh** under the timings whenever you want them brought up to date.

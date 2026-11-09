@@ -196,7 +196,7 @@
                 <a id="simplyGoBtn" data-tray-extra="simplygo" href="https://apps.apple.com/sg/app/simplygo/id667933103" target="_blank" rel="noopener noreferrer" class="glass-btn appIconBtn" data-i18n-aria-label="html.open_simplygo" aria-label="Open SimplyGo" data-i18n-title="html.open_simplygo_card_balance_top" title="Open SimplyGo: card balance, top-ups and travel history" hidden>
                     <img src="/images/icons/simplygo.png" alt="" width="512" height="512" decoding="async">
                 </a>
-                <a href="https://t.me/UwUsgbus_bot" data-tray-extra="telegram" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" data-i18n-aria-label="html.singapore_bus_timings_on_telegram" aria-label="Singapore Bus Timings on Telegram" data-i18n-title="html.singapore_bus_timings_on_telegram" title="Singapore Bus Timings on Telegram">
+                <a href="https://t.me/sgbus_app" data-tray-extra="telegram" target="_blank" rel="noopener noreferrer" class="glass-btn telegramBtn" data-i18n-aria-label="html.singapore_bus_timings_on_telegram" aria-label="Singapore Bus Timings on Telegram" data-i18n-title="html.singapore_bus_timings_on_telegram" title="Singapore Bus Timings on Telegram">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" class="icon" aria-hidden="true" focusable="false"><path fill="currentColor" d="M248 8C111 8 0 119 0 256S111 504 248 504 496 393 496 256 385 8 248 8zM365.3 169.6l-40.1 189.7c-3 13.4-11 16.7-22.3 10.4l-61.6-45.5-29.7 28.6c-3.3 3.3-6.1 6.1-12.4 6.1l4.4-63.1 114.9-103.8c5-4.5-1.1-6.9-7.7-2.5l-141.9 89.4-61.1-19.1c-13.3-4.2-13.5-13.3 2.8-19.6l238.9-92.1c11-4.2 20.7 2.6 17.1 19.6z"/></svg>
                 </a>
                 <a href="https://donate.stripe.com/28o2akeAr3hv0DK6oo" data-tray-extra="coffee" target="_blank" rel="noopener noreferrer" class="glass-btn" data-i18n-aria-label="settings.buy_augy_a_coffee" aria-label="Buy Augy a Coffee" data-i18n-title="settings.buy_augy_a_coffee" title="Buy Augy a Coffee">
@@ -999,7 +999,7 @@
                     <button id="syncCode" class="syncCode" type="button" data-i18n-title="settings.tap_to_copy_the_link" title="Tap to copy the link" data-i18n-aria-label="settings.sync_code_tap_to_copy" aria-label="Sync code. Tap to copy the link">------</button>
                     <!-- Syncing with the Telegram bot: its link with the code, and the command to send it -->
                     <div id="syncBot" class="syncBot" hidden>
-                        <a id="syncBotOpen" class="btn" href="https://t.me/UwUsgbus_bot" target="_blank" rel="noopener noreferrer"><span data-icon="chat"></span> <span data-i18n="settings.open_the_bot">Open the bot</span></a>
+                        <a id="syncBotOpen" class="btn" href="https://t.me/sgbus_app" target="_blank" rel="noopener noreferrer"><span data-icon="chat"></span> <span data-i18n="settings.open_the_bot">Open the bot</span></a>
                         <p class="mode-note"><span data-i18n="html.or_send_it">Or send it</span> <button id="syncBotCommand" class="syncBotCommand" type="button" data-i18n-title="settings.tap_to_copy" title="Tap to copy" data-i18n="settings.sync2">/sync</button></p>
                     </div>
                     <div id="syncQr" class="syncQr"></div>
@@ -1162,6 +1162,8 @@
             <div class="etaButtons">
                 <button id="etaLiveMap" class="btn" type="button"><span data-icon="map"></span> <span data-i18n="html.follow_on_the_map">Follow on the map</span></button>
                 <button id="etaDirections" class="btn" type="button"><span data-icon="navigate"></span> <span data-i18n="html.directions_there">Directions there</span></button>
+                <!-- Their trip as a live widget in the Telegram bot (telegram-bot/src/bot_trips.py): js/share.js -->
+                <a id="etaTelegram" class="btn" href="https://t.me/sgbus_app" target="_blank" rel="noopener noreferrer" hidden><span data-icon="chat"></span> <span data-i18n="html.follow_in_telegram">Follow in Telegram</span></a>
             </div>
         </div>
     </div>

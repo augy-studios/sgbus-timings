@@ -61,4 +61,4 @@ one address, so don't loop on them. Times are Singapore time (UTC+8).
 
 - The guide, with every feature explained: https://guide.sgbus.uwuapps.org
 - Links, in full: https://guide.sgbus.uwuapps.org/web/links
-- The Telegram bot, for chat: https://t.me/UwUsgbus_bot
+- The Telegram bot, for chat: https://t.me/sgbus_app

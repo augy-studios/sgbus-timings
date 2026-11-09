@@ -105,6 +105,7 @@ than about three taps to reach goes under Advanced.
 * [More from a stop](bot/more-from-a-stop.md)
 * [Routes and journeys](bot/routes.md)
 * [Navigate with /nav](bot/nav.md)
+* [Live trips](bot/trips.md)
 * [Places with /places](bot/places.md)
 * [Calendar with /calendar](bot/calendar.md)
 * [Routines](bot/routines.md)

@@ -26,7 +26,9 @@ export default async function handler(req, res) {
     }
 
     // Writes only: reading a link back is what everyone it's sent to does.
-    if (storeConfigured() && (await rateLimited(`share:${ip}`, RATE_LIMIT))) {
+    // Except the Telegram bot's, which all come from its one address (telegram-bot/src/bot_trips.py).
+    const bot = Boolean(process.env.BOT_API_TOKEN) && req.headers.authorization === `Bearer ${process.env.BOT_API_TOKEN}`;
+    if (!bot && storeConfigured() && (await rateLimited(`share:${ip}`, RATE_LIMIT))) {
       return res.status(429).json({ error: 'Too many shares at once. Try again in a minute.' });
     }
 

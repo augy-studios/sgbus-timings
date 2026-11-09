@@ -405,6 +405,9 @@
 
   let view = null; // { id, data, updatedAt, timer, tick }
 
+  // The Telegram bot, which follows a shared trip as a live widget (telegram-bot/src/bot_trips.py).
+  const TRIP_BOT = 'sgbus_app';
+
   async function openEtaView(id, first) {
     view = { id, ...first };
     renderView();
@@ -458,6 +461,9 @@
     }
     renderViewTimeline(live ? d.timeline : null);
     $('#etaLiveMap').hidden = gone;
+    // The bot shows their trip as a live widget in your own chat with it, until it's over.
+    $('#etaTelegram').hidden = !live;
+    $('#etaTelegram').href = `https://t.me/${TRIP_BOT}?start=eta_${view.id}`;
     if (window.LiveMap?.mode() === 'follow') LiveMap.updateFollow(d);
     const ago = Math.round((Date.now() - updatedAt) / 60000);
     $('#etaUpdated').textContent = gone ? I18n.t('share.view.expired', 'The link has expired.')

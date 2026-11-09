@@ -52,6 +52,7 @@ route - build a route between two bus stops and see the buses that run it
 myroutes - view your favourite routes
 nav - get from any place to any other by bus and train
 mynavs - view your favourite navs
+trip - your trip right now, live
 alerts - train service alerts and traffic incidents right now
 sub - get train service and traffic alerts, all or disruptions only
 unsub - stop train service and traffic alerts

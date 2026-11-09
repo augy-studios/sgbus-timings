@@ -16,7 +16,7 @@ The web app in its own window, made with Electron, with a tray icon and Service 
 ### [Command Line for Linux](cli/) — [releases](https://github.com/augy-studios/sgbus-timings/releases)
 `sgbus`: timings, search, routes, the route planner, Navigate, favourites, routines, service alerts and the weather in the terminal, running the site's own planner and search code. One file needing only Node.js 18, or an any-architecture `.deb`, built with plain Node. See [cli/README.md](cli/README.md).
 
-### [Telegram Bot](telegram-bot/) — [@UwUsgbus_bot](https://t.me/UwUsgbus_bot)
+### [Telegram Bot](telegram-bot/) — [@sgbus_app](https://t.me/sgbus_app)
 "Singapore Bus Timings" — a Telegram bot for looking up live arrivals, finding nearby stops, working out which buses run between two stops, and saving favourites, right from a chat. See [telegram-bot/README.md](telegram-bot/README.md) for full details.
 
 ### [Guide](docs-site/) at [guide.sgbus.uwuapps.org](https://guide.sgbus.uwuapps.org/)

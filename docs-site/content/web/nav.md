@@ -457,6 +457,10 @@ updated, and that the arrival time is the last estimate if it's been a while.
 It ends when you arrive or end the trip, or when you tap **Stop sharing my ETA**
 on its card. The link stops working three hours after its last update.
 
+Under it, **Follow in Telegram** opens the same trip in the
+[Telegram bot](../bot/trips.md#follow-someones-trip), as a live card in your own
+chat with it.
+
 ## Also in Telegram
 
 The [Telegram bot](../bot/nav.md)'s `/nav` asks the same planner, so it finds the

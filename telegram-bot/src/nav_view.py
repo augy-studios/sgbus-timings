@@ -348,6 +348,10 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
                  "Live bus timings show here from half an hour before you set off.")
     md += ["", f"_{escape_md(note)}_"]
     plain += ["", note]
+    # A live trip of this way, as a widget that updates by itself and can be shared
+    # (bot_trips.py): only for a way that sets off now or soon, and has a ride to follow.
+    if live and any(leg["mode"] in ("bus", "train") for leg in legs):
+        buttons.append([Button.inline("▶️ Start trip", make_button("trip_start", {**_ends_payload(start, end, when, via), "option": option}))])
     buttons.append([
         Button.inline("🔄 Refresh", make_button("nav_option", {**_ends_payload(start, end, when, via), "option": option})),
         Button.inline("🔙 Back to all ways", make_button("nav_show", _ends_payload(start, end, when, via))),

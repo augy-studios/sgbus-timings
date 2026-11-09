@@ -320,4 +320,35 @@ if "newsfeed_mode" not in _alert_columns:
     with db:
         db.execute("ALTER TABLE service_alert_subs ADD COLUMN newsfeed_mode TEXT NOT NULL DEFAULT 'off'")
 
+# Trips with a live widget (bot_trips.py), one row per trip by its live ETA link's id: one the
+# bot started from /nav (owner_chat, with the link's secret and the site's trip id), or one the
+# web app shares that someone opened here (no owner). trip_widget_messages is each chat's
+# message showing it.
+db.executescript(
+    """
+    CREATE TABLE IF NOT EXISTS trip_widgets (
+        eta_id TEXT PRIMARY KEY,
+        owner_chat INTEGER,
+        secret TEXT,
+        device_id TEXT,
+        widget_id TEXT,
+        parts_json TEXT,
+        alerted_json TEXT NOT NULL DEFAULT '[]',
+        last_json TEXT,
+        state TEXT,
+        rev INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'live',
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS trip_widget_messages (
+        eta_id TEXT NOT NULL REFERENCES trip_widgets(eta_id) ON DELETE CASCADE,
+        chat_id INTEGER NOT NULL,
+        message_id INTEGER NOT NULL,
+        own INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (eta_id, chat_id)
+    );
+    """
+)
+
 db.commit()

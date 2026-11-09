@@ -44,7 +44,7 @@ class SgbusCore {
   final void Function() clear;
   final String version;
 
-  static const bot = '@UwUsgbus_bot';
+  static const bot = '@sgbus_app';
   static const site = 'sgbus.uwuapps.org';
   static const maxRoutines = 20;
   static const nearby = 8;

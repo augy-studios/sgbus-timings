@@ -3,9 +3,24 @@
 **Latest update: 9 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
-**Telegram bot: https://t.me/UwUsgbus_bot**
+**Telegram bot: https://t.me/sgbus_app**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 9 November 2026: Live trips in the Telegram bot, and the bot's new name
+
+### Telegram bot
+
+- **Start trip** - Under a way in /nav that sets off now or soon, Start trip gives you a live card that keeps itself up to date: when you'll arrive, the trip's parts with the one you're on lit, and the stops left. Tap the time for a clock, or a part to see it. A Get Off Alert comes two stops before you get off, and /trip shows the card again.
+- **Share your trip** - Share this trip sends a link. Whoever opens it gets the same live card in their own chat with the bot, and a message when you've arrived. Anyone not on Telegram gets the web link too.
+- **@sgbus_app** - The bot is now [@sgbus_app](https://t.me/sgbus_app). Used @UwUsgbus_bot? Tap Start on @sgbus_app.
+
+### Web app
+
+- **Follow in Telegram** - A trip someone shares live opens as a live card in the Telegram bot, with Follow in Telegram under it.
+- **Links to the new bot** - The Telegram button, Sync with the Telegram bot and the guide all go to @sgbus_app.
 
 ---
 

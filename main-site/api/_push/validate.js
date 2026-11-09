@@ -59,7 +59,9 @@ const text = (v, name) => {
   return v.trim();
 };
 
-export function parseTrip(body, now = Date.now()) {
+// `fromBot`: sent by the Telegram bot (BOT_API_TOKEN), whose trips have no push subscription
+// (api/push/trips/[id].js). Only then is { bot: true } taken as one.
+export function parseTrip(body, now = Date.now(), { fromBot = false } = {}) {
   if (!body || typeof body !== 'object') fail('body must be an object');
   if (!isId(body.tripId)) fail('bad tripId');
   // Up to 12: a ride across the Causeway is three legs (js/trip.js, acrossTheCauseway).
@@ -127,7 +129,7 @@ export function parseTrip(body, now = Date.now()) {
 
   return {
     tripId: body.tripId,
-    subscription: parseSubscription(body.subscription),
+    subscription: fromBot && body.subscription?.bot === true ? { bot: true } : parseSubscription(body.subscription),
     legs,
     leg,
     at: body.at,

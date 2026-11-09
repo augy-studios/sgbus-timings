@@ -18,6 +18,7 @@ description: Every command the bot understands, and what you can send it without
 | `/myroutes` | Your favourite routes | [Routes and journeys](routes.md#save-a-route) |
 | `/nav` | Get from any place to any other by bus and train | [Navigate with /nav](nav.md) |
 | `/mynavs` | Your favourite navs | [Navigate with /nav](nav.md#save-it) |
+| `/trip` | The trip you're on, as its live card | [Live trips](trips.md) |
 | `/favouritepref` | Pin favourites to the top or bottom | [Favourites](favourites.md#top-or-bottom) |
 | `/addroutine` | Set up timings sent to you on a schedule | [Routines](routines.md) |
 | `/routines` | See, edit or delete your routines | [Routines](routines.md#see-change-or-delete-routines) |
@@ -46,5 +47,5 @@ description: Every command the bot understands, and what you can send it without
 
 ## In any chat
 
-Type `@UwUsgbus_bot` and a search to post timings into any chat. See
+Type `@sgbus_app` and a search to post timings into any chat. See
 [Inline mode](inline.md).

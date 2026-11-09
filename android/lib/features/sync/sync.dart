@@ -830,7 +830,7 @@ class _SyncScreenState extends State<SyncScreen> {
     final sg = context.sg;
     final connected = _status == 'connected';
     final hosting = _role == 'host' || _role == 'bot';
-    final link = _role == 'bot' ? 'https://t.me/UwUsgbus_bot?start=sync_$_code' : '${Api.site}/#sync/$_code';
+    final link = _role == 'bot' ? 'https://t.me/sgbus_app?start=sync_$_code' : '${Api.site}/#sync/$_code';
     final dot = switch (_tone) { 'ok' => sg.ok, 'warn' => sg.warn, 'error' => sg.error, _ => sg.muted };
     return SgScaffold(
       title: tr('settings.sync', 'Sync'),

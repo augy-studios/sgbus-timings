@@ -143,6 +143,12 @@ A walk to or from a station says which exit, the one nearest the walk's other
 end: 🚪 **Leave Serangoon station by Exit G**, then the walk from there, as on
 the [web](../web/nav.md#the-nearest-exit).
 
+## Start a trip
+
+Open a way that sets off now or soon and tap **▶️ Start trip**: the bot follows
+you there with a live card, a Get Off Alert, and a link to share. See
+[Live trips](trips.md).
+
 ## Also on the web
 
 The [web app's Navigate](../web/nav.md) uses the same planner, and can follow you

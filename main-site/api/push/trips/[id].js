@@ -22,11 +22,15 @@ export default async function handler(req, res) {
   const ip = req.headers['x-real-ip'] || String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
 
   try {
-    if (await rateLimited(ip, RATE_LIMIT)) return res.status(429).json({ error: 'too many requests' });
+    // The Telegram bot's trips (telegram-bot/src/bot_trips.py) all come from its one address, and
+    // have no push subscription: the cron only keeps their live ETA link updated, which the bot
+    // reads to update the trip's widget, and sends its own Get Off Alert.
+    const bot = Boolean(process.env.BOT_API_TOKEN) && req.headers.authorization === `Bearer ${process.env.BOT_API_TOKEN}`;
+    if (!bot && (await rateLimited(ip, RATE_LIMIT))) return res.status(429).json({ error: 'too many requests' });
 
     if (req.method === 'PUT') {
       const now = Date.now();
-      const sent = parseTrip(req.body, now);
+      const sent = parseTrip(req.body, now, { fromBot: bot });
       const trip = merge(await trips.get(id), sent, now);
       await trips.set(id, trip, ttlSeconds(trip, now));
       return res.status(200).json({ tripId: trip.tripId, leg: trip.leg, legStartedAt: trip.legStartedAt, alerted: trip.alerted, readied: trip.readied });

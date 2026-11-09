@@ -1,0 +1,71 @@
+<!-- A trip's live widget (telegram-bot/src/trip_widget.py, bot_trips.py): one shared widget per
+trip, its shared state the trip's progress, as the bot reads it from the trip's live ETA link.
+Chat state {"o":1} is the person on the trip. Tap the time to switch between minutes and a clock,
+and a part of the bar to see that part. Sent without these comments (trip_widget.py). -->
+<style>
+body{margin:0;padding:10px 14px max(10px,env(safe-area-inset-bottom))}
+p{margin:0 0 4px}
+.h{color:var(--tg-theme-hint-color);font-size:.85em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.big{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:2px 0 4px}
+#m{font-size:2.1em;font-weight:700;line-height:1.15;font-variant-numeric:tabular-nums}
+.bar{display:flex;gap:4px}
+.bar div{flex:1;padding:8px 0}
+.bar i{display:block;height:8px;border-radius:4px;background:var(--tg-theme-secondary-bg-color)}
+.bar .d i{background:var(--tg-theme-hint-color)}
+.bar .c i{background:var(--tg-theme-button-color)}
+.bar .s i{box-shadow:0 0 0 2px var(--tg-theme-link-color)}
+.p{margin:6px 0 2px}
+.p b{font-weight:600}
+.t{display:inline-block;margin-left:6px;padding:0 6px;border-radius:8px;font-size:.75em;background:var(--tg-theme-secondary-bg-color);color:var(--tg-theme-hint-color)}
+.end #m{color:var(--tg-theme-accent-text-color)}
+.st{color:var(--tg-theme-destructive-text-color)}
+</style>
+<div id="a"></div>
+<script>
+const W=window.TelegramWidget||{},A=document.getElementById('a'),IC={b:'🚌',t:'🚆',w:'🚶'};
+let D=null,R=-1,sel=null,clk=false;
+const E=(s)=>String(s==null?'':s).replace(/[&<>"]/g,(c)=>'&#'+c.charCodeAt(0)+';');
+const at=(s)=>new Date(s*1000).toLocaleTimeString(navigator.language||'en-SG',{timeZone:'Asia/Singapore',hour:'2-digit',minute:'2-digit'});
+function own(){try{return JSON.parse(W.chatData).o===1}catch(e){return false}}
+function load(){let d=null;try{d=JSON.parse(W.publicData)}catch(e){}if(d&&d.r>=R){D=d;R=d.r}}
+function part(i){const o=D.o||0,q=(D.p||[])[i-o];if(i===D.i)return{k:D.k,l:D.l,d:D.d};return q?{k:q[0],l:q[1],d:q[2]}:null}
+function line(i){
+const q=part(i),n=D.c>1?'Part '+(i+1)+' of '+D.c:'';
+if(!q)return '<p class="p">'+n+'</p>';
+let s='';
+if(i===D.i&&!D.e&&!D.x){if(q.k!=='w'&&D.s!=null)s=' · '+D.s+' stop'+(D.s===1?'':'s')+' left';if(D.s===0&&q.k!=='w')s=' · get off here'}
+const tag=D.e?'':i<D.i?'done':i>D.i?'later':'now';
+return '<p class="p">'+(IC[q.k]||'')+' <b>'+E(q.l)+'</b>'+(q.d?' to '+E(q.d):'')+E(s)+(tag?'<span class="t">'+tag+'</span>':'')+'</p>'+(n?'<p class="h">'+n+'</p>':'');
+}
+function render(){
+if(!D){A.innerHTML='<p class="h">Trip</p><p>Getting the trip…</p>';return}
+const now=Date.now()/1000,who=own()?'Your trip':D.n?D.n+'’s trip':'A shared trip';
+let big,sub,cls='';
+if(D.x===2){big='Ended';sub='This trip has ended';cls='st'}
+else if(D.x){big='Sharing stopped';sub=D.n?D.n+' stopped sharing':'';cls='st'}
+else if(D.e){big='Arrived';sub=D.t?'at '+D.t:'';cls='end'}
+else{const m=Math.max(0,Math.round((D.a-now)/60));big=clk?at(D.a):m<1?'Now':m+' min';sub=clk?'in '+m+' min':'arriving around '+at(D.a)}
+let bar='';
+for(let i=0;i<D.c;i++)bar+='<div data-i="'+i+'" class="'+(D.e||i<D.i?'d':i===D.i?'c':'')+(i===sel?' s':'')+'"><i></i></div>';
+const old=!D.e&&!D.x&&now-D.u>300;
+A.className=cls;
+A.innerHTML='<p class="h">'+E(who)+(D.t?' to '+E(D.t):'')+'</p>'
++'<div class="big"><span id="m">'+E(big)+'</span><span class="h">'+E(sub)+'</span></div>'
++(D.c>1?'<div class="bar">'+bar+'</div>':'')
++(D.x?'':line(sel==null?Math.min(D.i,D.c-1):sel))
++'<p class="h">'+(old?'Last heard from at ':'Updated ')+at(D.u)+'</p>';
+}
+A.addEventListener('click',(e)=>{
+const seg=e.target.closest('[data-i]');
+if(seg){const i=+seg.dataset.i;sel=sel===i||i===D.i?null:i}
+else if(e.target.closest('#m')&&D&&!D.e&&!D.x)clk=!clk;
+else return;
+if(W.HapticFeedback)W.HapticFeedback.selectionChanged();
+render();
+});
+load();render();
+if(W.onEvent){W.onEvent('publicDataChanged',()=>{load();render()});W.onEvent('chatDataChanged',render);W.onEvent('activated',render)}
+if(W.watchPublicData)W.watchPublicData();
+setInterval(render,15000);
+if(W.ready)W.ready();
+</script>

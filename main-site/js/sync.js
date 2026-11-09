@@ -665,7 +665,7 @@ async function startHosting() {
 }
 
 // The Telegram bot's username, for its links. The same as index.html's Telegram button.
-const SYNC_BOT = 'UwUsgbus_bot';
+const SYNC_BOT = 'sgbus_app';
 const botLink = (code) => `https://t.me/${SYNC_BOT}?start=sync_${code}`;
 
 // Syncing with the Telegram bot: a fresh code each time, which the bot takes with its /sync

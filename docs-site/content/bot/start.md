@@ -1,16 +1,16 @@
 ---
 title: Start the bot
-description: Open @UwUsgbus_bot in Telegram and get your first timings in a few seconds.
+description: Open @sgbus_app in Telegram and get your first timings in a few seconds.
 ---
 
 The bot is called **Singapore Bus Timings**, and its username is
-[@UwUsgbus_bot](https://t.me/UwUsgbus_bot). It works in every Telegram app:
+[@sgbus_app](https://t.me/sgbus_app). It works in every Telegram app:
 phone, desktop and web.
 
 ## Open it
 
-1. Open [t.me/UwUsgbus_bot](https://t.me/UwUsgbus_bot), or search for
-   `UwUsgbus_bot` in Telegram.
+1. Open [t.me/sgbus_app](https://t.me/sgbus_app), or search for
+   `sgbus_app` in Telegram.
 2. Tap **Start** at the bottom of the chat.
 3. The bot replies with what it can do, every command, and buttons to open the
    web app, open this guide, or make a donation.

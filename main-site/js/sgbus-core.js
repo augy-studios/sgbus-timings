@@ -28,7 +28,7 @@
 (function () {
   'use strict';
 
-  const BOT = '@UwUsgbus_bot';
+  const BOT = '@sgbus_app';
   const SG_OFFSET_MS = 8 * 3600 * 1000;
   const MAX_ROUTINES = 20;
   const NEARBY = 8;

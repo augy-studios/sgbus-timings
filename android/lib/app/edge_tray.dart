@@ -72,7 +72,7 @@ class EdgeTray extends StatefulWidget {
         short: () => tr('settings.simplygo', 'SimplyGo'),
         face: (size) => ClipOval(child: Image.asset('assets/images/simplygo.png', width: size, height: size, fit: BoxFit.cover, excludeFromSemantics: true))),
     TrayExtra('telegram', Icons.send_outlined, () => tr('html.singapore_bus_timings_on_telegram', 'Singapore Bus Timings on Telegram'),
-        () => _link('https://t.me/UwUsgbus_bot'), short: () => tr('settings.telegram_bot', 'Telegram bot')),
+        () => _link('https://t.me/sgbus_app'), short: () => tr('settings.telegram_bot', 'Telegram bot')),
     TrayExtra('coffee', Icons.coffee_outlined, () => tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
         () => _link('https://donate.stripe.com/28o2akeAr3hv0DK6oo')),
     TrayExtra('guide', Icons.help_outline, () => tr('html.how_to_use_sg_bus', 'How to use SG Bus Timings'),

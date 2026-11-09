@@ -5,6 +5,7 @@ from ..format import escape_md
 from ..mini_app import open_button
 from ..reply import send_rich_message
 from .sync import begin as begin_sync
+from .trips import follow_link
 
 ABOUT = """\
 # SG Bus Timings
@@ -19,6 +20,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - Just send your location (no command needed) to find the nearest bus stops
 - Build a route between two bus stops to see every bus that runs the whole way without a change
 - Navigate between any two places by bus and train, with every mix of the two to choose from
+- Start a trip on the way you pick: a live card of when you'll arrive, a Get Off Alert before your stop, and a link to share so others can follow along
 - Save places (home, work and your own, named as you like) and share them as links
 - Link your calendar to plan the way to each event, arriving on time
 - Save bus stops and bus numbers as favourites for quick access; favourites are pinned and starred wherever they're shown
@@ -43,6 +45,7 @@ Live bus arrival timings for Singapore, powered by LTA DataMall.
 - /myroutes - view your favourite routes
 - /nav - get from any place to any other by bus and train
 - /mynavs - view your favourite navs
+- /trip - your trip right now, live
 - /favouritepref - choose whether favourites pin to the top or bottom
 - /addroutine - set up a routine that sends you a bus stop's timings on a schedule
 - /routines - view, edit, or delete your routines
@@ -69,6 +72,11 @@ def register_start(client):
         param = event.raw_text.split(maxsplit=1)[1].strip() if len(event.raw_text.split()) > 1 else ""
         if param.lower().startswith("sync_"):
             await begin_sync(client, event, param[5:])
+            return
+        # Someone's live trip (bot_trips.py): Share under a trip's widget, or the web app's
+        # /eta page, links here as t.me/<bot>?start=eta_<id>.
+        if param.lower().startswith("eta_"):
+            await follow_link(client, event, param[4:].lower())
             return
         me = await client.get_me()
         username = escape_md(me.username) if me.username else "this bot"

@@ -53,6 +53,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/myroutes` | Lists your favourite routes as paginated buttons; tap one to reopen it |
 | `/nav` | Starts a flow to get from any place to any other by bus and train, listing every worthwhile mix of the two |
 | `/mynavs` | Lists your favourite navs as paginated buttons; tap one to plan it again |
+| `/trip` | Shows the trip you're on again, as its live widget |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
 | `/addroutine` | Starts a flow to set up a routine (time, frequency, bus stop, buses) that sends you timings on a schedule |
 | `/routines` | Lists your routines as numbered buttons; tap one to view, edit, or delete it |
@@ -495,6 +496,33 @@ Tap a way to see it part by part, with the live timings of each bus at the stop
 it's boarded, and a **🚏** button opening that stop's timings for the bus.
 **⭐ Add favourite** stars the nav, and `/mynavs` lists starred navs.
 
+### Live trips
+
+**▶️ Start trip**, under a way that sets off now or soon, starts a live trip of
+it, shown as a Telegram widget (Bot API 10.4) that updates by itself: when you'll
+arrive, a bar of the trip's parts with the one you're on lit, and how many stops
+are left. Tap the time to switch between minutes and a clock, or a part of the bar
+to see that part. The bot sends a **🔔 Get Off Alert** two stops before you get off.
+**📤 Share this trip** sends a `t.me/<bot>?start=eta_<id>` link, with the web
+app's `/eta/<id>` link for anyone not on Telegram. Whoever opens it gets the same
+widget in their own chat with the bot, updated for everyone at once, and a note
+when you've arrived. **🏁 End trip** ends it, and `/trip` shows it again.
+
+A trip shared live from the web app opens here too, from **Follow in Telegram**
+on its `/eta` page.
+
+How it works: each trip is the site's live ETA link (`api/_lib/share-links.js`).
+For a trip started here, the bot gives the site the trip to follow
+(`api/push/trips/<id>`, with no push subscription, which only `BOT_API_TOKEN`
+allows), and the site's cron moves it on each minute, by the clock and where LTA
+says the bus is, as it does for the web app in the background
+(`api/push/trip-poll.js`). The bot reads the link every 30 s and edits the one
+shared widget (`src/bot_trips.py`, `src/trip_widget.html`). Telethon has no
+widget types yet, so widgets go through the HTTP Bot API (`src/bot_api.py`) with
+the same `BOT_TOKEN`, and their buttons come back to Telethon as ordinary
+callbacks. Widgets go only to private chats, as Telegram allows in production.
+Needs `BOT_API_TOKEN`, as `/nav` does.
+
 ### Settings
 
 `/settings` shows every custom setting the bot keeps for you, and whether
@@ -648,6 +676,9 @@ telegram-bot/
     nav_api.py             calls the site's /api/nav and /api/places for /nav's journeys and places
     navs.py                /nav's draft (the ends being set) and favourite navs (SQLite)
     nav_view.py            builds the /nav panel, one way part by part, and the /mynavs list
+    bot_trips.py           live trips: Start trip, following a trip's link, its widget kept up to date, the Get Off Alert
+    trip_widget.py         the trip widget's state from a live ETA link, and its HTML (trip_widget.html)
+    bot_api.py             the HTTP Bot API, for widgets, which Telethon can't send yet
     service_alerts.py      Service Alerts subscriptions (SQLite), and what changed in LTA's train alerts and traffic incidents since the last poll
     service_alerts_view.py builds /alerts, the /sub reply and its mode buttons, and the updates sent to subscribers
     mrt_stations.py        MRT/LRT station names and line labels, copied from sgmrt-alerts
@@ -662,7 +693,7 @@ telegram-bot/
       addroutine.py, routines.py, newroute.py, favroutes.py,
       setname.py, settings.py, search.py, callbacks.py, inline.py,
       servicealerts.py (/alerts, /sub, /unsub, and the poll that sends updates),
-      nav.py (/nav, /mynavs)
+      nav.py (/nav, /mynavs), trips.py (Start trip, /trip, trip links)
   data/                   SQLite database + Telethon session file (gitignored)
 ```
 

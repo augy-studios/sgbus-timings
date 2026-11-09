@@ -8,13 +8,13 @@ It is handy for telling a friend when the bus is coming.
 
 ## Use it
 
-1. In any chat, type `@UwUsgbus_bot` followed by a space.
+1. In any chat, type `@sgbus_app` followed by a space.
 2. Then type what you would search for:
 
    ```text
-   @UwUsgbus_bot 84009
-   @UwUsgbus_bot 84009 22*
-   @UwUsgbus_bot bedok
+   @sgbus_app 84009
+   @sgbus_app 84009 22*
+   @sgbus_app bedok
    ```
 
    A stop code with buses after it, `84009 174, 175` or `84009 22*` for every bus

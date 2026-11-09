@@ -113,6 +113,8 @@ async function shareProgress(trip, done, now) {
 // `message` is { type: 'get-off' | 'board', tripId, leg, body }, and a title for 'board'; a
 // 'get-off' for an app with Settings' earphones only has quiet: true (api/_push/fcm.js).
 async function send(id, trip, message) {
+  // The Telegram bot's trip: nothing to push to. The bot tells you itself, from the ETA link.
+  if (trip.subscription?.bot) return false;
   const payload = JSON.stringify(message);
   try {
     await sendPush(trip.subscription, payload, { ttl: PUSH_TTL, urgency: 'high' });

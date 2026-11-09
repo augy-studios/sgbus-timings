@@ -88,7 +88,7 @@ open it again. See [Updates and offline use](../web/updates.md).
 
 ## The bot does not answer
 
-- Check you are in the chat with [@UwUsgbus_bot](https://t.me/UwUsgbus_bot).
+- Check you are in the chat with [@sgbus_app](https://t.me/sgbus_app).
 - If it is waiting for an answer, such as during `/addroutine`, what you send is
   taken as that answer. Send `/cancel` and try again.
 - Buttons on very old messages may no longer match what they opened. Search

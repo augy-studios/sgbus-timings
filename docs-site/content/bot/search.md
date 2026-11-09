@@ -58,4 +58,4 @@ the timings to one bus.
 
 > [!TIP]
 > Searching from another chat, without opening the bot? Use
-> [inline mode](inline.md): type `@UwUsgbus_bot bedok` in any chat.
+> [inline mode](inline.md): type `@sgbus_app bedok` in any chat.
