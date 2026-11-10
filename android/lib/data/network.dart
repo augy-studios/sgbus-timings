@@ -52,10 +52,18 @@ class Restricted {
 }
 
 class CrossBorder {
-  const CrossBorder(this.label, this.note, {this.abroad = false});
+  const CrossBorder(this.label, this.note, {this.abroad = false, this.vehicles = false});
   final String Function() label;
   final String Function() note;
   final bool abroad;
+
+  /// A checkpoint for vehicles only (Tuas): not a way across on foot, and no passport to say.
+  final bool vehicles;
+
+  /// In a route list: a passport needed, or at Tuas Checkpoint, no crossing on foot.
+  String short() => vehicles
+      ? tr('stop.noFootCrossing', '{place}: no crossing on foot', {'place': label()})
+      : tr('stop.passport', '{place}: passport needed', {'place': label()});
 }
 
 /// One run of one service as the planner rides it, restricted stops cut out.
@@ -387,7 +395,15 @@ class BusNet {
 
   static final _checkpoint = CrossBorder(() => tr('network.checkpoint', 'Immigration checkpoint'), () => tr('network.checkpointNote', 'Passport needed to go on.'));
   static final _malaysia = CrossBorder(() => tr('network.malaysia', 'In Malaysia'), () => tr('network.malaysiaNote', 'Passport needed.'), abroad: true);
+  // Tuas Checkpoint's stop, the site's TUAS (main-site/js/network.js).
+  static final _tuas = CrossBorder(
+    () => tr('network.tuas', 'Vehicle checkpoint'),
+    () => tr('network.tuasNote',
+        'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 from Jurong East, CW4 from Boon Lay or CW7 from Tuas Link.'),
+    vehicles: true,
+  );
   static final Map<String, CrossBorder> _crossBorder = {
+    '25269': _tuas,
     '46101': _checkpoint, '46109': _checkpoint,
     '46211': _malaysia, '46219': _malaysia, '46239': _malaysia, '47711': _malaysia,
   };

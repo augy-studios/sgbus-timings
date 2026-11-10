@@ -283,7 +283,16 @@
   const CHECKPOINT = { label: I18n.t('network.checkpoint', 'Immigration checkpoint'), note: I18n.t('network.checkpointNote', 'Passport needed to go on.') };
   // `abroad`: past Singapore's checkpoint, so a ride to one goes through it (js/trip.js).
   const MALAYSIA = { label: I18n.t('network.malaysia', 'In Malaysia'), note: I18n.t('network.malaysiaNote', 'Passport needed.'), abroad: true };
+  // Tuas Checkpoint's stop: a checkpoint for vehicles only, so not a way to Malaysia on foot.
+  // `vehicles`: its route lists say that, not that a passport's needed. The same as TUAS in the
+  // bot's restricted.py and android/lib/data/network.dart.
+  const TUAS = {
+    label: I18n.t('network.tuas', 'Vehicle checkpoint'),
+    note: I18n.t('network.tuasNote', 'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 from Jurong East, CW4 from Boon Lay or CW7 from Tuas Link.'),
+    vehicles: true,
+  };
   const CROSS_BORDER = {
+    25269: TUAS,
     46101: CHECKPOINT, 46109: CHECKPOINT,
     46211: MALAYSIA, 46219: MALAYSIA, 46239: MALAYSIA, 47711: MALAYSIA,
   };

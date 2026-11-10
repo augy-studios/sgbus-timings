@@ -1186,6 +1186,15 @@ function samePlaceStops(code) {
 // Under the stop's name: a stop only authorised people may use or one across the border
 // (js/network.js), and a way to the other half of one split in two, where some buses only
 // ever stop.
+// A stop at a checkpoint or across the border, in a route list: a passport needed, or at Tuas
+// Checkpoint, for vehicles only (js/network.js, CROSS_BORDER).
+function borderShort(code) {
+    const b = BusNet.crossBorder(code);
+    return b.vehicles
+        ? tr('stop.noFootCrossing', '{place}: no crossing on foot', { place: b.label })
+        : tr('stop.passport', '{place}: passport needed', { place: b.label });
+}
+
 function renderStopAside() {
     const { code } = current;
     const parts = [];
@@ -1675,7 +1684,7 @@ function renderServiceModal() {
         `<span class="seq">${seq}</span>` +
         `<span class="name">${favs.has(code) ? favMark() : ''}${escapeHtml(nameOf(code) || code)}` +
         (BusNet.restricted(code) ? `<span class="road">${escapeHtml(tr('stop.restrictedShort', 'Authorised personnel only'))}</span>` : '') +
-        (BusNet.crossBorder(code) ? `<span class="road">${escapeHtml(tr('stop.passport', '{place}: passport needed', { place: BusNet.crossBorder(code).label }))}</span>` : '') + `</span>` +
+        (BusNet.crossBorder(code) ? `<span class="road">${escapeHtml(borderShort(code))}</span>` : '') + `</span>` +
         `<span class="pill">${escapeHtml(code)}</span>` +
         `</button>`;
 
@@ -1771,7 +1780,7 @@ function stopRows(stops, { pin = true, direct = null } = {}) {
         return `<button type="button" class="routeStop${buses ? ' direct' : ''}" data-stop="${escapeHtml(s.code)}">` +
             `<span class="name">${favs.has(s.code) ? favMark() : ''}${escapeHtml(nameOf(s.code) || s.code)}` +
             (road ? `<span class="road">${escapeHtml(road)}</span>` : '') +
-            (BusNet.crossBorder(s.code) ? `<span class="road">${escapeHtml(tr('stop.passport', '{place}: passport needed', { place: BusNet.crossBorder(s.code).label }))}</span>` : '') +
+            (BusNet.crossBorder(s.code) ? `<span class="road">${escapeHtml(borderShort(s.code))}</span>` : '') +
             (buses ? `<span class="via">${ico('bus')} ${escapeHtml(tr('near.direct', 'Direct: {list}', { list: buses.join(', ') }))}</span>` : '') + `</span>` +
             (s.distance != null ? `<span class="dist">${formatDistance(s.distance)}</span>` : '') +
             `<span class="pill">${escapeHtml(s.code)}</span>` +
