@@ -52,7 +52,7 @@ _MALAYSIA = "🛂 In Malaysia: passport needed."
 # in main-site/js/network.js.
 _TUAS = (
     "🚗 Vehicle checkpoint: not for crossing to Malaysia, as this checkpoint can't be crossed on foot. "
-    "For a bus across, take Causeway Link CW3 from Jurong East, CW4 from Boon Lay or CW7 from Tuas Link."
+    "For a bus across, take Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link."
 )
 
 CROSS_BORDER = {

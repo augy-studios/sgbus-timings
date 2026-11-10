@@ -1183,7 +1183,7 @@
   "network.malaysia": "在马来西亚",
   "network.malaysiaNote": "需要护照。",
   "network.tuas": "车辆关卡",
-  "network.tuasNote": "不能从这里前往马来西亚：此关卡不允许步行通关。如要乘巴士过境，请在裕廊东搭乘 Causeway Link CW3、在文礼搭乘 CW4，或在大士连路搭乘 CW7。",
+  "network.tuasNote": "不能从这里前往马来西亚：此关卡不允许步行通关。如要乘巴士过境，请在裕廊东搭乘 Causeway Link CW3 或 CW4、在文礼搭乘 CW6，或在大士连路搭乘 CW7。",
   "offline.allowFind": "要寻找附近的手机，请允许 SG Bus Timings 使用“附近设备”。",
   "offline.allowReceive": "要接收附近手机的分享，请允许 SG Bus Timings 使用“附近设备”。",
   "offline.aPhone": "一部手机",

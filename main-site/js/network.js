@@ -288,7 +288,7 @@
   // bot's restricted.py and android/lib/data/network.dart.
   const TUAS = {
     label: I18n.t('network.tuas', 'Vehicle checkpoint'),
-    note: I18n.t('network.tuasNote', 'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 from Jurong East, CW4 from Boon Lay or CW7 from Tuas Link.'),
+    note: I18n.t('network.tuasNote', 'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link.'),
     vehicles: true,
   };
   const CROSS_BORDER = {

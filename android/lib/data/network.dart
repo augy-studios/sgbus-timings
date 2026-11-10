@@ -399,7 +399,7 @@ class BusNet {
   static final _tuas = CrossBorder(
     () => tr('network.tuas', 'Vehicle checkpoint'),
     () => tr('network.tuasNote',
-        'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 from Jurong East, CW4 from Boon Lay or CW7 from Tuas Link.'),
+        'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link.'),
     vehicles: true,
   );
   static final Map<String, CrossBorder> _crossBorder = {
