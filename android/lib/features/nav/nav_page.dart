@@ -900,24 +900,21 @@ class _NavPageState extends State<NavPage> {
     }
     final tooLate = nav.when?.mode == 'arrive' && span.leave < When.nowMs() - 60000;
     return [
-      Row(
-        children: [
-          TextButton.icon(
-            onPressed: () {
-              nav.option = null;
-              nav.changed();
-            },
-            icon: const Icon(Icons.arrow_back),
-            label: Text(tr('nav.allWays', 'All ways')),
-          ),
-          const Spacer(),
-          TextButton(onPressed: () => nav.open(o), child: Text(tr('nav.refresh', 'Refresh'))),
-          FilledButton.icon(
-            onPressed: () => AppNav.open('startTrip', {'option': o}),
-            icon: const Icon(Icons.notifications_active_outlined),
-            label: Text(tr('nav.startTrip', 'Start trip')),
-          ),
-        ],
+      WayHead(
+        back: TextButton.icon(
+          onPressed: () {
+            nav.option = null;
+            nav.changed();
+          },
+          icon: const Icon(Icons.arrow_back),
+          label: Text(tr('nav.allWays', 'All ways'), overflow: TextOverflow.ellipsis),
+        ),
+        refresh: TextButton(onPressed: () => nav.open(o), child: Text(tr('nav.refresh', 'Refresh'))),
+        main: FilledButton.icon(
+          onPressed: () => AppNav.open('startTrip', {'option': o}),
+          icon: const Icon(Icons.notifications_active_outlined),
+          label: Text(tr('nav.startTrip', 'Start trip')),
+        ),
       ),
       Text('${tr('planner.aboutMin', '~{m} min', {'m': minutes})} · ${navMixText(o)}', style: Theme.of(context).textTheme.titleMedium),
       if (nav.when != null)

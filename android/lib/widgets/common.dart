@@ -200,3 +200,30 @@ class SgScaffold extends StatelessWidget {
         body: SafeArea(top: false, child: body),
       );
 }
+
+/// A way's top row: Back on the left, Refresh and the main button (Start trip) on the right. On
+/// a phone, where the Edge Tray leaves the page too narrow for all three, the main button has a
+/// line of its own the width of the page, as on the site (`.plannerNav`), rather than running
+/// off the edge under the tray.
+class WayHead extends StatelessWidget {
+  const WayHead({super.key, required this.back, required this.refresh, required this.main});
+  final Widget back;
+  final Widget refresh;
+  final Widget main;
+
+  /// Below this wide the main button goes on a line of its own.
+  static const narrow = 420.0;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, c) {
+        if (c.maxWidth >= narrow) return Row(children: [back, const Spacer(), refresh, main]);
+        return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Flexible(child: back),
+            const Spacer(),
+            refresh,
+          ]),
+          main,
+        ]);
+      });
+}
