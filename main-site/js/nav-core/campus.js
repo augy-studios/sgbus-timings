@@ -59,6 +59,8 @@ export function campusRuns(files, nodes, busNode, crossings = {}) {
   };
   const runs = [];
   for (const route of model.routes) {
+    // A route kept out of Navigate (shuttles.json's `navigate`: false), shown in Bus timings only.
+    if (route.navigate === false) continue;
     // Each stop's place on the route, for its times (Campus.status), with the node it's at.
     const stops = route.keys.map((k, i) => [node(k), i]).filter(([id]) => id != null);
     if (stops.length < 2) continue;

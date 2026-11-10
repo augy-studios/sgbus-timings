@@ -1,5 +1,5 @@
 {
-  "_about": "The island's shuttle buses beyond NUS's and NTU's (js/campus.js reads them as it reads nus.json and ntu.json; js/nav-core/campus.js routes on them). Found from ShuttleBusFinder's Singapore directory as a list of services only, then each taken from its operator's own page, cited in `source` and checked on `checked`. Each group is a file and its config in one: `name`, `colour`, `fare` (\"free\" or \"paid\", with `fareText`), `access` (\"public\", \"guests\" for a hotel's, \"residents\" for a condo's, ridden in Navigate only from or to `place`), and its `stops` and `routes` as nus.json has them. Timings: \"daily\" or weekday/sat/sun_ph (and ph_eve, the day before a public holiday, where a route has its own), as bands or departure times from a stop. A stop with a five-digit id is LTA's stop of that code. `kmh` is a route's speed between stops where it isn't ~15 km/h. `live` is where its buses can be seen live (api/shuttle-live.js). Left out, as no current timetable could be found from the operator: Sembawang Shopping Centre's (last published March 2023), Marina Square's lunchtime shuttle (ran to 31 December 2025), and the condos' (Lilydale, Skies Miltonia, The Shaughnessy, The Miltonia Residences, The Canopy, Seletaris, Treetops Executive Residences).",
+  "_about": "The island's shuttle buses beyond NUS's and NTU's (js/campus.js reads them as it reads nus.json and ntu.json; js/nav-core/campus.js routes on them). Found from ShuttleBusFinder's Singapore directory as a list of services only, then each taken from its operator's own page, cited in `source` and checked on `checked`. Each group is a file and its config in one: `name`, `colour`, `fare` (\"free\" or \"paid\", with `fareText`), `access` (\"public\", \"guests\" for a hotel's, \"residents\" for a condo's, ridden in Navigate only from or to `place`), and its `stops` and `routes` as nus.json has them. Timings: \"daily\" or weekday/sat/sun_ph (and ph_eve, the day before a public holiday, where a route has its own), as bands or departure times from a stop. A stop with a five-digit id is LTA's stop of that code. `kmh` is a route's speed between stops where it isn't ~15 km/h. `live` is where its buses can be seen live (api/shuttle-live.js). Causeway Link's cross-border buses (CW1 to CW7) are a group too, timetable only and out of Navigate (`navigate`: false). Left out, as no current timetable could be found from the operator: Sembawang Shopping Centre's (last published March 2023), Marina Square's lunchtime shuttle (ran to 31 December 2025), and the condos' (Lilydale, Skies Miltonia, The Shaughnessy, The Miltonia Residences, The Canopy, Seletaris, Treetops Executive Residences).",
   "groups": {
     "ikea": {
       "name": "IKEA",
@@ -341,6 +341,171 @@
               "stevens-mrt": "ASVtxy0wRMRoqARkuep0LpuGimb6MjMwAE5PVk9URUxATEYAMzAxOTU2"
             }
           }
+        }
+      ]
+    },
+    "causewaylink": {
+      "name": "Causeway Link",
+      "colour": "#003a81",
+      "fare": "paid",
+      "fareText": "S$2.60 to S$6.00",
+      "access": "public",
+      "navigate": false,
+      "source": "https://www.causewaylink.com.my/routes-schedules/singapore-cross-border-bus/",
+      "checked": "2026-11-10",
+      "_about": "Causeway Link's buses between Singapore and Johor Bahru (bug report 20261110-W4H2), by timetable only: LTA's data hasn't got them, and Causeway Link publishes no live times or feed. Each route's first and last bus and interval from Causeway Link's own route pages (the source above, as its timetables read on 2026-11-10, which agree with its CBS_Bus_Timing_Final.pdf of April 2023), and the fares as its route list's most in Singapore dollars. CW4's and CW4S's departure times, CW2's night interval, and the Singapore stops from Land Transport Guru's page for each route (landtransportguru.net/jbbuscw1/ and so on). In Singapore each calls only at its own boarding point and the checkpoint. Each runs both ways, the Malaysian end shown as the checkpoint you clear at (JB CIQ, the Johor Bahru checkpoint's LTA stops, or CIQ 2nd Link); beyond it CW3, CW6 and CW4S go on as CW3L or CW3S, CW7 as CW4G, and CW1, CW2 and CW5 connect with CWL to Larkin. CW4 runs on weekdays only, not on Singapore's public holidays, and on to Pontian. `navigate`: false keeps them out of Navigate, which doesn't count immigration at Tuas.",
+      "_stops": "Newton Circus is Newton Food Centre's car park on Clemenceau Ave Nth (OneMap's point for the food centre). Boon Lay is the pick-up point opposite Boon Lay station on Boon Lay Way, as OpenStreetMap has it (moved there in March 2026), not an LTA stop. CIQ 2nd Link is two points at the Sultan Abu Bakar Complex, one for each way, so each route's road (scripts/shuttle-roads.mjs) doesn't loop to turn round: cwl-ciq2 on the expressway in from Singapore, cwl-ciq2-sg on OpenStreetMap's road out to Singapore (CIQ Sultan Abu Bakar Tanjung Kupang ke Singapura), and Terminal Gelang Patah the bus terminal as OpenStreetMap has it.",
+      "stops": [
+        { "id": "cwl-newton", "name": "Newton Circus (Causeway Link)", "road": "Clemenceau Ave Nth", "loc": "1.311916, 103.839570" },
+        { "id": "cwl-boonlay", "name": "Opp Boon Lay Stn (Causeway Link)", "road": "Boon Lay Way", "loc": "1.337928, 103.706938" },
+        { "id": "cwl-ciq2", "name": "CIQ 2nd Link", "road": "Johor Bahru", "loc": "1.376670, 103.601050" },
+        { "id": "cwl-ciq2-sg", "name": "CIQ 2nd Link", "road": "Johor Bahru", "loc": "1.378943, 103.597441" },
+        { "id": "cwl-gelangpatah", "name": "Terminal Gelang Patah", "road": "Johor Bahru", "loc": "1.446741, 103.589592" }
+      ],
+      "routes": [
+        {
+          "id": "CW1-JB",
+          "badge": "CW1",
+          "label": "CW1, Kranji MRT to JB CIQ",
+          "kmh": 40,
+          "stops": ["45139", "46101", "46211"],
+          "timings": { "45139": {"daily": [{"start": "0630", "end": "2330", "min": 15, "max": 30}]} }
+        },
+        {
+          "id": "CW1-SG",
+          "badge": "CW1",
+          "label": "CW1, JB CIQ to Kranji MRT",
+          "kmh": 40,
+          "stops": ["46219", "46109", "45139"],
+          "timings": { "46219": {"daily": [{"start": "0400", "end": "2300", "min": 15, "max": 30}]} }
+        },
+        {
+          "id": "CW2-JB",
+          "badge": "CW2",
+          "label": "CW2, Queen Street to JB CIQ",
+          "kmh": 40,
+          "stops": ["01109", "46101", "46211"],
+          "timings": {
+            "01109": {
+              "daily": [
+                { "start": "0000", "end": "0400", "min": 45, "max": 45 },
+                { "start": "0400", "end": "2300", "min": 15, "max": 20 },
+                { "start": "2300", "end": "2400", "min": 45, "max": 45 }
+              ]
+            }
+          }
+        },
+        {
+          "id": "CW2-SG",
+          "badge": "CW2",
+          "label": "CW2, JB CIQ to Queen Street",
+          "kmh": 40,
+          "stops": ["46219", "46109", "01109"],
+          "timings": {
+            "46219": {
+              "daily": [
+                { "start": "0000", "end": "0400", "min": 45, "max": 45 },
+                { "start": "0400", "end": "2300", "min": 15, "max": 20 },
+                { "start": "2300", "end": "2400", "min": 45, "max": 45 }
+              ]
+            }
+          }
+        },
+        {
+          "id": "CW3-JB",
+          "badge": "CW3",
+          "label": "CW3, Jurong East to Perling Mall",
+          "kmh": 40,
+          "stops": ["29009", "25269", "cwl-ciq2"],
+          "timings": { "29009": {"daily": [{"start": "0730", "end": "2330", "min": 20, "max": 30}]} }
+        },
+        {
+          "id": "CW3-SG",
+          "badge": "CW3",
+          "label": "CW3, Perling Mall to Jurong East",
+          "kmh": 40,
+          "stops": ["cwl-ciq2-sg", "25269", "29009"],
+          "timings": { "cwl-ciq2-sg": {"daily": [{"start": "0500", "end": "2230", "min": 20, "max": 30}]} }
+        },
+        {
+          "id": "CW4-JB",
+          "badge": "CW4",
+          "label": "CW4, Jurong East to Pontian",
+          "kmh": 40,
+          "stops": ["29009", "25269", "cwl-ciq2", "cwl-gelangpatah"],
+          "timings": { "29009": {"weekdays": ["0730", "1820"]} }
+        },
+        {
+          "id": "CW4-SG",
+          "badge": "CW4",
+          "label": "CW4, Pontian to Jurong East",
+          "kmh": 40,
+          "stops": ["cwl-gelangpatah", "cwl-ciq2-sg", "25269", "29009"],
+          "timings": { "cwl-gelangpatah": {"weekdays": ["0615", "1600"]} }
+        },
+        {
+          "id": "CW4S-JB",
+          "badge": "CW4S",
+          "label": "CW4S, Jurong East to Sutera Mall",
+          "kmh": 40,
+          "stops": ["29009", "25269", "cwl-ciq2"],
+          "timings": { "29009": {"daily": [{"start": "0730", "end": "2330", "min": 60, "max": 60}]} }
+        },
+        {
+          "id": "CW4S-SG",
+          "badge": "CW4S",
+          "label": "CW4S, Sutera Mall to Jurong East",
+          "kmh": 40,
+          "stops": ["cwl-ciq2-sg", "25269", "29009"],
+          "timings": { "cwl-ciq2-sg": {"daily": ["0730", "0830", "0910", "1730", "1800"]} }
+        },
+        {
+          "id": "CW5-JB",
+          "badge": "CW5",
+          "label": "CW5, Newton Circus to JB CIQ",
+          "kmh": 40,
+          "stops": ["cwl-newton", "46101", "46211"],
+          "timings": { "cwl-newton": {"daily": [{"start": "0645", "end": "2330", "min": 45, "max": 45}]} }
+        },
+        {
+          "id": "CW5-SG",
+          "badge": "CW5",
+          "label": "CW5, JB CIQ to Newton Circus",
+          "kmh": 40,
+          "stops": ["46219", "46109", "cwl-newton"],
+          "timings": { "46219": {"daily": [{"start": "0500", "end": "2230", "min": 45, "max": 45}]} }
+        },
+        {
+          "id": "CW6-JB",
+          "badge": "CW6",
+          "label": "CW6, Boon Lay to Perling Mall",
+          "kmh": 40,
+          "stops": ["cwl-boonlay", "25269", "cwl-ciq2"],
+          "timings": { "cwl-boonlay": {"daily": [{"start": "0730", "end": "2300", "min": 20, "max": 30}]} }
+        },
+        {
+          "id": "CW6-SG",
+          "badge": "CW6",
+          "label": "CW6, Perling Mall to Boon Lay",
+          "kmh": 40,
+          "stops": ["cwl-ciq2-sg", "25269", "cwl-boonlay"],
+          "timings": { "cwl-ciq2-sg": {"daily": [{"start": "0500", "end": "2200", "min": 20, "max": 30}]} }
+        },
+        {
+          "id": "CW7-JB",
+          "badge": "CW7",
+          "label": "CW7, Tuas Link MRT to Gelang Patah",
+          "kmh": 40,
+          "stops": ["25421", "25269", "cwl-ciq2"],
+          "timings": { "25421": {"daily": [{"start": "0730", "end": "2300", "min": 15, "max": 30}]} }
+        },
+        {
+          "id": "CW7-SG",
+          "badge": "CW7",
+          "label": "CW7, Gelang Patah to Tuas Link MRT",
+          "kmh": 40,
+          "stops": ["cwl-ciq2-sg", "25269", "25421"],
+          "timings": { "cwl-ciq2-sg": {"daily": [{"start": "0500", "end": "2215", "min": 15, "max": 30}]} }
         }
       ]
     }
