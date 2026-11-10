@@ -1412,12 +1412,15 @@ class TripDone {
   }
 
   List<double>? at(Object? p) => p is Map && p['lat'] is num && p['lng'] is num ? [(p['lat'] as num).toDouble(), (p['lng'] as num).toDouble()] : null;
+  // An end as a point: Your location once it's been found (Navigate's plannedFrom), as the
+  // site's is. Not yet found, it's 0,0 and there's no point to walk from or to.
+  List<double>? point(NavEnd? e) => e == null || (e.here && e.lat == 0 && e.lng == 0) ? null : [e.lat, e.lng];
   for (var k = 0; k < ways.length; k++) {
     final l = ways[k];
     if (l['mode'] == 'walk') {
       final last = k == ways.length - 1;
-      final start = k == 0 ? (from == null || from.here ? null : [from.lat, from.lng]) : at(l['fromExit']) ?? at(l['from']) ?? at(ways[k - 1]['to']);
-      final end = last ? (to == null || to.here ? null : [to.lat, to.lng]) : at(l['toExit']) ?? at(l['to']);
+      final start = k == 0 ? point(from) : at(l['fromExit']) ?? at(l['from']) ?? at(ways[k - 1]['to']);
+      final end = last ? point(to) : at(l['toExit']) ?? at(l['to']);
       if (start != null && end != null && ((l['metres'] as num?) ?? 100) >= 50) {
         legs.add(TripLeg(
           kind: 'walk',

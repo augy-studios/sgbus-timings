@@ -130,6 +130,11 @@ class NavState extends ChangeNotifier {
   NavEnd? from;
   NavEnd? to;
   NavEnd? via;
+
+  /// The ends the ways on show were planned between: as [from] and [to], but with Your location
+  /// found, as the site keeps it once it's located. A trip's first walk starts here.
+  NavEnd? plannedFrom;
+  NavEnd? plannedTo;
   bool viaOpen = false;
   WhenPick? when;
   List<Map<String, dynamic>> options = [];
@@ -182,6 +187,8 @@ class NavState extends ChangeNotifier {
       final data = await fetchWays(a, b, via: via, when: when);
       if (token != _token) return;
       offline = data['offline'] == true;
+      plannedFrom = a;
+      plannedTo = b;
       options = [for (final o in (data['options'] as List? ?? const [])) Map<String, dynamic>.from(o as Map)];
       for (final o in options) {
         if (o['via'] is Map && via != null) (o['via'] as Map)['label'] = via!.label;
