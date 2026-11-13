@@ -485,19 +485,18 @@ class _PlannerTabState extends State<PlannerTab> {
     final sg = context.sg;
     final s = p.start!, e = p.end!;
     final details = legs.map(Journeys.legDetails).toList();
-    final back = Row(children: [
-      TextButton.icon(onPressed: () {
+    final back = WayHead(
+      back: TextButton.icon(onPressed: () {
         p.journey = null;
         p.changed();
-      }, icon: const Icon(Icons.arrow_back), label: Text(tr('planner.backToRoute', 'Back to route'))),
-      const Spacer(),
-      TextButton(onPressed: () => _openJourney(legs), child: Text(tr('nav.refresh', 'Refresh'))),
-      FilledButton.icon(
+      }, icon: const Icon(Icons.arrow_back), label: Text(tr('planner.backToRoute', 'Back to route'), overflow: TextOverflow.ellipsis)),
+      refresh: TextButton(onPressed: () => _openJourney(legs), child: Text(tr('nav.refresh', 'Refresh'))),
+      main: FilledButton.icon(
         onPressed: () => AppNav.open('startTripLegs', {'legs': legs, 'start': s, 'end': e}),
         icon: const Icon(Icons.notifications_active_outlined),
         label: Text(tr('planner.startTrip', 'Start trip')),
       ),
-    ]);
+    );
     if (details.any((d) => d == null)) return [back, EmptyNote(tr('planner.journeyGone', "This journey no longer runs the way it did. Go back to the route for today's options."))];
     final when = p.when;
     final clock = Journeys.journeyClock(legs, s, e)!;

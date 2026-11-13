@@ -68,6 +68,7 @@ class CampusRoute {
     required this.live,
     this.place = const [],
     this.kmh,
+    this.navigate = true,
   });
   final String key; // "nus:A1"
   final String uni;
@@ -85,6 +86,9 @@ class CampusRoute {
   /// A hotel's or a condo's own stops' keys: it's only for ways from or to them (data/nav_core.dart).
   final List<String> place;
   final num? kmh;
+
+  /// False: not in Navigate, only Bus timings (shuttles.json's `navigate`, the site's).
+  final bool navigate;
 
   bool get loop => ids.first == ids.last;
   bool get seasonal => timings.containsKey('term') || timings.containsKey('vacation');
@@ -360,6 +364,7 @@ class Campus {
             final n = num.tryParse('${r['kmh'] ?? ''}');
             return n == null || n == 0 ? null : n;
           }(),
+          navigate: (r['navigate'] ?? conf['navigate']) != false,
         );
         routes.add(route);
         for (var i = 0; i < keys.length; i++) {

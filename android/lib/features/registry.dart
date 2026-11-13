@@ -137,7 +137,7 @@ void registerFeatures() {
   TripChange.register();
   AppNav.register('startTrip', (a) {
     final n = NavState.I;
-    final t = tripFromNav(a['option'] as Map<String, dynamic>, n.from, n.to);
+    final t = tripFromNav(a['option'] as Map<String, dynamic>, n.plannedFrom ?? n.from, n.plannedTo ?? n.to);
     if (t == null) {
       AppNav.say(tr('nav.cantFollow', "This way can't be followed as a trip. Try another way."));
     } else {

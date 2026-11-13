@@ -847,8 +847,20 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
 
 /// The notes, as a column of rows for the trip's screen and bar.
 class TripNotes extends StatelessWidget {
-  const TripNotes({super.key, this.compact = false});
+  const TripNotes({super.key, this.compact = false, this.onMore});
+
+  /// Under the trip bar (bug report 20261113-7K2S): the first note only, in two lines at most
+  /// and with small buttons, so the bar and its note don't fill a phone's screen. The whole of
+  /// it is on the trip screen, which [onMore] opens where the note does nothing else on a tap.
   final bool compact;
+  final VoidCallback? onMore;
+
+  static final _small = ButtonStyle(
+    visualDensity: VisualDensity.compact,
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    padding: WidgetStatePropertyAll(const EdgeInsets.symmetric(horizontal: 12)),
+    textStyle: WidgetStatePropertyAll(const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+  );
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -866,16 +878,20 @@ class TripNotes extends StatelessWidget {
                   _ => scheme.secondaryContainer,
                 },
                 child: InkWell(
-                  onTap: n.onTap,
+                  onTap: n.onTap ?? (compact ? onMore : null),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 6, 6, 6),
+                    padding: compact ? const EdgeInsets.fromLTRB(12, 4, 4, 4) : const EdgeInsets.fromLTRB(12, 6, 6, 6),
                     child: Row(children: [
                       Expanded(
                         child: Text(n.text,
+                            maxLines: compact ? 2 : null,
+                            overflow: compact ? TextOverflow.ellipsis : null,
                             style: TextStyle(color: n.tone == 'error' ? scheme.onErrorContainer : n.tone == 'warn' ? const Color(0xFF4E2A00) : scheme.onSecondaryContainer, fontSize: 13)),
                       ),
-                      if (n.second != null) TextButton(onPressed: n.onSecond, child: Text(n.second!)),
-                      if (n.action != null) FilledButton.tonal(onPressed: n.onAction, child: Text(n.action!)),
+                      if (n.second != null)
+                        TextButton(style: compact ? _small : null, onPressed: n.onSecond, child: Text(n.second!)),
+                      if (n.action != null)
+                        FilledButton.tonal(style: compact ? _small : null, onPressed: n.onAction, child: Text(n.action!)),
                     ]),
                   ),
                 ),

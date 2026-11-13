@@ -60,6 +60,7 @@ import io.flutter.embedding.android.TransparencyMode;
 import io.flutter.embedding.engine.FlutterEngine;
 import io.flutter.embedding.android.FlutterEngineConfigurator;
 import io.flutter.embedding.engine.plugins.util.GeneratedPluginRegister;
+import io.flutter.plugin.common.BinaryMessenger;
 
 public class MainActivity extends AppCompatActivity implements FlutterEngineConfigurator {
     static final String SITE = "https://sgbus.uwuapps.org";
@@ -70,6 +71,8 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
 
     private Bridge mBridge;
     private FlutterFragment mFlutter;
+    // The engine's messenger when the engine came before the bridge: see onCreate.
+    private BinaryMessenger mEarlyMessenger;
 
     Bridge bridge() {
         return mBridge;
@@ -89,6 +92,14 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
         mBridge.registerPlugin(ScanPlugin.class);
         mBridge.registerPlugin(PushNotificationsPlugin.class);
         mBridge.registerPlugin(MigratePlugin.class);
+        // Coming back after Android closed the app in the background (bug report 20261112-86PN),
+        // super.onCreate restores the FlutterFragment, and the fragment makes its engine and
+        // calls configureFlutterEngine then, before the bridge above was made. It's connected
+        // now, rather than crashing on a bridge that isn't there yet.
+        if (mEarlyMessenger != null) {
+            mBridge.connect(mEarlyMessenger);
+            mEarlyMessenger = null;
+        }
         Notifications.createChannels(this);
 
         FrameLayout root = new FrameLayout(this);
@@ -116,12 +127,15 @@ public class MainActivity extends AppCompatActivity implements FlutterEngineConf
     @Override
     public void configureFlutterEngine(@NonNull FlutterEngine engine) {
         GeneratedPluginRegister.registerGeneratedPlugins(engine);
-        mBridge.connect(engine.getDartExecutor().getBinaryMessenger());
+        BinaryMessenger messenger = engine.getDartExecutor().getBinaryMessenger();
+        if (mBridge != null) mBridge.connect(messenger);
+        else mEarlyMessenger = messenger;
     }
 
     @Override
     public void cleanUpFlutterEngine(@NonNull FlutterEngine engine) {
-        mBridge.disconnect();
+        mEarlyMessenger = null;
+        if (mBridge != null) mBridge.disconnect();
     }
 
     @Override

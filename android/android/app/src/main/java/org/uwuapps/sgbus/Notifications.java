@@ -38,7 +38,11 @@ final class Notifications {
     static final String ALERTS = "alerts";
     static final String GET_OFF = "get_off";
     static final String BOARD = "board";
-    static final String TRIP = "trip";
+    // The trip's own notification, its Live Update on Android 16. "trip_live" since 2.4.12: the
+    // first "trip" channel was low importance, so Android filed it under Silent, and a channel's
+    // importance can't be raised once it's made; that one's deleted (createChannels).
+    static final String TRIP = "trip_live";
+    private static final String TRIP_SILENT = "trip";
     static final String GET_OFF_QUIET = "get_off_quiet";
     static final String NEAR = "near";
     static final String LAST_BUS = "last_bus";
@@ -87,10 +91,20 @@ final class Notifications {
         board.setVibrationPattern(BOARD_BUZZ);
         board.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
+        // Default importance: with the other notifications rather than under Silent, with the
+        // phone's notification sound once as a trip starts (TripService sets setOnlyAlertOnce,
+        // so its updates through the trip stay quiet), and no buzz: the Get Off Alert has that.
         NotificationChannel trip = new NotificationChannel(TRIP, context.getString(R.string.ch_trip),
-                NotificationManager.IMPORTANCE_LOW);
+                NotificationManager.IMPORTANCE_DEFAULT);
         trip.setDescription(context.getString(R.string.ch_trip_about));
         trip.setShowBadge(false);
+        trip.enableVibration(false);
+        trip.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
+        trip.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
         NotificationChannel getOffQuiet = new NotificationChannel(GET_OFF_QUIET, context.getString(R.string.ch_get_off_quiet),
                 NotificationManager.IMPORTANCE_HIGH);
@@ -131,6 +145,7 @@ final class Notifications {
         manager.createNotificationChannel(getOff);
         manager.createNotificationChannel(board);
         manager.createNotificationChannel(trip);
+        manager.deleteNotificationChannel(TRIP_SILENT);
         manager.createNotificationChannel(getOffQuiet);
         manager.createNotificationChannel(near);
         manager.createNotificationChannel(lastBus);
