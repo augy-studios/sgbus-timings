@@ -13,13 +13,63 @@
 // pickWay: a shared way to open once the ways are in (openNavAt).
 // via: one stop on the way, a place like either end, or null; viaOpen: its box shown, not yet
 // set (Add a stop).
-const nav = { from: null, to: null, via: null, viaOpen: false, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), doorsOpen: new Set(), walksFor: null, pickWay: null };
+const nav = { from: null, to: null, via: null, viaOpen: false, options: [], option: null, onemap: false, when: null, whenPicker: null, token: 0, walksOpen: new Set(), doorsOpen: new Set(), walksFor: null, pickWay: null, plannedAt: 0, wayGone: false };
+
+// Ways planned to leave now are planned again once they're this old and Navigate's shown
+// (bug report 20261113-M8K5: a way from the morning, with a 96A long gone for the day, still
+// open in the afternoon). The same as NavState.staleMs in the Android app.
+const NAV_STALE_MS = 10 * 60000;
+const navStale = () => !nav.when && nav.plannedAt > 0 && Date.now() - nav.plannedAt > NAV_STALE_MS;
+
+// Plans again if the ways on show are stale, keeping the way open if it's still one of them,
+// and saying so over the list if it isn't.
+async function freshenNav() {
+  if (!navStale() || !nav.from || !nav.to) return false;
+  const was = nav.option ? wayKey(nav.option) : null;
+  nav.pickWay = was;
+  await runNav();
+  if (was && !nav.option && nav.options.length) {
+    nav.wayGone = true;
+    renderNav();
+  }
+  return true;
+}
+
+// The first bus of a way that won't be running by the time you'd reach its stop, setting off at
+// `leaveMs`, by LTA's first and last bus there that day (When.busRunsAt), with its last bus
+// there today: { route, stop, last }; null if every bus runs then, or the routes aren't loaded.
+function wayStopped(o, leaveMs) {
+  if (!window.BusNet?.isReady()) return null;
+  let t = 0;
+  for (const l of o.legs || []) {
+    const code = l.from?.code;
+    if (l.mode === 'bus' && !l.campus && code) {
+      const times = BusNet.timesAt(String(l.route), code);
+      if (times && !When.busRunsAt(times, leaveMs + t * 60000)) {
+        const last = BusNet.firstLast(String(l.route), code)?.last;
+        return { route: String(l.route), stop: l.from.name || code, last: last && last !== '-' ? last : null };
+      }
+    }
+    t += (l.wait || 0) + (l.minutes || 0);
+  }
+  return null;
+}
+
+function wayStoppedText(s) {
+  return s.last
+    ? I18n.t('nav.wayStopped', '{no} has finished for today: the last one from {stop} was at {time}. Pick another way from All ways.', { no: s.route, stop: s.stop, time: s.last })
+    : I18n.t('nav.wayNotRunning', '{no} isn’t running when you’d reach {stop}. Pick another way from All ways.', { no: s.route, stop: s.stop });
+}
 
 const NAV_PLACES_DELAY_MS = 300;
 // A Google Maps link, which /api/places reads for the one place it points at (api/_lib/gmaps.js).
 const MAPS_LINK_RE = /maps\.app\.goo\.gl\/|goo\.gl\/maps\/|google\.[a-z]{2,3}(?:\.[a-z]{2})?\/maps|maps\.google\./i;
 
 function initNav() {
+  // Back to the tab with Navigate open, leave-now ways planned a while ago are planned again.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !$('#navSection').hidden) freshenNav();
+  });
   for (const field of ['from', 'to']) {
     const id = field === 'from' ? 'navFrom' : 'navTo';
     attachPlaceSearch($(`#${id}`), $(`#${id}Ac`), (place) => setNavEnd(field, place), {
@@ -499,6 +549,7 @@ function backToNav() {
   showPanel('navSection', true);
   if (nav.from && nav.to) history.replaceState(null, '', navHash());
   renderNav();
+  freshenNav();
 }
 
 // Back to Navigate, from a trip's timeline (js/trip.js): the screen the trip was started from,
@@ -723,6 +774,8 @@ async function runNav() {
     const data = await fetchWays(nav.from, nav.to, when, nav.via);
     if (token !== nav.token) return;
     nav.options = data.options || [];
+    nav.plannedAt = Date.now();
+    nav.wayGone = false;
     nav.onemap = !!data.onemap;
     // Planned on the phone (planOnPhone): estimates, with nothing live.
     nav.offline = !!data.offline;
@@ -758,6 +811,7 @@ function renderNav() {
   }
   body.innerHTML =
     (nav.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
+    (nav.wayGone ? `<p class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.wayGone', 'The way you had open doesn’t run from now. These are the ways from now.'))}</p>` : '') +
     plannerStatus((nav.options.length === 1 ? I18n.t('nav.waysOne', '1 way to get there') : I18n.t('nav.waysMany', '{n} ways to get there', { n: nav.options.length })) + (nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : '') + I18n.t('nav.waysTail', ', quickest first. Every mix of bus and train is listed, not just the fastest.')) +
     `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
     navOthers() +
@@ -982,6 +1036,8 @@ async function renderNavOption(o) {
     (o.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
     `<p class="journeyHead">${escapeHtml(I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes }))} · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · ${escapeHtml(I18n.t('nav.onemapMin', 'OneMap ~{m} min', { m: o.onemapMinutes }))}` : ''}</p>` +
     farNotes(o).map((t) => `<p class="journeyWarn">${ico('walk')} ${escapeHtml(t)}.</p>`).join('') +
+    // Leaving now: a bus of the way gone for the day since it was planned, said before anything.
+    (!nav.when && wayStopped(o, Date.now()) ? `<p class="journeyWarn">${ico('alert')} ${escapeHtml(wayStoppedText(wayStopped(o, Date.now())))}</p>` : '') +
     (nav.when
       ? navTooLate(o)
         ? `<p class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t("planner.tooLateLeave", "To arrive by {time} you'd have had to leave by {leave}.", { time: When.clock(When.atToMs(nav.when.at)), leave: When.clock(When.span(nav.when, o.minutes).leave) }))}</p>`

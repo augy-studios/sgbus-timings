@@ -214,6 +214,17 @@
     return null;
   }
 
+  // LTA's 24-character first and last bus string for a service at a stop (When.busRunsAt), for
+  // Navigate's check that a way's buses still run (js/nav.js, wayStopped); null without one.
+  function timesAt(serviceNo, code) {
+    for (const dir of directions(serviceNo)) {
+      const run = runs[serviceNo][dir];
+      const i = run.stops.indexOf(code);
+      if (i !== -1) return run.times[i] || null;
+    }
+    return null;
+  }
+
   // A service's last bus at a stop on each day type, as LTA gives it ("HHMM", or "-" where it
   // doesn't run that day): { wd, sat, sun }, for a last bus reminder (js/reminders.js).
   function lastBuses(serviceNo, code) {
@@ -573,6 +584,7 @@
     terminals,
     landmarks,
     firstLast,
+    timesAt,
     lastBuses,
     stopsTo,
     busDistance,

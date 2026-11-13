@@ -135,6 +135,32 @@ class NavState extends ChangeNotifier {
   /// found, as the site keeps it once it's located. A trip's first walk starts here.
   NavEnd? plannedFrom;
   NavEnd? plannedTo;
+
+  /// When the ways on show were planned. Planned to leave now, they're planned again once
+  /// they're [staleMs] old and Navigate's shown (bug report 20261113-M8K5: a way from the
+  /// morning, with a 96A long since gone for the day, still open in the afternoon).
+  int plannedAt = 0;
+  static const staleMs = 10 * 60000;
+  bool get stale => when == null && plannedAt != 0 && When.nowMs() - plannedAt > staleMs;
+
+  /// The way that was open didn't come back when it was planned again: said over the list.
+  bool wayGone = false;
+
+  /// Plans again if the ways on show are stale, keeping the way open if it's still one of them.
+  Future<void> freshen() async {
+    if (!stale || busy || from == null || to == null) return;
+    final was = option;
+    await run(keep: was);
+    if (was == null) return;
+    final again = options.where((o) => wayKey(o) == wayKey(was)).firstOrNull;
+    if (again != null) {
+      await open(again);
+    } else {
+      option = null;
+      wayGone = true;
+      notifyListeners();
+    }
+  }
   bool viaOpen = false;
   WhenPick? when;
   List<Map<String, dynamic>> options = [];
@@ -189,6 +215,8 @@ class NavState extends ChangeNotifier {
       offline = data['offline'] == true;
       plannedFrom = a;
       plannedTo = b;
+      plannedAt = When.nowMs();
+      wayGone = false;
       options = [for (final o in (data['options'] as List? ?? const [])) Map<String, dynamic>.from(o as Map)];
       for (final o in options) {
         if (o['via'] is Map && via != null) (o['via'] as Map)['label'] = via!.label;
@@ -336,7 +364,7 @@ class NavPage extends StatefulWidget {
   State<NavPage> createState() => _NavPageState();
 }
 
-class _NavPageState extends State<NavPage> {
+class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
   NavState get nav => NavState.I;
   String get _mode => Store.I.get(NavPage.modeKey) == 'bus' && NavPage.busOnly != null ? 'bus' : 'all';
 
@@ -345,13 +373,28 @@ class _NavPageState extends State<NavPage> {
     super.initState();
     nav.addListener(_redraw);
     Favs.I.addListener(_redraw);
+    AppNav.page.addListener(_shown);
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _shown());
   }
 
   @override
   void dispose() {
     nav.removeListener(_redraw);
     Favs.I.removeListener(_redraw);
+    AppNav.page.removeListener(_shown);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  // Shown again, or the app back, with leave-now ways planned a while ago: planned again.
+  void _shown() {
+    if (mounted && AppNav.page.value == 'nav') unawaited(nav.freshen());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _shown();
   }
 
   void _redraw() {
@@ -510,6 +553,8 @@ class _NavPageState extends State<NavPage> {
     final best = nav.options.where((o) => o['walkOnly'] != true).map((o) => (o['minutes'] as num).toDouble()).fold(double.infinity, (a, b) => a < b ? a : b);
     return [
       if (nav.offline) Padding(padding: const EdgeInsets.only(bottom: 6), child: _warn(tr('nav.plannedOffline', 'Planned offline: times are estimates.'))),
+      if (nav.wayGone)
+        Padding(padding: const EdgeInsets.only(bottom: 6), child: _warn(tr('nav.wayGone', 'The way you had open doesn’t run from now. These are the ways from now.'))),
       Text(
         '${n == 1 ? tr('nav.waysOne', '1 way to get there') : tr('nav.waysMany', '{n} ways to get there', {'n': n})}'
         '${nav.when != null ? ', ${When.describe(nav.when).replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toLowerCase())}' : ''}'
@@ -938,6 +983,9 @@ class _NavPageState extends State<NavPage> {
           style: TextStyle(color: sg.muted),
         ),
       if (o['offline'] == true) Padding(padding: const EdgeInsets.only(top: 4), child: _warn(tr('nav.plannedOffline', 'Planned offline: times are estimates.'))),
+      // Leaving now: a bus of the way gone for the day since it was planned, said before anything.
+      if ((nav.when == null ? wayStopped(o, When.nowMs()) : null) case final stopped?)
+        Padding(padding: const EdgeInsets.only(top: 4), child: _warn(wayStoppedText(stopped))),
       const SizedBox(height: 8),
       ...steps,
       const SizedBox(height: 8),
@@ -1186,7 +1234,10 @@ void reopenNav(Map o) {
   final kept = way != null && open != null && wayKey(open) == way && same(n.from, from) && same(n.to, to) && same(n.via, via) && n.when?.at == picked?.at && n.when?.mode == picked?.mode;
   Store.I.put(NavPage.modeKey, null);
   AppNav.showPage('nav');
-  if (kept) return;
+  if (kept) {
+    unawaited(n.freshen());
+    return;
+  }
   n.from = from;
   n.to = to;
   n.via = via;
@@ -1194,10 +1245,51 @@ void reopenNav(Map o) {
   final saved = o['option'] is Map ? Map<String, dynamic>.from(o['option'] as Map) : null;
   n.run(keep: saved).then((_) {
     if (way == null || !identical(n.option, saved)) return;
-    final again = n.options.where((w) => wayKey(w) == way).firstOrNull ?? saved;
-    if (again != null) n.open(again);
+    // The way as it was picked, if the new plan hasn't it: unless, leaving now, a bus of it has
+    // stopped running for the day, when the list's shown instead.
+    final again = n.options.where((w) => wayKey(w) == way).firstOrNull ??
+        (saved != null && (n.when != null || wayStopped(saved, When.nowMs()) == null) ? saved : null);
+    if (again != null) {
+      n.open(again);
+    } else if (saved != null) {
+      n.option = null;
+      n.wayGone = true;
+      n.changed();
+    }
   });
 }
+
+/// The first bus of a way that won't be running by the time you'd reach its stop, setting off
+/// at [leaveMs], by LTA's first and last bus there for that day (bug report 20261113-M8K5), with
+/// its last bus there today; null if every bus runs then, or BusNet hasn't its hours yet.
+({String route, String stop, String? last})? wayStopped(Map o, int leaveMs) {
+  if (!BusNet.ready) return null;
+  var t = 0.0;
+  for (final l in (o['legs'] as List? ?? const []).cast<Map>()) {
+    final from = l['from'] is Map ? l['from'] as Map : null;
+    final code = from?['code'];
+    if (l['mode'] == 'bus' && l['campus'] == null && code is String) {
+      final route = '${l['route']}';
+      for (final dir in BusNet.directions(route)) {
+        final run = BusNet.run(route, dir)!;
+        final i = run.stops.indexOf(code);
+        if (i == -1 || i >= run.times.length) continue;
+        if (!When.busRunsAt(run.times[i], leaveMs + (t * 60000).round())) {
+          final last = BusNet.firstLast(route, code, dir)?.last;
+          return (route: route, stop: '${from?['name'] ?? code}', last: last == null || last == '-' ? null : last);
+        }
+        break;
+      }
+    }
+    t += ((l['wait'] as num?) ?? 0).toDouble() + ((l['minutes'] as num?) ?? 0).toDouble();
+  }
+  return null;
+}
+
+/// What [wayStopped] found, in words.
+String wayStoppedText(({String route, String stop, String? last}) s) => s.last != null
+    ? tr('nav.wayStopped', '{no} has finished for today: the last one from {stop} was at {time}. Pick another way from All ways.', {'no': s.route, 'stop': s.stop, 'time': s.last})
+    : tr('nav.wayNotRunning', '{no} isn’t running when you’d reach {stop}. Pick another way from All ways.', {'no': s.route, 'stop': s.stop});
 
 /// Opens Navigate with its ends, from a link, a place or a saved nav.
 void openNav({NavEnd? from, NavEnd? to, NavEnd? via, WhenPick? when, String? way}) {
