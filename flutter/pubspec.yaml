@@ -1,0 +1,79 @@
+# SG Bus Timings for Android: the app's own screens in Flutter, with its native parts (Java)
+# reached over a MethodChannel (README.md).
+name: sgbus_timings
+description: "SG Bus Timings for Android: Singapore's live bus timings, natively in Flutter."
+publish_to: 'none'
+
+# The app's version: versionName+versionCode. Raise both for a new version: a phone only takes
+# a higher versionCode as an update. 1.0.0 to 1.2.0 (versionCode 1 to 3) were the Bubblewrap
+# app, 2.0.0 to 2.3.1 (4 to 26) the Capacitor one, and from 2.4.0 (27) this Flutter one. The
+# watch app (android/wear/) reads it here too, and desktop/package.json's and cli/package.json's
+# versions are raised to the same.
+version: 2.4.11+41
+
+environment:
+  sdk: ^3.13.0
+
+dependencies:
+  camera: ^0.12.2
+  dynamic_color: ^2.1.0
+  file_selector: ^1.1.0
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_webrtc: ^1.6.3
+  geolocator: ^14.1.2
+  http: ^1.6.0
+  image: ^4.12.0
+  intl: ^0.20.3
+  maplibre_gl: ^0.28.0
+  path_provider: ^2.1.5
+  material_color_utilities: ^0.13.0
+  qr_flutter: ^4.1.0
+  sensors_plus: ^7.1.1
+  # The desktop apps' own native parts: each window's handle, the Jump List, the Dock
+  # (packages/sgbus_desktop/).
+  sgbus_desktop:
+    path: packages/sgbus_desktop
+  nativeapi: ^0.5.10
+  nativeapi_flutter: ^0.5.10
+  shared_preferences: ^2.5.6
+  timezone: ^0.11.2
+  window_manager: ^0.6.0
+  tray_manager: ^0.8.3
+  flutter_local_notifications: ^23.0.0
+  desktop_multi_window: ^0.3.1
+  webview_all: ^1.4.12
+  pasteboard: ^0.6.0
+  url_launcher: ^6.3.3
+  crypto: ^3.0.8
+  yaml: ^3.1.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    # The site's own words, in each of its languages: copied from main-site/i18n/ by
+    # tool/sync_i18n.dart, and checked to match by test/i18n_test.dart.
+    - assets/i18n/
+    # The few words only the app says (Back twice, Material You's switch).
+    - assets/i18n_app/
+    # SimplyGo's logo on its Edge Tray button, as the site's.
+    - assets/images/simplygo.png
+    # The flags in the language list, drawn from the site's (flag-icons, MIT; js/lang-pick.js).
+    - assets/images/flags/
+    # The magic cup's pattern, as the site's (features/misc/magic_cup.dart).
+    - assets/images/magic-cup-texture.png
+    # The desktop apps' icon and tray icons, and the map's page (lib/features/map/web/).
+    - assets/desktop/
+    - assets/desktop/map/
+  fonts:
+    # The site's font, for the usual look. Material You uses the phone's own.
+    - family: Jua
+      fonts:
+        - asset: assets/fonts/Jua-Regular.ttf

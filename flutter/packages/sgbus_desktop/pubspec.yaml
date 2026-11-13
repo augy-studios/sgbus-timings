@@ -1,0 +1,27 @@
+# The desktop apps' own native parts that no package on pub.dev has (lib/sgbus_desktop.dart): each
+# window's native handle, so nativeapi can drive the window it belongs to (several windows each
+# run their own engine); Windows' Jump List, taskbar thumbnail buttons and start at sign-in; the
+# macOS Dock menu and badge, links and reopening; forwarding a second copy's links on Linux.
+# A plugin, not runner code, so every engine (the widgets' windows too) gets it registered.
+name: sgbus_desktop
+description: "SG Bus Timings' desktop native parts."
+version: 1.0.0
+publish_to: 'none'
+
+environment:
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      windows:
+        pluginClass: SgbusDesktopPluginCApi
+      macos:
+        pluginClass: SgbusDesktopPlugin
+      linux:
+        pluginClass: SgbusDesktopPlugin
