@@ -1526,7 +1526,7 @@ class TripBar extends StatelessWidget {
                 ]),
               )),
             ),
-          ).let((bar) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [bar, const TripNotes(compact: true)]));
+          ).let((bar) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [bar, TripNotes(compact: true, onMore: () => AppNav.push(const TripScreen(), name: 'trip'))]));
         },
       );
 }
