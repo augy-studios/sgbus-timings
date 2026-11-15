@@ -3,12 +3,14 @@
 //
 // Update bar: as the app opens, and again on coming back after six hours, /api/app-release says
 // the newest version; a newer one than this brings a bar to the top, whose Update opens the app's
-// own update window (UpdateActivity), and Not now puts it away while the app's open.
+// own update window (UpdateActivity), and Not now puts it away while the app's open. Never in the
+// desktop app, which updates itself (desktop/updater.dart).
 //
 // Report a bug: what went wrong, a way to be reached if they'd like an answer, up to three
 // pictures (from the phone, or a screenshot of a page of the app), and what helps find it (the
 // app's version, the phone, the page on show and the language), sent to Augy on Telegram by
-// /api/bug-report. What's typed stays until it's sent.
+// /api/bug-report. What's typed stays until it's sent. A report from the desktop app says it's
+// from "desktop", with the app's version.
 //
 // Screenshot a page puts the report away and leaves you in the app, to go to the page you want,
 // with a floating Screenshot this page. That takes the whole page, top to bottom, scrolling it a
@@ -29,6 +31,7 @@ import '../../api/api.dart';
 import '../../api/net.dart';
 import '../../app/nav.dart';
 import '../../app/shell.dart';
+import '../../app/version.dart';
 import '../../data/nav_offline.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
@@ -42,14 +45,18 @@ import '../timings/timings_page.dart';
 const _updateLink = 'intent://update#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
 const _checkLink = 'intent://update/check#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
 
+/// Sets up the small things as the app starts: SimplyGo, #near and app update links, Report a
+/// bug's entry in Settings, the hold-a-button tip, the update bar (never in the desktop app), and
+/// what Bus and train keeps for planning offline.
 void registerMisc() {
   AppNav.register('simplygo', (_) => Native.call('SgBus', 'openApp', {'name': 'simplygo'}).catchError((_) => null));
   AppNav.register('near', (_) {
     AppNav.showPage('timings');
     TimingsPage.askNear.value++;
   });
+  // The desktop app updates itself (desktop/updater.dart): nothing of Android's to open.
   AppNav.register('appUpdate', (a) {
-    if (playBuild) return;
+    if (playBuild || Native.has('desktop')) return;
     if (a['version'] != null) {
       AppUpdate.check(version: '${a['version']}');
     } else {
@@ -74,8 +81,9 @@ void registerMisc() {
   }
   // What Bus and train needs to plan with no connection, kept while there is one.
   Timer(const Duration(seconds: 8), () => NavOffline.keepReady());
-  // On Google Play, Play says when there's a new version, and updates it.
-  if (!playBuild) {
+  // On Google Play, Play says when there's a new version, and updates it. The desktop app has its
+  // own update window and title bar button instead (desktop/updater.dart), so never this bar.
+  if (!playBuild && !Native.has('desktop')) {
     Shell.top.add(() => const AppUpdateBar());
     AppUpdate.check();
   }
@@ -83,9 +91,11 @@ void registerMisc() {
 }
 
 class _Resume extends WidgetsBindingObserver {
+  /// Coming back to the app after six hours: checks for a new version again (not on Google Play,
+  /// nor in the desktop app, which checks for itself).
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!playBuild && state == AppLifecycleState.resumed && When.nowMs() - AppUpdate._checkedAt > 6 * 3600 * 1000) AppUpdate.check();
+    if (!playBuild && !Native.has('desktop') && state == AppLifecycleState.resumed && When.nowMs() - AppUpdate._checkedAt > 6 * 3600 * 1000) AppUpdate.check();
   }
 }
 
@@ -395,8 +405,20 @@ class _BugReportState extends State<BugReport> {
 
   void _keep() => Store.I.putJson(_draftKey, {'text': _text.text, 'contact': _contact.text});
 
+  /// What helps find the bug, sent with it: the app's version, which app it is, the device, the
+  /// page on show and the language. The desktop app says "desktop" and its own version, as the
+  /// site's report did in the Electron app.
   Map<String, String> get _details {
     final info = Native.info;
+    if (Native.has('desktop')) {
+      return {
+        'version': appVersion,
+        'platform': 'desktop',
+        'device': [if (info?['device'] != null) '${info!['device']}', 'Flutter'].join(' · '),
+        'page': AppNav.page.value,
+        'lang': I18n.I.lang,
+      };
+    }
     return {
       'version': '${info?['version'] ?? ''}',
       'platform': 'android',
@@ -406,7 +428,9 @@ class _BugReportState extends State<BugReport> {
     };
   }
 
-  String get _detailsText => ['Android app', _details['version'], _details['device'], _details['page']].where((s) => s != null && s.isNotEmpty).join(' · ');
+  /// The same, in a line shown under the report: "Android app · 2.5.0 · …" or "Desktop app · …".
+  String get _detailsText =>
+      [Native.has('desktop') ? 'Desktop app' : 'Android app', _details['version'], _details['device'], _details['page']].where((s) => s != null && s.isNotEmpty).join(' · ');
 
   /// An image as a JPEG data URL, at most _shotSide a side and about 900 KB, made away from
   /// the screen's thread.

@@ -17,6 +17,7 @@ import 'package:flutter/services.dart';
 
 import '../../app/nav.dart';
 import '../../data/stops.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -45,6 +46,8 @@ class CardSheet extends StatefulWidget {
 
   static _CardSheetState? _state;
 
+  /// Opens Card value's sheet (a dialog on the desktop, though a computer has no NFC to read a
+  /// card with), or, if it's open already, hands it the card just tapped.
   static Future<void> open({Map<String, dynamic>? tapped, bool reading = false}) async {
     if (_state != null) {
       if (tapped != null) _state!._tapped(tapped);
@@ -52,7 +55,7 @@ class CardSheet extends StatefulWidget {
     }
     final context = AppNav.context;
     if (context == null || !Native.has('card')) return;
-    await showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => CardSheet._(tapped: tapped, reading: reading));
+    await AppSheet.show<void>(context: context, isScrollControlled: true, builder: (_) => CardSheet._(tapped: tapped, reading: reading));
   }
 
   @override

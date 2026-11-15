@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import '../../api/api.dart';
 import '../../api/net.dart';
 import '../../app/nav.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -25,8 +26,9 @@ class ShareCard extends StatefulWidget {
   final Future<Map<String, dynamic>>? made; // a link already made (live progress)
   final VoidCallback? onStop; // live progress: Stop sharing
 
+  /// Opens the share card in a sheet (a dialog on the desktop).
   static Future<void> show(BuildContext context, ShareCard card) =>
-      showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => card);
+      AppSheet.show<void>(context: context, isScrollControlled: true, builder: (_) => card);
 
   /// "How to get to" a place.
   static Future<void> place(BuildContext context, {required String label, required double lat, required double lng, String note = ''}) => show(

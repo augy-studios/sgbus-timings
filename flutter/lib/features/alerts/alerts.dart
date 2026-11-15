@@ -6,6 +6,10 @@
 // and pushes as LTA's feeds change (main-site/api/push/poll.js). New versions of the app are a
 // fourth switch (SgBusPlugin.setReleases).
 //
+// The desktop app has no push server: it checks LTA's feeds every minute itself and notifies from
+// there (desktop/alerts_poll.dart, Alerts.polled), its notifications need no permission to ask for
+// (except macOS's, asked once), and New versions of the app is its own updater's switch.
+//
 // The disruptions bar runs along the top of the main screen while a train line is disrupted or
 // delayed, with Details and Hide, checked every two minutes while the app's in front.
 import 'dart:async';
@@ -387,6 +391,8 @@ class _AlertsPageState extends State<AlertsPage> {
     return tr('alerts.notesOn', "You'll be notified of {list}.", {'list': parts.join(tr('alerts.andOf', ', and of '))});
   }
 
+  /// One kind of alert (train, traffic or newsfeed) set to all, disruptions only or off: the
+  /// server's told on a phone; the desktop only keeps the choice, and checks every minute itself.
   Future<void> _setMode(String kind, String mode) async {
     final previous = _modes;
     final next = {..._modes, kind: mode};
@@ -410,7 +416,7 @@ class _AlertsPageState extends State<AlertsPage> {
       perm = 'denied';
     }
     if (perm != 'granted') {
-      setState(() => _problem = tr('alerts.problem.appDenied', "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again."));
+      setState(() => _problem = _deniedText());
       return;
     }
     setState(() {
@@ -428,10 +434,19 @@ class _AlertsPageState extends State<AlertsPage> {
     }
   }
 
+  /// What to say when notifications are off for the app: where to turn them on, Android's settings
+  /// on a phone, the computer's own on the desktop.
+  String _deniedText() => Native.has('desktop')
+      ? tr('desktop.alerts.denied', "Notifications are off for SG Bus Timings. Turn them on in your computer's notification settings, then pick again.")
+      : tr('alerts.problem.appDenied', "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again.");
+
+  /// New versions of the app, on or off: the phone's updater, or on the desktop the app's own
+  /// (desktop/updater.dart, through the bridge's setReleases). Turning it on asks for notifications
+  /// first.
   Future<void> _setReleases(bool on) async {
     try {
       if (on && await Alerts.permission(ask: true) != 'granted') {
-        setState(() => _problem = tr('alerts.problem.appDenied', "Notifications are off for SG Bus Timings. Turn them on in Android's settings for the app, then pick again."));
+        setState(() => _problem = _deniedText());
         return;
       }
       final r = await Native.call('SgBus', 'setReleases', {'on': on});

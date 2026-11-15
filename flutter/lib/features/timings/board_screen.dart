@@ -1,7 +1,8 @@
 // The departures board (the site's js/board.js): a stop's buses full screen, as an interchange's
 // screens show them. Each bus, where it's going and its next three, how full in their colour; a
 // page at a time, turning every 8 seconds when there are more than fit, refreshed every 20, the
-// minutes counting down between. Full screen and kept on.
+// minutes counting down between. Full screen and kept on: in the desktop app, the window goes full
+// screen (its title bar hidden) while the board's open.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -36,10 +37,14 @@ class _BoardScreenState extends State<BoardScreen> {
   final List<Timer> _timers = [];
   int _perPage = 6;
 
+  /// Opens full screen (the phone's bars hidden, or the desktop window full screen), keeps the
+  /// screen on, and starts the board's timers: refresh, turn the page, count down.
   @override
   void initState() {
     super.initState();
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // The desktop window full screen too, its title bar hidden (host.dart, desktop/chrome.dart).
+    if (Native.has('desktop')) Native.call('SgBus', 'setFullScreen', {'on': true}).catchError((_) => null);
     if (Native.available) Native.call('SgBus', 'flag', {'on': true, 'torch': false}).catchError((_) => null);
     _timers
       ..add(Timer.periodic(const Duration(seconds: 20), (_) => _load()))
@@ -48,12 +53,14 @@ class _BoardScreenState extends State<BoardScreen> {
     _load();
   }
 
+  /// Closing: the timers stop, and the phone's bars or the desktop window come back as they were.
   @override
   void dispose() {
     for (final t in _timers) {
       t.cancel();
     }
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    if (Native.has('desktop')) Native.call('SgBus', 'setFullScreen', {'on': false}).catchError((_) => null);
     if (Native.available) Native.call('SgBus', 'flag', {'on': false}).catchError((_) => null);
     super.dispose();
   }

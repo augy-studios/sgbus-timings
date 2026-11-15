@@ -1,7 +1,8 @@
 // The flag-down screen (the site's js/flag.js): a bus's number as big as the screen allows, white
 // on black, to hold up at a dark stop so its captain sees which bus you want. The screen stays on
 // at full brightness, and the torch can be turned on, steady (SgBusPlugin.flag). Never a strobe:
-// flashing it at a driver would dazzle them.
+// flashing it at a driver would dazzle them. In the desktop app, the window goes full screen while
+// it's open, as the site's flag-down does.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -23,11 +24,15 @@ class _FlagScreenState extends State<FlagScreen> with WidgetsBindingObserver {
   bool _hasTorch = false;
   bool _torch = false;
 
+  /// Opens full screen (the phone's bars hidden, or the desktop window full screen), with the
+  /// screen bright and kept on.
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+    // The desktop window full screen too, its title bar hidden (host.dart, desktop/chrome.dart).
+    if (Native.has('desktop')) Native.call('SgBus', 'setFullScreen', {'on': true}).catchError((_) => null);
     _flag();
   }
 
@@ -47,10 +52,13 @@ class _FlagScreenState extends State<FlagScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) _flag();
   }
 
+  /// Closing: the torch and brightness let go, and the phone's bars or the desktop window come
+  /// back as they were.
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    if (Native.has('desktop')) Native.call('SgBus', 'setFullScreen', {'on': false}).catchError((_) => null);
     if (Native.has('flag')) Native.call('SgBus', 'flag', {'on': false}).catchError((_) => null);
     super.dispose();
   }

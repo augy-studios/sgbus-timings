@@ -2,7 +2,8 @@
 // 2.4.0: no longer an Easter egg's secret), then light, dark, by the clock or the phone's, the
 // UwU Apps theme's brand colour, High contrast, Your colours (still a secret an egg unlocks, as on
 // the site: one colour on the colour wheel, or a preset an egg brought, and the whole theme made
-// from it), and the Easter eggs found.
+// from it), and the Easter eggs found. In the desktop app, also Use system accent colour: the
+// computer's own accent for buttons and highlights (desktop/desk_theme.dart).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -12,7 +13,9 @@ import '../../data/eggs_data.dart';
 import '../../data/gta6.dart';
 import '../../data/rewards.dart';
 import '../../data/store.dart';
+import '../../desktop/desk_theme.dart';
 import '../../i18n/i18n.dart';
+import '../../native/native_bridge.dart';
 import '../../theme/colours.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -33,6 +36,8 @@ class _ThemeScreenState extends State<ThemeScreen> {
 
   AppLook get look => AppLook.I;
 
+  /// Theme: Material You, its colours, light or dark, the brand colour, High contrast, Your colours
+  /// and the eggs found; on the desktop, also Use system accent colour.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -55,6 +60,22 @@ class _ThemeScreenState extends State<ThemeScreen> {
             subtitle: Text(tr('theme.materialYouNote', 'Turn off for the UwU Apps theme.')),
           ),
         ),
+        // ---- the desktop's: the computer's own accent colour ----
+        if (Native.has('desktop')) ...[
+          const SizedBox(height: 10),
+          SgCard(
+            child: ValueListenableBuilder<bool>(
+              valueListenable: DeskTheme.systemAccent,
+              builder: (context, on, _) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: on,
+                onChanged: DeskTheme.setSystemAccent,
+                title: Text(tr('desktop.theme.accent', 'Use system accent colour'), style: Theme.of(context).textTheme.titleMedium),
+                subtitle: Text(tr('desktop.theme.accentNote', "Your computer's accent colour for buttons and highlights, with the app's own backgrounds and fonts.")),
+              ),
+            ),
+          ),
+        ],
         // ---- Material You's colours: the wallpaper's, unless GTA VI's or Your colours are picked ----
         if (look.materialYou)
           Choice(

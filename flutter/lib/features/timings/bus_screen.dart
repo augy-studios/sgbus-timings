@@ -12,6 +12,7 @@ import '../../data/favs.dart';
 import '../../data/geo.dart';
 import '../../data/network.dart';
 import '../../data/stops.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -112,6 +113,8 @@ class _BusScreenState extends State<BusScreen> {
     return '${_name(o)} → ${_name(e)}';
   }
 
+  /// The route: its summary and landmarks, its directions as tabs, and its stops in order, each a
+  /// row that opens its timings for this bus (on the desktop, right-click it for its menu).
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -136,10 +139,12 @@ class _BusScreenState extends State<BusScreen> {
     final favs = Favs.I.stops().map((f) => f.code).toSet();
     final saved = Favs.I.isBus(no);
 
+    // One stop on the route: its place in order, name and code, picked out if it's where the
+    // route was opened from.
     Widget row(String code, String seq) {
       final me = code == _from && !_onward;
       final border = BusNet.crossBorder(code);
-      return Material(
+      final tile = Material(
         color: me ? sg.brand.withValues(alpha: 0.55) : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
@@ -170,6 +175,7 @@ class _BusScreenState extends State<BusScreen> {
           ),
         ),
       );
+      return DeskContextMenu(target: DeskTarget.stop(code, buses: no), child: tile);
     }
 
     final rows = <Widget>[];

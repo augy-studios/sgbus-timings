@@ -14,6 +14,7 @@ import 'package:flutter/services.dart';
 import '../../app/links.dart';
 import '../../app/nav.dart';
 import '../../data/store.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -40,11 +41,12 @@ class OfflineShare extends StatefulWidget {
 
   static bool _open = false;
 
+  /// Opens Offline Sharing's sheet (a dialog on the desktop) to send, receive or write a sticker.
   static Future<void> open(String mode, {String? url, String? title}) {
     final context = AppNav.context;
     if (context == null) return Future.value();
     _open = true;
-    return showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => OfflineShare._(mode, url: url, title: title))
+    return AppSheet.show<void>(context: context, isScrollControlled: true, builder: (_) => OfflineShare._(mode, url: url, title: title))
         .whenComplete(() => _open = false);
   }
 

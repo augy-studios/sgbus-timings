@@ -15,6 +15,7 @@ import '../../data/network.dart';
 import '../../data/search.dart';
 import '../../data/stops.dart';
 import '../../data/store.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -205,6 +206,7 @@ class _TimingsPageState extends State<TimingsPage> {
                     icon: Icons.directions_bus_outlined,
                     code: tr('favs.bus', 'Bus {no}', {'no': no}),
                     name: BusNet.endsText(no),
+                    menu: DeskTarget.bus(no),
                     onTap: () {
                       _focus.unfocus();
                       Recents.add(Recents.bus(no));
@@ -230,6 +232,7 @@ class _TimingsPageState extends State<TimingsPage> {
                       if (h.distance != null) '${h.distance!.round()} m',
                       if (BusNet.crossBorder(h.stop.code) != null) BusNet.crossBorder(h.stop.code)!.label(),
                     ].join(' · '),
+                    menu: DeskTarget.stop(h.stop.code),
                     onTap: () => _openStop(h.stop.code),
                   ),
                 for (final c in campus?.stops ?? const <CampusStop>[])
@@ -307,18 +310,22 @@ class _TimingsPageState extends State<TimingsPage> {
   }
 }
 
+/// One of the search's suggestions: a stop, a bus, a postal code or a shuttle, by its code and
+/// name. A stop or a bus has the desktop's right-click menu ([menu]).
 class _Suggestion extends StatelessWidget {
-  const _Suggestion({required this.code, required this.name, this.road = '', this.icon, required this.onTap});
+  const _Suggestion({required this.code, required this.name, this.road = '', this.icon, required this.onTap, this.menu});
   final String code;
   final String name;
   final String road;
   final IconData? icon;
   final VoidCallback onTap;
+  final DeskTarget? menu;
 
+  /// The row: its code (with an icon) on the left, its name and road beside it.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
-    return InkWell(
+    final row = InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Padding(
@@ -340,16 +347,18 @@ class _Suggestion extends StatelessWidget {
         ]),
       ),
     );
+    return menu == null ? row : DeskContextMenu(target: menu!, child: row);
   }
 }
 
-/// A list of stops in a sheet, to pick one from.
+/// A list of stops in a sheet (a side panel on the desktop), to pick one from.
 Future<void> showStopList(BuildContext context, String title, List<StopRowItem> stops,
     {required void Function(String code) onPick, bool pin = true, Map<String, List<String>>? direct, String note = ''}) {
-  return showModalBottomSheet<void>(
+  return AppSheet.show<void>(
     context: context,
+    desktop: DeskSheet.panel,
     isScrollControlled: true,
-    builder: (ctx) => DraggableScrollableSheet(
+    builder: (ctx) => AppSheet.draggable(
       expand: false,
       initialChildSize: 0.7,
       builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.paddingOf(ctx).bottom), children: [

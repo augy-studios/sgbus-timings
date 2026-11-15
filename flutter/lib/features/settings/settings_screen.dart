@@ -12,6 +12,7 @@ import '../../app/pages.dart';
 import '../../data/favs.dart';
 import '../../data/network.dart';
 import '../../data/store.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -200,9 +201,11 @@ class _SettingsGroupState extends State<SettingsGroup> {
 
   List<(String, String)> get _onOffOptions => [('on', tr('settings.on', 'On')), ('off', tr('settings.off', 'Off'))];
 
+  /// Settings, You, Language: the four languages in a sheet (a dialog on the desktop), and a way to
+  /// say a translation reads wrong. The app changes language behind the magic cup.
   Future<void> _pickLanguage() async {
     // As tall as it needs, and scrolling past that: on a phone on its side, four languages don't fit.
-    final pick = await showModalBottomSheet<String>(
+    final pick = await AppSheet.show<String>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
@@ -305,6 +308,8 @@ class _SettingsGroupState extends State<SettingsGroup> {
     ];
   }
 
+  /// Settings, Pages and Edge Tray: Custom home, the tray's side and buttons, where favourites
+  /// pin, and bus times as minutes or the clock.
   List<Widget> _pages() {
     final labels = {
       'glance': tr('settings.glance', 'Glance'),
@@ -317,7 +322,8 @@ class _SettingsGroupState extends State<SettingsGroup> {
     };
     final extras = {
       'explorer': tr('settings.explorer', 'Explorer'),
-      'simplygo': tr('settings.simplygo', 'SimplyGo'),
+      // SimplyGo's app is a phone's: the desktop app's Edge Tray has no SimplyGo button to turn off.
+      if (!Native.has('desktop')) 'simplygo': tr('settings.simplygo', 'SimplyGo'),
       'telegram': tr('settings.telegram_bot', 'Telegram bot'),
       'coffee': tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
       'guide': tr('settings.guide', 'Guide'),

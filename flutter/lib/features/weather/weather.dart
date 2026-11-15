@@ -7,6 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../../api/api.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -112,6 +113,8 @@ class _WeatherButtonState extends State<WeatherButton> {
     if (mounted) setState(() {});
   }
 
+  /// The weather pill: now's weather in a line, which opens the forecast (a side panel on the
+  /// desktop).
   @override
   Widget build(BuildContext context) {
     final d = Weather.data;
@@ -128,7 +131,7 @@ class _WeatherButtonState extends State<WeatherButton> {
           wrap: true,
           onTap: () {
             Weather.loadIfStale();
-            showModalBottomSheet<void>(context: context, isScrollControlled: true, builder: (_) => const WeatherSheet());
+            AppSheet.show<void>(context: context, desktop: DeskSheet.panel, isScrollControlled: true, builder: (_) => const WeatherSheet());
           },
         ),
       ),
@@ -179,6 +182,8 @@ class _WeatherSheetState extends State<WeatherSheet> {
     return (tr('weather.pm.veryHigh', 'Very high'), sg.error);
   }
 
+  /// The forecast and air quality, as a list that drags up on a phone and fills the panel on the
+  /// desktop.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -323,7 +328,7 @@ class _WeatherSheetState extends State<WeatherSheet> {
         ),
       ));
     }
-    return DraggableScrollableSheet(
+    return AppSheet.draggable(
       expand: false,
       initialChildSize: 0.75,
       builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(20, 0, 20, 24 + MediaQuery.paddingOf(ctx).bottom), children: [

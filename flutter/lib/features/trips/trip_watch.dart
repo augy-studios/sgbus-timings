@@ -20,7 +20,8 @@
 //                       and as the app goes into the background, so it follows the bus from LTA's
 //                       live positions and pushes the alert itself; its answer says how far it's
 //                       got. A push that arrives here (tripPush) is taken as an alert given.
-//   MyICA               a trip to Tuas or Woodlands Checkpoint has its button, for ICA's app.
+//   MyICA               a trip to Tuas or Woodlands Checkpoint has its button, for ICA's app
+//                       (on a phone: the desktop app keeps the note, without the button).
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
@@ -766,6 +767,9 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     return (last.alight != null && BusNet.isCheckpoint(last.alight!)) || BusNet.nearCheckpoint(last.points.last);
   }
 
+  /// The notes the trip shows now: going by the clock, other direct buses, a switch to undo, where
+  /// to board, alerts about its buses, a lost last bus, a faster way, and for a checkpoint, MyICA
+  /// (its button only on a phone, as the site has it).
   List<TripNote> notes() {
     final t = Trip.I;
     if (!t.active) return const [];
@@ -837,8 +841,9 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     if (_toCheckpoint) {
       out.add(TripNote(
         tr('app.myicaNote', 'Have your MyICA QR code ready for immigration.'),
-        action: tr('trip.myica', 'MyICA'),
-        onAction: () => Native.call('SgBus', 'openApp', {'name': 'myica'}).catchError((_) => null),
+        // ICA's app is a phone's: the desktop app has no button to open it.
+        action: Native.has('desktop') ? null : tr('trip.myica', 'MyICA'),
+        onAction: Native.has('desktop') ? null : () => Native.call('SgBus', 'openApp', {'name': 'myica'}).catchError((_) => null),
       ));
     }
     return out;

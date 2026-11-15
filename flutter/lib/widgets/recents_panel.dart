@@ -10,6 +10,7 @@ import '../data/places.dart';
 import '../data/recents.dart';
 import '../data/stops.dart';
 import '../data/when.dart';
+import '../desktop/adaptive.dart';
 import '../features/calendar/calendar.dart';
 import '../features/nav/doors.dart' show lineColour;
 import '../features/share/share_card.dart';
@@ -35,6 +36,7 @@ class RecentsPanel extends StatefulWidget {
 class _RecentsPanelState extends State<RecentsPanel> {
   String _tab = 'recent';
 
+  /// The panel: its tabs (Recent, Saved, and Calendar where there is one) and the open tab's rows.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -78,21 +80,27 @@ class _RecentsPanelState extends State<RecentsPanel> {
       final buses = Favs.I.buses();
       if (stops.isEmpty && buses.isEmpty) rows.add(EmptyNote(tr('recents.noFavs', 'Star a stop or a bus to see it here.')));
       for (final f in stops) {
-        rows.add(ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.star_outline),
-          title: Text(f.name.isNotEmpty ? f.name : (Stops.nameOf(f.code).isNotEmpty ? Stops.nameOf(f.code) : f.code)),
-          subtitle: Text(tr('favs.stop', 'Bus stop {code}', {'code': f.code})),
-          onTap: () => widget.onFavStop?.call(f.code),
+        rows.add(DeskContextMenu(
+          target: DeskTarget.stop(f.code),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.star_outline),
+            title: Text(f.name.isNotEmpty ? f.name : (Stops.nameOf(f.code).isNotEmpty ? Stops.nameOf(f.code) : f.code)),
+            subtitle: Text(tr('favs.stop', 'Bus stop {code}', {'code': f.code})),
+            onTap: () => widget.onFavStop?.call(f.code),
+          ),
         ));
       }
       for (final no in buses) {
-        rows.add(ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.directions_bus_outlined),
-          title: Text(tr('favs.bus', 'Bus {no}', {'no': no})),
-          subtitle: Text(BusNet.endsText(no)),
-          onTap: () => widget.onFavBus?.call(no),
+        rows.add(DeskContextMenu(
+          target: DeskTarget.bus(no),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.directions_bus_outlined),
+            title: Text(tr('favs.bus', 'Bus {no}', {'no': no})),
+            subtitle: Text(BusNet.endsText(no)),
+            onTap: () => widget.onFavBus?.call(no),
+          ),
         ));
       }
     } else {
@@ -150,6 +158,8 @@ class _RecentsPanelState extends State<RecentsPanel> {
         child: Text(text, style: TextStyle(color: context.sg.muted, fontSize: 12, fontWeight: FontWeight.w700)),
       );
 
+  /// One recent search: tapped, it's searched again; its menu saves it as a place, shares it or
+  /// removes it.
   Widget _row(Recent r) {
     final sg = context.sg;
     final icon = r.kind == 'station' ? Icons.train_outlined : (r.kind == 'stop' || r.kind == 'bus') ? Icons.directions_bus_outlined : Icons.history;
@@ -167,7 +177,7 @@ class _RecentsPanelState extends State<RecentsPanel> {
     } else if (r.sub.isNotEmpty) {
       sub = Text(r.sub, maxLines: 1, overflow: TextOverflow.ellipsis);
     }
-    return ListTile(
+    final row = ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon),
       title: Text(r.label),
@@ -197,5 +207,11 @@ class _RecentsPanelState extends State<RecentsPanel> {
         ],
       ),
     );
+    // A recent stop or bus also has the desktop's right-click menu.
+    final code = r.code;
+    if (code == null || code.isEmpty) return row;
+    if (r.kind == 'stop') return DeskContextMenu(target: DeskTarget.stop(code), child: row);
+    if (r.kind == 'bus') return DeskContextMenu(target: DeskTarget.bus(code), child: row);
+    return row;
   }
 }

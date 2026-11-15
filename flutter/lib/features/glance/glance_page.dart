@@ -17,6 +17,7 @@ import '../../data/places.dart';
 import '../../data/stops.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -243,9 +244,11 @@ class _GlancePageState extends State<GlancePage> {
 
   void _open(String code, [String? no]) => StopScreen.open(code, service: no);
 
+  /// Glance's source, picked in a sheet (a dialog on the desktop): your saved stops, one of your
+  /// lists, nearby, or a place. Glance fetches again from the new one.
   Future<void> _pickSource() async {
     final now = _chosen()?.key;
-    final pick = await showModalBottomSheet<String>(
+    final pick = await AppSheet.show<String>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
@@ -328,6 +331,8 @@ class _GlancePageState extends State<GlancePage> {
     );
   }
 
+  /// Glance: the next bus, then a card a stop with its next buses, each stop and bus a row that
+  /// opens its timings (and, on the desktop, has a right-click menu).
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -346,47 +351,53 @@ class _GlancePageState extends State<GlancePage> {
           child: SgCard(
             padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              InkWell(
-                onTap: () => _open(s.code),
-                child: Row(children: [
-                  Expanded(child: Text(Stops.nameOf(s.code).isEmpty ? s.code : Stops.nameOf(s.code), style: Theme.of(context).textTheme.titleMedium)),
-                  if (s.metres != null) Text(tr('glance.minWalk', '{m} min walk', {'m': GlancePage.walkMins(s.metres!)}), style: TextStyle(color: sg.muted, fontSize: 13)),
-                ]),
+              DeskContextMenu(
+                target: DeskTarget.stop(s.code),
+                child: InkWell(
+                  onTap: () => _open(s.code),
+                  child: Row(children: [
+                    Expanded(child: Text(Stops.nameOf(s.code).isEmpty ? s.code : Stops.nameOf(s.code), style: Theme.of(context).textTheme.titleMedium)),
+                    if (s.metres != null) Text(tr('glance.minWalk', '{m} min walk', {'m': GlancePage.walkMins(s.metres!)}), style: TextStyle(color: sg.muted, fontSize: 13)),
+                  ]),
+                ),
               ),
               const SizedBox(height: 4),
               if (rows.isEmpty) Text(tr('glance.noneDueHere', 'No buses due right now.'), style: TextStyle(color: sg.muted)),
               for (final r in rows.take(GlancePage.rowsMax))
-                InkWell(
-                  onTap: () => _open(s.code, r.no),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: Row(children: [
-                      SizedBox(width: 56, child: Text(r.no, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
-                      Expanded(
-                        child: Text(r.to.isEmpty ? '' : tr('glance.to', 'to {to}', {'to': r.to}),
-                            maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.muted)),
-                      ),
-                      for (var i = 0; i < 3; i++)
-                        SizedBox(
-                          width: Eta.clockTimes ? 52 : 36,
-                          // Smaller rather than broken in two, where a language's "Arr" is long.
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              i < r.times.length ? _timeCell(r.times[i]) : '',
-                              textAlign: TextAlign.end,
-                              maxLines: 1,
-                              softWrap: false,
-                              style: TextStyle(
-                                fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w500,
-                                fontSize: i == 0 ? 17 : 15,
-                                color: i < r.times.length && r.times[i] < 60000 ? sg.ok : (i == 0 ? sg.ink : sg.muted),
+                DeskContextMenu(
+                  target: DeskTarget.stop(s.code, buses: r.no),
+                  child: InkWell(
+                    onTap: () => _open(s.code, r.no),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      child: Row(children: [
+                        SizedBox(width: 56, child: Text(r.no, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800))),
+                        Expanded(
+                          child: Text(r.to.isEmpty ? '' : tr('glance.to', 'to {to}', {'to': r.to}),
+                              maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.muted)),
+                        ),
+                        for (var i = 0; i < 3; i++)
+                          SizedBox(
+                            width: Eta.clockTimes ? 52 : 36,
+                            // Smaller rather than broken in two, where a language's "Arr" is long.
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                i < r.times.length ? _timeCell(r.times[i]) : '',
+                                textAlign: TextAlign.end,
+                                maxLines: 1,
+                                softWrap: false,
+                                style: TextStyle(
+                                  fontWeight: i == 0 ? FontWeight.w800 : FontWeight.w500,
+                                  fontSize: i == 0 ? 17 : 15,
+                                  color: i < r.times.length && r.times[i] < 60000 ? sg.ok : (i == 0 ? sg.ink : sg.muted),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                    ]),
+                      ]),
+                    ),
                   ),
                 ),
               if (rows.length > GlancePage.rowsMax)

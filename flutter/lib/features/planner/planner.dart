@@ -20,6 +20,7 @@ import '../../data/search.dart';
 import '../../data/stops.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -152,14 +153,17 @@ class _PlannerTabState extends State<PlannerTab> {
   static List<String> _directFirst(List<String> codes, Map<String, List<String>>? direct) =>
       direct == null ? codes : [...codes.where(direct.containsKey), ...codes.where((c) => !direct.containsKey(c))];
 
+  /// Bus only's start or end stop, picked in a sheet (a side panel on the desktop): search by name
+  /// or code, stops near you or a saved place, or a favourite, those with a direct bus first.
   Future<void> _pickStop(String field) async {
     final q = TextEditingController();
     // Stops near you or a place, to pick from: the pin, or a saved place that isn't a stop.
     String? nearTitle;
     List<({Stop stop, double metres})> near = const [];
     String nearNote = '';
-    final code = await showModalBottomSheet<String>(
+    final code = await AppSheet.show<String>(
       context: context,
+      desktop: DeskSheet.panel,
       isScrollControlled: true,
       builder: (ctx) => StatefulBuilder(builder: (ctx, set) {
         final v = q.text.trim();
@@ -185,7 +189,7 @@ class _PlannerTabState extends State<PlannerTab> {
 
         return Padding(
           padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-          child: DraggableScrollableSheet(
+          child: AppSheet.draggable(
             expand: false,
             initialChildSize: 0.8,
             builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 0, 16, 16 + MediaQuery.paddingOf(ctx).bottom), children: [

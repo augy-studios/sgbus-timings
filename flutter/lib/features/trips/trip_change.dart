@@ -21,6 +21,7 @@ import '../../data/geo.dart';
 import '../../data/network.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../nav/nav_page.dart';
@@ -72,7 +73,8 @@ class TripChange {
     return to != null && to['lat'] is num ? NavEnd('${to['label'] ?? ''}', (to['lat'] as num).toDouble(), (to['lng'] as num).toDouble()) : null;
   }
 
-  /// Change here: the ways on from leg `j`'s `k`th stop to where the trip ends, to pick one.
+  /// Change here: the ways on from leg `j`'s `k`th stop to where the trip ends, to pick one, in a
+  /// sheet (a dialog on the desktop).
   static Future<void> changeAt(BuildContext context, int j, int k) async {
     final t = Trip.I;
     final leg = t.legs[j];
@@ -112,7 +114,7 @@ class TripChange {
         ways.value = [];
       }
     }();
-    await showModalBottomSheet<void>(
+    await AppSheet.show<void>(
       context: context,
       isScrollControlled: true,
       builder: (context) => SafeArea(

@@ -27,6 +27,7 @@ import '../../data/places.dart';
 import '../../data/stops.dart';
 import '../../data/store.dart';
 import '../../data/when.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -1008,7 +1009,8 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
     return exit is Map && exit['name'] != null ? tr('nav.stationExit', '{station}, Exit {exit}', {'station': name, 'exit': exit['name']}) : name;
   }
 
-  // Share: your ETA on a trip, these directions, or either end, as the site's menu has them.
+  /// Share: your ETA on a trip, these directions, or either end, as the site's menu has them, in a
+  /// sheet (a dialog on the desktop). With only one of them, it's shared straight away.
   void _shareMenu() {
     final from = nav.from, to = nav.to;
     void directions() {
@@ -1043,7 +1045,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
       if (to != null && !to.here) (Icons.flag_outlined, tr('share.end', 'Share end'), to.label, () => ShareCard.place(context, label: to.label, lat: to.lat, lng: to.lng)),
     ];
     if (items.length == 1) return items.first.$4();
-    showModalBottomSheet<void>(
+    AppSheet.show<void>(
       context: context,
       isScrollControlled: true,
       builder: (c) => SafeArea(

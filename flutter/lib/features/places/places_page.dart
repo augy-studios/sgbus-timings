@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../app/nav.dart';
 import '../../data/places.dart';
 import '../../data/store.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -115,10 +116,11 @@ class _PlacesPageState extends State<PlacesPage> {
   }
 }
 
-/// Places' form, for a place or a new one, from Places or from Home or Work tapped elsewhere.
+/// Places' form, for a place or a new one, from Places or from Home or Work tapped elsewhere: in a
+/// sheet, or a dialog on the desktop.
 Future<void> editPlace(BuildContext context, [Place? p]) async {
     final fixed = p != null && (p.key == 'home' || p.key == 'work');
-    final result = await showModalBottomSheet<({PlacePick place, String name})>(
+    final result = await AppSheet.show<({PlacePick place, String name})>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _PlaceForm(place: p, fixed: fixed),

@@ -12,6 +12,7 @@ import '../../data/arrivals.dart';
 import '../../data/favs.dart';
 import '../../data/network.dart';
 import '../../data/stops.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
@@ -133,6 +134,7 @@ class _FavsPageState extends State<FavsPage> {
           l.id == list.id ? FavList(l.id, l.name, on ? [...l.items.where((k) => k != key), key] : l.items.where((k) => k != key).toList()) : l
       ]);
 
+  /// Favourites: the lists' tabs, then each kind of favourite as chips, or the list's picker.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -151,16 +153,21 @@ class _FavsPageState extends State<FavsPage> {
     final shown = favs.length + buses.length + groups.length + routes.length + navs.length;
     String stopName(String code) => Stops.nameOf(code).isNotEmpty ? Stops.nameOf(code) : tr('favs.stopNoName', 'Bus stop');
 
-    Widget chip({String? code, required String name, String buses = '', required VoidCallback onOpen, required VoidCallback onRemove}) => InputChip(
-          label: Text.rich(TextSpan(children: [
-            if (code != null) TextSpan(text: '$code ', style: TextStyle(fontWeight: FontWeight.w700, color: sg.brandInk)),
-            TextSpan(text: name),
-            if (buses.isNotEmpty) TextSpan(text: ' · $buses', style: const TextStyle(fontWeight: FontWeight.w700)),
-          ])),
-          onPressed: onOpen,
-          onDeleted: onRemove,
-          deleteButtonTooltipMessage: removeLabel,
-        );
+    // A favourite as a chip that opens it, with its x; a stop or bus also has the desktop's
+    // right-click menu.
+    Widget chip({String? code, required String name, String buses = '', required VoidCallback onOpen, required VoidCallback onRemove, DeskTarget? menu}) {
+      final c = InputChip(
+        label: Text.rich(TextSpan(children: [
+          if (code != null) TextSpan(text: '$code ', style: TextStyle(fontWeight: FontWeight.w700, color: sg.brandInk)),
+          TextSpan(text: name),
+          if (buses.isNotEmpty) TextSpan(text: ' · $buses', style: const TextStyle(fontWeight: FontWeight.w700)),
+        ])),
+        onPressed: onOpen,
+        onDeleted: onRemove,
+        deleteButtonTooltipMessage: removeLabel,
+      );
+      return menu == null ? c : DeskContextMenu(target: menu, child: c);
+    }
 
     Widget group(String label, List<Widget> chips, {String? tour}) {
       if (chips.isEmpty) return const SizedBox.shrink();
@@ -235,6 +242,7 @@ class _FavsPageState extends State<FavsPage> {
                   code: f.code,
                   name: f.name.isNotEmpty ? f.name : stopName(f.code),
                   onOpen: () => StopScreen.open(f.code),
+                  menu: DeskTarget.stop(f.code),
                   onRemove: () => list != null ? _listOut(list, ['stop:${f.code}']) : Favs.I.removeStop(f.code),
                 ),
             ]),
@@ -244,6 +252,7 @@ class _FavsPageState extends State<FavsPage> {
                   code: no,
                   name: BusNet.endsText(no),
                   onOpen: () => BusScreen.open(no),
+                  menu: DeskTarget.bus(no),
                   onRemove: () => list != null ? _listOut(list, ['bus:$no']) : Favs.I.toggleBus(no),
                 ),
             ]),
@@ -254,6 +263,7 @@ class _FavsPageState extends State<FavsPage> {
                   name: stopName(e.key),
                   buses: e.value.join(', '),
                   onOpen: () => StopScreen.open(e.key, service: e.value.join(',')),
+                  menu: DeskTarget.stop(e.key, buses: e.value.join(',')),
                   onRemove: () => list != null
                       ? _listOut(list, [for (final no in e.value) 'stopbus:${e.key}/$no'])
                       : [for (final no in e.value) Favs.I.toggleStopBus(e.key, no)],

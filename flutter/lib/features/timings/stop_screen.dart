@@ -9,6 +9,10 @@
 // Only ... narrows it back; Route from here opens the bus's onward stops. Each bus has its
 // Route, a star for that bus at this stop (Favourites), Flag (full screen, to flag it down)
 // and its own refresh.
+//
+// In the desktop app, the tools also have Tray countdown (this stop's next buses in the tray) and
+// Desktop widget (a widget for it on the desktop), and right-clicking a bus opens its menu
+// (desktop/adaptive.dart).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -21,6 +25,7 @@ import '../../data/favs.dart';
 import '../../data/geo.dart';
 import '../../data/network.dart';
 import '../../data/stops.dart';
+import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
@@ -76,6 +81,8 @@ class _StopScreenState extends State<StopScreen> {
   bool _directionsOpen = false; // Directions, opened into the live map and Citymapper
   final Set<String> _refreshing = {};
   int _seq = 0;
+  bool _inTray = false; // the desktop's Tray countdown just pressed: it reads "In the tray"
+  Timer? _inTrayTimer;
 
   String get code => widget.code;
 
@@ -97,11 +104,13 @@ class _StopScreenState extends State<StopScreen> {
     if (mounted && (ModalRoute.of(context)?.isCurrent ?? false)) _load();
   }
 
+  /// Lets go of what it listens to, Shake to refresh, and the Tray countdown button's timer.
   @override
   void dispose() {
     Favs.I.removeListener(_redraw);
     MakeItLine.changed?.removeListener(_redraw);
     if (Shake.onShake == _shaken) Shake.onShake = _shakeBefore;
+    _inTrayTimer?.cancel();
     super.dispose();
   }
 
@@ -160,10 +169,25 @@ class _StopScreenState extends State<StopScreen> {
     ];
   }
 
+  /// The desktop's Tray countdown: this stop's next buses, or the one bus it's narrowed to, in
+  /// the tray (desktop/glance.dart, through the bridge). Once it's set, its button reads "In the
+  /// tray" for 2.5 seconds, as the site's does in the desktop app.
+  Future<void> _trayCountdown(bool narrowed) async {
+    final set = await DeskActions.trayCountdown(DeskTarget.stop(code, buses: narrowed ? _service : null));
+    if (!set || !mounted) return;
+    _inTrayTimer?.cancel();
+    setState(() => _inTray = true);
+    _inTrayTimer = Timer(const Duration(milliseconds: 2500), () {
+      if (mounted) setState(() => _inTray = false);
+    });
+  }
+
+  /// Pick a bus: every bus at the stop as a button, in a sheet (a dialog on the desktop). The
+  /// timings narrow to the one picked.
   Future<void> _pickBus() async {
     final live = _data?.services.map((s) => s.serviceNo).toSet() ?? <String>{};
     final all = {...live, ...BusNet.servicesAtStop(code)}.toList()..sort(byNumber);
-    final pick = await showModalBottomSheet<String>(
+    final pick = await AppSheet.show<String>(
       context: context,
       isScrollControlled: true,
       builder: (ctx) => SafeArea(
@@ -189,6 +213,8 @@ class _StopScreenState extends State<StopScreen> {
     }
   }
 
+  /// The stop's timings: the stop and its Save, its tools (on the desktop also Tray countdown and
+  /// Desktop widget), notes about it, the Incoming buses bar, then a card a bus.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -271,6 +297,23 @@ class _StopScreenState extends State<StopScreen> {
                 ),
               ],
               Pill(icon: Icons.schedule, label: tr('stop.tool.board', 'Board'), onTap: () => AppNav.open('board', {'code': code})),
+              // The desktop's: this stop's next buses in the tray, or in a widget on the desktop.
+              if (DeskActions.canTray)
+                Pill(
+                  icon: Icons.notifications_outlined,
+                  label: _inTray ? tr('stop.tool.inTray', 'In the tray') : tr('stop.tool.tray', 'Tray countdown'),
+                  tooltip: narrowed && BusFilter.one(_service) != null
+                      ? tr('stop.tool.trayBus.title', "Show bus {no}'s next buses in the tray, and stop it from the tray's menu", {'no': _service})
+                      : tr('stop.tool.tray.title', "Show this stop's next buses in the tray, and stop it from the tray's menu"),
+                  onTap: () => _trayCountdown(narrowed),
+                ),
+              if (DeskActions.canWidget)
+                Pill(
+                  icon: Icons.widgets_outlined,
+                  label: tr('desktop.stop.widget', 'Desktop widget'),
+                  tooltip: tr('desktop.stop.widget.title', "Show this stop's next buses in a widget on your desktop"),
+                  onTap: () => DeskActions.pinWidget(DeskTarget.stop(code, buses: narrowed ? _service : null)),
+                ),
               if (Native.has('sticker'))
                 Pill(icon: Icons.nfc, label: tr('offline.sticker', 'NFC sticker'), onTap: () => AppNav.open('sticker', {'url': Links.stop(code), 'label': name})),
             ]),
@@ -430,6 +473,8 @@ class ServiceCard extends StatelessWidget {
   final bool refreshing;
   final VoidCallback onRefresh;
 
+  /// The bus's card: its number and way, its Route, star, Flag and refresh, its next three, and
+  /// today's first and last bus. On the desktop, right-click it for its menu.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -482,7 +527,7 @@ class ServiceCard extends StatelessWidget {
       );
     }
 
-    return SgCard(
+    final card = SgCard(
       border: tone,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -537,6 +582,7 @@ class ServiceCard extends StatelessWidget {
         ],
       ]),
     );
+    return DeskContextMenu(target: DeskTarget.stop(code, buses: no), child: card);
   }
 }
 

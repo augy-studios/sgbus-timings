@@ -14,6 +14,7 @@ import '../data/when.dart';
 import '../data/stations.dart';
 import '../data/search.dart';
 import '../data/stops.dart';
+import '../desktop/adaptive.dart';
 import '../i18n/i18n.dart';
 import '../theme/theme.dart';
 import 'common.dart';
@@ -41,9 +42,9 @@ class PlacePick {
       );
 }
 
-/// Searches for a place in a sheet, and gives back the one picked.
+/// Searches for a place in a sheet (a side panel on the desktop), and gives back the one picked.
 Future<PlacePick?> pickPlace(BuildContext context, {String? title, bool here = true, bool saved = true, bool calendar = false, String? query}) =>
-    showModalBottomSheet<PlacePick>(context: context, isScrollControlled: true, builder: (_) => _PlaceSheet(title: title, here: here, saved: saved, calendar: calendar, query: query));
+    AppSheet.show<PlacePick>(context: context, desktop: DeskSheet.panel, isScrollControlled: true, builder: (_) => _PlaceSheet(title: title, here: here, saved: saved, calendar: calendar, query: query));
 
 class _PlaceSheet extends StatefulWidget {
   const _PlaceSheet({this.title, required this.here, required this.saved, this.calendar = false, this.query});
@@ -177,12 +178,14 @@ class _PlaceSheetState extends State<_PlaceSheet> {
     }
   }
 
+  /// The search box, Use my location, and what's found or saved, as a list that drags up on a
+  /// phone and fills the side panel on the desktop.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: DraggableScrollableSheet(
+      child: AppSheet.draggable(
         expand: false,
         initialChildSize: 0.8,
         builder: (ctx, scroll) => ListView(controller: scroll, padding: EdgeInsets.fromLTRB(16, 0, 16, 24 + MediaQuery.paddingOf(ctx).bottom), children: [
