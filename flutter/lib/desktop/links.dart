@@ -1,4 +1,6 @@
-// uwu:// links on the desktop, shared by every UwU App (the Electron apps' links.js, as is).
+// uwu:// links on the desktop (desktop-features-spec §10), shared by every UwU App: the Electron
+// apps' links.js, ported as is. Which page a uwu://sgbus/ link opens is Desktop.fromAppLink's
+// job (desktop.dart); this file is about who gets the link at all.
 //
 // On Android each app claims uwu:// for its own host, and the phone sends each link to the right
 // app. Windows, macOS and Linux can't do that: a URL scheme belongs to exactly one app. So each UwU
@@ -12,22 +14,26 @@
 // so every link opens the app it's for, as on a phone. Only uwu:// links ever come through here,
 // and they're handed over as one argument, never through a shell. The note is settings.json's
 // linkHandoff, which the Electron app kept the same way.
+// test/desktop/links_test.dart checks the parts that don't need another app installed.
 import 'dart:convert';
 import 'dart:io';
 
 import 'desktop.dart';
 import 'settings.dart';
 
+/// Claims uwu:// for this app at start, and hands other UwU apps' links on to them.
 class DeskLinks {
   DeskLinks._();
 
+  /// The settings.json key for the app that held uwu:// before this one.
   static const _key = 'linkHandoff';
 
-  // What every copy of this app's handler has in it: the install folder and .app are "SG Bus
-  // Timings", the .deb's menu entry is sgbus-timings.desktop, a build from source sgbus_timings.exe.
-  // Either alone would miss the other, take this app for another, and hand its links back to itself.
+  /// What every copy of this app's handler has in it: the install folder and .app are "SG Bus
+  /// Timings", the .deb's menu entry is sgbus-timings.desktop, a build from source sgbus_timings.exe.
+  /// Either alone would miss the other, take this app for another, and hand its links back to itself.
   static const ownName = 'timings';
 
+  /// Runs a command and gives its output, or '' if it fails or takes more than 5 seconds.
   static Future<String> _run(String file, List<String> args) async {
     try {
       final r = await Process.run(file, args).timeout(const Duration(seconds: 5));
@@ -37,7 +43,8 @@ class DeskLinks {
     }
   }
 
-  /// Which app holds uwu:// now: {command} on Windows, {app} on macOS, {desktop} on Linux.
+  /// Which app holds uwu:// now: {command} on Windows (its registry command line), {app} on macOS
+  /// (the .app's path), {desktop} on Linux (its .desktop file's name). Null if none does.
   static Future<Map<String, String>?> currentHandler() async {
     if (Platform.isWindows) {
       for (final root in [r'HKCU\Software\Classes', r'HKLM\Software\Classes']) {
@@ -48,6 +55,7 @@ class DeskLinks {
       return null;
     }
     if (Platform.isMacOS) {
+      // AppKit's answer, asked through osascript's JavaScript, as Dart can't call AppKit itself.
       final out = (await _run('/usr/bin/osascript', [
         '-l',
         'JavaScript',
@@ -60,7 +68,8 @@ class DeskLinks {
     return desktop.isEmpty ? null : {'desktop': desktop};
   }
 
-  /// Whether a handler is this app: any copy of it, installed or from source.
+  /// Whether a handler is this app: any copy of it, installed or from source. (The handler is
+  /// compared as JSON text, so a Windows path's backslashes are doubled to match.)
   static bool isThisApp(Map handler) {
     final text = jsonEncode(handler).toLowerCase();
     return text.contains(ownName) || text.contains(Platform.resolvedExecutable.toLowerCase().replaceAll(r'\', r'\\'));
@@ -73,12 +82,14 @@ class DeskLinks {
     if (before != null && !isThisApp(before)) DeskSettings.write({_key: before});
     final exe = Platform.resolvedExecutable;
     if (Platform.isWindows) {
-      const root = r'HKCU\Software\Classes\uwu';
+      // For this person only (HKCU), as Electron's setAsDefaultProtocolClient wrote it.
+      final root = 'HKCU\\Software\\Classes\\${Desktop.scheme}';
       await _run('reg', ['add', root, '/ve', '/d', 'URL:${Desktop.name} link', '/f']);
       await _run('reg', ['add', root, '/v', 'URL Protocol', '/d', '', '/f']);
       await _run('reg', ['add', '$root\\DefaultIcon', '/ve', '/d', '"$exe",0', '/f']);
       await _run('reg', ['add', '$root\\shell\\open\\command', '/ve', '/d', '"$exe" "%1"', '/f']);
     } else if (Platform.isMacOS) {
+      // By the app's bundle id; the bundle's own URL types (Info.plist) declare the scheme.
       await _run('/usr/bin/osascript', [
         '-l',
         'JavaScript',
@@ -101,6 +112,7 @@ class DeskLinks {
     ];
   }
 
+  /// Starts another program on its own, not waiting for it.
   static Future<void> _start(String file, List<String> args) async {
     try {
       await Process.start(file, args, mode: ProcessStartMode.detached);
@@ -109,7 +121,8 @@ class DeskLinks {
     }
   }
 
-  /// The Exec line of a .desktop file, from the usual places.
+  /// The Exec line of a .desktop file, from the usual places (the person's own applications
+  /// folder first, then the system's). Null for a name that isn't a plain .desktop file name.
   static String? desktopExec(String name) {
     if (!RegExp(r'^[\w.-]+\.desktop$').hasMatch(name)) return null;
     final env = Platform.environment;
@@ -118,14 +131,55 @@ class DeskLinks {
     for (final dir in [dataHome, ...dirs]) {
       try {
         final text = File('$dir/applications/$name').readAsStringSync();
-        final entry = text.split(RegExp(r'^\[', multiLine: true)).where((s) => s.startsWith('Desktop Entry]')).firstOrNull;
-        final exec = RegExp(r'^Exec=(.+)$', multiLine: true).firstMatch(entry ?? '');
-        if (exec != null) return exec[1]!.trim();
+        final exec = execOf(text);
+        if (exec != null) return exec;
       } catch (_) {
         // Not in this one.
       }
     }
     return null;
+  }
+
+  /// The Exec line in a .desktop file's text: from its [Desktop Entry] section, not an action's.
+  static String? execOf(String desktopFile) {
+    final entry = desktopFile.split(RegExp(r'^\[', multiLine: true)).where((s) => s.startsWith('Desktop Entry]')).firstOrNull;
+    return RegExp(r'^Exec=(.+)$', multiLine: true).firstMatch(entry ?? '')?[1]!.trim();
+  }
+
+  /// A Windows handler's command line ("C:\...\App.exe" "%1", as Electron and most installers
+  /// write it) with [link] in place of %1, split into the program and its arguments. The link
+  /// goes on the end if the command line has no %1.
+  static List<String> windowsCommand(String command, String link) {
+    var used = false;
+    final parts = <String>[];
+    for (final part in split(command)) {
+      if (RegExp(r'%[1lL]').hasMatch(part)) {
+        used = true;
+        parts.add(part.replaceAll(RegExp(r'%[1lL]'), link));
+      } else {
+        parts.add(part);
+      }
+    }
+    if (!used) parts.add(link);
+    return parts;
+  }
+
+  /// A .desktop file's Exec line with [link] in place of %u (or %U, %f, %F), the other field
+  /// codes dropped and %% made %, split into the program and its arguments. The link goes on the
+  /// end if there's no field code for it.
+  static List<String> linuxCommand(String exec, String link) {
+    var used = false;
+    final parts = <String>[];
+    for (final part in split(exec, escapes: true)) {
+      if (RegExp(r'^%[uUfF]$').hasMatch(part)) {
+        parts.add(link);
+        used = true;
+      } else if (!RegExp(r'^%[a-zA-Z]$').hasMatch(part)) {
+        parts.add(part.replaceAll('%%', '%'));
+      }
+    }
+    if (!used) parts.add(link);
+    return parts;
   }
 
   /// Hands a link for another app's host to the app that held uwu:// before this one. False if
@@ -134,19 +188,7 @@ class DeskLinks {
     final to = DeskSettings.get<Map<String, dynamic>>(_key);
     if (to == null || isThisApp(to)) return false;
     if (Platform.isWindows && to['command'] is String) {
-      // "C:\...\App.exe" "%1", as Electron and most installers write it.
-      var used = false;
-      final parts = <String>[];
-      for (final part in split(to['command'] as String)) {
-        if (RegExp(r'%[1lL]').hasMatch(part)) {
-          used = true;
-          parts.add(part.replaceAll(RegExp(r'%[1lL]'), link));
-        } else {
-          parts.add(part);
-        }
-      }
-      if (!used) parts.add(link);
-      if (parts.isEmpty) return false;
+      final parts = windowsCommand(to['command'] as String, link);
       _start(parts.first, parts.sublist(1));
       return true;
     }
@@ -157,18 +199,7 @@ class DeskLinks {
     if (Platform.isLinux && to['desktop'] is String) {
       final exec = desktopExec(to['desktop'] as String);
       if (exec == null) return false;
-      var used = false;
-      final parts = <String>[];
-      for (final part in split(exec, escapes: true)) {
-        if (RegExp(r'^%[uUfF]$').hasMatch(part)) {
-          parts.add(link);
-          used = true;
-        } else if (!RegExp(r'^%[a-zA-Z]$').hasMatch(part)) {
-          parts.add(part.replaceAll('%%', '%'));
-        }
-      }
-      if (!used) parts.add(link);
-      if (parts.isEmpty) return false;
+      final parts = linuxCommand(exec, link);
       _start(parts.first, parts.sublist(1));
       return true;
     }

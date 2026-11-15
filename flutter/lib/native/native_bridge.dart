@@ -6,6 +6,10 @@
 //   Native.call('SgBus', 'info')                 the plugin's answer, as a map (or null)
 //   Native.on('Trip', 'location', (data) {...})  its events, until .cancel()
 //   Native.has('card')                           whether this build and phone can (info's features)
+//
+// On Windows, macOS and Linux there's no Java behind the channel: main.dart sets
+// [Native.host] to desktop/host.dart's DesktopHost before [Native.start], and every call and event
+// goes to it in Dart instead (flutter-desktop-app-spec §3), so the screens need no desktop branches.
 import 'dart:async';
 import 'dart:convert';
 
@@ -25,6 +29,7 @@ class NativeError implements Exception {
 
 /// Native parts answered in Dart instead of over the channel: the desktop apps' (desktop/host.dart),
 /// which answer the same plugin calls a phone's Java does, so the screens need no desktop branches.
+/// Set as [Native.host].
 abstract class NativeHost {
   /// What this host can do, as info's features.
   List<String> get features;
@@ -36,12 +41,13 @@ abstract class NativeHost {
   Future<Map<String, dynamic>?> call(String plugin, String method, Map<String, dynamic>? options);
 }
 
-/// One listener on a plugin's event.
+/// One listener on a plugin's event, from [Native.on].
 class NativeListener {
   NativeListener._(this._key, this._fn);
   final String _key;
   final void Function(Map<String, dynamic>) _fn;
 
+  /// Stops listening.
   void cancel() => Native._remove(this);
 }
 
@@ -51,6 +57,7 @@ class NativeListener {
 const playBuild = bool.fromEnvironment('SGBUS_PLAY');
 const _notOnPlay = {'update', 'checkupdate', 'releases', 'nearstops', 'onabus'};
 
+/// The bridge to the app's native parts: Java on a phone, [host] on a computer.
 class Native {
   Native._();
 
@@ -62,9 +69,12 @@ class Native {
   /// Whether the native side is there at all: false in tests and screenshots.
   static bool available = true;
 
-  /// The desktop's host, set before [start]. Null on a phone.
+  /// The desktop's host, set before [start]. Null on a phone. While it's set, [call] goes to it,
+  /// [on] listens for its [emit]s, and nothing goes over the channel.
   static NativeHost? host;
 
+  /// Connects to the native side, once, and asks what it can do (SgBus.info). On a computer, the
+  /// host's answers are taken straight away. On a phone, events start coming in from here.
   static Future<void> start() async {
     if (_started) return;
     _started = true;
@@ -98,7 +108,10 @@ class Native {
   }
 
   /// What this build and phone can do, as SgBusPlugin.info lists it.
+  /// A Play build never has the features Play keeps for other kinds of app (_notOnPlay).
   static bool has(String feature) => !(playBuild && _notOnPlay.contains(feature)) && ((_info?['features'] as List?) ?? const []).contains(feature);
+
+  /// SgBus.info's whole answer (version, device, features...), or null before [start].
   static Map<String, dynamic>? get info => _info;
 
   /// For the guide's screenshots: the features a phone has and the plugins' answers, so the
@@ -110,7 +123,8 @@ class Native {
 
   static Future<Map<String, dynamic>?> Function(String plugin, String method, Map<String, dynamic>? options)? _fake;
 
-  /// One of a plugin's events, from the desktop's host.
+  /// One of a plugin's events, from the desktop's host: given to every listener [on] that event,
+  /// as the channel would give a phone's.
   static void emit(String plugin, String event, Map<String, dynamic> data) => fakeEvent(plugin, event, data);
 
   /// For the guide's screenshots: one of a plugin's events, as if the phone had sent it.
@@ -120,6 +134,9 @@ class Native {
     }
   }
 
+  /// Calls one of a plugin's methods and gives its answer: the screenshots' fake, the desktop's
+  /// host, or a phone's Java over the channel, in that order. Throws a [NativeError] if it fails
+  /// ('unavailable' where there's no native side at all).
   static Future<Map<String, dynamic>?> call(String plugin, String method, [Map<String, dynamic>? options]) async {
     if (_fake != null) return _fake!(plugin, method, options);
     if (host != null) return host!.call(plugin, method, options);
@@ -139,6 +156,9 @@ class Native {
     }
   }
 
+  /// Listens for one of a plugin's events until the listener's cancelled. The first listener on
+  /// an event asks the phone's plugin to start sending it (not on a computer: the host just
+  /// [emit]s).
   static NativeListener on(String plugin, String event, void Function(Map<String, dynamic>) fn) {
     final key = '$plugin.$event';
     final l = NativeListener._(key, fn);
@@ -150,6 +170,7 @@ class Native {
     return l;
   }
 
+  /// A cancelled listener: once an event has none left, the phone's plugin is told to stop.
   static void _remove(NativeListener l) {
     final list = _listeners[l._key];
     if (list == null || !list.remove(l) || list.isNotEmpty || !available || host != null) return;
@@ -173,6 +194,7 @@ class Native {
     return after?[alias] == 'granted';
   }
 
+  /// A JSON object from the channel as a map, or null for anything else.
   static Map<String, dynamic>? _decode(String? json) {
     if (json == null || json.isEmpty) return null;
     final v = jsonDecode(json);
