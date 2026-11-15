@@ -1412,12 +1412,15 @@ class TripDone {
   }
 
   List<double>? at(Object? p) => p is Map && p['lat'] is num && p['lng'] is num ? [(p['lat'] as num).toDouble(), (p['lng'] as num).toDouble()] : null;
+  // An end as a point: Your location once it's been found (Navigate's plannedFrom), as the
+  // site's is. Not yet found, it's 0,0 and there's no point to walk from or to.
+  List<double>? point(NavEnd? e) => e == null || (e.here && e.lat == 0 && e.lng == 0) ? null : [e.lat, e.lng];
   for (var k = 0; k < ways.length; k++) {
     final l = ways[k];
     if (l['mode'] == 'walk') {
       final last = k == ways.length - 1;
-      final start = k == 0 ? (from == null || from.here ? null : [from.lat, from.lng]) : at(l['fromExit']) ?? at(l['from']) ?? at(ways[k - 1]['to']);
-      final end = last ? (to == null || to.here ? null : [to.lat, to.lng]) : at(l['toExit']) ?? at(l['to']);
+      final start = k == 0 ? point(from) : at(l['fromExit']) ?? at(l['from']) ?? at(ways[k - 1]['to']);
+      final end = last ? point(to) : at(l['toExit']) ?? at(l['to']);
       if (start != null && end != null && ((l['metres'] as num?) ?? 100) >= 50) {
         legs.add(TripLeg(
           kind: 'walk',
@@ -1501,26 +1504,29 @@ class TripBar extends StatelessWidget {
             child: InkWell(
               onTap: () => AppNav.push(const TripScreen(), name: 'trip'),
               child: SafeArea(bottom: false, child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+                padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
                 child: Row(children: [
                   Icon(t.current?.kind == 'train' ? Icons.directions_subway_filled : t.current?.kind == 'walk' ? Icons.directions_walk : Icons.directions_bus, color: sg.onBar),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(t.title, style: TextStyle(color: sg.onBar, fontWeight: FontWeight.w700)),
-                      Text(t.barText(), style: TextStyle(color: sg.onBar)),
+                      // A line for where to and two for the part you're on, so on a phone,
+                      // beside the tray, the bar doesn't take a third of the screen; the
+                      // whole of it is a tap away on the trip screen.
+                      Text(t.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.onBar, fontWeight: FontWeight.w700)),
+                      Text(t.barText(), maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: sg.onBar, fontSize: 13)),
                     ]),
                   ),
                   Tooltip(message: tr('trip.show_the_stops_ahead', 'Show the stops ahead'), child: Icon(Icons.expand_more, color: sg.onBar)),
                   if (t.legs.length > 1) ...[
-                    IconButton(tooltip: tr('trip.back_to_the_part_before', 'Back to the part before'), onPressed: t.leg == 0 ? null : () => t.step(-1), icon: Icon(Icons.skip_previous, color: t.leg == 0 ? sg.onBar.withValues(alpha: .4) : sg.onBar)),
-                    IconButton(tooltip: tr('trip.on_to_the_next_part', 'On to the next part'), onPressed: t.leg >= t.legs.length - 1 ? null : () => t.step(1), icon: Icon(Icons.skip_next, color: t.leg >= t.legs.length - 1 ? sg.onBar.withValues(alpha: .4) : sg.onBar)),
+                    IconButton(visualDensity: VisualDensity.compact, tooltip: tr('trip.back_to_the_part_before', 'Back to the part before'), onPressed: t.leg == 0 ? null : () => t.step(-1), icon: Icon(Icons.skip_previous, color: t.leg == 0 ? sg.onBar.withValues(alpha: .4) : sg.onBar)),
+                    IconButton(visualDensity: VisualDensity.compact, tooltip: tr('trip.on_to_the_next_part', 'On to the next part'), onPressed: t.leg >= t.legs.length - 1 ? null : () => t.step(1), icon: Icon(Icons.skip_next, color: t.leg >= t.legs.length - 1 ? sg.onBar.withValues(alpha: .4) : sg.onBar)),
                   ],
-                  IconButton(tooltip: tr('trip.end_the_trip', 'End the trip'), onPressed: () => t.stop(), icon: Icon(Icons.close, color: sg.onBar)),
+                  IconButton(visualDensity: VisualDensity.compact, tooltip: tr('trip.end_the_trip', 'End the trip'), onPressed: () => t.stop(), icon: Icon(Icons.close, color: sg.onBar)),
                 ]),
               )),
             ),
-          ).let((bar) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [bar, const TripNotes(compact: true)]));
+          ).let((bar) => Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [bar, TripNotes(compact: true, onMore: () => AppNav.push(const TripScreen(), name: 'trip'))]));
         },
       );
 }

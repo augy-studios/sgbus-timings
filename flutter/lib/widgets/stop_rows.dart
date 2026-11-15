@@ -49,7 +49,7 @@ class StopRows extends StatelessWidget {
                   ]),
                   if ((Stops.of(s.code)?.road ?? '').isNotEmpty) Text(Stops.of(s.code)!.road, style: TextStyle(color: sg.muted, fontSize: 13)),
                   if (BusNet.crossBorder(s.code) != null)
-                    Text(tr('stop.passport', '{place}: passport needed', {'place': BusNet.crossBorder(s.code)!.label()}), style: TextStyle(color: sg.muted, fontSize: 13)),
+                    Text(BusNet.crossBorder(s.code)!.short(), style: TextStyle(color: sg.muted, fontSize: 13)),
                   if (direct?[s.code] != null)
                     Text(tr('near.direct', 'Direct: {list}', {'list': direct![s.code]!.join(', ')}), style: TextStyle(color: sg.brandInk, fontSize: 13)),
                 ]),

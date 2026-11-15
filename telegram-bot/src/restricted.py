@@ -48,7 +48,15 @@ def restricted_note(code: str) -> "str | None":
 _CHECKPOINT = "🛂 Immigration checkpoint: passport needed to go on."
 _MALAYSIA = "🛂 In Malaysia: passport needed."
 
+# Tuas Checkpoint's stop: for vehicles only, so not a way to Malaysia on foot. The same as TUAS
+# in main-site/js/network.js.
+_TUAS = (
+    "🚗 Vehicle checkpoint: not for crossing to Malaysia, as this checkpoint can't be crossed on foot. "
+    "For a bus across, take Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link."
+)
+
 CROSS_BORDER = {
+    "25269": _TUAS,
     **{code: _CHECKPOINT for code in ("46101", "46109")},
     **{code: _MALAYSIA for code in ("46211", "46219", "46239", "47711")},
 }

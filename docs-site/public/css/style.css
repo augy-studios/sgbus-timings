@@ -700,10 +700,15 @@ html[data-secrets="on"] .secret-page .secret-locked { display: none; }
   line-height: 1.6;
   vertical-align: baseline;
   white-space: nowrap;
+  /* Kept on one line while it fits; one longer than the line (a whole install command, on a
+     phone or with Android's text made bigger) wraps inside its box rather than widening the
+     page, which let it pan sideways and left the back-to-top button off to one side. */
+  max-width: 100%;
+  text-align: left;
   cursor: copy;
   transition: background 0.15s ease, color 0.15s ease, gap 0.15s ease;
 }
-.copy-chip code { font-size: inherit; color: inherit; }
+.copy-chip code { font-size: inherit; color: inherit; min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 .copy-chip-icon {
   width: 0;
   overflow: hidden;

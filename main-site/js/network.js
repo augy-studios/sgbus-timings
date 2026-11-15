@@ -214,6 +214,17 @@
     return null;
   }
 
+  // LTA's 24-character first and last bus string for a service at a stop (When.busRunsAt), for
+  // Navigate's check that a way's buses still run (js/nav.js, wayStopped); null without one.
+  function timesAt(serviceNo, code) {
+    for (const dir of directions(serviceNo)) {
+      const run = runs[serviceNo][dir];
+      const i = run.stops.indexOf(code);
+      if (i !== -1) return run.times[i] || null;
+    }
+    return null;
+  }
+
   // A service's last bus at a stop on each day type, as LTA gives it ("HHMM", or "-" where it
   // doesn't run that day): { wd, sat, sun }, for a last bus reminder (js/reminders.js).
   function lastBuses(serviceNo, code) {
@@ -283,7 +294,16 @@
   const CHECKPOINT = { label: I18n.t('network.checkpoint', 'Immigration checkpoint'), note: I18n.t('network.checkpointNote', 'Passport needed to go on.') };
   // `abroad`: past Singapore's checkpoint, so a ride to one goes through it (js/trip.js).
   const MALAYSIA = { label: I18n.t('network.malaysia', 'In Malaysia'), note: I18n.t('network.malaysiaNote', 'Passport needed.'), abroad: true };
+  // Tuas Checkpoint's stop: a checkpoint for vehicles only, so not a way to Malaysia on foot.
+  // `vehicles`: its route lists say that, not that a passport's needed. The same as TUAS in the
+  // bot's restricted.py and android/lib/data/network.dart.
+  const TUAS = {
+    label: I18n.t('network.tuas', 'Vehicle checkpoint'),
+    note: I18n.t('network.tuasNote', 'Not for crossing to Malaysia: this checkpoint can’t be crossed on foot. For a bus across, take Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link.'),
+    vehicles: true,
+  };
   const CROSS_BORDER = {
+    25269: TUAS,
     46101: CHECKPOINT, 46109: CHECKPOINT,
     46211: MALAYSIA, 46219: MALAYSIA, 46239: MALAYSIA, 47711: MALAYSIA,
   };
@@ -564,6 +584,7 @@
     terminals,
     landmarks,
     firstLast,
+    timesAt,
     lastBuses,
     stopsTo,
     busDistance,

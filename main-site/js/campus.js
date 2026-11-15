@@ -274,6 +274,8 @@
           place: (r.place || conf.place || []).map((id) => resolve(String(id), where)).filter(Boolean),
           // Between stops, km/h (nav-core's 15 unless said): a coach on the expressway is quicker.
           kmh: Number(r.kmh) || null,
+          // false: not in Navigate (Causeway Link's, as nav-core doesn't count immigration at Tuas).
+          navigate: (r.navigate ?? conf.navigate) !== false,
           // Where its buses can be seen live (api/shuttle-live.js): { provider, stops: { id: param } }.
           live: r.live || null,
           source: r.source || conf.source || '',

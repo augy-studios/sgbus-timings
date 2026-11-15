@@ -278,6 +278,8 @@ List<NavRun> _busRuns(List<NavNode> nodes, Map<String, int> busNode, Map<String,
 
   final runs = <NavRun>[];
   for (final route in model.routes) {
+    // Kept out of Navigate (shuttles.json's `navigate`: false), as the site's nav-core does.
+    if (!route.navigate) continue;
     final stops = <(int, int)>[];
     for (final (i, k) in route.keys.indexed) {
       final id = node(k);

@@ -240,7 +240,6 @@ public class TripService extends Service {
                 .setContentText(mText)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
-                .setSilent(true)
                 .setCategory(NotificationCompat.CATEGORY_NAVIGATION)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
                 .setContentIntent(Notifications.open(this, null, NOTIFICATION_ID))

@@ -158,7 +158,7 @@ class _BusScreenState extends State<BusScreen> {
                   if (BusNet.restricted(code) != null)
                     Text(tr('stop.restrictedShort', 'Authorised personnel only'), style: TextStyle(color: sg.muted, fontSize: 12)),
                   if (border != null)
-                    Text(tr('stop.passport', '{place}: passport needed', {'place': border.label()}), style: TextStyle(color: sg.muted, fontSize: 12)),
+                    Text(border.short(), style: TextStyle(color: sg.muted, fontSize: 12)),
                 ]),
               ),
               Container(
