@@ -61,15 +61,32 @@ Future<void> loadFonts() async {
   await _font('Roboto', roboto);
   // The phone's own font in Material You ("sans-serif", Android's default), as stock Android's.
   await _font('sans-serif', roboto);
-  // Android's own fallback (Noto) stood in for by DejaVu, for "→", "·" and the like.
-  // On Windows, Segoe UI does.
-  final linux = File('/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf').existsSync();
-  await _font('Noto Sans', linux ? ['/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'] : ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/segoeuib.ttf']);
+  // Android's own fallback (Noto) stood in for by the computer's own fonts, for "→", "·" and the
+  // like: DejaVu on Linux, Arial Unicode on a Mac, Segoe UI on Windows.
+  final fonts = _systemFonts();
+  await _font('Noto Sans', fonts.sans);
   await _font('MaterialIcons', ['$mf/MaterialIcons-Regular.otf']);
   // What a screen with no font of its own falls back to on a phone: its default, and the terminal's
-  // monospace, for which Consolas stands in on Windows.
+  // monospace (DejaVu Sans Mono, SF Mono or Consolas).
   await _font('FlutterTest', roboto);
-  await _font('monospace', [linux ? '/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf' : 'C:/Windows/Fonts/consola.ttf']);
+  await _font('monospace', [fonts.mono]);
+}
+
+/// The computer's own fonts that stand in for the phone's fallback fonts: a regular and a bold
+/// sans-serif, and a monospace, picked by which system's font folder is there.
+({List<String> sans, String mono}) _systemFonts() {
+  const dejaVu = '/usr/share/fonts/truetype/dejavu';
+  if (File('$dejaVu/DejaVuSans.ttf').existsSync()) {
+    return (sans: ['$dejaVu/DejaVuSans.ttf', '$dejaVu/DejaVuSans-Bold.ttf'], mono: '$dejaVu/DejaVuSansMono.ttf');
+  }
+  const macFonts = '/System/Library/Fonts';
+  if (File('$macFonts/SFNSMono.ttf').existsSync()) {
+    return (
+      sans: ['$macFonts/Supplemental/Arial Unicode.ttf', '$macFonts/Supplemental/Arial Bold.ttf'],
+      mono: '$macFonts/SFNSMono.ttf',
+    );
+  }
+  return (sans: ['C:/Windows/Fonts/segoeui.ttf', 'C:/Windows/Fonts/segoeuib.ttf'], mono: 'C:/Windows/Fonts/consola.ttf');
 }
 
 /// Real Tamil letters for tests that measure them, as the phone's own font has them and the fonts
