@@ -66,7 +66,7 @@ class DeskWidgets {
   }
 
   /// A new widget, kept, and opened. From the tray it opens in its setup; given a stop [code]
-  /// (for "Pin to Desktop Widget" on a stop's right-click menu, desktop-features-spec §8) it
+  /// (for "Pin as a desktop widget" on a stop's right-click menu, desktop-features-spec §8) it
   /// opens straight on that stop's timings, narrowed to [buses] if any are given.
   static Future<void> add({String? code, String name = '', List<String> buses = const []}) async {
     final stop = code != null && RegExp(r'^\d{5}$').hasMatch(code) ? code : null;

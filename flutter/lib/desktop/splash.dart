@@ -69,6 +69,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         final s = widget.status ?? live;
         return DragToMoveArea(
           child: Container(
+            // The whole window: a Scaffold lets its body be narrower than itself, and without
+            // this the panel would only be as wide as its widest line, leaving a strip of
+            // Flutter's own background beside it.
+            constraints: const BoxConstraints.expand(),
             decoration: BoxDecoration(color: c.bg, border: Border.all(color: c.edge)),
             child: DefaultTextStyle(
               style: TextStyle(color: c.ink, fontSize: 15, fontWeight: FontWeight.w600, height: 1.35),

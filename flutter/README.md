@@ -225,6 +225,8 @@ notifications from the server. See `FIREBASE-SETUP.md`.
 To try it on a phone over USB, `flutter run` with the phone plugged in and USB debugging on.
 `flutter test` runs the tests; `flutter test test/shots/` renders the guide's screenshots into
 `docs-site/public/screenshots/android/`, at 3x, from fixed data (`test/shots/harness.dart`).
+`test/shots/desktop_shots_test.dart` renders the desktop app's into
+`docs-site/public/screenshots/desktop/`, at 2x; the final set is made on Windows.
 
 ## Build the desktop app
 

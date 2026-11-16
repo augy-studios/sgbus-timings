@@ -67,6 +67,16 @@ taken: from `flutter/`, `flutter test test/shots/`, or `SHOTS=stop,board flutter
 test/shots/` for only those. `shots_test.dart` has the pages, and `guide_test.dart` the
 sheets and whatever needs the phone's own parts, with `Native.fake` standing in for them.
 
+The desktop app's (`public/screenshots/desktop/`, `desktop/` in `content/`) come from the same
+renderer, at 2x: from `flutter/`, `flutter test test/shots/desktop_shots_test.dart` (or
+`SHOTS=window,menu flutter test test/shots/desktop_shots_test.dart`). The current set was
+rendered on a Mac, so its title bar has an empty space where the Mac's traffic lights go, no
+window buttons, and ⌘ shortcuts. For the final set, run `flutter test
+test/shots/desktop_shots_test.dart` on Windows: the window buttons are then on the right, the
+shortcuts say Ctrl, and the windows without a font of their own get Segoe UI. What the system
+draws (the tray and its menu, the Mac's menu bar, the Jump List, the Dock, notifications) can't
+be drawn this way.
+
 The command line's (`cli-*.png`, `web/linux-cli.md`) are its real output drawn as a terminal,
 from the built file: `node ../cli/build.mjs`, then `node screenshots/cli-shots.cjs`.
 

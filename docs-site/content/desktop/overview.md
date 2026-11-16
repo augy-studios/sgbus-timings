@@ -10,6 +10,11 @@ navigation rail down the side, and a stop or a bus opening beside your list on a
 wide window. Around them are the things only a desktop app can do, such as the
 tray, widgets on your desktop and Service alerts as notifications.
 
+<figure>
+<img src="/screenshots/desktop/window.png" alt="The desktop app's window: the green title bar with Back, Forward and Reload, the command bar in the middle showing Bedok Int (84009), and Copy link and the two screenshot buttons; the navigation rail down the left with Bus timings picked; Bus timings' list with Stops near me; and Bedok Int's timings beside it." width="1280" height="860" loading="lazy">
+<figcaption>Bus timings on a wide window, with a stop open beside the list.</figcaption>
+</figure>
+
 Before 2.5.0 the desktop app was the website in a window. If you had that one, it
 updates to the new app by itself and brings across everything you'd saved: see
 [Coming from the old desktop app](install.md#coming-from-the-old-desktop-app).

@@ -137,13 +137,13 @@ with **Try again**.
 ### Make it yours
 
 <figure>
-<img src="/screenshots/web/desktop-setup.png" alt="The Make SG Bus Timings yours window: a green welcome panel on the left with Bus timings, Navigate and Service alerts, and on the right rows for Language, Start when I sign in, Follow system theme, Theme and Brand colour, with Get started at the bottom." width="940" height="660" loading="lazy">
-<figcaption>Make it yours in the old desktop app (2.4.8). The new app's window looks the same, with a System accent swatch after the brand colours.</figcaption>
+<img src="/screenshots/desktop/setup.png" alt="The Make SG Bus Timings yours window: a pale green welcome panel on the left with the app's icon, Bus timings, Navigate and Service alerts, and on the right rows for Language (Automatic), Start when I sign in (on), Follow system theme (off), Theme (Light) and Brand colour, with Classic picked and the blue System accent swatch last, then Get started at the bottom." width="940" height="660" loading="lazy">
+<figcaption>Make it yours. The last swatch, System accent, is your computer's own accent colour.</figcaption>
 </figure>
 
 <figure>
-<img src="/screenshots/web/desktop-setup-dark.png" alt="The same window with Theme set to Dark and GTA VI as the brand colour: a hot pink welcome panel and a dark settings side, with a hot pink Get started button." width="940" height="660" loading="lazy">
-<figcaption>It shows each choice as you pick it (the old desktop app, as above).</figcaption>
+<img src="/screenshots/desktop/setup-dark.png" alt="The same window with Theme set to Dark and System accent picked: the welcome panel and Get started in the computer's blue, and Your computer's own accent colour under Brand colour." width="940" height="660" loading="lazy">
+<figcaption>It shows each choice as you pick it.</figcaption>
 </figure>
 
 The first time the app opens, it lets you set it up in one go:
@@ -163,8 +163,8 @@ in the [tray's menu](tray-and-widgets.md#the-tray), or in the
 ## Updates
 
 <figure>
-<img src="/screenshots/web/desktop-update.png" alt="The small window the desktop app opens with: the app's icon, Downloading update, 31 of 85 MB, a bar a third of the way along, and Later under it." width="300" height="360" loading="lazy">
-<figcaption>Updating as it opens, in the old desktop app (2.4.8). The new app's window looks the same.</figcaption>
+<img src="/screenshots/desktop/update.png" alt="The small window the desktop app opens with: the app's icon, Downloading update, 31 of 85 MB, a bar a third of the way along, and Later under it." width="300" height="360" loading="lazy">
+<figcaption>Updating as it opens.</figcaption>
 </figure>
 
 The app checks for a new version as it opens, in a small window with its icon:
@@ -176,8 +176,8 @@ carry on in the background. Offline, it opens after a few seconds without it. Th
 window is light or dark as your computer is.
 
 <figure>
-<img src="/screenshots/web/desktop-update-dark.png" alt="The same window in dark mode: the app's icon on a dark green background, Downloading update, 31 of 85 MB, a bar a third of the way along, and Later." width="300" height="360" loading="lazy">
-<figcaption>The same, with your computer in dark mode (the old desktop app, as above).</figcaption>
+<img src="/screenshots/desktop/update-dark.png" alt="The same window in dark mode: the app's icon on a dark green background, Downloading update, 31 of 85 MB, a bar a third of the way along, and Later." width="300" height="360" loading="lazy">
+<figcaption>The same, with your computer in dark mode.</figcaption>
 </figure>
 
 After that it checks every hour while it runs, and again when your computer wakes

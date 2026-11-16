@@ -54,6 +54,8 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 `flutter test test/shots/` renders the guide's shots of the app into
 `docs-site/public/screenshots/android/`, at 3x, from fixed data (see `test/shots/harness.dart`).
+`test/shots/desktop_shots_test.dart` renders the desktop app's into
+`docs-site/public/screenshots/desktop/`, at 2x; the final set is made on Windows.
 
 ## Desktop (2.5.0)
 

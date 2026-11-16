@@ -55,11 +55,16 @@ the previous and next favourite stop, under its preview.
 
 ## Bus timings widgets
 
+<figure>
+<img src="/screenshots/desktop/widget.png" alt="A Bus timings widget for Bedok Int: 84009, Every bus, with round Refresh, Pick another stop, Keep on top and Remove buttons, then a row per bus with its next three times, such as 14 in 1 min, 11 min and 22 min, and Updated 08:30 at the bottom." width="320" height="300" loading="lazy">
+<figcaption>A widget for Bedok Int, every bus.</figcaption>
+</figure>
+
 Keep a stop's live timings on your desktop, in a small window of its own:
 
 1. Pick **Add a Bus timings widget** in the tray's menu or the command bar (on a
    Mac, also in the **File** menu). Or open a stop and click **Desktop widget**, or
-   right-click a stop and pick **Pin to desktop widget**, to skip the next step.
+   right-click a stop and pick **Pin as a desktop widget**, to skip the next step.
 2. Pick one of your favourite stops, or type a stop's 5-digit code. To show only
    some buses, type their numbers, such as `15, 62`. Click **Save**.
 
@@ -69,6 +74,11 @@ when it last did. Its buttons refresh it now, pick another stop, keep it on top 
 other windows, and remove it. Click a bus to open it in the app. Add as many as
 you like; they're where you left them each time the app starts. Quitting the app
 keeps them; only the remove button takes one away.
+
+<figure>
+<img src="/screenshots/desktop/widget-dark.png" alt="The same widget with the app in dark mode: light writing on a dark background, each bus's next time in pale green." width="320" height="300" loading="lazy">
+<figcaption>It's light or dark as the app is.</figcaption>
+</figure>
 
 Windows 11's own Widgets board only takes apps from the Microsoft Store, so the
 widgets live on your desktop instead.

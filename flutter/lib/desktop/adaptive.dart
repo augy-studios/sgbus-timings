@@ -8,8 +8,8 @@
 //   the app's own navigator, so a screen in the detail pane (app/nav.dart) gets a dialog that
 //   centres in and dims the whole content area, beside the rail and under the title bar, not
 //   just the pane. A screen opened in the pane while one's up closes it first (AppNav.push).
-// - DeskContextMenu: right-click a stop, a bus or a favourite for Open in split pane, Pin to desktop
-//   widget, Set as tray countdown, Star or Unstar, and Copy link (DeskActions does each).
+// - DeskContextMenu: right-click a stop, a bus or a favourite for Open in split pane, Pin as a
+//   desktop widget, Set as tray countdown, Star or Unstar, and Copy link (DeskActions does each).
 // - DeskTooltips: tooltips that wait 400 ms under the mouse. DeskHover: a pointer and a highlight,
 //   for a clickable row or card that isn't an InkWell, ListTile or chip (those do it themselves;
 //   no row needs it yet).

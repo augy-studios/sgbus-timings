@@ -8,6 +8,11 @@ colour, and the app's pages below it, laid out for the size of the window. It
 opens maximised; make it smaller and it opens that size, in the same place, next
 time.
 
+<figure>
+<img src="/screenshots/desktop/window.png" alt="The desktop app's window: the green title bar with Back, Forward and Reload, the command bar in the middle showing Bedok Int (84009), and Copy link and the two screenshot buttons; the navigation rail down the left with Bus timings picked; Bus timings' list with Stops near me; and Bedok Int's timings beside it." width="1280" height="860" loading="lazy">
+<figcaption>The title bar along the top, the rail down the left, and a stop beside your list.</figcaption>
+</figure>
+
 ## The title bar
 
 From left to right:
@@ -35,6 +40,11 @@ link, brings its window to the front.
 
 ## The command bar
 
+<figure>
+<img src="/screenshots/desktop/command-bar.png" alt="The command bar open in the title bar with 14 typed, and its list under it: Buses, with Bus 14 picked, then 14A, 14e and 140, each with where it runs, then Bus stops whose codes start with 14, such as HarbourFront Int, 14009." width="1280" height="540" loading="lazy">
+<figcaption>A bus number finds its buses first, then the stops.</figcaption>
+</figure>
+
 **Ctrl+K** (**⌘K** on a Mac), or a click on the middle of the title bar, opens the
 command bar. Type to find:
 
@@ -44,6 +54,11 @@ command bar. Type to find:
   tray do, such as **Bus stops near me**, **Copy link**, **Take a long screenshot**,
   **Full screen**, **Add a Bus timings widget**, **Make it yours…** and **Check
   for updates…**. With nothing typed, it lists them all.
+
+<figure>
+<img src="/screenshots/desktop/command-bar-dark.png" alt="The command bar open with nothing typed, in dark mode: Search stops, buses and commands, or paste a link, over a list of Commands: Glance, Bus timings, Favourites, Navigate, Service alerts, Your trips, Places, Settings with its shortcut, and Theme." width="1280" height="540" loading="lazy">
+<figcaption>With nothing typed, every command.</figcaption>
+</figure>
 
 Move through the list with the arrow keys and press **Enter**, or click one. **Esc**
 closes it.
@@ -91,12 +106,17 @@ The app fits itself to the window's width:
   place. Until you pick one, the space says how. The departures board still takes
   the whole window.
 
+<figure>
+<img src="/screenshots/desktop/window-dark.png" alt="The same window in dark mode: the rail down the left, Bus timings' list of stops near you in a column, and Bedok Int's timings in the detail pane beside it, with Tray countdown and Desktop widget among its buttons." width="1280" height="860" loading="lazy">
+<figcaption>Wider than 1024 pixels, a stop opens beside the list.</figcaption>
+</figure>
+
 ## Right-click menus
 
 Right-click a stop, a bus or a favourite, in a list or a search, for:
 
 - **Open**, or **Open in split pane** on a wide window.
-- **Pin to desktop widget**: a [widget](tray-and-widgets.md#bus-timings-widgets) for
+- **Pin as a desktop widget**: a [widget](tray-and-widgets.md#bus-timings-widgets) for
   that stop on your desktop (stops only).
 - **Set as tray countdown**: its next buses [in the tray](tray-and-widgets.md#a-stops-buses-in-the-tray)
   (stops only).
@@ -105,12 +125,27 @@ Right-click a stop, a bus or a favourite, in a list or a search, for:
 
 In a picker, such as Navigate's **From**, **Open** picks that stop.
 
+<figure>
+<img src="/screenshots/desktop/menu.png" alt="The rail and Bus timings' list of stops near you, with a menu open just under Bedok Stn Exit A, where it was right-clicked: Open in split pane, Pin as a desktop widget, Set as tray countdown, Star and Copy link." width="484" height="820" loading="lazy">
+<figcaption>A stop's right-click menu.</figcaption>
+</figure>
+
 ## Dialogs and panels
 
 What slides up from the bottom on a phone opens here in the middle of the window
 as a **dialog**, such as a picker, a menu or a form, or from the right as a
 **panel**, for a list or details. **Esc**, **Ctrl+W** (**⌘W** on a Mac), its close
 button or a click outside it closes it.
+
+<figure>
+<img src="/screenshots/desktop/dialog.png" alt="Pick a bus as a dialog in the middle of the window, over Bedok Int's timings: every bus at the stop as a button, and a close button at its top right. The pages behind it are dimmed; the title bar and the rail aren't." width="1280" height="860" loading="lazy">
+<figcaption>Pick a bus, from a stop, as a dialog.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/desktop/panel-dark.png" alt="Glance in dark mode with the weather open as a panel down the window's right: 25 °C and fog, today's range, feels like, humidity, wind, the next hours and the rain to come, with a close button at its top." width="1280" height="860" loading="lazy">
+<figcaption>Today's weather, from Glance, as a panel.</figcaption>
+</figure>
 
 ## Full screen
 
