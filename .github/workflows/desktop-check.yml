@@ -1,0 +1,94 @@
+# Checks the desktop rewrite on every push and pull request to desktop-flutter-rewrite, on each
+# desktop system (Windows, macOS, Linux): the Dart analyser and a debug build everywhere, and the
+# tests on Linux, so a change that breaks one of them shows up straight away rather than at the
+# next release. Nothing is published. The release builds are build-desktop.yml.
+name: Desktop check
+
+on:
+  push:
+    branches: [desktop-flutter-rewrite]
+  pull_request:
+    branches: [desktop-flutter-rewrite]
+
+# Read the code, nothing more.
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-check-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Augy's Flutter version (flutter/.metadata's revision, c197ca5). Not newer: Flutter 3.50's
+  # Dart (3.14) can't compile nativeapi 0.5.10, which is written for Dart 3.13.
+  FLUTTER_VERSION: 3.47.9
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows
+          - os: macos-latest
+            target: macos
+          - os: ubuntu-latest
+            target: linux
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: flutter
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      # What the Linux build compiles against: GTK 3, WebKitGTK 4.1 (the map), X11 and Xi
+      # (nativeapi) and PulseAudio (flutter_webrtc). And DejaVu, the font the screenshot tests are
+      # drawn with, which is why the tests only run here.
+      - name: Install Linux build tools and fonts
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config fonts-dejavu-core \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
+
+      - name: Install Flutter
+        if: runner.os != 'Windows'
+        working-directory: .
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Install Flutter (Windows)
+        if: runner.os == 'Windows'
+        working-directory: .
+        shell: pwsh
+        run: |
+          git clone --depth 1 --branch $env:FLUTTER_VERSION https://github.com/flutter/flutter.git "$env:RUNNER_TEMP\flutter"
+          "$env:RUNNER_TEMP\flutter\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - run: flutter pub get
+
+      # Errors and warnings fail the check; the analyser's hints (infos) don't.
+      - run: flutter analyze --no-fatal-infos
+
+      - name: Test
+        if: runner.os == 'Linux'
+        run: flutter test
+
+      # A quick look at the installer scripts: each shell script parses, the update-file writer
+      # loads.
+      - name: Check the installer scripts
+        if: runner.os == 'Linux'
+        run: |
+          for script in installers/macos/*.sh installers/linux/*.sh; do
+            bash -n "$script"
+          done
+          node --check installers/update-files.mjs
+
+      - run: flutter build ${{ matrix.target }} --debug

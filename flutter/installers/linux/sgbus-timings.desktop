@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SG Bus Timings
+Comment=Live Singapore bus timings, routes and journeys
+Exec="/opt/SG Bus Timings/sgbus-timings" %U
+Terminal=false
+Type=Application
+Icon=sgbus-timings
+StartupWMClass=org.uwuapps.sgbus
+MimeType=x-scheme-handler/uwu;
+Categories=Utility;
