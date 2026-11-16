@@ -197,6 +197,198 @@ void main() {
       expect(find.byType(BottomSheet), findsOneWidget);
     });
   });
+
+  group('narrowing the window to the phone layout', () {
+    /// The window's layout, as the desktop's chrome hands it down; changed as the window would.
+    late ValueNotifier<DeskLayout> layout;
+
+    /// The title bar's watcher of the app's navigator, and its Back and Forward, set up as
+    /// desktop/chrome.dart sets them.
+    late RouteWatcher watcher;
+    late ViewHistory history;
+
+    setUp(() {
+      Store.memory({'sgbus_tour': 'done', 'sgbus_first_run': 'done', 'sgbus_start': 'timings'});
+      AppNav.fromPane = false;
+      Native.fake(['desktop'], (_, _, _) async => <String, dynamic>{});
+      history = ViewHistory()..pageShown('timings');
+      watcher = RouteWatcher()..onNewScreen = history.screenOpened;
+      AppNav.rootWatcher = watcher;
+      DeskPanes.observer.onNewScreen = history.screenOpened;
+      DeskPanes.historyStep = (step) => history.stepping(step);
+    });
+    tearDown(() {
+      AppNav.rootWatcher = null;
+      DeskPanes.observer.onNewScreen = null;
+      DeskPanes.historyStep = null;
+      Native.fake(const [], null);
+    });
+
+    /// The shell in [start], with its layout following [layout].
+    Future<void> shell(WidgetTester t, DeskLayout start) async {
+      t.view.physicalSize = const Size(1200, 700);
+      t.view.devicePixelRatio = 1;
+      addTearDown(t.view.reset);
+      layout = ValueNotifier(start);
+      addTearDown(layout.dispose);
+      await t.pumpWidget(MaterialApp(
+        navigatorKey: AppNav.navigatorKey,
+        navigatorObservers: [watcher],
+        theme: AppLook.I.theme(Brightness.light),
+        home: ValueListenableBuilder<DeskLayout>(
+          valueListenable: layout,
+          builder: (_, now, shell) => DeskLayoutScope(layout: now, child: shell!),
+          child: Shell(pages: {'timings': () => const Center(child: Text('the list'))}),
+        ),
+      ));
+      await t.pumpAndSettle();
+    }
+
+    /// Opens a plain screen called [text] with a site address, from the list or ([fromPane])
+    /// from inside the detail pane.
+    Future<void> open(WidgetTester t, String text, String address, {bool fromPane = false}) async {
+      AppNav.fromPane = fromPane;
+      AppNav.push(Scaffold(body: Center(child: Text(text))), name: 'stop', address: address);
+      await t.pumpAndSettle();
+    }
+
+    /// The layout changes to [to], as the window crosses a width.
+    Future<void> resize(WidgetTester t, DeskLayout to) async {
+      layout.value = to;
+      await t.pumpAndSettle();
+    }
+
+    testWidgets("the detail pane's screens move over the whole window, in order", (t) async {
+      await shell(t, DeskLayout.split);
+      await open(t, 'stop 84009', '#84009');
+      await open(t, 'bus 22', '#bus/22', fromPane: true);
+      await resize(t, DeskLayout.phone);
+      expect(AppNav.pane, isNull, reason: 'the pane has gone');
+      expect(find.text('bus 22'), findsOneWidget, reason: 'what was in front still is');
+      expect(AppNav.addressOf(DeskPanes.observer.ownTop), isNull, reason: "the pane's watcher let them go");
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(find.text('stop 84009'), findsOneWidget, reason: 'Back steps through them as before');
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(find.text('the list'), findsOneWidget);
+      expect(AppNav.nav!.canPop(), isFalse);
+    });
+
+    testWidgets('from the rail layout too', (t) async {
+      await shell(t, DeskLayout.rail);
+      await open(t, 'stop 84009', '#84009');
+      await resize(t, DeskLayout.phone);
+      expect(find.text('stop 84009'), findsOneWidget);
+      expect(AppNav.nav!.canPop(), isTrue);
+    });
+
+    testWidgets("going wide again doesn't open them twice", (t) async {
+      await shell(t, DeskLayout.split);
+      await open(t, 'stop 84009', '#84009');
+      await open(t, 'bus 22', '#bus/22', fromPane: true);
+      await resize(t, DeskLayout.phone);
+      await resize(t, DeskLayout.split);
+      expect(AppNav.paneShowsScreen, isFalse, reason: 'the new pane starts empty');
+      expect(find.text('bus 22', skipOffstage: false), findsOneWidget);
+      expect(find.text('stop 84009', skipOffstage: false), findsOneWidget);
+      AppNav.nav!.pop();
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(AppNav.nav!.canPop(), isFalse, reason: 'just the two, over the shell');
+
+      // And narrowing again, with nothing in the pane, opens nothing.
+      await resize(t, DeskLayout.phone);
+      expect(AppNav.nav!.canPop(), isFalse);
+      expect(find.text('the list'), findsOneWidget);
+    });
+
+    testWidgets('an empty pane moves nothing', (t) async {
+      await shell(t, DeskLayout.split);
+      await resize(t, DeskLayout.phone);
+      expect(AppNav.nav!.canPop(), isFalse);
+      expect(find.text('the list'), findsOneWidget);
+    });
+
+    testWidgets("a dialog the pane's screen opened closes first, not left under the moved screen", (t) async {
+      await shell(t, DeskLayout.split);
+      Object? got = 'not yet';
+      AppNav.push(_Picker(closed: (v) => got = v), name: 'stop', address: '#84009');
+      await t.pumpAndSettle();
+      await t.tap(find.text('Pick a bus'));
+      await t.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+
+      await resize(t, DeskLayout.phone);
+      expect(find.byType(Dialog, skipOffstage: false), findsNothing);
+      expect(got, isNull, reason: 'the screen that opened it hears it closed with nothing');
+      expect(find.text('Pick a bus').hitTestable(), findsOneWidget, reason: 'the stop, moved, is in front');
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(find.text('the list'), findsOneWidget, reason: 'Back goes to the list, not to a stale dialog');
+      expect(AppNav.nav!.canPop(), isFalse);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets('with Settings open, it stays in front; the screens move once it closes', (t) async {
+      await shell(t, DeskLayout.split);
+      await open(t, 'stop 84009', '#84009');
+      await open(t, 'bus 22', '#bus/22', fromPane: true);
+      AppNav.push(const Scaffold(body: Center(child: Text('Settings'))), name: 'settings');
+      await t.pumpAndSettle();
+
+      await resize(t, DeskLayout.phone);
+      expect(find.text('Settings').hitTestable(), findsOneWidget, reason: 'still what the person sees');
+      expect(find.text('bus 22', skipOffstage: false), findsNothing, reason: 'waiting, not yet over the window');
+
+      AppNav.nav!.pop(); // closes Settings
+      await t.pumpAndSettle();
+      expect(find.text('bus 22').hitTestable(), findsOneWidget);
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(find.text('stop 84009').hitTestable(), findsOneWidget, reason: 'in the same order');
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(find.text('the list'), findsOneWidget);
+      expect(AppNav.nav!.canPop(), isFalse);
+    });
+
+    testWidgets('widened again while they wait, they go back into the pane', (t) async {
+      await shell(t, DeskLayout.split);
+      await open(t, 'stop 84009', '#84009');
+      await open(t, 'bus 22', '#bus/22', fromPane: true);
+      AppNav.push(const Scaffold(body: Center(child: Text('Settings'))), name: 'settings');
+      await t.pumpAndSettle();
+      await resize(t, DeskLayout.phone);
+      await resize(t, DeskLayout.split);
+      expect(AppNav.paneShowsScreen, isTrue);
+      expect(find.text('Settings').hitTestable(), findsOneWidget, reason: 'Settings is still in front');
+
+      AppNav.nav!.pop(); // closes Settings
+      await t.pumpAndSettle();
+      expect(AppNav.nav!.canPop(), isFalse, reason: 'nothing was moved over the window as well');
+      expect(find.text('bus 22').hitTestable(), findsOneWidget);
+      AppNav.pane!.pop();
+      await t.pumpAndSettle();
+      expect(find.text('stop 84009').hitTestable(), findsOneWidget, reason: 'in the same order, in the pane');
+    });
+
+    testWidgets("moving the screens leaves the title bar's Forward as it was", (t) async {
+      await shell(t, DeskLayout.split);
+      await open(t, 'stop 84009', '#84009');
+      await open(t, 'bus 22', '#bus/22', fromPane: true);
+      // Then something for Forward to open again: a page left with Back, as chrome.dart's Back
+      // does it.
+      history.pageShown('favs');
+      final before = history.backAPage()!;
+      history.stepping(() => history.pageShown(before));
+      expect(history.canForward, isTrue);
+
+      await resize(t, DeskLayout.phone);
+      expect(find.text('bus 22'), findsOneWidget);
+      expect(history.canForward, isTrue, reason: 'the moved screens are not new ones');
+    });
+  });
 }
 
 /// A stop's screen in miniature: Pick a bus opens a sheet (a dialog on the desktop) with one

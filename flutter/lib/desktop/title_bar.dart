@@ -4,7 +4,9 @@
 // Forward and Reload; the command bar in the middle (command_bar.dart); Copy link, the two
 // screenshots (screenshot.dart) and the green Restart to update (updater.dart); and on Windows
 // and Linux the window's own Minimise, Maximise and Close, drawn as Windows draws them. On a Mac
-// the bar leaves room on its left for the traffic lights instead.
+// the bar leaves room on its left for the traffic lights instead. In a phone-sized window (under
+// 720 px) Copy link and the two screenshots fold into one More menu, so the command bar keeps
+// its room.
 //
 // How it fits with chrome.dart: this file only draws the bar. Every button does what
 // chrome.dart's DeskChrome says (back, forward, reload, copyLink, minimize, close…) and greys
@@ -14,6 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 
+import '../app/nav.dart';
 import '../i18n/i18n.dart';
 import '../theme/theme.dart';
 import 'chrome.dart';
@@ -30,6 +33,10 @@ class TitleBar extends StatelessWidget {
   /// For the guide's screenshots: drawn as on Windows, without a window.
   final bool preview;
 
+  /// Narrower than this (where the window takes the phone layout, app/nav.dart), Copy link and
+  /// the two screenshots fold into one More menu ([_MoreButton]).
+  static const compactUnder = DeskPanes.railFrom;
+
   /// The bar: its drag area underneath, and the buttons and command bar in a row over it.
   @override
   Widget build(BuildContext context) {
@@ -39,45 +46,53 @@ class TitleBar extends StatelessWidget {
       color: ink.background,
       child: SizedBox(
         height: DeskChrome.barHeight,
-        child: Stack(children: [
-          // Under the buttons, so they answer a click at once: everywhere else drags the
-          // window, and a double-click maximises it (or as the Mac is set to).
-          if (!preview) Positioned.fill(child: DragToMoveArea(window: Desktop.window, child: const SizedBox.expand())),
-          ValueListenableBuilder<bool>(
-            valueListenable: DeskChrome.fullScreen,
-            builder: (context, full, _) => Padding(
-              padding: EdgeInsets.only(left: mac && !full ? DeskChrome.macInset : 6, right: mac ? 8 : 0),
-              child: Row(children: [
-                _BarButton(ink: ink, icon: Icons.arrow_back, tip: tr('desktop.bar.back', 'Back ({keys})', {'keys': Desktop.mac ? '⌘[' : 'Alt+Left'}), onTap: DeskChrome.back, enabled: DeskChrome.canBack),
-                _BarButton(ink: ink, icon: Icons.arrow_forward, tip: tr('desktop.bar.forward', 'Forward ({keys})', {'keys': Desktop.mac ? '⌘]' : 'Alt+Right'}), onTap: DeskChrome.forward, enabled: DeskChrome.canForward),
-                _ReloadButton(ink: ink),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
-                      child: CommandBar(key: preview ? null : DeskChrome.barKey, ink: ink),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _BarButton(ink: ink, icon: Icons.link, tip: tr('desktop.bar.copyLink', 'Copy link ({keys})', {'keys': DeskMenus.keys('C', shift: true)}), onTap: DeskChrome.copyLink),
-                _ShotButtons(ink: ink),
-                _UpdateButton(),
-                if (!mac) _WindowButtons(ink: ink, full: full),
-              ]),
-            ),
-          ),
-        ]),
+        child: LayoutBuilder(builder: (context, box) => _bar(ink, mac, compact: box.maxWidth < compactUnder)),
       ),
     );
   }
+
+  /// The bar's drag area, with its buttons and the command bar over it; [compact] in a narrow
+  /// window.
+  Widget _bar(BarColours ink, bool mac, {required bool compact}) => Stack(children: [
+        // Under the buttons, so they answer a click at once: everywhere else drags the
+        // window, and a double-click maximises it (or as the Mac is set to).
+        if (!preview) Positioned.fill(child: DragToMoveArea(window: Desktop.window, child: const SizedBox.expand())),
+        ValueListenableBuilder<bool>(
+          valueListenable: DeskChrome.fullScreen,
+          builder: (context, full, _) => Padding(
+            padding: EdgeInsets.only(left: mac && !full ? DeskChrome.macInset : 6, right: mac ? 8 : 0),
+            child: Row(children: [
+              _BarButton(ink: ink, icon: Icons.arrow_back, tip: tr('desktop.bar.back', 'Back ({keys})', {'keys': Desktop.mac ? '⌘[' : 'Alt+Left'}), onTap: DeskChrome.back, enabled: DeskChrome.canBack),
+              _BarButton(ink: ink, icon: Icons.arrow_forward, tip: tr('desktop.bar.forward', 'Forward ({keys})', {'keys': Desktop.mac ? '⌘]' : 'Alt+Right'}), onTap: DeskChrome.forward, enabled: DeskChrome.canForward),
+              _ReloadButton(ink: ink),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 560),
+                    child: CommandBar(key: preview ? null : DeskChrome.barKey, ink: ink),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              if (compact)
+                _MoreButton(ink: ink)
+              else ...[
+                _BarButton(ink: ink, icon: Icons.link, tip: tr('desktop.bar.copyLink', 'Copy link ({keys})', {'keys': DeskMenus.keys('C', shift: true)}), onTap: DeskChrome.copyLink),
+                _ShotButtons(ink: ink),
+              ],
+              _UpdateButton(),
+              if (!mac) _WindowButtons(ink: ink, full: full),
+            ]),
+          ),
+        ),
+      ]);
 }
 
 /// One of the bar's small buttons: an icon (or [child]) with a tooltip, dimmed while it can't
 /// be used ([enabled] false, or [on] false).
 class _BarButton extends StatelessWidget {
-  const _BarButton({required this.ink, required this.icon, required this.tip, required this.onTap, this.enabled, this.on = true, this.child});
+  const _BarButton({required this.ink, required this.icon, required this.tip, required this.onTap, this.enabled, this.on = true, this.child, this.focusNode});
   final BarColours ink;
   final IconData icon;
   final String tip;
@@ -85,6 +100,9 @@ class _BarButton extends StatelessWidget {
   final ValueListenable<bool>? enabled;
   final bool on;
   final Widget? child;
+
+  /// Its focus, for a button that's given focus (More, as its menu opens).
+  final FocusNode? focusNode;
 
   /// The button itself, usable or dimmed.
   Widget _button(bool usable) => Tooltip(
@@ -99,6 +117,7 @@ class _BarButton extends StatelessWidget {
             child: Material(
               type: MaterialType.transparency,
               child: InkWell(
+                focusNode: focusNode,
                 borderRadius: BorderRadius.circular(6),
                 hoverColor: ink.hover,
                 onTap: usable ? onTap : null,
@@ -155,6 +174,58 @@ class _ShotButtons extends StatelessWidget {
               onTap: () => DeskShot.take(long: true),
               on: !busy),
         ]),
+      );
+}
+
+/// In a narrow window, one More button for Copy link and the two screenshots, as a menu, so the
+/// command bar keeps its room (TitleBar.compactUnder).
+class _MoreButton extends StatefulWidget {
+  const _MoreButton({required this.ink});
+  final BarColours ink;
+
+  @override
+  State<_MoreButton> createState() => _MoreButtonState();
+}
+
+/// The More button's focus, which its menu takes as it opens, so Esc closes it even when it was
+/// opened with the mouse (the menu listens for Esc from its button or its items).
+class _MoreButtonState extends State<_MoreButton> {
+  final _focus = FocusNode(debugLabel: 'More');
+
+  /// Lets go of the button's focus as the bar goes.
+  @override
+  void dispose() {
+    _focus.dispose();
+    super.dispose();
+  }
+
+  /// The button, opening and closing its menu; the screenshots are greyed out while one's taken.
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
+        valueListenable: DeskShot.busy,
+        builder: (_, busy, _) => MenuAnchor(
+          childFocusNode: _focus,
+          menuChildren: [
+            MenuItemButton(leadingIcon: const Icon(Icons.link, size: 18), onPressed: DeskChrome.copyLink, child: Text(tr('desktop.cmd.copyLink', 'Copy link'))),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.photo_camera_outlined, size: 18),
+              onPressed: busy ? null : () => DeskShot.take(long: false),
+              child: Text(tr('desktop.cmd.shot', 'Take a screenshot')),
+            ),
+            MenuItemButton(
+              leadingIcon: const Icon(Icons.height, size: 18),
+              onPressed: busy ? null : () => DeskShot.take(long: true),
+              child: Text(tr('desktop.cmd.longShot', 'Take a long screenshot')),
+            ),
+          ],
+          builder: (_, menu, _) => _BarButton(
+            ink: widget.ink,
+            icon: Icons.more_horiz,
+            tip: tr('html.more', 'More'),
+            focusNode: _focus,
+            onTap: () => menu.isOpen ? menu.close() : menu.open(),
+          ),
+        ),
       );
 }
 

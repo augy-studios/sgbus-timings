@@ -122,9 +122,13 @@ class Desktop {
 
   // ---------- the main window ----------
 
-  /// The smallest the main window goes, and its size the first time (or whenever it isn't
-  /// maximised and has no kept size): desktop-shaped, as the features spec's §5 sets them.
-  static const minSize = Size(800, 600);
+  /// The smallest the main window goes: phone-sized, the features spec's compact fallback (§5).
+  /// Under 720 px wide it's laid out as the phone app is, with the Edge Tray (app/nav.dart's
+  /// DeskPanes).
+  static const minSize = Size(360, 520);
+
+  /// The main window's size the first time (or whenever it isn't maximised and has no kept
+  /// size), as the features spec's §5 sets it.
   static const defaultSize = Size(1120, 760);
   static Rect? _normal; // the un-maximised bounds, kept as they change
   static Timer? _keepTimer;
@@ -210,10 +214,7 @@ class Desktop {
     final b = s['bounds'];
     var placed = false;
     if (b is Map && b['width'] is num && b['height'] is num) {
-      // Never smaller than the least size (an older app kept a phone-shaped window).
-      final width = math.max((b['width'] as num).toDouble(), minSize.width);
-      final height = math.max((b['height'] as num).toDouble(), minSize.height);
-      final rect = Rect.fromLTWH((b['x'] as num? ?? 40).toDouble(), (b['y'] as num? ?? 40).toDouble(), width, height);
+      final rect = keptBounds(b);
       if (_onAScreen(rect)) {
         w.bounds = rect.toNative();
         placed = true;
@@ -233,6 +234,15 @@ class Desktop {
     for (final f in List.of(onShown)) {
       f();
     }
+  }
+
+  /// The window's kept bounds (settings.json's `bounds`, with a width and height) as it can
+  /// take them: never smaller than [minSize], whatever an older copy kept, and at 40, 40 if their
+  /// place is missing.
+  static Rect keptBounds(Map<dynamic, dynamic> b) {
+    final width = math.max((b['width'] as num).toDouble(), minSize.width);
+    final height = math.max((b['height'] as num).toDouble(), minSize.height);
+    return Rect.fromLTWH((b['x'] as num? ?? 40).toDouble(), (b['y'] as num? ?? 40).toDouble(), width, height);
   }
 
   /// Called once the main window has been shown the first time.

@@ -6,9 +6,10 @@
 // (app/shell.dart) has a second navigator, the detail pane: a screen pushed with its site
 // address (a stop, a bus, a shared ETA, sync, a team run) opens there instead of over the whole
 // window, beside the page's list. On Android, and while something full-screen is open, it's
-// pushed over everything as always. The layouts, and the desktop title bar's Back and Forward
-// (ViewHistory), are kept here, not under desktop/, so the shell (and their tests) needn't bring
-// in the desktop's window packages.
+// pushed over everything as always. If the window narrows to the phone layout, the pane's
+// screens move over the whole window (DeskPanes.fold). The layouts, and the desktop title bar's
+// Back and Forward (ViewHistory), are kept here, not under desktop/, so the shell (and their
+// tests) needn't bring in the desktop's window packages.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -124,12 +125,7 @@ class AppNav {
     // screen it came from, which may be gone. The shell is the only screen under it here
     // (_panesInFront), so this stops there.
     nav?.popUntil((r) => r is PageRoute);
-    final route = PageRouteBuilder<T>(
-      settings: settings,
-      pageBuilder: (_, _, _) => screen,
-      transitionDuration: Duration.zero,
-      reverseTransitionDuration: Duration.zero,
-    );
+    final route = PaneRoute<T>(screen: screen, settings: settings);
     final stack = fromPane;
     // Used once: a screen opened next by the keyboard or a menu, with no click, replaces.
     fromPane = false;
@@ -170,6 +166,18 @@ class AppNav {
     o(args);
     return true;
   }
+}
+
+/// A screen in the desktop's detail pane: it opens in place (no slide), and keeps the screen it
+/// shows, so the screen can move over the whole window if the window narrows to the phone
+/// layout (DeskPanes.fold).
+class PaneRoute<T> extends PageRouteBuilder<T> {
+  /// A route showing [screen], with its name and site address in [settings].
+  PaneRoute({required this.screen, super.settings})
+      : super(pageBuilder: (_, _, _) => screen, transitionDuration: Duration.zero, reverseTransitionDuration: Duration.zero);
+
+  /// The screen it shows.
+  final Widget screen;
 }
 
 // ---------- the desktop's layouts ----------
@@ -239,6 +247,54 @@ class DeskPanes {
 
   /// The pane's screens changed.
   static void _changed() => open.value = AppNav.paneShowsScreen;
+
+  /// The screens open in the detail pane, bottom first (not its "pick something" note).
+  static List<PaneRoute<dynamic>> screens() => observer.routes.whereType<PaneRoute<dynamic>>().toList();
+
+  /// Runs a fold or an unfold as a step of the title bar's Back and Forward, so the screens it
+  /// opens don't clear Forward's list (desktop/chrome.dart sets it to its ViewHistory.stepping;
+  /// nothing sets it on Android).
+  static void Function(void Function() step)? historyStep;
+
+  /// Runs [step] through [historyStep], or just runs it if nothing has set one.
+  static void _asHistoryStep(void Function() step) {
+    final wrap = historyStep;
+    if (wrap == null) {
+      step();
+    } else {
+      wrap(step);
+    }
+  }
+
+  /// The window narrowed to the phone layout, so the detail pane went, and with it the screens it
+  /// had ([screens], taken just before; app/shell.dart waits to call this until nothing
+  /// full-screen is open over the shell). Each opens again over the whole window, in the same
+  /// order, so nothing open is lost and Back still steps through them; they stay there if the
+  /// window widens again, so they're never in both places. A dialog or panel open over the shell
+  /// (one a pane's screen opened, which sits on the app's own navigator) closes first, as when a
+  /// screen replaces what the pane showed ([AppNav.push]), and whatever opened it hears null.
+  static void fold(List<PaneRoute<dynamic>> screens) {
+    final nav = AppNav.nav;
+    if (nav == null || screens.isEmpty) return;
+    nav.popUntil((r) => r is PageRoute);
+    _asHistoryStep(() {
+      for (final route in screens) {
+        nav.push<void>(MaterialPageRoute(builder: (_) => route.screen, settings: route.settings));
+      }
+    });
+  }
+
+  /// The window widened again before folded screens could move ([fold] was still waiting for a
+  /// full-screen screen to close): they go back into the new detail pane, in the same order.
+  static void unfold(List<PaneRoute<dynamic>> screens) {
+    final pane = AppNav.pane;
+    if (pane == null) return;
+    _asHistoryStep(() {
+      for (final route in screens) {
+        pane.push<void>(PaneRoute(screen: route.screen, settings: route.settings));
+      }
+    });
+  }
 }
 
 /// Keeps a list of a navigator's open routes, and says when it changes: the detail pane's

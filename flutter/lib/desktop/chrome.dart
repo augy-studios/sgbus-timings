@@ -107,6 +107,9 @@ class DeskChrome {
     DeskPanes.observer.addListener(_refresh);
     observer.onNewScreen = _newScreen;
     DeskPanes.observer.onNewScreen = _newScreen;
+    // The detail pane's screens moving as the window narrows or widens aren't new screens: they
+    // leave Forward's list as it was.
+    DeskPanes.historyStep = (step) => history.stepping(step);
     AppNav.page.addListener(_pageChanged);
     history.pageShown(AppNav.page.value);
     I18n.I.addListener(_refresh);

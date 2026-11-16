@@ -17,6 +17,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **A title bar with a command bar** - Back, Forward and Reload on the left, Copy link, the two screenshots and Restart to update on the right, and in the middle a box that finds any stop, bus or command: click it, or press Ctrl+K (⌘K on a Mac). Paste a link to the website or a uwu://sgbus/ link into it and it opens in the app.
 - **Keyboard shortcuts** - Ctrl+L or F6 for the link, Ctrl+Shift+C to copy it, Alt+Left and Alt+Right for Back and Forward, F5 to reload, Ctrl+, for Settings, Ctrl+W to close what's in front, and F11 for full screen. On a Mac, ⌘ for Ctrl, ⌘[ and ⌘] for Back and Forward, and ⌃⌘F for full screen.
 - **Made for a big window** - From 720 pixels wide, a navigation rail down the left takes the Edge Tray's place, and on a wide window a stop or a bus opens beside your list, so you keep your place in it.
+- **A narrow window too** - The window can be made as small as a phone, 360 by 520 pixels, and under 720 pixels wide it's laid out as the Android app is, with the Edge Tray. Anything open beside your list stays open as the window narrows.
 - **Right-click menus** - On a stop, a bus or a favourite: open it, pin it to a desktop widget, set it as the tray countdown, star it, or copy its link.
 - **Dialogs, not sheets** - Pickers and forms open in the middle of the window, and lists slide in from the right. Esc closes them.
 - **The Mac's menu bar** - Every command in the menus along the top of the screen, each with its shortcut.
@@ -24,6 +25,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Your computer's colour** - Use system accent colour in Theme, or System accent in Make it yours, paints the app in your computer's own accent colour.
 - **Explorer and the live map** - Drawn as in the Android app, with Save the map to keep Singapore's streets for when you're offline.
 - **Everything it had** - The tray and its menu, the tray countdown, Bus timings widgets, your favourites in the Jump List and the Dock, Service alerts as notifications, starting when you sign in, uwu:// links, screenshots and updating itself.
+- **Closing a widget** - A Bus timings widget closed with Alt+F4 is removed, as its × does. Quitting the app keeps them all for next time.
 - **Linux** - The app now needs Ubuntu 22.04, Debian 12 or newer, and the AppImage uses your computer's own GTK 3 and WebKitGTK 4.1, which most desktops have. If the new version doesn't open, the guide says what to install.
 
 ### Android app 2.5.0
@@ -34,6 +36,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **A shorter trip bar** - The bar itself takes a line for where you're going and two for the part you're on, beside smaller buttons, rather than up to a third of the screen. Tap it for the rest on the trip's screen.
 - **Start trip within reach** - On a phone, Start trip under a way, in Navigate and the route planner, has a line of its own across the page, rather than running off its edge under the Edge Tray.
 - **The first walk from Your location** - A trip from Your location starts with the walk to its first stop, from where you were when the ways were planned, not at its first ride, so on a long first walk the Get Off Alert no longer comes early.
+- **Readable in high contrast** - With High contrast on and a dark colour of your own in Theme, the writing on buttons and bars in that colour is white, so it reads. The usual colours and GTA VI keep their black writing.
 
 ### Website and Android app
 

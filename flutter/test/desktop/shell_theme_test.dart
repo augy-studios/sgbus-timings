@@ -104,10 +104,10 @@ void main() {
       reads('your colours');
     });
 
-    test("Android's high contrast keeps black on the brand colour", () {
+    test("Android's high contrast has white on a dark colour of your own too", () {
       Store.I.putJson(AppLook.coloursKey, Colours.keep('#1b2a80', null));
       final sg = AppLook.I.theme(Brightness.light, contrast: true).extension<SgColors>()!;
-      expect(sg.onBrand, Colors.black);
+      expect(sg.onBrand, Colors.white);
     });
   });
 }

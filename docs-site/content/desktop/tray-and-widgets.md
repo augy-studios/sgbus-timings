@@ -73,7 +73,7 @@ buses as fit, and scrolls for the rest. It refreshes every 30 seconds, and says
 when it last did. Its buttons refresh it now, pick another stop, keep it on top of
 other windows, and remove it. Click a bus to open it in the app. Add as many as
 you like; they're where you left them each time the app starts. Quitting the app
-keeps them; only the remove button takes one away.
+keeps them; its remove button, or closing it with Alt+F4, takes one away.
 
 <figure>
 <img src="/screenshots/desktop/widget-dark.png" alt="The same widget with the app in dark mode: light writing on a dark background, each bus's next time in pale green." width="320" height="300" loading="lazy">

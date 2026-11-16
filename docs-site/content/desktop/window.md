@@ -96,8 +96,11 @@ On Windows and Linux, quit from the [tray's menu](tray-and-widgets.md#the-tray).
 
 The app fits itself to the window's width:
 
-- **Narrower than 720 pixels**: the same layout as the phone, with the
-  [Edge Tray](../android/main-screen.md#the-edge-tray) down the side.
+- **Narrower than 720 pixels** (the window goes down to 360 by 520): the same layout
+  as the phone, with the [Edge Tray](../android/main-screen.md#the-edge-tray) down the
+  side. Copy link and the two screenshots move into the title bar's **More** (⋯)
+  button, and anything open beside the list moves over the whole window, so nothing
+  is lost.
 - **From 720 pixels**: a **navigation rail** down the left, with your pages' buttons,
   takes the Edge Tray's place.
 - **Wider than 1024 pixels**: the page's list sits in a column on the left, and a

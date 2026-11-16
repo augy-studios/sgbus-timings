@@ -186,6 +186,14 @@ class CommandBarState extends State<CommandBar> {
   int _selected = 0;
   double _width = 480;
 
+  /// Narrower than this, the bar at rest leaves out its shortcut (Ctrl+K), and open, its
+  /// message...
+  static const _keysFrom = 200.0;
+
+  /// ...and narrower than this, its words too, showing just the search icon: in a phone-sized
+  /// window there's little room beside the title bar's buttons.
+  static const _wordsFrom = 64.0;
+
   /// Where focus was before the bar opened, given back when Esc closes it.
   FocusNode? _before;
 
@@ -310,10 +318,12 @@ class CommandBarState extends State<CommandBar> {
         );
       });
 
-  /// At rest: the title (or a message), with the shortcut's hint.
+  /// At rest: the title (or a message), with the shortcut's hint, as much of it as there's room
+  /// for ([_keysFrom], [_wordsFrom]).
   Widget _rest() {
     final ink = widget.ink;
     final hint = tr('desktop.bar.search', 'Search stops, buses and commands');
+    final icon = Icon(Icons.search, size: 15, color: ink.fg.withValues(alpha: .75));
     return Semantics(
       button: true,
       label: hint,
@@ -328,27 +338,31 @@ class CommandBarState extends State<CommandBar> {
               height: 28,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(color: ink.field, borderRadius: BorderRadius.circular(14)),
-              child: ListenableBuilder(
-                listenable: Listenable.merge([DeskChrome.title, DeskChrome.message]),
-                builder: (context, _) {
-                  final said = DeskChrome.message.value;
-                  return Row(children: [
-                    Icon(Icons.search, size: 15, color: ink.fg.withValues(alpha: .75)),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        said ?? DeskChrome.title.value,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: ink.fg, fontSize: 13, fontWeight: said == null ? FontWeight.w500 : FontWeight.w700),
-                      ),
+              child: _width < _wordsFrom
+                  ? Center(child: icon)
+                  : ListenableBuilder(
+                      listenable: Listenable.merge([DeskChrome.title, DeskChrome.message]),
+                      builder: (context, _) {
+                        final said = DeskChrome.message.value;
+                        return Row(children: [
+                          icon,
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              said ?? DeskChrome.title.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: ink.fg, fontSize: 13, fontWeight: said == null ? FontWeight.w500 : FontWeight.w700),
+                            ),
+                          ),
+                          if (_width >= _keysFrom) ...[
+                            const SizedBox(width: 6),
+                            Text(DeskMenus.keys('K'), style: TextStyle(color: ink.fg, fontSize: 11)),
+                          ],
+                        ]);
+                      },
                     ),
-                    const SizedBox(width: 6),
-                    Text(DeskMenus.keys('K'), style: TextStyle(color: ink.fg, fontSize: 11)),
-                  ]);
-                },
-              ),
             ),
           ),
         ),
@@ -357,7 +371,7 @@ class CommandBarState extends State<CommandBar> {
   }
 
   /// Open: the search box, with Up, Down and Esc of its own, and a message at its end while one
-  /// shows.
+  /// shows. In a narrow bar the message, then the search icon, make room for typing.
   Widget _field() {
     final ink = widget.ink;
     final style = TextStyle(color: ink.fg, fontSize: 13);
@@ -366,8 +380,10 @@ class CommandBarState extends State<CommandBar> {
       padding: const EdgeInsets.only(left: 10, right: 8),
       decoration: BoxDecoration(color: ink.field, borderRadius: BorderRadius.circular(14), border: Border.all(color: ink.fg, width: 1.5)),
       child: Row(children: [
-        Icon(Icons.search, size: 15, color: ink.fg.withValues(alpha: .75)),
-        const SizedBox(width: 6),
+        if (_width >= _wordsFrom) ...[
+          Icon(Icons.search, size: 15, color: ink.fg.withValues(alpha: .75)),
+          const SizedBox(width: 6),
+        ],
         Expanded(
           child: CallbackShortcuts(
             bindings: {
@@ -399,17 +415,39 @@ class CommandBarState extends State<CommandBar> {
             ),
           ),
         ),
-        ValueListenableBuilder<String?>(
-          valueListenable: DeskChrome.message,
-          builder: (_, said, _) => said == null ? const SizedBox.shrink() : Text(said, style: style.copyWith(fontWeight: FontWeight.w700)),
-        ),
+        // At most half the bar, so there's always room to type; left out of a very narrow bar,
+        // where the list under it says "Nothing matches" anyway.
+        if (_width >= _keysFrom)
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: _width / 2),
+            child: ValueListenableBuilder<String?>(
+              valueListenable: DeskChrome.message,
+              builder: (_, said, _) =>
+                  said == null ? const SizedBox.shrink() : Text(said, maxLines: 1, overflow: TextOverflow.ellipsis, style: style.copyWith(fontWeight: FontWeight.w700)),
+            ),
+          ),
       ]),
     );
   }
 
-  /// The list under the open box, in the chrome's overlay, at least 460 px wide.
+  /// The list under the open box, in the chrome's overlay: centred under the box, at least
+  /// 460 px wide. In a phone-sized window (the phone layout, app/nav.dart) the box is too narrow
+  /// to hang it from, so it spans the window under the title bar instead, 16 px in from each side.
   Widget _list(BuildContext context) {
-    final width = math.min(math.max(_width, 460.0), MediaQuery.sizeOf(context).width - 32);
+    final window = MediaQuery.sizeOf(context).width;
+    final results = TapRegion(
+      groupId: _group,
+      child: _Results(
+        hits: _hits,
+        selected: _selected,
+        scroll: _scroll,
+        onHover: (i) => setState(() => _selected = i),
+        onPick: (i) => _run(_hits[i]),
+      ),
+    );
+    if (window < DeskPanes.railFrom) {
+      return Stack(children: [Positioned(left: 16, right: 16, top: DeskChrome.barHeight + 6, child: results)]);
+    }
     return Stack(children: [
       CompositedTransformFollower(
         link: _link,
@@ -417,19 +455,7 @@ class CommandBarState extends State<CommandBar> {
         targetAnchor: Alignment.bottomCenter,
         followerAnchor: Alignment.topCenter,
         offset: const Offset(0, 6),
-        child: TapRegion(
-          groupId: _group,
-          child: SizedBox(
-            width: width,
-            child: _Results(
-              hits: _hits,
-              selected: _selected,
-              scroll: _scroll,
-              onHover: (i) => setState(() => _selected = i),
-              onPick: (i) => _run(_hits[i]),
-            ),
-          ),
-        ),
+        child: SizedBox(width: math.min(math.max(_width, 460.0), window - 32), child: results),
       ),
     ]);
   }

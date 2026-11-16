@@ -692,11 +692,12 @@ class AppLook extends ChangeNotifier {
     );
   }
 
-  /// High contrast's writing on the brand colour: black, as on every brand swatch. On the
-  /// desktop (compact) it's white instead on a brand colour too dark for black (an accent
-  /// colour, or Your colours); Android keeps black for now.
+  /// High contrast's writing on the brand colour: black wherever black reads (WCAG AA, 4.5:1), as
+  /// on every brand swatch and GTA VI's pink; white on a brand colour too dark for black (a dark
+  /// colour of Your colours, or a dark accent colour on the desktop). The same on Android and
+  /// the desktop.
   Color _contrastOnBrand(Color brand) {
-    if (!compact || Colours.contrast('#000000', hexOf(brand)) >= Colours.aa) return Colors.black;
+    if (Colours.contrast('#000000', hexOf(brand)) >= Colours.aa) return Colors.black;
     return Colors.white;
   }
 

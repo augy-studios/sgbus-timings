@@ -127,7 +127,7 @@ screen takes the website's plain path.
 
 | Feature | Where (`lib/desktop/` unless it says) |
 |---|---|
-| **Start-up order**: the update window, then the app hidden until its first frame, Make it yours the first time, then the tray, widgets and checks | `desktop_main.dart`, `desktop.dart` (the window: opens maximised, 1120 x 760 un-maximised, at least 800 x 600, size and place kept; close to the tray; one copy at a time) |
+| **Start-up order**: the update window, then the app hidden until its first frame, Make it yours the first time, then the tray, widgets and checks | `desktop_main.dart`, `desktop.dart` (the window: opens maximised, 1120 x 760 un-maximised, at least 360 x 520, size and place kept; close to the tray; one copy at a time) |
 | **The title bar** (40 px, the brand colour): Back and Forward through the app's own history, Reload, the command bar, Copy link, the two screenshots, Restart to update, and on Windows and Linux its own window buttons | `title_bar.dart`, `chrome.dart`, `screenshot.dart`; the history is `app/nav.dart`'s `ViewHistory` |
 | **The command bar** (Ctrl/⌘+K, F, L or F6): stops, buses and the app's commands; a pasted site address, `#address` or `uwu://sgbus/` link opens in the app, another UwU app's link goes to that app, anything else to the browser | `command_bar.dart`, `app/links.dart` (`Links.read`) |
 | **Keyboard shortcuts** on all three systems, and the **macOS menu bar** (App, File, Edit, View, Window, Help) | `menubar.dart` (the full list is in its header) |

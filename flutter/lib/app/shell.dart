@@ -7,7 +7,9 @@
 // Tray's place, and the page shares the room with a detail pane, a navigator of its own where a
 // stop, a bus or a shared link opens (app/nav.dart's push and DeskPanes): above 1024 px the page's list sits in
 // a 360-400 px pane on the left with the detail beside it; from 720 to 1024 px the detail covers
-// the list while it's open. Under 720 px, and always on Android, the shell is the phone's.
+// the list while it's open. Under 720 px, and always on Android, the shell is the phone's; a
+// window narrowed to it keeps what the detail pane had open, moved over the whole window (once
+// any full-screen screen open over the shell, such as Settings, is closed).
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -41,6 +43,17 @@ class _ShellState extends State<Shell> {
   /// Keeps the pages' place (scroll, what's typed) as the desktop's layout changes around them.
   final _pagesKey = GlobalKey();
 
+  /// The desktop's layout when the shell was last drawn; null before the first time.
+  DeskLayout? _layout;
+
+  /// The detail pane's screens, waiting to move over the whole window: the window narrowed to
+  /// the phone layout while a full-screen screen (Settings, the map) was open, so they wait
+  /// under it, and the person stays on what they were looking at.
+  List<PaneRoute<dynamic>> _waiting = const [];
+
+  /// The app's navigator's watcher (desktop/chrome.dart's), followed while screens wait.
+  RouteWatcher? _watching;
+
   /// Opens on the home page, and starts following the page picked and the connection.
   @override
   void initState() {
@@ -57,16 +70,76 @@ class _ShellState extends State<Shell> {
     setState(() {});
   }
 
-  /// Stops following the page and the connection as the shell goes.
+  /// Stops following the page, the connection and the app's screens as the shell goes.
   @override
   void dispose() {
     AppNav.page.removeListener(_changed);
     Net.off.removeListener(_net);
+    _stopWaiting();
     super.dispose();
   }
 
   /// The page changed: the shell shows it.
   void _changed() => setState(() {});
+
+  /// The desktop's layout changed (the window crossed 720 or 1024 px): narrowed to the phone's,
+  /// or widened from it.
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final layout = DeskPanes.layoutOf(context);
+    final before = _layout;
+    _layout = layout;
+    if (before == null || before == layout) return;
+    if (layout == DeskLayout.phone && before != DeskLayout.phone) _narrowed();
+    if (before == DeskLayout.phone && layout != DeskLayout.phone) _widened();
+  }
+
+  /// Narrowed to the phone layout: the panes go. The screens the detail pane had open are taken
+  /// now, while it still has them, and open over the whole window once this frame is drawn and
+  /// the pane is gone (DeskPanes.fold); or, with a full-screen screen open over the shell, once
+  /// that's closed.
+  void _narrowed() {
+    final screens = DeskPanes.screens();
+    if (screens.isEmpty) return;
+    final watcher = AppNav.rootWatcher;
+    if (watcher != null && watcher.depth > 1) {
+      _stopWaiting();
+      _waiting = screens;
+      _watching = watcher..addListener(_rootChanged);
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) DeskPanes.fold(screens);
+    });
+  }
+
+  /// Widened from the phone layout with screens still waiting: they go back into the new detail
+  /// pane, as they were, once this frame has built it (DeskPanes.unfold).
+  void _widened() {
+    final screens = _stopWaiting();
+    if (screens.isEmpty) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) DeskPanes.unfold(screens);
+    });
+  }
+
+  /// The app's screens changed while the pane's wait: once nothing full-screen is left over the
+  /// shell, they move over the whole window.
+  void _rootChanged() {
+    if ((_watching?.depth ?? 0) > 1) return;
+    final screens = _stopWaiting();
+    if (mounted) DeskPanes.fold(screens);
+  }
+
+  /// Stops waiting and following the app's screens, and hands back what was waiting.
+  List<PaneRoute<dynamic>> _stopWaiting() {
+    _watching?.removeListener(_rootChanged);
+    _watching = null;
+    final screens = _waiting;
+    _waiting = const [];
+    return screens;
+  }
 
   /// Android's Back, with nothing open over the shell: home first, then "Press back again to
   /// exit".

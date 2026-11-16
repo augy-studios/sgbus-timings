@@ -6,7 +6,8 @@
 //
 // Added from the tray's menu. Each one's stop, buses, size and place are kept in settings.json
 // (the Electron app's `widgets`, so its widgets come back) and it's opened again where it was
-// when the app starts. Closing one with its × removes it; quitting the app keeps them all.
+// when the app starts. Closing one with its × or Alt+F4 removes it; quitting the app, or the
+// computer shutting down, keeps them all ([WidgetClosing] tells the two apart).
 //
 // Each window runs its own engine (desktop_multi_window), and asks the main window, over the
 // 'sgbus/main' channel, for anything kept: the main window alone writes settings.json. So this
@@ -121,7 +122,9 @@ class DeskWidgets {
         if (a['bounds'] is Map) update(id, {'bounds': a['bounds']});
         return true;
       case 'widget-close':
-        remove(id);
+        // Closed by its × or Alt+F4: forgotten. While the app is quitting it's kept for next
+        // time instead, as the Electron app's `quitting` flag had it (Desktop.quit sets it).
+        if (!Desktop.quitting) remove(id);
         _open.remove(id);
         return true;
       case 'widget-prefs':
@@ -147,11 +150,68 @@ class DeskWidgets {
 
 // ---------- the widget's own window ----------
 
+/// How a widget's window closing is told apart, as the Electron app did it: closed by a person
+/// (its ×, Alt+F4, the window manager's Close) the widget is forgotten; closed by the computer
+/// shutting down or signing out, or by the app quitting, it's kept for next time.
+///
+/// The window's close requests say which: one a person makes can be held while something is
+/// done first, and one the system forces can't be (nativeapi's EventRequest.isCancelable).
+/// Quitting the app ends it outright (Desktop.quit), with no close request at all; and if a
+/// widget is closed while the app is quitting, the main window keeps it ('widget-close' in
+/// [DeskWidgets.handle]).
+class WidgetClosing {
+  /// [ask] tells the main window to forget the widget; tests pass their own.
+  WidgetClosing(this.id, {Future<void> Function(String id)? ask}) : _ask = ask ?? _askMain;
+
+  /// The widget's id.
+  final String id;
+  final Future<void> Function(String id) _ask;
+
+  /// This window's own (each widget window runs its own engine), set as it starts.
+  static WidgetClosing? current;
+
+  /// The longest a close waits for the main window, so a widget never stays stuck open.
+  static const wait = Duration(seconds: 2);
+
+  /// The one asking of the main window, once it's started: the × and the close it starts (or
+  /// an Alt+F4 while the × waits) all wait on this same one.
+  Future<void>? _asking;
+
+  /// Asks the main window, over the 'sgbus/main' channel, to forget the widget.
+  static Future<void> _askMain(String id) => mainChannel.invokeMethod('widget-close', {'id': id});
+
+  /// Asks the main window to forget the widget, once, waiting at most [wait]; never fails.
+  /// Called again, it waits on the first asking.
+  Future<void> forget() => _asking ??= _askOnce();
+
+  /// The asking itself, at most [wait] long.
+  Future<void> _askOnce() async {
+    try {
+      await _ask(id).timeout(wait);
+    } catch (_) {
+      // The main window didn't answer: the widget stays kept, and opens again next time.
+    }
+  }
+
+  /// The widget's window was asked to close. A close a person asked for is held until the main
+  /// window has forgotten the widget, then let through. One the system forces (shutting down,
+  /// signing out) can't be held and isn't anyone removing the widget, so it's kept.
+  void onCloseRequested(EventRequest request) {
+    if (!request.isCancelable) return;
+    final decision = request.defer();
+    // No decision: the request has already been cancelled or has ended, so nothing closes.
+    if (decision == null) return;
+    forget().whenComplete(() => decision.accept());
+  }
+}
+
 /// A widget window's engine starts here: it asks the main window for the widget's settings and
 /// the app's, draws the widget, then sets its window up (frameless, off the taskbar, its kept
-/// size and place) and keeps its place as it's moved or resized.
+/// size and place), keeps its place as it's moved or resized, and forgets the widget when a
+/// person closes it ([WidgetClosing]).
 Future<void> runBusWidget(Map<String, Object?> args) async {
   final id = '${args['id']}';
+  final closing = WidgetClosing.current = WidgetClosing(id);
   Map<String, dynamic>? saved;
   Map<String, Object?> prefs = const {};
   try {
@@ -182,6 +242,8 @@ Future<void> runBusWidget(Map<String, Object?> args) async {
     // Its place is sent half a second after it stops moving, not on every step of a drag.
     Timer? keep;
     w.addListener((e) {
+      // Listened for before the window shows, so no close can come before it's in place.
+      if (e is WindowCloseRequestedEvent) closing.onCloseRequested(e.request);
       if (e is WindowMovedEvent || e is WindowResizedEvent) {
         keep?.cancel();
         keep = Timer(const Duration(milliseconds: 500), () {
@@ -432,11 +494,10 @@ class _BusWidgetState extends State<BusWidget> {
     return '';
   }
 
-  /// The × button: the widget's forgotten, and its window closes.
+  /// The × button: the widget's forgotten, and its window closes. The close then asks no more
+  /// (WidgetClosing asks the main window only once).
   Future<void> _close() async {
-    try {
-      await mainChannel.invokeMethod('widget-close', {'id': widget.id});
-    } catch (_) {}
+    await (WidgetClosing.current ?? WidgetClosing(widget.id)).forget();
     Desktop.window?.close();
   }
 
