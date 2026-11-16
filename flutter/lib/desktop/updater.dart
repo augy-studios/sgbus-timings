@@ -394,9 +394,10 @@ class Updater {
     return out;
   }
 
-  /// Clears the folders earlier downloads left in the temp folder, then makes a new one. Dart's
-  /// createTemp makes it readable by this person only (mode 0700 on Linux and macOS). Another
-  /// person's folders, which can't be deleted, are skipped.
+  /// Clears the folders earlier downloads left in the temp folder, then makes a new one that only
+  /// this person can open (mode 0700 on Linux and macOS, set explicitly: createTemp alone gave
+  /// 0755 on Linux, and /tmp is shared by every user there). If the mode can't be set, the
+  /// download doesn't go ahead. Another person's folders, which can't be deleted, are skipped.
   static Future<Directory> _freshDownloadFolder() async {
     final temp = Directory.systemTemp;
     try {
@@ -410,7 +411,22 @@ class Updater {
     } catch (_) {
       // The temp folder couldn't be listed: nothing to clear.
     }
-    return temp.createTemp('sgbus-timings-update-');
+    final folder = await temp.createTemp('sgbus-timings-update-');
+    if (!Platform.isWindows) await _ownerOnly(folder);
+    return folder;
+  }
+
+  /// Makes [folder] readable, writable and openable by this person only (chmod 700), and checks
+  /// it took; throws if not, so nothing is downloaded where another user could swap the file.
+  static Future<void> _ownerOnly(Directory folder) async {
+    final result = await Process.run('chmod', ['700', folder.path]);
+    final mode = (await folder.stat()).modeString();
+    if (result.exitCode != 0 || mode != 'rwx------') {
+      try {
+        await folder.delete(recursive: true);
+      } catch (_) {}
+      throw FileSystemException('Couldn\'t make the download folder private ($mode)', folder.path);
+    }
   }
 
   /// A file's SHA-512 in base64, as the update files give it.

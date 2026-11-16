@@ -57,6 +57,13 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# webview_all_windows (the desktop map's WebView) still includes <experimental/coroutine>, which
+# newer Visual Studio compilers (MSVC 14.5x, as on GitHub's Windows runners) stop with error
+# STL1011. This define keeps it building until the package moves to C++20's <coroutine>.
+if(TARGET webview_all_windows_plugin)
+  target_compile_definitions(webview_all_windows_plugin PRIVATE _SILENCE_EXPERIMENTAL_COROUTINE_DEPRECATION_WARNINGS)
+endif()
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can
