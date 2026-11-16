@@ -21,6 +21,7 @@ import '../../data/rewards.dart';
 import '../../data/store.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
+import '../map/sg_map.dart';
 
 /// Marks a widget as what a tour's step lights up.
 class TourTarget extends StatefulWidget {
@@ -138,6 +139,11 @@ class Tours {
     }
   }
 
+  /// Whether a step applies on this device. Explorer's compass step needs a compass, which a
+  /// computer hasn't (SgMap.hasCompass), so the desktop app leaves it out even if something
+  /// with its target is on screen. [hasCompass] is for tests, in place of the device's answer.
+  static bool applies(TourStep step, {bool? hasCompass}) => step.target != 'map.compass' || (hasCompass ?? SgMap.hasCompass);
+
   /// A page's, or a view's, the first time.
   static void first(String id) {
     if (seen(id) || _running || !steps.containsKey(id)) return;
@@ -152,7 +158,7 @@ class Tours {
       AppNav.showPage(id);
       await Future<void>.delayed(const Duration(milliseconds: 400));
     }
-    final shown = [for (final s in list) if (TourTarget.rectOf(s.target) != null) s];
+    final shown = [for (final s in list) if (TourTarget.rectOf(s.target) != null && applies(s)) s];
     _markSeen(id);
     if (shown.isEmpty || !context.mounted) return;
     _running = true;

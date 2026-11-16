@@ -1,6 +1,8 @@
 // uwu:// links on the desktop: which page a uwu://sgbus/ link opens (Desktop.fromAppLink in
 // lib/desktop/desktop.dart, as the Electron app and Android's MainActivity map them), and how a
-// link for another UwU app is handed on to it (lib/desktop/links.dart, as links.js does).
+// link for another UwU app is handed on to it (lib/desktop/links.dart, as links.js does), and a
+// copy started only to hand one on quitting only once the other app has been started.
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -101,9 +103,52 @@ void main() {
 
       test("nobody noted, or only this app: there's nobody to hand it to", () {
         expect(DeskLinks.passOn('uwu://promptr/x'), isFalse);
+        expect(DeskLinks.handOn('uwu://promptr/x'), isNull);
         DeskSettings.write({'linkHandoff': {'desktop': 'sgbus-timings.desktop', 'app': '/Applications/SG Bus Timings.app', 'command': '"SG Bus Timings.exe" "%1"'}});
         expect(DeskLinks.passOn('uwu://promptr/x'), isFalse);
+        expect(DeskLinks.handOn('uwu://promptr/x'), isNull);
       });
+    });
+  });
+
+  // A copy started only to carry another app's link (desktop_main.dart's start-up hand-off): the
+  // other app is started a moment after it's asked for, so quitting first would stop it.
+  group('a copy started only to hand a link on', () {
+    test('quits only once the other app has been started', () async {
+      final start = Completer<void>();
+      final steps = <String>[];
+      final done = DeskLinks.handOffAndQuit('uwu://promptr/x', () async => steps.add('quit'), handOn: (link) {
+        steps.add('hand on $link');
+        return start.future;
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(steps, ['hand on uwu://promptr/x'], reason: 'not quit while the other app is starting');
+      start.complete();
+      expect(await done, isTrue);
+      expect(steps, ['hand on uwu://promptr/x', 'quit']);
+    });
+
+    test('a start that fails (the app was uninstalled) still quits', () async {
+      var quit = false;
+      final done = DeskLinks.handOffAndQuit('uwu://promptr/x', () async => quit = true, handOn: (_) => Future<void>.error(const ProcessException('/nowhere', [])));
+      expect(await done, isTrue);
+      expect(quit, isTrue);
+    });
+
+    testWidgets('a start that never finishes still quits, after handOffWait', (t) async {
+      var quit = false;
+      final done = DeskLinks.handOffAndQuit('uwu://promptr/x', () async => quit = true, handOn: (_) => Completer<void>().future);
+      await t.pump(DeskLinks.handOffWait - const Duration(milliseconds: 10));
+      expect(quit, isFalse);
+      await t.pump(const Duration(milliseconds: 20));
+      expect(quit, isTrue);
+      expect(await done, isTrue);
+    });
+
+    test("with nobody to hand it to, it doesn't quit: the app opens as usual", () async {
+      var quit = false;
+      expect(await DeskLinks.handOffAndQuit('uwu://promptr/x', () async => quit = true, handOn: (_) => null), isFalse);
+      expect(quit, isFalse);
     });
   });
 }

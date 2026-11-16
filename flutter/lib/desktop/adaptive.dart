@@ -369,10 +369,6 @@ class DeskContextMenu extends StatelessWidget {
   /// a list of stops), the same as clicking the row, so the stop is picked and the picker closes.
   final VoidCallback? onOpen;
 
-  /// Above this width the shell shows a list and what's picked side by side (spec §5), so Open
-  /// says it opens in the split pane.
-  static const splitWidth = 1024.0;
-
   /// Builds [child], listening for a right-click on the desktop.
   @override
   Widget build(BuildContext context) {
@@ -385,7 +381,10 @@ class DeskContextMenu extends StatelessWidget {
   static Future<void> show(BuildContext context, Offset at, DeskTarget target, {VoidCallback? onOpen}) async {
     final overlay = Overlay.of(context).context.findRenderObject()! as RenderBox;
     final local = overlay.globalToLocal(at);
-    final wide = MediaQuery.sizeOf(context).width > splitWidth;
+    // In the split layout (a window wider than DeskPanes.splitAbove, spec §5) what's opened shows
+    // beside the list, so Open says so. Asked of the layout the window's chrome hands down, not
+    // the width here: a page is told only its own room beside the rail, narrower than the window.
+    final wide = DeskPanes.layoutOf(context) == DeskLayout.split;
     final starred = DeskActions.starred(target);
     final picked = await showMenu<_Pick>(
       context: context,
@@ -464,7 +463,8 @@ class _DeskHoverState extends State<DeskHover> {
 }
 
 /// Tooltips that wait 400 ms under the mouse before they show, as a computer's do (a phone shows
-/// them on a long press, which this doesn't change). The shell wraps the app in it on the desktop.
+/// them on a long press, which this doesn't change). app/app.dart wraps the desktop app in it,
+/// window chrome and all.
 class DeskTooltips extends StatelessWidget {
   const DeskTooltips({super.key, required this.child});
   final Widget child;

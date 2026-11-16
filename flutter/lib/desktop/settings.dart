@@ -9,9 +9,10 @@
 //
 // Keys, and the files that write them: bounds, maximized, trayHintShown (desktop.dart);
 // loginChosen (desktop.dart, tray.dart, welcome.dart); updateNotices (host.dart; updater.dart only
-// reads it); setupDone, pendingLook (welcome.dart); useSystemAccent (welcome.dart, and the desktop
-// theme in desk_theme.dart, which reads it too); widgets (widgets_window.dart); trayStop,
-// favourites (glance.dart); linkHandoff (links.dart).
+// reads it); setupDone, pendingLook (welcome.dart); useSystemAccent (welcome.dart, from Make it
+// yours, and desk_theme.dart's setSystemAccent, from Settings' Theme; desk_theme.dart reads it at
+// start); widgets (widgets_window.dart); trayStop (glance.dart, also through host.dart's
+// SgBus.setTrayStop), favourites (glance.dart); linkHandoff (links.dart).
 import 'dart:convert';
 import 'dart:io';
 

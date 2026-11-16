@@ -320,10 +320,9 @@ class _SettingsGroupState extends State<SettingsGroup> {
       'trips': tr('settings.your_trips', 'Your trips'),
       'places': tr('settings.places', 'Places'),
     };
-    final extras = {
+    final names = {
       'explorer': tr('settings.explorer', 'Explorer'),
-      // SimplyGo's app is a phone's: the desktop app's Edge Tray has no SimplyGo button to turn off.
-      if (!Native.has('desktop')) 'simplygo': tr('settings.simplygo', 'SimplyGo'),
+      'simplygo': tr('settings.simplygo', 'SimplyGo'),
       'telegram': tr('settings.telegram_bot', 'Telegram bot'),
       'coffee': tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
       'guide': tr('settings.guide', 'Guide'),
@@ -333,6 +332,8 @@ class _SettingsGroupState extends State<SettingsGroup> {
       'card': tr('settings.card_value', 'Card value'),
       'receive': tr('settings.receive_nearby', 'Receive nearby'),
     };
+    // On the desktop, not SimplyGo nor the phone's own extras: they never show there.
+    final extras = {for (final e in names.entries) if (EdgeTray.offered(e.key)) e.key: e.value};
     final hidden = EdgeTray.hidden();
     return [
       Text(tr('settings.custom_home', 'Custom home'), style: Theme.of(context).textTheme.titleSmall),
@@ -487,7 +488,7 @@ class _SettingsGroupState extends State<SettingsGroup> {
           contentPadding: EdgeInsets.zero,
           title: Text(tr('settings.guide', 'Guide')),
           subtitle: const Text('guide.sgbus.uwuapps.org'),
-          onTap: () => Native.call('SgBus', 'openLink', {'url': 'https://guide.sgbus.uwuapps.org/android/overview'}).catchError((_) => null),
+          onTap: () => Native.call('SgBus', 'openLink', {'url': EdgeTray.guideUrl}).catchError((_) => null),
         ),
         ?BugReportEntry.build?.call(context),
       ];

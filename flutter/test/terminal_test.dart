@@ -47,8 +47,8 @@ void main() {
   });
 
   test('colours are marks, and nothing else gets through', () {
-    final line = SgbusCore.bold('Bedok\u001b[2J‮Int');
-    expect(SgbusCore.visible(SgbusCore.clean('Bedok\u001b[2J‮Int')), 'Bedok[2JInt');
+    final line = SgbusCore.bold('Bedok\u001b[2J\u202eInt');
+    expect(SgbusCore.visible(SgbusCore.clean('Bedok\u001b[2J\u202eInt')), 'Bedok[2JInt');
     expect(SgbusCore.visible(line).contains('Bedok'), isTrue);
     expect(SgbusCore.clean('a${SgbusCore.open}31${SgbusCore.shut}b'), 'a31b');
   });

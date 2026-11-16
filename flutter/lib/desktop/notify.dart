@@ -32,18 +32,17 @@ class DeskNotify {
   /// handler, and a click that started the app. Also gives desktop.dart the "still running" note.
   static Future<void> init() async {
     if (_ready) return;
-    // The icon as Flutter bundles it beside the exe on Windows and Linux. macOS uses the app's
-    // own icon and takes none here.
-    final sep = Platform.pathSeparator;
-    final dir = File(Platform.resolvedExecutable).parent.path;
-    final icon = '$dir${sep}data${sep}flutter_assets${sep}assets${sep}desktop${sep}icon.png';
+    // Windows and Linux are given the app's icon as a file; macOS uses the app's own icon and
+    // takes none here.
+    final icon = iconPath(Platform.resolvedExecutable, os: Platform.operatingSystem);
+    final hasIcon = File(icon).existsSync();
     try {
       await _plugin.initialize(
         settings: InitializationSettings(
-          windows: WindowsInitializationSettings(appName: Desktop.name, appUserModelId: Desktop.appId, guid: _guid, iconPath: File(icon).existsSync() ? icon : null),
+          windows: WindowsInitializationSettings(appName: Desktop.name, appUserModelId: Desktop.appId, guid: _guid, iconPath: hasIcon ? icon : null),
           // Not asked here: show() asks the first time there's something to show.
           macOS: const DarwinInitializationSettings(requestAlertPermission: false, requestBadgePermission: false, requestSoundPermission: false),
-          linux: LinuxInitializationSettings(defaultActionName: tr('desktop.open', 'Open'), defaultIcon: File(icon).existsSync() ? FilePathLinuxIcon(icon) : null),
+          linux: LinuxInitializationSettings(defaultActionName: tr('desktop.open', 'Open'), defaultIcon: hasIcon ? FilePathLinuxIcon(icon) : null),
         ),
         onDidReceiveNotificationResponse: (r) => _clicked(r.payload),
       );
@@ -59,6 +58,22 @@ class DeskNotify {
               ? tr('desktop.stillRunningMac', 'It keeps checking for Service Alerts from the menu bar. Quit it from the menu bar icon, or with ⌘Q.')
               : tr('desktop.stillRunningTray', 'It keeps checking for Service Alerts from the tray. Quit it from the tray icon.'),
         );
+  }
+
+  /// Where Flutter bundles the app's icon (assets/desktop/icon.png) for the running app at [exe]
+  /// on [os] (Platform.operatingSystem's 'windows', 'linux' or 'macos'): in data/flutter_assets
+  /// beside the exe on Windows and Linux; inside a Mac's .app, from Contents/MacOS/ (the exe's
+  /// folder) over to Contents/Frameworks/App.framework/Resources/flutter_assets.
+  static String iconPath(String exe, {required String os}) {
+    final sep = os == 'windows' ? '\\' : '/';
+    const icon = ['assets', 'desktop', 'icon.png'];
+    // The exe's folder, as a list of folder names.
+    final folders = exe.split(sep)..removeLast();
+    if (os == 'macos') {
+      if (folders.isNotEmpty) folders.removeLast(); // Contents/MacOS up to Contents
+      return [...folders, 'Frameworks', 'App.framework', 'Resources', 'flutter_assets', ...icon].join(sep);
+    }
+    return [...folders, 'data', 'flutter_assets', ...icon].join(sep);
   }
 
   /// Whether notifications may show: always on Windows and Linux. macOS asks the person once,

@@ -1,7 +1,8 @@
-// The desktop app's start, in the order the Electron app had it (main.js): the update window
-// first (which may install an update and restart before anything else opens), then the app,
-// hidden, with Make it yours in front of it the first time; the tray, the widgets and the checks
-// that run while it's open. main.dart calls each part around its own start.
+// The desktop app's start, in the order the Electron app had it (main.js): a copy started only to
+// hand another UwU app's link on does that and quits; then the update window (which may install
+// an update and restart before anything else opens), then the app, hidden, with Make it yours in
+// front of it the first time; the tray, the widgets and the checks that run while it's open.
+// main.dart calls each part around its own start.
 //
 // The main window stays hidden until the app's first frame is drawn, so it never flashes white
 // (desktop-features-spec §5).
@@ -15,6 +16,7 @@ import 'package:sgbus_desktop/sgbus_desktop.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../app/links.dart';
+import '../app/nav.dart';
 import '../data/favs.dart';
 import '../data/store.dart';
 import '../theme/theme.dart';
@@ -40,10 +42,12 @@ class DeskStart {
   /// Set once the desktop's first look has been chosen, so it's chosen only once.
   static const _lookKey = 'desktop.look';
 
-  /// Before the app's drawn: the window found and set up, and the desktop's look for the app:
-  /// the site's (not Material You's, as the website and the Electron app had it), chosen once,
-  /// with the computer's accent colour if "Use system accent colour" is on (desk_theme.dart).
+  /// Before the app's drawn: a copy started only to hand another UwU app's link on quits here
+  /// ([_handOffOnly]); otherwise the window is found and set up, and the desktop's look chosen for
+  /// the app: the site's (not Material You's, as the website and the Electron app had it), chosen
+  /// once, with the computer's accent colour if "Use system accent colour" is on (desk_theme.dart).
   static Future<void> window() async {
+    await _handOffOnly();
     await Desktop.findWindow();
     Desktop.setUpMain();
     DeskLocation.init();
@@ -52,6 +56,27 @@ class DeskStart {
       if (Store.I.get(AppLook.lookKey) == null) AppLook.I.materialYou = false;
     }
     await DeskTheme.init();
+  }
+
+  /// Started only to carry another UwU app's link (desktop-features-spec §10): a uwu:// link for
+  /// another app's host, which reached this app because it holds uwu:// for every UwU app. The
+  /// link is handed to the app that held uwu:// before (links.dart), and this copy quits at once,
+  /// before the update window, the main window or the tray, as the Electron app did. A link of
+  /// this app's own, or one with nobody to hand it to, carries on into the app as usual.
+  static Future<void> _handOffOnly() async {
+    final link = await _startLink();
+    if (link == null || Desktop.fromAppLink(link) != null) return;
+    // Waits for the other app to start, then Desktop.quit ends this one: nothing after it runs.
+    await DeskLinks.handOffAndQuit(link, Desktop.quit);
+  }
+
+  /// The uwu:// link the app was started with, or null. Windows and Linux put it in the command
+  /// line. macOS sends it as an Apple event instead, which the native side keeps: asked for here,
+  /// before anything listens to SgbusDesktop.events (after that it comes only as an 'open' event,
+  /// which afterApp's listener opens).
+  static Future<String?> _startLink() async {
+    final fromMac = Platform.isMacOS ? await SgbusDesktop.startLink() : null;
+    return fromMac ?? Desktop.linkIn(Desktop.launchArgs);
   }
 
   /// The update window, as the app opens: small, frameless, in the middle of the screen. Completes
@@ -94,27 +119,20 @@ class DeskStart {
     DeskChrome.init();
     const WindowMethodChannel('sgbus/main', mode: ChannelMode.unidirectional).setMethodCallHandler(_fromWindows);
     await DeskNotify.init();
-    SgbusDesktop.events.listen((e) {
-      final (name, data) = e;
-      if (name == 'open') {
-        final args = [for (final a in (data['args'] as List? ?? const [])) '$a', if (data['url'] is String) data['url'] as String];
-        final link = Desktop.linkIn(args);
-        if (link != null) {
-          Desktop.openLink(link, passOn: DeskLinks.passOn);
-        } else {
-          Desktop.show();
-        }
-      } else if (name == 'activate') {
-        Desktop.show();
-      }
-    });
-    // Started only to carry another UwU app's link (from a shortcut it can't hand over): hand it
-    // over and go, before the window.
-    final startLink = Desktop.linkIn(Desktop.launchArgs);
-    if (startLink != null && Desktop.fromAppLink(startLink) == null && DeskLinks.passOn(startLink)) {
-      await Desktop.quit();
-      return;
-    }
+    // Opening a page needs the app's navigator, made with its first frame. It's almost always
+    // there by now; if not, the first frame is waited for (at most 2 s, as below).
+    if (AppNav.nav == null) await WidgetsBinding.instance.endOfFrame.timeout(const Duration(seconds: 2), onTimeout: () {});
+    // The page a uwu://sgbus/ link in the command line names (Windows and Linux), opened before
+    // the native side's events are listened to. A link a second copy handed over while this one
+    // was starting is held until then, so it opens after this one, and wins: it's the newer.
+    final page = Desktop.startPage();
+    if (page != null) Links.open(page);
+    // The first listener tells the native side Dart is ready, so it sends what it held back: a
+    // second copy's link, or on macOS the link that started the app.
+    SgbusDesktop.events.listen(_nativeEvent);
+    // macOS: ⌘Q, the app menu's Quit and the Dock's Quit go through Desktop.quit, as the tray's
+    // Quit does, so the window's place is kept and a downloaded update installs.
+    if (Platform.isMacOS) SgbusDesktop.setQuitHandler(Desktop.quit);
     unawaited(DeskLinks.init());
     await Desktop.startAtLoginFirstRun();
     await Welcome.applyPending();
@@ -124,8 +142,6 @@ class DeskStart {
     Updater.start();
     AlertsPoll.start();
     Favs.I.shareWithWidgets();
-    final page = Desktop.startPage();
-    if (page != null) Links.open(page);
     // The first launch offline: "No connection" in place of the app (chrome.dart).
     unawaited(DeskChrome.checkFirstLaunch());
     // Shown only once the app's first frame is drawn, so the window never flashes white.
@@ -140,6 +156,25 @@ class DeskStart {
       Desktop.firstShow();
     }
     await DeskWidgets.restore();
+  }
+
+  /// One event from the native side (sgbus_desktop's events): a link (a second copy's command
+  /// line on Windows and Linux, a uwu:// link on macOS) opens its page, or is handed on to the
+  /// UwU app it's for; a second copy started with no link, or the Dock icon clicked (macOS),
+  /// brings the window forward. Glance listens for the thumbnail buttons and the Dock menu.
+  static void _nativeEvent((String, Map<String, Object?>) e) {
+    final (name, data) = e;
+    if (name == 'open') {
+      final args = [for (final a in (data['args'] as List? ?? const [])) '$a', if (data['url'] is String) data['url'] as String];
+      final link = Desktop.linkIn(args);
+      if (link != null) {
+        Desktop.openLink(link, passOn: DeskLinks.passOn);
+      } else {
+        Desktop.show();
+      }
+    } else if (name == 'activate') {
+      Desktop.show();
+    }
   }
 
   /// What the other windows (Make it yours, the widgets) ask the main window over the
@@ -164,6 +199,7 @@ class DeskStart {
 class _SplashApp extends StatelessWidget {
   const _SplashApp();
 
+  /// The update window's screen, alone in an app of its own.
   @override
   Widget build(BuildContext context) => const MaterialApp(debugShowCheckedModeBanner: false, home: Scaffold(body: SplashScreen()));
 }

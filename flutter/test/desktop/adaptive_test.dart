@@ -8,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/data/favs.dart';
 import 'package:sgbus_timings/data/store.dart';
 import 'package:sgbus_timings/desktop/adaptive.dart';
@@ -34,12 +35,12 @@ Widget _opener({required WidgetBuilder sheet, DeskSheet desktop = DeskSheet.dial
       ),
     );
 
-/// A page with one right-clickable row for [target].
-Widget _row(DeskTarget target) => MaterialApp(
-      home: Scaffold(
-        body: DeskContextMenu(target: target, child: const ListTile(title: Text('The row'))),
-      ),
-    );
+/// A page with one right-clickable row for [target], in the window [layout] the desktop's chrome
+/// hands down (none, as on a phone, if it isn't given).
+Widget _row(DeskTarget target, {DeskLayout? layout}) {
+  final page = Scaffold(body: DeskContextMenu(target: target, child: const ListTile(title: Text('The row'))));
+  return MaterialApp(home: layout == null ? page : DeskLayoutScope(layout: layout, child: page));
+}
 
 /// What the screens asked the bridge for, while it stands in for the desktop app's.
 final _calls = <(String, Map<String, dynamic>?)>[];
@@ -253,15 +254,21 @@ void main() {
       expect(find.text('Set as tray countdown'), findsNothing);
     });
 
-    testWidgets('on a wide window, Open says it opens in the split pane', (t) async {
+    testWidgets('in the split layout, Open says it opens in the split pane', (t) async {
       _desktop();
-      t.view.physicalSize = const Size(1280, 800);
-      t.view.devicePixelRatio = 1;
-      addTearDown(t.view.reset);
-      await t.pumpWidget(_row(const DeskTarget.stop('84009')));
+      await t.pumpWidget(_row(const DeskTarget.stop('84009'), layout: DeskLayout.split));
       await t.tap(find.text('The row'), buttons: kSecondaryButton);
       await t.pumpAndSettle();
       expect(find.text('Open in split pane'), findsOneWidget);
+    });
+
+    testWidgets('beside the rail without a split, Open is just Open', (t) async {
+      _desktop();
+      await t.pumpWidget(_row(const DeskTarget.stop('84009'), layout: DeskLayout.rail));
+      await t.tap(find.text('The row'), buttons: kSecondaryButton);
+      await t.pumpAndSettle();
+      expect(find.text('Open'), findsOneWidget);
+      expect(find.text('Open in split pane'), findsNothing);
     });
 
     testWidgets('Star stars the stop, and then it says Unstar', (t) async {

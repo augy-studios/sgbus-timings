@@ -166,11 +166,12 @@ static void my_application_init(MyApplication* self) {}
 // unknown options such as --updated through to the command line untouched, as no options are
 // declared here.
 MyApplication* my_application_new() {
-  // Set the program name to the application ID, which helps various systems
-  // like GTK and desktop environments map this running application to its
-  // corresponding .desktop file. This ensures better integration by allowing
-  // the application to be recognized beyond its binary name.
+  // The program's name and class are the app's id (org.uwuapps.sgbus), set before GTK starts, so
+  // on X11 the window's WM_CLASS (name and class alike) matches the .desktop file's
+  // StartupWMClass, and the dock and taskbar put the window under the app's own icon. GTK would
+  // otherwise use the binary's name, and a class with a capital first letter.
   g_set_prgname(APPLICATION_ID);
+  gdk_set_program_class(APPLICATION_ID);
 
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID, "flags",

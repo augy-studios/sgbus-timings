@@ -1,13 +1,16 @@
 // The app: its look (theme/theme.dart) and language (i18n/i18n.dart), redrawn as either changes,
 // the main screen (app/shell.dart), and what it was opened with (app/links.dart). In the desktop
 // app it's wrapped in the desktop's window chrome (desktop/chrome.dart): the title bar, the
-// navigation rail, the split panes, the menu bar and the keyboard shortcuts.
+// navigation rail, the split panes, the menu bar and the keyboard shortcuts; its tooltips wait
+// 400 ms under the mouse, and on Windows and Linux lists scroll as theirs do
+// (desktop/adaptive.dart).
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import '../desktop/adaptive.dart';
 import '../desktop/chrome.dart';
 import '../desktop/desk_theme.dart';
 import '../desktop/desktop.dart';
@@ -33,6 +36,8 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
   NativeListener? _open;
   NativeListener? _language;
 
+  /// Starts following the look, the language and the app coming back, and, once the first
+  /// frame's up, the links the app's opened with and the language Android's settings pick.
   @override
   void initState() {
     super.initState();
@@ -60,6 +65,7 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
     });
   }
 
+  /// Stops following them all.
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -97,6 +103,7 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
     (context as Element).visitChildren(redo);
   }
 
+  /// The app in its look and language, with the desktop's chrome around it on a computer.
   @override
   Widget build(BuildContext context) {
     final look = AppLook.I;
@@ -110,7 +117,9 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
           navigatorKey: AppNav.navigatorKey,
           // The desktop's title bar keeps its own history (desktop/chrome.dart).
           navigatorObservers: [if (Desktop.on) DeskChrome.observer],
-          // TODO(desktop): scrollBehavior: Desktop.on ? const DeskScrollBehavior() : null, once desktop/adaptive.dart has it.
+          // Windows and Linux: scrolling as theirs (no Android glow, a scroll bar). macOS keeps
+          // Flutter's own, which already scrolls as a Mac does.
+          scrollBehavior: Desktop.on && !Desktop.mac ? const DeskScrollBehavior() : null,
           scaffoldMessengerKey: AppNav.messengerKey,
           theme: look.theme(Brightness.light, contrast: contrast),
           darkTheme: look.theme(Brightness.dark, contrast: contrast),
@@ -123,7 +132,8 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
             GlobalCupertinoLocalizations.delegate,
           ],
           builder: (context, child) {
-            if (Desktop.on) child = DeskChrome.wrap(context, child!);
+            // The tooltips wrap the chrome too, so the title bar's and the rail's wait as well.
+            if (Desktop.on) child = DeskTooltips(child: DeskChrome.wrap(context, child!));
             final dark = Theme.of(context).brightness == Brightness.dark;
             return AnnotatedRegion<SystemUiOverlayStyle>(
               value: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
@@ -154,5 +164,6 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
   }
 }
 
-/// Starts the app's timers that tick while it's open, cancelled with the subscription.
+/// Starts one of the app's timers that tick while it's open: [fn] every [d], until the
+/// subscription is cancelled.
 StreamSubscription<void> every(Duration d, void Function() fn) => Stream<void>.periodic(d).listen((_) => fn());

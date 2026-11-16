@@ -3,6 +3,10 @@
 // show in the brand colour, then the extras Settings can hide (sgbus_tray_hide) and Settings
 // and Theme. Its tab tucks it away (sgbus_tray_closed), leaving the whole width to the page. On a
 // wide screen (a tablet), each button says what it is beside its icon.
+//
+// The desktop app's navigation rail (desktop/chrome.dart) shows the same extras. An extra that
+// needs a phone (SimplyGo's app, the card reader, Offline Sharing, the phone's reminders) is
+// left out there, and out of Settings' Edge Tray buttons ([EdgeTray.offered]).
 import 'package:flutter/material.dart';
 
 import '../api/net.dart';
@@ -18,13 +22,27 @@ import 'pages.dart';
 import '../features/map/map_save.dart';
 import '../features/tour/tour.dart';
 
+/// One of the Edge Tray's extras (and the desktop rail's): a button under the pages' tabs that
+/// opens a feature or a link, and that Settings can hide.
 class TrayExtra {
   const TrayExtra(this.id, this.icon, this.label, this.open, {this.when, this.badge, this.short, this.face});
+
+  /// Its name in sgbus_tray_hide and in Settings' Edge Tray buttons.
   final String id;
+
+  /// Its icon, unless [face] draws a picture instead.
   final IconData icon;
+
+  /// What it's called: its tooltip, and its words on a wide screen unless [short] is given.
   final String Function() label;
+
+  /// What a tap does.
   final void Function() open;
+
+  /// Whether it shows now (online, on this device), or always if null.
   final bool Function()? when;
+
+  /// A number on it (the uwuCoins balance), or null for none.
   final String? Function()? badge;
 
   /// What it's called beside its icon on a wide screen, where `label` says too much.
@@ -34,6 +52,7 @@ class TrayExtra {
   final Widget Function(double size)? face;
 }
 
+/// The Edge Tray around the page ([child]), which keeps clear of it.
 class EdgeTray extends StatefulWidget {
   const EdgeTray({super.key, required this.child});
   final Widget child;
@@ -46,14 +65,38 @@ class EdgeTray extends StatefulWidget {
   static const wideFrom = 600.0;
   static const wideButton = 196.0;
 
+  /// Whether the tray is down the left side (Settings' Edge Tray side), rather than the right.
   static bool left() => Store.I.get(sideKey) == 'left';
+
+  /// The extras turned off in Settings' Edge Tray buttons, by id.
   static Set<String> hidden() => (Store.I.get(hideKey) ?? '').split(' ').where((s) => s.isNotEmpty).toSet();
+
+  /// Shows or hides one extra, by id, as its button in Settings does.
   static void setExtra(String id, bool show) {
     final h = hidden()..remove(id);
     if (!show) h.add(id);
     Store.I.put(hideKey, h.isEmpty ? null : h.join(' '));
   }
 
+  /// The guide, for the Guide extra and Settings' Guide: its page on the desktop app on a
+  /// computer, its Android overview on a phone.
+  static String get guideUrl => Native.has('desktop') ? 'https://guide.sgbus.uwuapps.org/web/desktop-app' : 'https://guide.sgbus.uwuapps.org/android/overview';
+
+  /// The bridge feature each phone-only extra needs (native/native_bridge.dart's features): the
+  /// phone's own reminders, its card reader and Offline Sharing. Their [TrayExtra.when] asks it.
+  static const phoneFeature = {'nearstops': 'nearstops', 'routines': 'routines', 'card': 'card', 'receive': 'sharenearby'};
+
+  /// Whether Settings' Edge Tray buttons offers the extra [id] to turn on or off. On a phone,
+  /// every one, as ever. In the desktop app, not SimplyGo (its app is a phone's) nor a phone-only
+  /// extra the app can't do ([phoneFeature]), since neither ever shows there.
+  static bool offered(String id) {
+    if (!Native.has('desktop')) return true;
+    if (id == 'simplygo') return false;
+    final feature = phoneFeature[id];
+    return feature == null || Native.has(feature);
+  }
+
+  /// Every extra, in the tray's order.
   static final extras = <TrayExtra>[
     // Offline, only with Singapore's map saved.
     TrayExtra('explorer', Icons.explore_outlined, () => tr('tray.explorer', 'Explorer'), () => AppNav.open('explorer'), when: () => !Net.off.value || MapSave.saved),
@@ -68,26 +111,31 @@ class EdgeTray extends StatefulWidget {
         () => AppNav.open('receive'), when: () => Native.has('sharenearby')),
     TrayExtra('update', Icons.system_update_alt, () => tr('tray.appUpdate', 'Check for app updates'),
         () => AppNav.open('appUpdate'), when: () => Native.has('checkupdate') && !Net.off.value),
+    // SimplyGo's app is a phone's: not on the desktop.
     TrayExtra('simplygo', Icons.contactless_outlined, () => tr('html.open_simplygo', 'Open SimplyGo'), () => AppNav.open('simplygo'),
-        short: () => tr('settings.simplygo', 'SimplyGo'),
+        when: () => !Native.has('desktop'), short: () => tr('settings.simplygo', 'SimplyGo'),
         face: (size) => ClipOval(child: Image.asset('assets/images/simplygo.png', width: size, height: size, fit: BoxFit.cover, excludeFromSemantics: true))),
     TrayExtra('telegram', Icons.send_outlined, () => tr('html.singapore_bus_timings_on_telegram', 'Singapore Bus Timings on Telegram'),
         () => _link('https://t.me/sgbus_app'), short: () => tr('settings.telegram_bot', 'Telegram bot')),
     TrayExtra('coffee', Icons.coffee_outlined, () => tr('settings.buy_augy_a_coffee', 'Buy Augy a Coffee'),
         () => _link('https://donate.stripe.com/28o2akeAr3hv0DK6oo')),
     TrayExtra('guide', Icons.help_outline, () => tr('html.how_to_use_sg_bus', 'How to use SG Bus Timings'),
-        () => _link('https://guide.sgbus.uwuapps.org/android/overview'), short: () => tr('settings.guide', 'Guide')),
+        () => _link(guideUrl), short: () => tr('settings.guide', 'Guide')),
   ];
 
+  /// Opens a link through the bridge: the browser, on a phone or a computer.
   static void _link(String url) => Native.call('SgBus', 'openLink', {'url': url}).catchError((_) => null);
 
   @override
   State<EdgeTray> createState() => _EdgeTrayState();
 }
 
+/// Redraws the tray as the page, the coins, the connection or its settings change.
 class _EdgeTrayState extends State<EdgeTray> {
+  /// Whether the tray is tucked away.
   bool get _closed => Store.I.get(EdgeTray.closedKey) == '1';
 
+  /// Starts following what the tray shows.
   @override
   void initState() {
     super.initState();
@@ -101,6 +149,7 @@ class _EdgeTrayState extends State<EdgeTray> {
     });
   }
 
+  /// Stops following them.
   @override
   void dispose() {
     AppNav.page.removeListener(_redraw);
@@ -109,13 +158,16 @@ class _EdgeTrayState extends State<EdgeTray> {
     super.dispose();
   }
 
+  /// Something the tray shows changed: drawn again.
   void _redraw() => setState(() {});
 
   static const _time = Duration(milliseconds: 340);
   static const _ease = Cubic(0.2, 0.8, 0.2, 1);
 
+  /// Opens the tray if it's tucked away ([closed]), or tucks it away, and keeps that.
   void _toggle(bool closed) => setState(() => Store.I.put(EdgeTray.closedKey, closed ? null : '1'));
 
+  /// The page, kept clear of the tray, with the tray's buttons and its tab beside it.
   @override
   Widget build(BuildContext context) {
     final left = EdgeTray.left();

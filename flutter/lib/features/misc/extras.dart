@@ -159,8 +159,11 @@ class Shake {
 
   static bool get enabled => Store.I.get(key) != 'off';
 
+  /// Starts listening to the accelerometer, on a phone. Not on the desktop: sensors_plus has no
+  /// desktop build, and asking for its sampling rate there fails with an error that no try can
+  /// catch (it's thrown later, inside the package).
   static void start() {
-    if (!Native.available) return;
+    if (!Native.available || Native.has('desktop')) return;
     try {
       _sub = userAccelerometerEventStream(samplingPeriod: SensorInterval.gameInterval).listen(_onMotion, onError: (_) => _sub?.cancel(), cancelOnError: true);
     } catch (_) {

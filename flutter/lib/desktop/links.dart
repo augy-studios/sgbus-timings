@@ -112,7 +112,8 @@ class DeskLinks {
     ];
   }
 
-  /// Starts another program on its own, not waiting for it.
+  /// Starts another program on its own, not waiting for it to finish. Completes once it has been
+  /// started, or starting it failed: it never fails itself.
   static Future<void> _start(String file, List<String> args) async {
     try {
       await Process.start(file, args, mode: ProcessStartMode.detached);
@@ -183,26 +184,50 @@ class DeskLinks {
   }
 
   /// Hands a link for another app's host to the app that held uwu:// before this one. False if
+  /// there's nobody to hand it to. For a link that comes while the app's open (the command bar, a
+  /// second copy): the app carries on, so the other app's start needn't be waited for.
+  static bool passOn(String link) => handOn(link) != null;
+
+  /// Starts handing [link] to the app that held uwu:// before this one, and gives the start to
+  /// wait for (it completes once the other app has been started, or starting it failed). Null if
   /// there's nobody to hand it to.
-  static bool passOn(String link) {
+  static Future<void>? handOn(String link) {
     final to = DeskSettings.get<Map<String, dynamic>>(_key);
-    if (to == null || isThisApp(to)) return false;
+    if (to == null || isThisApp(to)) return null;
     if (Platform.isWindows && to['command'] is String) {
       final parts = windowsCommand(to['command'] as String, link);
-      _start(parts.first, parts.sublist(1));
-      return true;
+      return _start(parts.first, parts.sublist(1));
     }
     if (Platform.isMacOS && to['app'] is String) {
-      _start('/usr/bin/open', ['-a', to['app'] as String, link]);
-      return true;
+      return _start('/usr/bin/open', ['-a', to['app'] as String, link]);
     }
     if (Platform.isLinux && to['desktop'] is String) {
       final exec = desktopExec(to['desktop'] as String);
-      if (exec == null) return false;
+      if (exec == null) return null;
       final parts = linuxCommand(exec, link);
-      _start(parts.first, parts.sublist(1));
-      return true;
+      return _start(parts.first, parts.sublist(1));
     }
-    return false;
+    return null;
+  }
+
+  /// The longest a copy that's only handing a link on waits for the other app to start.
+  static const handOffWait = Duration(seconds: 5);
+
+  /// For a copy started only to carry [link] (desktop_main.dart, desktop-features-spec §10): hands
+  /// it on, waits until the other app has been started, and only then runs [quit]. Quitting
+  /// first would stop the start, which dart:io runs a moment after it's asked for, and the other
+  /// app would never open. A start that fails (the app was uninstalled) or takes longer than
+  /// [handOffWait] still quits. False, with nothing run, if there's nobody to hand it to.
+  /// [handOn] is for tests, in place of the real one.
+  static Future<bool> handOffAndQuit(String link, Future<void> Function() quit, {Future<void>? Function(String link) handOn = DeskLinks.handOn}) async {
+    final started = handOn(link);
+    if (started == null) return false;
+    try {
+      await started.timeout(handOffWait);
+    } catch (_) {
+      // Failed, or still not started: quit all the same.
+    }
+    await quit();
+    return true;
   }
 }
