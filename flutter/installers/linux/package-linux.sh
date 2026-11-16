@@ -42,8 +42,9 @@ package="sgbus-timings-desktop"
 maintainer="UwU Apps <augybiz@gmail.com>"
 summary="Live Singapore bus timings, routes and journeys"
 description="SG Bus Timings for Windows, macOS and Linux: Singapore's live bus timings, routes and journeys, with a tray icon, widgets and Service Alerts as desktop notifications."
-# The icon in each size the menus use: the same pictures as the Mac app's icon.
-icon_set="macos/Runner/Assets.xcassets/AppIcon.appiconset"
+# The icon in each size the menus use: the full-square icon (the Mac app has its own rounded one,
+# installers/macos/make-mac-icon.py).
+icon_set="$here/icons"
 icon_sizes="16 32 64 128 256 512"
 
 if [ ! -x "$bundle/sgbus_timings" ]; then
@@ -89,6 +90,10 @@ deb_root="$work/deb"
 lay_out_files "$deb_root"
 mkdir -p "$deb_root/DEBIAN"
 installed_kb="$(du -sk "$deb_root" | cut -f1)"
+# What the app needs, by names Ubuntu 22.04 and Debian 12 know as well as newer ones. GTK 3 was
+# renamed libgtk-3-0t64 in Ubuntu 24.04 and Debian 13, so it's "the new name, or the old". The
+# map's web view uses WebKitGTK functions from 2.40 on: older 22.04 copies (2.36) are updated.
+depends="libgtk-3-0t64 | libgtk-3-0, libwebkit2gtk-4.1-0 (>= 2.40), libx11-6, libxi6, libpulse0, xdg-utils"
 cat > "$deb_root/DEBIAN/control" <<EOF
 Package: $package
 Version: $version
@@ -97,7 +102,7 @@ Vendor: $maintainer
 Architecture: $deb_arch
 Maintainer: $maintainer
 Installed-Size: $installed_kb
-Depends: libgtk-3-0, libwebkit2gtk-4.1-0, libx11-6, libxi6, libpulse0, xdg-utils
+Depends: $depends
 Section: utils
 Priority: optional
 Homepage: https://sgbus.uwuapps.org

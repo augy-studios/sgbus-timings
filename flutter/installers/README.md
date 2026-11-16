@@ -24,9 +24,14 @@ copies stop updating.
 | `update-files.mjs` | `latest.yml` (Windows), `latest-mac.yml`, `latest-linux.yml` and `latest-linux-arm64.yml`, byte for byte as electron-builder wrote them | anywhere with Node 18 or later |
 
 `linux/` also holds what the packages carry: `sgbus-timings.desktop` (the menu entry, with the
-`uwu://` handler), `after-install.sh` and `after-remove.sh` (the `.deb`'s and `.rpm`'s scripts),
-`apparmor-profile`, and `LINUX-BUILD.md`, building them on a Linux machine of your own and the
-apt repository.
+`uwu://` handler), `icons/` (the full-square app icon in each size the menus use, 16 to 512
+pixels, also the AppImage's), `after-install.sh` and `after-remove.sh` (the `.deb`'s and `.rpm`'s
+scripts), `apparmor-profile`, and `LINUX-BUILD.md`, building them on a Linux machine of your own
+and the apt repository. `linux/check-glibc.sh` checks a Linux build opens on Ubuntu 22.04 and
+Debian 12 (GitHub Actions runs it after each one).
+
+`macos/make-mac-icon.py` remakes the Mac app's own rounded icon from new artwork: by default
+`main-site/sgbusicon1.png`, or the picture you give it. It needs Pillow (`pip install pillow`).
 
 ## The commands
 

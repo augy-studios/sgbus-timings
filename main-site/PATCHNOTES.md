@@ -24,17 +24,22 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Your computer's colour** - Use system accent colour in Theme, or System accent in Make it yours, paints the app in your computer's own accent colour.
 - **Explorer and the live map** - Drawn as in the Android app, with Save the map to keep Singapore's streets for when you're offline.
 - **Everything it had** - The tray and its menu, the tray countdown, Bus timings widgets, your favourites in the Jump List and the Dock, Service alerts as notifications, starting when you sign in, uwu:// links, screenshots and updating itself.
-- **Linux** - The app now needs Ubuntu 24.04, Debian 13 or newer, and the AppImage uses your computer's own GTK 3 and WebKitGTK 4.1, which most desktops have. If the new version doesn't open, the guide says what to install.
+- **Linux** - The app now needs Ubuntu 22.04, Debian 12 or newer, and the AppImage uses your computer's own GTK 3 and WebKitGTK 4.1, which most desktops have. If the new version doesn't open, the guide says what to install.
 
 ### Android app 2.5.0
 
 - **No crash coming back** - Opening the app again after a long time in the background no longer crashes it.
 - **Your trip with your other notifications** - A trip's notification, and its Live Update on Android 16, is listed with your other notifications and on the lock screen, not under Silent, with one sound as the trip starts.
 - **A shorter note under the trip bar** - A long note under the trip bar, such as a last bus missed and the way changed, takes two lines at most. Tap it for the whole note on the trip's screen.
+- **A shorter trip bar** - The bar itself takes a line for where you're going and two for the part you're on, beside smaller buttons, rather than up to a third of the screen. Tap it for the rest on the trip's screen.
+- **Start trip within reach** - On a phone, Start trip under a way, in Navigate and the route planner, has a line of its own across the page, rather than running off its edge under the Edge Tray.
+- **The first walk from Your location** - A trip from Your location starts with the walk to its first stop, from where you were when the ways were planned, not at its first ride, so on a long first walk the Get Off Alert no longer comes early.
 
 ### Website and Android app
 
 - **No way with a bus gone for the day** - A way in Navigate that leaves now is planned again once it's ten minutes old and you come back to it, and an open way says when one of its buses has finished for the day, with the time of the last one. In the Android app, Back to Navigate from a trip no longer opens a way with a bus that has stopped running.
+- **Tuas Checkpoint** - Its stop says it's for vehicles only, as it can't be crossed on foot, with the buses across to take instead: Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link. Route lists say "no crossing on foot" there, not "passport needed", and the Telegram bot's note on the stop says the same.
+- **Causeway Link in Bus timings** - Causeway Link's buses across to Johor Bahru, CW1 to CW7, show with the shuttle buses at the stops they serve in Singapore, such as Kranji Stn, Queen St Ter and Jurong Town Hall Int, and at the checkpoints. Their times are by timetable, as Causeway Link has no live times, and Navigate doesn't use them.
 
 ### Linux command line 2.5.0
 

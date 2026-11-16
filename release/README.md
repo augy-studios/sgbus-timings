@@ -107,7 +107,7 @@ one won't take it as an update: `flutter/README.md`, "Build the APK"), `appVersi
    | Debian, Ubuntu, Mint; Fedora, openSUSE, RHEL | the `.deb`; the `.rpm` |
    | Any other Linux (with GTK 3 and WebKitGTK 4.1) | the `.AppImage` |
 
-   The Linux files need Ubuntu 24.04, Debian 13 or newer.
+   The Linux files need Ubuntu 22.04, Debian 12 or newer.
 
    The desktop files join the release a few minutes after it's out. Windows SmartScreen: More
    info > Run anyway. macOS, the first time: System Settings > Privacy & Security > Open Anyway.
@@ -214,4 +214,7 @@ copies (2.4.8 and before) read the same files the same way.
 | No "new version" notification on phones | Open the webhook in GitHub (**Settings** > **Webhooks**) and look at **Recent Deliveries**: the answer says why (`flutter/FIREBASE-SETUP.md`, "If something goes wrong"). Published before the APK finished uploading? **Redeliver** it now. |
 | The desktop installers never came | **Actions** > **Build desktop apps**: a failed test stops every build, and each job's log says why. Fix it on `main`, then **Run workflow** with the release's tag. |
 | Desktop apps don't see the new version | A `latest*.yml` is missing from the release, or still uploading. Run **Build desktop apps** by hand with the tag to add them. |
-| A Linux AppImage won't open after updating | It needs Ubuntu 24.04, Debian 13 or newer, and the computer's GTK 3 and WebKitGTK 4.1 (the guide's "Install and update it" page says what to install). |
+| The Linux build stops at **Check it opens on Ubuntu 22.04** | A file in the build needs a newer C or C++ library than Ubuntu 22.04 and Debian 12 have, so it wouldn't open there; the step's log names it. Usually a package that brings its own library was upgraded: go back to the version before (`flutter/pubspec.yaml`), or decide to raise the Linux minimum. |
+| The Linux jobs (or the tests) fail at once, before any step runs, on 23 or 30 March or 6 or 13 April 2027 | GitHub's planned "brownouts" of its Ubuntu 22.04 machines, 14:00 to 00:00 UTC (10pm to 8am in Singapore), warning that they're going (actions/runner-images#14254). Run the workflow again after 8am. |
+| No Ubuntu 22.04 machine any more (from 17 April 2027) | GitHub has retired them. Move the Linux build (and the tests) into an `ubuntu:22.04` container on a newer machine, which keeps the app opening on Ubuntu 22.04 and Debian 12; or decide to raise the Linux minimum. |
+| A Linux AppImage won't open after updating | It needs Ubuntu 22.04, Debian 12 or newer, and the computer's GTK 3 and WebKitGTK 4.1 (the guide's "Install and update it" page says what to install). |

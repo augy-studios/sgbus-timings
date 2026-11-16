@@ -24,10 +24,10 @@ and download the one for your computer from under **Assets**:
 | Any other Linux on 64-bit Arm | `sg-bus-timings-2.5.0-arm64.AppImage` |
 
 The version in the names goes up with each release; download the newest. The Mac
-app needs macOS 12 or later. The Linux app needs a recent system: Ubuntu 24.04,
-Debian 13 or newer, or another Linux as new. On an older one, such as Ubuntu 22.04
-or Debian 12, it may not open: use the [command line](../web/linux-cli.md) or the
-website there. The `.zip` files and the `latest` files on the release are what the
+app needs macOS 12 or later. The Linux app needs Ubuntu 22.04, Debian 12 or
+newer, or another Linux as new. On an older one, such as Ubuntu 20.04 or Debian
+11, it won't open: use the [command line](../web/linux-cli.md) or the website
+there. The `.zip` files and the `latest` files on the release are what the
 app updates itself from: you don't need them.
 
 > [!TIP]
@@ -96,7 +96,7 @@ program**, or `chmod +x` it), then open it.
 > draw its window and the live map. Most desktops have both. If it doesn't open,
 > install them: `sudo apt install libgtk-3-0 libwebkit2gtk-4.1-0` on Debian and
 > Ubuntu, or `sudo dnf install gtk3 webkit2gtk4.1` on Fedora. Like the `.deb` and
-> `.rpm`, it needs Ubuntu 24.04, Debian 13 or newer.
+> `.rpm`, it needs Ubuntu 22.04, Debian 12 or newer.
 
 An AppImage also needs FUSE to open, which most desktops have. If it says it
 can't mount itself, install it (`sudo apt install fuse3` on Debian and Ubuntu,
@@ -224,7 +224,7 @@ picks, so that window doesn't ask again. It reads them once, and leaves the old
 app's copy where it was.
 
 > [!WARNING]
-> **Linux:** the new app needs Ubuntu 24.04, Debian 13 or newer, where the old one
+> **Linux:** the new app needs Ubuntu 22.04, Debian 12 or newer, where the old one
 > ran on older systems too. On an older system, it may not open after the update.
 > **AppImage:** the old app carried its own browser, and the new one uses your
 > computer's GTK 3 and WebKitGTK 4.1. If the new version doesn't open after the

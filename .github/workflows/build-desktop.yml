@@ -106,11 +106,12 @@ jobs:
           fi
 
   # The Flutter tests, once, before anything's built. On Linux: the screenshot tests are drawn
-  # with its fonts (DejaVu).
+  # with its fonts (DejaVu). On Ubuntu 22.04, the machine the Linux files are built on and the one
+  # desktop-check.yml tests on, rather than ubuntu-latest, which is moving on to 26.04.
   test:
     needs: release
     if: needs.release.outputs.build == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     permissions:
       contents: read
@@ -306,6 +307,15 @@ jobs:
         run: gh release upload "$RELEASE_TAG" build/dist/*.zip build/dist/*.dmg build/dist/latest-mac.yml --repo "$GITHUB_REPOSITORY" --clobber
 
   # Linux, each processor on its own machine: .deb, .rpm, AppImage and the update file.
+  #
+  # On Ubuntu 22.04, not the newest, for the glibc floor: a Linux program only opens where the C
+  # library (glibc) is at least as new as the build machine's, so building on 22.04 (glibc 2.35)
+  # is what lets the app open on Ubuntu 22.04, Debian 12 (2.36) and everything newer. Built on
+  # 24.04 it would need 24.04 or Debian 13. "Check it opens on Ubuntu 22.04" below makes sure.
+  # GitHub is retiring its 22.04 machines (actions/runner-images#14254). Before that, in four
+  # "brownouts" on 23 and 30 March and 6 and 13 April 2027, 14:00 to 00:00 UTC (10pm to 8am in
+  # Singapore), every job on them fails at once: run it again afterwards. From 17 April 2027
+  # they're gone: then build in an ubuntu:22.04 container on a newer machine, to keep the floor.
   linux:
     needs: [release, test]
     strategy:
@@ -313,11 +323,11 @@ jobs:
       matrix:
         include:
           - arch: x64
-            os: ubuntu-latest
+            os: ubuntu-22.04
             yml: latest-linux.yml
             appimagetool: appimagetool-x86_64.AppImage
           - arch: arm64
-            os: ubuntu-24.04-arm
+            os: ubuntu-22.04-arm
             yml: latest-linux-arm64.yml
             appimagetool: appimagetool-aarch64.AppImage
     name: linux-${{ matrix.arch }}
@@ -334,12 +344,13 @@ jobs:
           ref: ${{ github.event.release.tag_name || github.ref }}
 
       # Flutter's Linux build tools, the libraries the app and its plugins build against (GTK 3,
-      # WebKitGTK 4.1 for the map, X11 and Xi for nativeapi, PulseAudio for flutter_webrtc), and
-      # rpmbuild for the .rpm.
+      # WebKitGTK 4.1 for the map, X11 and Xi for nativeapi, PulseAudio for flutter_webrtc),
+      # rpmbuild for the .rpm, and objdump (binutils) for the glibc check. All under these names
+      # on 22.04 and 24.04 alike.
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config file rpm \
+          sudo apt-get install -y clang cmake ninja-build pkg-config file rpm binutils \
             libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
 
       - name: Install Flutter
@@ -360,6 +371,11 @@ jobs:
       - run: flutter --version
       - run: flutter pub get
       - run: flutter build linux --release
+
+      # The glibc floor above: fails if the build asks for a newer C or C++ library than
+      # Ubuntu 22.04 and Debian 12 have, so no Linux file is released that wouldn't open there.
+      - name: Check it opens on Ubuntu 22.04
+        run: bash installers/linux/check-glibc.sh build/linux/${{ matrix.arch }}/release/bundle
 
       - name: Pack it
         run: bash installers/linux/package-linux.sh ${{ matrix.arch }}

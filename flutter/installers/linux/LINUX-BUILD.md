@@ -9,8 +9,10 @@ no port, and nginx isn't touched. The Arm ones need a 64-bit Arm Linux machine, 
 Raspberry Pi 4 or 5 on 64-bit Raspberry Pi OS, with the same steps.
 
 A Linux build only runs on systems at least as new as the one it was built on (their C library,
-glibc), so build on the oldest system it should run on. GitHub Actions builds on Ubuntu 24.04,
-so the released files need Ubuntu 24.04, Debian 13 or newer.
+glibc), so build on the oldest system it should run on. GitHub Actions builds on Ubuntu 22.04,
+so the released files need Ubuntu 22.04, Debian 12 or newer; `installers/linux/check-glibc.sh`
+checks every build it makes. Built on the Debian 13 VPS, they need Debian 13 or newer, leaving
+out Ubuntu 22.04 and 24.04 and Debian 12: to keep those, build on Ubuntu 22.04 or Debian 12.
 
 You need about 5 GB free for Flutter, the tools and the build. The first build takes a while;
 later ones a few minutes.
@@ -129,7 +131,7 @@ the live map.
 Most PCs want the x64 files (`amd64`, `x86_64`); an Arm computer, such as a Raspberry Pi 4 or
 5 on 64-bit Raspberry Pi OS or an Arm laptop, the Arm ones (`arm64`, `aarch64`). `uname -m`
 says which: `x86_64` or `aarch64`. There's no 32-bit build. The released files need Ubuntu
-24.04, Debian 13 or newer, or another Linux as new.
+22.04, Debian 12 or newer, or another Linux as new.
 
 - **`.deb`** (Debian, Ubuntu, Mint, Raspberry Pi OS): `sudo apt install
   ./sg-bus-timings-2.5.0-amd64.deb` (or `-arm64.deb`), then open **SG Bus Timings** from the

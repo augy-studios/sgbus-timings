@@ -33,7 +33,11 @@ jobs:
             target: windows
           - os: macos-latest
             target: macos
-          - os: ubuntu-latest
+          # Ubuntu 22.04, as the release builds (build-desktop.yml): a Linux build only opens
+          # where glibc is at least as new as the build machine's, and 22.04's (2.35) lets the app
+          # open on Ubuntu 22.04, Debian 12 and newer. The tests run here too. GitHub retires
+          # these machines on 17 April 2027 (build-desktop.yml's Linux job says what then).
+          - os: ubuntu-22.04
             target: linux
     name: ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
@@ -48,14 +52,15 @@ jobs:
       - uses: actions/checkout@v4
 
       # What the Linux build compiles against: GTK 3, WebKitGTK 4.1 (the map), X11 and Xi
-      # (nativeapi) and PulseAudio (flutter_webrtc). And DejaVu, the font the screenshot tests are
-      # drawn with, which is why the tests only run here.
+      # (nativeapi) and PulseAudio (flutter_webrtc); file and objdump (binutils) for the glibc
+      # check. And DejaVu, the font the screenshot tests are drawn with, which is why the tests
+      # only run here.
       - name: Install Linux build tools and fonts
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang cmake ninja-build pkg-config fonts-dejavu-core \
-            libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
+          sudo apt-get install -y clang cmake ninja-build pkg-config file binutils \
+            fonts-dejavu-core libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
 
       - name: Install Flutter
         if: runner.os != 'Windows'
@@ -92,3 +97,9 @@ jobs:
           node --check installers/update-files.mjs
 
       - run: flutter build ${{ matrix.target }} --debug
+
+      # The release's glibc check (installers/linux/check-glibc.sh) on this build, so a change
+      # that would stop the app opening on Ubuntu 22.04 or Debian 12 shows up now.
+      - name: Check it opens on Ubuntu 22.04
+        if: runner.os == 'Linux'
+        run: bash installers/linux/check-glibc.sh build/linux/x64/debug/bundle

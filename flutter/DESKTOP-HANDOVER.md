@@ -55,7 +55,8 @@ Read first, in this order:
   one copy (a named mutex; a second copy sends its command line with `WM_COPYDATA`), sets the
   AppUserModelID `org.uwuapps.sgbus`, titles the window "SG Bus Timings" and doesn't show it
   (Dart does); `flutter_window.cpp` registers plugins for desktop_multi_window's engines;
-  `Runner.rc` names; icons from the Electron app's `build/icon.png`.
+  `Runner.rc` names; icons from the Electron app's `build/icon.png`, except the Mac app's, which
+  `installers/macos/make-mac-icon.py` makes from `main-site/sgbusicon1.png`.
 - **`packages/sgbus_desktop/`**, a local plugin registered in every engine: each window's native
   handle (nativeapi's `getCurrent()` is the *active* window, so it can't be used), Windows' Jump
   List, thumbnail buttons and start at sign-in (the same `Run` value Electron wrote), the macOS
