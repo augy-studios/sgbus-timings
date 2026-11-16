@@ -325,7 +325,7 @@ class Desktop {
   /// (app/links.dart has the rules).
   static String? typedAddress(String text) => Links.typedAddress(text);
 
-  /// Whether an address is the site's own (http:// too).
+  /// Whether an address is the site's own: https:// on the site's host only (Links.isSite).
   static bool isSite(String url) => Links.isSite(url);
 
   /// A link while the app's open: the page it names. Another UwU app's link is handed on to it.

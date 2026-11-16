@@ -80,7 +80,7 @@ class EdgeTray extends StatefulWidget {
 
   /// The guide, for the Guide extra and Settings' Guide: its page on the desktop app on a
   /// computer, its Android overview on a phone.
-  static String get guideUrl => Native.has('desktop') ? 'https://guide.sgbus.uwuapps.org/web/desktop-app' : 'https://guide.sgbus.uwuapps.org/android/overview';
+  static String get guideUrl => Native.has('desktop') ? 'https://guide.sgbus.uwuapps.org/desktop/overview' : 'https://guide.sgbus.uwuapps.org/android/overview';
 
   /// The bridge feature each phone-only extra needs (native/native_bridge.dart's features): the
   /// phone's own reminders, its card reader and Offline Sharing. Their [TrayExtra.when] asks it.

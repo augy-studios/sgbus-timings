@@ -41,7 +41,7 @@ void main() {
       _phone();
       expect(EdgeTray.guideUrl, 'https://guide.sgbus.uwuapps.org/android/overview');
       _desktop();
-      expect(EdgeTray.guideUrl, 'https://guide.sgbus.uwuapps.org/web/desktop-app');
+      expect(EdgeTray.guideUrl, 'https://guide.sgbus.uwuapps.org/desktop/overview');
     });
   });
 
