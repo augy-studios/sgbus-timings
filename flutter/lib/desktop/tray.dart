@@ -106,11 +106,11 @@ class DeskTray {
     menu.addItem(_item(tr('tray.alerts', 'Service alerts'), () => Desktop.show('#alerts')));
     menu.addItem(_item(tr('tray.navigate', 'Navigate'), () => Desktop.show('#nav')));
     menu.addItem(_item(tr('desktop.tray.addWidget', 'Add a Bus timings widget'), DeskWidgets.add));
-    menu.addItem(_item(tr('desktop.tray.makeItYours', 'Make it yours...'), () => Welcome.open()));
+    menu.addItem(_item(tr('desktop.tray.makeItYours', 'Make it yours…'), () => Welcome.open()));
     menu.addSeparator();
     menu.addItem(Updater.checking.value
-        ? _item(tr('desktop.tray.checking', 'Checking for updates...'), () {}, enabled: false)
-        : _item(tr('desktop.tray.check', 'Check for updates...'), Updater.checkNow));
+        ? _item(tr('desktop.tray.checking', 'Checking for updates…'), () {}, enabled: false)
+        : _item(tr('desktop.tray.check', 'Check for updates…'), Updater.checkNow));
     menu.addItem(_startAtLoginItem());
     menu.addSeparator();
     menu.addItem(_item(tr('desktop.tray.quit', 'Quit'), () => Desktop.quit()));

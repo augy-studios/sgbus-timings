@@ -506,9 +506,9 @@ class DeskChrome {
       command(Icons.height, tr('desktop.cmd.longShot', 'Take a long screenshot'), () => DeskShot.take(long: true)),
       command(Icons.fullscreen, tr('desktop.cmd.fullScreen', 'Full screen'), toggleFullScreen, keys: Desktop.mac ? '⌃⌘F' : 'F11'),
       command(Icons.widgets_outlined, tr('desktop.tray.addWidget', 'Add a Bus timings widget'), DeskWidgets.add),
-      command(Icons.auto_awesome_outlined, tr('desktop.tray.makeItYours', 'Make it yours...'), () => Welcome.open()),
+      command(Icons.auto_awesome_outlined, tr('desktop.tray.makeItYours', 'Make it yours…'), () => Welcome.open()),
       if (ready != null) command(Icons.download, tr('desktop.tray.restart', 'Restart to update to {v}', {'v': ready}), Updater.restartToUpdate),
-      if (ready == null) command(Icons.system_update_alt, tr('desktop.tray.check', 'Check for updates...'), Updater.checkNow),
+      if (ready == null) command(Icons.system_update_alt, tr('desktop.tray.check', 'Check for updates…'), Updater.checkNow),
     ];
   }
 }

@@ -574,7 +574,7 @@ class _BusWidgetState extends State<BusWidget> {
     }
     final String note;
     if (data.error) {
-      note = tr('desktop.widget.offline', "Couldn't reach LTA. Tap refresh to try again.");
+      note = tr('desktop.widget.offline', "Couldn't reach LTA. Click Refresh to try again.");
     } else if (_buses.isNotEmpty) {
       note = tr('desktop.widget.noneOfThose', 'None of those buses are due here right now.');
     } else {

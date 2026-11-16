@@ -627,7 +627,7 @@ rm -rf "$4"
   /// The tray's "Check for updates...": a check now, and a notification of what it found.
   static void checkNow() {
     if (Desktop.fromSource) {
-      DeskNotify.show(title: tr('desktop.update.none', 'No updates to check for'), body: tr('desktop.update.fromSource', 'Run from source, there is nothing to update. The installed app checks for itself.'));
+      DeskNotify.show(title: tr('desktop.update.none', 'No updates to check for'), body: tr('desktop.update.fromSource', "Running from source, so there's nothing to update. The installed app checks for itself."));
       return;
     }
     if (checking.value) return;

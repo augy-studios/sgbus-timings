@@ -43,21 +43,21 @@ const welcomeWords = {
     'title': 'Jadikan SG Bus Timings milik anda', 'sub': 'Pilih rupa dan rasa aplikasi ini.', 'language': 'Bahasa', 'auto': 'Automatik',
     'start': 'Mula apabila saya log masuk', 'follow': 'Ikut tema sistem', 'theme': 'Tema', 'light': 'Cerah', 'dark': 'Gelap', 'time': 'Ikut masa', 'colour': 'Warna jenama',
     'system': 'Warna aksen sistem', 'systemNote': 'Warna aksen komputer anda sendiri',
-    'yours': 'Warna anda sedang digunakan, jadi warna jenama menunggu sehingga anda mematikannya.', 'foot': 'Anda boleh menukar semua ini bila-bila masa, daripada menu dulang.', 'go': 'Mulakan',
+    'yours': 'Warna anda sedang digunakan, jadi warna jenama menunggu sehingga anda mematikannya.', 'foot': 'Anda boleh menukar semua ini bila-bila masa, daripada “Jadikan milik anda” dalam menu dulang.', 'go': 'Mulakan',
   },
   'ta': {
     'welcome': 'SG Bus Timings-க்கு வரவேற்கிறோம்', 'tag': 'நேரடி பேருந்து வருகைகள், பயணங்கள் மற்றும் எச்சரிக்கைகள், உங்கள் விருப்பப்படி.', 'timings': 'பேருந்து நேரங்கள்', 'navigate': 'வழிகாட்டல்', 'alerts': 'சேவை எச்சரிக்கைகள்',
     'title': 'SG Bus Timings-ஐ உங்களுடையதாக்குங்கள்', 'sub': 'செயலி எப்படி இருக்க வேண்டும் என்பதைத் தேர்ந்தெடுங்கள்.', 'language': 'மொழி', 'auto': 'தானியங்கி',
     'start': 'நான் உள்நுழையும்போது தொடங்கு', 'follow': 'கணினியின் தீமைப் பின்பற்று', 'theme': 'தீம்', 'light': 'வெளிர்', 'dark': 'இருண்ட', 'time': 'நேரத்தைப் பொறுத்து', 'colour': 'முதன்மை வண்ணம்',
     'system': 'கணினியின் வண்ணம்', 'systemNote': 'உங்கள் கணினியின் சொந்த வண்ணம்',
-    'yours': 'உங்கள் வண்ணங்கள் இயக்கத்தில் உள்ளன, அவற்றை அணைக்கும் வரை முதன்மை வண்ணங்கள் காத்திருக்கும்.', 'foot': 'இவற்றை எப்போது வேண்டுமானாலும் தட்டு மெனுவிலிருந்து மாற்றலாம்.', 'go': 'தொடங்கு',
+    'yours': 'உங்கள் வண்ணங்கள் இயக்கத்தில் உள்ளன, அவற்றை அணைக்கும் வரை முதன்மை வண்ணங்கள் காத்திருக்கும்.', 'foot': 'இவற்றை எப்போது வேண்டுமானாலும் தட்டு மெனுவில் உள்ள உங்களுடையதாக்கு என்பதிலிருந்து மாற்றலாம்.', 'go': 'தொடங்கு',
   },
   'zh-SG': {
     'welcome': '欢迎使用 SG Bus Timings', 'tag': '实时巴士到站、行程和通告，随你所愿。', 'timings': '巴士时刻', 'navigate': '导航', 'alerts': '服务通告',
     'title': '打造你的 SG Bus Timings', 'sub': '选择应用的外观和感觉。', 'language': '语言', 'auto': '自动',
     'start': '登录时启动', 'follow': '跟随系统主题', 'theme': '主题', 'light': '浅色', 'dark': '深色', 'time': '按时间', 'colour': '主题色',
     'system': '系统强调色', 'systemNote': '使用电脑自己的强调色',
-    'yours': '“你的颜色”已开启，关闭后才会使用主题色。', 'foot': '你可以随时在托盘菜单中更改这些设置。', 'go': '开始使用',
+    'yours': '“你的颜色”已开启，关闭后才会使用主题色。', 'foot': '你可以随时在托盘菜单的“个性化设置”中更改这些设置。', 'go': '开始使用',
   },
 };
 

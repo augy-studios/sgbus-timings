@@ -103,11 +103,11 @@ class DeskMenus {
           PlatformMenuItemGroup(members: _provided(PlatformProvidedMenuItemType.about)),
           PlatformMenuItemGroup(members: [
             PlatformMenuItem(label: tr('desktop.menu.settings', 'Settings…'), shortcut: _cmd(LogicalKeyboardKey.comma), onSelected: _settings),
-            PlatformMenuItem(label: tr('desktop.tray.makeItYours', 'Make it yours...'), onSelected: () => Welcome.open()),
+            PlatformMenuItem(label: tr('desktop.tray.makeItYours', 'Make it yours…'), onSelected: () => Welcome.open()),
             if (ready != null)
               PlatformMenuItem(label: tr('desktop.tray.restart', 'Restart to update to {v}', {'v': ready}), onSelected: Updater.restartToUpdate)
             else
-              PlatformMenuItem(label: tr('desktop.tray.check', 'Check for updates...'), onSelected: Updater.checkNow),
+              PlatformMenuItem(label: tr('desktop.tray.check', 'Check for updates…'), onSelected: Updater.checkNow),
           ]),
           PlatformMenuItemGroup(members: _provided(PlatformProvidedMenuItemType.servicesSubmenu)),
           PlatformMenuItemGroup(members: [
