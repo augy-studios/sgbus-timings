@@ -37,6 +37,12 @@
 //
 // Where the platform's map can't be drawn (tests and the guide's screenshots), MapPreview draws
 // the same lines and dots on a plain ground, so every panel round it can still be seen.
+//
+// On the desktop (Windows, macOS, Linux) the map is MapLibre GL JS in a WebView instead
+// (web/web_map_view.dart), behind the same SgMap widget and SgMapController calls (sg_map.dart),
+// so everything here is shared. It has no location dot of its own, so yours is drawn here, as
+// MapPreview's is, and kept in view by the camera; and as a computer has no compass, there's no
+// Turn the map with the way you face.
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -67,6 +73,7 @@ import 'map_card.dart';
 import '../tour/tour.dart';
 import 'map_save.dart';
 import 'orbit_handle.dart';
+import 'sg_map.dart';
 import 'two_finger_drag.dart';
 
 // ---------- what's drawn ----------
@@ -363,7 +370,7 @@ class LiveMap extends StatefulWidget {
 
 class _LiveMapState extends State<LiveMap> {
   final ink = MapInk();
-  MapLibreMapController? _map;
+  SgMapController? _map;
   bool _styled = false;
   Timer? _flush;
 
@@ -375,7 +382,7 @@ class _LiveMapState extends State<LiveMap> {
   StreamSubscription<Fix>? _watch;
   bool following = true;
   bool turning = false;
-  bool _located = false; // location allowed, so MapLibre draws your dot
+  bool _located = false; // location allowed, so MapLibre draws your dot (on Android)
   int _steering = 0; // camera moves of the app's own under way (_steer, _orbitStart)
   final _fingers = TwoFingerDrag();
   CameraPosition? _orbitGoal;
@@ -528,7 +535,7 @@ class _LiveMapState extends State<LiveMap> {
   // is): kept, and done once it's made, or the map stays on all of Singapore.
   (List<List<double>>, double)? _pendingFit;
 
-  void _mapMade(MapLibreMapController c) {
+  void _mapMade(SgMapController c) {
     _map = c;
     final p = _pendingFit;
     _pendingFit = null;
@@ -901,13 +908,17 @@ class _LiveMapState extends State<LiveMap> {
     }
   }
 
-  // Your own dot where MapLibre can't draw its puck: in MapPreview, or before location's allowed.
+  // Your own dot where MapLibre can't draw its puck: in MapPreview, before location's allowed,
+  // and on the desktop, whose map has no puck (SgMap.drawsLocation).
   MapDot? _meDot;
   MapDisc? _meRing;
   void _drawMe() {
     final f = here;
     if (f == null) return;
-    if (!LiveMap.preview && _located) return; // MapLibre's own, with its compass arrow
+    if (!LiveMap.preview && _located && SgMap.drawsLocation) return; // MapLibre's own, with its compass arrow
+    // On the desktop, the estimate's dot stands in for yours while it's shown, as MapLibre's
+    // puck is hidden then on Android.
+    if (_estAt != null && !SgMap.drawsLocation) return;
     final at = [f.lat, f.lng];
     final ring = math.min(f.accuracy ?? 30, 500).toDouble();
     if (_meDot == null) {
@@ -922,8 +933,17 @@ class _LiveMapState extends State<LiveMap> {
     }
   }
 
+  /// Takes your own dot off the map (the desktop's, while the estimate stands in for it); the next
+  /// fix draws it again.
+  void _hideMe() {
+    if (_meDot == null) return;
+    ink.clear('me');
+    _meDot = null;
+    _meRing = null;
+  }
+
   /// Who's followed in the middle of the screen, where MapLibre isn't tracking them: someone's
-  /// shared trip, and MapPreview.
+  /// shared trip, MapPreview, and you on the desktop.
   void _keepInView(LatLng at) {
     _centre = at;
     _map?.animateCamera(CameraUpdate.newLatLng(at), duration: const Duration(milliseconds: 500));
@@ -953,7 +973,8 @@ class _LiveMapState extends State<LiveMap> {
   }
 
   MyLocationTrackingMode get _tracking {
-    if (!_located || _estAt != null || LiveMap.preview || mode == MapMode.follow) return MyLocationTrackingMode.none;
+    // The desktop's map has no puck to track: yours is kept in view as someone's shared trip is.
+    if (!_located || _estAt != null || LiveMap.preview || mode == MapMode.follow || !SgMap.drawsLocation) return MyLocationTrackingMode.none;
     if (turning) return MyLocationTrackingMode.trackingCompass;
     return following && mode != MapMode.traffic ? MyLocationTrackingMode.tracking : MyLocationTrackingMode.none;
   }
@@ -991,10 +1012,13 @@ class _LiveMapState extends State<LiveMap> {
   void _startReckoning() {
     if (LiveMap.preview) return;
     try {
-      _motion = userAccelerometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(
-        (e) => _reckon.motion(e.x, e.y, e.z, When.nowMs()),
-        onError: (_) {},
-      );
+      // The desktop has no accelerometer to ask: the estimate goes by your last speed there.
+      if (SgMap.hasMotionSensors) {
+        _motion = userAccelerometerEventStream(samplingPeriod: SensorInterval.uiInterval).listen(
+          (e) => _reckon.motion(e.x, e.y, e.z, When.nowMs()),
+          onError: (_) {},
+        );
+      }
     } catch (_) {
       // No accelerometer: the estimate carries on at your last speed.
     }
@@ -1050,6 +1074,7 @@ class _LiveMapState extends State<LiveMap> {
       // off isn't a drag: _steering says so until the fixes are back.
       _steering++;
       _map?.updateMyLocationTrackingMode(MyLocationTrackingMode.none);
+      if (!SgMap.drawsLocation) _hideMe();
       _estDot = ink.dot('est', at, radius: 8, fill: LiveMap.meColour, fillOpacity: 0.6, label: tr('map.estimated', 'No GPS here, so this is an estimate.'), z: 9);
     } else {
       _estDot!.at = at;
@@ -1729,7 +1754,7 @@ class _LiveMapState extends State<LiveMap> {
     final size = MediaQuery.sizeOf(context);
     final map = LiveMap.preview
         ? MapPreview(ink: ink, centre: _centre, zoom: _zoom, here: here)
-        : MapLibreMap(
+        : SgMap(
             styleString: _dark ? LiveMap.styleDark : LiveMap.styleLight,
             initialCameraPosition: CameraPosition(target: _centre, zoom: _zoom),
             minMaxZoomPreference: const MinMaxZoomPreference(9, 19),
@@ -1849,7 +1874,7 @@ class _LiveMapState extends State<LiveMap> {
               _round(Icons.zoom_out_map, tr('html.show_the_whole_route', 'Show the whole route'), _overview),
             if (!following && mode != MapMode.traffic && (here != null || mode == MapMode.follow))
               _round(Icons.my_location, tr('html.back_to_street_level_following', 'Back to street level, following'), () => _setFollowing(true)),
-            if (_located && mode != MapMode.follow && !LiveMap.preview)
+            if (_located && mode != MapMode.follow && !LiveMap.preview && SgMap.hasCompass)
               TourTarget(id: 'map.compass', child: _round(turning ? Icons.explore : Icons.explore_outlined, tr('html.turn_the_map_with_the', 'Turn the map with the way you face'), () => _setTurning(!turning), on: turning)),
             if (mode == MapMode.explore) ...[
               TourTarget(id: 'map.layers', child: _round(Icons.layers_outlined, tr('tray.layers', 'Layers'), _openLayers)),

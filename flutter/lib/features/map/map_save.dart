@@ -9,6 +9,11 @@
 // and keeps what it has. Its tiles are at a new address every week (its TileJSON names them): the one
 // used is kept with the download, and once a newer one's out, the sheet says so and Update map fetches
 // that week's, keeping the old until the new one's in.
+//
+// On the desktop, whose map is MapLibre GL JS in a WebView (sg_map.dart), there are no MapLibre
+// offline regions: the same download (the same box, zooms and limits, as the site's
+// js/map-save.js counts them) goes into the map's own disk cache instead (web/map_prefetch.dart),
+// where its local server finds it with no connection. The sheet is the same.
 import 'dart:async';
 import 'dart:convert';
 
@@ -22,6 +27,9 @@ import '../../data/when.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import 'live_map.dart';
+import 'sg_map.dart';
+import 'web/map_prefetch.dart';
+import 'web/map_server.dart';
 
 class MapSave {
   MapSave._();
@@ -65,6 +73,7 @@ class _SaveSheetState extends State<_SaveSheet> {
   bool _newer = false;
   final List<int> _ids = [];
   Completer<void>? _current;
+  MapPrefetch? _prefetch; // the desktop's download, while it runs
 
   @override
   void initState() {
@@ -97,6 +106,7 @@ class _SaveSheetState extends State<_SaveSheet> {
   Future<void> _cancel() async {
     setState(() => _cancelled = true);
     if (_current?.isCompleted == false) _current!.complete();
+    _prefetch?.cancel();
   }
 
   String _mb(num bytes) => '${(bytes / (1024 * 1024)).toStringAsFixed(bytes < 10 * 1024 * 1024 ? 1 : 0)} MB';
@@ -114,6 +124,7 @@ class _SaveSheetState extends State<_SaveSheet> {
       _updating = MapSave.saved;
       _bytes = 0;
     });
+    if (SgMap.inWebView) return _downloadOnDesktop();
     final ids = _ids..clear();
     try {
       final week = _week ?? await _thisWeek();
@@ -177,9 +188,68 @@ class _SaveSheetState extends State<_SaveSheet> {
     if (mounted) setState(() => _progress = null);
   }
 
+  /// The desktop's download (web/map_prefetch.dart): the same box, zooms and limits as Android's,
+  /// into the map's own cache, with the same messages. A first download cancelled or failed keeps
+  /// nothing; an update cancelled keeps the map saved before.
+  Future<void> _downloadOnDesktop() async {
+    final cache = MapServer.instance.cache;
+    final fetch = _prefetch = MapPrefetch(
+      cache: cache,
+      styles: const [LiveMap.styleLight, LiveMap.styleDark],
+      box: MapSave.box,
+      minZoom: MapSave.minZoom.toInt(),
+      maxZoom: MapSave.maxZoom.toInt(),
+      maxBytes: MapSave.maxBytes,
+      bytesMargin: MapSave.bytesMargin,
+    );
+    try {
+      final r = await fetch.run(onProgress: (done, total, bytes) {
+        if (!mounted) return;
+        setState(() {
+          _progress = total == 0 ? 0 : done / total;
+          _bytes = bytes;
+        });
+      });
+      if (r.cancelled) {
+        if (!_updating) await cache.clearSaved();
+        _message = _updating ? tr('mapSave.updateCancelled', 'Update cancelled. The map saved before is still there.') : tr('mapSave.cancelled', 'Cancelled. Nothing was kept.');
+      } else {
+        await _keepDesktopDownload(r);
+      }
+    } on TooManyTiles catch (e) {
+      if (!_updating) await cache.clearSaved();
+      _message = tr('mapSave.tooMany', "That's {n} tiles, more than the {max} OpenFreeMap allows in one download.", {'n': e.count, 'max': e.max});
+    } catch (e) {
+      if (!_updating) await cache.clearSaved();
+      _message = tr('mapSave.failed', "Couldn't save the map: {why}", {'why': '$e'});
+    }
+    _prefetch = null;
+    if (mounted) setState(() => _progress = null);
+  }
+
+  /// Records a finished desktop download as saved. An older week's tiles are deleted once the
+  /// new week's are all in; after a download stopped at the limit or with parts missing they're
+  /// kept, as the map's server fills in a tile missing this week from any week it has.
+  Future<void> _keepDesktopDownload(PrefetchResult r) async {
+    final week = r.weekFolder;
+    if (week != null && !r.capped && r.failed == 0) await MapServer.instance.cache.keepSavedWeek(week);
+    _capped = r.capped;
+    Store.I.putJson(MapSave.metaKey, {'at': When.nowMs(), 'ids': const <int>[], 'bytes': r.bytes, 'week': r.week, if (r.capped) 'capped': true});
+    _newer = false;
+    if (r.capped) {
+      _message = tr('mapSave.capped', "The map came near {mb}, OpenFreeMap's limit for one download, so it stopped there: the closest-in view of some places isn't saved.", {'mb': _mb(MapSave.maxBytes)});
+    } else if (r.failed > 0) {
+      _message = tr('mapSave.someFailed', "{n} of its {total} parts couldn't be saved. Try again to fill them in.", {'n': r.failed, 'total': r.total});
+    }
+  }
+
   Future<void> _remove() async {
-    for (final id in (MapSave.meta['ids'] as List? ?? const [])) {
-      await deleteOfflineRegion((id as num).toInt()).catchError((_) {});
+    if (SgMap.inWebView) {
+      await MapServer.instance.cache.clearSaved();
+    } else {
+      for (final id in (MapSave.meta['ids'] as List? ?? const [])) {
+        await deleteOfflineRegion((id as num).toInt()).catchError((_) {});
+      }
     }
     Store.I.put(MapSave.metaKey, null);
     setState(() => _message = tr('mapSave.removed', 'Removed. The map keeps what you look at, as before.'));
@@ -222,7 +292,9 @@ class _SaveSheetState extends State<_SaveSheet> {
               TextButton.icon(onPressed: _remove, icon: const Icon(Icons.close), label: Text(tr('mapSave.remove', 'Remove'))),
             ]),
           ] else ...[
-            Text(tr('mapSave.intro', "Keep Singapore's map on this phone, so the live map shows the streets with no connection, on a trip or a walk.")),
+            Text(SgMap.inWebView
+                ? tr('desktop.mapSaveIntro', "Keep Singapore's map on this computer, so the live map shows the streets with no connection.")
+                : tr('mapSave.intro', "Keep Singapore's map on this phone, so the live map shows the streets with no connection, on a trip or a walk.")),
             const SizedBox(height: 6),
             Text(tr('mapSave.size', '{n} tiles from OpenFreeMap, about {mb}. Best on Wi-Fi.', {'n': '616', 'mb': '15 MB'}), style: TextStyle(color: sg.muted)),
             if (_message.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 8), child: Text(_message, style: TextStyle(color: sg.muted))),
