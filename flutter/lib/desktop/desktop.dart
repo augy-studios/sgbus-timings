@@ -6,8 +6,11 @@
 // - Make it yours, the first window, and from the tray's menu after that (welcome.dart);
 // - a tray icon (the menu bar on macOS): closing the window keeps the app running there, so
 //   Service Alerts still come, checked every minute (alerts_poll.dart, notify.dart);
-// - its own title bar: back, forward, reload, the address, copy, screenshots, the update button and
-//   the window's buttons (chrome.dart, screenshot.dart);
+// - its own title bar: back, forward, reload, the command bar (search and links), copy, screenshots,
+//   the update button and the window's buttons; a navigation rail and split panes on a wide
+//   window; the macOS menu bar and the keyboard shortcuts (chrome.dart, menubar.dart,
+//   screenshot.dart);
+// - the product's own look by default, or the computer's accent colour (desk_theme.dart);
 // - starting when you sign in, maximised, one copy at a time, uwu:// links (links.dart);
 // - Bus timings widgets on the desktop (widgets_window.dart);
 // - the tray countdown, the Jump List, the taskbar's thumbnail buttons, the Dock (glance.dart);
@@ -20,11 +23,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:ffi' as ffi;
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:nativeapi/nativeapi.dart' show DisplayManager;
 import 'package:sgbus_desktop/sgbus_desktop.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -33,6 +38,8 @@ import '../app/nav.dart';
 import '../app/version.dart';
 import 'settings.dart';
 
+/// The desktop app's window, links, start at sign-in and small helpers, for every part of the
+/// desktop layer. Everything is static: one per engine (each window has its own).
 class Desktop {
   Desktop._();
 
@@ -42,19 +49,24 @@ class Desktop {
 
   /// For the guide's screenshots and tests: draw the desktop's parts without being on one.
   static bool drawAnyway = false;
+  /// Whether to draw the desktop's parts: on the desktop, or for a screenshot of them.
   static bool get looks => on || drawAnyway;
 
+  // The app's names and addresses, which never change (desktop-features-spec §5, §10).
   static const site = 'https://sgbus.uwuapps.org';
   static const appId = 'org.uwuapps.sgbus';
   static const name = 'SG Bus Timings';
   static const scheme = 'uwu';
   static const linkHost = 'sgbus';
   static const releases = 'https://github.com/augy-studios/sgbus-timings/releases/latest';
+  /// How the app names itself to the servers it asks (BeaconDB, GitHub).
   static String get userAgent => 'SGBusTimingsDesktop/$appVersion (+$site)';
 
   /// What this engine's window is: 'main', 'widget' or 'welcome', with its arguments.
   static String kind = 'main';
   static Map<String, Object?> windowArgs = const {};
+
+  /// desktop_multi_window's handle on this engine's window.
   static WindowController? controller;
 
   /// This engine's own window.
@@ -69,6 +81,7 @@ class Desktop {
   /// The main window's been shown once (after the update window and Make it yours).
   static bool shown = false;
 
+  /// Which system the app is running on.
   static bool get mac => Platform.isMacOS;
   static bool get windows => Platform.isWindows;
   static bool get linux => Platform.isLinux;
@@ -105,24 +118,32 @@ class Desktop {
 
   // ---------- the main window ----------
 
-  static const minSize = Size(360, 520);
-  static const defaultSize = Size(480, 880);
+  /// The smallest the main window goes, and its size the first time (or whenever it isn't
+  /// maximised and has no kept size): desktop-shaped, as the features spec's §5 sets them.
+  static const minSize = Size(800, 600);
+  static const defaultSize = Size(1120, 760);
   static Rect? _normal; // the un-maximised bounds, kept as they change
   static Timer? _keepTimer;
 
   /// The main window's set up, still hidden: its own title bar, its least size, and its close
-  /// button keeping the app in the tray.
+  /// button keeping the app in the tray. On macOS the traffic lights stay, over the left of the
+  /// app's own title bar (chrome.dart leaves them room).
   static void setUpMain() {
     final w = window;
     if (w == null) return;
     w.title = name;
     w.titleBarStyle = TitleBarStyle.hidden;
+    if (mac) w.isWindowControlButtonsVisible = true;
     w.minimumSize = minSize.toNative();
     w.addListener(_mainEvent);
   }
 
+  /// Called whenever the main window is maximised, restored, or goes in or out of full screen
+  /// (the title bar redraws its buttons).
   static final List<void Function()> onWindowChange = [];
 
+  /// The main window's own events: close hides it to the tray (unless quitting), and its size,
+  /// place and maximised state are kept as they change.
   static void _mainEvent(WindowEvent e) {
     switch (e) {
       case WindowCloseRequestedEvent():
@@ -143,14 +164,19 @@ class Desktop {
     }
   }
 
+  /// Writes the window's un-maximised bounds and maximised state to the settings file (`bounds`,
+  /// `maximized`), so it opens the same way next time. Moves and resizes come in bursts, so
+  /// they're written 600 ms after the last one; closing writes at once ([now]).
   static void _keepBounds({bool now = false}) {
     final w = window;
     if (w == null || !shown) return;
-    try {
-      if (!w.isMaximized && !w.isFullScreen && !w.isMinimized) _normal = w.bounds.toRect();
-    } catch (_) {}
     _keepTimer?.cancel();
     void write() {
+      // Read when it's written, not at each event: a Mac sends resizes while it animates into
+      // maximised, when the window isn't yet "maximised" but no longer its own size either.
+      try {
+        if (!w.isMaximized && !w.isFullScreen && !w.isMinimized) _normal = w.bounds.toRect();
+      } catch (_) {}
       final b = _normal;
       DeskSettings.write({
         if (b != null) 'bounds': {'x': b.left.round(), 'y': b.top.round(), 'width': b.width.round(), 'height': b.height.round()},
@@ -180,7 +206,10 @@ class Desktop {
     final b = s['bounds'];
     var placed = false;
     if (b is Map && b['width'] is num && b['height'] is num) {
-      final rect = Rect.fromLTWH((b['x'] as num? ?? 40).toDouble(), (b['y'] as num? ?? 40).toDouble(), (b['width'] as num).toDouble(), (b['height'] as num).toDouble());
+      // Never smaller than the least size (an older app kept a phone-shaped window).
+      final width = math.max((b['width'] as num).toDouble(), minSize.width);
+      final height = math.max((b['height'] as num).toDouble(), minSize.height);
+      final rect = Rect.fromLTWH((b['x'] as num? ?? 40).toDouble(), (b['y'] as num? ?? 40).toDouble(), width, height);
       if (_onAScreen(rect)) {
         w.bounds = rect.toNative();
         placed = true;
@@ -194,6 +223,7 @@ class Desktop {
     }
     _normal = w.bounds.toRect();
     if (s['maximized'] != false) w.maximize();
+    if (mac) w.isWindowControlButtonsVisible = true;
     w.show();
     w.focus();
     for (final f in List.of(onShown)) {
@@ -201,14 +231,29 @@ class Desktop {
     }
   }
 
+  /// Called once the main window has been shown the first time.
   static final List<void Function()> onShown = [];
 
+  /// Whether kept bounds still land on a screen (a monitor may have been unplugged since): at
+  /// least a strip of the title bar, 100 by 40 px, on one of the screens' working areas.
   static bool _onAScreen(Rect r) {
+    try {
+      for (final display in DisplayManager.instance.getAll()) {
+        final seen = r.intersect(display.workArea.toRect());
+        if (seen.width >= 100 && seen.height >= 40) return true;
+      }
+      return false;
+    } catch (_) {
+      return _nearAScreen(r);
+    }
+  }
+
+  /// The rougher test, if the screens' places can't be read: anywhere near the size of a screen
+  /// from the top left counts.
+  static bool _nearAScreen(Rect r) {
     try {
       for (final view in ui.PlatformDispatcher.instance.displays) {
         final size = view.size / view.devicePixelRatio;
-        // Bounds are in logical pixels across every screen; one that overlaps the primary
-        // screen's area or sits near it is taken as on a screen.
         if (r.overlaps(Rect.fromLTWH(-size.width, -size.height, size.width * 3, size.height * 3))) return true;
       }
     } catch (_) {}
@@ -217,7 +262,11 @@ class Desktop {
 
   /// The window, forward, on [hash] (a #address on the site) if there's one.
   static void show([String? hash]) {
-    if (hash != null && hash.isNotEmpty) Links.open('$site/${hash.startsWith('#') ? hash : '#$hash'}');
+    if (hash != null && hash.isNotEmpty) {
+      // From the tray, a notification or a widget: a fresh start in the detail pane.
+      AppNav.fromPane = false;
+      Links.open('$site/${hash.startsWith('#') ? hash : '#$hash'}');
+    }
     final w = window;
     if (w == null) return;
     if (!shown) {
@@ -260,57 +309,24 @@ class Desktop {
     exit(0);
   }
 
+  /// What runs just before the app quits (an update to install, say).
   static final List<Future<void> Function()> beforeQuit = [];
 
   // ---------- links ----------
 
-  /// uwu://sgbus/ links, to the site's address they name, as the Android app maps them: the
-  /// site's short links by their path (uwu://sgbus/go/k3v9q2x7ma), anything else as the site's
-  /// # address (uwu://sgbus/84009, uwu://sgbus/bus/22, uwu://sgbus/nav, uwu://sgbus/map/84009),
-  /// and uwu://sgbus/ alone the home page. Null for another host, or anything not a plain address.
-  static String? fromAppLink(String link) {
-    final Uri url;
-    try {
-      url = Uri.parse(link);
-    } catch (_) {
-      return null;
-    }
-    if (url.scheme.toLowerCase() != scheme || url.host.toLowerCase() != linkHost) return null;
-    final rest = url.path.replaceAll(RegExp(r'^/+|/+$'), '');
-    if (!RegExp(r'^[\w\-./,~%]*$').hasMatch(rest)) return null;
-    if (rest.isEmpty) return '$site/';
-    if (RegExp(r'^(go|trip|eta)/[a-z0-9]{10}$').hasMatch(rest)) return '$site/$rest';
-    return '$site/#$rest';
-  }
+  /// uwu://sgbus/ links, to the site's address they name (app/links.dart has the rules); null
+  /// for another app's link or anything not a plain address.
+  static String? fromAppLink(String link) => Links.fromAppLink(link);
 
   /// A uwu:// link among a command line's arguments.
   static String? linkIn(List<String> args) => args.where((a) => a.toLowerCase().startsWith('$scheme://')).firstOrNull;
 
-  /// Typed in the title bar's address: the site's own (sgbus.uwuapps.org/#84009), another site's
-  /// (example.com, https://…), a path or # address on the site (/#bus/22, #84009), or a uwu://sgbus/
-  /// link. Null for anything else.
-  static String? typedAddress(String text) {
-    final typed = text.trim();
-    if (typed.isEmpty) return null;
-    if (typed.toLowerCase().startsWith('$scheme://')) return fromAppLink(typed);
-    if (RegExp(r'^[#/]').hasMatch(typed)) return Uri.parse('$site/').resolve(typed).toString();
-    final hasScheme = RegExp(r'^[a-z][a-z0-9+.-]*://', caseSensitive: false).hasMatch(typed);
-    // A word, or a number, is not an address (84009 would be taken as an IP address).
-    if (!hasScheme && !RegExp(r'^[^\s/?#]+\.[^\s/?#]+').hasMatch(typed)) return null;
-    final Uri url;
-    try {
-      url = Uri.parse(hasScheme ? typed : 'https://$typed');
-    } catch (_) {
-      return null;
-    }
-    return (url.scheme == 'http' || url.scheme == 'https') && url.host.isNotEmpty ? url.toString() : null;
-  }
+  /// An address typed into the command bar, as a whole address, or null if it isn't one
+  /// (app/links.dart has the rules).
+  static String? typedAddress(String text) => Links.typedAddress(text);
 
-  /// Whether an address is the site's own.
-  static bool isSite(String url) {
-    final u = Uri.tryParse(url);
-    return u != null && u.scheme == 'https' && u.host == Uri.parse(site).host;
-  }
+  /// Whether an address is the site's own (http:// too).
+  static bool isSite(String url) => Links.isSite(url);
 
   /// A link while the app's open: the page it names. Another UwU app's link is handed on to it.
   static void openLink(String link, {bool Function(String)? passOn}) {
@@ -321,6 +337,7 @@ class Desktop {
       return;
     }
     show();
+    AppNav.fromPane = false;
     Links.open(target);
   }
 
@@ -330,15 +347,35 @@ class Desktop {
     return link == null ? null : fromAppLink(link);
   }
 
+  // ---------- the window's background ----------
+
+  static Color? _background;
+
+  /// Paints the window itself in the theme's background colour, so it never flashes white while
+  /// it's resized or shown (chrome.dart calls it as the theme changes).
+  static void paintBackground(Color colour) {
+    final w = window;
+    if (w == null || colour == _background) return;
+    _background = colour;
+    try {
+      w.backgroundColor = colour.toNative();
+    } catch (_) {}
+  }
+
   // ---------- starting when you sign in ----------
 
+  /// Linux's autostart entry, which starts the app when the person signs in.
   static File get _autostart => File('${Platform.environment['XDG_CONFIG_HOME'] ?? '${Platform.environment['HOME']}/.config'}/autostart/sgbus-timings.desktop');
 
+  /// Whether the app starts when the person signs in to the computer.
   static Future<bool> startsAtLogin() async {
     if (linux) return _autostart.existsSync();
     return await SgbusDesktop.startsAtLogin() ?? false;
   }
 
+  /// Turns starting at sign-in on or off: an autostart entry on Linux, the system's own way on
+  /// Windows and macOS (the sgbus_desktop plugin). Not from source, so a developer's computer
+  /// doesn't start a test build.
   static Future<void> setStartAtLogin(bool on) async {
     if (fromSource) return;
     if (linux) {

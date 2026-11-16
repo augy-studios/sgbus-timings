@@ -14,6 +14,10 @@
 // Either way light, dark or by the clock (sgbus.mode: light 09:00 to 18:00), and High contrast
 // (sgbus_contrast: the phone's setting, on or off). Every screen takes its colours from
 // SgColors, the site's tokens (style.css), so a screen reads the same in both looks.
+//
+// The desktop app (desktop/desk_theme.dart) starts in the UwU Apps theme, can paint the brand
+// colour with the computer's accent colour (accentOverride), and uses compact controls
+// (compact). On Android neither is ever set, so nothing changes there.
 // CorePalette and Scheme: what DynamicColorPlugin hands back, and how Android's own palettes
 // map to roles; their replacements take no CorePalette.
 // ignore_for_file: deprecated_member_use
@@ -24,6 +28,7 @@ import 'package:material_color_utilities/material_color_utilities.dart' show Cor
 import '../data/gta6.dart';
 import '../data/store.dart';
 import '../native/native_bridge.dart';
+import 'colours.dart';
 
 /// The site's colour tokens, as both looks have them.
 @immutable
@@ -65,15 +70,25 @@ class SgColors extends ThemeExtension<SgColors> {
   final SgAccents? accents; // GTA VI's other colours; every other theme has the one brand colour
 
   // A colour to each kind of thing, which in every theme but GTA VI is the brand colour.
-  Color get pick => accents?.pick ?? brand; // what's picked
+
+  /// What's picked, and the writing on it.
+  Color get pick => accents?.pick ?? brand;
   Color get onPick => accents?.onPick ?? onBrand;
-  Color get tray => accents?.tray ?? brand; // the page you're on, and what's switched on
+
+  /// The page you're on and what's switched on, and the writing on it.
+  Color get tray => accents?.tray ?? brand;
   Color get onTray => accents?.onTray ?? onBrand;
-  Color get bar => accents?.bar ?? brand; // the bars across the top
+
+  /// The bars across the top, and the writing on them.
+  Color get bar => accents?.bar ?? brand;
   Color get onBar => accents?.onBar ?? onBrand;
-  Color get badge => accents?.badge ?? brand; // codes and round icons
+
+  /// Codes and round icons, and the writing on them.
+  Color get badge => accents?.badge ?? brand;
   Color get onBadge => accents?.onBadge ?? onBrand;
-  Color get heading => accents?.heading ?? muted; // section labels
+
+  /// Section labels.
+  Color get heading => accents?.heading ?? muted;
 
   /// A bus number's colour, the same for that bus wherever it's shown.
   Color busInk(String no) {
@@ -125,6 +140,8 @@ class SgAccents {
   static const _on = Color(0xFF1D0030);
   static const _white = Colors.white;
 
+  /// Orange for what's picked, yellow for what's on, blue for the bars, magenta for codes, each
+  /// with the writing that reads on it.
   Color get pick => const Color(0xFFE6953E);
   Color get onPick => _on;
   Color get tray => const Color(0xFFFFBC24);
@@ -135,6 +152,8 @@ class SgAccents {
   Color get onBadge => _white;
   final Color heading;
   final List<Color> inks;
+
+  /// The wheel's slices, each colour with its writing.
   List<(Color, Color)> get slices => const [
         (Color(0xFFFF2B90), _on),
         (Color(0xFF2B60DA), _white),
@@ -144,11 +163,16 @@ class SgAccents {
       ];
 }
 
+/// Short ways for a screen to reach the look: `context.sg` for the site's colours.
 extension SgTheme on BuildContext {
+  /// The site's colour tokens in the theme in use.
   SgColors get sg => Theme.of(this).extension<SgColors>()!;
+
+  /// Whether the Material You look is on.
   bool get materialYou => AppLook.I.materialYou;
 }
 
+/// One of the site's brand colours: its id (kept in sgbus.colorTheme), colour and name.
 class BrandSwatch {
   const BrandSwatch(this.id, this.hex, this.label, {this.dot});
   final String id;
@@ -157,11 +181,58 @@ class BrandSwatch {
   final List<Color>? dot; // its dot's colours, top to bottom, where it isn't just the one
 }
 
+/// A colour as "#rrggbb", for Colours' sums.
+String hexOf(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
+
+/// The desktop title bar's colours (desktop/chrome.dart), from the theme in use: the bars'
+/// colour, writing that reads on it (the theme's own, held to WCAG AA), and the tints for the
+/// command bar's field and a button under the pointer. The tints only ever add contrast: lighter
+/// behind dark writing, darker behind light writing.
+@immutable
+class BarColours {
+  const BarColours({required this.background, required this.fg, required this.field, required this.hover});
+
+  /// The bar's colours for a theme's tokens: the brand colour (GTA VI's blue bar), and its
+  /// writing.
+  factory BarColours.of(SgColors sg) {
+    final background = sg.bar;
+    var fg = sg.onBar;
+    // The theme's colours already meet AA on every real bar colour; if one doesn't (a colour of
+    // someone's own), the better of dark or white stands in.
+    if (Colours.contrast(hexOf(fg), hexOf(background)) < Colours.aa) fg = hexColor(Colours.onColour(hexOf(background)));
+    final lightWriting = fg.computeLuminance() > .5;
+    if (lightWriting) {
+      return BarColours(background: background, fg: fg, field: const Color(0x2E000000), hover: const Color(0x38000000));
+    }
+    // A very light bar (white, say) can't get lighter, so it takes a faint grey; dark writing
+    // still reads easily on it.
+    if (background.computeLuminance() > .8) {
+      return BarColours(background: background, fg: fg, field: const Color(0x12000000), hover: const Color(0x1A000000));
+    }
+    return BarColours(background: background, fg: fg, field: const Color(0x59FFFFFF), hover: const Color(0x4DFFFFFF));
+  }
+
+  /// The bar's colour.
+  final Color background;
+
+  /// The writing and icons on it.
+  final Color fg;
+
+  /// The command bar's field, laid over the bar.
+  final Color field;
+
+  /// A button under the pointer, laid over the bar.
+  final Color hover;
+}
+
+/// A "#rrggbb" colour, or [fallback] if it isn't one.
 Color hexColor(String s, [Color fallback = const Color(0xFFCCFFCC)]) {
   final m = RegExp(r'^#?([0-9a-fA-F]{6})$').firstMatch(s.trim());
   return m == null ? fallback : Color(0xFF000000 | int.parse(m[1]!, radix: 16));
 }
 
+/// The app's look: which one, its colours, light or dark, and the ThemeData for it. Screens
+/// redraw when it changes (app/app.dart listens).
 class AppLook extends ChangeNotifier {
   AppLook._();
   static final AppLook I = AppLook._();
@@ -192,6 +263,7 @@ class AppLook extends ChangeNotifier {
     'light': {'--bg': '#fff0f7', '--ink': '#1d0030', '--muted': '#66406f', '--brand': '#ff2b90', '--on-brand': '#1d0030', '--brand-ink': '#bc0082'},
     'dark': {'--bg': '#1d0030', '--ink': '#fff4fa', '--muted': '#d9c2de', '--brand': '#ff2b90', '--on-brand': '#1d0030', '--brand-ink': '#ff7ccb'},
   };
+  // The swatches' names, as the site has them (not translated there either).
   static String _classic() => 'Classic';
   static String _ng1() => 'Not green 1';
   static String _ng2() => 'Not green 2';
@@ -213,12 +285,16 @@ class AppLook extends ChangeNotifier {
   /// In Material You: the wallpaper's colours ("phone", the default), Your colours ("yours") or
   /// GTA VI's ("gta-6").
   static const youColoursKey = 'app.youColours';
+
+  /// Which colours Material You uses (above); Your colours only while they're set, GTA VI only
+  /// while it can be picked.
   String get youColours {
     final v = Store.I.get(youColoursKey);
     if (v == 'yours' && yourColours != null) return v!;
     return v == gta6 && Gta6.canPick ? gta6 : 'phone';
   }
 
+  /// Picks Material You's colours; GTA VI only if it can be picked now.
   set youColours(String v) {
     if (v == gta6 && !Gta6.pick()) return;
     Store.I.put(youColoursKey, v == 'phone' ? null : v);
@@ -228,18 +304,46 @@ class AppLook extends ChangeNotifier {
   /// For tests and screenshots: the platform's brightness and contrast.
   Brightness Function()? platformBrightness;
 
+  // ---------- the desktop's (desktop/desk_theme.dart) ----------
+
+  Color? _accentOverride;
+
+  /// The computer's accent colour, standing in for the brand colour, while the desktop's "Use
+  /// system accent colour" is on; null otherwise (always, on Android). Your colours still come
+  /// first, as they do over the brand colours.
+  Color? get accentOverride => _accentOverride;
+  /// Sets (or clears) the accent colour, repainting the app if it changed.
+  set accentOverride(Color? colour) {
+    if (colour == _accentOverride) return;
+    _accentOverride = colour;
+    notifyListeners();
+  }
+
+  /// The desktop's compact controls: smaller paddings, for a mouse rather than a finger.
+  bool compact = false;
+
+  /// The accent colour's tokens, while it stands in for the brand colour.
+  Map<String, dynamic>? _accentTokens(Brightness b) {
+    final accent = _accentOverride;
+    if (accent == null || yourColours != null) return null;
+    return Colours.accentTokens(hexOf(accent), b == Brightness.dark ? 'dark' : 'light');
+  }
+
+  /// Whether the Material You look is on (the UwU Apps theme when it's off).
   bool get materialYou => Store.I.get(lookKey) != 'usual';
   set materialYou(bool on) {
     Store.I.put(lookKey, on ? null : 'usual');
     notifyListeners();
   }
 
+  /// The brand colour picked; Classic for GTA VI once it can't be picked.
   String get swatchId {
     final v = Store.I.get(colorKey) ?? 'classic';
     return v == gta6 && !Gta6.canPick ? 'classic' : v;
   }
 
-  // Locked, as when Sync brings it from another device: Classic instead.
+  /// Picks a brand colour. GTA VI while it's locked (as when Sync brings it from another
+  /// device) is Classic instead.
   set swatchId(String id) {
     Store.I.put(colorKey, id == gta6 && !Gta6.pick() ? 'classic' : id);
     notifyListeners();
@@ -251,6 +355,7 @@ class AppLook extends ChangeNotifier {
     return const ['light', 'dark', 'time', 'phone'].contains(v) ? v! : (materialYou ? 'phone' : 'light');
   }
 
+  /// Picks light, dark, by the clock, or the phone's.
   set modePreference(String v) {
     Store.I.put(modeKey, v);
     notifyListeners();
@@ -262,6 +367,7 @@ class AppLook extends ChangeNotifier {
     return v == 'on' || v == 'off' ? v! : 'auto';
   }
 
+  /// Picks High contrast: the phone's ("auto"), on or off.
   set contrast(String v) {
     Store.I.put(contrastKey, v == 'auto' ? null : v);
     notifyListeners();
@@ -273,13 +379,16 @@ class AppLook extends ChangeNotifier {
     return v['kind'] == 'base' && v['base'] is String ? v : null;
   }
 
+  /// Repaints the app with what's set now (the clock may have turned light or dark).
   void changed() => notifyListeners();
 
+  /// Whether it's light by the clock: 09:00 to 18:00.
   static bool daylight([DateTime? now]) {
     final h = (now ?? DateTime.now()).hour;
     return h >= lightFromHour && h < lightUntilHour;
   }
 
+  /// Light, dark or the system's, from the mode picked.
   ThemeMode themeMode() => switch (modePreference) {
         'dark' => ThemeMode.dark,
         'time' => daylight() ? ThemeMode.light : ThemeMode.dark,
@@ -287,27 +396,35 @@ class AppLook extends ChangeNotifier {
         _ => ThemeMode.light,
       };
 
+  /// Whether High contrast is on: set on, or the phone's setting while it's "auto".
   bool highContrast(BuildContext context) =>
       contrast == 'on' || (contrast == 'auto' && MediaQuery.maybeHighContrastOf(context) == true);
 
+  /// The brand colour in use: Your colours' one colour, the computer's accent colour (the
+  /// desktop's choice), or the picked swatch.
   Color get brand {
     final yc = yourColours;
     if (yc != null) return hexColor(yc['base'] as String);
+    if (_accentOverride != null) return _accentOverride!;
     return Color(swatches.firstWhere((s) => s.id == swatchId, orElse: () => swatches.first).hex);
   }
 
+  /// The app's whole theme for light or dark, in the look picked.
   ThemeData theme(Brightness b, {bool contrast = false}) {
-    final t = materialYou ? _material(b, contrast) : _usual(b, contrast);
-    return isGta6 && !contrast ? _gta6Dress(t, b) : t;
+    var t = materialYou ? _material(b, contrast) : _usual(b, contrast);
+    if (isGta6 && !contrast) t = _gta6Dress(t, b);
+    if (compact) t = t.copyWith(visualDensity: VisualDensity.compact);
+    return t;
   }
 
   /// GTA VI's colours are what's showing.
-  bool get isGta6 => materialYou ? youColours == gta6 : yourColours == null && swatchId == gta6;
+  bool get isGta6 => materialYou ? youColours == gta6 : yourColours == null && _accentOverride == null && swatchId == gta6;
 
-  // GTA VI uses every colour of the logo, a colour to each kind of thing, as style.css has it: pink
-  // for the main buttons, orange for what's picked, yellow for what's switched on, blue for the
-  // bars and icons, magenta for codes, and the bus numbers going through them. The status colours
-  // (ok, warn, busy, error, the tones) keep their meaning. Not over High contrast or Your colours.
+  /// GTA VI uses every colour of the logo, a colour to each kind of thing, as style.css has it:
+  /// pink for the main buttons, orange for what's picked, yellow for what's switched on, blue for
+  /// the bars and icons, magenta for codes, and the bus numbers going through them. The status
+  /// colours (ok, warn, busy, error, the tones) keep their meaning. Not over High contrast or
+  /// Your colours.
   ThemeData _gta6Dress(ThemeData t, Brightness b) {
     final dark = b == Brightness.dark;
     final sg = t.extension<SgColors>()!;
@@ -358,6 +475,7 @@ class AppLook extends ChangeNotifier {
 
   static const _seed = Color(0xFF2E7D32); // the site's green, as a tone that seeds well
 
+  /// The Material You look, in the wallpaper's (or Your, or GTA VI's) colours.
   ThemeData _material(Brightness b, bool contrast) {
     final yc = yourColours;
     ColorScheme scheme;
@@ -366,8 +484,11 @@ class AppLook extends ChangeNotifier {
     } else if (youColours == gta6) {
       scheme = _gta6Scheme(b);
     } else {
+      // The phone's wallpaper colours; on the desktop, the computer's accent colour if it's
+      // chosen; otherwise the app's green.
       final phone = b == Brightness.dark ? phoneDark : phoneLight;
-      scheme = phone ?? ColorScheme.fromSeed(seedColor: _seed, brightness: b);
+      final seed = _accentOverride ?? _seed;
+      scheme = phone ?? ColorScheme.fromSeed(seedColor: seed, brightness: b);
     }
     if (contrast) {
       scheme = ColorScheme.fromSeed(
@@ -436,7 +557,8 @@ class AppLook extends ChangeNotifier {
     );
   }
 
-  // The logo's pink as it is, and at night its violet for the surfaces, not a dark pink.
+  /// GTA VI in Material You: the logo's pink as it is, and at night its violet for the surfaces,
+  /// not a dark pink.
   static ColorScheme _gta6Scheme(Brightness b) {
     final s = ColorScheme.fromSeed(seedColor: const Color(0xFFFF2B90), brightness: b, dynamicSchemeVariant: DynamicSchemeVariant.fidelity);
     if (b == Brightness.light) return s;
@@ -452,6 +574,7 @@ class AppLook extends ChangeNotifier {
 
   // ---------- the UwU Apps theme ----------
 
+  /// One of the site's CSS colour tokens ("#rrggbb" or "rgba(…)"), or [fallback] without it.
   Color _token(Map<String, dynamic>? tokens, String name, Color fallback) {
     final v = tokens?[name];
     if (v is! String) return fallback;
@@ -461,14 +584,14 @@ class AppLook extends ChangeNotifier {
     return Color.fromRGBO(double.parse(m[1]!).round(), double.parse(m[2]!).round(), double.parse(m[3]!).round(), m[4] == null ? 1 : double.parse(m[4]!));
   }
 
+  /// The UwU Apps theme: the site's look, in the brand colour (or Your colours, GTA VI's, or the
+  /// desktop's accent colour).
   ThemeData _usual(Brightness b, bool contrast) {
     final dark = b == Brightness.dark;
     final yc = yourColours;
     final tokens = yc != null
         ? (yc[dark ? 'dark' : 'light'] as Map?)?.cast<String, dynamic>()
-        : swatchId == gta6
-            ? _gta6Tokens[dark ? 'dark' : 'light']
-            : null;
+        : _accentTokens(b) ?? (swatchId == gta6 ? _gta6Tokens[dark ? 'dark' : 'light'] : null);
     final brand = brandColor(tokens);
     var sg = SgColors(
       bg: _token(tokens, '--bg', dark ? const Color(0xFF0C100E) : const Color(0xFFEEF2F0)),
@@ -498,7 +621,7 @@ class AppLook extends ChangeNotifier {
         ink: dark ? Colors.white : Colors.black,
         muted: dark ? const Color(0xFFE6E6E6) : const Color(0xFF1F2622),
         brand: sg.brand,
-        onBrand: Colors.black,
+        onBrand: _contrastOnBrand(sg.brand),
         brandInk: dark ? const Color(0xFFBFF5CF) : const Color(0xFF0B4D26),
         ok: dark ? const Color(0xFF4ADE80) : const Color(0xFF0B5A28),
         warn: dark ? const Color(0xFFFBBF24) : const Color(0xFF7A3600),
@@ -569,13 +692,22 @@ class AppLook extends ChangeNotifier {
     );
   }
 
+  /// High contrast's writing on the brand colour: black, as on every brand swatch. On the
+  /// desktop (compact) it's white instead on a brand colour too dark for black (an accent
+  /// colour, or Your colours); Android keeps black for now.
+  Color _contrastOnBrand(Color brand) {
+    if (!compact || Colours.contrast('#000000', hexOf(brand)) >= Colours.aa) return Colors.black;
+    return Colors.white;
+  }
+
+  /// The brand colour from a set of tokens, or the one in use without them.
   Color brandColor(Map<String, dynamic>? tokens) {
     final b = tokens?['--brand'];
     return b is String ? hexColor(b, brand) : brand;
   }
 
-  // Android's own tonal palettes as the scheme: seeded from them for the newer roles, then the
-  // roles Android sets itself put back, so the app matches the phone's other apps.
+  /// Android's own tonal palettes as the scheme: seeded from them for the newer roles, then the
+  /// roles Android sets itself put back, so the app matches the phone's other apps.
   static ColorScheme _fromPalette(CorePalette p, Brightness b) {
     final s = b == Brightness.dark ? Scheme.darkFromCorePalette(p) : Scheme.lightFromCorePalette(p);
     return ColorScheme.fromSeed(seedColor: Color(s.primary), brightness: b).copyWith(

@@ -1,5 +1,7 @@
 // The app: its look (theme/theme.dart) and language (i18n/i18n.dart), redrawn as either changes,
-// the main screen (app/shell.dart), and what it was opened with (app/links.dart).
+// the main screen (app/shell.dart), and what it was opened with (app/links.dart). In the desktop
+// app it's wrapped in the desktop's window chrome (desktop/chrome.dart): the title bar, the
+// navigation rail, the split panes, the menu bar and the keyboard shortcuts.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -7,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import '../desktop/chrome.dart';
+import '../desktop/desk_theme.dart';
 import '../desktop/desktop.dart';
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
@@ -16,6 +19,7 @@ import 'nav.dart';
 import 'shell.dart';
 import '../features/misc/magic_cup.dart';
 
+/// The whole app, the same on Android and the desktop.
 class SgBusApp extends StatefulWidget {
   const SgBusApp({super.key, required this.pages});
   final Map<String, Widget Function()> pages;
@@ -24,6 +28,7 @@ class SgBusApp extends StatefulWidget {
   State<SgBusApp> createState() => _SgBusAppState();
 }
 
+/// Follows the look, the language, links opened and the app coming back to the front.
 class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
   NativeListener? _open;
   NativeListener? _language;
@@ -65,20 +70,23 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  // The wallpaper's colours read again each time the app comes back, and the clock's light or
-  // dark checked.
+  /// The wallpaper's colours (or the desktop's accent colour) read again each time the app
+  /// comes back, and the clock's light or dark checked.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       AppLook.I.readPhone();
       AppLook.I.changed();
+      // The desktop's accent colour, in case it was changed meanwhile.
+      if (Desktop.on) DeskTheme.refresh();
     }
   }
 
+  /// The look changed: the app's drawn again in it.
   void _redraw() => setState(() {});
 
-  // A new language reaches every screen that's open, not only the one on top: a screen asks for
-  // its words as it's built, and those under it wouldn't be built again till you came back in.
+  /// A new language reaches every screen that's open, not only the one on top: a screen asks
+  /// for its words as it's built, and those under it wouldn't be built again till you came back.
   void _newLanguage() {
     setState(() {});
     void redo(Element e) {
@@ -102,6 +110,7 @@ class _SgBusAppState extends State<SgBusApp> with WidgetsBindingObserver {
           navigatorKey: AppNav.navigatorKey,
           // The desktop's title bar keeps its own history (desktop/chrome.dart).
           navigatorObservers: [if (Desktop.on) DeskChrome.observer],
+          // TODO(desktop): scrollBehavior: Desktop.on ? const DeskScrollBehavior() : null, once desktop/adaptive.dart has it.
           scaffoldMessengerKey: AppNav.messengerKey,
           theme: look.theme(Brightness.light, contrast: contrast),
           darkTheme: look.theme(Brightness.dark, contrast: contrast),

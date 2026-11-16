@@ -5,20 +5,25 @@
 // the site's CSS custom properties, so the site and the app read each other's.
 import 'dart:math' as math;
 
+/// Your colours' maths: contrast, mixing and the theme made from one colour. Everything is
+/// static, on "#rrggbb" strings as the site keeps them.
 class Colours {
   Colours._();
   static const aa = 4.5;
   static const darkText = '#121815';
   static const classic = '#ccffcc';
 
+  /// A colour's red, green and blue, 0 to 255.
   static List<int> rgb(String hex) {
     final n = int.parse(hex.replaceAll('#', ''), radix: 16);
     return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   }
 
+  /// Red, green and blue as "#rrggbb".
   static String toHex(num r, num g, num b) =>
       '#${[r, g, b].map((v) => v.round().clamp(0, 255).toRadixString(16).padLeft(2, '0')).join()}';
 
+  /// How light a colour looks, 0 to 1 (WCAG's relative luminance).
   static double luminance(String hex) {
     final c = rgb(hex).map((v) {
       final x = v / 255;
@@ -27,19 +32,23 @@ class Colours {
     return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
   }
 
+  /// The contrast between two colours, 1 to 21 (WCAG's ratio).
   static double contrast(String a, String b) {
     final la = luminance(a), lb = luminance(b);
     final hi = math.max(la, lb), lo = math.min(la, lb);
     return (hi + 0.05) / (lo + 0.05);
   }
 
+  /// Two colours mixed, [share] of the first.
   static String mix(String a, String b, double share) {
     final x = rgb(a), y = rgb(b);
     return toHex(x[0] * share + y[0] * (1 - share), x[1] * share + y[1] * (1 - share), x[2] * share + y[2] * (1 - share));
   }
 
+  /// The writing that reads best on a colour: the dark one or white.
   static String onColour(String bg) => contrast(darkText, bg) >= contrast('#ffffff', bg) ? darkText : '#ffffff';
 
+  /// A colour's hue (0 to 360), saturation and lightness (0 to 1).
   static ({double h, double s, double l}) hsl(String hex) {
     final c = rgb(hex).map((v) => v / 255).toList();
     final r = c[0], g = c[1], b = c[2];
@@ -60,6 +69,7 @@ class Colours {
     return (h: h, s: d != 0 ? d / (1 - (2 * l - 1).abs()) : 0, l: l);
   }
 
+  /// Hue, saturation and lightness as "#rrggbb".
   static String fromHsl(double h, double s, double l) {
     final c = (1 - (2 * l - 1).abs()) * s;
     final x = c * (1 - ((h / 60) % 2 - 1).abs());
@@ -78,6 +88,8 @@ class Colours {
     return toHex((r + m) * 255, (g + m) * 255, (b + m) * 255);
   }
 
+  /// A button in [base] whose writing reads on it (and on it faded over a card): the colour
+  /// made lighter or darker only as far as it must, with dark or white writing.
   static ({String fill, String text}) buttonFor(String base, String card) {
     final c = hsl(base);
     bool reads(String fill, String text) => [fill, mix(fill, card, 0.55), mix(fill, card, 0.75)].every((x) => contrast(text, x) >= aa);
@@ -94,6 +106,7 @@ class Colours {
     return best == null ? (fill: base, text: onColour(base)) : (fill: best.fill, text: best.text);
   }
 
+  /// Writing in [hue]'s colour that reads on the background and the cards, for a mode.
   static String inkOf(String hue, String bg, String card, String mode) {
     final c = hsl(hue);
     final sat = c.s < 0.05 ? 0.0 : c.s.clamp(0.35, 0.8);
@@ -105,6 +118,7 @@ class Colours {
     return mode == 'dark' ? '#ffffff' : '#000000';
   }
 
+  /// A softer tone of the writing (for the muted text) that still reads on both.
   static String softer(String ink, String bg, String card, [double from = 0.55]) {
     for (var share = from; share < 1; share += 0.05) {
       final c = mix(ink, card, share);
@@ -113,6 +127,7 @@ class Colours {
     return ink;
   }
 
+  /// The site's CSS colour tokens from each part.
   static Map<String, String> tokens({required String bg, required String card, required String ink, required String brand, required String onBrand,
           required String brandInk, required String muted, required String mutedStrong, required String border}) =>
       {
@@ -148,6 +163,19 @@ class Colours {
       onBrand: button.text,
       brandInk: inkOf(base, bg, card, mode),
     );
+  }
+
+  /// The brand's three colours from a computer's accent colour, for the desktop app's "Use
+  /// system accent colour" (desktop/desk_theme.dart), over the site's own neutral background
+  /// and cards in [mode] ("light" or "dark"): the colour for bars and buttons (made lighter or
+  /// darker only as far as its writing needs to read), that writing, and a tone of it for
+  /// writing on the page. Everything else stays the site's.
+  static Map<String, String> accentTokens(String accent, String mode) {
+    final dark = mode == 'dark';
+    final bg = dark ? '#0c100e' : '#eef2f0';
+    final card = dark ? '#1a1e1c' : '#f8faf9';
+    final button = buttonFor(accent, card);
+    return {'--brand': button.fill, '--on-brand': button.text, '--brand-ink': inkOf(accent, bg, card, mode)};
   }
 
   /// Your colours for both modes, as kept.

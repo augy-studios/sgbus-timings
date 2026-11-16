@@ -2,16 +2,24 @@
 // Your trips or Places), the Edge Tray beside it, and Back: through what's open, then the page
 // back to home, and with nothing left, "Press back again to exit" (2.2.7's, backtwice): a second
 // press within two seconds sends the app to the background, so a trip carries on.
+//
+// In the desktop app, from 720 px wide, the navigation rail (desktop/chrome.dart) takes the Edge
+// Tray's place, and the page shares the room with a detail pane, a navigator of its own where a
+// stop, a bus or a shared link opens (app/nav.dart's push and DeskPanes): above 1024 px the page's list sits in
+// a 360-400 px pane on the left with the detail beside it; from 720 to 1024 px the detail covers
+// the list while it's open. Under 720 px, and always on Android, the shell is the phone's.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../api/net.dart';
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
+import '../theme/theme.dart';
 import 'edge_tray.dart';
 import 'nav.dart';
 import 'pages.dart';
 
+/// The main screen, around the page on show.
 class Shell extends StatefulWidget {
   const Shell({super.key, required this.pages});
   final Map<String, Widget Function()> pages;
@@ -24,10 +32,14 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellState();
 }
 
+/// The page on show, the pages built so far, and Android's Back.
 class _ShellState extends State<Shell> {
   DateTime? _backAt;
   static const _exitMs = 2000;
   final Map<String, Widget> _built = {};
+
+  /// Keeps the pages' place (scroll, what's typed) as the desktop's layout changes around them.
+  final _pagesKey = GlobalKey();
 
   @override
   void initState() {
@@ -37,8 +49,8 @@ class _ShellState extends State<Shell> {
     Net.off.addListener(_net);
   }
 
-  // Offline, a page that needs the network gives way to one that doesn't; back online, the
-  // tray has them all again.
+  /// Offline, a page that needs the network gives way to one that doesn't; back online, the
+  /// tray has them all again.
   void _net() {
     if (!Pages.shows(AppNav.page.value)) AppNav.page.value = Pages.home();
     setState(() {});
@@ -51,8 +63,11 @@ class _ShellState extends State<Shell> {
     super.dispose();
   }
 
+  /// The page changed: the shell shows it.
   void _changed() => setState(() {});
 
+  /// Android's Back, with nothing open over the shell: home first, then "Press back again to
+  /// exit".
   void _back() {
     final home = Pages.home();
     if (AppNav.page.value != home) {
@@ -79,6 +94,14 @@ class _ShellState extends State<Shell> {
     final id = AppNav.page.value;
     // Each page kept once built, so a page switched away from and back keeps its place.
     final page = _built[id] ??= (widget.pages[id] ?? widget.pages['timings']!)();
+    final pages = KeyedSubtree(
+      key: _pagesKey,
+      child: IndexedStack(
+        index: _built.keys.toList().indexOf(id),
+        children: [for (final k in _built.keys) KeyedSubtree(key: ValueKey(k), child: k == id ? page : _built[k]!)],
+      ),
+    );
+    final layout = DeskPanes.layoutOf(context);
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
@@ -89,19 +112,117 @@ class _ShellState extends State<Shell> {
           const OfflineBar(),
           for (final t in Shell.top) t(),
           Expanded(
-            child: MediaQuery.removePadding(
-              context: context,
-              // Under the bar, the page needn't keep clear of the status bar too.
-              removeTop: false,
-              child: EdgeTray(
-                child: IndexedStack(
-                  index: _built.keys.toList().indexOf(id),
-                  children: [for (final k in _built.keys) KeyedSubtree(key: ValueKey(k), child: k == id ? page : _built[k]!)],
-                ),
-              ),
-            ),
+            child: layout == DeskLayout.phone
+                ? MediaQuery.removePadding(
+                    context: context,
+                    // Under the bar, the page needn't keep clear of the status bar too.
+                    removeTop: false,
+                    child: EdgeTray(child: pages),
+                  )
+                : _Panes(layout: layout, list: pages),
           ),
         ]),
+      ),
+    );
+  }
+}
+
+/// The desktop's panes (from 720 px wide): the page as the list, and the detail pane, side by
+/// side above 1024 px, or the detail over the list while it's open from 720 to 1024 px. The
+/// detail pane's navigator keeps its screens as the layout changes between the two.
+class _Panes extends StatefulWidget {
+  const _Panes({required this.layout, required this.list});
+  final DeskLayout layout;
+  final Widget list;
+
+  @override
+  State<_Panes> createState() => _PanesState();
+}
+
+/// Holds the detail pane's navigator, so it keeps its screens as the layout changes.
+class _PanesState extends State<_Panes> {
+  /// The detail pane's own navigator, which starts on its "pick something" note.
+  late final Widget _detail = Navigator(
+    key: AppNav.paneKey,
+    observers: [DeskPanes.observer],
+    onGenerateRoute: (settings) => PageRouteBuilder<void>(
+      settings: const RouteSettings(name: 'pane'),
+      pageBuilder: (_, _, _) => const _PaneNote(),
+      transitionDuration: Duration.zero,
+    ),
+  );
+
+  @override
+  void dispose() {
+    // The pane's gone (the window narrowed to the phone layout), and its screens with it.
+    DeskPanes.observer.reset();
+    super.dispose();
+  }
+
+  /// [child] told its own size, so a page lays itself out for its pane, not the window.
+  Widget _sized(Widget child) => LayoutBuilder(
+        builder: (context, box) => MediaQuery(data: MediaQuery.of(context).copyWith(size: box.biggest), child: child),
+      );
+
+  /// The detail pane, at most 1000 px wide and centred in a wider pane, as the site's column.
+  Widget _detailPane() => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: DeskPanes.detailMax),
+          child: _sized(_detail),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.layout == DeskLayout.split) {
+      return LayoutBuilder(builder: (context, box) {
+        final listWidth = DeskPanes.listWidth(box.maxWidth);
+        return Row(children: [
+          SizedBox(width: listWidth, child: _sized(widget.list)),
+          VerticalDivider(width: 1, thickness: 1, color: context.sg.border),
+          Expanded(child: _detailPane()),
+        ]);
+      });
+    }
+    // 720 to 1024 px: one pane; the detail covers the list while it shows a screen.
+    return ValueListenableBuilder<bool>(
+      valueListenable: DeskPanes.open,
+      builder: (context, open, _) => Stack(children: [
+        Positioned.fill(child: Offstage(offstage: open, child: _sized(widget.list))),
+        Positioned.fill(child: Offstage(offstage: !open, child: _detailPane())),
+      ]),
+    );
+  }
+}
+
+/// The detail pane with nothing open: what to do to fill it.
+class _PaneNote extends StatelessWidget {
+  const _PaneNote();
+
+  @override
+  Widget build(BuildContext context) {
+    final sg = context.sg;
+    return Material(
+      type: MaterialType.transparency,
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.directions_bus_outlined, size: 56, color: sg.muted.withValues(alpha: .6)),
+            const SizedBox(height: 16),
+            Text(
+              tr('desktop.pane.pick', 'Pick a stop or a bus to see its timings here.'),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: sg.muted, fontSize: 16),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              tr('desktop.pane.search', 'Or search for one with {keys}.', {'keys': Theme.of(context).platform == TargetPlatform.macOS ? '⌘K' : 'Ctrl+K'}),
+              textAlign: TextAlign.center,
+              style: TextStyle(color: sg.muted.withValues(alpha: .8), fontSize: 14),
+            ),
+          ]),
+        ),
       ),
     );
   }

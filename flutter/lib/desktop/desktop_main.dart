@@ -2,6 +2,9 @@
 // first (which may install an update and restart before anything else opens), then the app,
 // hidden, with Make it yours in front of it the first time; the tray, the widgets and the checks
 // that run while it's open. main.dart calls each part around its own start.
+//
+// The main window stays hidden until the app's first frame is drawn, so it never flashes white
+// (desktop-features-spec §5).
 import 'dart:async';
 import 'dart:io';
 
@@ -17,6 +20,7 @@ import '../data/store.dart';
 import '../theme/theme.dart';
 import 'alerts_poll.dart';
 import 'chrome.dart';
+import 'desk_theme.dart';
 import 'desktop.dart';
 import 'glance.dart';
 import 'links.dart';
@@ -28,13 +32,17 @@ import 'updater.dart';
 import 'welcome.dart';
 import 'widgets_window.dart';
 
+/// The desktop app's start-up, in order: the window, the update window, then everything around
+/// the app once it's drawn.
 class DeskStart {
   DeskStart._();
 
+  /// Set once the desktop's first look has been chosen, so it's chosen only once.
   static const _lookKey = 'desktop.look';
 
-  /// Before the app's drawn: the window found and set up, and the computer's own look for the
-  /// app (the site's, not Material You's, as the website and the Electron app had it), once.
+  /// Before the app's drawn: the window found and set up, and the desktop's look for the app:
+  /// the site's (not Material You's, as the website and the Electron app had it), chosen once,
+  /// with the computer's accent colour if "Use system accent colour" is on (desk_theme.dart).
   static Future<void> window() async {
     await Desktop.findWindow();
     Desktop.setUpMain();
@@ -43,6 +51,7 @@ class DeskStart {
       Store.I.put(_lookKey, '1');
       if (Store.I.get(AppLook.lookKey) == null) AppLook.I.materialYou = false;
     }
+    await DeskTheme.init();
   }
 
   /// The update window, as the app opens: small, frameless, in the middle of the screen. Completes
@@ -60,6 +69,7 @@ class DeskStart {
     w.hide();
   }
 
+  /// The window shaped for the update window: small, frameless, fixed, in the middle.
   static void _splashLook(Window w) {
     w.setFrameless(true);
     w.isResizable = false;
@@ -116,6 +126,11 @@ class DeskStart {
     Favs.I.shareWithWidgets();
     final page = Desktop.startPage();
     if (page != null) Links.open(page);
+    // The first launch offline: "No connection" in place of the app (chrome.dart).
+    unawaited(DeskChrome.checkFirstLaunch());
+    // Shown only once the app's first frame is drawn, so the window never flashes white.
+    // At most 2 s: a window that draws nothing (no screen, say) still shows.
+    await WidgetsBinding.instance.endOfFrame.timeout(const Duration(seconds: 2), onTimeout: () {});
     if (Welcome.due) {
       // Make it yours comes first, the once; the window then, unless a link's brought it up.
       await Welcome.open(() {
@@ -127,6 +142,8 @@ class DeskStart {
     await DeskWidgets.restore();
   }
 
+  /// What the other windows (Make it yours, the widgets) ask the main window over the
+  /// `sgbus/main` channel.
   static Future<Object?> _fromWindows(MethodCall call) async {
     final a = call.arguments is Map ? Map<String, Object?>.from(call.arguments as Map) : <String, Object?>{};
     if (call.method.startsWith('widget-')) return DeskWidgets.handle(call.method, a);
@@ -143,6 +160,7 @@ class DeskStart {
   }
 }
 
+/// The update window's whole app, run in the main window's engine before the app itself.
 class _SplashApp extends StatelessWidget {
   const _SplashApp();
 
