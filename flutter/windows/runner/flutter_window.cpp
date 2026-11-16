@@ -1,3 +1,6 @@
+// SG Bus Timings for Windows: the main window, which holds the Flutter view that draws the app.
+// It registers the plugins with the main engine and every other window's engine, and leaves
+// showing the window to the Dart side.
 #include "flutter_window.h"
 
 #include <optional>
@@ -5,11 +8,15 @@
 #include "flutter/generated_plugin_registrant.h"
 #include "desktop_multi_window/desktop_multi_window_plugin.h"
 
+// Keeps the Dart project (the app's compiled code and assets) to start once the window exists.
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
+// Nothing of its own to free: the Flutter view goes in OnDestroy.
 FlutterWindow::~FlutterWindow() {}
 
+// The window exists: starts the Flutter engine and its view at the window's size, registers the
+// plugins, and puts the view in the window. Returns false if Flutter couldn't start.
 bool FlutterWindow::OnCreate() {
   if (!Win32Window::OnCreate()) {
     return false;
@@ -42,6 +49,7 @@ bool FlutterWindow::OnCreate() {
   return true;
 }
 
+// The window's going: stops the Flutter engine with it.
 void FlutterWindow::OnDestroy() {
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
@@ -50,6 +58,9 @@ void FlutterWindow::OnDestroy() {
   Win32Window::OnDestroy();
 }
 
+// Every message to the window: Flutter and its plugins see it first (the sgbus_desktop plugin
+// picks out a second copy's command line and the taskbar's buttons here), then the template's
+// own handling (the system's fonts changing, resizing, closing).
 LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,

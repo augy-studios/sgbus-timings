@@ -1,3 +1,4 @@
+// SG Bus Timings for Windows: the main window that hosts the Flutter view (flutter_window.cpp).
 #ifndef RUNNER_FLUTTER_WINDOW_H_
 #define RUNNER_FLUTTER_WINDOW_H_
 

@@ -1,3 +1,5 @@
+# SG Bus Timings for Windows: builds the runner (main.cpp, flutter_window.cpp and Flutter's
+# template files) into the app's executable, with its icon and version details (Runner.rc).
 cmake_minimum_required(VERSION 3.14)
 project(runner LANGUAGES CXX)
 

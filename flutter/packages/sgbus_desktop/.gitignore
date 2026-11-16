@@ -1,0 +1,4 @@
+# Made by running `flutter test` or `flutter pub get` inside the package.
+build/
+.dart_tool/
+pubspec.lock

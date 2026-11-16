@@ -16,6 +16,11 @@ dependencies:
   flutter:
     sdk: flutter
 
+# For test/, run from the app's folder (flutter test packages/sgbus_desktop/test/).
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
 flutter:
   plugin:
     platforms:

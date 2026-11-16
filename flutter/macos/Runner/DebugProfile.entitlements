@@ -1,12 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  SG Bus Timings for macOS: what the app is allowed to do, for `flutter run`, debug and profile
+  builds. The same as Release.entitlements (which says why the App Sandbox is off, and what each
+  entry is for), plus cs.allow-jit: while debugging, the Dart VM compiles code as it runs, for hot
+  reload.
+
+  The sandbox is off here too, so a debug build reads and writes the same folders, and behaves the
+  same way, as the copy people install.
+-->
 <plist version="1.0">
 <dict>
 	<key>com.apple.security.app-sandbox</key>
-	<true/>
+	<false/>
 	<key>com.apple.security.cs.allow-jit</key>
 	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
 	<key>com.apple.security.network.server</key>
+	<true/>
+	<key>com.apple.security.personal-information.location</key>
 	<true/>
 </dict>
 </plist>

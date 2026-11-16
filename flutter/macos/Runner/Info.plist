@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  SG Bus Timings for macOS: what macOS reads about the app before it starts. Most values come from
+  Configs/AppInfo.xcconfig (the name and bundle id) and Flutter's build (the version). The app's
+  own entries, kept as the Electron app (desktop/package.json) had them so nothing changes for
+  people updating from it:
+  - CFBundleURLTypes: uwu:// links open this app (uwu://sgbus/84009 opens that stop).
+  - NSLocation...UsageDescription: the words macOS shows when it asks to share your location.
+  - LSApplicationCategoryType: the Travel category, in Finder and Launchpad.
+-->
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
@@ -14,16 +23,35 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundleDisplayName</key>
+	<string>$(PRODUCT_NAME)</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>SG Bus Timings link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>uwu</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.travel</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>$(PRODUCT_COPYRIGHT)</string>
+	<key>NSLocationUsageDescription</key>
+	<string>SG Bus Timings uses your location to find the bus stops near you and to follow your trip.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>SG Bus Timings uses your location to find the bus stops near you and to follow your trip.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

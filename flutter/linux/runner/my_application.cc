@@ -1,3 +1,12 @@
+// SG Bus Timings for Linux: the app itself, as a GTK application. One copy at a time: GTK
+// registers the app on the session's D-Bus under its id (org.uwuapps.sgbus), so starting it again
+// (from the menu, at sign-in, a uwu:// link) runs a second copy only long enough to hand its
+// command line to the first, which passes it to Dart through the sgbus_desktop plugin
+// (desktop-features-spec §5). The second copy then exits.
+//
+// The main window starts hidden: the Dart side shows it once it knows how, as the update window,
+// after Make it yours, or as the app itself, maximised or not (lib/desktop/desktop.dart). The
+// Windows and macOS runners do the same.
 #include "my_application.h"
 
 #include <flutter_linux/flutter_linux.h>
@@ -5,25 +14,44 @@
 #include <gdk/gdkx.h>
 #endif
 
+#include "desktop_multi_window/desktop_multi_window_plugin.h"
 #include "flutter/generated_plugin_registrant.h"
+#include "sgbus_desktop/sgbus_desktop_plugin.h"
 
 struct _MyApplication {
   GtkApplication parent_instance;
+
+  // The arguments this copy was started with, minus the program's name, for Dart's main().
   char** dart_entrypoint_arguments;
+
+  // The main window, once it's made. GTK keeps the app running while it exists, hidden or not.
+  GtkWindow* window;
 };
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
-// Called when first Flutter frame received.
-static void first_frame_cb(MyApplication* self, FlView* view) {
-  gtk_widget_show(gtk_widget_get_toplevel(GTK_WIDGET(view)));
+// Registers every plugin with an engine that desktop_multi_window has just made for another
+// window (Make it yours, or a Bus timings widget), as each engine needs its own copies.
+static void register_plugins_for_new_window(FlPluginRegistry* registry) {
+  fl_register_plugins(registry);
 }
 
-// Implements GApplication::activate.
+// Makes the main window, hidden, with the Flutter view that draws the app in it, and registers
+// the plugins. GTK calls this (GApplication's activate) when the app starts.
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
+
+  // Started again some other way than its command line (a desktop asking the running app over
+  // D-Bus): bring the window that's there forward rather than making a second one.
+  if (self->window != nullptr) {
+    gchar* no_arguments[] = {const_cast<gchar*>(""), nullptr};
+    sgbus_desktop_plugin_forward(no_arguments);
+    return;
+  }
+
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
+  self->window = window;
 
   // Use a header bar when running in GNOME as this is the common style used
   // by applications and is the setup most users will be using (e.g. Ubuntu
@@ -32,6 +60,7 @@ static void my_application_activate(GApplication* application) {
   // in case the window manager does more exotic layout, e.g. tiling.
   // If running on Wayland assume the header bar will work (may need changing
   // if future cases occur).
+  // The Dart side hides it for the app's own title bar (lib/desktop/desktop.dart).
   gboolean use_header_bar = TRUE;
 #ifdef GDK_WINDOWING_X11
   GdkScreen* screen = gtk_window_get_screen(window);
@@ -45,11 +74,11 @@ static void my_application_activate(GApplication* application) {
   if (use_header_bar) {
     GtkHeaderBar* header_bar = GTK_HEADER_BAR(gtk_header_bar_new());
     gtk_widget_show(GTK_WIDGET(header_bar));
-    gtk_header_bar_set_title(header_bar, "sgbus_timings");
+    gtk_header_bar_set_title(header_bar, "SG Bus Timings");
     gtk_header_bar_set_show_close_button(header_bar, TRUE);
     gtk_window_set_titlebar(window, GTK_WIDGET(header_bar));
   } else {
-    gtk_window_set_title(window, "sgbus_timings");
+    gtk_window_set_title(window, "SG Bus Timings");
   }
 
   gtk_window_set_default_size(window, 1280, 720);
@@ -67,74 +96,75 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_show(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
-  // Show the window when Flutter renders.
-  // Requires the view to be realized so we can start rendering.
-  g_signal_connect_swapped(view, "first-frame", G_CALLBACK(first_frame_cb),
-                           self);
+  // Realised so Flutter starts drawing while the window is still hidden. Flutter's template
+  // shows the window on the first frame here; this app leaves that to the Dart side.
   gtk_widget_realize(GTK_WIDGET(view));
 
+  // After the view is in the window: desktop_multi_window finds the main window through it.
   fl_register_plugins(FL_PLUGIN_REGISTRY(view));
+  desktop_multi_window_plugin_set_window_created_callback(
+      register_plugins_for_new_window);
 
   gtk_widget_grab_focus(GTK_WIDGET(view));
 }
 
-// Implements GApplication::local_command_line.
-static gboolean my_application_local_command_line(GApplication* application,
-                                                  gchar*** arguments,
-                                                  int* exit_status) {
+// A command line for the app (GApplication's command_line). In the first copy this runs once
+// for its own start, and again each time the app's started while it runs, with that copy's
+// command line (GTK passes it over D-Bus). The first time it starts the app; after that the
+// command line goes to Dart, which opens a uwu:// link in it or brings the window forward.
+static gint my_application_command_line(GApplication* application,
+                                        GApplicationCommandLine* command_line) {
   MyApplication* self = MY_APPLICATION(application);
-  // Strip out the first argument as it is the binary name.
-  self->dart_entrypoint_arguments = g_strdupv(*arguments + 1);
+  gchar** arguments =
+      g_application_command_line_get_arguments(command_line, nullptr);
 
-  g_autoptr(GError) error = nullptr;
-  if (!g_application_register(application, nullptr, &error)) {
-    g_warning("Failed to register: %s", error->message);
-    *exit_status = 1;
-    return TRUE;
+  if (self->window == nullptr) {
+    // Strip out the first argument as it is the binary name.
+    g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
+    self->dart_entrypoint_arguments =
+        g_strdupv(arguments[0] != nullptr ? arguments + 1 : arguments);
+    g_application_activate(application);
+  } else {
+    sgbus_desktop_plugin_forward(arguments);
   }
 
-  g_application_activate(application);
-  *exit_status = 0;
-
-  return TRUE;
+  g_strfreev(arguments);
+  return 0;
 }
 
-// Implements GApplication::startup.
+// Runs as the app starts, before any window (GApplication's startup). Nothing of the app's own.
 static void my_application_startup(GApplication* application) {
-  // MyApplication* self = MY_APPLICATION(object);
-
-  // Perform any actions required at application startup.
-
   G_APPLICATION_CLASS(my_application_parent_class)->startup(application);
 }
 
-// Implements GApplication::shutdown.
+// Runs as the app ends (GApplication's shutdown). Nothing of the app's own: the Dart side has
+// tidied up before it quits.
 static void my_application_shutdown(GApplication* application) {
-  // MyApplication* self = MY_APPLICATION(object);
-
-  // Perform any actions required at application shutdown.
-
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }
 
-// Implements GObject::dispose.
+// Lets go of the kept command line when the app object goes (GObject's dispose).
 static void my_application_dispose(GObject* object) {
   MyApplication* self = MY_APPLICATION(object);
   g_clear_pointer(&self->dart_entrypoint_arguments, g_strfreev);
   G_OBJECT_CLASS(my_application_parent_class)->dispose(object);
 }
 
+// Tells GTK which of the functions above answer which of its calls.
 static void my_application_class_init(MyApplicationClass* klass) {
   G_APPLICATION_CLASS(klass)->activate = my_application_activate;
-  G_APPLICATION_CLASS(klass)->local_command_line =
-      my_application_local_command_line;
+  G_APPLICATION_CLASS(klass)->command_line = my_application_command_line;
   G_APPLICATION_CLASS(klass)->startup = my_application_startup;
   G_APPLICATION_CLASS(klass)->shutdown = my_application_shutdown;
   G_OBJECT_CLASS(klass)->dispose = my_application_dispose;
 }
 
+// Sets up a new app object (GLib's boilerplate): nothing to do.
 static void my_application_init(MyApplication* self) {}
 
+// Makes the app object, unique under its id, taking its command lines itself. GLib passes
+// unknown options such as --updated through to the command line untouched, as no options are
+// declared here.
 MyApplication* my_application_new() {
   // Set the program name to the application ID, which helps various systems
   // like GTK and desktop environments map this running application to its
@@ -144,5 +174,5 @@ MyApplication* my_application_new() {
 
   return MY_APPLICATION(g_object_new(my_application_get_type(),
                                      "application-id", APPLICATION_ID, "flags",
-                                     G_APPLICATION_NON_UNIQUE, nullptr));
+                                     G_APPLICATION_HANDLES_COMMAND_LINE, nullptr));
 }

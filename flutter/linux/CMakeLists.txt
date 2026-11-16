@@ -1,13 +1,20 @@
+# SG Bus Timings for Linux: how the app is built (Flutter's template, with the app's own id).
+# The runner itself is in runner/; the plugins' builds are added by flutter/generated_plugins.cmake.
+
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
 project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change
-# the on-disk name of your application.
+# the on-disk name of your application. The installers rename it as they package
+# it (flutter/installers/), so it stays the same here.
 set(BINARY_NAME "sgbus_timings")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
-set(APPLICATION_ID "org.uwuapps.sgbus_timings")
+# The same as the Android app's id and the other desktop apps': GTK uses it to keep
+# one copy at a time (runner/my_application.cc), and the desktop to match windows
+# to the app's menu entry.
+set(APPLICATION_ID "org.uwuapps.sgbus")
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

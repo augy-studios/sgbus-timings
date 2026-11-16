@@ -1,3 +1,5 @@
+# SG Bus Timings for Linux: builds the runner (main.cc, my_application.cc) into the app's
+# executable, linked with Flutter and GTK.
 cmake_minimum_required(VERSION 3.13)
 project(runner LANGUAGES CXX)
 

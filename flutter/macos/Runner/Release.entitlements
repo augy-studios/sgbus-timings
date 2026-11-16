@@ -1,8 +1,36 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  SG Bus Timings for macOS: what the app is allowed to do, for release builds (the copy people
+  install). DebugProfile.entitlements is the same for `flutter run` and debug builds, plus the one
+  the Dart VM needs while debugging.
+
+  The App Sandbox is OFF, on purpose, as it was for the Electron app. With it on, the app couldn't:
+  - update itself: the updater unzips the new SG Bus Timings.app with ditto, and a small shell
+    script swaps it in for the old one after the app quits (flutter-desktop-app-spec §9). A
+    sandboxed app can't write to its own bundle or the folder it's in, and anything it starts
+    (the script, ditto, xattr) is sandboxed too;
+  - read what the Electron app kept: macOS would quietly move the app's files into
+    ~/Library/Containers/org.uwuapps.sgbus/, so the settings file and stored data in
+    ~/Library/Application Support/SG Bus Timings (spec §12) would be out of reach.
+  The Mac App Store requires the sandbox, but this app is shipped from GitHub releases instead.
+
+  The other entries only take effect if the sandbox (or the hardened runtime, for location) is ever
+  turned on. They're listed so the app's needs are written down in one place:
+  - network.client: bus timings, the map's tiles, updates;
+  - network.server: the map's own small web server on 127.0.0.1, which serves the map's page and
+    its tiles from the disk cache, so the map works offline;
+  - personal-information.location: the location dot and the stops near you.
+-->
 <plist version="1.0">
 <dict>
 	<key>com.apple.security.app-sandbox</key>
+	<false/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<key>com.apple.security.personal-information.location</key>
 	<true/>
 </dict>
 </plist>

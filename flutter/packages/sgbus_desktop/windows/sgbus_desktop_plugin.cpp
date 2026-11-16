@@ -1,7 +1,11 @@
-// SG Bus Timings' desktop native parts on Windows (lib/sgbus_desktop.dart): this engine's
-// window, the Jump List, the taskbar thumbnail's buttons, starting at sign-in (the same Run entry
-// the Electron app wrote, so its setting carries on), and a second copy's command line, which the
-// runner (runner/main.cpp) sends here with WM_COPYDATA.
+// SG Bus Timings' desktop native parts on Windows (the Dart side is lib/sgbus_desktop.dart): this
+// engine's window, the Jump List, the taskbar thumbnail's buttons, starting at sign-in (the same
+// Run entry the Electron app wrote, so its setting carries on), and a second copy's command line,
+// which the runner (windows/runner/main.cpp) sends here with WM_COPYDATA.
+//
+// Every engine (the main window's, Make it yours', each Bus timings widget's) registers its own
+// copy of this plugin, each looking after its own window. Windows has no Dock, so the Dock calls
+// answer "not implemented", which the Dart side takes quietly.
 #include "include/sgbus_desktop/sgbus_desktop_plugin_c_api.h"
 
 #include <flutter/method_channel.h>
@@ -15,8 +19,11 @@
 #include <shlobj.h>
 
 #include <cmath>
+#include <cstring>
 #include <memory>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 #pragma comment(lib, "propsys.lib")
@@ -27,12 +34,16 @@ using flutter::EncodableList;
 using flutter::EncodableMap;
 using flutter::EncodableValue;
 
+// The app's identity for Windows (the AppUserModelID, as runner/main.cpp sets it), and the name of
+// its Run value: the Electron app used both.
 const wchar_t kAppId[] = L"org.uwuapps.sgbus";
+// Where Windows keeps the programs that start at sign-in, and Task Manager's on/off switch for each.
 const wchar_t kRunKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Run";
 const wchar_t kApprovedKey[] = L"Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\StartupApproved\\Run";
 // runner/main.cpp's WM_COPYDATA tag for a second copy's command line.
 const ULONG_PTR kForwardTag = 0x53474255;  // "SGBU"
 
+// UTF-8 (Dart's strings) to UTF-16 (Windows' own).
 std::wstring Wide(const std::string& s) {
   if (s.empty()) return std::wstring();
   int n = MultiByteToWideChar(CP_UTF8, 0, s.data(), (int)s.size(), nullptr, 0);
@@ -41,6 +52,7 @@ std::wstring Wide(const std::string& s) {
   return out;
 }
 
+// UTF-16 (Windows' own strings) to UTF-8, for Dart.
 std::string Narrow(const std::wstring& s) {
   if (s.empty()) return std::string();
   int n = WideCharToMultiByte(CP_UTF8, 0, s.data(), (int)s.size(), nullptr, 0, nullptr, nullptr);
@@ -49,29 +61,33 @@ std::string Narrow(const std::wstring& s) {
   return out;
 }
 
+// The value under [key] in a map from Dart, or nullptr if it isn't there.
 const EncodableValue* Field(const EncodableMap& m, const char* key) {
   auto it = m.find(EncodableValue(key));
   return it == m.end() ? nullptr : &it->second;
 }
 
+// The text under [key] in a map from Dart, or "" if it's missing or not text.
 std::string Str(const EncodableMap& m, const char* key) {
   auto v = Field(m, key);
   return v && std::holds_alternative<std::string>(*v) ? std::get<std::string>(*v) : std::string();
 }
 
+// The true/false under [key] in a map from Dart, or [fallback] if it's missing.
 bool Bool(const EncodableMap& m, const char* key, bool fallback) {
   auto v = Field(m, key);
   return v && std::holds_alternative<bool>(*v) ? std::get<bool>(*v) : fallback;
 }
 
+// The full path of the running SG Bus Timings.exe, for the Jump List's links and the Run entry.
 std::wstring ExePath() {
   wchar_t path[MAX_PATH * 4];
   DWORD n = GetModuleFileNameW(nullptr, path, ARRAYSIZE(path));
   return std::wstring(path, n);
 }
 
-// 16 px white glyphs for the thumbnail's buttons, as the Electron app drew them: ◀, ▶ and a
-// refresh ring with its arrowhead.
+// 16 px white glyphs for the thumbnail's buttons, as the Electron app drew them: ◀ (0), ▶ (1) and
+// a refresh ring with its arrowhead (2). Drawn pixel by pixel, so no icon files are needed.
 HICON Glyph(int which) {
   const int size = 16;
   std::vector<uint32_t> px(size * size, 0);
@@ -107,7 +123,10 @@ HICON Glyph(int which) {
   ReleaseDC(nullptr, dc);
   if (!color) return nullptr;
   memcpy(bits, px.data(), px.size() * 4);
-  HBITMAP mask = CreateBitmap(size, size, 1, 1, nullptr);
+  // The icon's mask, all clear: the colour picture's own transparency is what's used. (Made empty
+  // rather than left as whatever was in memory.)
+  std::vector<BYTE> mask_bits(size * size / 8, 0);
+  HBITMAP mask = CreateBitmap(size, size, 1, 1, mask_bits.data());
   ICONINFO ii = {};
   ii.fIcon = TRUE;
   ii.hbmColor = color;
@@ -118,8 +137,11 @@ HICON Glyph(int which) {
   return icon;
 }
 
+// The plugin for one engine and its window.
 class SgbusDesktopPlugin : public flutter::Plugin {
  public:
+  // Sets up the channel the Dart side calls, and listens to the window's messages for the
+  // taskbar's buttons and a second copy's command line.
   explicit SgbusDesktopPlugin(flutter::PluginRegistrarWindows* registrar) : registrar_(registrar) {
     channel_ = std::make_unique<flutter::MethodChannel<EncodableValue>>(
         registrar->messenger(), "org.uwuapps.sgbus/desktop", &flutter::StandardMethodCodec::GetInstance());
@@ -129,17 +151,24 @@ class SgbusDesktopPlugin : public flutter::Plugin {
         [this](HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) { return Proc(hwnd, message, wparam, lparam); });
   }
 
+  // Stops listening to the window and frees the buttons' icons, when the engine goes.
   ~SgbusDesktopPlugin() override {
     registrar_->UnregisterTopLevelWindowProcDelegate(proc_id_);
     for (auto icon : icons_) if (icon) DestroyIcon(icon);
   }
 
  private:
+  // This engine's window (the top-level one its Flutter view is in), or nullptr if it has none.
   HWND Top() {
     auto view = registrar_->GetView();
     return view ? GetAncestor(view->GetNativeWindow(), GA_ROOT) : nullptr;
   }
 
+  // Every message to the window, before Flutter's own handling. Picks out: the taskbar's button
+  // being (re)made, so the thumbnail buttons are added again (Explorer restarting loses them); a
+  // thumbnail button pressed ('thumb' to Dart, with its id); and a second copy's command line
+  // ('open' to Dart, with its arguments, or kept until Dart is listening). Anything else is left
+  // to Flutter (nullopt).
   std::optional<LRESULT> Proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
     if (message == taskbar_created_) {
       buttons_added_ = false;
@@ -159,13 +188,20 @@ class SgbusDesktopPlugin : public flutter::Plugin {
         EncodableList args;
         for (int i = 1; argv && i < argc; i++) args.push_back(EncodableValue(Narrow(argv[i])));
         if (argv) LocalFree(argv);
-        channel_->InvokeMethod("open", std::make_unique<EncodableValue>(EncodableMap{{EncodableValue("args"), EncodableValue(args)}}));
+        EncodableValue open_event(EncodableMap{{EncodableValue("args"), EncodableValue(args)}});
+        if (dart_listening_) {
+          channel_->InvokeMethod("open", std::make_unique<EncodableValue>(open_event));
+        } else {
+          // Dart isn't listening yet (the update window can take 10 s or more): kept for "ready".
+          waiting_.push_back(open_event);
+        }
         return TRUE;
       }
     }
     return std::nullopt;
   }
 
+  // Answers a call from the Dart side; see lib/sgbus_desktop.dart for what each one is for.
   void Handle(const flutter::MethodCall<EncodableValue>& call, std::unique_ptr<flutter::MethodResult<EncodableValue>> result) {
     const auto& name = call.method_name();
     EncodableMap args;
@@ -173,6 +209,7 @@ class SgbusDesktopPlugin : public flutter::Plugin {
     if (name == "handle") {
       result->Success(EncodableValue((int64_t)(intptr_t)Top()));
     } else if (name == "ready") {
+      StartSending();
       result->Success();
     } else if (name == "jumpList") {
       auto tasks = Field(args, "tasks");
@@ -203,6 +240,19 @@ class SgbusDesktopPlugin : public flutter::Plugin {
     }
   }
 
+  // The Dart side is listening: from now on events go straight to it, and any second copy's
+  // command line kept until now is sent, in the order they came.
+  void StartSending() {
+    dart_listening_ = true;
+    for (const auto& open_event : waiting_) {
+      channel_->InvokeMethod("open", std::make_unique<EncodableValue>(open_event));
+    }
+    waiting_.clear();
+  }
+
+  // Replaces the Jump List's tasks (right-click the taskbar icon) with [tasks], each a link that
+  // starts SG Bus Timings.exe with a uwu://sgbus/ link, which the running copy is handed. An
+  // empty list clears them. Returns whether Windows took it.
   bool JumpList(const EncodableList& tasks) {
     ICustomDestinationList* list = nullptr;
     if (FAILED(CoCreateInstance(CLSID_DestinationList, nullptr, CLSCTX_INPROC_SERVER, IID_PPV_ARGS(&list)))) return false;
@@ -252,6 +302,9 @@ class SgbusDesktopPlugin : public flutter::Plugin {
     return ok;
   }
 
+  // Puts the kept buttons on the taskbar thumbnail: added the first time, updated after (Windows
+  // allows up to 7, and adding only once per window). Fails until the window's on the taskbar;
+  // the "taskbar button created" message in Proc tries again then. Returns whether it worked.
   bool ApplyButtons() {
     HWND top = Top();
     if (!top) return false;
@@ -278,7 +331,8 @@ class SgbusDesktopPlugin : public flutter::Plugin {
     return SUCCEEDED(hr);
   }
 
-  // The Run entry, and Task Manager's switch for it (StartupApproved: 2 on, 3 off).
+  // Whether the app starts at sign-in: its Run entry is there, and Task Manager's switch for it
+  // isn't off (StartupApproved: 2 on, 3 off; an odd first byte means off).
   bool GetLogin() {
     HKEY key;
     bool on = false;
@@ -295,6 +349,8 @@ class SgbusDesktopPlugin : public flutter::Plugin {
     return on;
   }
 
+  // Starts the app at sign-in (the Run entry, with the exe's path in quotes) or stops it, and
+  // keeps Task Manager's switch in step.
   void SetLogin(bool on) {
     HKEY key;
     if (RegCreateKeyExW(HKEY_CURRENT_USER, kRunKey, 0, nullptr, 0, KEY_WRITE, nullptr, &key, nullptr) == ERROR_SUCCESS) {
@@ -320,15 +376,25 @@ class SgbusDesktopPlugin : public flutter::Plugin {
 
   flutter::PluginRegistrarWindows* registrar_;
   std::unique_ptr<flutter::MethodChannel<EncodableValue>> channel_;
+  // Our place in the window's message listeners, to stop listening when the engine goes.
   int proc_id_ = 0;
+  // The "taskbar button created" message's number, which Windows hands out at run time.
   UINT taskbar_created_ = 0;
+  // Whether the thumbnail buttons have been added to this window yet (then they're updated).
   bool buttons_added_ = false;
+  // The thumbnail buttons as the Dart side last sent them, kept to add again when needed.
   std::vector<EncodableMap> buttons_;
+  // The ◀, ▶ and refresh icons, made once.
   std::vector<HICON> icons_;
+  // Whether the Dart side is listening for events yet (it says "ready" when it starts).
+  bool dart_listening_ = false;
+  // "open" events (each {args: [...]}) that came before the Dart side was listening.
+  std::vector<EncodableValue> waiting_;
 };
 
 }  // namespace
 
+// Called by Flutter's generated plugin list once per engine as it starts.
 void SgbusDesktopPluginCApiRegisterWithRegistrar(FlutterDesktopPluginRegistrarRef registrar) {
   auto windows_registrar = flutter::PluginRegistrarManager::GetInstance()->GetRegistrar<flutter::PluginRegistrarWindows>(registrar);
   windows_registrar->AddPlugin(std::make_unique<SgbusDesktopPlugin>(windows_registrar));

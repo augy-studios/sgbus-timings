@@ -1,3 +1,6 @@
+# Builds the sgbus_desktop plugin's Windows side (sgbus_desktop_plugin.cpp) as a DLL the app
+# loads. Flutter's generated plugin list adds this folder to the app's build. propsys, shell32
+# and ole32 are Windows' own libraries for the Jump List and the taskbar's buttons.
 cmake_minimum_required(VERSION 3.14)
 set(PROJECT_NAME "sgbus_desktop")
 project(${PROJECT_NAME} LANGUAGES CXX)
