@@ -237,7 +237,7 @@ void main() {
       await t.pumpWidget(_row(const DeskTarget.stop('84009')));
       await t.tap(find.text('The row'), buttons: kSecondaryButton);
       await t.pumpAndSettle();
-      for (final item in ['Open', 'Pin to desktop widget', 'Set as tray countdown', 'Star', 'Copy link']) {
+      for (final item in ['Open', 'Pin as a desktop widget', 'Set as tray countdown', 'Star', 'Copy link']) {
         expect(find.text(item), findsOneWidget, reason: item);
       }
     });
@@ -250,7 +250,7 @@ void main() {
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Star'), findsOneWidget);
       expect(find.text('Copy link'), findsOneWidget);
-      expect(find.text('Pin to desktop widget'), findsNothing);
+      expect(find.text('Pin as a desktop widget'), findsNothing);
       expect(find.text('Set as tray countdown'), findsNothing);
     });
 
@@ -305,7 +305,7 @@ void main() {
       expect(share.$2?['url'], 'https://sgbus.uwuapps.org/#84009,174');
     });
 
-    testWidgets('Set as tray countdown and Pin to desktop widget ask the desktop for them', (t) async {
+    testWidgets('Set as tray countdown and Pin as a desktop widget ask the desktop for them', (t) async {
       _desktop();
       await t.pumpWidget(_row(const DeskTarget.stop('84009', buses: '174')));
       await t.tap(find.text('The row'), buttons: kSecondaryButton);
@@ -317,7 +317,7 @@ void main() {
       expect(tray.$2?['service'], '174');
       await t.tap(find.text('The row'), buttons: kSecondaryButton);
       await t.pumpAndSettle();
-      await t.tap(find.text('Pin to desktop widget'));
+      await t.tap(find.text('Pin as a desktop widget'));
       await t.pumpAndSettle();
       final widget = _calls.where((c) => c.$1 == 'addWidget').single;
       expect(widget.$2?['code'], '84009');
@@ -330,7 +330,7 @@ void main() {
       await t.tap(find.text('The row'), buttons: kSecondaryButton);
       await t.pumpAndSettle();
       expect(find.text('Open'), findsOneWidget);
-      expect(find.text('Pin to desktop widget'), findsNothing);
+      expect(find.text('Pin as a desktop widget'), findsNothing);
       expect(find.text('Set as tray countdown'), findsNothing);
     });
   });

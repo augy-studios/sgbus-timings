@@ -404,13 +404,16 @@ class _SettingsGroupState extends State<SettingsGroup> {
             note: tr('settings.earphones_only_with_earphones_in',
                 'Earphones only: with earphones in, the beeps play just in them; without, the phone only buzzes. Never out loud on a quiet bus.'),
           ),
-        Choice(
-          label: tr('settings.shake_to_refresh', 'Shake to refresh'),
-          value: _onOff('sgbus_shake'),
-          options: _onOffOptions,
-          onChanged: (v) => _set('sgbus_shake', v),
-          note: tr('settings.give_the_phone_a_firm', 'Give the phone a firm shake to refresh the timings on screen.'),
-        ),
+        // Shake to refresh needs a phone's accelerometer: a computer has none (extras.dart's
+        // Shake.start does nothing there), so the switch isn't offered on the desktop.
+        if (!Native.has('desktop'))
+          Choice(
+            label: tr('settings.shake_to_refresh', 'Shake to refresh'),
+            value: _onOff('sgbus_shake'),
+            options: _onOffOptions,
+            onChanged: (v) => _set('sgbus_shake', v),
+            note: tr('settings.give_the_phone_a_firm', 'Give the phone a firm shake to refresh the timings on screen.'),
+          ),
         if (Native.has('pip'))
           Choice(
             label: tr('settings.pictureinpicture', 'Picture-in-picture'),

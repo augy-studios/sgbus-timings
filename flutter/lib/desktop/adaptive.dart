@@ -392,7 +392,7 @@ class DeskContextMenu extends StatelessWidget {
       items: [
         _item(_Pick.open, wide ? Icons.vertical_split_outlined : Icons.open_in_new,
             wide ? tr('desktop.menu.openSplit', 'Open in split pane') : tr('desktop.menu.open', 'Open')),
-        if (target.stop != null && DeskActions.canWidget) _item(_Pick.widget, Icons.widgets_outlined, tr('desktop.menu.pinWidget', 'Pin to desktop widget')),
+        if (target.stop != null && DeskActions.canWidget) _item(_Pick.widget, Icons.widgets_outlined, tr('desktop.menu.pinWidget', 'Pin as a desktop widget')),
         if (target.stop != null && DeskActions.canTray) _item(_Pick.tray, Icons.notifications_outlined, tr('desktop.menu.trayCountdown', 'Set as tray countdown')),
         if (target.canStar)
           _item(_Pick.star, starred ? Icons.star_rounded : Icons.star_outline_rounded,

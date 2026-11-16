@@ -35,7 +35,7 @@ class DeskMenus {
   DeskMenus._();
 
   /// The guide's page about the desktop app, for Help.
-  static const guide = 'https://guide.sgbus.uwuapps.org/web/desktop-app';
+  static const guide = 'https://guide.sgbus.uwuapps.org/desktop/overview';
 
   static bool get _mac => Desktop.mac;
 
