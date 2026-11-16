@@ -3,7 +3,7 @@
 // back to home, and with nothing left, "Press back again to exit" (2.2.7's, backtwice): a second
 // press within two seconds sends the app to the background, so a trip carries on.
 //
-// In the desktop app, from 720 px wide, the navigation rail (desktop/chrome.dart) takes the Edge
+// In the desktop app, from 720 px wide, the navigation rail (desktop/rail.dart) takes the Edge
 // Tray's place, and the page shares the room with a detail pane, a navigator of its own where a
 // stop, a bus or a shared link opens (app/nav.dart's push and DeskPanes): above 1024 px the page's list sits in
 // a 360-400 px pane on the left with the detail beside it; from 720 to 1024 px the detail covers
@@ -41,6 +41,7 @@ class _ShellState extends State<Shell> {
   /// Keeps the pages' place (scroll, what's typed) as the desktop's layout changes around them.
   final _pagesKey = GlobalKey();
 
+  /// Opens on the home page, and starts following the page picked and the connection.
   @override
   void initState() {
     super.initState();
@@ -56,6 +57,7 @@ class _ShellState extends State<Shell> {
     setState(() {});
   }
 
+  /// Stops following the page and the connection as the shell goes.
   @override
   void dispose() {
     AppNav.page.removeListener(_changed);
@@ -89,6 +91,9 @@ class _ShellState extends State<Shell> {
     AppNav.say(tr('app.exitHint', 'Press back again to exit'));
   }
 
+  /// The offline bar and the top bars, then the page on show: beside the Edge Tray on a phone (and
+  /// a desktop window under 720 px), or in the desktop's panes. Back with nothing open over the
+  /// shell goes to [_back].
   @override
   Widget build(BuildContext context) {
     final id = AppNav.page.value;
@@ -152,9 +157,10 @@ class _PanesState extends State<_Panes> {
     ),
   );
 
+  /// The panes are going (the window narrowed to the phone layout), and the detail pane's
+  /// screens with them, so its watcher forgets them.
   @override
   void dispose() {
-    // The pane's gone (the window narrowed to the phone layout), and its screens with it.
     DeskPanes.observer.reset();
     super.dispose();
   }
@@ -172,6 +178,9 @@ class _PanesState extends State<_Panes> {
         ),
       );
 
+  /// Above 1024 px the list and the detail side by side, with a line between; from 720 to 1024 px
+  /// one at a time, the detail covering the list while it shows a screen. Both keep their place
+  /// (Offstage, not removed) as they swap.
   @override
   Widget build(BuildContext context) {
     if (widget.layout == DeskLayout.split) {
@@ -199,6 +208,7 @@ class _PanesState extends State<_Panes> {
 class _PaneNote extends StatelessWidget {
   const _PaneNote();
 
+  /// The note, centred and greyed: pick a stop or a bus, or search with Ctrl+K (⌘K on a Mac).
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -232,6 +242,7 @@ class _PaneNote extends StatelessWidget {
 class OfflineBar extends StatelessWidget {
   const OfflineBar({super.key});
 
+  /// The bar while the app's offline and OK hasn't put it away; nothing otherwise.
   @override
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: Listenable.merge([Net.off, Net.dismissed]),

@@ -281,6 +281,7 @@ class WelcomeApp extends StatelessWidget {
   /// For screenshots: the computer's light or dark.
   final Brightness? brightness;
 
+  /// A plain app around the welcome screen; the screen draws its own colours.
   @override
   Widget build(BuildContext context) => MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -304,6 +305,7 @@ class WelcomeScreen extends StatefulWidget {
 
 /// The window's own colours, light or dark (not the brand colour), as setup.html had them.
 class _Look {
+  /// The dark set, or the light one.
   _Look(bool dark)
       : ink = dark ? const Color(0xFFEEF2EF) : const Color(0xFF121815),
         muted = dark ? const Color(0xFFA9B5AE) : const Color(0xFF5B665F),
@@ -314,6 +316,8 @@ class _Look {
   final Color ink, muted, bg, row, tile, edge;
 }
 
+/// The welcome window's picks as they're made, and whether Get started has been pressed (it
+/// sends the picks once).
 class _WelcomeScreenState extends State<WelcomeScreen> {
   late final WelcomeState s = widget.state;
   bool _busy = false;
@@ -365,6 +369,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     Desktop.window?.title = w['welcome']!;
   }
 
+  /// The welcome panel beside the choices, or the choices alone in a window under 760 px wide.
   @override
   Widget build(BuildContext context) {
     final look = _Look(_dark);

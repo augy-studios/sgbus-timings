@@ -37,6 +37,8 @@ class DeskMenus {
   /// The guide's page about the desktop app, for Help.
   static const guide = 'https://guide.sgbus.uwuapps.org/desktop/overview';
 
+  /// Whether this is a Mac: ⌘ in place of Ctrl, its own keys for Back, Forward and full screen,
+  /// and the menu bar along the top of the screen.
   static bool get _mac => Desktop.mac;
 
   /// A shortcut as the system writes it, for tooltips and the command bar: "⌘K" or "⇧⌘C" on a

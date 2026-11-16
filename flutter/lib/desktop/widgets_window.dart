@@ -209,6 +209,7 @@ class WidgetApp extends StatelessWidget {
   /// For the guide's screenshots: timings to show, not fetched.
   final WidgetData? data;
 
+  /// A plain app around the widget; the widget draws its own colours.
   @override
   Widget build(BuildContext context) => MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -240,6 +241,7 @@ class BusWidget extends StatefulWidget {
 
 /// The widget's colours, light or dark, as the site's widget.html has them.
 class _Palette {
+  /// The dark set, or the light one.
   _Palette(bool dark)
       : bg = dark ? const Color(0xFF151B18) : const Color(0xFFF2F7F3),
         row = dark ? const Color(0xFF1F2924) : const Color(0xFFE2F5E5),
@@ -251,6 +253,8 @@ class _Palette {
   final Color bg, row, ink, muted, accent, border, error;
 }
 
+/// The widget's stop and buses, its latest timings, its setup while it's being set up, and the
+/// timer that fetches them again.
 class _BusWidgetState extends State<BusWidget> {
   /// How often the timings are fetched again.
   static const refreshEvery = Duration(seconds: 30);
@@ -299,6 +303,7 @@ class _BusWidgetState extends State<BusWidget> {
     }
   }
 
+  /// Stops fetching and lets go of the setup's boxes as the widget closes.
   @override
   void dispose() {
     _timer?.cancel();
@@ -443,6 +448,8 @@ class _BusWidgetState extends State<BusWidget> {
     setState(() => _onTop = on);
   }
 
+  /// The widget: its buttons along the top, the setup or the timings, and the footer; dragging its
+  /// edges resizes the window.
   @override
   Widget build(BuildContext context) {
     final c = _Palette(_dark);

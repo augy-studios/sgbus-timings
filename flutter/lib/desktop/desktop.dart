@@ -81,9 +81,13 @@ class Desktop {
   /// The main window's been shown once (after the update window and Make it yours).
   static bool shown = false;
 
-  /// Which system the app is running on.
+  /// Whether the app is running on a Mac.
   static bool get mac => Platform.isMacOS;
+
+  /// Whether it's running on Windows.
   static bool get windows => Platform.isWindows;
+
+  /// Whether it's running on Linux.
   static bool get linux => Platform.isLinux;
 
   /// Running from a build made with `flutter run`, not an installed copy.
@@ -127,7 +131,7 @@ class Desktop {
 
   /// The main window's set up, still hidden: its own title bar, its least size, and its close
   /// button keeping the app in the tray. On macOS the traffic lights stay, over the left of the
-  /// app's own title bar (chrome.dart leaves them room).
+  /// app's own title bar (title_bar.dart leaves them room).
   static void setUpMain() {
     final w = window;
     if (w == null) return;

@@ -205,6 +205,8 @@ class _StopScreenState extends State<StopScreen> {
         ),
       ),
     );
+    // On the desktop the stop may have been replaced in the detail pane while the dialog was up.
+    if (!mounted) return;
     if (pick != null) {
       setState(() {
         _service = pick;

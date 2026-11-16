@@ -2,12 +2,15 @@
 // 720 px, the navigation rail from 720 to 1024 px, and the list and detail panes side by side
 // above 1024 px. And where a screen opens: one with a site address (a stop, a bus) in the detail
 // pane on a wide window, replacing what it showed, or on top of it when opened from inside it;
-// the departures board and screens without an address over the whole window, as on Android.
+// the departures board and screens without an address over the whole window, as on Android. A
+// dialog a pane's screen opened closes when another screen replaces that one.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/app/shell.dart';
 import 'package:sgbus_timings/data/store.dart';
+import 'package:sgbus_timings/desktop/adaptive.dart';
+import 'package:sgbus_timings/native/native_bridge.dart';
 import 'package:sgbus_timings/theme/theme.dart';
 
 void main() {
@@ -42,13 +45,15 @@ void main() {
       AppNav.fromPane = false;
     });
 
-    /// The shell, in [layout], in a window [width] px wide, with two plain pages.
-    Future<void> shell(WidgetTester t, DeskLayout layout, double width) async {
+    /// The shell, in [layout], in a window [width] px wide, with two plain pages. [observers]
+    /// watch the app's navigator, as the desktop's title bar does.
+    Future<void> shell(WidgetTester t, DeskLayout layout, double width, {List<NavigatorObserver> observers = const []}) async {
       t.view.physicalSize = Size(width, 700);
       t.view.devicePixelRatio = 1;
       addTearDown(t.view.reset);
       await t.pumpWidget(MaterialApp(
         navigatorKey: AppNav.navigatorKey,
+        navigatorObservers: observers,
         theme: AppLook.I.theme(Brightness.light),
         home: DeskLayoutScope(
           layout: layout,
@@ -150,7 +155,78 @@ void main() {
       expect(AppNav.paneShowsScreen, isFalse);
       expect(find.text('the favourites'), findsOneWidget);
     });
+
+    testWidgets("split: a dialog from the pane's screen closes when another screen replaces it", (t) async {
+      Native.fake(['desktop'], (_, _, _) async => <String, dynamic>{});
+      // The title bar's watcher, as desktop/chrome.dart sets it up.
+      final watcher = RouteWatcher();
+      AppNav.rootWatcher = watcher;
+      addTearDown(() {
+        AppNav.rootWatcher = null;
+        Native.fake(const [], null);
+      });
+      await shell(t, DeskLayout.split, 1200, observers: [watcher]);
+      Object? got = 'not yet';
+      AppNav.push(_Picker(closed: (v) => got = v), name: 'stop', address: '#84009');
+      await t.pumpAndSettle();
+      await t.tap(find.text('Pick a bus'));
+      await t.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+
+      // The command bar, Forward, a link or the tray opens another stop while it's up.
+      await open(t, 'stop 84011', address: '#84011');
+      expect(find.byType(Dialog), findsNothing);
+      expect(got, isNull, reason: 'the screen that opened it hears it closed with nothing');
+      expect(find.text('Pick a bus'), findsNothing, reason: 'the stop it came from was replaced');
+      expect(find.text('stop 84011').hitTestable(), findsOneWidget, reason: 'nothing left over the new stop');
+      expect(AppNav.nav!.canPop(), isFalse);
+      expect(t.takeException(), isNull);
+    });
+
+    testWidgets("phone: a screen opens over a sheet that's up, which is still there after Back, as on Android", (t) async {
+      await shell(t, DeskLayout.phone, 600);
+      AppNav.push(_Picker(closed: (_) {}), name: 'stop', address: '#84009');
+      await t.pumpAndSettle();
+      await t.tap(find.text('Pick a bus'));
+      await t.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await open(t, 'bus 22', name: 'bus', address: '#bus/22');
+      expect(find.text('bus 22'), findsOneWidget);
+      AppNav.nav!.pop();
+      await t.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+    });
   });
+}
+
+/// A stop's screen in miniature: Pick a bus opens a sheet (a dialog on the desktop) with one
+/// choice, and the screen shows what was picked. [closed] hears what the sheet closed with.
+class _Picker extends StatefulWidget {
+  const _Picker({required this.closed});
+  final void Function(String?) closed;
+
+  @override
+  State<_Picker> createState() => _PickerState();
+}
+
+/// What was picked, shown on the button.
+class _PickerState extends State<_Picker> {
+  String _picked = '';
+
+  /// Opens the sheet; once it closes, shows the pick if the screen's still there.
+  Future<void> _pick() async {
+    final pick = await AppSheet.show<String>(
+      context: context,
+      builder: (ctx) => TextButton(onPressed: () => Navigator.pop(ctx, '22'), child: const Text('Bus 22')),
+    );
+    widget.closed(pick);
+    if (!mounted || pick == null) return;
+    setState(() => _picked = pick);
+  }
+
+  /// The one button, with the pick beside its name.
+  @override
+  Widget build(BuildContext context) => Scaffold(body: Center(child: TextButton(onPressed: _pick, child: Text('Pick a bus$_picked'))));
 }
 
 /// A context with no chrome above it, as on Android.

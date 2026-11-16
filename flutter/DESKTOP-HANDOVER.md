@@ -63,8 +63,8 @@ Read first, in this order:
 - **`lib/desktop/`**, the desktop layer: `desktop.dart`, `desktop_main.dart`, `host.dart`,
   `leveldb.dart` (**tested against a real Electron profile**: all 40 keys), `settings.dart`,
   `notify.dart`, `alerts_poll.dart`, `updater.dart` and `splash.dart`, `welcome.dart`, `tray.dart`,
-  `glance.dart`, `widgets_window.dart`, `chrome.dart`, `screenshot.dart`, `links.dart`,
-  `location.dart`. Each file's header says what it does.
+  `glance.dart`, `widgets_window.dart`, `chrome.dart` (with `title_bar.dart`, `command_bar.dart`
+  and `rail.dart`), `screenshot.dart`, `links.dart`, `location.dart`. Each file's header says what it does.
 - **Shared code touched**: `native/native_bridge.dart` (a `NativeHost` behind the bridge),
   `main.dart` (desktop start, other windows' entry), `app/app.dart` (title bar and history
   observer), `app/nav.dart` (`push(address:)`, given on stop, bus, board, eta, sync and team),

@@ -34,6 +34,9 @@ class AppNav {
 
   /// The app's navigator, and its context (for dialogs).
   static NavigatorState? get nav => navigatorKey.currentState;
+
+  /// The app's navigator's context, for opening a dialog or sheet over everything from code that
+  /// has no context of its own (a notification, the bridge).
   static BuildContext? get context => navigatorKey.currentContext;
 
   // ---------- the desktop's detail pane ----------
@@ -41,6 +44,8 @@ class AppNav {
   /// The detail pane's own navigator, on a wide desktop window only (app/shell.dart puts it
   /// there). Everywhere else, Android included, nothing uses the key, so [pane] is null.
   static final paneKey = GlobalKey<NavigatorState>();
+
+  /// The detail pane's navigator, or null where there's no pane (Android, a narrow window).
   static NavigatorState? get pane => paneKey.currentState;
 
   /// Screens that always use the whole window, never the pane, though they have an address:
@@ -110,8 +115,15 @@ class AppNav {
   }
 
   /// Opens a screen in the desktop's detail pane, in place (no slide). From inside the pane it
-  /// goes on top of what's there; from anywhere else it replaces it ([fromPane]).
+  /// goes on top of what's there; from anywhere else it replaces it ([fromPane]). A dialog, panel
+  /// or menu open over the app closes first, and whatever opened it hears null.
   static Future<T?> _pushToPane<T>(NavigatorState pane, Widget screen, RouteSettings settings) {
+    // The desktop's dialogs and panels sit on the app's own navigator, over the panes
+    // (desktop/adaptive.dart), and the title bar, the rail, a link or the tray can still open a
+    // screen while one's up. Left open, it would hide the new screen and still answer for the
+    // screen it came from, which may be gone. The shell is the only screen under it here
+    // (_panesInFront), so this stops there.
+    nav?.popUntil((r) => r is PageRoute);
     final route = PageRouteBuilder<T>(
       settings: settings,
       pageBuilder: (_, _, _) => screen,
@@ -181,6 +193,8 @@ class DeskLayoutScope extends InheritedWidget {
   const DeskLayoutScope({super.key, required this.layout, required super.child});
   final DeskLayout layout;
 
+  /// The shell is drawn again only when the layout changes (the window crossed 720 or 1024 px),
+  /// not on every resize.
   @override
   bool updateShouldNotify(DeskLayoutScope oldWidget) => oldWidget.layout != layout;
 }
@@ -251,6 +265,8 @@ class RouteWatcher extends NavigatorObserver with ChangeNotifier {
     _later();
   }
 
+  /// A route opened: added to the list. A new screen over another (not a dialog, nor the first
+  /// screen) also calls [onNewScreen], which clears the title bar's Forward.
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     routes.add(route);
@@ -258,18 +274,23 @@ class RouteWatcher extends NavigatorObserver with ChangeNotifier {
     _later();
   }
 
+  /// A route closed (Back, a Close button, a dialog answered): taken off the list.
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     routes.remove(route);
     _later();
   }
 
+  /// A route taken away without closing, as when a new screen replaces what the detail pane
+  /// showed (AppNav's pushAndRemoveUntil): taken off the list.
   @override
   void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
     routes.remove(route);
     _later();
   }
 
+  /// A route swapped for another: the new one takes the old one's place in the list (or the old
+  /// one just goes, if there's no new one or the old one wasn't listed).
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     final i = oldRoute == null ? -1 : routes.indexOf(oldRoute);

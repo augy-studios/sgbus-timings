@@ -4,7 +4,10 @@
 // - AppSheet.show: every feature opens its sheets through this, never showModalBottomSheet. On a
 //   phone it's the same bottom sheet as ever; on the desktop a centred dialog (pickers, menus,
 //   forms) or a panel that slides in from the right (lists and details), closed with Esc, Ctrl+W
-//   (Cmd+W on a Mac), its Close button or a click outside it.
+//   (Cmd+W on a Mac), its Close button or a click outside it. On the desktop it always opens on
+//   the app's own navigator, so a screen in the detail pane (app/nav.dart) gets a dialog that
+//   centres in and dims the whole content area, beside the rail and under the title bar, not
+//   just the pane. A screen opened in the pane while one's up closes it first (AppNav.push).
 // - DeskContextMenu: right-click a stop, a bus or a favourite for Open in split pane, Pin to desktop
 //   widget, Set as tray countdown, Star or Unstar, and Copy link (DeskActions does each).
 // - DeskTooltips: tooltips that wait 400 ms under the mouse. DeskHover: a pointer and a highlight,
@@ -18,10 +21,10 @@
 // the phone app; tests and the guide's screenshots turn it on with `Native.fake(['desktop'], ...)`.
 //
 // This file, and the shared screens, never import the desktop layer itself (desktop.dart,
-// glance.dart, chrome.dart, widgets_window.dart): those bring in the window and tray packages,
-// which a phone build and the screens' tests don't need. What only the desktop can do (the tray
-// countdown, a desktop widget, full screen) goes through the bridge instead, as Share and Notify
-// do, and host.dart answers it.
+// glance.dart, chrome.dart, title_bar.dart, command_bar.dart, rail.dart, widgets_window.dart):
+// those bring in the window and tray packages, which a phone build and the screens' tests don't
+// need. What only the desktop can do (the tray countdown, a desktop widget, full screen) goes
+// through the bridge instead, as Share and Notify do, and host.dart answers it.
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -61,6 +64,14 @@ class AppSheet {
   /// a centred dialog or a right-hand panel, as [desktop] says. Choose the dialog for pickers,
   /// short menus, forms and confirmations, and the panel for lists, search and details. Like a
   /// bottom sheet, it completes with what `Navigator.pop` was given, or null.
+  ///
+  /// On the desktop the dialog or panel always goes on the app's own (root) navigator, so it
+  /// covers the whole content area, beside the rail and under the title bar, even when a screen
+  /// in the detail pane opens it (desktop-features-spec §5); [useRootNavigator] only applies to
+  /// the phone's sheet. So [builder] must close it with the context it's given, never the
+  /// caller's: in the pane, the caller's would close the pane's screen instead. A screen opened
+  /// in the pane while it's up closes it, and it completes with null; check `mounted` after
+  /// awaiting it, as the screen that opened it may have been replaced.
   static Future<T?> show<T>({
     required BuildContext context,
     required WidgetBuilder builder,
@@ -78,18 +89,21 @@ class AppSheet {
         useRootNavigator: useRootNavigator,
       );
     }
-    if (desktop == DeskSheet.panel) return _showPanel<T>(context, builder, isDismissible, useRootNavigator);
+    if (desktop == DeskSheet.panel) return _showPanel<T>(context, builder, isDismissible);
     return showDialog<T>(
       context: context,
       barrierDismissible: isDismissible,
-      useRootNavigator: useRootNavigator,
+      // Over the whole content area, not just the detail pane a screen there sits in.
+      useRootNavigator: true,
       builder: (ctx) => _DeskSurface(panel: false, dismissible: isDismissible, child: Builder(builder: builder)),
     );
   }
 
   /// The right-hand panel: slides in from the window's right edge over a dimmed page, and back
-  /// out as it closes.
-  static Future<T?> _showPanel<T>(BuildContext context, WidgetBuilder builder, bool dismissible, bool useRootNavigator) {
+  /// out as it closes. Like the dialog, on the app's own navigator, so it reaches the window's
+  /// right edge and runs the content area's full height (under the title bar) even from a
+  /// screen in the detail pane.
+  static Future<T?> _showPanel<T>(BuildContext context, WidgetBuilder builder, bool dismissible) {
     // From the right in a left-to-right language; from the left in a right-to-left one.
     final from = Directionality.of(context) == TextDirection.rtl ? -1.0 : 1.0;
     return showGeneralDialog<T>(
@@ -97,7 +111,7 @@ class AppSheet {
       barrierDismissible: dismissible,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54,
-      useRootNavigator: useRootNavigator,
+      useRootNavigator: true,
       transitionDuration: const Duration(milliseconds: 220),
       pageBuilder: (ctx, _, _) => _DeskSurface(panel: true, dismissible: dismissible, child: Builder(builder: builder)),
       transitionBuilder: (ctx, animation, _, child) => SlideTransition(

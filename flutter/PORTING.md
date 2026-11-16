@@ -70,10 +70,10 @@ come from CI and haven't been run on a real machine yet (`DESKTOP-HANDOVER.md`, 
 | Part | Electron | Dart | Status |
 |---|---|---|---|
 | Start-up order, the window (maximised, size kept, close to tray), one copy at a time | `main.js` | `lib/desktop/desktop_main.dart`, `desktop.dart`, the runners in `windows/`, `macos/`, `linux/` | ✅ |
-| Title bar: back, forward, reload, copy, screenshots, Restart to update, window buttons | `titlebar.html`, `titlebar.js`, `titlebar-preload.js` | `chrome.dart`, `screenshot.dart`, `lib/app/nav.dart` (`ViewHistory`) | ✅ |
-| The command bar (Electron's address bar only copied its address) | `main.js` | `chrome.dart`, `lib/app/links.dart` (`Links.read`) | ✅ |
+| Title bar: back, forward, reload, copy, screenshots, Restart to update, window buttons | `titlebar.html`, `titlebar.js`, `titlebar-preload.js` | `title_bar.dart`, `chrome.dart`, `screenshot.dart`, `lib/app/nav.dart` (`ViewHistory`) | ✅ |
+| The command bar (Electron's address bar only copied its address) | `main.js` | `command_bar.dart`, `chrome.dart`, `lib/app/links.dart` (`Links.read`) | ✅ |
 | Keyboard shortcuts and the macOS menu bar | `main.js` | `menubar.dart` | ✅ |
-| Navigation rail, split panes, dialogs and side panels, right-click menus (new in 2.5.0) | none | `chrome.dart`, `lib/app/shell.dart`, `adaptive.dart` | ✅ |
+| Navigation rail, split panes, dialogs and side panels, right-click menus (new in 2.5.0) | none | `rail.dart`, `chrome.dart`, `lib/app/shell.dart`, `adaptive.dart` | ✅ |
 | What the page asked of the app (notify, favourites, tray, widgets, full screen, location) | `preload.js` | `host.dart`, answering `lib/native/native_bridge.dart` | ✅ |
 | Make it yours | `setup.html`, `setup.js`, `setup-preload.js` | `welcome.dart` | ✅ |
 | The update window and updating itself | `splash.html`, `updater.js` | `splash.dart`, `updater.dart` | ✅ |

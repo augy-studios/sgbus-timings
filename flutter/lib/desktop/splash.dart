@@ -37,6 +37,7 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
+/// Runs the icon's bob while the splash window is up.
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   // The icon's gentle bob: up and a little bigger, then back, every 2.4 seconds.
   late final AnimationController _bob = AnimationController(vsync: this, duration: const Duration(milliseconds: 2400));

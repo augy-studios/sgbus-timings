@@ -4,7 +4,7 @@
 // and Theme. Its tab tucks it away (sgbus_tray_closed), leaving the whole width to the page. On a
 // wide screen (a tablet), each button says what it is beside its icon.
 //
-// The desktop app's navigation rail (desktop/chrome.dart) shows the same extras. An extra that
+// The desktop app's navigation rail (desktop/rail.dart) shows the same extras. An extra that
 // needs a phone (SimplyGo's app, the card reader, Offline Sharing, the phone's reminders) is
 // left out there, and out of Settings' Edge Tray buttons ([EdgeTray.offered]).
 import 'package:flutter/material.dart';

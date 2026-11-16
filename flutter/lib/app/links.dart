@@ -3,7 +3,7 @@
 // routes (script.js's routeFromHash). MainActivity hands each over as the site's address
 // (SgBusPlugin "open" events).
 //
-// And what's typed or pasted into the desktop app's command bar (desktop/chrome.dart): an
+// And what's typed or pasted into the desktop app's command bar (desktop/command_bar.dart): an
 // address to open in the app, another site's to open in the browser, another UwU app's link, or
 // words to search for (read), as the Electron app's address bar had it (desktop/main.js).
 import 'package:flutter/foundation.dart';
@@ -39,12 +39,15 @@ class CommandInput {
   final InputKind kind;
   final String text;
 
+  /// Two readings are the same when their kind and text are (the tests compare them).
   @override
   bool operator ==(Object other) => other is CommandInput && other.kind == kind && other.text == text;
 
+  /// Matches [==]: the same kind and text, the same hash.
   @override
   int get hashCode => Object.hash(kind, text);
 
+  /// Its kind and text, for a test's failure message.
   @override
   String toString() => 'CommandInput($kind, $text)';
 }

@@ -1,8 +1,11 @@
 // The shared screens' desktop manners (lib/desktop/adaptive.dart): a sheet stays a phone's bottom
 // sheet on Android and becomes a dialog or a right-hand panel on the desktop, closed with Esc or
-// Ctrl+W (Cmd+W on a Mac); the right-click menu shows only on the desktop, with the right items,
-// and does what it says. `Native.fake(['desktop', ...])` stands in for the desktop app's bridge
-// host, as the guide's screenshots fake a phone's.
+// Ctrl+W (Cmd+W on a Mac). From a screen in the detail pane (a navigator of its own), the
+// desktop's dialog or panel goes on the app's own navigator, over the whole content area (beside
+// the rail and under the title bar; these tests have neither, so it's the whole test window), not
+// just the pane, while the phone's sheet stays where it always was. The right-click menu shows
+// only on the desktop, with the right items, and does what it says. `Native.fake(['desktop',
+// ...])` stands in for the desktop app's bridge host, as the guide's screenshots fake a phone's.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -32,6 +35,44 @@ Widget _opener({required WidgetBuilder sheet, DeskSheet desktop = DeskSheet.dial
             ),
           ),
         ),
+      ),
+    );
+
+/// The desktop's split layout in miniature: a 300 px list on the left and, beside it, a navigator
+/// of its own standing in for the detail pane (app/shell.dart's). The pane's screen has one button
+/// that opens a sheet through AppSheet.show with its own context, keeping what it closed with.
+Widget _paneOpener({
+  required GlobalKey<NavigatorState> root,
+  required GlobalKey<NavigatorState> pane,
+  required WidgetBuilder sheet,
+  DeskSheet desktop = DeskSheet.dialog,
+  void Function(Object?)? closed,
+}) =>
+    MaterialApp(
+      theme: AppLook.I.theme(Brightness.light),
+      navigatorKey: root,
+      home: Scaffold(
+        body: Row(children: [
+          const SizedBox(width: 300, child: Text('The list')),
+          Expanded(
+            child: Navigator(
+              key: pane,
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (context) => Scaffold(
+                  body: Center(
+                    child: TextButton(
+                      onPressed: () async {
+                        final got = await AppSheet.show<Object>(context: context, desktop: desktop, isScrollControlled: true, builder: sheet);
+                        closed?.call(got);
+                      },
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ]),
       ),
     );
 
@@ -193,6 +234,93 @@ void main() {
       await t.drag(find.byType(ListView), const Offset(0, -2000));
       await t.pumpAndSettle();
       expect(find.text('Row 39'), findsOneWidget);
+    });
+  });
+
+  group('AppSheet.show from a screen in the detail pane', () {
+    late GlobalKey<NavigatorState> root;
+    late GlobalKey<NavigatorState> pane;
+    setUp(() {
+      root = GlobalKey<NavigatorState>();
+      pane = GlobalKey<NavigatorState>();
+    });
+
+    /// The navigator the route holding [finder] is on.
+    NavigatorState? navigatorOf(WidgetTester t, Finder finder) => ModalRoute.of(t.element(finder))?.navigator;
+
+    /// The test's window, in logical pixels.
+    Rect window(WidgetTester t) => Offset.zero & (t.view.physicalSize / t.view.devicePixelRatio);
+
+    testWidgets('on the desktop, the dialog goes on the app navigator, centred in the window, and Esc closes it', (t) async {
+      _desktop();
+      Object? got = 'not yet';
+      await t.pumpWidget(_paneOpener(root: root, pane: pane, sheet: (_) => const Text('Body'), closed: (v) => got = v));
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      expect(find.byType(Dialog), findsOneWidget);
+      expect(navigatorOf(t, find.text('Body')), same(root.currentState));
+      expect(pane.currentState!.canPop(), isFalse);
+      // Centred in the whole window, not in the pane beside the 300 px list.
+      expect(t.getCenter(find.byType(Dialog)).dx, closeTo(window(t).center.dx, 0.5));
+
+      await t.sendKeyEvent(LogicalKeyboardKey.escape);
+      await t.pumpAndSettle();
+      expect(find.text('Body'), findsNothing);
+      expect(got, isNull);
+      // Only the dialog closed: the pane's screen is still there.
+      expect(find.text('Open'), findsOneWidget);
+    });
+
+    testWidgets('on the desktop, its Close button closes it, and the pane keeps its screen', (t) async {
+      _desktop();
+      Object? got = 'not yet';
+      await t.pumpWidget(_paneOpener(root: root, pane: pane, sheet: (_) => const Text('Body'), closed: (v) => got = v));
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      await t.tap(find.byTooltip('Close'));
+      await t.pumpAndSettle();
+      expect(find.text('Body'), findsNothing);
+      expect(got, isNull);
+      expect(find.text('Open'), findsOneWidget);
+    });
+
+    testWidgets('on the desktop, what it closed with comes back to the screen that opened it', (t) async {
+      _desktop();
+      Object? got = 'not yet';
+      await t.pumpWidget(_paneOpener(
+        root: root,
+        pane: pane,
+        sheet: (ctx) => TextButton(onPressed: () => Navigator.pop(ctx, 'picked'), child: const Text('Pick me')),
+        closed: (v) => got = v,
+      ));
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      await t.tap(find.text('Pick me'));
+      await t.pumpAndSettle();
+      expect(got, 'picked');
+      expect(find.byType(Dialog), findsNothing);
+      expect(find.text('Open'), findsOneWidget);
+    });
+
+    testWidgets('on the desktop, the panel runs down the window’s right edge, its full height', (t) async {
+      _desktop();
+      await t.pumpWidget(_paneOpener(root: root, pane: pane, sheet: (_) => const Text('Panel body'), desktop: DeskSheet.panel));
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      expect(navigatorOf(t, find.text('Panel body')), same(root.currentState));
+      final panel = t.getRect(find.ancestor(of: find.text('Panel body'), matching: find.byType(Material)).first);
+      expect(panel.right, window(t).right);
+      expect(panel.height, window(t).height);
+      expect(panel.width, AppSheet.panelWidth);
+    });
+
+    testWidgets('on Android, the bottom sheet stays on the navigator it was opened from', (t) async {
+      await t.pumpWidget(_paneOpener(root: root, pane: pane, sheet: (_) => const Text('Sheet body')));
+      await t.tap(find.text('Open'));
+      await t.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
+      expect(ModalRoute.of(t.element(find.text('Sheet body'))), isA<ModalBottomSheetRoute<Object>>());
+      expect(navigatorOf(t, find.text('Sheet body')), same(pane.currentState));
     });
   });
 
