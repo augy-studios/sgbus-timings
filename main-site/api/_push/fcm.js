@@ -1,4 +1,4 @@
-// Pushes to the Android app (android/) through Firebase Cloud Messaging, as Web Push pushes to
+// Pushes to the Android app (flutter/) through Firebase Cloud Messaging, as Web Push pushes to
 // browsers: the app's WebView has no Web Push, so it registers with FCM and sends its token as
 // its subscription, { fcm: token } (js/alerts.js). Service Alerts (api/push/poll.js) and the
 // Get Off Alert (api/push/trip-poll.js) both come through here for the app, via sendPush in
@@ -6,11 +6,11 @@
 //
 // FCM's HTTP v1 API, with an OAuth token made from the Firebase project's service account:
 // FIREBASE_SERVICE_ACCOUNT holds its JSON key, as downloaded or base64'd
-// (android/FIREBASE-SETUP.md). The token is signed here with node:crypto, so there's no
+// (flutter/FIREBASE-SETUP.md). The token is signed here with node:crypto, so there's no
 // Google library, and kept until just before it runs out (an hour).
 //
 // Each push carries a notification, which Android shows itself while the app is in the
-// background, on the app's own channels (android/.../Notifications.java), and the same as
+// background, on the app's own channels (flutter/android/.../Notifications.java), and the same as
 // data, for the page when the app's in front.
 
 import { createSign } from 'node:crypto';

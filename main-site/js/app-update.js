@@ -1,4 +1,4 @@
-// The Android app's update bar: in the app (android/), when GitHub has a newer version of it
+// The Android app's update bar: in the app (flutter/), when GitHub has a newer version of it
 // than the one running. The app says its version in its hello (js/app-bridge.js), and
 // /api/app-release the newest one.
 //
@@ -18,8 +18,8 @@
 //            pushes to the moment a release is published. Off until turned on, as turning it on
 //            asks for Android's notification permission. Tapping the notification opens the
 //            update window (MainActivity); arriving with the app in front, it brings the bar.
-//   Desktop  the app's own "a new version is out" notifications (desktop/updater.js, which looks
-//            every hour, as Electron can't be pushed to). On unless turned off.
+//   Desktop  the app's own "a new version is out" notifications (lib/desktop/updater.dart, which looks
+//            every hour, as the desktop app can't be pushed to). On unless turned off.
 // Plain script: this project does not use ES modules.
 (function () {
   const LINK = 'intent://update#Intent;scheme=org.uwuapps.sgbus;package=org.uwuapps.sgbus;end';
@@ -219,7 +219,7 @@
     document.body.prepend(bar);
   }
 
-  // The desktop app from 2.1.1 (desktop/preload.js).
+  // The desktop app from 2.1.1 (the Electron app's preload.js; desktop/ is in git history).
   if (window.sgbusDesktop?.releases) initReleases(desktop);
 
   if (!window.AppBridge) return;

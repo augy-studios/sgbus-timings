@@ -16,7 +16,6 @@ than about three taps to reach goes under Advanced.
 ## Web app: basics
 
 * [Open and install the app](web/install.md)
-* [Windows, Mac and Linux apps](web/desktop-app.md)
 * [The command line on Linux](web/linux-cli.md)
 * [Your main screen](web/main-screen.md)
 * [Find a bus stop](web/search.md)
@@ -89,6 +88,13 @@ than about three taps to reach goes under Advanced.
 * [Picture-in-picture](android/picture-in-picture.md)
 * [The sgbus terminal](android/terminal.md)
 * [What the app asks for](android/permissions.md)
+
+## Windows, Mac and Linux app
+
+* [The Windows, Mac and Linux app](desktop/overview.md)
+* [Install and update it](desktop/install.md)
+* [The window and its shortcuts](desktop/window.md)
+* [Tray, widgets and notifications](desktop/tray-and-widgets.md)
 
 ## Telegram bot: basics
 

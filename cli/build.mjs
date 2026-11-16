@@ -19,8 +19,10 @@ import { fileURLToPath } from 'node:url';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.dirname(here);
 const { version, description, homepage } = JSON.parse(fs.readFileSync(path.join(here, 'package.json'), 'utf8'));
-const desktop = JSON.parse(fs.readFileSync(path.join(root, 'desktop', 'package.json'), 'utf8')).version;
-if (desktop !== version) throw new Error(`cli/package.json says ${version}, desktop/package.json ${desktop}: the apps share one version number.`);
+// The apps' version: the Android and desktop app's, pubspec.yaml's `version: 2.5.0+42` line without
+// the build number after the +.
+const appVersion = fs.readFileSync(path.join(root, 'flutter', 'pubspec.yaml'), 'utf8').match(/^version:\s*([0-9.]+)/m)?.[1];
+if (appVersion !== version) throw new Error(`cli/package.json says ${version}, flutter/pubspec.yaml ${appVersion}: the apps share one version number.`);
 
 // ---------- the one file ----------
 

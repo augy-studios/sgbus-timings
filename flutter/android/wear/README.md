@@ -1,8 +1,8 @@
 # SG Bus Timings for Wear OS
 
 A small native watch app (Java, no Compose), built alongside the phone's by
-`android/build-apk.ps1` into `release/<version>/sg-bus-timings-<version>-watch.apk`. How
-people install it is in the guide: `docs-site/content/web/wear-os.md`.
+`flutter/build-apk.ps1` into `release/<version>/sg-bus-timings-<version>-watch.apk`. How
+people install it is in the guide: `docs-site/content/android/wear-os.md`.
 
 | Part | What it does |
 |---|---|

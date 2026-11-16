@@ -1,15 +1,15 @@
 // POST /api/push/release   a new version of the apps is out
 //
-// GitHub calls this for the repository's releases (a webhook, android/FIREBASE-SETUP.md), and it
+// GitHub calls this for the repository's releases (a webhook, flutter/FIREBASE-SETUP.md), and it
 // pushes "SG Bus Timings 2.1.1 is out" to the sgbus-releases FCM topic, which the Android app
 // joins when "New versions of the app" is on in Service alerts (js/app-update.js,
 // SgBusPlugin.setReleases). Tapping it opens the app's update window (MainActivity,
 // UpdateActivity), which installs it. A watch paired with the phone shows it too, as it shows
 // the phone's other notifications.
 //
-// The desktop apps hear without this: Electron has no Web Push or FCM to push to, so they check
-// GitHub themselves every hour and when the computer wakes (desktop/updater.js), and say so with
-// a desktop notification. Their installers reach the release a few minutes after it's
+// The desktop app hears without this: the Flutter app has no Web Push or FCM to push to there, so
+// it checks GitHub itself every hour and when the computer wakes (lib/desktop/updater.dart), and
+// says so with a desktop notification. Its installers reach the release a few minutes after it's
 // published anyway, once GitHub Actions has built them.
 //
 // GitHub signs each delivery with GITHUB_WEBHOOK_SECRET, checked here before anything is sent,

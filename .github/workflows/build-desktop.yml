@@ -28,7 +28,7 @@
 # The command-line edition for Linux (cli/, from 2.2.2) is built and checked with dpkg-deb on
 # every run, and goes on the release with them: its single file `sgbus` and its .deb.
 #
-# With the APT_SIGNING_KEY secret set (desktop/LINUX-BUILD.md, "An apt repository"), the newest
+# With the APT_SIGNING_KEY secret set (flutter/installers/linux/LINUX-BUILD.md, "An apt repository"), the newest
 # published release's .deb files also go into a signed apt repository on GitHub Pages, so
 # `apt upgrade` brings each new version. Without the secret that job is skipped.
 name: Build desktop apps
@@ -430,7 +430,7 @@ jobs:
         run: |
           gh release upload "$RELEASE_TAG" cli/dist/sgbus cli/dist/*.deb --repo "$GITHUB_REPOSITORY" --clobber
 
-  # The apt repository (desktop/LINUX-BUILD.md, "An apt repository"): the newest published
+  # The apt repository (flutter/installers/linux/LINUX-BUILD.md, "An apt repository"): the newest published
   # release's .deb files, the app's for amd64 and arm64 and the command line's for all, signed
   # with APT_SIGNING_KEY and put on GitHub Pages, at https://augy-studios.github.io/sgbus-timings/.
   # It holds only the newest version, as releases/latest does. It runs once the Linux and command

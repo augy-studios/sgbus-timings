@@ -1,6 +1,6 @@
 # SG Bus Timings Guide
 
-How to use the [web app](../main-site/), the [Android app](../android/) and the
+How to use the [web app](../main-site/), the [Android app](../flutter/), the [Windows, Mac and Linux app](../flutter/) and the
 [Telegram bot](../telegram-bot/),
 at [guide.sgbus.uwuapps.org](https://guide.sgbus.uwuapps.org).
 
@@ -63,7 +63,7 @@ connection cut for real.
 
 The Android app's (`public/screenshots/android/`, `android/` in `content/`) are drawn by
 Flutter's own test renderer from fixed data, so they come out the same whenever they're
-taken: from `android/`, `flutter test test/shots/`, or `SHOTS=stop,board flutter test
+taken: from `flutter/`, `flutter test test/shots/`, or `SHOTS=stop,board flutter test
 test/shots/` for only those. `shots_test.dart` has the pages, and `guide_test.dart` the
 sheets and whatever needs the phone's own parts, with `Native.fake` standing in for them.
 

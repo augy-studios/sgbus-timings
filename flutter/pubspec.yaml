@@ -7,8 +7,8 @@ publish_to: 'none'
 # The app's version: versionName+versionCode. Raise both for a new version: a phone only takes
 # a higher versionCode as an update. 1.0.0 to 1.2.0 (versionCode 1 to 3) were the Bubblewrap
 # app, 2.0.0 to 2.3.1 (4 to 26) the Capacitor one, and from 2.4.0 (27) this Flutter one. The
-# watch app (android/wear/) reads it here too, and desktop/package.json's and cli/package.json's
-# versions are raised to the same.
+# watch app (android/wear/) and the desktop installers (installers/) read it here too, and
+# lib/app/version.dart's appVersion and cli/package.json's version are raised to the same.
 version: 2.4.11+41
 
 environment:

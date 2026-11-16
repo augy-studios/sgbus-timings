@@ -98,10 +98,11 @@ offers **File**, then **Add to Dock**.
 #### Or the Windows, Mac and Linux app
 
 There's also a desktop app for Windows (`.exe` or `.msi`), Mac (`.dmg`) and
-Linux (`.deb`, `.rpm` or `.AppImage`), on Intel and AMD or on Arm: the same app
-in its own window, which stays in the tray and shows Service alerts as desktop
-notifications. See
-[Windows, Mac and Linux apps](desktop-app.md) to download and install it.
+Linux (`.deb`, `.rpm` or `.AppImage`), on Intel and AMD or on Arm: an app of its
+own with the Android app's screens, which stays in the tray, shows Service alerts
+as desktop notifications and puts widgets on your desktop. See
+[The Windows, Mac and Linux app](../desktop/overview.md), and
+[Install and update it](../desktop/install.md) to download it.
 
 > [!NOTE]
 > An installed app keeps its own favourites and settings, separate from the

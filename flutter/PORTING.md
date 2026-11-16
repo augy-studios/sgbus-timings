@@ -1,4 +1,4 @@
-# Porting the site to the native Flutter app (2.4.0)
+# Porting the site to the native Flutter app (2.4.0), and the desktop app to it (2.5.0)
 
 The Android app is moving from the site in a WebView to its own screens in Dart, with full
 parity with the site. The site's JS (`main-site/js/`, `main-site/script.js`) and the guide
@@ -54,3 +54,42 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 
 `flutter test test/shots/` renders the guide's shots of the app into
 `docs-site/public/screenshots/android/`, at 3x, from fixed data (see `test/shots/harness.dart`).
+
+## Desktop (2.5.0)
+
+The Electron desktop app (2.0.0 to 2.4.8, `desktop/`, removed in 2.5.0 and kept in git history)
+showed the site in a window, with its own parts around it. From 2.5.0 the desktop app is this
+Flutter app, so the screens above are the desktop's too, and each Electron part is ported to the
+desktop layer (`lib/desktop/`) with the Electron app's words, settings keys and file names, so its
+users update in place. `docs/desktop-features-spec.md` (its checklist, §21) and
+`docs/flutter-desktop-app-spec.md` are the spec; `DESKTOP-HANDOVER.md` says what's left.
+
+✅ here means built, tested with Flutter 3.47.9 and seen on macOS; the Windows and Linux builds
+come from CI and haven't been run on a real machine yet (`DESKTOP-HANDOVER.md`, item 1).
+
+| Part | Electron | Dart | Status |
+|---|---|---|---|
+| Start-up order, the window (maximised, size kept, close to tray), one copy at a time | `main.js` | `lib/desktop/desktop_main.dart`, `desktop.dart`, the runners in `windows/`, `macos/`, `linux/` | ✅ |
+| Title bar: back, forward, reload, copy, screenshots, Restart to update, window buttons | `titlebar.html`, `titlebar.js`, `titlebar-preload.js` | `chrome.dart`, `screenshot.dart`, `lib/app/nav.dart` (`ViewHistory`) | ✅ |
+| The command bar (Electron's address bar only copied its address) | `main.js` | `chrome.dart`, `lib/app/links.dart` (`Links.read`) | ✅ |
+| Keyboard shortcuts and the macOS menu bar | `main.js` | `menubar.dart` | ✅ |
+| Navigation rail, split panes, dialogs and side panels, right-click menus (new in 2.5.0) | none | `chrome.dart`, `lib/app/shell.dart`, `adaptive.dart` | ✅ |
+| What the page asked of the app (notify, favourites, tray, widgets, full screen, location) | `preload.js` | `host.dart`, answering `lib/native/native_bridge.dart` | ✅ |
+| Make it yours | `setup.html`, `setup.js`, `setup-preload.js` | `welcome.dart` | ✅ |
+| The update window and updating itself | `splash.html`, `updater.js` | `splash.dart`, `updater.dart` | ✅ |
+| The tray and its menu | `main.js` (`createTray`) | `tray.dart` | ✅ |
+| Tray countdown, Jump List, thumbnail buttons, Dock menu and badge | `glance.js` | `glance.dart`, `packages/sgbus_desktop/` | ✅ |
+| Bus timings widgets | `widgets.js`, `main-site/widget.html` | `widgets_window.dart` | ✅ |
+| Service Alerts every minute, as notifications | `main-site/js/alerts.js` (its desktop part), `main.js` | `alerts_poll.dart`, `notify.dart` | ✅ |
+| `uwu://` links, claimed and handed on | `links.js` | `links.dart` | ✅ |
+| Location on Linux (NetworkManager and BeaconDB) | `location.js`, `main-site/js/desktop-location.js` | `location.dart`, `lib/data/location.dart` | ✅ (unbuilt here) |
+| The settings file | `settings.js` | `settings.dart` | ✅ |
+| "No connection" on a first launch offline | `offline.html` | `chrome.dart` | ✅ |
+| The old app's data, brought across once | Chromium's `localStorage` | `leveldb.dart`, `host.dart` (`Migrate.read`), `lib/data/migrate.dart` | ✅ |
+| The live map, Explorer and Save the map | the site's `js/map*.js` in Chromium | `lib/features/map/sg_map.dart`, `lib/features/map/web/`, `assets/desktop/map/` | ✅ |
+| Installers and update files under the Electron app's names | electron-builder (`package.json`), `build-linux.sh` | `installers/` (`installers/README.md`) | ✅ (Windows and Linux packages unrun) |
+| Release builds on GitHub | `.github/workflows/build-desktop.yml` | the same file, rebuilt for Flutter; `desktop-check.yml` | ✅ (not run yet) |
+| The desktop's words in four languages (`desktop.*` in `assets/i18n_app/`) | `setup.js`, `main.js` | `tr('desktop.…')` | ✅ |
+
+`test/desktop/` holds the desktop layer's tests, and `tool/playwright/map.test.cjs` the map page's
+(`README.md`, "Build the desktop app").

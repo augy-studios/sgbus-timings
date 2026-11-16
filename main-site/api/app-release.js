@@ -1,4 +1,4 @@
-// The newest release of the Android app (android/), for its update bar (js/app-update.js) and
+// The newest release of the Android app (flutter/), for its update bar (js/app-update.js) and
 // its own updater (UpdateActivity.java). Read from the repository's GitHub Releases, tagged
 // android-v<version> with the APK attached (release/README.md, api/_lib/release.js), and cached
 // at Vercel's edge, so GitHub sees a request every few minutes however many phones ask: its limit

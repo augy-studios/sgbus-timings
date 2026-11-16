@@ -1,4 +1,4 @@
-// The Android app's releases (android/) on GitHub, tagged android-v<version> with the APK
+// The Android app's releases (flutter/) on GitHub, tagged android-v<version> with the APK
 // attached (release/README.md). Shared by api/app-release.js, which the app's updater reads, and
 // api/push/release.js, which tells phones a new one is out.
 

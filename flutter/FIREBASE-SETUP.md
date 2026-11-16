@@ -14,9 +14,9 @@ list of phones for it. The topic has the `sgbus-` prefix because topics are shar
 app in a Firebase project. A watch paired with the phone shows the notification too, as it
 shows the phone's others.
 
-The desktop apps don't use any of this: Electron has no FCM or Web Push, so they look for new
-versions themselves every hour (`desktop/updater.js`), and Service Alerts every minute while
-they run.
+The desktop app (this same Flutter app on Windows, Mac and Linux) doesn't use any of this: it
+has no FCM or Web Push, so it looks for new versions itself every hour (`lib/desktop/updater.dart`), and
+for Service Alerts every minute while it runs (`lib/desktop/alerts_poll.dart`).
 
 SG Bus Timings goes into one shared **UwU Apps** Firebase project, which every UwU Apps app
 can join as an app of its own. Only FCM is used: no Analytics, no Firebase database,
@@ -32,7 +32,7 @@ It takes about 20 minutes, and covers four things:
 
 | What | Where it goes | Secret? |
 |---|---|---|
-| `google-services.json`, which tells the app which Firebase project it belongs to | `android/android/app/` | No, but kept out of git anyway |
+| `google-services.json`, which tells the app which Firebase project it belongs to | `flutter/android/app/` | No, but kept out of git anyway |
 | SG Bus Timings' service account key (`….json`), which lets this site's server send pushes | Vercel, as `FIREBASE_SERVICE_ACCOUNT` | **Yes.** Anyone with it can push to phones with any app in the UwU Apps project |
 | A webhook secret, which proves a "release published" call really came from GitHub | GitHub and Vercel, as `GITHUB_WEBHOOK_SECRET` | **Yes** |
 | A GitHub token (optional), which raises GitHub's rate limit for the release lookups | Vercel, as `GITHUB_TOKEN` | Yes, though it can do nothing but read |
@@ -81,9 +81,9 @@ Otherwise:
    doesn't need it.
 4. **Register app**.
 5. **Download google-services.json**. Save it as
-   `android\native\app\google-services.json` in this project (beside `build.gradle`).
+   `flutter\android\app\google-services.json` in this project (beside `build.gradle`).
 6. Click **Next** through the remaining steps without changing anything: the project already
-   has what they describe (`android/build.gradle` and `android/app/build.gradle` apply the
+   has what they describe (`flutter/android/build.gradle` and `flutter/android/app/build.gradle` apply the
    Google services plugin when the file is there).
 
 The file lists every app in the project registered so far; the build takes the entry for
@@ -169,7 +169,7 @@ here; they follow by themselves a few minutes later.
 ## 7. Build the app with Firebase in it
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
+powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1
 ```
 
 The build picks up `google-services.json` by itself. Install the new APK on your phone.
@@ -212,7 +212,7 @@ done. Its topics get its own prefix, never `sgbus-`.
 | What happens | What to do |
 |---|---|
 | The build stops with `No matching client found for package name 'org.uwuapps.sgbus'` | `google-services.json` was downloaded before SG Bus Timings was added. Download it again from **Project settings** > **Your apps** > **SG Bus Timings**. |
-| Service alerts still says the app "can't get notifications from the server yet", or there's no **New versions of the app** | The APK was built without `google-services.json`. Check it's at `android\native\app\google-services.json`, build again and reinstall. |
+| Service alerts still says the app "can't get notifications from the server yet", or there's no **New versions of the app** | The APK was built without `google-services.json`. Check it's at `flutter\android\app\google-services.json`, build again and reinstall. |
 | "Notifications are off for SG Bus Timings" | You said no to Android's prompt. Android **Settings** > **Apps** > **SG Bus Timings** > **Notifications**, turn them on, then pick again. |
 | "Couldn't reach Firebase" when turning on **New versions of the app** | The phone was offline, or has no Google Play services (some Huawei phones), which FCM needs. |
 | The test campaign never arrives | Check the package name in Firebase is exactly `org.uwuapps.sgbus`, and that the phone has Google Play services (most do; Huawei phones without them can't get FCM). |

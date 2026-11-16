@@ -1,6 +1,6 @@
 // What the site's own planner (main-site/js/nav-core/) says for a set of journeys, as
 // test/fixtures/nav-core-expected.json, for test/nav_core_test.dart to hold lib/data/nav_core.dart to.
-// From android/: node tool/nav_core_expected.mjs
+// From flutter/: node tool/nav_core_expected.mjs
 import { readFileSync, writeFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { buildGraph } from '../../main-site/js/nav-core/network.js';

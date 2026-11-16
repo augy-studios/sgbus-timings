@@ -5,7 +5,8 @@
     "trailingSlash": false,
     "redirects": [
         { "source": "/web/android-app", "destination": "/android/overview", "permanent": true },
-        { "source": "/web/wear-os", "destination": "/android/wear-os", "permanent": true }
+        { "source": "/web/wear-os", "destination": "/android/wear-os", "permanent": true },
+        { "source": "/web/desktop-app", "destination": "/desktop/overview", "permanent": true }
     ],
     "headers": [
         {

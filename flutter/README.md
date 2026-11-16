@@ -1,6 +1,10 @@
-# SG Bus Timings for Android
+# SG Bus Timings for Android, Windows, macOS and Linux
 
-The Android app, `org.uwuapps.sgbus`. From 2.4.0 it's a Flutter app: every screen is drawn in
+The Android app and, from 2.5.0, the desktop app, both `org.uwuapps.sgbus`, from this one Flutter
+project. The desktop app has the same screens with a desktop layer around them (`lib/desktop/`):
+see "The desktop app" below, and `installers/README.md` for its installers.
+
+From 2.4.0 the Android app is a Flutter app: every screen is drawn in
 Dart (`lib/`), with full parity with the web app at sgbus.uwuapps.org, whose JS
 (`main-site/js/`, `main-site/script.js`) and guide (`docs-site/content/web/`) are its spec.
 Each feature is ported with the site's storage keys, words (`assets/i18n/`, copied from the
@@ -73,7 +77,7 @@ running in it. The website and PWA lose nothing.
 | NFC | Not asked: Android grants it | `CardPlugin` |
 | Install unknown apps | First update | `UpdateActivity` |
 
-The Google Play build (`powershell -ExecutionPolicy Bypass -File android\build-apk.ps1 -Aab`, into
+The Google Play build (`powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1 -Aab`, into
 `release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity` and
 `REQUEST_INSTALL_PACKAGES`, as Play updates apps itself: `app/src/play/AndroidManifest.xml`, and
 `playBuild` in `lib/native/native_bridge.dart` for the update bar and buttons. The same manifest
@@ -103,26 +107,94 @@ of date for them, and the page says so. **It hasn't been tried on a real card ye
 first read says "couldn't be read as an EZ-Link or NETS FlashPay card", the command bytes in
 `READ_PURSE` are where to look.
 
+## The desktop app
+
+From 2.5.0, SG Bus Timings for Windows, macOS and Linux is this project too: the Android app's
+screens, in Flutter, with a desktop layer around them, replacing the Electron app (2.0.0 to 2.4.8,
+which showed the site in a window; its code was `desktop/`, removed in 2.5.0 and kept in git
+history). `docs/desktop-features-spec.md` lists every desktop feature and
+`docs/flutter-desktop-app-spec.md` how each is built; the guide's pages for people are
+`docs-site/content/desktop/`.
+
+The shared screens never import the desktop layer. They ask `Native.has('desktop')`, and reach
+what only the desktop can do (the tray countdown, a desktop widget, full screen, notifications,
+links) through the same bridge the phone's Java answers (`lib/native/native_bridge.dart`): on a
+desktop, `main.dart` points it at `lib/desktop/host.dart` instead. Anything only a phone has (NFC,
+the camera, reminders, the Get Off Alert with the screen off) fails there as `unavailable`, and the
+screen takes the website's plain path.
+
+### What it adds
+
+| Feature | Where (`lib/desktop/` unless it says) |
+|---|---|
+| **Start-up order**: the update window, then the app hidden until its first frame, Make it yours the first time, then the tray, widgets and checks | `desktop_main.dart`, `desktop.dart` (the window: opens maximised, 1120 x 760 un-maximised, at least 800 x 600, size and place kept; close to the tray; one copy at a time) |
+| **The title bar** (40 px, the brand colour): Back and Forward through the app's own history, Reload, the command bar, Copy link, the two screenshots, Restart to update, and on Windows and Linux its own window buttons | `chrome.dart`, `screenshot.dart`; the history is `app/nav.dart`'s `ViewHistory` |
+| **The command bar** (Ctrl/⌘+K, F, L or F6): stops, buses and the app's commands; a pasted site address, `#address` or `uwu://sgbus/` link opens in the app, another UwU app's link goes to that app, anything else to the browser | `chrome.dart`, `app/links.dart` (`Links.read`) |
+| **Keyboard shortcuts** on all three systems, and the **macOS menu bar** (App, File, Edit, View, Window, Help) | `menubar.dart` (the full list is in its header) |
+| **Navigation rail and split panes**: from 720 px a rail replaces the Edge Tray; above 1024 px the page's list sits in a 360 to 400 px pane and a stop or bus opens beside it | `chrome.dart`, `app/shell.dart`, `app/nav.dart` (`DeskPanes`) |
+| **Dialogs and side panels** in place of bottom sheets, **right-click menus** on stop, bus and favourite rows, 400 ms tooltips, Windows and Linux scrolling | `adaptive.dart` (`AppSheet.show`, `DeskContextMenu`, `DeskActions`) |
+| **Make it yours**: language, start at sign-in, light or dark, brand colour or System accent; its own window and engine, its own words in four languages | `welcome.dart` |
+| **The look**: the UwU Apps theme by default (Material You off), or the computer's accent colour (`useSystemAccent`) | `desk_theme.dart`, `theme/theme.dart` |
+| **The tray** (the menu bar on macOS) and its menu | `tray.dart` |
+| **Tray countdown**, favourites in the **Jump List**, the taskbar's **thumbnail buttons** and the **Dock** menu and badge | `glance.dart`, and `packages/sgbus_desktop/` |
+| **Bus timings widgets**: frameless windows on the desktop, each its own engine (`desktop_multi_window`), asking the main window over `sgbus/main` for anything kept | `widgets_window.dart` |
+| **Service Alerts as notifications**: no push to a computer, so it checks every minute by the server's rules (`main-site/api/_push/alerts.js`) | `alerts_poll.dart`, `notify.dart` |
+| **Updates**: reads `latest*.yml` from the newest release, SHA-512 checked, installs by install type; the small update window | `updater.dart`, `splash.dart`; `installers/` writes the files |
+| **Links**: claims `uwu://` and hands other UwU apps' links on; the site's own links open in the app, others in the browser | `links.dart`, `desktop.dart` (`fromAppLink`), `host.dart` |
+| **Start at sign-in**: on from the first run of an installed copy until it's turned off (`loginChosen`) | `desktop.dart`, `packages/sgbus_desktop/` (Windows' `Run` value as Electron wrote it) |
+| **Location on Linux** where GeoClue can't: a NetworkManager Wi-Fi scan looked up on BeaconDB | `location.dart`, `data/location.dart` (`Locate.fallback`) |
+| **The live map**: MapLibre GL JS 5.24.0 (bundled, `assets/desktop/map/`) in a WebView, behind the same controller interface as Android's native map, with a local server on 127.0.0.1 proxying OpenFreeMap through a disk cache, and Save the map | `lib/features/map/sg_map.dart`, `lib/features/map/web/` (`web_map_view.dart`, `web_map_controller.dart`, `map_commands.dart`, `map_server.dart`, `tile_cache.dart`, `map_prefetch.dart`) |
+| **The Electron app's data, brought across once**: its `localStorage` (a Chromium LevelDB, read in pure Dart) into the app's own store, and its `settings.json` read in place | `leveldb.dart`, `host.dart` (`Migrate.read`), `lib/data/migrate.dart`, `settings.dart` |
+
+`settings.dart` keeps the desktop's own settings in `settings.json`, in the folder the Electron
+app used: `%APPDATA%\SG Bus Timings`, `~/Library/Application Support/SG Bus Timings` or
+`~/.config/SG Bus Timings`. Its header lists every key and which file writes it.
+
+The runners: `windows/` (one copy through a named mutex, the AppUserModelID, the window hidden
+until Dart shows it), `macos/` ("SG Bus Timings.app", bundle id `org.uwuapps.sgbus`, the `uwu`
+scheme, stays alive with no window, App Sandbox off so it can update itself and read the Electron
+app's folder), and `linux/` (a unique `GtkApplication`, id `org.uwuapps.sgbus`). The local plugin
+`packages/sgbus_desktop/` does what no package does: each window's native handle, the Jump List,
+thumbnail buttons, start at sign-in, the Dock menu and badge, and links that arrive while the app
+starts.
+
+### Flutter 3.47.9
+
+Build the desktop app with **Flutter 3.47.9** (Dart 3.13), as `.github/workflows/` pins it. Flutter
+3.50's Dart 3.14 can't compile `nativeapi` 0.5.10, which `window_manager` 0.6 and `tray_manager` 0.8
+are built on (its `Isolate.create` moved), so on 3.50 nothing that imports them builds or tests.
+Don't override or patch `nativeapi`; moving to a newer Flutter waits for a `nativeapi` that builds
+on it. Keep importing `package:flutter/material.dart`, so the code still builds on 3.47.
+
 ## The project
 
 ```text
-android/
+flutter/
   pubspec.yaml                 the app's version, its packages and assets
   lib/                         the app, in Dart: app/ (shell, Edge Tray, links), data/, features/,
-                               theme/, i18n/, native/, sync/, widgets/
+                               theme/, i18n/, native/, sync/, widgets/, and desktop/ (the desktop
+                               layer); the desktop map is features/map/web/
   assets/i18n/, i18n_app/      the site's words, and the app's own
+  assets/desktop/              the desktop's icons, and map/ (MapLibre GL JS and its page)
   test/                        unit tests (journeys, calendar, rewards, sync, words checked
-                               against the site) and test/shots/, the guide's screenshots
+                               against the site), test/desktop/ (the desktop layer and its map)
+                               and test/shots/, the guide's screenshots
+  tool/                        fixtures and expected results for the tests, and
+                               playwright/map.test.cjs, the desktop map's page in Chromium
   android/                     the Gradle project: app/ (the native plugins), wear/ (Wear OS)
+  windows/, macos/, linux/     the desktop runners
+  packages/sgbus_desktop/      the desktop's own native plugin (Windows, macOS, Linux)
+  installers/                  the desktop installers and update files (installers/README.md)
   build-apk.ps1                builds the signed APKs into release/<version>/
   FIREBASE-SETUP.md            setting up push notifications
-  PORTING.md                   each part of the site and its Dart
+  PORTING.md                   each part of the site and its Dart, and the desktop's parts
+  DESKTOP-HANDOVER.md          the desktop rewrite: what's done and what's left
 ```
 
 ## Build the APK
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
+powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1
 ```
 
 It runs `flutter build apk` for the phone (ARM, 32 and 64 bit, in one APK, as the updater
@@ -141,9 +213,11 @@ On Linux or macOS, `flutter build apk --release --target-platform android-arm,an
 here, and `android/gradlew :wear:assembleRelease`.
 
 For a new version, raise `version:` in `pubspec.yaml` (`2.4.0+27`: the name, and after the `+`
-the `versionCode`, which a phone only takes higher as an update); the watch reads it too. Raise
-`desktop/package.json`'s and `cli/package.json`'s `version` to the same: the apps share
-version numbers.
+the `versionCode`, which a phone only takes higher as an update); the watch and the desktop
+installers read it too. Raise `appVersion` in `lib/app/version.dart` (what the desktop app says it
+is; `test/desktop/version_test.dart` fails until the two match, once its skip is removed at
+2.5.0) and `cli/package.json`'s `version`
+(`cli/build.mjs` stops until it matches) to the same: the apps share version numbers.
 
 Without `android/app/google-services.json` the app builds and works, but can't get
 notifications from the server. See `FIREBASE-SETUP.md`.
@@ -151,6 +225,35 @@ notifications from the server. See `FIREBASE-SETUP.md`.
 To try it on a phone over USB, `flutter run` with the phone plugged in and USB debugging on.
 `flutter test` runs the tests; `flutter test test/shots/` renders the guide's screenshots into
 `docs-site/public/screenshots/android/`, at 3x, from fixed data (`test/shots/harness.dart`).
+
+## Build the desktop app
+
+GitHub Actions builds every desktop installer when a release is published, and adds them to it
+(`.github/workflows/build-desktop.yml`; `release/README.md`). `desktop-check.yml` runs the
+analyser, a debug build on each system and the tests on every push to `desktop-flutter-rewrite`.
+To build one yourself, with Flutter 3.47.9, from this folder:
+
+| System | Needs | Build |
+|---|---|---|
+| Windows (x64 PC, or an Arm64 PC for Arm64) | Visual Studio with "Desktop development with C++" | `flutter build windows --release` |
+| macOS (either processor) | Xcode and CocoaPods | `FLUTTER_XCODE_ARCHS=arm64 flutter build macos --release` (or `x86_64`) |
+| Linux (a machine of that processor) | `clang cmake ninja-build pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev` | `flutter build linux --release` |
+
+Flutter can't cross-build: a Mac app only builds on a Mac, and Windows and Linux only for the
+processor they run on. `installers/README.md` packs a build into the installers, and
+`installers/linux/LINUX-BUILD.md` covers a Linux machine of your own.
+
+To try it from source, `flutter run -d windows` (or `macos`, `linux`). Run from source, it doesn't
+update itself or start at sign-in; `SGBUS_SPLASH_DEMO=1` shows the update window going through
+its steps with made-up numbers. It uses the same settings folder as an installed copy.
+
+Tests: `flutter test` runs everything, the desktop layer's in `test/desktop/`. The desktop map's
+page has its own test in Chromium, with Playwright installed globally (`npm i -g playwright`,
+then `npx playwright install chromium`):
+
+```bash
+NODE_PATH="$(npm root -g)" node --test tool/playwright/map.test.cjs
+```
 
 ## The signing key
 

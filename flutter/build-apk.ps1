@@ -1,6 +1,6 @@
 # Builds the signed Android apps into release/<version>/ at the project root:
 #
-#     powershell -ExecutionPolicy Bypass -File android\build-apk.ps1
+#     powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1
 #
 # From 2.4.0 the app is Flutter (lib/, android/): `flutter build apk` builds the phone's app,
 # for ARM phones (32 and 64 bit, one APK, as the app's updater fetches the one file), then
@@ -165,4 +165,4 @@ Copy-Item $watch $watchDest -Force
 # What puts the names back in this APK's crashes, as R8 renames them. For here only, never the release.
 Copy-Item "$here\build\app\outputs\mapping\release\mapping.txt" "$root\release\$version\sg-bus-timings-$version-mapping.txt" -Force
 Write-Host "Done: $dest"
-Write-Host "      $watchDest (Wear OS: see android/android/wear/README.md to install it on a watch)"
+Write-Host "      $watchDest (Wear OS: see flutter/android/wear/README.md to install it on a watch)"

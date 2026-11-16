@@ -8,11 +8,12 @@ every service that calls there, the next three buses for each, how full they
 are and how far away. It also shows where a bus goes, and which buses get you
 from one stop to another, with a change or two if no single bus does.
 
-It comes in three forms, built on the same live data from LTA:
+It comes in four forms, built on the same live data from LTA:
 
 <div class="cards">
-<a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app, or as an app for Windows, Mac and Linux.</span></a>
+<a class="card-link glass" href="web/install.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The web app</span><span class="card-text">At sgbus.uwuapps.org. Search, timings, a route planner, favourites and service alert notifications, installable on your phone like an app.</span></a>
 <a class="card-link glass" href="android/overview.md"><span class="card-icon" data-icon="info"></span><span class="card-title">The Android app</span><span class="card-text">An app of its own, with its own screens. Follows your trip with the screen off, and adds widgets, reminders, card value and Material You.</span></a>
+<a class="card-link glass" href="desktop/overview.md"><span class="card-icon" data-icon="info"></span><span class="card-title">The Windows, Mac and Linux app</span><span class="card-text">The Android app's screens on your computer, with the tray, desktop widgets and Service alerts as notifications.</span></a>
 <a class="card-link glass" href="bot/start.md"><span class="card-icon" data-icon="send"></span><span class="card-title">The Telegram bot</span><span class="card-text">@sgbus_app. The same timings in a chat, plus routines and Service Alerts sent to you as they happen.</span></a>
 <a class="card-link glass" href="getting-started/reading-timings.md"><span class="card-icon" data-icon="clock"></span><span class="card-title">Reading bus timings</span><span class="card-text">What the colours, badges and distances next to each bus mean.</span></a>
 <a class="card-link glass" href="help/troubleshooting.md"><span class="card-icon" data-icon="info"></span><span class="card-title">Troubleshooting</span><span class="card-text">No timings, the wrong stop, location not working, or sync that will not connect.</span></a>
@@ -45,8 +46,11 @@ The web app, the Android app and the bot each have two sections in the sidebar:
   bus, planning a route, navigating by bus and train, the Get Off Alert,
   routines, service alerts and syncing.
 
+The Windows, Mac and Linux app has one section of its own, for what it adds: it has
+the Android app's screens, so the Android sections cover the rest.
+
 Start with [Reading bus timings](getting-started/reading-timings.md): it explains
-what the colours and badges mean, in all three.
+what the colours and badges mean, in all of them.
 
 ## Quick start
 
@@ -67,6 +71,14 @@ Read more in [Find a bus stop](web/search.md).
 3. Tap a stop for its next three buses, and **Save** to keep it in your favourites.
 
 Read more in [The Android app](android/overview.md).
+
+### On Windows, Mac or Linux
+
+1. [Install the app](desktop/install.md), and open it.
+2. Press **Ctrl+K** (**⌘K** on a Mac), then type a stop's name or code.
+3. Pick a stop for its next three buses, and **Save** to keep it in your favourites.
+
+Read more in [The Windows, Mac and Linux app](desktop/overview.md).
 
 ### In Telegram
 

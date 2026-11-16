@@ -4,11 +4,11 @@ A step-by-step guide for publishing the Android app on Google Play, written for 
 stands on 2.4.0, ahead of the 3.0.0 release.
 
 > **2.4.0 (November 2026):** the app is now Flutter, every screen in Dart, with the same
-> package, key and native plugins (`android/README.md`). Its version is `pubspec.yaml`'s; where a
+> package, key and native plugins (`flutter/README.md`). Its version is `pubspec.yaml`'s; where a
 > step below names Capacitor's files (`capacitor.config.json`, `npx cap sync`), the Flutter app
 > has none, and the step is done.
 
-> **8 November 2026:** decisions D5 and D6 are made. The Play build (`android/README.md`) leaves out
+> **8 November 2026:** decisions D5 and D6 are made. The Play build (`flutter/README.md`) leaves out
 > background location, exact alarms by `USE_EXACT_ALARM` (it asks for `SCHEDULE_EXACT_ALARM` instead,
 > unlike D6's first choice), activity recognition and battery optimisation. Where section 6 or 11.4
 > differs, that's the current state.
@@ -28,7 +28,7 @@ code changes in sections 4, 6 and 7 are not in the repo.
 |---|---|
 | **[Augy]** | A hand step only Augy can do: his Google account, his money, his ID, his decisions, his clicks in Play Console |
 | **[Dev]** | A change to this repo, made on a `help/*` branch and reviewed and merged by Augy |
-| **[Windows]** | A build step. There is no Android SDK on the Mac, so builds run on the Windows PC, as `android/build-apk.ps1` does today |
+| **[Windows]** | A build step. There is no Android SDK on the Mac, so builds run on the Windows PC, as `flutter/build-apk.ps1` does today |
 
 ## Contents
 
@@ -74,19 +74,19 @@ Everything here was read from the repo.
 
 | Thing | Value | Where |
 |---|---|---|
-| Phone app id | `org.uwuapps.sgbus` | `android/android/app/build.gradle` (`applicationId`, `namespace`) |
-| applicationIdSuffix / flavors | None. One variant, `release` | `android/android/app/build.gradle` |
-| Version | `2.4.0+27` (versionName 2.4.0, versionCode 27) | `android/pubspec.yaml` (`version:`) |
-| minSdk | 24 (Android 7) | `android/android/variables.gradle` |
-| compileSdk / targetSdk | 36 / 36 | `android/android/variables.gradle` |
-| Build tools | Flutter 3.47, Android Gradle Plugin 9.1.0, JDK 21+ | `android/android/settings.gradle`, `android/pubspec.yaml` |
-| What the app is | A Flutter app with every screen in Dart (`lib/`), the site's own API, plus native plugins | `android/README.md`, `android/PORTING.md` |
-| Signing | Release APKs signed with `android/android.keystore`, read through `android/keystore.properties`. Both are kept out of git, and are not opened or copied in this guide | `build.gradle` (`signingConfigs.release`), `android/.gitignore` |
-| Signing key fingerprint (public) | SHA-256 `4E:D5:3F:F1:...:76:CB:44:EB`; `build-apk.ps1` refuses any other key | `android/README.md` |
-| Push notifications | Firebase Cloud Messaging; `google-services.json` kept out of git | `android/FIREBASE-SETUP.md` |
+| Phone app id | `org.uwuapps.sgbus` | `flutter/android/app/build.gradle` (`applicationId`, `namespace`) |
+| applicationIdSuffix / flavors | None. One variant, `release` | `flutter/android/app/build.gradle` |
+| Version | `2.4.0+27` (versionName 2.4.0, versionCode 27) | `flutter/pubspec.yaml` (`version:`) |
+| minSdk | 24 (Android 7) | `flutter/android/variables.gradle` |
+| compileSdk / targetSdk | 36 / 36 | `flutter/android/variables.gradle` |
+| Build tools | Flutter 3.47, Android Gradle Plugin 9.1.0, JDK 21+ | `flutter/android/settings.gradle`, `flutter/pubspec.yaml` |
+| What the app is | A Flutter app with every screen in Dart (`lib/`), the site's own API, plus native plugins | `flutter/README.md`, `flutter/PORTING.md` |
+| Signing | Release APKs signed with `flutter/android.keystore`, read through `flutter/keystore.properties`. Both are kept out of git, and are not opened or copied in this guide | `build.gradle` (`signingConfigs.release`), `flutter/.gitignore` |
+| Signing key fingerprint (public) | SHA-256 `4E:D5:3F:F1:...:76:CB:44:EB`; `build-apk.ps1` refuses any other key | `flutter/README.md` |
+| Push notifications | Firebase Cloud Messaging; `google-services.json` kept out of git | `flutter/FIREBASE-SETUP.md` |
 | How people get it today | APK from GitHub Releases (tag `android-v<version>`); the app updates itself from there | `release/README.md`, `UpdateActivity.java`, `main-site/js/app-update.js`, `main-site/api/app-release.js` |
-| Watch app today | Not on Play, and stays off it for now. `sg-bus-timings-<version>-watch.apk`, attached to the GitHub release and installed by hand over `adb` Wi-Fi debugging | `docs-site/content/web/wear-os.md` |
-| Build | `powershell -ExecutionPolicy Bypass -File android\build-apk.ps1` builds both signed APKs into `release/<version>/` | `android/build-apk.ps1` |
+| Watch app today | Not on Play, and stays off it for now. `sg-bus-timings-<version>-watch.apk`, attached to the GitHub release and installed by hand over `adb` Wi-Fi debugging | `docs-site/content/android/wear-os.md` |
+| Build | `powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1` builds both signed APKs into `release/<version>/` | `flutter/build-apk.ps1` |
 | Languages | English, Chinese (`zh-SG`), Malay (`ms`), Tamil (`ta`) in the site; the native app's own few strings are English only | `main-site/i18n/` |
 | Ads | None | `docs-site/content/help/privacy.md` |
 | Analytics | Google Analytics (gtag) on the site, which loads inside the app's WebView too | `main-site/index.html` |
@@ -168,7 +168,7 @@ only in what is in them (section 7), not in their package name.
 - Keep your own copy of the keystore and its backup anyway: the GitHub APK is still signed with it.
 - Play recommends a **separate upload key** for signing the .aab you upload (it can be reset if
   lost; the app signing key cannot). Make a new one for uploads. It must be kept out of git too:
-  `android/.gitignore` already ignores `*.keystore` and `keystore.properties`; a differently
+  `flutter/.gitignore` already ignores `*.keystore` and `keystore.properties`; a differently
   named `upload-keystore.properties` would need adding to it.
 - `build-apk.ps1` refuses any APK signed with a different key. A new `build-aab.ps1` for the .aab
   must skip that check, because the .aab is signed with the upload key, not the app signing key
@@ -215,23 +215,20 @@ Under Option 2 none of this is needed; it is the fallback if the key plan change
 
 ## 5. Step 1: Bump everything to 3.0.0
 
-[Dev] The apps "share version numbers", so raise all of these together (`android/README.md`,
+[Dev] The apps "share version numbers", so raise all of these together (`flutter/README.md`,
 `release/README.md`).
 
 | File | Change |
 |---|---|
-| `android/android/app/build.gradle` | `versionName "3.0.0"` and `versionCode 24` (or higher). **This is the one that matters on Play.** The GitHub watch APK reads both from here, so it follows by itself |
-| `desktop/package.json` | `"version": "3.0.0"` |
-| `desktop/package-lock.json` | `"version"` at lines 3 and 9 (`npm install --package-lock-only` does it) |
-| `cli/package.json` | `"version": "3.0.0"`. `cli/build.mjs` stops the build if it differs from `desktop/package.json` |
+| `flutter/android/app/build.gradle` | `versionName "3.0.0"` and `versionCode 24` (or higher). **This is the one that matters on Play.** The GitHub watch APK reads both from here, so it follows by itself |
+| `cli/package.json` | `"version": "3.0.0"`. `cli/build.mjs` stops the build if it differs from `flutter/pubspec.yaml`'s version |
 | `cli/package-lock.json` | Not present in the repo, so nothing to change |
-| `android/capacitor.config.json` | Optional: `appendUserAgent` `SGBusTimingsApp/2` to `/3`. Nothing reads it |
 | `main-site/sw.js` | `VERSION = "v124"` is the site's cache version, not the app's. Raise it only if site files changed |
-| `android/package.json`, `main-site/package.json`, `docs-site/package.json` | No version field. Leave alone |
+| `main-site/package.json`, `docs-site/package.json` | No version field. Leave alone |
 
 Docs that quote the old number (update them in the same commit, for a tidy release):
-`android/README.md`, `cli/README.md` (the `.deb` file name in the install lines),
-`desktop/LINUX-BUILD.md` (examples), `docs-site/content/web/linux-cli.md`,
+`flutter/README.md`, `cli/README.md` (the `.deb` file name in the install lines),
+`flutter/installers/linux/LINUX-BUILD.md` (examples), `docs-site/content/web/linux-cli.md`,
 `main-site/README.md` and `main-site/PATCHNOTES.md` (a 3.0.0 entry).
 
 Version codes on Play:
@@ -274,7 +271,7 @@ built, check it has no `.so` files (section 9).
 
 ### Things Play will refuse in the Play build
 
-The manifest (`android/android/app/src/main/AndroidManifest.xml`) has four items that its own comments
+The manifest (`flutter/android/app/src/main/AndroidManifest.xml`) has four items that its own comments
 already call "not allowed on Google Play". The `play` flavor removes them.
 
 | Item | Why | What the Play build does instead |
@@ -333,7 +330,7 @@ The friend recommends flexible, checked on every open. That is what the sketch b
 Android's [build variants][variants] let one module build two products from the same code:
 
 ```groovy
-// android/android/app/build.gradle
+// flutter/android/app/build.gradle
 android {
     flavorDimensions = ["channel"]
     productFlavors {
@@ -362,7 +359,7 @@ removed by a variable, so the flavor's `src/play/AndroidManifest.xml` is needed 
 Files (all [Dev]):
 
 ```text
-android/android/app/src/
+flutter/android/app/src/
   main/                 everything shared (as today), minus UpdateActivity
   github/java/org/uwuapps/sgbus/UpdateActivity.java   moved here, unchanged
   github/java/org/uwuapps/sgbus/Channel.java          (below)
@@ -539,7 +536,7 @@ keep the package name and the key the same.
 Augy has decided: **the watch app is not going on Google Play for now.** Nothing in the other
 sections depends on it, and the Play build is the phone app alone.
 
-The watch app (`android/android/wear/`) is a small native Java app: a **Bus timings tile** and a
+The watch app (`flutter/android/wear/`) is a small native Java app: a **Bus timings tile** and a
 screen listing your favourite stops. Favourite stops come from the phone app over the Wearable
 Data Layer (`WearSync.java` to `FavouritesListener`).
 
@@ -547,14 +544,14 @@ Data Layer (`WearSync.java` to `FavouritesListener`).
 
 Unchanged:
 
-- `android/build-apk.ps1` builds it with the phone app and writes
+- `flutter/build-apk.ps1` builds it with the phone app and writes
   `release/<version>/sg-bus-timings-<version>-watch.apk`.
 - It is attached to the GitHub release (`release/README.md`) and installed by hand over `adb`
-  Wi-Fi debugging (`docs-site/content/web/wear-os.md`, which says it "isn't on Google Play").
+  Wi-Fi debugging (`docs-site/content/android/wear-os.md`, which says it "isn't on Google Play").
   That page stays as it is.
 - It has the phone's application id (`org.uwuapps.sgbus`), `versionName` and `versionCode`, read
-  from `android/android/app/build.gradle`, and is signed with the same key
-  (`android/android/wear/build.gradle`). It will be 3.0.0 with the phone app.
+  from `flutter/android/app/build.gradle`, and is signed with the same key
+  (`flutter/android/wear/build.gradle`). It will be 3.0.0 with the phone app.
 
 ### What to watch for
 
@@ -580,7 +577,7 @@ None of this is done or needed now. From Google's [Wear OS packaging][wear] and
 3. A listing that says "Wear OS", with at least one square screenshot (at least 384 x 384 pixels,
    no device frame) taken on a Wear OS device, and a mention of the tile in the description.
 4. A check on a round emulator, and a real watch if possible.
-5. Updating `docs-site/content/web/wear-os.md` (it says the app isn't on Google Play).
+5. Updating `docs-site/content/android/wear-os.md` (it says the app isn't on Google Play).
 
 The watch app targets API 36 and Play asks Wear OS apps for 35 or higher, so the target level
 would already be met.
@@ -592,49 +589,43 @@ would already be met.
 Play takes bundles, not APKs: "Starting August 2021, new apps are required to publish with the Android
 App Bundle" and bundles require Play App Signing ([publishing with bundles][aab]).
 
-[Dev] first change `android/build-apk.ps1` (or add `build-aab.ps1` beside it) for the flavors:
+> **Done since this was written (8 November 2026):** the Play build no longer needs flavors or a
+> separate script. `build-apk.ps1 -Aab` builds the phone's app as a bundle with the updater taken
+> out (`flutter/README.md`, "Permissions"), and checks it. The steps below replace the plan that
+> was here.
 
-- `assembleRelease` becomes `assembleGithubRelease :wear:assembleRelease`, and the phone APK
-  path becomes `native\app\build\outputs\apk\github\release\app-github-release.apk`. The watch
-  APK path and the `-watch` file stay as they are (section 8). Without that edit, the old
-  script builds both flavors and fails to find its file.
-- A new `build-aab.ps1` runs Gradle for the bundles and checks the **upload** key's fingerprint,
-  not the old SHA-256 pinned in `build-apk.ps1`.
-
-[Windows] [Augy or Thomas] Then, in PowerShell from the project root:
+[Windows] [Augy or Thomas] Build the APKs first, as for any release, then in PowerShell from the
+project root:
 
 ```powershell
-cd android
-npm ci
-npx cap sync android
+powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1 -Aab
 ```
 
-```powershell
-cd native
-.\gradlew.bat clean :app:bundlePlayRelease --no-daemon
-```
-
-The file appears at:
+Flutter writes the bundle at:
 
 ```text
-android\native\app\build\outputs\bundle\playRelease\app-play-release.aab
+flutter\build\app\outputs\bundle\release\app-release.aab
 ```
+
+and the script copies it to `release\<version>\sg-bus-timings-<version>.aab`, once it has checked
+the signature and that nothing of the updater is left in it.
 
 Signing:
 
 - The build reads the signing key through `keystore.properties` and `android.keystore`, exactly as
-  today (`build.gradle`, `signingConfigs.release`). **Use the new upload key** for the bundles
-  (section 4): point the Play flavor at an `upload-keystore.properties` file so GitHub APKs
-  keep using the old key. Never put either file in git or in this doc.
-- `google-services.json` must be in `android/android/app/` for the build, or the app builds
+  the APKs do (`build.gradle`, `signingConfigs.release`), and `build-apk.ps1 -Aab` refuses a bundle
+  signed with any other key. Still a plan: **using a new upload key** for the bundles (section 4),
+  through an `upload-keystore.properties` file so GitHub APKs keep using the old key, would mean
+  changing that check. Never put either file in git or in this doc.
+- `google-services.json` must be in `flutter/android/app/` for the build, or the app builds
   without push and the Play build would ship with no notifications (`FIREBASE-SETUP.md`).
-- Check the bundle's certificate before uploading. `keytool -printcert -jarfile app-play-release.aab`
-  prints the SHA-256 of the key that signed it: it should be the upload key's, not the old one.
+- To check the bundle's certificate yourself, `keytool -printcert -jarfile sg-bus-timings-<version>.aab`
+  prints the SHA-256 of the key that signed it (the upload key's, once there is one).
 - Check for native libraries (16 KB rule): rename a copy to `.zip` and look for `.so` files under
   `base/lib/`; there should be none, or use Android Studio's Analyze APK/bundle.
-- File name: keep `release/3.0.0/sg-bus-timings-3.0.0.aab` for your own records. `.aab`
-  files are already ignored by git (`android/.gitignore`), so they are not committed. They are not
-  the thing to put on GitHub: GitHub gets the `github` flavor's APK.
+- File name: `release/<version>/sg-bus-timings-<version>.aab`, kept for your own records. `.aab`
+  files are kept out of git, so they are not committed. They are not the thing to put on GitHub:
+  GitHub gets the APKs.
 
 Size: an app of a few MB is far below Play's limits.
 
@@ -700,7 +691,7 @@ Size: an app of a few MB is far below Play's limits.
 |---|---|---|
 | App name | 30 characters | `SG Bus Timings` |
 | Short description | 80 characters | e.g. "Live bus arrival timings for every bus stop in Singapore" |
-| Full description | 4,000 characters | Describe the real features from `android/README.md`: widget, Get Off Alert, trip following, reminders, NFC card value. Leave out the watch app, which is not on Play. Say what it needs. Include the background-location wording only if you keep that feature. Repeated keywords can get the app suspended |
+| Full description | 4,000 characters | Describe the real features from `flutter/README.md`: widget, Get Off Alert, trip following, reminders, NFC card value. Leave out the watch app, which is not on Play. Say what it needs. Include the background-location wording only if you keep that feature. Repeated keywords can get the app suspended |
 | App icon | 512 x 512 px, 32-bit PNG with alpha, up to 1024 KB | Make from the launcher icon (`res/mipmap-*`), not scaled up from small PNGs |
 | Feature graphic | 1024 x 500 px, JPEG or 24-bit PNG, **no alpha** | Required |
 | Phone screenshots | 2 to 8 per device type, JPEG or 24-bit PNG, 320 to 3840 px per side | To be considered for recommendations, at least 4 at 1080 px or larger (1080x1920 portrait) |
@@ -817,10 +808,10 @@ Other answers:
 - **Site links.** Add the Play badge/link to the web app's "Get the Android app" bar
   (`main-site/js/app-update.js`, `offerApp()`) and the guide's `android-app.md`.
 - **Target API each year.** Google moves the requirement every August; raise `targetSdkVersion`
-  in `android/android/variables.gradle` and test, or updates stop being accepted ([target API][target]).
+  in `flutter/android/variables.gradle` and test, or updates stop being accepted ([target API][target]).
 - **Key upgrade.** Play can upgrade the app signing key once a year; if it does, update
   `assetlinks.json` with any new fingerprints.
-- **Pruning.** If the Play build is the main one, update `android/README.md`'s "If the app ever
+- **Pruning.** If the Play build is the main one, update `flutter/README.md`'s "If the app ever
   goes on Google Play..." note, which this guide replaces.
 
 ---

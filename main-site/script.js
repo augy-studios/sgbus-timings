@@ -877,7 +877,8 @@ function shareFavsWithWidgets(favs, waited = false) {
     if (window.AppBridge?.native) {
         AppBridge.ready(5000).then(() => AppBridge.has('widget') && AppBridge.call('SgBus', 'setFavourites', { stops: list })).catch(() => {});
     }
-    // The desktop app's Jump List, Dock menu and taskbar thumbnail buttons (desktop/glance.js).
+    // The Electron desktop app's Jump List, Dock menu and taskbar thumbnail buttons (its glance.js,
+    // 2.0.0 to 2.4.8; desktop/ is in git history). From 2.5.0 the app does this itself.
     window.sgbusDesktop?.favourites?.(list);
     if (!('caches' in window)) return;
     caches.open('sgbus-widgets')
@@ -1134,7 +1135,8 @@ function renderStopTools() {
             : `<button type="button" class="iconBtn" data-tool="navigate" title="${escapeHtml(tr('stop.tool.directions.title', 'Walking directions to this stop'))}">${ico('navigate')} ${escapeHtml(tr('stop.tool.directions', 'Directions'))}</button>`);
     }
     parts.push(`<button type="button" class="iconBtn" data-tool="board" title="${escapeHtml(tr('stop.tool.board.title', 'This stop’s buses full screen, like an interchange’s departure screens'))}">${ico('clock')} ${escapeHtml(tr('stop.tool.board', 'Board'))}</button>`);
-    // The desktop app: this stop's (or bus's) next buses in the tray (desktop/glance.js).
+    // The Electron desktop app: this stop's (or bus's) next buses in the tray (its glance.js, 2.0.0
+    // to 2.4.8; desktop/ is in git history). From 2.5.0 the app has its own Tray countdown.
     if (window.sgbusDesktop?.tray) {
         parts.push(`<button type="button" class="iconBtn" data-tool="tray" title="${escapeHtml(oneBus(service) && !expanded ? tr('stop.tool.trayBus.title', "Show bus {no}'s next buses in the tray, and stop it from the tray's menu", { no: service }) : tr('stop.tool.tray.title', "Show this stop's next buses in the tray, and stop it from the tray's menu"))}">${ico('bell')} ${escapeHtml(tr('stop.tool.tray', 'Tray countdown'))}</button>`);
     }
@@ -1961,7 +1963,7 @@ function syncTrayExtras() {
 // A button in the Edge Tray for SimplyGo's app, for card balances, top-ups and travel history,
 // shown on phones and tablets only.
 //
-// On Android with SG Bus Timings' own Android app installed (android/), the app opens SimplyGo
+// On Android with SG Bus Timings' own Android app installed (flutter/), the app opens SimplyGo
 // itself, by its package, as a native app does (OpenAppActivity.java): the link names this
 // app, so Chrome hands it there, from the app or from Chrome. Without it, Chrome goes to the
 // link's fallback, SimplyGo's Play Store page. On iPhone and iPad, its App Store page. Either
