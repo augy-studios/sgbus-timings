@@ -1,11 +1,56 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 10 November 2026**
+**Latest update: 16 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
 
 Newest first. Each update covers the web app and the Telegram bot.
+
+---
+
+## 16 November 2026: The desktop app, rebuilt as an app of its own (2.5.0)
+
+### Desktop app 2.5.0
+
+- **A real desktop app** - Until now the Windows, Mac and Linux app showed this website in a window. From 2.5.0 it has the Android app's own screens, laid out for a computer, around the extras only a desktop app has. Copies installed with the .exe, as an AppImage or on a Mac update themselves; the .msi, .deb and .rpm copies say a new version is out, to install over the old one. Either way, everything you've saved comes across by itself the first time it opens: favourites, places, trips, uwuCoins and settings, and the desktop app's own: the window's size, your widgets, the tray countdown, Start when I sign in and your Make it yours choices.
+- **A title bar with a command bar** - Back, Forward and Reload on the left, Copy link, the two screenshots and Restart to update on the right, and in the middle a box that finds any stop, bus or command: click it, or press Ctrl+K (⌘K on a Mac). Paste a link to the website or a uwu://sgbus/ link into it and it opens in the app.
+- **Keyboard shortcuts** - Ctrl+L or F6 for the link, Ctrl+Shift+C to copy it, Alt+Left and Alt+Right for Back and Forward, F5 to reload, Ctrl+, for Settings, Ctrl+W to close what's in front, and F11 for full screen. On a Mac, ⌘ for Ctrl, ⌘[ and ⌘] for Back and Forward, and ⌃⌘F for full screen.
+- **Made for a big window** - From 720 pixels wide, a navigation rail down the left takes the Edge Tray's place, and on a wide window a stop or a bus opens beside your list, so you keep your place in it.
+- **A narrow window too** - The window can be made as small as a phone, 360 by 520 pixels, and under 720 pixels wide it's laid out as the Android app is, with the Edge Tray. Anything open beside your list stays open as the window narrows.
+- **Right-click menus** - On a stop, a bus or a favourite: open it, pin it to a desktop widget, set it as the tray countdown, star it, or copy its link.
+- **Dialogs, not sheets** - Pickers and forms open in the middle of the window, and lists slide in from the right. Esc closes them.
+- **The Mac's menu bar** - Every command in the menus along the top of the screen, each with its shortcut.
+- **Desktop widget on a stop** - A stop's timings have Desktop widget beside Tray countdown, for a widget of that stop in one click.
+- **Your computer's colour** - Use system accent colour in Theme, or System accent in Make it yours, paints the app in your computer's own accent colour.
+- **Explorer and the live map** - Drawn as in the Android app, with Save the map to keep Singapore's streets for when you're offline.
+- **Everything it had** - The tray and its menu, the tray countdown, Bus timings widgets, your favourites in the Jump List and the Dock, Service alerts as notifications, starting when you sign in, uwu:// links, screenshots and updating itself.
+- **Closing a widget** - A Bus timings widget closed with Alt+F4 is removed, as its × does. Quitting the app keeps them all for next time.
+- **Linux** - The app now needs Ubuntu 22.04, Debian 12 or newer, and the AppImage uses your computer's own GTK 3 and WebKitGTK 4.1, which most desktops have. If the new version doesn't open, the guide says what to install.
+
+### Android app 2.5.0
+
+- **No crash coming back** - Opening the app again after a long time in the background no longer crashes it.
+- **Your trip with your other notifications** - A trip's notification, and its Live Update on Android 16, is listed with your other notifications and on the lock screen, not under Silent, with one sound as the trip starts.
+- **A shorter note under the trip bar** - A long note under the trip bar, such as a last bus missed and the way changed, takes two lines at most. Tap it for the whole note on the trip's screen.
+- **A shorter trip bar** - The bar itself takes a line for where you're going and two for the part you're on, beside smaller buttons, rather than up to a third of the screen. Tap it for the rest on the trip's screen.
+- **Start trip within reach** - On a phone, Start trip under a way, in Navigate and the route planner, has a line of its own across the page, rather than running off its edge under the Edge Tray.
+- **The first walk from Your location** - A trip from Your location starts with the walk to its first stop, from where you were when the ways were planned, not at its first ride, so on a long first walk the Get Off Alert no longer comes early.
+- **Readable in high contrast** - With High contrast on and a dark colour of your own in Theme, the writing on buttons and bars in that colour is white, so it reads. The usual colours and GTA VI keep their black writing.
+
+### Website and Android app
+
+- **No way with a bus gone for the day** - A way in Navigate that leaves now is planned again once it's ten minutes old and you come back to it, and an open way says when one of its buses has finished for the day, with the time of the last one. In the Android app, Back to Navigate from a trip no longer opens a way with a bus that has stopped running.
+- **Tuas Checkpoint** - Its stop says it's for vehicles only, as it can't be crossed on foot, with the buses across to take instead: Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link. Route lists say "no crossing on foot" there, not "passport needed", and the Telegram bot's note on the stop says the same.
+- **Causeway Link in Bus timings** - Causeway Link's buses across to Johor Bahru, CW1 to CW7, show with the shuttle buses at the stops they serve in Singapore, such as Kranji Stn, Queen St Ter and Jurong Town Hall Int, and at the checkpoints. Their times are by timetable, as Causeway Link has no live times, and Navigate doesn't use them.
+
+### Linux command line 2.5.0
+
+- No changes of its own: numbered 2.5.0 to stay in step with the apps.
+
+### Guide
+
+- The Windows, Mac and Linux app has a section of its own: installing and updating it (coming from 2.4.8 included), the window and its shortcuts, and the tray, widgets and notifications.
 
 ---
 

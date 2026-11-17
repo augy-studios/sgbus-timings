@@ -22,7 +22,7 @@ Debian 12 and later and Ubuntu 24.04 and later have a new enough Node.js. On Ubu
 install Node.js 20 from [NodeSource](https://github.com/nodesource/distributions) first.
 
 Or from the apt repository, once it's set up, so `apt upgrade` brings each new version:
-add it as in `desktop/LINUX-BUILD.md` ("An apt repository"), then
+add it as in `flutter/installers/linux/LINUX-BUILD.md` ("An apt repository"), then
 `sudo apt install sgbus-timings-cli`.
 
 **Anything else** (Fedora, Arch, a home folder without sudo): one file.
@@ -116,6 +116,6 @@ package, an `ar` archive written in plain Node, so it builds on Windows too:
 | `release/<version>/sg-bus-timings-cli-<version>-all.deb` | `/usr/bin/sgbus`, the routines' systemd user timer (`linux/`), bash completion, and the `md5sums`, `changelog.Debian.gz` and `copyright` Debian's policy asks for |
 
 Raise `version` in `package.json` with the apps' (the build refuses to run if it differs from
-`desktop/package.json`), build, and attach both files to the release (`release/README.md`).
+`flutter/pubspec.yaml`'s), build, and attach both files to the release (`release/README.md`).
 `SGBUS_SITE=http://127.0.0.1:8766` points it at another copy of the site, such as
 `docs-site/screenshots/serve.cjs`.

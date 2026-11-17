@@ -1,0 +1,338 @@
+# SG Bus Timings for Android, Windows, macOS and Linux
+
+The Android app and, from 2.5.0, the desktop app, both `org.uwuapps.sgbus`, from this one Flutter
+project. The desktop app has the same screens with a desktop layer around them (`lib/desktop/`):
+see "The desktop app" below, and `installers/README.md` for its installers.
+
+From 2.4.0 the Android app is a Flutter app: every screen is drawn in
+Dart (`lib/`), with full parity with the web app at sgbus.uwuapps.org, whose JS
+(`main-site/js/`, `main-site/script.js`) and guide (`docs-site/content/web/`) are its spec.
+Each feature is ported with the site's storage keys, words (`assets/i18n/`, copied from the
+site by `tool/sync_i18n.dart`) and API calls; `PORTING.md` maps each part of the site to its
+Dart, and says what's left. The native parts (`android/app/src/main/java/org/uwuapps/sgbus/`)
+are the same plugins as before, reached over a method channel (`lib/native/native_bridge.dart`,
+`bridge/`), so the Java didn't need rewriting.
+
+Versions 2.0.0 to 2.3.1 were the site in Capacitor's WebView. 2.4.0 brings everything they kept
+(the WebView's `localStorage`) across on its first open (`lib/data/migrate.dart`,
+`MigratePlugin`), and the Android app's Material You look is on by default (Theme turns it off
+for the UwU Apps theme). Versions 1.0.0 to 1.2.0 were a Bubblewrap Trusted Web Activity. It's
+the same package and signing key throughout, so each installs over the last as an update.
+
+Shared as an APK file through GitHub Releases: see `release/README.md`. It updates itself
+from there.
+
+## What it adds to the site
+
+The third column names the site's side; its Dart port is listed in `PORTING.md`.
+
+| Feature | Native side (`android/app/src/main/java/org/uwuapps/sgbus/`) | Site side (`main-site/`) |
+|---|---|---|
+| **Trip following with the screen off**: location all trip long, an ongoing "On a trip" notification with End trip, and the Get Off Alert over the lock screen. The screen no longer has to stay on. From 2.0.8, walking or riding by your average speed (up to 10 km/h walking, a bus or train's 40 km/h or so riding), as the page can't count steps with the screen off. From 2.2.7, the notification shows the part you're on: a bus, a train or walking for its icon, tinted the line's colour on a train, and the bus or line ("Bus 174", "EW Line") by the app's name; an older app keeps its own icon | `TripPlugin`, `TripService` (a foreground service of the location type; `ic_trip_bus`, `ic_trip_train` and `ic_trip_walk` in `res/drawable/`), `Pace` | `js/trip.js` (`nativeLook`) |
+| **Notifications from the server**: Service Alerts, and the Get Off Alert if the app was closed mid-trip, through Firebase Cloud Messaging, as the WebView has no Web Push | `PushNotificationsPlugin`, `MessagingService`, `Notifications` (channels) | `js/alerts.js`, `api/_push/fcm.js`, `api/_push/send.js` |
+| **New versions as notifications** (2.1.1): "SG Bus Timings 2.1.1 is out" the moment a release is published, for phones that turned on **New versions of the app** in Service alerts. A GitHub webhook calls the site, which pushes to the FCM topic `sgbus-releases` the switch joins; tapping it opens `UpdateActivity`'s check for that version. Setup: `FIREBASE-SETUP.md` | `SgBusPlugin.releases` / `setReleases` (`firebase-messaging`), `Notifications` (`releases` channel), `MainActivity.onNewIntent`, `UpdateActivity.check` | `js/app-update.js`, `api/push/release.js`, `api/_lib/release.js`, `api/_push/fcm.js` (`sendToTopic`) |
+| **The phone's calendar**, for Navigate's Calendar tab | `PhoneCalendarPlugin`, `CalendarReader` | `js/calendar.js` |
+| **Card value**: an EZ-Link or NETS FlashPay card's stored value and recent rides over NFC, and from 2.0.8 Android offering the app when a card's held to the phone (`TECH_DISCOVERED`, `res/xml/nfc_tech.xml`), straight to it while it's open (foreground dispatch) | `CardPlugin`, `MainActivity` | `js/card.js` |
+| **Bus timings widget** on the home screen: any stop, resizable, refreshed every 15 minutes or on tap. From 2.1.1 the widget picker shows it with example buses (`res/layout/widget_timings_preview.xml` on Android 12 and later, `drawable-nodpi/widget_preview.png` and its `-night` before) | `TimingsWidget`, `TimingsWidgetService`, `WidgetConfigActivity`, `WidgetStore`, `WidgetRefreshWorker` | favourites from `script.js` (`shareFavsWithWidgets`) |
+| **Picture-in-picture** during a trip or with the live map open | `MainActivity` (PiP), `SgBusPlugin.pip` | `js/pip.js` |
+| **Share sheet** for every share button (the WebView has no `navigator.share`) | `SgBusPlugin.share` | `js/app-bridge.js` |
+| **Telegram and WhatsApp** on the share card open the app's own chat picker, not its web link through the browser | `SgBusPlugin.share` (`app`) | `js/share.js` (`sendTo`) |
+| **Offline Sharing** (2.1.0), the share card's fifth button: the link handed to a phone nearby with no internet. By tap, the phone answering as an NFC Type 4 tag with the link on it (host card emulation), which any phone reads as a tag, opening it in this app (`NDEF_DISCOVERED`) or the browser; and by Google's Nearby Connections (`play-services-nearby`) to a phone with the Edge Tray's Receive nearby open | `OfflineSharePlugin`, `ShareTagService` (`res/xml/share_tag_service.xml`), `MainActivity.tappedLink` | `js/offline-share.js`, `js/share.js` (`offlineUrl`) |
+| **NFC stickers** (2.1.0): a link written onto a blank sticker, in reader mode | `OfflineSharePlugin.write` | `js/offline-share.js` (`sticker`) |
+| **Reminders** (2.1.0), with the app closed: Timings near a stop (Play services geofences around picked favourites, a quiet notification refreshed by WorkManager), Time to leave (a 15-minute WorkManager job planning calendar events through `/api/nav`, then an exact alarm), last bus (exact alarms from LTA's last bus times), "On a bus?" (Play services activity transitions). Set again after a restart or an update | `RemindersPlugin`, `NearStops`, `LeaveTime`, `LastBus`, `OnABus`, `BootReceiver` | `js/reminders.js` |
+| **Bus home and Bus to work** (2.1.0): dynamic launcher shortcuts and Quick Settings tiles, from Places' Home and Work | `PlaceShortcuts`, `PlaceTile`, `SgBusPlugin.setPlaces` | `js/reminders.js` (`sendPlaces`) |
+| **Voice search** (2.1.0): Android's speech screen (`RecognizerIntent`), so no microphone permission | `SgBusPlugin.listen` | `js/voice.js` |
+| **Scan a stop's code** (2.1.0): the page's camera, read by ML Kit's on-device text recognition (`play-services-mlkit-text-recognition`) | `ScanPlugin` | `js/scan.js` |
+| **Flag-down screen** (2.1.0): full brightness and a steady torch | `SgBusPlugin.flag` | `js/flag.js` |
+| **Get Off Alert in earphones only** (2.1.0): a sound-free channel, and the beeps on the media stream when earphones are in | `TripPlugin.alert` (`quiet`), `SgBusPlugin.audioOut` | `js/trip.js`, `js/reminders.js` |
+| **Battery optimisation**, asked once on the first trip (2.1.0) | `TripPlugin`, `SgBusPlugin.batteryIntent` | |
+| **Wear OS** (2.1.0): favourite stops handed to the watch app over the Wearable Data Layer | `WearSync`, and the watch app in `android/wear/` (its README) | `script.js` (`shareFavsWithWidgets`) |
+| **Opening SimplyGo** itself, not its store page | `OpenAppActivity`, reached by `SgBusPlugin.shouldOverrideLoad` | `script.js` ("SimplyGo") |
+| **Opening MyICA Mobile** (2.2.1), from a trip to a checkpoint, for its immigration QR code | `OpenAppActivity` (`myica`), the `myica` feature | `js/trip.js` ("MyICA"), `js/network.js` (`ICA_CHECKPOINTS`) |
+| **Your phone's colours** (2.3.0), a secret on Android 12 and later: Material You's tonal palettes, read each time the app opens or comes back, for the page to make its whole theme from (the `phonecolours` feature) | `SgBusPlugin.phoneColours` | `js/colours.js` (`fromPhone`), `js/eggs.js` |
+| **The app's language** (2.3.1): Android's per-app languages (Settings, Apps, SG Bus Timings, Language, on Android 13 and later; AppCompat keeps it before that), two-way with the page's own Language: picked in either, the other follows (the `applang` feature, `info`'s `lang`, and `language` events), so the app's own words match | `SgBusPlugin.setLanguage`, `appLanguage`, `onLanguage`; `MainActivity.onConfigurationChanged`; `res/xml/locales_config.xml`, `AppLocalesMetadataHolderService` in `AndroidManifest.xml` | `js/app-bridge.js` (`tellLanguage`), `js/i18n.js` (`set`, `unset`) |
+| **Updating itself** from GitHub Releases: the update bar, and from 2.0.8 the Edge Tray's "Check for app updates". On a Samsung device (Android 14 and later), an update that doesn't install is put down to Auto Blocker, with how to turn it off and a button to Security settings, as nothing public says whether it's on. From 2.2.8 a Material 3 page in the phone's own colours (Material You), with a changelog of each release's notes and a wavy progress bar (see "The updater's page" below) | `UpdateActivity`, `WavyProgressView`, `res/layout/update_*.xml` | `js/app-update.js`, `api/app-release.js` |
+| **Links**: the site's own (`https://sgbus.uwuapps.org/...`, verified by `.well-known/assetlinks.json`), `uwu://sgbus/` links, the launcher shortcuts, and places shared into it from Google Maps | `MainActivity` | `script.js` (`routeFromHash`, `routeFromShare`) |
+
+`SgBusPlugin` also tells the page what this build can do (`info`, with `features`), posts
+notifications for it, and opens Android's settings pages. `MainActivity` makes Back go back
+through the page's history, closing what's open over the page; from 2.2.7 (`backtwice`), with
+nothing left to close, the first press shows "Press back again to exit" (`exit_hint` in
+`res/values/strings.xml`) and a second within two seconds sends the app to the background. Also
+from 2.2.7, the WebView's text zoom follows the phone's font size (`fitTextSize`, checked each
+time the app comes back).
+
+The site keeps its own versions of all of these that a browser can do (the Get Off Alert
+with the screen on, Web Push, the iCal calendar link), and only uses the app's when it's
+running in it. The website and PWA lose nothing.
+
+### Permissions
+
+| Permission | Asked | For |
+|---|---|---|
+| Location (while using) | First time the site asks: Near me, Navigate, the live map, a trip | The site's own location, and `TripService` |
+| Location all the time (`ACCESS_BACKGROUND_LOCATION`) | Once, on the first trip, after location's allowed. Android 11 and later ask it on a settings page | Not needed for a trip, which runs as a foreground service; asked as decided for future features. The trip works without it |
+| Notifications | First trip, or turning on Service alerts | Alerts, and the trip's own notification |
+| Calendar | Only when you pick "Use this phone's calendar" | `PhoneCalendarPlugin` |
+| NFC | Not asked: Android grants it | `CardPlugin` |
+| Install unknown apps | First update | `UpdateActivity` |
+
+The Google Play build (`powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1 -Aab`, into
+`release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity` and
+`REQUEST_INSTALL_PACKAGES`, as Play updates apps itself: `app/src/play/AndroidManifest.xml`, and
+`playBuild` in `lib/native/native_bridge.dart` for the update bar and buttons. The same manifest
+removes what Play keeps for other kinds of app, and `build-apk.ps1 -Aab` refuses a bundle that still
+has them:
+
+| Permission | On Google Play instead |
+|---|---|
+| `USE_EXACT_ALARM` | `SCHEDULE_EXACT_ALARM`, which the person allows in Android's Alarms & reminders. Without it, routines, last bus and Time to leave still come, but Android can deliver them late |
+| `ACCESS_BACKGROUND_LOCATION` | No Timings near a stop. Trips carry on through their foreground service, and Time to leave plans from Home when the phone can't say where it is |
+| `ACTIVITY_RECOGNITION` | No "On a bus?" |
+| `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` | A trip doesn't ask; Android's own list stays a button away |
+
+Play Console still needs its declaration for the foreground service. It's signed with
+`android.keystore`. If Play App Signing
+re-signs it with Google's key, add that key's SHA-256 (Play Console, **App signing**) to
+`main-site/.well-known/assetlinks.json`, or links won't open the app for anyone who installed it
+from Play.
+
+### Card value
+
+CEPAS cards (EZ-Link and NETS FlashPay) hold their value in a purse that CEPAS's Read Purse
+command reads without a key. `CardPlugin` reads it in NFC reader mode and nothing is written.
+The layout is FareBot's and Metrodroid's, which read the same cards. Cards on SimplyGo's
+account-based ticketing keep their value in the account, so the card's own figure can be out
+of date for them, and the page says so. **It hasn't been tried on a real card yet**: if the
+first read says "couldn't be read as an EZ-Link or NETS FlashPay card", the command bytes in
+`READ_PURSE` are where to look.
+
+## The desktop app
+
+From 2.5.0, SG Bus Timings for Windows, macOS and Linux is this project too: the Android app's
+screens, in Flutter, with a desktop layer around them, replacing the Electron app (2.0.0 to 2.4.8,
+which showed the site in a window; its code was `desktop/`, removed in 2.5.0 and kept in git
+history). `docs/desktop-features-spec.md` lists every desktop feature and
+`docs/flutter-desktop-app-spec.md` how each is built; the guide's pages for people are
+`docs-site/content/desktop/`.
+
+The shared screens never import the desktop layer. They ask `Native.has('desktop')`, and reach
+what only the desktop can do (the tray countdown, a desktop widget, full screen, notifications,
+links) through the same bridge the phone's Java answers (`lib/native/native_bridge.dart`): on a
+desktop, `main.dart` points it at `lib/desktop/host.dart` instead. Anything only a phone has (NFC,
+the camera, reminders, the Get Off Alert with the screen off) fails there as `unavailable`, and the
+screen takes the website's plain path.
+
+### What it adds
+
+| Feature | Where (`lib/desktop/` unless it says) |
+|---|---|
+| **Start-up order**: the update window, then the app hidden until its first frame, Make it yours the first time, then the tray, widgets and checks | `desktop_main.dart`, `desktop.dart` (the window: opens maximised, 1120 x 760 un-maximised, at least 360 x 520, size and place kept; close to the tray; one copy at a time) |
+| **The title bar** (40 px, the brand colour): Back and Forward through the app's own history, Reload, the command bar, Copy link, the two screenshots, Restart to update, and on Windows and Linux its own window buttons | `title_bar.dart`, `chrome.dart`, `screenshot.dart`; the history is `app/nav.dart`'s `ViewHistory` |
+| **The command bar** (Ctrl/⌘+K, F, L or F6): stops, buses and the app's commands; a pasted site address, `#address` or `uwu://sgbus/` link opens in the app, another UwU app's link goes to that app, anything else to the browser | `command_bar.dart`, `app/links.dart` (`Links.read`) |
+| **Keyboard shortcuts** on all three systems, and the **macOS menu bar** (App, File, Edit, View, Window, Help) | `menubar.dart` (the full list is in its header) |
+| **Navigation rail and split panes**: from 720 px a rail replaces the Edge Tray; above 1024 px the page's list sits in a 360 to 400 px pane and a stop or bus opens beside it | `rail.dart`, `chrome.dart`, `app/shell.dart`, `app/nav.dart` (`DeskPanes`) |
+| **Dialogs and side panels** in place of bottom sheets, **right-click menus** on stop, bus and favourite rows, 400 ms tooltips, Windows and Linux scrolling | `adaptive.dart` (`AppSheet.show`, `DeskContextMenu`, `DeskActions`) |
+| **Make it yours**: language, start at sign-in, light or dark, brand colour or System accent; its own window and engine, its own words in four languages | `welcome.dart` |
+| **The look**: the UwU Apps theme by default (Material You off), or the computer's accent colour (`useSystemAccent`) | `desk_theme.dart`, `theme/theme.dart` |
+| **The tray** (the menu bar on macOS) and its menu | `tray.dart` |
+| **Tray countdown**, favourites in the **Jump List**, the taskbar's **thumbnail buttons** and the **Dock** menu and badge | `glance.dart`, and `packages/sgbus_desktop/` |
+| **Bus timings widgets**: frameless windows on the desktop, each its own engine (`desktop_multi_window`), asking the main window over `sgbus/main` for anything kept | `widgets_window.dart` |
+| **Service Alerts as notifications**: no push to a computer, so it checks every minute by the server's rules (`main-site/api/_push/alerts.js`) | `alerts_poll.dart`, `notify.dart` |
+| **Updates**: reads `latest*.yml` from the newest release, SHA-512 checked, installs by install type; the small update window | `updater.dart`, `splash.dart`; `installers/` writes the files |
+| **Links**: claims `uwu://` and hands other UwU apps' links on; the site's own links open in the app, others in the browser | `links.dart`, `desktop.dart` (`fromAppLink`), `host.dart` |
+| **Start at sign-in**: on from the first run of an installed copy until it's turned off (`loginChosen`) | `desktop.dart`, `packages/sgbus_desktop/` (Windows' `Run` value as Electron wrote it) |
+| **Location on Linux** where GeoClue can't: a NetworkManager Wi-Fi scan looked up on BeaconDB | `location.dart`, `data/location.dart` (`Locate.fallback`) |
+| **The live map**: MapLibre GL JS 5.24.0 (bundled, `assets/desktop/map/`) in a WebView, behind the same controller interface as Android's native map, with a local server on 127.0.0.1 proxying OpenFreeMap through a disk cache, and Save the map | `lib/features/map/sg_map.dart`, `lib/features/map/web/` (`web_map_view.dart`, `web_map_controller.dart`, `map_commands.dart`, `map_server.dart`, `tile_cache.dart`, `map_prefetch.dart`) |
+| **The Electron app's data, brought across once**: its `localStorage` (a Chromium LevelDB, read in pure Dart) into the app's own store, and its `settings.json` read in place | `leveldb.dart`, `host.dart` (`Migrate.read`), `lib/data/migrate.dart`, `settings.dart` |
+
+`settings.dart` keeps the desktop's own settings in `settings.json`, in the folder the Electron
+app used: `%APPDATA%\SG Bus Timings`, `~/Library/Application Support/SG Bus Timings` or
+`~/.config/SG Bus Timings`. Its header lists every key and which file writes it.
+
+The runners: `windows/` (one copy through a named mutex, the AppUserModelID, the window hidden
+until Dart shows it), `macos/` ("SG Bus Timings.app", bundle id `org.uwuapps.sgbus`, the `uwu`
+scheme, stays alive with no window, App Sandbox off so it can update itself and read the Electron
+app's folder), and `linux/` (a unique `GtkApplication`, id `org.uwuapps.sgbus`). The local plugin
+`packages/sgbus_desktop/` does what no package does: each window's native handle, the Jump List,
+thumbnail buttons, start at sign-in, the Dock menu and badge, and links that arrive while the app
+starts.
+
+### Flutter 3.50.0
+
+Build the app, desktop and Android, with **Flutter 3.50.0** (Dart 3.14), as `.github/workflows/`
+pins it. `window_manager` 0.7 and `tray_manager` 0.9 are built on `nativeapi` 0.6, and all three
+need it: on an older Flutter, `flutter pub get` can't get them. (Until 17 November 2026 the app was
+on Flutter 3.47.9, because `nativeapi` 0.5.10 didn't compile on 3.50.)
+
+Flutter 3.50 moves Material and Cupertino into packages of their own (`material_ui` and
+`cupertino_ui`), so `flutter analyze` lists each `package:flutter/material.dart` import as a
+deprecation info. They still work; CI runs the analyser with `--no-fatal-infos`. Moving the imports
+over is a change of its own.
+
+## The project
+
+```text
+flutter/
+  pubspec.yaml                 the app's version, its packages and assets
+  lib/                         the app, in Dart: app/ (shell, Edge Tray, links), data/, features/,
+                               theme/, i18n/, native/, sync/, widgets/, and desktop/ (the desktop
+                               layer); the desktop map is features/map/web/
+  assets/i18n/, i18n_app/      the site's words, and the app's own
+  assets/desktop/              the desktop's icons, and map/ (MapLibre GL JS and its page)
+  test/                        unit tests (journeys, calendar, rewards, sync, words checked
+                               against the site), test/desktop/ (the desktop layer and its map)
+                               and test/shots/, the guide's screenshots
+  tool/                        fixtures and expected results for the tests, and
+                               playwright/map.test.cjs, the desktop map's page in Chromium
+  android/                     the Gradle project: app/ (the native plugins), wear/ (Wear OS)
+  windows/, macos/, linux/     the desktop runners
+  packages/sgbus_desktop/      the desktop's own native plugin (Windows, macOS, Linux)
+  installers/                  the desktop installers and update files (installers/README.md)
+  build-apk.ps1                builds the signed APKs into release/<version>/
+  FIREBASE-SETUP.md            setting up push notifications
+  PORTING.md                   each part of the site and its Dart, and the desktop's parts
+  DESKTOP-HANDOVER.md          the desktop rewrite: what's done and what's left
+```
+
+## Build the APK
+
+```powershell
+powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1
+```
+
+It runs `flutter build apk` for the phone (ARM, 32 and 64 bit, in one APK, as the updater
+fetches one file) and Gradle for the watch, checks both signatures, then puts them in
+`release/<version>/`. It needs Flutter, a JDK 21 or later and the Android SDK.
+
+A release build of the phone's app goes through R8, which shrinks and renames its Java, as Google
+Play's DEX code optimisation check wants. What's looked up by name stays out of that:
+`android/app/proguard-rules.pro` keeps every plugin and its annotated methods, so a new plugin or
+`@PluginMethod` needs no new rule, but anything else found by reflection does. Try a change like
+that on a release build, as a debug one isn't shrunk. A crash's names come back with that build's
+`mapping.txt`: Play gets it inside the bundle, and the APK's is kept beside it in
+`release/<version>/`.
+
+On Linux or macOS, `flutter build apk --release --target-platform android-arm,android-arm64`
+here, and `android/gradlew :wear:assembleRelease`.
+
+For a new version, raise `version:` in `pubspec.yaml` (`2.4.0+27`: the name, and after the `+`
+the `versionCode`, which a phone only takes higher as an update); the watch and the desktop
+installers read it too. Raise `appVersion` in `lib/app/version.dart` (what the desktop app says it
+is; `test/desktop/version_test.dart` fails until the two match, once its skip is removed at
+2.5.0) and `cli/package.json`'s `version`
+(`cli/build.mjs` stops until it matches) to the same: the apps share version numbers.
+
+Without `android/app/google-services.json` the app builds and works, but can't get
+notifications from the server. See `FIREBASE-SETUP.md`.
+
+To try it on a phone over USB, `flutter run` with the phone plugged in and USB debugging on.
+`flutter test` runs the tests; `flutter test test/shots/` renders the guide's screenshots into
+`docs-site/public/screenshots/android/`, at 3x, from fixed data (`test/shots/harness.dart`).
+`test/shots/desktop_shots_test.dart` renders the desktop app's into
+`docs-site/public/screenshots/desktop/`, at 2x; the final set is made on Windows.
+
+## Build the desktop app
+
+GitHub Actions builds every desktop installer when a release is published, and adds them to it
+(`.github/workflows/build-desktop.yml`; `release/README.md`). `desktop-check.yml` runs the
+analyser, a debug build on each system and the tests on every push to `desktop-flutter-rewrite`.
+To build one yourself, with Flutter 3.50.0, from this folder:
+
+| System | Needs | Build |
+|---|---|---|
+| Windows (x64 PC, or an Arm64 PC for Arm64) | Visual Studio with "Desktop development with C++" | `flutter build windows --release` |
+| macOS (either processor) | Xcode and CocoaPods | `FLUTTER_XCODE_ARCHS=arm64 flutter build macos --release` (or `x86_64`) |
+| Linux (a machine of that processor) | `clang cmake ninja-build pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev` | `flutter build linux --release` |
+
+Flutter can't cross-build: a Mac app only builds on a Mac, and Windows and Linux only for the
+processor they run on. `installers/README.md` packs a build into the installers, and
+`installers/linux/LINUX-BUILD.md` covers a Linux machine of your own.
+
+To try it from source, `flutter run -d windows` (or `macos`, `linux`). Run from source, it doesn't
+update itself or start at sign-in; `SGBUS_SPLASH_DEMO=1` shows the update window going through
+its steps with made-up numbers. It uses the same settings folder as an installed copy.
+
+Tests: `flutter test` runs everything, the desktop layer's in `test/desktop/`. The desktop map's
+page has its own test in Chromium, with Playwright installed globally (`npm i -g playwright`,
+then `npx playwright install chromium`):
+
+```bash
+NODE_PATH="$(npm root -g)" node --test tool/playwright/map.test.cjs
+```
+
+## The signing key
+
+`android.keystore` and its passwords in `keystore.properties` are kept out of git. **Back both
+up somewhere safe.** An APK signed with a different key can't update one already installed, and
+the site's `main-site/.well-known/assetlinks.json` lists this key's SHA-256 fingerprint, which is
+what lets the site's links open in the app:
+
+```text
+4E:D5:3F:F1:F4:CB:4E:5E:A7:CB:C1:28:46:48:F6:2E:B3:90:47:EB:C2:9B:25:20:F5:7D:FE:5B:76:CB:44:EB
+```
+
+`build-apk.ps1` refuses an APK signed with any other key.
+
+## Google's developer verification
+
+From 30 September 2026, Android in Singapore (with Brazil, Indonesia and Thailand) checks that
+apps come from a verified developer, starting with installs through participating app stores,
+with more to follow in 2027. To stay ahead of it and keep Play Protect from warning about the
+APK:
+
+1. Sign up on the [Android Developer Console](https://developer.android.com/developer-verification/guides/android-developer-console).
+   **Full distribution** (US$25 once, ID check) to share it with anyone; **limited** (free, up
+   to 20 named devices) only for testing.
+2. Register the package `org.uwuapps.sgbus` with the SHA-256 fingerprint above.
+3. As the package already exists, the Console asks for an APK signed with this key to prove
+   it's yours: it says what to put in it.
+
+Check [Google's guide](https://developer.android.com/developer-verification/guides) for the
+current steps; they were still settling in October 2026.
+
+## Install it
+
+Copy the APK to the phone and open it. Android asks to allow installing apps from wherever it
+was opened (Files, Chrome, Telegram); allow it once. A copy of `org.uwuapps.sgbus` signed with
+another key, say from PWABuilder, has to be uninstalled first.
+
+On a Samsung phone or tablet with Auto Blocker on (One UI 6 and later; on by default on newer
+ones), only apps from the Play Store or Galaxy Store install, whatever "Install unknown apps"
+says, and that goes for the app's own updates too. Turn it off in **Settings** > **Security and
+privacy** > **Auto Blocker** to install or update, then back on, or let "Turn on automatically"
+do it after 30 minutes where One UI has it.
+
+## Changing it
+
+- **A screen**: its feature in `lib/features/`, its way in registered in
+  `lib/features/registry.dart` (`AppNav.register`), the site's words through `tr()`.
+- **Permissions, activities, links**: `android/app/src/main/AndroidManifest.xml`.
+- **A native plugin of this app's own**: a `Plugin` class like `CardPlugin`, registered in
+  `MainActivity`, called from Dart with `Native.call('Name', 'method', {...})`.
+- **A Flutter package**: `flutter pub add` it; check what permissions its Android manifest adds.
+
+### The updater's page
+
+`UpdateActivity` is the app's one screen in Material 3 (Material Components, `materialVersion`
+in `android/variables.gradle`): `UpdateTheme` in `res/values/update.xml` takes its colours from
+the wallpaper on Android 12 and later (`DynamicColors`), and before that from the tonal palette
+of the app's green, light and dark (`values-night/update.xml`). Its icons are the site's
+(`update_ic_*.xml`, from `main-site/js/icons.js`). The changelog is `main-site/api/app-release.js`'s
+`history`: each release's notes on GitHub, its "## What's new" read into groups by their "###"
+headings, so write the notes as `release/README.md` shows for them to show well. Material's
+progress bar has no wave for views, so `WavyProgressView` draws Material 3 Expressive's.
+
+To see each step on an emulator, a debuggable build (`flutter build apk --debug`, never a release)
+takes two extras: `org.uwuapps.sgbus.update.TEST_JSON`, a file in the app's cache to read in
+place of `/api/app-release`, and `org.uwuapps.sgbus.update.TEST_VERSION`, a version to be. For
+example, as 2.2.7 with 2.2.8 out, its JSON saved from the site with a 2.2.8 release added:
+
+```bash
+adb push release.json /data/local/tmp/
+adb shell "run-as org.uwuapps.sgbus cp /data/local/tmp/release.json cache/"
+adb shell am start -a android.intent.action.VIEW -d org.uwuapps.sgbus://update/check   -n org.uwuapps.sgbus/.UpdateActivity   --es org.uwuapps.sgbus.update.TEST_JSON release.json --es org.uwuapps.sgbus.update.TEST_VERSION 2.2.7
+```
+
+`adb shell cmd uimode night yes` shows it dark. Update downloads that release's real APK, which
+then isn't installed as it isn't newer than the build you're running.

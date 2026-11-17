@@ -1,27 +1,34 @@
-# Builds the desktop app (desktop/) for macOS, Windows and Linux on GitHub's own machines, each
-# on its own system: a Mac app can only be built on a Mac, and the .msi only on Windows.
+# Builds the desktop app (the Flutter project in flutter/) for Windows, macOS and Linux on GitHub's
+# own machines, each on its own system and processor: Flutter can't build a Mac app anywhere but a
+# Mac, nor cross-build Windows or Linux for another processor. The packaging is done by the
+# scripts in flutter/installers/, which say what each file is and why it's named as it is.
 #
 # - A release published: built from its tag and added straight to it, beside the APK; unless it
 #   has them all already (a draft made by a hand run, say). A push builds nothing: publishing's
 #   own tag would otherwise build everything a second time, for nowhere.
 # - Run by hand (Actions > Build desktop apps > Run workflow): with a release's tag, such as
-#   android-v2.0.3, the installers are added to that GitHub release, replacing any of the same
+#   android-v2.5.0, the installers are added to that GitHub release, replacing any of the same
 #   name. With no release of that tag yet, a draft one is made for them: add the APK to it and
 #   publish it. Until then nobody's app sees it, as a draft is never the latest. With the tag left
 #   empty, they're kept on the run, under Artifacts, for 30 days, to try a build.
 #
-# None of them is signed with a paid certificate: the Mac app is signed ad-hoc, so macOS says it
-# "can't be opened" the first time, and Windows SmartScreen warns before the first run
-# (desktop/README.md).
+# What's built, under the Electron app's file names so its updater installs this one:
+#   Windows  sg-bus-timings-<v>-setup.exe (x64 and Arm64 in one), sg-bus-timings-<v>.msi (x64),
+#            latest.yml. The x64 and Arm64 halves are built on an x64 and an Arm machine, then one
+#            job packs both into the .exe and builds the .msi.
+#   macOS    sg-bus-timings-<v>-mac-arm64.zip/.dmg and -mac-x64.zip/.dmg, latest-mac.yml
+#   Linux    .deb, .rpm and .AppImage for x64 and arm64, latest-linux.yml, latest-linux-arm64.yml
+#
+# The tests run first (on Linux, whose fonts the screenshot tests are drawn with); nothing is
+# built from code that fails them.
+#
+# None of them is signed with a paid certificate: the Mac app is signed ad hoc, so macOS says it
+# "can't be opened" the first time, and Windows SmartScreen warns before the first run.
 #
 # The command-line edition for Linux (cli/, from 2.2.2) is built and checked with dpkg-deb on
 # every run, and goes on the release with them: its single file `sgbus` and its .deb.
 #
-# Windows' .exe is one installer for both x64 and Arm (it installs whichever the PC is); the
-# .msi is x64 only, as electron-builder's WiX can't make an Arm one. Linux's .deb, .rpm and
-# .AppImage are each built for x64 and arm64, the Arm ones cross-built on the same x64 machine.
-#
-# With the APT_SIGNING_KEY secret set (desktop/LINUX-BUILD.md, "An apt repository"), the newest
+# With the APT_SIGNING_KEY secret set (flutter/installers/linux/LINUX-BUILD.md, "An apt repository"), the newest
 # published release's .deb files also go into a signed apt repository on GitHub Pages, so
 # `apt upgrade` brings each new version. Without the secret that job is skipped.
 name: Build desktop apps
@@ -30,30 +37,38 @@ on:
   workflow_dispatch:
     inputs:
       release_tag:
-        description: "A release's tag to add the installers to, such as android-v2.0.3 (a draft release is made if there's none). Empty: only keep them on the run."
+        description: "A release's tag to add the installers to, such as android-v2.5.0 (a draft release is made if there's none). Empty: only keep them on the run."
         required: false
         default: ''
   release:
     types: [published]
 
-permissions:
-  contents: write
+# Nothing by default: each job asks for only what it needs.
+permissions: {}
 
 concurrency:
   group: build-desktop-${{ github.ref }}-${{ github.event.release.tag_name || inputs.release_tag }}
   cancel-in-progress: true
 
+env:
+  # Flutter 3.50.0 (Dart 3.14), which nativeapi 0.6, window_manager 0.7 and tray_manager 0.9
+  # need: an older Flutter can't get the packages in flutter/pubspec.lock.
+  FLUTTER_VERSION: 3.50.0
+  # The release to add the files to; empty for a hand run that only keeps them on the run.
+  RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+
 jobs:
   # Where the installers go, and whether they need building at all.
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # to make a draft release for a hand run's tag
     outputs:
       build: ${{ steps.check.outputs.build }}
       cli: ${{ steps.check.outputs.cli }}
       apt: ${{ steps.check.outputs.apt }}
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - id: check
         env:
@@ -90,101 +105,198 @@ jobs:
             fi
           fi
 
-  build:
+  # The Flutter tests, once, before anything's built. On Linux: the screenshot tests are drawn
+  # with its fonts (DejaVu). On Ubuntu 22.04, the machine the Linux files are built on and the one
+  # desktop-check.yml tests on, rather than ubuntu-latest, which is moving on to 26.04.
+  test:
     needs: release
     if: needs.release.outputs.build == 'true'
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            name: mac
-            build: npm run build:mac
-            # latest-mac.yml and the .zip are what the Mac app reads to update itself (updater.js).
-            files: |
-              dist/*.dmg
-              dist/*.zip
-              dist/*.blockmap
-              dist/latest-mac.yml
-          - os: windows-latest
-            name: windows
-            build: npm run build:win
-            # latest.yml and the .exe's blockmap: the .exe's own updates. The .exe carries the
-            # app for x64 and for Arm, so one file, under its old name, updates both.
-            files: |
-              dist/*-setup.exe
-              dist/*.msi
-              dist/*.blockmap
-              dist/latest.yml
-          - os: ubuntu-latest
-            name: linux
-            build: npm run build:linux
-            # latest-linux.yml and latest-linux-arm64.yml: the AppImages' updates, x64 and Arm.
-            # Cross-built here rather than on an Arm runner: the app has no native modules, so
-            # packaging it for Arm runs nothing on Arm, and one job writes both .yml files.
-            files: |
-              dist/*.deb
-              dist/*.rpm
-              dist/*.AppImage
-              dist/latest-linux.yml
-              dist/latest-linux-arm64.yml
-    name: ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
+    permissions:
+      contents: read
     defaults:
       run:
-        working-directory: desktop
-        shell: bash
-    env:
-      # No paid certificate: don't look for one (package.json signs the Mac app ad-hoc).
-      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+        working-directory: flutter
     steps:
       - uses: actions/checkout@v4
         with:
           # A release builds from its own tag; a hand run from the branch it's on.
           ref: ${{ github.event.release.tag_name || github.ref }}
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: desktop/package-lock.json
+      - name: Install Flutter
+        working-directory: .
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
 
-      - run: npm ci
-
-      # The .rpm needs rpmbuild, which electron-builder's fpm calls.
-      - name: Install rpm
-        if: runner.os == 'Linux'
+      # flutter test builds every package's native code for this machine first: cnativeapi (under
+      # window_manager and tray_manager) needs GTK 3, X11 and Xi through pkg-config, so the same
+      # packages as desktop-check.yml's Linux job. Without them the tests, and so every installer
+      # after them, never run.
+      - name: Install build packages and fonts
         run: |
           sudo apt-get update
-          sudo apt-get install -y rpm
+          sudo apt-get install -y clang cmake ninja-build pkg-config fonts-dejavu-core \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
 
-      - name: Build
-        run: ${{ matrix.build }}
+      - run: flutter pub get
+      - run: flutter test
 
-      - name: List what was built
-        id: files
-        env:
-          FILES: ${{ matrix.files }}
+  # Windows, one half per processor, each on its own machine. The halves go to the next job.
+  windows:
+    needs: [release, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: windows-latest
+          - arch: arm64
+            os: windows-11-arm
+    name: windows-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: flutter
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      # Flutter from its own repository at the version's tag: on the Arm machine it then fetches
+      # its Arm64 tools for itself.
+      - name: Install Flutter
+        working-directory: .
         run: |
-          version="$(node -p "require('./package.json').version")"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          # The files, one per line, for the release upload; and with desktop/ before each for
-          # upload-artifact, which doesn't follow working-directory.
-          {
-            echo 'list<<EOF'
-            echo "$FILES" | sed '/^$/d; s|^|desktop/|'
-            echo EOF
-          } >> "$GITHUB_OUTPUT"
-          ls -lh $FILES
+          git clone --depth 1 --branch $env:FLUTTER_VERSION https://github.com/flutter/flutter.git "$env:RUNNER_TEMP\flutter"
+          "$env:RUNNER_TEMP\flutter\bin" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
 
-      # Only with no release to put them on.
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build windows --release
+
+      # The build with its program renamed "SG Bus Timings.exe", in build\installers\windows\<arch>.
+      - name: Stage it
+        run: ./installers/windows/stage-windows.ps1 -Arch ${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-${{ matrix.arch }}
+          path: flutter/build/installers/windows/${{ matrix.arch }}
+          if-no-files-found: error
+          retention-days: 1
+
+  # Both Windows halves into the .exe, and the x64 one into the .msi, then latest.yml.
+  windows-installers:
+    needs: [release, windows]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # to add the files to the release
+    defaults:
+      run:
+        working-directory: flutter
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-x64
+          path: flutter/build/installers/windows/x64
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows-arm64
+          path: flutter/build/installers/windows/arm64
+
+      # NSIS for the .exe; the WiX Toolset for the .msi, at 5.0.2, the version sgbus-timings.wxs
+      # is written for.
+      - name: Install NSIS and WiX
+        run: |
+          # upgrade installs it, or brings an older copy on the machine up to date (the shortcuts
+          # need Include\Win\COM.nsh, which only recent versions have).
+          choco upgrade nsis -y --no-progress
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add --global WixToolset.UI.wixext/5.0.2
+
+      - name: Build the installers
+        run: ./installers/windows/package-windows.ps1
+
+      - name: Write latest.yml
+        run: node installers/update-files.mjs windows
+
       - uses: actions/upload-artifact@v4
         if: env.RELEASE_TAG == ''
         with:
-          name: sg-bus-timings-${{ steps.files.outputs.version }}-${{ matrix.name }}
-          path: ${{ steps.files.outputs.list }}
+          name: sg-bus-timings-windows
+          path: |
+            flutter/build/dist/*-setup.exe
+            flutter/build/dist/*.msi
+            flutter/build/dist/latest.yml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add them to the release
+        if: env.RELEASE_TAG != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$RELEASE_TAG" build/dist/*-setup.exe build/dist/*.msi build/dist/latest.yml --repo "$GITHUB_REPOSITORY" --clobber
+
+  # Both Mac processors, one after the other on the same Mac, then latest-mac.yml.
+  mac:
+    needs: [release, test]
+    runs-on: macos-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write # to add the files to the release
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      - name: Install Flutter
+        working-directory: .
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - run: flutter --version
+      - run: flutter pub get
+
+      # FLUTTER_XCODE_ARCHS goes to Xcode as ARCHS: one processor per build.
+      - name: Build for Apple silicon
+        run: FLUTTER_XCODE_ARCHS=arm64 flutter build macos --release
+      - name: Pack it
+        run: bash installers/macos/package-macos.sh arm64
+
+      - name: Build for Intel
+        run: FLUTTER_XCODE_ARCHS=x86_64 flutter build macos --release
+      - name: Pack it
+        run: bash installers/macos/package-macos.sh x64
+
+      - name: Write latest-mac.yml
+        run: node installers/update-files.mjs mac
+
+      - uses: actions/upload-artifact@v4
+        if: env.RELEASE_TAG == ''
+        with:
+          name: sg-bus-timings-mac
+          path: |
+            flutter/build/dist/*.zip
+            flutter/build/dist/*.dmg
+            flutter/build/dist/latest-mac.yml
           if-no-files-found: error
           retention-days: 30
 
@@ -192,9 +304,104 @@ jobs:
         if: env.RELEASE_TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          FILES: ${{ matrix.files }}
+        run: gh release upload "$RELEASE_TAG" build/dist/*.zip build/dist/*.dmg build/dist/latest-mac.yml --repo "$GITHUB_REPOSITORY" --clobber
+
+  # Linux, each processor on its own machine: .deb, .rpm, AppImage and the update file.
+  #
+  # On Ubuntu 22.04, not the newest, for the glibc floor: a Linux program only opens where the C
+  # library (glibc) is at least as new as the build machine's, so building on 22.04 (glibc 2.35)
+  # is what lets the app open on Ubuntu 22.04, Debian 12 (2.36) and everything newer. Built on
+  # 24.04 it would need 24.04 or Debian 13. "Check it opens on Ubuntu 22.04" below makes sure.
+  # GitHub is retiring its 22.04 machines (actions/runner-images#14254). Before that, in four
+  # "brownouts" on 23 and 30 March and 6 and 13 April 2027, 14:00 to 00:00 UTC (10pm to 8am in
+  # Singapore), every job on them fails at once: run it again afterwards. From 17 April 2027
+  # they're gone: then build in an ubuntu:22.04 container on a newer machine, to keep the floor.
+  linux:
+    needs: [release, test]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            os: ubuntu-22.04
+            yml: latest-linux.yml
+            appimagetool: appimagetool-x86_64.AppImage
+          - arch: arm64
+            os: ubuntu-22.04-arm
+            yml: latest-linux-arm64.yml
+            appimagetool: appimagetool-aarch64.AppImage
+    name: linux-${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    permissions:
+      contents: write # to add the files to the release
+    defaults:
+      run:
+        working-directory: flutter
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name || github.ref }}
+
+      # Flutter's Linux build tools, the libraries the app and its plugins build against (GTK 3,
+      # WebKitGTK 4.1 for the map, X11 and Xi for nativeapi, PulseAudio for flutter_webrtc),
+      # rpmbuild for the .rpm, and objdump (binutils) for the glibc check. All under these names
+      # on 22.04 and 24.04 alike.
+      - name: Install build tools
         run: |
-          gh release upload "$RELEASE_TAG" $FILES --repo "$GITHUB_REPOSITORY" --clobber
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config file rpm binutils \
+            libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
+
+      - name: Install Flutter
+        working-directory: .
+        run: |
+          git clone --depth 1 --branch "$FLUTTER_VERSION" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      # appimagetool 1.9.1, for this processor.
+      - name: Install appimagetool
+        working-directory: .
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/appimagetool" \
+            "https://github.com/AppImage/appimagetool/releases/download/1.9.1/${{ matrix.appimagetool }}"
+          chmod +x "$RUNNER_TEMP/appimagetool"
+          echo "APPIMAGETOOL=$RUNNER_TEMP/appimagetool" >> "$GITHUB_ENV"
+
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build linux --release
+
+      # The glibc floor above: fails if the build asks for a newer C or C++ library than
+      # Ubuntu 22.04 and Debian 12 have, so no Linux file is released that wouldn't open there.
+      - name: Check it opens on Ubuntu 22.04
+        run: bash installers/linux/check-glibc.sh build/linux/${{ matrix.arch }}/release/bundle
+
+      - name: Pack it
+        run: bash installers/linux/package-linux.sh ${{ matrix.arch }}
+
+      - name: Write ${{ matrix.yml }}
+        run: node installers/update-files.mjs linux-${{ matrix.arch }}
+
+      - uses: actions/upload-artifact@v4
+        if: env.RELEASE_TAG == ''
+        with:
+          name: sg-bus-timings-linux-${{ matrix.arch }}
+          path: |
+            flutter/build/dist/*.deb
+            flutter/build/dist/*.rpm
+            flutter/build/dist/*.AppImage
+            flutter/build/dist/${{ matrix.yml }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Add them to the release
+        if: env.RELEASE_TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" build/dist/*.deb build/dist/*.rpm build/dist/*.AppImage \
+            "build/dist/${{ matrix.yml }}" --repo "$GITHUB_REPOSITORY" --clobber
 
   # The command-line edition (cli/README.md): built with plain Node, then checked by Debian's own
   # tools and run once before it goes anywhere.
@@ -203,8 +410,8 @@ jobs:
     if: needs.release.outputs.cli == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+    permissions:
+      contents: write # to add the files to the release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -244,17 +451,18 @@ jobs:
         run: |
           gh release upload "$RELEASE_TAG" cli/dist/sgbus cli/dist/*.deb --repo "$GITHUB_REPOSITORY" --clobber
 
-  # The apt repository (desktop/LINUX-BUILD.md, "An apt repository"): the newest published
+  # The apt repository (flutter/installers/linux/LINUX-BUILD.md, "An apt repository"): the newest published
   # release's .deb files, the app's for amd64 and arm64 and the command line's for all, signed
   # with APT_SIGNING_KEY and put on GitHub Pages, at https://augy-studios.github.io/sgbus-timings/.
-  # It holds only the newest version, as releases/latest does. It runs once the other jobs have
-  # finished or were skipped (a release that had its files already), and reads the .deb files
-  # from the release itself; a draft, or a release that isn't the newest, is left out.
+  # It holds only the newest version, as releases/latest does. It runs once the Linux and command
+  # line jobs have finished or were skipped (a release that had its files already), and reads the
+  # .deb files from the release itself; a draft, or a release that isn't the newest, is left out.
+  # Not after failed tests, which build nothing: the release would have no app .deb to read.
   apt:
-    needs: [release, build, cli]
+    needs: [release, test, linux, cli]
     if: >-
       !cancelled() && needs.release.outputs.apt == 'true'
-      && needs.build.result != 'failure' && needs.cli.result != 'failure'
+      && needs.test.result != 'failure' && needs.linux.result != 'failure' && needs.cli.result != 'failure'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -266,7 +474,6 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - name: Is it the newest published release?
         id: newest

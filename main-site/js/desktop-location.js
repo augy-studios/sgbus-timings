@@ -1,5 +1,6 @@
-// In the Linux desktop app (2.0.7 and later), your location comes from the app
-// (desktop/location.js, through preload.js's sgbusDesktop.locate), as Chromium there can't
+// In the Electron desktop app on Linux (2.0.7 to 2.4.8), your location comes from the app
+// (its location.js, through preload.js's sgbusDesktop.locate; from 2.5.0 the app does it itself,
+// in flutter/lib/desktop/location.dart), as Chromium there can't
 // find it by itself. navigator.geolocation is pointed at it, so everything that asks for your
 // location (Stops near me, Navigate, Places, the live map, a trip) works as it does anywhere
 // else. Its errors carry the app's own explanation as `desktopMessage` (locationMessage in

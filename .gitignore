@@ -12,3 +12,7 @@ release/**
 
 # Agent worktrees (help desk and workspace boards).
 .claude/worktrees/
+
+# Python byte-code caches (e.g. from flutter/installers/macos/make-mac-icon.py)
+__pycache__/
+*.pyc

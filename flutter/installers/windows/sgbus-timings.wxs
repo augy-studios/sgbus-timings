@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SG Bus Timings for Windows: the .msi, sg-bus-timings-<version>.msi (WiX Toolset 5).
+
+  For people and IT departments who install with msiexec or Group Policy. x64 only (an Arm64 PC
+  runs it under emulation; the .exe installs the Arm64 build). Like the Electron app's .msi it
+  installs for one person by default, into %LOCALAPPDATA%\Programs\SG Bus Timings (Windows puts
+  "Program Files" there for a per-user install), or for everyone with ALLUSERS=1.
+
+  The app can't update a .msi install itself: it says when there's a new version and links to it.
+  Installing the new .msi over the old one replaces it, the Electron app's .msi too, because they
+  share the UpgradeCode below.
+
+  Where the names come from (read from Electron 2.4.8's sg-bus-timings-2.4.8.msi, on the
+  android-v2.4.11 release, with msitools' msiinfo):
+    - UpgradeCode {3FF645DE-1032-5174-93DD-DE717BE68737} (the Property table). Never change it,
+      or the old .msi isn't removed and two copies are left installed.
+    - ALLUSERS 2 with MSIINSTALLPERUSER 1 (Scope="perUserOrMachine" below), the folder
+      ProgramFiles64Folder\SG Bus Timings, Manufacturer "UwU Apps".
+    - A MajorUpgrade that also takes the same version (the Upgrade table: VersionMax 2.4.8.0
+      inclusive), removing the old version before installing (RemoveExistingProducts after
+      InstallValidate, WiX's default).
+    - Start menu and desktop shortcuts named "SG Bus Timings", the Start menu one with the
+      AppUserModelID org.uwuapps.sgbus (the MsiShortcutProperty table).
+    - "Open SG Bus Timings" ticked on the last page (runAfterFinish).
+
+  Built by package-windows.ps1:
+    wix build -arch x64 -ext WixToolset.UI.wixext -d Version=2.5.0 -d AppDir=<x64 build folder>
+      -d IconFile=<app_icon.ico> -o sg-bus-timings-2.5.0.msi sgbus-timings.wxs
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="SG Bus Timings"
+           Manufacturer="UwU Apps"
+           Version="$(var.Version)"
+           UpgradeCode="3FF645DE-1032-5174-93DD-DE717BE68737"
+           Scope="perUserOrMachine"
+           Compressed="yes">
+
+    <MajorUpgrade AllowSameVersionUpgrades="yes"
+                  DowngradeErrorMessage="A newer version of SG Bus Timings is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- The icon in Apps & features. -->
+    <Icon Id="AppIcon.ico" SourceFile="$(var.IconFile)" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
+    <Property Id="ARPHELPLINK" Value="https://sgbus.uwuapps.org" />
+    <Property Id="ARPURLINFOABOUT" Value="https://sgbus.uwuapps.org" />
+    <Property Id="ARPNOMODIFY" Value="1" />
+
+    <!-- %LOCALAPPDATA%\Programs\SG Bus Timings for one person, C:\Program Files\SG Bus Timings for everyone. -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="APPLICATIONFOLDER" Name="SG Bus Timings" />
+    </StandardDirectory>
+    <!-- Where the shortcuts go: the person's Start menu and desktop (everyone's with ALLUSERS=1). -->
+    <StandardDirectory Id="ProgramMenuFolder" />
+    <StandardDirectory Id="DesktopFolder" />
+
+    <Feature Id="App" Title="SG Bus Timings" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="MainExecutable" />
+    </Feature>
+
+    <!-- The app and its shortcuts. The Start menu one carries the app's AppUserModelID, which ties
+         it to the app's windows, Jump List and notifications. -->
+    <DirectoryRef Id="APPLICATIONFOLDER">
+      <Component Id="MainExecutable">
+        <File Id="MainExe" Source="$(var.AppDir)\SG Bus Timings.exe" KeyPath="yes">
+          <Shortcut Id="StartMenuShortcut" Directory="ProgramMenuFolder" Name="SG Bus Timings"
+                    WorkingDirectory="APPLICATIONFOLDER" Advertise="no">
+            <ShortcutProperty Key="System.AppUserModel.ID" Value="org.uwuapps.sgbus" />
+          </Shortcut>
+          <Shortcut Id="DesktopShortcut" Directory="DesktopFolder" Name="SG Bus Timings"
+                    WorkingDirectory="APPLICATIONFOLDER" Advertise="no" />
+        </File>
+      </Component>
+    </DirectoryRef>
+
+    <!-- Everything else in the build (flutter_windows.dll, the plugins, data\), found by wildcard. -->
+    <ComponentGroup Id="AppFiles" Directory="APPLICATIONFOLDER">
+      <Files Include="$(var.AppDir)\**">
+        <Exclude Files="$(var.AppDir)\SG Bus Timings.exe" />
+      </Files>
+    </ComponentGroup>
+
+    <!-- The pages: Welcome, then where to install, then the progress and the last page. There's no
+         licence page (the app is free and open source, MIT). -->
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Open SG Bus Timings" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <CustomAction Id="OpenApp" FileRef="MainExe" ExeCommand="" Return="asyncNoWait" Impersonate="yes" />
+    <UI>
+      <ui:WixUI Id="WixUI_InstallDir" InstallDirectory="APPLICATIONFOLDER" />
+      <Publish Dialog="WelcomeDlg" Control="Next" Event="NewDialog" Value="InstallDirDlg" Order="99" />
+      <Publish Dialog="InstallDirDlg" Control="Back" Event="NewDialog" Value="WelcomeDlg" Order="99" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction" Value="OpenApp"
+               Condition="WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed" />
+    </UI>
+  </Package>
+</Wix>

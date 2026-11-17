@@ -10,7 +10,8 @@
 // (api/_push/fcm.js). FCM shows the notification itself while the app's in the background; in
 // front, the app hands it here and it's shown through the app (AppBridge.notify).
 //
-// In the desktop app (desktop/), which has no Web Push either but stays open in the tray, the
+// In the Electron desktop app (2.0.0 to 2.4.8; from 2.5.0 the app checks by itself, in
+// flutter/lib/desktop/alerts_poll.dart), which has no Web Push either but stays open in the tray, the
 // page checks /api/service-alerts itself every DESKTOP_POLL_MS, by the same rules as
 // api/_push/alerts.js, and the app shows what's new as a notification (window.sgbusDesktop).
 // The Newsfeed (/api/notices): what LTA and the bus and train operators announce ahead of time,

@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v163";
+const VERSION = "v164";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -103,7 +103,8 @@ const ASSETS = [
   // The sgbus terminal and its commands, fetched the first time it's opened (script.js).
   "/js/sgbus-core.js",
   "/js/terminal.js",
-  // The desktop app's widgets (desktop/widgets.js).
+  // The Electron desktop app's widgets (its widgets.js, 2.0.0 to 2.4.8; desktop/ is in git history).
+  // From 2.5.0 the app draws its own (flutter/lib/desktop/widgets_window.dart).
   "/widget.html",
   "/js/widget.js",
   // The live map's engine (js/map-engine.js), and Leaflet, its fallback without WebGL, so the

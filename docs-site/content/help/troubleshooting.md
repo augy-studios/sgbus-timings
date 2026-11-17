@@ -54,7 +54,7 @@ in [the app](../web/route-planner.md#picked-the-wrong-side-of-the-road) and
 - Indoors or underground, your position can be rough or slow to arrive. Search
   by name or postal code instead.
 - In the Linux app, location needs Wi-Fi turned on:
-  see [Windows, Mac and Linux apps](../web/desktop-app.md#location).
+  see [The Windows, Mac and Linux app](../desktop/overview.md#location).
 
 ### In the bot
 

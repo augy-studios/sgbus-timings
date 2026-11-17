@@ -31,7 +31,7 @@ In the Linux app, where the computer can't tell where it is by itself, the app
 asks [BeaconDB](https://beacondb.net) where the Wi-Fi networks around it are:
 their hardware addresses and signal strengths go to BeaconDB, never their names,
 your location or anything else of yours. See
-[Windows, Mac and Linux apps](../web/desktop-app.md#location).
+[The Windows, Mac and Linux app](../desktop/overview.md#location).
 
 ### What goes to the server
 
@@ -174,11 +174,18 @@ notification to the phone.
 
 ### The desktop app
 
-The Windows, Mac and Linux app shows the website in its own window, so everything on
-this page applies to it the same way. For Service alerts it asks the server for
-the current alerts every minute while it runs, the same request the alerts card
-makes, and shows what's new itself: nothing is sent about you, and no push
-subscription is made.
+The [Windows, Mac and Linux app](../desktop/overview.md) is an app of its own, like the
+Android app: it asks the same servers for the same things, so everything on this page
+applies to it the same way, and it keeps its own storage on your computer. For
+Service alerts it asks the server for the current alerts every minute while it runs,
+the same request the alerts card makes, and shows what's new itself: nothing is sent
+about you, and no push subscription is made. To look for a new version it reads a
+small file from the app's releases on GitHub, which sees your IP address as any
+download does. Its settings, widgets and screenshots stay on your computer.
+
+The first time it opens after an update from the old desktop app (2.4.8 and before),
+it reads what the old app kept on the computer and copies it into its own storage.
+Nothing of it is sent anywhere.
 
 ### Weather
 

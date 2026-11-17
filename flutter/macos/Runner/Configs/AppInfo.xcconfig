@@ -1,0 +1,15 @@
+// SG Bus Timings for macOS: the app's name and identity, read by Xcode when it builds the Runner
+// target (Info.plist takes its values from here).
+//
+// Both must stay the same for good (flutter-desktop-app-spec §0): they're what the Electron app
+// was called, so its updater, the person's Dock, login items and uwu:// links keep finding the
+// app, and macOS keeps its location and notification permissions.
+
+// The app's name: "SG Bus Timings.app" in Applications, and its name in the menu bar and Dock.
+PRODUCT_NAME = SG Bus Timings
+
+// The bundle id, the same as the Android app's id and the Electron app's appId.
+PRODUCT_BUNDLE_IDENTIFIER = org.uwuapps.sgbus
+
+// The copyright shown in About SG Bus Timings.
+PRODUCT_COPYRIGHT = Copyright © 2026 UwU Apps
