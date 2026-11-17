@@ -148,7 +148,10 @@ class DeskStart {
     // At most 2 s: a window that draws nothing (no screen, say) still shows.
     await WidgetsBinding.instance.endOfFrame.timeout(const Duration(seconds: 2), onTimeout: () {});
     if (Welcome.due) {
-      // Make it yours comes first, the once; the window then, unless a link's brought it up.
+      // Make it yours comes first, the once; the window then, unless a link's brought it up. Its
+      // window is an engine of its own, so it waits for this one to stop drawing, as the widgets
+      // do (DeskWidgets.restore: two engines starting to draw at once crash on Windows).
+      await DeskWidgets.quiet();
       await Welcome.open(() {
         if (!Desktop.shown) Desktop.firstShow();
       });

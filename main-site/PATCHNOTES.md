@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 17 November 2026**
+**Latest update: 18 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -9,11 +9,16 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 17 November 2026: Update checks that say what went wrong
+## 18 November 2026: A steadier start for the desktop app (2.5.1)
 
-### Desktop app
+### Desktop app 2.5.1
 
+- **No crash as it opens** - With a desktop widget kept, the Windows app could crash as it opened, leaving a black window, on most starts. Your widgets now open a moment after the main window has finished drawing, one at a time, and so does Make it yours the first time.
 - **Why an update check failed** - When Check for updates can't tell, it says why: GitHub couldn't be reached, the connection to it wasn't secure (often the computer's clock), the newest version's files for your computer aren't up yet, GitHub is turning away checks from your network, or GitHub itself is having trouble, with its error. Before, it always said to check your connection.
+
+### Linux command line 2.5.1
+
+- No changes of its own: numbered 2.5.1 to stay in step with the desktop app. The Android app stays on 2.5.0.
 
 ## 17 November 2026: The desktop app, rebuilt as an app of its own (2.5.0)
 

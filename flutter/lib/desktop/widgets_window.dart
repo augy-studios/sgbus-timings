@@ -18,6 +18,7 @@ import 'dart:convert';
 import 'dart:math' as math;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -82,10 +83,37 @@ class DeskWidgets {
     await _openWidget(w);
   }
 
-  /// At start: every widget kept, where it was.
+  /// At start: every widget kept, where it was, one at a time once the main window has stopped
+  /// drawing. On Windows every engine in the app draws through the one Direct3D 11 renderer ANGLE
+  /// keeps for the process, and two engines drawing their first frames at once crashed it (an
+  /// access violation in flutter_windows.dll, StateManager11, and a black window), on most
+  /// launches with a widget kept. Each widget gets [_firstFrames] to draw its own before the next.
   static Future<void> restore() async {
     for (final w in list()) {
-      if (!_open.containsKey(w['id'])) await _openWidget(w);
+      if (_open.containsKey(w['id'])) continue;
+      await quiet();
+      await _openWidget(w);
+      await Future<void>.delayed(_firstFrames);
+    }
+  }
+
+  /// How long a new widget's engine is given to start and draw its first frames.
+  static const _firstFrames = Duration(milliseconds: 1500);
+
+  /// Waits until this window has drawn nothing for [still], or [atMost] has gone by (a spinner
+  /// that never stops, say). Before any window with an engine of its own opens at start.
+  /// [drawing] says whether it's drawing now (for tests; a frame asked for or under way).
+  static Future<void> quiet({Duration still = const Duration(milliseconds: 500), Duration atMost = const Duration(seconds: 4), bool Function()? drawing}) async {
+    drawing ??= () => SchedulerBinding.instance.hasScheduledFrame || SchedulerBinding.instance.schedulerPhase != SchedulerPhase.idle;
+    final end = DateTime.now().add(atMost);
+    var since = DateTime.now();
+    while (DateTime.now().isBefore(end)) {
+      if (drawing()) {
+        since = DateTime.now();
+      } else if (DateTime.now().difference(since) >= still) {
+        return;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     }
   }
 
