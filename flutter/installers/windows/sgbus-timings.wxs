@@ -46,7 +46,7 @@
     <Property Id="ARPPRODUCTICON" Value="AppIcon.ico" />
     <Property Id="ARPHELPLINK" Value="https://sgbus.uwuapps.org" />
     <Property Id="ARPURLINFOABOUT" Value="https://sgbus.uwuapps.org" />
-    <Property Id="ARPNOMODIFY" Value="1" />
+    <!-- No Modify in Apps & features: WixUI_InstallDir sets ARPNOMODIFY itself, so it isn't set here. -->
 
     <!-- %LOCALAPPDATA%\Programs\SG Bus Timings for one person, C:\Program Files\SG Bus Timings for everyone. -->
     <StandardDirectory Id="ProgramFiles64Folder">
