@@ -294,4 +294,98 @@ void main() {
       expect(kind.canInstall, isFalse);
     });
   });
+
+  // "Couldn't check for updates" says what went wrong, from a small server answering as GitHub
+  // might, not always "check your connection".
+  group('Updater.find', () {
+    late HttpServer server;
+    var status = HttpStatus.ok;
+    var body = '';
+
+    // Every computer's installer, so the check finds this one's wherever the test runs.
+    const everyone = '''
+version: 99.0.0
+files:
+  - url: sg-bus-timings-99.0.0-setup.exe
+    sha512: c2hh
+  - url: sg-bus-timings-99.0.0-mac-x64.zip
+    sha512: c2hh
+  - url: sg-bus-timings-99.0.0-mac-arm64.zip
+    sha512: c2hh
+  - url: sg-bus-timings-99.0.0-x86_64.AppImage
+    sha512: c2hh
+  - url: sg-bus-timings-99.0.0-arm64.AppImage
+    sha512: c2hh
+''';
+
+    setUp(() async {
+      status = HttpStatus.ok;
+      body = everyone;
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((request) {
+        request.response.statusCode = status;
+        request.response.write(body);
+        request.response.close();
+      });
+    });
+
+    tearDown(() => server.close(force: true));
+
+    String base() => 'http://${server.address.address}:${server.port}';
+
+    Future<UpdateCheckError> failure() async {
+      try {
+        await Updater.find(base: base());
+      } on UpdateCheckError catch (e) {
+        return e;
+      }
+      fail('the check should have failed');
+    }
+
+    test('a newer version is found', () async {
+      expect((await Updater.find(base: base()))?.version, '99.0.0');
+    });
+
+    test('no update file on the release yet: not ready, not the connection', () async {
+      status = HttpStatus.notFound;
+      final e = await failure();
+      expect(e.problem, UpdateProblem.notReady);
+      expect(e.message, contains("isn't ready for this computer"));
+      expect(e.message, isNot(contains('connection')));
+    });
+
+    test("an update file without this computer's installer: not ready", () async {
+      body = 'version: 99.0.0\nfiles:\n  - url: sg-bus-timings-99.0.0.msi\n    sha512: c2hh\n';
+      expect((await failure()).problem, UpdateProblem.notReady);
+    });
+
+    test('GitHub turning checks away, or down, says so with its error', () async {
+      status = HttpStatus.tooManyRequests;
+      expect((await failure()).problem, UpdateProblem.limited);
+      status = HttpStatus.forbidden;
+      expect((await failure()).problem, UpdateProblem.limited);
+      status = HttpStatus.serviceUnavailable;
+      final e = await failure();
+      expect(e.problem, UpdateProblem.github);
+      expect(e.message, contains('503'));
+      status = HttpStatus.gone;
+      expect((await failure()).message, contains('410'));
+    });
+
+    test('GitHub not reached: the connection', () async {
+      final port = server.port;
+      await server.close(force: true);
+      try {
+        await Updater.find(base: 'http://127.0.0.1:$port');
+        fail('the check should have failed');
+      } on UpdateCheckError catch (e) {
+        expect(e.problem, UpdateProblem.offline);
+        expect(e.message, contains('connection'));
+      }
+    });
+
+    test('anything else thrown still has a message', () {
+      expect(UpdateCheckError.of(StateError('?')).message, isNotEmpty);
+    });
+  });
 }

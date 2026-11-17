@@ -9,6 +9,12 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 17 November 2026: Update checks that say what went wrong
+
+### Desktop app
+
+- **Why an update check failed** - When Check for updates can't tell, it says why: GitHub couldn't be reached, the connection to it wasn't secure (often the computer's clock), the newest version's files for your computer aren't up yet, GitHub is turning away checks from your network, or GitHub itself is having trouble, with its error. Before, it always said to check your connection.
+
 ## 17 November 2026: The desktop app, rebuilt as an app of its own (2.5.0)
 
 ### Desktop app 2.5.0

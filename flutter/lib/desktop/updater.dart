@@ -58,6 +58,68 @@ class SplashStatus {
   final bool later;
 }
 
+/// Why a check for a new version found nothing, so "Couldn't check for updates" says so rather
+/// than always blaming the connection.
+enum UpdateProblem {
+  /// GitHub wasn't reached: no connection, a timeout, or the name not found.
+  offline,
+
+  /// GitHub was reached but the secure connection failed: usually the computer's clock, or a
+  /// proxy or firewall in the way.
+  secure,
+
+  /// The newest release has no update file for this computer, or one without its installer: the
+  /// desktop files are added a few minutes after a release is out, or their build failed.
+  notReady,
+
+  /// GitHub turned the check away (403 or 429): too many checks from this network for now.
+  limited,
+
+  /// GitHub itself is having trouble (500 and up).
+  github,
+
+  /// Any other answer.
+  other,
+}
+
+class UpdateCheckError implements Exception {
+  const UpdateCheckError(this.problem, {this.status});
+
+  /// The kind of problem an HTTP status other than 200 is.
+  factory UpdateCheckError.forStatus(int status) => UpdateCheckError(
+    switch (status) {
+      404 => UpdateProblem.notReady,
+      403 || 429 => UpdateProblem.limited,
+      >= 500 => UpdateProblem.github,
+      _ => UpdateProblem.other,
+    },
+    status: status,
+  );
+
+  /// [e] as an [UpdateCheckError], whatever was thrown.
+  factory UpdateCheckError.of(Object e) => e is UpdateCheckError ? e : const UpdateCheckError(UpdateProblem.other);
+
+  final UpdateProblem problem;
+
+  /// GitHub's HTTP status, when it answered.
+  final int? status;
+
+  /// What to tell the person, under "Couldn't check for updates".
+  String get message => switch (problem) {
+    UpdateProblem.offline => tr('desktop.update.checkConnection', "Couldn't reach GitHub. Check your connection and try again."),
+    UpdateProblem.secure => tr('desktop.update.checkSecure', "Couldn't connect to GitHub securely. Check your computer's date and time, or any proxy or firewall."),
+    UpdateProblem.notReady => tr('desktop.update.checkNotReady', "The newest version isn't ready for this computer yet. Its files go up a few minutes after it's out, so try again soon."),
+    UpdateProblem.limited => tr('desktop.update.checkLimited', 'GitHub is turning away checks from your network for now. Try again in an hour.'),
+    UpdateProblem.github => tr('desktop.update.checkGitHub', "GitHub isn't working properly right now (error {code}). Try again later.", {'code': '$status'}),
+    UpdateProblem.other => status == null
+        ? tr('desktop.update.checkOther', 'Something went wrong. Try again later.')
+        : tr('desktop.update.checkStatus', 'GitHub answered with error {code}. Try again later.', {'code': '$status'}),
+  };
+
+  @override
+  String toString() => 'UpdateCheckError(${problem.name}${status == null ? '' : ', $status'})';
+}
+
 /// One update file's answer: the newest version, and the file this copy would update from.
 class UpdateInfo {
   UpdateInfo({required this.version, required this.file, required this.sha512, required this.size});
@@ -347,13 +409,24 @@ class Updater {
   // ---------- finding and downloading ----------
 
   /// The newest release's update file, if it's newer than this copy; null if this is the newest.
-  /// Throws when it can't tell (offline, or no update file on the release).
-  static Future<UpdateInfo?> find() async {
-    final address = Uri.parse('$_base/$ymlName?t=${DateTime.now().millisecondsSinceEpoch}');
-    final r = await http.get(address, headers: {'User-Agent': Desktop.userAgent, 'Cache-Control': 'no-cache'}).timeout(const Duration(seconds: 20));
-    if (r.statusCode != 200) throw HttpException('update file: ${r.statusCode}');
-    final info = UpdateInfo.parse(utf8.decode(r.bodyBytes), extension: _extension, arm64: Desktop.mac ? arm64 : null);
-    if (info == null) throw const FormatException('update file');
+  /// Throws an [UpdateCheckError] saying why when it can't tell. [base] is where the files are:
+  /// the newest release, or a test's own server.
+  static Future<UpdateInfo?> find({String base = _base}) async {
+    final address = Uri.parse('$base/$ymlName?t=${DateTime.now().millisecondsSinceEpoch}');
+    final http.Response r;
+    try {
+      r = await http.get(address, headers: {'User-Agent': Desktop.userAgent, 'Cache-Control': 'no-cache'}).timeout(const Duration(seconds: 20));
+    } on HandshakeException {
+      throw const UpdateCheckError(UpdateProblem.secure);
+    } on Exception {
+      // SocketException, http's ClientException, TimeoutException: GitHub wasn't reached.
+      throw const UpdateCheckError(UpdateProblem.offline);
+    }
+    if (r.statusCode != 200) throw UpdateCheckError.forStatus(r.statusCode);
+    final info = UpdateInfo.parse(utf8.decode(r.bodyBytes, allowMalformed: true), extension: _extension, arm64: Desktop.mac ? arm64 : null);
+    // An update file without this computer's installer in it: the release's files for it are
+    // still being added, as with a missing file.
+    if (info == null) throw const UpdateCheckError(UpdateProblem.notReady);
     return newer(info.version, appVersion) ? info : null;
   }
 
@@ -566,8 +639,8 @@ rm -rf "$4"
         return;
       }
       _found(info, asked: asked);
-    } catch (_) {
-      if (asked) DeskNotify.show(title: tr('desktop.update.cantCheck', "Couldn't check for updates"), body: tr('desktop.update.checkConnection', 'Check your connection and try again.'));
+    } catch (e) {
+      if (asked) DeskNotify.show(title: tr('desktop.update.cantCheck', "Couldn't check for updates"), body: UpdateCheckError.of(e).message);
     } finally {
       checking.value = false;
       _asked = false;
