@@ -14,7 +14,7 @@ by the clock on Windows, the menu bar on a Mac), so
 time, a notification says it's still running.
 
 - **Windows**: click the bus to bring the window back, or to put it away if it's in
-  front. Right-click it for its menu.
+  front. Right-click it for its menu, and click anywhere else to close the menu.
 - **Mac and Linux**: click the bus for its menu. On a Mac, clicking the app's icon
   in the Dock brings the window back too.
 

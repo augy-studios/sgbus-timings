@@ -200,13 +200,13 @@ window.__chat = (d) => { TelegramWidget.chatData = d; (window.__h.chatDataChange
     let c = await site({});
     let p = await go(c, '#share/egg0000001');
     await p.waitForFunction(() => !document.getElementById('coinResult')?.hidden, null, { timeout: 10000 });
-    // GTA VI's colours are the wheel's to give once anyone can't just set them (js/gta6.js, after
-    // 26 November 2026), and an egg before then.
+    // GTA VI's colours are the wheel's to give once anyone can't just set them (js/gta6.js, from
+    // 15 December 2026), and an egg before then.
     const first = { text: await p.textContent('#coinResult'), redeemed, due: await p.evaluate(() => window.Gta6.due()) };
     ok(`5. an egg link: ${first.due ? 'GTA VI\'s colours, while they\'re the wheel\'s' : 'an Easter egg, as the colours can still be set'}`,
       first.text.includes(first.due ? 'GTA VI' : 'An Easter egg') && first.redeemed === 1, JSON.stringify(first));
     if (!first.due) {
-      // Due, as after 26 November: the colours, not an egg.
+      // Due, as from 15 December: the colours, not an egg.
       const later = await p.evaluate(async () => {
         window.Gta6.due = () => true;
         window.Gta6.claim = () => {};

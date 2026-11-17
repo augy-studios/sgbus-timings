@@ -231,11 +231,11 @@ class Gta6Offer {
     return true;
   }
 
-  /// In Material You, its choice under Colours. In the UwU Apps theme, its brand colour, which
-  /// Your colours stand over, so they go.
+  /// In Material You (and the desktop's own look), its choice under Colours. In the UwU Apps
+  /// theme, its brand colour, which Your colours stand over, so they go.
   static void set() {
     final look = AppLook.I;
-    if (look.materialYou) {
+    if (look.materialYou || look.deskLook) {
       look.youColours = AppLook.gta6;
     } else {
       Store.I.remove(AppLook.coloursKey);
@@ -249,7 +249,7 @@ class Gta6Window extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final replaces = !AppLook.I.materialYou && AppLook.I.yourColours != null;
+    final replaces = !AppLook.I.materialYou && !AppLook.I.deskLook && AppLook.I.yourColours != null;
     return AlertDialog(
       title: Text(tr('gta6.title', 'GTA VI’s colours')),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -263,7 +263,7 @@ class Gta6Window extends StatelessWidget {
         const SizedBox(height: 12),
         Text(tr('gta6.text', 'To celebrate the game’s release on 19 November, there’s a new theme in its logo’s pink, blue, orange, yellow and violet.')),
         const SizedBox(height: 8),
-        Text(tr('gta6.keep', 'Set it before 26 November and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.')),
+        Text(tr('gta6.keep', 'Set it by 14 December and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.')),
         if (replaces) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('gta6.replace', 'This replaces Your colours. You can pick them again any time.'))),
       ]),
       actions: [

@@ -241,7 +241,7 @@ void main() {
     await _ready(t, {'sgbus_coins': '{"balance":250,"log":[],"spins":0}'});
     await shot(t, 'coins', () => const CoinsScreen());
     // GTA VI's colours, not set in time: the wheel's to give.
-    When.now = () => DateTime.utc(2026, 11, 25, 16);
+    When.now = () => DateTime.utc(2026, 12, 14, 16);
     await shot(t, 'coins-gta6', () => const CoinsScreen());
     When.now = () => stillAt;
     final ms = stillAt.millisecondsSinceEpoch;

@@ -4,11 +4,13 @@
 // Make it yours..., Check for updates..., Start when I sign in, and Quit.
 //
 // Clicking the icon on Windows shows the window, or hides it if it's in front; a right-click opens
-// the menu. On macOS and Linux a click opens the menu (Linux's tray icons can only do that).
+// the menu, which a click anywhere outside it closes. On macOS and Linux a click opens the menu
+// (Linux's tray icons can only do that).
 // The menu's built again each time it opens on Windows, and whenever an update, a check or the
 // countdown changes, so what it says is current.
 import 'dart:async';
 
+import 'package:sgbus_desktop/sgbus_desktop.dart';
 import 'package:tray_manager/tray_manager.dart';
 
 import '../i18n/i18n.dart';
@@ -42,7 +44,8 @@ class DeskTray {
     icon.setTooltip(_tip);
     _startsAtLogin = await Desktop.startsAtLogin();
     await refresh();
-    icon.setContextMenuTrigger(Desktop.windows ? ContextMenuTrigger.rightClicked : ContextMenuTrigger.clicked);
+    // On Windows the app opens the menu itself (_clicked), so it can come to the front first.
+    icon.setContextMenuTrigger(Desktop.windows ? ContextMenuTrigger.none : ContextMenuTrigger.clicked);
     icon.addListener(_clicked);
     icon.setVisible(true);
     for (final n in [Updater.available, Updater.ready, Updater.checking]) {
@@ -51,8 +54,9 @@ class DeskTray {
   }
 
   /// A click on the icon. On Windows a left click shows or hides the window and a right click
-  /// opens the menu, made again first so its check box is true. On macOS and Linux the click
-  /// opens the menu itself, so it's only made again here for next time.
+  /// opens the menu, made again first so its check box is true, once a window of the app's is in
+  /// front: Windows closes a tray menu on a click outside it only then (bug: it stayed open). On
+  /// macOS and Linux the click opens the menu itself, so it's only made again here for next time.
   static Future<void> _clicked(TrayIconEvent e) async {
     final showsMenu = e is TrayIconRightClickedEvent || (e is TrayIconClickedEvent && !Desktop.windows);
     if (e is TrayIconClickedEvent && Desktop.windows) {
@@ -65,6 +69,10 @@ class DeskTray {
     if (showsMenu) {
       _startsAtLogin = await Desktop.startsAtLogin();
       await refresh();
+    }
+    if (e is TrayIconRightClickedEvent && Desktop.windows) {
+      await SgbusDesktop.trayFront();
+      _icon?.openContextMenu();
     }
   }
 

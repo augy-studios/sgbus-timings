@@ -141,7 +141,7 @@ as a **dialog**, such as a picker, a menu or a form, or from the right as a
 button or a click outside it closes it.
 
 <figure>
-<img src="/screenshots/desktop/dialog.png" alt="Pick a bus as a dialog in the middle of the window, over Bedok Int's timings: every bus at the stop as a button, and a close button at its top right. The pages behind it are dimmed; the title bar and the rail aren't." width="1280" height="860" loading="lazy">
+<img src="/screenshots/desktop/dialog.png" alt="Pick a bus as a dialog in the middle of the window, over Bedok Int's timings: every bus at the stop as a button, favourite buses 14 and 196 first with a star, and a close button at its top right. The pages behind it are dimmed; the title bar and the rail aren't." width="1280" height="860" loading="lazy">
 <figcaption>Pick a bus, from a stop, as a dialog.</figcaption>
 </figure>
 

@@ -860,13 +860,6 @@ class TripNotes extends StatelessWidget {
   final bool compact;
   final VoidCallback? onMore;
 
-  static final _small = ButtonStyle(
-    visualDensity: VisualDensity.compact,
-    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-    padding: WidgetStatePropertyAll(const EdgeInsets.symmetric(horizontal: 12)),
-    textStyle: WidgetStatePropertyAll(const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-  );
-
   @override
   Widget build(BuildContext context) => ListenableBuilder(
         listenable: TripWatch.I,
@@ -886,22 +879,52 @@ class TripNotes extends StatelessWidget {
                   onTap: n.onTap ?? (compact ? onMore : null),
                   child: Padding(
                     padding: compact ? const EdgeInsets.fromLTRB(12, 4, 4, 4) : const EdgeInsets.fromLTRB(12, 6, 6, 6),
-                    child: Row(children: [
-                      Expanded(
-                        child: Text(n.text,
-                            maxLines: compact ? 2 : null,
-                            overflow: compact ? TextOverflow.ellipsis : null,
-                            style: TextStyle(color: n.tone == 'error' ? scheme.onErrorContainer : n.tone == 'warn' ? const Color(0xFF4E2A00) : scheme.onSecondaryContainer, fontSize: 13)),
-                      ),
-                      if (n.second != null)
-                        TextButton(style: compact ? _small : null, onPressed: n.onSecond, child: Text(n.second!)),
-                      if (n.action != null)
-                        FilledButton.tonal(style: compact ? _small : null, onPressed: n.onAction, child: Text(n.action!)),
-                    ]),
+                    child: TripNoteRow(n, compact: compact),
                   ),
                 ),
               ),
           ]);
         },
       );
+}
+
+/// A note's words and its buttons. Its buttons never shrink, so two of them beside the words could
+/// leave the words a column a letter wide on a phone (bug report 20261117-5YJ4): on the trip
+/// screen two go on a row of their own under the words, and under the trip bar ([compact]) only
+/// the main one shows, beside them, so the bar stays short; the other's on the trip screen.
+class TripNoteRow extends StatelessWidget {
+  const TripNoteRow(this.note, {super.key, this.compact = false});
+  final TripNote note;
+  final bool compact;
+
+  static final _small = ButtonStyle(
+    visualDensity: VisualDensity.compact,
+    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    padding: WidgetStatePropertyAll(const EdgeInsets.symmetric(horizontal: 12)),
+    textStyle: WidgetStatePropertyAll(const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+  );
+
+  /// The words, with the buttons beside or under them.
+  @override
+  Widget build(BuildContext context) {
+    final n = note;
+    final scheme = Theme.of(context).colorScheme;
+    final words = Text(n.text,
+        maxLines: compact ? 2 : null,
+        overflow: compact ? TextOverflow.ellipsis : null,
+        style: TextStyle(color: n.tone == 'error' ? scheme.onErrorContainer : n.tone == 'warn' ? const Color(0xFF4E2A00) : scheme.onSecondaryContainer, fontSize: 13));
+    final second = n.second == null ? null : TextButton(style: compact ? _small : null, onPressed: n.onSecond, child: Text(n.second!));
+    final action = n.action == null ? null : FilledButton.tonal(style: compact ? _small : null, onPressed: n.onAction, child: Text(n.action!));
+    if (second != null && action != null && !compact) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Padding(padding: const EdgeInsets.only(right: 6, top: 2), child: words),
+        OverflowBar(alignment: MainAxisAlignment.end, overflowAlignment: OverflowBarAlignment.end, spacing: 4, children: [second, action]),
+      ]);
+    }
+    final button = action ?? second;
+    return Row(children: [
+      Expanded(child: words),
+      ?button,
+    ]);
+  }
 }

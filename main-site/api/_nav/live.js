@@ -8,13 +8,17 @@
 //   incidents } when the traffic makes it a minute or more slower or an incident is on its
 //   way: the minutes added, the slow roads by name, and the incidents, to say why. And
 //   `usual`, its minutes without traffic, for a trip to time it by the traffic as it goes.
+// - running(options, ...): the ways OneMap added (_nav/onemap-check.js) without a bus that won't
+//   be running by the time it's reached, by LTA's first and last bus at its stop, as the router
+//   never boards one (bug report 20261113-M8K5: OneMap's timetable offered 96A, a morning
+//   service, in the afternoon).
 // - othersFor(from, to, ...): walking and, for someone with a bike, cycling the whole way,
 //   each only where it might compete, and driving it, always (Navigate's Drive there),
 //   { walk: { minutes, distance }, cycle: { ... }, drive: { ... } }.
 
 import { footRoute, metres } from "../_lib/foot.js";
 import { incidentsNear, segmentFactor, slowRoads } from "../_lib/traffic.js";
-import { lastBusAfter, sgClock } from "./when.js";
+import { busRunsAt, lastBusAfter, sgClock } from "./when.js";
 
 const LAST_WINDOW_MIN = 30;
 const MAX_INCIDENTS = 2;
@@ -108,6 +112,30 @@ export function annotate(options, { graph, traffic, setOff }) {
       if (extra >= 1 || incidents.length) leg.traffic = { extra: Math.max(0, extra), roads: slowRoads(traffic, leg.path), incidents };
     }
   }
+}
+
+// Whether every bus of a way is running when it's boarded, setting off at `setOff`. A bus the
+// network can't place on a run counts as running, as there's nothing to check it by.
+function busesRun(o, graph, setOff) {
+  let t = 0;
+  for (const leg of o.legs) {
+    if (leg.mode === "walk") {
+      t += leg.minutes || 0;
+      continue;
+    }
+    const board = leg.board ?? t + (leg.wait || 0);
+    t = board + (leg.minutes || 0);
+    if (leg.mode !== "bus") continue;
+    const ride = rideOf(graph, leg);
+    if (ride && !busRunsAt(ride.run.times?.[ride.i], setOff + board * 60000)) return false;
+  }
+  return true;
+}
+
+// The ways without OneMap's that ride a bus outside its hours. The router's own already ride
+// only what's running (js/nav-core/plan.js).
+export function running(options, { graph, setOff }) {
+  return options.filter((o) => o.source !== "onemap" || busesRun(o, graph, setOff));
 }
 
 export async function othersFor(from, to, best, { bike = false } = {}) {

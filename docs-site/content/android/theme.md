@@ -59,7 +59,7 @@ their usual colours. In Material You, pick it under **Colours**. In the UwU Apps
 it's the last of the swatches under **Brand colour**. A window also offers it once when the app
 opens. SG Bus Timings isn't connected with Rockstar Games.
 
-Set it at least once before 26 November, Singapore time, and it's yours to keep, even if you change
+Set it at least once by 14 December, Singapore time, and it's yours to keep, even if you change
 colours later. After that it's locked until you win it on the
 [uwuCoins wheel](uwucoins.md#spin-the-wheel). It's kept on each device, so set it on each one you use.
 

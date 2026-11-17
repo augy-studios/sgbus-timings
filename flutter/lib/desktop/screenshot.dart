@@ -19,6 +19,7 @@ import 'package:flutter/rendering.dart';
 import 'package:pasteboard/pasteboard.dart';
 
 import '../i18n/i18n.dart';
+import '../theme/theme.dart';
 import 'chrome.dart';
 import 'desktop.dart';
 import 'notify.dart';
@@ -79,12 +80,26 @@ class DeskShot {
   /// The screen's pixels per logical pixel, so the picture is as sharp as the screen.
   static double get _ratio => WidgetsBinding.instance.platformDispatcher.views.first.devicePixelRatio;
 
+  /// The page's own background, under each picture: in the computer's own look the page is
+  /// see-through, and the window's glass behind it isn't in the picture.
+  static Color get _background {
+    final c = key.currentContext;
+    return c == null ? Colors.white : c.sg.bg;
+  }
+
   /// The content as it is on screen, as a PNG.
   static Future<Uint8List?> _short() async {
     final b = _boundary;
     if (b == null) return null;
-    final image = await b.toImage(pixelRatio: _ratio);
+    final shot = await b.toImage(pixelRatio: _ratio);
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder)
+      ..drawColor(_background, BlendMode.src)
+      ..drawImage(shot, Offset.zero, Paint());
+    final image = await recorder.endRecording().toImage(shot.width, shot.height);
+    shot.dispose();
     final data = await image.toByteData(format: ui.ImageByteFormat.png);
+    image.dispose();
     return data?.buffer.asUint8List();
   }
 
@@ -172,6 +187,7 @@ class DeskShot {
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, w, outH));
     final paint = Paint()..filterQuality = FilterQuality.high;
+    canvas.drawColor(_background, BlendMode.src);
     // Above the scrolling part, from the first.
     canvas.drawImageRect(shots.first.$2, Rect.fromLTWH(0, 0, w, viewTop * px), Rect.fromLTWH(0, 0, w, viewTop * px), paint);
     // Each screenful, where its scroll offset puts it. The last may overlap the one before (it

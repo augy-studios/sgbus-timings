@@ -3,7 +3,9 @@
 // UwU Apps theme's brand colour, High contrast, Your colours (still a secret an egg unlocks, as on
 // the site: one colour on the colour wheel, or a preset an egg brought, and the whole theme made
 // from it), and the Easter eggs found. In the desktop app, also Use system accent colour: the
-// computer's own accent for buttons and highlights (desktop/desk_theme.dart).
+// computer's own accent for buttons and highlights (desktop/desk_theme.dart), and in Material
+// You's place the computer's own look: Fluent 2 on Windows, macOS Tahoe, or Deepin's and COSMIC's
+// frosted glass on Linux, with its colours as Material You has them.
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -50,18 +52,32 @@ class _ThemeScreenState extends State<ThemeScreen> {
     return SgScaffold(
       title: tr('theme.title', 'Theme'),
       body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
-        // ---- Material You ----
-        SgCard(
-          child: SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: look.materialYou,
-            onChanged: (on) => setState(() => look.materialYou = on),
-            title: Text(tr('theme.materialYou', 'Material You'), style: Theme.of(context).textTheme.titleMedium),
-            subtitle: Text(tr('theme.materialYouNote', 'Turn off for the UwU Apps theme.')),
+        // ---- Material You, or on the desktop the computer's own look ----
+        if (look.deskStyle case final style?)
+          SgCard(
+            child: ValueListenableBuilder<bool>(
+              valueListenable: DeskTheme.look,
+              builder: (context, on, _) => SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: on,
+                onChanged: (on) => DeskTheme.setLook(on).then((_) => setState(() {})),
+                title: Text(DeskTheme.styleName(style), style: Theme.of(context).textTheme.titleMedium),
+                subtitle: Text(tr('desktop.theme.lookNote', "Your computer's own look, in see-through glass. Turn off for the UwU Apps theme.")),
+              ),
+            ),
+          )
+        else
+          SgCard(
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              value: look.materialYou,
+              onChanged: (on) => setState(() => look.materialYou = on),
+              title: Text(tr('theme.materialYou', 'Material You'), style: Theme.of(context).textTheme.titleMedium),
+              subtitle: Text(tr('theme.materialYouNote', 'Turn off for the UwU Apps theme.')),
+            ),
           ),
-        ),
-        // ---- the desktop's: the computer's own accent colour ----
-        if (Native.has('desktop')) ...[
+        // ---- the desktop's: the computer's own accent colour, which its own look always has ----
+        if (Native.has('desktop') && !look.deskLook) ...[
           const SizedBox(height: 10),
           SgCard(
             child: ValueListenableBuilder<bool>(
@@ -76,19 +92,20 @@ class _ThemeScreenState extends State<ThemeScreen> {
             ),
           ),
         ],
-        // ---- Material You's colours: the wallpaper's, unless GTA VI's or Your colours are picked ----
-        if (look.materialYou)
+        // ---- Material You's colours: the wallpaper's (the computer's accent colour in its own
+        // look), unless GTA VI's or Your colours are picked ----
+        if (look.materialYou || look.deskLook)
           Choice(
             label: tr('theme.youColours', 'Colours'),
             value: look.youColours,
             options: [
-              ('phone', tr('theme.youColours.phone', 'Your phone’s')),
+              ('phone', look.deskLook ? tr('desktop.theme.computerColours', "Your computer's") : tr('theme.youColours.phone', 'Your phone’s')),
               if (Gta6.canPick) (AppLook.gta6, tr('theme.gta6', 'GTA VI')),
               if (yc != null) ('yours', tr('theme.youColours.yours', 'Your colours')),
             ],
             onChanged: (v) => setState(() => look.youColours = v),
           ),
-        if (look.materialYou) ..._gta6Note(sg),
+        if (look.materialYou || look.deskLook) ..._gta6Note(sg),
         // ---- light or dark ----
         Choice(
           label: tr('theme.mode', 'Mode'),
@@ -103,7 +120,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
           note: modeNote,
         ),
         // ---- the UwU Apps theme's brand colour ----
-        if (!look.materialYou) ...[
+        if (!look.materialYou && !look.deskLook) ...[
           Text(tr('theme.brand', 'Brand colour'), style: Theme.of(context).textTheme.titleSmall),
           const SizedBox(height: 8),
           if (yc != null)
@@ -175,7 +192,7 @@ class _ThemeScreenState extends State<ThemeScreen> {
       return [
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: Text(tr('gta6.setNote', 'Set GTA VI before 26 November to keep it for good.'), style: TextStyle(color: sg.muted, fontSize: 13)),
+          child: Text(tr('gta6.setNote', 'Set GTA VI by 14 December to keep it for good.'), style: TextStyle(color: sg.muted, fontSize: 13)),
         ),
       ];
     }

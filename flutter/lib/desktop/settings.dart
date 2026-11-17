@@ -11,7 +11,8 @@
 // loginChosen (desktop.dart, tray.dart, welcome.dart); updateNotices (host.dart; updater.dart only
 // reads it); setupDone, pendingLook (welcome.dart); useSystemAccent (welcome.dart, from Make it
 // yours, and desk_theme.dart's setSystemAccent, from Settings' Theme; desk_theme.dart reads it at
-// start); widgets (widgets_window.dart); trayStop (glance.dart, also through host.dart's
+// start); platformLook, the computer's own look (desk_theme.dart's setLook, from Settings' Theme);
+// widgets (widgets_window.dart); trayStop (glance.dart, also through host.dart's
 // SgBus.setTrayStop), favourites (glance.dart); linkHandoff (links.dart).
 import 'dart:convert';
 import 'dart:io';

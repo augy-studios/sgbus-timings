@@ -235,9 +235,31 @@ class SgbusDesktopPlugin : public flutter::Plugin {
         SetForegroundWindow(top);
       }
       result->Success();
+    } else if (name == "trayFront") {
+      result->Success(EncodableValue(TrayFront()));
     } else {
       result->NotImplemented();
     }
+  }
+
+  // Just before the tray's menu opens: one of the app's own windows made the foreground window,
+  // as Windows asks of a notification icon's menu, so that a click anywhere outside the menu
+  // closes it. nativeapi gives the menu a message-only window, which can never be in front, so
+  // without this the menu stayed open until something in it was picked. The window is a hidden
+  // one of its own (as .NET's NotifyIcon has), made once and never shown, so the app's own window
+  // doesn't come forward with the menu. Returns whether Windows let it come to the front.
+  bool TrayFront() {
+    static HWND front = nullptr;
+    if (!front || !IsWindow(front)) {
+      WNDCLASSW wc = {};
+      wc.lpfnWndProc = DefWindowProcW;
+      wc.hInstance = GetModuleHandleW(nullptr);
+      wc.lpszClassName = L"SgbusTrayMenuOwner";
+      RegisterClassW(&wc);  // Fails harmlessly once it's registered.
+      front = CreateWindowExW(WS_EX_TOOLWINDOW, wc.lpszClassName, L"", WS_POPUP, 0, 0, 0, 0, nullptr, nullptr, wc.hInstance, nullptr);
+      if (!front) return false;
+    }
+    return SetForegroundWindow(front) != FALSE;
   }
 
   // The Dart side is listening: from now on events go straight to it, and any second copy's

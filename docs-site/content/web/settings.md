@@ -178,7 +178,7 @@ Changing the language takes a sip from Singapore's famous language-changing cup.
 ## Themes
 
 <figure>
-<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark, Time-based and Phone's setting modes, eight brand colour swatches with GTA VI last, its note saying to set it before 26 November, and High contrast." width="420" height="647" loading="lazy">
+<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark, Time-based and Phone's setting modes, eight brand colour swatches with GTA VI last, its note saying to set it by 14 December, and High contrast." width="420" height="647" loading="lazy">
 <figcaption>The theme picker: a mode, and one of eight colours.</figcaption>
 </figure>
 
@@ -217,13 +217,13 @@ sixteen combinations.
 further than a tint, with a colour to each kind of thing: pink main buttons, orange for what's
 picked, blue for what's switched on, bus numbers going through them all, and a violet page in dark
 mode. Arrival times keep their usual colours. A window offers it once when the app
-opens. Set it at least once before 26 November, Singapore time, and it's yours to keep, even if you
+opens. Set it at least once by 14 December, Singapore time, and it's yours to keep, even if you
 change colours later. After that it's locked until you win it on the
 [uwuCoins wheel](uwucoins.md#spin-the-wheel). It's kept on each device, so set it on each one you
 use. SG Bus Timings isn't connected with Rockstar Games.
 
 <figure>
-<img src="/screenshots/web/gta6-offer.png" alt="A window titled GTA VI's colours: a strip running from blue through pink to orange, what the theme is, how to keep it by setting it before 26 November, and buttons for Set it and Not now." width="420" height="299" loading="lazy">
+<img src="/screenshots/web/gta6-offer.png" alt="A window titled GTA VI's colours: a strip running from blue through pink to orange, what the theme is, how to keep it by setting it by 14 December, and buttons for Set it and Not now." width="420" height="299" loading="lazy">
 <figcaption>The window that offers it, once.</figcaption>
 </figure>
 
@@ -243,7 +243,7 @@ use. SG Bus Timings isn't connected with Rockstar Games.
 </figure>
 
 <figure>
-<img src="/screenshots/web/gta6-locked.png" alt="The brand colours after 26 November, not set in time: GTA VI's dot faded, and under its name, Win GTA VI on the uwuCoins wheel." width="382" height="219" loading="lazy">
+<img src="/screenshots/web/gta6-locked.png" alt="The brand colours after 14 December, not set in time: GTA VI's dot faded, and under its name, Win GTA VI on the uwuCoins wheel." width="382" height="219" loading="lazy">
 <figcaption>Not set in time: it's won on the wheel. Tap it to go there.</figcaption>
 </figure>
 

@@ -14,7 +14,8 @@
 // source? }, quickest first. The router is
 // _nav/router.js, riding only what's running at the time (_nav/when.js), planned for the time
 // by js/nav-core/plan.js, which the phone plans offline with too; OneMap checks its
-// options (_nav/onemap-check.js); train legs on a line LTA reports as disrupted are flagged.
+// options (_nav/onemap-check.js), and any it adds with a bus that won't be running are dropped
+// (_nav/live.js, running); train legs on a line LTA reports as disrupted are flagged.
 //
 // &via=lat,lng adds one stop on the way (Navigate's Add a stop, _nav/via.js): each option then
 // rides both halves in turn, with `via` { leg, minutes } saying where the stop comes, and the
@@ -28,7 +29,7 @@ import { getGraph, originOf } from "./_nav/network.js";
 import { GUESS_MIN, planFor, planViaFor } from "../js/nav-core/plan.js";
 import { checkWithOneMap } from "./_nav/onemap-check.js";
 import { readWhen } from "./_nav/when.js";
-import { annotate, othersFor, withTraffic } from "./_nav/live.js";
+import { annotate, othersFor, running, withTraffic } from "./_nav/live.js";
 import { joinWays } from "./_nav/via.js";
 import { getTraffic } from "./_lib/traffic.js";
 
@@ -122,6 +123,7 @@ export default async function handler(req, res) {
         live ? othersFor(from, to, best, { bike: req.query.bike === "1" }).catch(() => ({})) : {},
       ]);
     }
+    options = running(options, { graph, setOff });
     annotate(options, { graph, traffic, setOff });
 
     // Lines LTA reports trouble on, as the router's line codes.

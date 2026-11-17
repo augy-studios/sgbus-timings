@@ -183,10 +183,13 @@ class _StopScreenState extends State<StopScreen> {
   }
 
   /// Pick a bus: every bus at the stop as a button, in a sheet (a dialog on the desktop). The
-  /// timings narrow to the one picked.
+  /// timings narrow to the one picked. Favourite buses, and those saved at this stop, are pinned
+  /// first (or last, as Favourites pins them) with a star, as the site's picker and the
+  /// timings below have them (bug report 20261113-V6FE).
   Future<void> _pickBus() async {
     final live = _data?.services.map((s) => s.serviceNo).toSet() ?? <String>{};
-    final all = {...live, ...BusNet.servicesAtStop(code)}.toList()..sort(byNumber);
+    final favs = {...Favs.I.buses(), ...Favs.I.busesAt(code)};
+    final all = Favs.pinned({...live, ...BusNet.servicesAtStop(code)}.toList()..sort(byNumber), favs, Favs.I.pin('bus'), (no) => no);
     final pick = await AppSheet.show<String>(
       context: context,
       isScrollControlled: true,
@@ -199,7 +202,7 @@ class _StopScreenState extends State<StopScreen> {
             if (all.isEmpty) EmptyNote(tr('stop.noLive', 'No live buses right now.')),
             Wrap(spacing: 8, runSpacing: 8, children: [
               for (final no in all)
-                Pill(label: no, on: _service == no, onTap: () => Navigator.pop(ctx, no)),
+                Pill(label: no, icon: favs.contains(no) ? Icons.star : null, on: _service == no, onTap: () => Navigator.pop(ctx, no)),
             ]),
           ]),
         ),
@@ -438,11 +441,20 @@ class _IncomingBar extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: tone ?? sg.border, width: tone == null ? 1 : 2),
               ),
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Text(label, style: TextStyle(color: sg.load(s.next!.load), fontWeight: FontWeight.w700)),
-                Text(s.serviceNo, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: sg.busInk(s.serviceNo))),
-                if (way != null) Text(way.short, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: tone)),
-              ]),
+              // Made smaller rather than cut off where a font's lines are taller than Jua's (the
+              // desktop's Segoe UI, say) or the text is made bigger: the bar's a fixed height.
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Text(label, style: TextStyle(color: sg.load(s.next!.load), fontWeight: FontWeight.w700)),
+                  Text(s.serviceNo, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: sg.busInk(s.serviceNo))),
+                  if (way != null)
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 66),
+                      child: Text(way.short, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: tone)),
+                    ),
+                ]),
+              ),
             ),
           );
         },

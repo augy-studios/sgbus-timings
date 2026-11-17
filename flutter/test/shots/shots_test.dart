@@ -13,6 +13,7 @@ import 'package:sgbus_timings/features/nav/nav_page.dart';
 import 'package:sgbus_timings/features/planner/planner.dart';
 import 'package:sgbus_timings/features/trips/trip.dart';
 import 'package:sgbus_timings/features/trips/trips_page.dart';
+import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/app/shell.dart';
 import 'package:sgbus_timings/data/location.dart';
 import 'package:sgbus_timings/data/store.dart';
@@ -119,8 +120,11 @@ void main() {
     Trip.I.onFix(Fix(Trip.I.current!.points.first[0], Trip.I.current!.points.first[1], accuracy: 8));
     Shell.top
       ..clear()
-      ..add(() => const TripBar());
-    await shot(t, 'trip-bar', () => Scaffold(body: Column(children: [for (final b in Shell.top) b(), Expanded(child: onPage('glance', const GlancePage()))])));
+      ..add(TripBar.top);
+    // The main screen as the app has it, the bar above Glance (only the bar keeps clear of the
+    // status bar).
+    AppNav.page.value = 'glance';
+    await shot(t, 'trip-bar', () => Shell(pages: {'glance': () => const GlancePage()}));
     await shot(t, 'trip', () => const TripScreen());
     await t.runAsync(() => Trip.I.stop());
     await shot(t, 'trips', () => onPage('trips', const TripsPage()));

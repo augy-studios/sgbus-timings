@@ -15,6 +15,7 @@ import '../../data/store.dart';
 import '../../desktop/adaptive.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
+import '../../desktop/desk_theme.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import 'settings_find.dart';
@@ -94,7 +95,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ListTile(
           leading: const Icon(Icons.palette_outlined),
           title: Text(tr('theme.title', 'Theme')),
-          subtitle: Text(AppLook.I.materialYou ? tr('theme.materialYou', 'Material You') : tr('theme.usualLook', 'UwU Apps theme')),
+          subtitle: Text(AppLook.I.desk != null
+              ? DeskTheme.styleName(AppLook.I.desk!)
+              : AppLook.I.materialYou
+                  ? tr('theme.materialYou', 'Material You')
+                  : tr('theme.usualLook', 'UwU Apps theme')),
           onTap: () => AppNav.open('theme'),
         ),
         for (final g in groups)

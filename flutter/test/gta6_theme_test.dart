@@ -17,8 +17,8 @@ double _contrast(Color a, Color b) {
 }
 
 SgColors _sg(Brightness b) => AppLook.I.theme(b).extension<SgColors>()!;
-final _before = DateTime.utc(2026, 11, 25, 15, 59);
-final _after = DateTime.utc(2026, 11, 25, 16);
+final _before = DateTime.utc(2026, 12, 14, 15, 59);
+final _after = DateTime.utc(2026, 12, 14, 16);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -178,12 +178,12 @@ void main() {
     });
   });
 
-  group('kept if set before 26 November', () {
-    test('the last minute of the 25th in Singapore is in time, and midnight is not', () {
+  group('kept if set by 14 December', () {
+    test('the last minute of the 14th in Singapore is in time, and midnight is not', () {
       expect(Gta6.open, isTrue);
       When.now = () => _after;
       expect(Gta6.open, isFalse);
-      expect(Gta6.until, DateTime.parse('2026-11-26T00:00:00+08:00').millisecondsSinceEpoch);
+      expect(Gta6.until, DateTime.parse('2026-12-15T00:00:00+08:00').millisecondsSinceEpoch);
     });
 
     test('set once in time, it can be set again long after', () {
@@ -326,11 +326,11 @@ void main() {
     testWidgets('offers it in both looks, and says to set it in time', (t) async {
       AppLook.I.materialYou = true;
       await screen(t);
-      expect(find.textContaining('before 26 November'), findsOneWidget);
+      expect(find.textContaining('by 14 December'), findsOneWidget);
       await t.tap(find.text('GTA VI'));
       await t.pump();
       expect(AppLook.I.youColours, AppLook.gta6);
-      expect(find.textContaining('before 26 November'), findsNothing, reason: 'it’s theirs now');
+      expect(find.textContaining('by 14 December'), findsNothing, reason: 'it’s theirs now');
     });
 
     testWidgets('as a swatch', (t) async {

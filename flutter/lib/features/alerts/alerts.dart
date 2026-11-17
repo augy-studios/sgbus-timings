@@ -20,6 +20,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../api/api.dart';
 import '../../app/nav.dart';
+import '../../app/shell.dart';
 import '../../data/favs.dart';
 import '../../data/mrt.dart';
 import '../../data/stops.dart';
@@ -281,11 +282,14 @@ class Alerts {
 class DisruptionBar extends StatelessWidget {
   const DisruptionBar({super.key});
 
+  /// The bar as one of the shell's top bars.
+  static final top = TopBar(() => const DisruptionBar(), listenable: Alerts.bar, shown: () => Alerts.bar.value != null && Alerts.bar.value != Alerts.barPutAway);
+
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<String?>(
         valueListenable: Alerts.bar,
         builder: (context, text, _) {
-          if (text == null || text == Alerts.barPutAway) return const SizedBox.shrink();
+          if (text == null || !top.shown()) return const SizedBox.shrink();
           final sg = context.sg;
           return Material(
             color: sg.error.withValues(alpha: 0.14),

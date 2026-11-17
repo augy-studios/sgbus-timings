@@ -1,6 +1,8 @@
 ext {
     minSdkVersion = 24
-    compileSdkVersion = 36
+    // 37 for flutter_local_notifications (the desktop's notifications, lib/desktop/notify.dart),
+    // which Android builds too, and androidx.core 1.19 it brings. targetSdk stays 36.
+    compileSdkVersion = 37
     targetSdkVersion = 36
     androidxAppCompatVersion = '1.7.1'
     androidxCoreVersion = '1.17.0'
@@ -26,4 +28,6 @@ ext {
     // Notifications from the server (PushNotificationsPlugin, MessagingService) and
     // SgBusPlugin's "new versions" topic (2.1.1).
     firebaseMessagingVersion = '25.0.1'
+    // Java's newer library on older Androids, which flutter_local_notifications needs.
+    desugarJdkLibsVersion = '2.1.5'
 }

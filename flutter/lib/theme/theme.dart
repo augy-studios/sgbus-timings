@@ -17,7 +17,17 @@
 //
 // The desktop app (desktop/desk_theme.dart) starts in the UwU Apps theme, can paint the brand
 // colour with the computer's accent colour (accentOverride), and uses compact controls
-// (compact). On Android neither is ever set, so nothing changes there.
+// (compact). In Material You's place it offers the computer's own look (deskStyle, deskLook):
+//
+//   Fluent 2 (Windows)       Mica behind the window (Acrylic where there's no Mica), Segoe UI,
+//            4 px controls and 8 px cards, and a title bar of plain white or black.
+//   macOS Tahoe (macOS)      the window's vibrancy behind Liquid Glass cards: see-through, blurred,
+//            with a bright rim, capsule buttons and round corners, in the system font.
+//   Frosted glass (Linux)    Deepin's and COSMIC's: frosted cards over a soft backdrop of the
+//            accent colour, 8 px controls and 14 px cards, in the desktop's font.
+//
+// Each in the computer's accent colour (or Your colours, or GTA VI's, as Material You has them),
+// light, dark or the system's. On Android none of these is ever set, so nothing changes there.
 // CorePalette and Scheme: what DynamicColorPlugin hands back, and how Android's own palettes
 // map to roles; their replacements take no CorePalette.
 // ignore_for_file: deprecated_member_use
@@ -161,6 +171,42 @@ class SgAccents {
         (Color(0xFFBC0082), _white),
         (Color(0xFFFFBC24), _on),
       ];
+}
+
+/// The computer's own look on the desktop, in Material You's place (desktop/desk_theme.dart):
+/// its corners, its accent colour when the computer doesn't say, and its fonts.
+enum DeskStyle {
+  /// Windows' Fluent 2: Mica and Acrylic.
+  fluent(card: 8, control: 4, dialog: 8, accent: Color(0xFF0078D4), font: 'Segoe UI Variable Text', fallback: ['Segoe UI', 'Nirmala UI', 'Microsoft YaHei UI', 'Segoe UI Symbol']),
+
+  /// macOS Tahoe's Liquid Glass. Capsule controls.
+  tahoe(card: 22, control: 0, dialog: 26, accent: Color(0xFF007AFF), font: null, fallback: []),
+
+  /// Deepin's (DDE) and COSMIC's frosted glass.
+  frosted(card: 14, control: 8, dialog: 16, accent: Color(0xFF0081FF), font: 'sans-serif', fallback: ['Noto Sans', 'Cantarell', 'DejaVu Sans']);
+
+  const DeskStyle({required this.card, required this.control, required this.dialog, required this.accent, required this.font, required this.fallback});
+
+  /// Corner radii: a card, a control (0 for a capsule) and a dialog.
+  final double card, control, dialog;
+
+  /// The accent colour when the computer doesn't give one.
+  final Color accent;
+
+  /// The font, with what stands in for the letters it hasn't; null for the system's own.
+  final String? font;
+  final List<String> fallback;
+
+  /// The platform whose type sizes and font the look takes.
+  TargetPlatform get platform => switch (this) {
+        fluent => TargetPlatform.windows,
+        tahoe => TargetPlatform.macOS,
+        frosted => TargetPlatform.linux,
+      };
+
+  /// A control's shape, with its edge.
+  OutlinedBorder shape([BorderSide side = BorderSide.none]) =>
+      control == 0 ? StadiumBorder(side: side) : RoundedRectangleBorder(borderRadius: BorderRadius.circular(control), side: side);
 }
 
 /// Short ways for a screen to reach the look: `context.sg` for the site's colours.
@@ -322,6 +368,41 @@ class AppLook extends ChangeNotifier {
   /// The desktop's compact controls: smaller paddings, for a mouse rather than a finger.
   bool compact = false;
 
+  /// The computer's own look that the desktop offers in Material You's place (DeskStyle); null on
+  /// Android. While it's set, Material You is off whatever was saved.
+  DeskStyle? deskStyle;
+
+  bool _deskLook = false;
+
+  /// Whether the computer's own look is on (the UwU Apps theme when it's off).
+  bool get deskLook => deskStyle != null && _deskLook;
+  set deskLook(bool on) {
+    if (on == _deskLook) return;
+    _deskLook = on;
+    notifyListeners();
+  }
+
+  /// The computer's own look while it's on; null otherwise.
+  DeskStyle? get desk => deskLook ? deskStyle : null;
+
+  Color? _deskAccent;
+
+  /// The computer's accent colour, for its own look, whether or not "Use system accent colour"
+  /// is on; null where the computer doesn't say.
+  Color? get deskAccent => _deskAccent;
+  set deskAccent(Color? colour) {
+    if (colour == _deskAccent) return;
+    _deskAccent = colour;
+    if (deskLook) notifyListeners();
+  }
+
+  /// A card's corners in the look in use.
+  double get cardRadius => materialYou ? 24 : desk?.card ?? 18;
+
+  /// A pill's shape (a filter, a choice) in the look in use: Fluent's are 4 px rectangles, the
+  /// rest capsules.
+  OutlinedBorder pillShape([BorderSide side = BorderSide.none]) => desk == DeskStyle.fluent ? desk!.shape(side) : StadiumBorder(side: side);
+
   /// The accent colour's tokens, while it stands in for the brand colour.
   Map<String, dynamic>? _accentTokens(Brightness b) {
     final accent = _accentOverride;
@@ -329,8 +410,9 @@ class AppLook extends ChangeNotifier {
     return Colours.accentTokens(hexOf(accent), b == Brightness.dark ? 'dark' : 'light');
   }
 
-  /// Whether the Material You look is on (the UwU Apps theme when it's off).
-  bool get materialYou => Store.I.get(lookKey) != 'usual';
+  /// Whether the Material You look is on (the UwU Apps theme when it's off). Never on the
+  /// desktop, which offers the computer's own look in its place.
+  bool get materialYou => deskStyle == null && Store.I.get(lookKey) != 'usual';
   set materialYou(bool on) {
     Store.I.put(lookKey, on ? null : 'usual');
     notifyListeners();
@@ -352,7 +434,7 @@ class AppLook extends ChangeNotifier {
   /// "light", "dark" or "time".
   String get modePreference {
     final v = Store.I.get(modeKey);
-    return const ['light', 'dark', 'time', 'phone'].contains(v) ? v! : (materialYou ? 'phone' : 'light');
+    return const ['light', 'dark', 'time', 'phone'].contains(v) ? v! : (materialYou || deskLook ? 'phone' : 'light');
   }
 
   /// Picks light, dark, by the clock, or the phone's.
@@ -411,14 +493,19 @@ class AppLook extends ChangeNotifier {
 
   /// The app's whole theme for light or dark, in the look picked.
   ThemeData theme(Brightness b, {bool contrast = false}) {
-    var t = materialYou ? _material(b, contrast) : _usual(b, contrast);
+    final d = desk;
+    var t = d != null
+        ? _desk(d, b, contrast)
+        : materialYou
+            ? _material(b, contrast)
+            : _usual(b, contrast);
     if (isGta6 && !contrast) t = _gta6Dress(t, b);
     if (compact) t = t.copyWith(visualDensity: VisualDensity.compact);
     return t;
   }
 
   /// GTA VI's colours are what's showing.
-  bool get isGta6 => materialYou ? youColours == gta6 : yourColours == null && _accentOverride == null && swatchId == gta6;
+  bool get isGta6 => materialYou || deskLook ? youColours == gta6 : yourColours == null && _accentOverride == null && swatchId == gta6;
 
   /// GTA VI uses every colour of the logo, a colour to each kind of thing, as style.css has it:
   /// pink for the main buttons, orange for what's picked, yellow for what's switched on, blue for
@@ -570,6 +657,201 @@ class AppLook extends ChangeNotifier {
       surfaceContainerHigh: const Color(0xFF350054),
       surfaceContainerHighest: const Color(0xFF420D63),
     );
+  }
+
+  // ---------- the computer's own look (the desktop's) ----------
+
+  /// Each look's background (under the window's own effect, or where there's none), cards,
+  /// stronger cards, card edges, writing and quieter writing, light and dark. The quieter
+  /// writing meets WCAG AA on the background and on the cards.
+  static const _deskTokens = {
+    DeskStyle.fluent: {
+      'light': [Color(0xFFF3F3F3), Color(0xB3FFFFFF), Color(0xE6FFFFFF), Color(0x14000000), Color(0xFF1B1B1B), Color(0xFF5E5E5E)],
+      'dark': [Color(0xFF202020), Color(0x0FFFFFFF), Color(0x1AFFFFFF), Color(0x17FFFFFF), Color(0xFFFFFFFF), Color(0xFFC8C8C8)],
+    },
+    DeskStyle.tahoe: {
+      'light': [Color(0xFFF5F5F7), Color(0x8CFFFFFF), Color(0xC7FFFFFF), Color(0xB3FFFFFF), Color(0xFF1D1D1F), Color(0xFF636366)],
+      'dark': [Color(0xFF1E1E1E), Color(0x1AFFFFFF), Color(0x29FFFFFF), Color(0x2EFFFFFF), Color(0xFFF5F5F7), Color(0xFFA1A1A6)],
+    },
+    DeskStyle.frosted: {
+      'light': [Color(0xFFEEF0F4), Color(0x99FFFFFF), Color(0xD1FFFFFF), Color(0xB3FFFFFF), Color(0xFF1F2329), Color(0xFF575E6A)],
+      'dark': [Color(0xFF1C1D21), Color(0x14FFFFFF), Color(0x24FFFFFF), Color(0x24FFFFFF), Color(0xFFF0F1F3), Color(0xFFA8ADB6)],
+    },
+  };
+
+  /// Dialogs, menus and side panels: solid, so what's under them doesn't show through the
+  /// writing.
+  static Color _deskSolid(DeskStyle d, bool dark) => switch (d) {
+        DeskStyle.fluent => dark ? const Color(0xFF2B2B2B) : const Color(0xFFFFFFFF),
+        DeskStyle.tahoe => dark ? const Color(0xFF2A2A2C) : const Color(0xFFF6F6F6),
+        DeskStyle.frosted => dark ? const Color(0xFF2A2B30) : const Color(0xFFFAFAFB),
+      };
+
+  /// The colour the computer's own look is in: Your colours or GTA VI's when picked for it, as
+  /// Material You has them, else the computer's accent colour, else the look's own.
+  Color _deskBrand(DeskStyle d) {
+    final yc = yourColours;
+    if (youColours == 'yours' && yc != null) return hexColor(yc['base'] as String);
+    if (youColours == gta6) return const Color(0xFFFF2B90);
+    return _deskAccent ?? d.accent;
+  }
+
+  /// The computer's own look ([DeskStyle]): its system font and corners, see-through cards (the
+  /// window's Mica or vibrancy behind them, or the frosted backdrop on Linux: desk_theme.dart),
+  /// in its accent colour. High contrast makes it solid: plain white or black, with clear edges.
+  ThemeData _desk(DeskStyle d, Brightness b, bool contrast) {
+    final dark = b == Brightness.dark;
+    final mode = dark ? 'dark' : 'light';
+    final t = _deskTokens[d]![mode]!;
+    final bg = contrast ? (dark ? Colors.black : Colors.white) : t[0];
+    final card = contrast ? bg : Color.alphaBlend(t[1], bg);
+    final accent = _deskBrand(d);
+    final button = Colours.buttonFor(hexOf(accent), hexOf(card));
+    final brand = hexColor(button.fill);
+    var sg = SgColors(
+      bg: bg,
+      surface: t[1],
+      surfaceStrong: t[2],
+      border: t[3],
+      ink: t[4],
+      muted: t[5],
+      brand: brand,
+      onBrand: hexColor(button.text),
+      brandInk: hexColor(Colours.inkOf(hexOf(accent), hexOf(bg), hexOf(card), mode)),
+      ok: dark ? const Color(0xFF4ADE80) : const Color(0xFF0F7234),
+      warn: dark ? const Color(0xFFFBBF24) : const Color(0xFFA24B08),
+      busy: dark ? const Color(0xFF94A3B8) : const Color(0xFF627288),
+      error: dark ? const Color(0xFFFA9696) : const Color(0xFFB91C1C),
+      tones: dark
+          ? const [Color(0xFF93C5FD), Color(0xFFF9A8D4), Color(0xFFC4B5FD)]
+          : const [Color(0xFF1D4ED8), Color(0xFFBE185D), Color(0xFF6D28D9)],
+      // Fluent's cards sit on Mica as they are; Tahoe's and the frosted ones blur what's behind.
+      glass: d != DeskStyle.fluent,
+    );
+    if (contrast) {
+      sg = SgColors(
+        bg: bg,
+        surface: dark ? const Color(0xFF0D0D0D) : Colors.white,
+        surfaceStrong: dark ? const Color(0xFF161616) : Colors.white,
+        border: dark ? const Color(0xFFF2F2F2) : const Color(0xFF121815),
+        ink: dark ? Colors.white : Colors.black,
+        muted: dark ? const Color(0xFFE6E6E6) : const Color(0xFF1F2622),
+        brand: brand,
+        onBrand: _contrastOnBrand(brand),
+        brandInk: sg.brandInk,
+        ok: dark ? const Color(0xFF4ADE80) : const Color(0xFF0B5A28),
+        warn: dark ? const Color(0xFFFBBF24) : const Color(0xFF7A3600),
+        busy: sg.busy,
+        error: dark ? const Color(0xFFFA9696) : const Color(0xFF8F1010),
+        tones: sg.tones,
+        glass: false,
+      );
+    }
+    final solid = contrast ? sg.surface : _deskSolid(d, dark);
+    final scheme = ColorScheme(
+      brightness: b,
+      primary: sg.brandInk,
+      onPrimary: dark ? const Color(0xFF0C100E) : Colors.white,
+      primaryContainer: sg.brand,
+      onPrimaryContainer: sg.onBrand,
+      secondary: sg.brandInk,
+      onSecondary: dark ? const Color(0xFF0C100E) : Colors.white,
+      secondaryContainer: Color.alphaBlend(sg.brand.withValues(alpha: 0.35), solid),
+      onSecondaryContainer: sg.ink,
+      error: sg.error,
+      onError: Colors.white,
+      surface: solid,
+      onSurface: sg.ink,
+      onSurfaceVariant: sg.muted,
+      surfaceContainerLowest: solid,
+      surfaceContainerLow: Color.alphaBlend(sg.surface, sg.bg),
+      surfaceContainer: Color.alphaBlend(sg.surface, sg.bg),
+      surfaceContainerHigh: Color.alphaBlend(sg.surfaceStrong, sg.bg),
+      surfaceContainerHighest: Color.alphaBlend(sg.surfaceStrong, sg.bg),
+      outline: sg.muted,
+      outlineVariant: contrast ? sg.border : Color.alphaBlend(sg.border, sg.bg),
+      surfaceTint: Colors.transparent,
+    );
+    final typography = Typography.material2021(platform: d.platform);
+    final fallback = d.fallback.isEmpty ? null : d.fallback;
+    final text = (dark ? typography.white : typography.black).apply(fontFamily: d.font, fontFamilyFallback: fallback, bodyColor: sg.ink, displayColor: sg.ink);
+    final edge = BorderSide(color: contrast ? sg.border : Color.alphaBlend(sg.border, sg.bg));
+    final control = d.shape();
+    final field = d.control == 0 ? 10.0 : d.control;
+    final menu = d.control == 0 ? 12.0 : d.control + 4;
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      brightness: b,
+      fontFamily: d.font,
+      fontFamilyFallback: fallback,
+      textTheme: text,
+      // See-through, for the window's Mica or vibrancy (or the frosted backdrop) to show; solid
+      // in high contrast.
+      scaffoldBackgroundColor: contrast ? sg.bg : Colors.transparent,
+      canvasColor: solid,
+      extensions: [sg],
+      // No ripples: a desktop's controls light up under the pointer and when pressed.
+      splashFactory: NoSplash.splashFactory,
+      cardTheme: CardThemeData(
+        elevation: 0,
+        color: sg.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(d.card), side: BorderSide(color: sg.border)),
+        margin: EdgeInsets.zero,
+      ),
+      appBarTheme: AppBarTheme(backgroundColor: Colors.transparent, foregroundColor: sg.ink, elevation: 0, scrolledUnderElevation: 0, surfaceTintColor: Colors.transparent),
+      filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: sg.brand, foregroundColor: sg.onBrand, shape: control)),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: OutlinedButton.styleFrom(foregroundColor: sg.ink, shape: control, side: edge)),
+      textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: sg.brandInk, shape: control)),
+      elevatedButtonTheme: ElevatedButtonThemeData(style: ElevatedButton.styleFrom(shape: control, elevation: 0)),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(shape: control, side: edge, selectedBackgroundColor: sg.brand, selectedForegroundColor: sg.onBrand),
+      ),
+      chipTheme: ChipThemeData(shape: control, side: edge),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: sg.surfaceStrong,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(field), borderSide: edge),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(field), borderSide: edge),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(field), borderSide: BorderSide(color: sg.brandInk, width: 2)),
+      ),
+      switchTheme: SwitchThemeData(
+        trackColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? sg.brand : null),
+        thumbColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected) ? sg.onBrand : null),
+      ),
+      dialogTheme: DialogThemeData(backgroundColor: solid, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(d.dialog), side: edge)),
+      bottomSheetTheme: BottomSheetThemeData(backgroundColor: solid, showDragHandle: true),
+      popupMenuTheme: PopupMenuThemeData(color: solid, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(menu), side: edge)),
+      menuTheme: MenuThemeData(
+        style: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(solid),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(menu), side: edge)),
+        ),
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(color: solid, borderRadius: BorderRadius.circular(d.control == 0 ? 8 : d.control), border: Border.fromBorderSide(edge)),
+        textStyle: TextStyle(color: sg.ink, fontSize: 12),
+      ),
+    );
+  }
+
+  /// The desktop title bar's colours in the computer's own look; null in the other looks.
+  /// Fluent 2's is plain white in light and plain black in dark; Tahoe's is the window's own
+  /// glass; the frosted one is a pane of it.
+  BarColours? deskBar(Brightness b, {bool contrast = false}) {
+    final d = desk;
+    if (d == null) return null;
+    final dark = b == Brightness.dark;
+    final t = _deskTokens[d]![dark ? 'dark' : 'light']!;
+    final field = dark ? const Color(0x1FFFFFFF) : const Color(0x0F000000);
+    final hover = dark ? const Color(0x1FFFFFFF) : const Color(0x14000000);
+    if (d == DeskStyle.fluent) {
+      return dark
+          ? BarColours(background: Colors.black, fg: Colors.white, field: field, hover: hover)
+          : BarColours(background: Colors.white, fg: const Color(0xFF1B1B1B), field: field, hover: hover);
+    }
+    if (contrast) return BarColours(background: dark ? Colors.black : Colors.white, fg: dark ? Colors.white : Colors.black, field: field, hover: hover);
+    return BarColours(background: d == DeskStyle.tahoe ? Colors.transparent : t[1], fg: t[4], field: field, hover: hover);
   }
 
   // ---------- the UwU Apps theme ----------

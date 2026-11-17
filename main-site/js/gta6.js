@@ -1,5 +1,5 @@
-// GTA VI's colours (Augy, 7 November 2026), for the game's release on 19 November: a brand colour
-// (js/theme.js, style.css) anyone can set until UNTIL, midnight going into 26 November in
+// GTA VI's colours (Augy, 7 November 2026; open until 14 December, as Discord's Vice City Makeover, from 17 November), for the game's release on 19 November: a brand colour
+// (js/theme.js, style.css) anyone can set until UNTIL, midnight going into 15 December in
 // Singapore. Set once by then, it's theirs for good, whatever they change to afterwards. After
 // that it's locked until the uwuCoins wheel's egg slice gives it (js/coins.js), which it does
 // before any more eggs, and until it does the slice stays a prize once the eggs are all found.
@@ -15,7 +15,7 @@
   const OFFER_KEY = 'sgbus_gta6_offer';
   const ID = 'gta6Modal';
   const THEME = 'gta-6';
-  const UNTIL = Date.UTC(2026, 10, 25, 16);
+  const UNTIL = Date.UTC(2026, 11, 14, 16);
   const WAIT_MS = 2500;
   const TRY_MS = 3000;
 

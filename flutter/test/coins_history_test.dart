@@ -56,7 +56,7 @@ void main() {
     });
 
     test('GTA VI won on the wheel says so', () {
-      When.now = () => DateTime.utc(2026, 12, 1);
+      When.now = () => DateTime.utc(2026, 12, 20);
       Coins.setBalance(100000);
       for (var i = 0; i < 2000 && !Gta6.owned; i++) {
         Coins.spin();

@@ -198,7 +198,7 @@
   // GTA VI's word under its name: how to keep it, or where to win it. Null once it's theirs.
   function swatchNote(t) {
     if (t.id !== window.Gta6?.THEME || Gta6.owned()) return null;
-    return Gta6.open() ? I18n.t("gta6.setNote", "Set GTA VI before 26 November to keep it for good.") : I18n.t("gta6.locked", "Win GTA VI on the uwuCoins wheel.");
+    return Gta6.open() ? I18n.t("gta6.setNote", "Set GTA VI by 14 December to keep it for good.") : I18n.t("gta6.locked", "Win GTA VI on the uwuCoins wheel.");
   }
 
   function renderSwatches() {

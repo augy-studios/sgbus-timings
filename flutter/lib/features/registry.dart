@@ -130,8 +130,8 @@ void registerFeatures() {
   AppNav.register('planner', (a) => openPlanner(start: a['start'] as String?, end: a['end'] as String?, when: a['when'] as dynamic));
   Shell.top
     ..clear()
-    ..add(() => const DisruptionBar())
-    ..add(() => const TripBar());
+    ..add(DisruptionBar.top)
+    ..add(TripBar.top);
   Trip.I.resume();
   TripWatch.I.start();
   TripChange.register();

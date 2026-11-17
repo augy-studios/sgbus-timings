@@ -127,6 +127,8 @@
   "desktop.stop.widget.title": "Show this stop's next buses in a widget on your desktop",
   "desktop.theme.accent": "Use system accent colour",
   "desktop.theme.accentNote": "Your computer's accent colour for buttons and highlights, with the app's own backgrounds and fonts.",
+  "desktop.theme.lookNote": "Your computer's own look, in see-through glass. Turn off for the UwU Apps theme.",
+  "desktop.theme.computerColours": "Your computer's",
   "desktop.title.board": "Departures board",
   "desktop.title.bus": "Bus {no}",
   "desktop.title.map": "Map",

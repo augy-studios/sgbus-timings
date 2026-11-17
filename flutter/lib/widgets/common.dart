@@ -18,7 +18,7 @@ class SgCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
-    final radius = BorderRadius.circular(context.materialYou ? 24 : 18);
+    final radius = BorderRadius.circular(AppLook.I.cardRadius);
     final body = Material(
       color: color ?? (context.materialYou ? Theme.of(context).colorScheme.surfaceContainerLow : sg.surface),
       shape: RoundedRectangleBorder(borderRadius: radius, side: context.materialYou && border == null ? BorderSide.none : BorderSide(color: border ?? sg.border)),
@@ -26,7 +26,8 @@ class SgCard extends StatelessWidget {
       child: InkWell(onTap: onTap, child: Padding(padding: padding, child: child)),
     );
     if (!sg.glass) return body;
-    // The UwU Apps theme's glass: what's behind blurred through it.
+    // The UwU Apps theme's glass, and Tahoe's and the frosted look's: what's behind blurred through
+    // it.
     return ClipRRect(
       borderRadius: radius,
       child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: body),
@@ -74,9 +75,9 @@ class Pill extends StatelessWidget {
     final words = Text(label, style: TextStyle(color: ink, fontSize: 14));
     final btn = Material(
       color: unset ? Colors.transparent : on ? sg.pick : (context.materialYou ? Theme.of(context).colorScheme.surfaceContainerHigh : sg.surfaceStrong),
-      shape: StadiumBorder(side: context.materialYou && !unset ? BorderSide.none : BorderSide(color: sg.border)),
+      shape: AppLook.I.pillShape(context.materialYou && !unset ? BorderSide.none : BorderSide(color: sg.border)),
       child: InkWell(
-        customBorder: const StadiumBorder(),
+        customBorder: AppLook.I.pillShape(),
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),

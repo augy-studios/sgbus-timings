@@ -49,3 +49,5 @@ With a time picked (`&when=leave|arrive&at=2026-10-09T08:30`), and for Leave now
 is only boarded between its first and last bus at that stop, and a train between about
 5:30am (6am on Sundays and public holidays) and midnight. Arrive by plans from the quickest
 way's time to set off, then keeps each way only if it runs from its own.
+A way OneMap's check adds is dropped if one of its buses won't be running by the time it's
+reached (`live.js`, `running`), as OneMap's timetables don't follow LTA's first and last buses.

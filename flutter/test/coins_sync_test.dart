@@ -24,7 +24,7 @@ void main() {
     });
 
     test('GTA VI\'s colours while they\'re the wheel\'s to give', () {
-      if (!Gta6.due) return; // before 26 November they can still be set, and an egg's given
+      if (!Gta6.due) return; // by 14 December they can still be set, and an egg's given
       final r = Coins.eggLinkPrize();
       expect(r.gta6, isTrue);
     });

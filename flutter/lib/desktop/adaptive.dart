@@ -15,6 +15,9 @@
 //   no row needs it yet).
 // - DeskScrollBehavior: scrolling as Windows and Linux do it (no Android glow or stretch, a
 //   scroll bar, mouse wheel and touchpad), for those two only: macOS keeps its own.
+// - DeskCursor: the pointing hand over every button, in every window (main.dart installs it).
+//   Flutter's own buttons show the arrow on a computer (adaptiveClickable), as a desktop's native
+//   buttons do; the app wants the hand, as the website and the Electron app had it.
 //
 // How a screen tells it's the desktop app: `Native.has('desktop')`, the desktop's bridge host
 // (host.dart) listing 'desktop' among its features. On Android it's false, so nothing here changes
@@ -29,6 +32,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
@@ -453,6 +457,110 @@ class DeskHover extends StatefulWidget {
 
   @override
   State<DeskHover> createState() => _DeskHoverState();
+}
+
+/// The pointing hand over every button. Flutter's buttons (and InkWell, the rail's destinations,
+/// list rows, chips and menu items, which all tap through an InkWell) ask for the arrow on a
+/// computer, and have no theme to say otherwise for InkWell or the rail. So the mouse tracker
+/// sees, in front of a region that asks for the arrow over something it taps (its child's
+/// semantics have a tap: so not a disabled button), a region of its own that asks for the hand.
+/// Text fields, links and anything else that asks for a cursor of its own keep theirs.
+class DeskCursor extends MouseTracker {
+  DeskCursor._() : super((position, viewId) => _hands(_hitTest(position, viewId)));
+
+  /// What's under the mouse, as Flutter's own tracker finds it.
+  static HitTestResult _hitTest(Offset position, int viewId) {
+    final result = HitTestResult();
+    RendererBinding.instance.hitTestInView(result, position, viewId);
+    return result;
+  }
+
+  /// The hand's region for each region it goes in front of, kept so the tracker sees the same one
+  /// while the mouse stays.
+  static final _hand = Expando<_Hand>('hand');
+
+  /// A hover's own hit test, with the hand put in.
+  @override
+  void updateWithEvent(PointerEvent event, HitTestResult? hitTestResult) =>
+      super.updateWithEvent(event, hitTestResult == null ? null : _hands(hitTestResult));
+
+  /// [result], with the hand in front of the region that decides the cursor, if that region asks
+  /// for the arrow over a tap; [result] itself otherwise. The tracker takes the first region (in
+  /// hit-test order, front to back) that asks for a cursor at all.
+  static HitTestResult _hands(HitTestResult result) {
+    final path = result.path.toList();
+    final at = path.indexWhere((e) => e.target is MouseTrackerAnnotation && (e.target as MouseTrackerAnnotation).cursor != MouseCursor.defer);
+    if (at < 0) return result;
+    final region = path[at].target;
+    if (region is! RenderMouseRegion || region.cursor != SystemMouseCursors.basic || !_taps(region)) return result;
+    final out = _Path();
+    for (var i = 0; i < path.length; i++) {
+      final e = path[i];
+      final transform = e.transform ?? Matrix4.identity();
+      if (i == at) out.put(_hand[region] ??= _Hand(region), transform);
+      out.put(e.target, transform);
+    }
+    return out;
+  }
+
+  /// Whether the region's child taps: an InkWell's MouseRegion has its Semantics (with the tap,
+  /// while it's enabled) a step or two in.
+  static bool _taps(RenderMouseRegion region) {
+    RenderObject? c = region.child;
+    for (var depth = 0; depth < 4 && c != null; depth++) {
+      if (c is RenderSemanticsAnnotations) return c.properties.onTap != null;
+      c = c is RenderProxyBox ? c.child : null;
+    }
+    return false;
+  }
+}
+
+/// The desktop app's binding: Flutter's own, with [DeskCursor] as its mouse tracker. main.dart
+/// starts it in every desktop window (the app, Make it yours, the widgets) in place of
+/// WidgetsFlutterBinding's.
+class DeskBinding extends WidgetsFlutterBinding {
+  DeskBinding._();
+
+  /// Starts the binding, once, before anything else needs one.
+  static void ensureInitialized() => DeskBinding._();
+
+  /// The mouse tracker that shows the hand over buttons. A binding of its own overriding this is
+  /// how a tracker is put in; the call on is only marked for tests because tests swap it too.
+  @override
+  // ignore: invalid_use_of_visible_for_testing_member
+  void initMouseTracker([MouseTracker? tracker]) => super.initMouseTracker(tracker ?? DeskCursor._());
+}
+
+/// A hit test's path made again, each entry with its own transform, as the tracker gives it to a
+/// region's hover.
+class _Path extends HitTestResult {
+  /// Adds [target] at [transform].
+  void put(HitTestTarget target, Matrix4 transform) {
+    pushTransform(transform);
+    add(HitTestEntry(target));
+    popTransform();
+  }
+}
+
+/// A region of the mouse tracker's that asks for the hand, in front of [region].
+class _Hand with Diagnosticable implements MouseTrackerAnnotation, HitTestTarget {
+  _Hand(this.region);
+  final RenderMouseRegion region;
+
+  @override
+  MouseCursor get cursor => SystemMouseCursors.click;
+
+  @override
+  PointerEnterEventListener? get onEnter => null;
+
+  @override
+  PointerExitEventListener? get onExit => null;
+
+  @override
+  bool get validForMouseTracker => region.validForMouseTracker;
+
+  @override
+  void handleEvent(PointerEvent event, HitTestEntry entry) {}
 }
 
 /// Remembers whether the mouse is over the row, for its highlight.

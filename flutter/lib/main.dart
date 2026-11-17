@@ -15,6 +15,7 @@ import 'data/network.dart';
 import 'data/stations.dart';
 import 'data/stops.dart';
 import 'data/store.dart';
+import 'desktop/adaptive.dart';
 import 'desktop/desktop.dart';
 import 'desktop/desktop_main.dart';
 import 'desktop/host.dart';
@@ -27,7 +28,12 @@ import 'theme/theme.dart';
 import 'features/tour/tour.dart';
 
 Future<void> main(List<String> args) async {
-  WidgetsFlutterBinding.ensureInitialized();
+  // On a computer, the binding that shows the pointing hand over buttons (desktop/adaptive.dart).
+  if (Desktop.on) {
+    DeskBinding.ensureInitialized();
+  } else {
+    WidgetsFlutterBinding.ensureInitialized();
+  }
   if (Desktop.on) {
     await Desktop.identify();
     if (Desktop.kind == 'welcome') return runWelcome(Desktop.windowArgs);

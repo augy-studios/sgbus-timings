@@ -3,7 +3,8 @@
 // data as the Android app's (harness.dart: the clock stopped at STILL_AT, the stops and routes
 // from test/fixtures/, made-up timings): Make it yours, the update window, the main window with a
 // stop in its detail pane, the command bar open, a right-click menu, a dialog and a side panel,
-// and a Bus timings widget.
+// the computer's own look (Fluent 2 and the frosted glass; Tahoe needs a Mac's vibrancy and
+// font, so it's taken on a Mac), and a Bus timings widget.
 //
 // The desktop's paths are turned on as the app turns them on: the bridge says 'desktop' (and the
 // desktop host's other features, Native.fake), the site's look with compact controls (as
@@ -38,6 +39,7 @@ import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/desktop/adaptive.dart';
 import 'package:sgbus_timings/desktop/chrome.dart';
 import 'package:sgbus_timings/desktop/command_bar.dart';
+import 'package:sgbus_timings/desktop/desk_theme.dart';
 import 'package:sgbus_timings/desktop/desktop.dart';
 import 'package:sgbus_timings/desktop/splash.dart';
 import 'package:sgbus_timings/desktop/updater.dart';
@@ -45,6 +47,7 @@ import 'package:sgbus_timings/desktop/welcome.dart';
 import 'package:sgbus_timings/desktop/widgets_window.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';
 import 'package:sgbus_timings/features/registry.dart';
+import 'package:sgbus_timings/features/settings/theme_screen.dart';
 import 'package:sgbus_timings/features/timings/stop_screen.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/i18n/i18n.dart';
@@ -114,6 +117,11 @@ final (String, List<String>) _systemFont = switch (_platform) {
 /// asks for the system's by name). Where its files aren't there, Roboto stands in.
 Future<void> _loadFonts() async {
   await loadFonts();
+  // Fluent 2's font (theme/theme.dart's DeskStyle.fluent), Windows 11's own Segoe UI Variable.
+  const variable = 'C:/Windows/Fonts/SegUIVar.ttf';
+  if (File(variable).existsSync()) {
+    await (FontLoader('Segoe UI Variable Text')..addFont(Future.value(ByteData.sublistView(File(variable).readAsBytesSync())))).load();
+  }
   final (family, files) = _systemFont;
   var there = files.where((f) => File(f).existsSync()).toList();
   if (family == 'Roboto') return;
@@ -380,6 +388,39 @@ void main() {
       await t.tap(find.byType(WeatherButton));
       await settle(t);
     });
+  });
+
+  testWidgets("desktop: the computer's own look", variant: _onDesktop, timeout: _t, (t) async {
+    await _ready(t);
+    AppLook.I.deskAccent = const Color(_windowsBlue);
+    addTearDown(() {
+      AppLook.I.deskStyle = null;
+      AppLook.I.deskLook = false;
+      AppLook.I.deskAccent = null;
+      DeskTheme.effect.value = false;
+      DeskTheme.look.value = false;
+    });
+    // Fluent 2 on Windows: the window's Mica behind the see-through page. Mica is the desktop's
+    // wallpaper blurred almost to one colour, which the look's own background stands in for.
+    AppLook.I.deskStyle = DeskStyle.fluent;
+    AppLook.I.deskLook = true;
+    DeskTheme.look.value = true;
+    DeskTheme.effect.value = true;
+    Widget onMica(Brightness b) => ColoredBox(color: AppLook.I.theme(b).extension<SgColors>()!.bg, child: _mainWindow(b));
+    for (final b in Brightness.values) {
+      final dark = b == Brightness.dark;
+      await _shot(t, dark ? 'look-fluent-dark' : 'look-fluent', size: _windowSize, () => onMica(b), then: _bedokInPane);
+    }
+    // Theme, with the look's switch in Material You's place and its Colours.
+    await _shot(t, 'look-theme', size: _windowSize, () => onMica(Brightness.light), then: (t) async {
+      ThemeScreen.open();
+      await settle(t);
+    });
+    // Deepin's and COSMIC's frosted glass, as Linux has it: the app's own backdrop of the accent
+    // colour (Linux gives no effect of its own), blurred through the cards.
+    AppLook.I.deskStyle = DeskStyle.frosted;
+    DeskTheme.effect.value = false;
+    await _shot(t, 'look-frosted', size: _windowSize, () => _mainWindow(Brightness.light), then: _bedokInPane);
   });
 
   testWidgets('desktop: a Bus timings widget', variant: _onDesktop, timeout: _t, (t) async {

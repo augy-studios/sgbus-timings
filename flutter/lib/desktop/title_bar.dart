@@ -40,7 +40,9 @@ class TitleBar extends StatelessWidget {
   /// The bar: its drag area underneath, and the buttons and command bar in a row over it.
   @override
   Widget build(BuildContext context) {
-    final ink = BarColours.of(context.sg);
+    // The computer's own look has bars of its own (Fluent's plain white or black); the others
+    // are in the brand colour.
+    final ink = AppLook.I.deskBar(Theme.of(context).brightness, contrast: AppLook.I.highContrast(context)) ?? BarColours.of(context.sg);
     final mac = Desktop.mac && !preview;
     return Material(
       color: ink.background,
@@ -323,6 +325,7 @@ class _WindowButtonState extends State<_WindowButton> {
           button: true,
           label: widget.tip,
           child: MouseRegion(
+            cursor: SystemMouseCursors.click,
             onEnter: (_) => setState(() => _over = true),
             onExit: (_) => setState(() => _over = false),
             child: GestureDetector(

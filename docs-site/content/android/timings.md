@@ -78,13 +78,14 @@ walk, use **Directions**.
 ## Pick a bus
 
 <figure>
-<img src="/screenshots/android/stop-pick.png" alt="Bedok Int with a sheet slid up: Pick a bus, then a grid of every bus number that calls there, from 7 and 7A to 854e." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/stop-pick.png" alt="Bedok Int with a sheet slid up: Pick a bus, then a grid of every bus number that calls there, starting with favourite buses 14 and 196, each with a star, then from 7 and 7A to 854e." width="412" height="892" loading="lazy">
 <figcaption>Every bus that calls here, running now or not.</figcaption>
 </figure>
 
 **Pick a bus** slides up every bus that calls at the stop, from the bus routes rather
-than what's running now, so a bus that's stopped for the night is still there. Pick
-one and the screen shows only that bus.
+than what's running now, so a bus that's stopped for the night is still there. Your
+[favourite buses](favourites.md) come first, each with a star (or last, if Favourites
+pins them to the bottom). Pick one and the screen shows only that bus.
 
 <figure>
 <img src="/screenshots/android/stop-narrowed.png" alt="Bedok Int narrowed to bus 14: Show all services and Route from here, then Pick a bus, Directions, Board and NFC sticker, the row of next buses with just bus 14, and bus 14's card." width="412" height="892" loading="lazy">

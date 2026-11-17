@@ -32,6 +32,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
+import 'package:nativeapi/nativeapi.dart' as na show Application, Brightness, VisualEffect;
 
 import '../api/net.dart';
 import '../app/links.dart';
@@ -42,6 +43,7 @@ import '../data/stops.dart';
 import '../i18n/i18n.dart';
 import '../theme/theme.dart';
 import 'command_bar.dart';
+import 'desk_theme.dart';
 import 'desktop.dart';
 import 'menubar.dart';
 import 'rail.dart';
@@ -446,11 +448,20 @@ class _Body extends StatelessWidget {
   }
 
   /// The menus and keys around everything, then the title bar over the rail and the content,
-  /// laid out for the window's width; the window's own background follows the theme's.
+  /// laid out for the window's width; the window's own background follows the theme's, and its
+  /// effect goes behind a see-through page (the computer's own look: desk_theme.dart). Where the
+  /// window has no effect, the frosted backdrop is drawn behind it instead.
   @override
   Widget build(BuildContext context) {
-    final background = Theme.of(context).scaffoldBackgroundColor;
-    WidgetsBinding.instance.addPostFrameCallback((_) => Desktop.paintBackground(background));
+    final theme = Theme.of(context);
+    // The window's own background is solid (the look's, under a see-through page), as it shows
+    // before the first frame and wherever the window's effect is off.
+    final background = context.sg.bg;
+    final clear = theme.scaffoldBackgroundColor.a < 1;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Desktop.paintBackground(background);
+      _windowEffect(theme.brightness, clear: clear);
+    });
     return DeskMenus.wrap(
       // Focus lands back here (not above the shortcuts) when something lets it go.
       child: FocusScope(
@@ -461,26 +472,72 @@ class _Body extends StatelessWidget {
           child: Listener(
             behavior: HitTestBehavior.translucent,
             onPointerDown: (e) => AppNav.fromPane = AppNav.paneContains(e.position),
-            child: ValueListenableBuilder<bool>(
-              valueListenable: DeskChrome.fullScreen,
-              builder: (context, full, _) => Column(children: [
-                if (!full) const TitleBar(),
-                Expanded(
-                  child: LayoutBuilder(builder: (context, box) {
-                    final layout = DeskPanes.layoutFor(box.maxWidth);
-                    return Row(children: [
-                      if (!full && layout != DeskLayout.phone) const DeskRail(),
-                      Expanded(child: _Content(layout: layout, child: child)),
-                    ]);
-                  }),
-                ),
-              ]),
-            ),
+            child: Stack(fit: StackFit.expand, children: [
+              // The frosted backdrop, behind a see-through page the window has no effect for.
+              ValueListenableBuilder<bool>(
+                valueListenable: DeskTheme.effect,
+                builder: (context, effect, _) => clear && !effect ? const DeskBackdrop() : const SizedBox.shrink(),
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: DeskChrome.fullScreen,
+                builder: (context, full, _) => Column(children: [
+                  if (!full) const TitleBar(),
+                  Expanded(
+                    child: LayoutBuilder(builder: (context, box) {
+                      final layout = DeskPanes.layoutFor(box.maxWidth);
+                      return Row(children: [
+                        if (!full && layout != DeskLayout.phone) const DeskRail(),
+                        Expanded(child: _Content(layout: layout, child: child)),
+                      ]);
+                    }),
+                  ),
+                ]),
+              ),
+            ]),
           ),
         ),
       ),
     );
   }
+}
+
+/// The window's effect last set: its light or dark, and whether the page was see-through.
+(Brightness, bool)? _effectFor;
+
+/// After each frame: the window's own effect behind a see-through page ([clear]: the computer's
+/// own look), in the app's light or dark, or none behind a solid one (the other looks, high
+/// contrast). Mica, then Acrylic, on Windows (Mica needs Windows 11 22H2); the vibrancy of a
+/// Mac's sidebar; none on Linux, which has none to ask for. Whether one took is DeskTheme.effect,
+/// and nothing's done when neither has changed.
+void _windowEffect(Brightness brightness, {required bool clear}) {
+  if (_effectFor == (brightness, clear)) return;
+  _effectFor = (brightness, clear);
+  final w = Desktop.window;
+  if (w == null) return;
+  final effects = Desktop.windows
+      ? const [na.VisualEffect.mica, na.VisualEffect.acrylic]
+      : Desktop.mac
+          ? const [na.VisualEffect.blur]
+          : const <na.VisualEffect>[];
+  var on = false;
+  try {
+    if (clear) {
+      // The effect's tint (Mica's, the vibrancy's) follows the window's light or dark.
+      na.Application.instance.setBrightness(brightness == Brightness.dark ? na.Brightness.dark : na.Brightness.light);
+      for (final e in effects) {
+        if (w.setVisualEffect(e)) {
+          on = true;
+          break;
+        }
+      }
+    } else if (DeskTheme.effect.value) {
+      w.setVisualEffect(na.VisualEffect.none);
+      na.Application.instance.setBrightness(na.Brightness.system);
+    }
+  } catch (_) {
+    on = false;
+  }
+  DeskTheme.effect.value = on;
 }
 
 /// The area beside the rail and under the bar: the app's navigator, told its own size (so a page

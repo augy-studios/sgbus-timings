@@ -103,6 +103,11 @@ class SgbusDesktop {
         ],
       });
 
+  /// Windows: makes a hidden window of the app's the foreground window, just before the tray's
+  /// menu opens, so a click outside the menu closes it (the menu's own owner can't be in front).
+  /// True if Windows let it come forward.
+  static Future<bool> trayFront() async => await _invoke<bool>('trayFront') ?? false;
+
   /// Windows: the taskbar thumbnail's buttons, each {id, tooltip, icon: prev|next|refresh,
   /// enabled}. A pressed button comes back as a 'thumb' event with its id.
   static Future<void> thumbButtons(List<Map<String, Object>> buttons) => _invoke('thumbButtons', {'buttons': buttons});

@@ -26,12 +26,29 @@ class Shell extends StatefulWidget {
   const Shell({super.key, required this.pages});
   final Map<String, Widget Function()> pages;
 
-  /// What runs along the top of every page: the disruptions bar (features/alerts/) and the trip
-  /// bar (features/trips/).
-  static final List<Widget Function()> top = [];
+  /// What runs along the top of every page, under the offline bar: the disruptions bar
+  /// (features/alerts/), the trip bar (features/trips/) and the app update bar (features/misc/).
+  static final List<TopBar> top = [];
 
   @override
   State<Shell> createState() => _ShellState();
+}
+
+/// One of the bars along the top of the main screen: how to draw it, and whether it's showing,
+/// so that only the first one showing keeps clear of the status bar, and the page under them
+/// needn't (bug report 20261113-7K2S: each bar, and then the page, left the status bar's height
+/// empty again).
+class TopBar {
+  const TopBar(this.build, {required this.listenable, required this.shown});
+
+  /// The bar, which draws nothing while it isn't showing.
+  final Widget Function() build;
+
+  /// What changes whether it's showing.
+  final Listenable listenable;
+
+  /// Whether it's showing now.
+  final bool Function() shown;
 }
 
 /// The page on show, the pages built so far, and Android's Back.
@@ -180,26 +197,34 @@ class _ShellState extends State<Shell> {
       ),
     );
     final layout = DeskPanes.layoutOf(context);
+    final bars = [OfflineBar.top, ...Shell.top];
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _back();
       },
       child: Scaffold(
-        body: Column(children: [
-          const OfflineBar(),
-          for (final t in Shell.top) t(),
-          Expanded(
-            child: layout == DeskLayout.phone
-                ? MediaQuery.removePadding(
-                    context: context,
-                    // Under the bar, the page needn't keep clear of the status bar too.
-                    removeTop: false,
-                    child: EdgeTray(child: pages),
-                  )
-                : _Panes(layout: layout, list: pages),
-          ),
-        ]),
+        body: ListenableBuilder(
+          listenable: Listenable.merge([for (final b in bars) b.listenable]),
+          builder: (context, _) {
+            // Whether a bar above already keeps clear of the status bar: then the bars after it,
+            // and the page, needn't leave its height empty again.
+            var covered = false;
+            final column = <Widget>[];
+            for (final b in bars) {
+              column.add(MediaQuery.removePadding(context: context, removeTop: covered, child: b.build()));
+              covered = covered || b.shown();
+            }
+            return Column(children: [
+              ...column,
+              Expanded(
+                child: layout == DeskLayout.phone
+                    ? MediaQuery.removePadding(context: context, removeTop: covered, child: EdgeTray(child: pages))
+                    : _Panes(layout: layout, list: pages),
+              ),
+            ]);
+          },
+        ),
       ),
     );
   }
@@ -315,12 +340,15 @@ class _PaneNote extends StatelessWidget {
 class OfflineBar extends StatelessWidget {
   const OfflineBar({super.key});
 
+  /// The bar as the shell's first top bar.
+  static final top = TopBar(() => const OfflineBar(), listenable: Listenable.merge([Net.off, Net.dismissed]), shown: () => Net.off.value && !Net.dismissed.value);
+
   /// The bar while the app's offline and OK hasn't put it away; nothing otherwise.
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-        listenable: Listenable.merge([Net.off, Net.dismissed]),
+        listenable: top.listenable,
         builder: (context, _) {
-          if (!Net.off.value || Net.dismissed.value) return const SizedBox.shrink();
+          if (!top.shown()) return const SizedBox.shrink();
           final scheme = Theme.of(context).colorScheme;
           return Material(
             color: scheme.inverseSurface,

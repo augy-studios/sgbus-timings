@@ -30,6 +30,7 @@ import 'package:flutter/services.dart';
 
 import '../../api/api.dart';
 import '../../app/nav.dart';
+import '../../app/shell.dart';
 import '../../data/arrivals.dart';
 import '../../data/geo.dart';
 import '../../data/journeys.dart';
@@ -1491,6 +1492,9 @@ List<TripLeg> tripFromLegs(List<Leg> legs) => [
 
 class TripBar extends StatelessWidget {
   const TripBar({super.key});
+
+  /// The bar as one of the shell's top bars.
+  static final top = TopBar(() => const TripBar(), listenable: Trip.I, shown: () => Trip.I.active);
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(

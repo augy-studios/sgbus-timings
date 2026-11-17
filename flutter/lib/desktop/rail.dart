@@ -80,7 +80,14 @@ class _RailState extends State<DeskRail> {
     final extras = EdgeTray.extras.where((e) => !hidden.contains(e.id) && (e.when?.call() ?? true)).toList();
     final picked = tabs.indexWhere((p) => p.id == AppNav.page.value);
     final favs = Favs.I.stops().length;
-    final background = Color.alphaBlend(sg.surface, sg.bg);
+    // In the computer's own look the rail is part of the window's glass: Fluent's sits on its Mica
+    // as it is, Tahoe's and the frosted one are a pane of it. Solid in the other looks.
+    final desk = AppLook.I.desk;
+    final background = desk == null || Theme.of(context).scaffoldBackgroundColor.a == 1
+        ? Color.alphaBlend(sg.surface, sg.bg)
+        : desk == DeskStyle.fluent
+            ? Colors.transparent
+            : sg.surface;
     final rail = NavigationRail(
       backgroundColor: background,
       selectedIndex: picked < 0 ? null : picked,

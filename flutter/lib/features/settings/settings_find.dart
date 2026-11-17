@@ -15,7 +15,7 @@ class SettingsFind {
   SettingsFind._();
 
   static final all = <FoundSetting>[
-    FoundSetting('theme', () => tr('theme.title', 'Theme'), 'colours colors dark light look material you contrast wallpaper'),
+    FoundSetting('theme', () => tr('theme.title', 'Theme'), 'colours colors dark light look material you contrast wallpaper glass fluent mica acrylic tahoe frosted deepin cosmic'),
     FoundSetting('you', () => tr('settings.language', 'Language'), 'language languages bahasa 语言 中文 மொழி chinese malay tamil english'),
     FoundSetting('you', () => tr('settings.your_name_for_the_greeting', 'Your name, for the greeting'), 'name greeting'),
     FoundSetting('you', () => tr('settings.birthday', 'Birthday'), 'birthday age'),

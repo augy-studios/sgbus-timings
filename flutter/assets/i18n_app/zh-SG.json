@@ -127,6 +127,8 @@
   "desktop.stop.widget.title": "在桌面小组件中显示这个巴士站的下几班巴士",
   "desktop.theme.accent": "使用系统强调色",
   "desktop.theme.accentNote": "按钮和高亮部分使用电脑的强调色，背景和字体则保留应用自己的。",
+  "desktop.theme.lookNote": "电脑自己的外观，呈半透明玻璃效果。关闭即可使用 UwU Apps 主题。",
+  "desktop.theme.computerColours": "电脑的",
   "desktop.title.board": "班次显示屏",
   "desktop.title.bus": "{no} 号巴士",
   "desktop.title.map": "地图",

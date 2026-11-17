@@ -84,7 +84,7 @@ void registerMisc() {
   // On Google Play, Play says when there's a new version, and updates it. The desktop app has its
   // own update window and title bar button instead (desktop/updater.dart), so never this bar.
   if (!playBuild && !Native.has('desktop')) {
-    Shell.top.add(() => const AppUpdateBar());
+    Shell.top.add(AppUpdateBar.top);
     AppUpdate.check();
   }
   WidgetsBinding.instance.addObserver(_Resume());
@@ -135,11 +135,14 @@ class AppUpdate {
 class AppUpdateBar extends StatelessWidget {
   const AppUpdateBar({super.key});
 
+  /// The bar as one of the shell's top bars.
+  static final top = TopBar(() => const AppUpdateBar(), listenable: AppUpdate.latest, shown: () => AppUpdate.latest.value != null && !AppUpdate.dismissed);
+
   @override
   Widget build(BuildContext context) => ValueListenableBuilder(
         valueListenable: AppUpdate.latest,
         builder: (context, latest, _) {
-          if (latest == null || AppUpdate.dismissed) return const SizedBox.shrink();
+          if (latest == null || !top.shown()) return const SizedBox.shrink();
           final sg = context.sg;
           final self = Native.has('update');
           return Semantics(

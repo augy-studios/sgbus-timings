@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 16 November 2026**
+**Latest update: 17 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -9,7 +9,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
-## 16 November 2026: The desktop app, rebuilt as an app of its own (2.5.0)
+## 17 November 2026: The desktop app, rebuilt as an app of its own (2.5.0)
 
 ### Desktop app 2.5.0
 
@@ -27,6 +27,9 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Everything it had** - The tray and its menu, the tray countdown, Bus timings widgets, your favourites in the Jump List and the Dock, Service alerts as notifications, starting when you sign in, uwu:// links, screenshots and updating itself.
 - **Closing a widget** - A Bus timings widget closed with Alt+F4 is removed, as its × does. Quitting the app keeps them all for next time.
 - **Linux** - The app now needs Ubuntu 22.04, Debian 12 or newer, and the AppImage uses your computer's own GTK 3 and WebKitGTK 4.1, which most desktops have. If the new version doesn't open, the guide says what to install.
+- **Your computer's own look** - In Material You's place, Theme has Fluent 2 (Acrylic & Mica) on Windows, macOS Tahoe on a Mac, and Deepin & COSMIC Frosted Glass on Linux: see-through glass over the window's own Mica or vibrancy, in your computer's accent colour and font. On Windows its title bar is plain white, or black in dark mode. Its Colours can be your computer's, GTA VI's or Your colours, and with High contrast on it's solid.
+- **A hand over buttons** - The pointer turns into a hand over anything you can click.
+- **The tray's menu closes** - On Windows, clicking anywhere outside the tray's menu closes it, rather than it staying open until something in it was picked.
 
 ### Android app 2.5.0
 
@@ -37,10 +40,14 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Start trip within reach** - On a phone, Start trip under a way, in Navigate and the route planner, has a line of its own across the page, rather than running off its edge under the Edge Tray.
 - **The first walk from Your location** - A trip from Your location starts with the walk to its first stop, from where you were when the ways were planned, not at its first ride, so on a long first walk the Get Off Alert no longer comes early.
 - **Readable in high contrast** - With High contrast on and a dark colour of your own in Theme, the writing on buttons and bars in that colour is white, so it reads. The usual colours and GTA VI keep their black writing.
+- **No gap under the bars** - With the trip bar, a disruption or an update along the top, the page under it no longer leaves the status bar's height empty again, and nor does a second bar under the first.
+- **Readable notes on the trip's screen** - A note with two buttons, such as a slower bus with Reroute and Keep my way, puts them under its words, rather than squeezing the words into a column a letter wide. Under the trip bar the note shows its main button only.
+- **Your buses first in Pick a bus** - Pick a bus on a stop puts your favourite buses first (or last, as Favourites has them), each with a star, as the website does.
 
 ### Website and Android app
 
-- **No way with a bus gone for the day** - A way in Navigate that leaves now is planned again once it's ten minutes old and you come back to it, and an open way says when one of its buses has finished for the day, with the time of the last one. In the Android app, Back to Navigate from a trip no longer opens a way with a bus that has stopped running.
+- **No way with a bus gone for the day** - A way in Navigate that leaves now is planned again once it's ten minutes old and you come back to it, and an open way says when one of its buses has finished for the day, with the time of the last one. In the Android app, Back to Navigate from a trip no longer opens a way with a bus that has stopped running. Navigate, and the Telegram bot's /nav, also no longer offer a way OneMap found on a bus that will have finished for the day by the time you'd reach it.
+- **GTA VI colours until 14 December** - Set them at least once by 14 December, Singapore time, and they're yours to keep, in step with Discord's Vice City Makeover. After that they're won on the uwuCoins wheel.
 - **Tuas Checkpoint** - Its stop says it's for vehicles only, as it can't be crossed on foot, with the buses across to take instead: Causeway Link CW3 or CW4 from Jurong East, CW6 from Boon Lay or CW7 from Tuas Link. Route lists say "no crossing on foot" there, not "passport needed", and the Telegram bot's note on the stop says the same.
 - **Causeway Link in Bus timings** - Causeway Link's buses across to Johor Bahru, CW1 to CW7, show with the shuttle buses at the stops they serve in Singapore, such as Kranji Stn, Queen St Ter and Jurong Town Hall Int, and at the checkpoints. Their times are by timetable, as Causeway Link has no live times, and Navigate doesn't use them.
 
@@ -51,6 +58,7 @@ Newest first. Each update covers the web app and the Telegram bot.
 ### Guide
 
 - The Windows, Mac and Linux app has a section of its own: installing and updating it (coming from 2.4.8 included), the window and its shortcuts, and the tray, widgets and notifications.
+- Pictures of the desktop app in your computer's own look (Fluent 2 in light and dark, its Theme screen, and the frosted glass on Linux), and new ones of Pick a bus with your favourite buses first, the trip bar, and GTA VI's colours with their new date.
 
 ---
 

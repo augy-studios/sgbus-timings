@@ -63,9 +63,51 @@ done differently:
 - From 720 pixels wide, the **navigation rail** down the left takes the place of
   the Edge Tray. On a narrower window the Edge Tray is there as on a phone.
 - It starts in the website's look, the [UwU Apps theme](../android/theme.md#the-uwu-apps-theme)
-  in your brand colour, not Material You. **Use system accent colour**, on the
-  Theme screen in Settings, paints it in your computer's own accent colour instead.
+  in your brand colour. **Use system accent colour**, on the Theme screen in
+  Settings, paints it in your computer's own accent colour instead.
+- In Material You's place, the Theme screen has
+  [your computer's own look](#your-computers-own-look).
+- The pointer turns into a hand over anything you can click.
 - A bug report says it's from the desktop app, with the app's version.
+
+## Your computer's own look
+
+Where the Android app has Material You, the Theme screen in Settings has a switch
+for your computer's own look, in see-through glass and your computer's accent
+colour:
+
+- **Fluent 2 (Acrylic & Mica)** on Windows: Windows' Mica behind the window
+  (Acrylic on Windows 10), Segoe UI, and a plain white title bar, or black in dark
+  mode.
+- **macOS Tahoe** on a Mac: the window's own frosted glass behind see-through
+  cards, with round buttons, in the Mac's own font.
+- **Deepin & COSMIC Frosted Glass** on Linux: frosted cards over soft pools of
+  your accent colour.
+
+Its **Colours** can be your computer's, GTA VI's or Your colours, as Material
+You's can, and **Mode** picks light, dark, by the clock or your computer's. With
+**High contrast** on, it's solid rather than see-through, for easier reading. Turn
+the switch off for the UwU Apps theme.
+
+<figure>
+<img src="/screenshots/desktop/look-fluent.png" alt="The window in Fluent 2: a plain white title bar with the command bar, a light grey rail and list, and Bedok Int's timings in white cards with square-cornered buttons and a blue Saved button, all in Segoe UI." width="1280" height="860" loading="lazy">
+<figcaption>Fluent 2 on Windows.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/desktop/look-fluent-dark.png" alt="The same window in Fluent 2's dark mode: a plain black title bar, dark grey cards on a darker background, and the blue Saved button." width="1280" height="860" loading="lazy">
+<figcaption>Fluent 2 in dark mode, with its black title bar.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/desktop/look-theme.png" alt="Theme in Fluent 2: a switch for Fluent 2 (Acrylic & Mica), turned on, saying Your computer's own look, in see-through glass. Turn off for the UwU Apps theme. Under it, Colours with Your computer's picked and GTA VI, then Mode and High contrast." width="1280" height="860" loading="lazy">
+<figcaption>The switch, where the Android app has Material You.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/desktop/look-frosted.png" alt="The window in Deepin and COSMIC's frosted glass: a soft blue and violet backdrop showing through a pale title bar, a frosted rail and list, and Bedok Int's timings on frosted white cards with round buttons." width="1280" height="860" loading="lazy">
+<figcaption>Frosted glass on Linux.</figcaption>
+</figure>
 
 ## What needs a phone
 
