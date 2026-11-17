@@ -158,13 +158,17 @@ app's folder), and `linux/` (a unique `GtkApplication`, id `org.uwuapps.sgbus`).
 thumbnail buttons, start at sign-in, the Dock menu and badge, and links that arrive while the app
 starts.
 
-### Flutter 3.47.9
+### Flutter 3.50.0
 
-Build the desktop app with **Flutter 3.47.9** (Dart 3.13), as `.github/workflows/` pins it. Flutter
-3.50's Dart 3.14 can't compile `nativeapi` 0.5.10, which `window_manager` 0.6 and `tray_manager` 0.8
-are built on (its `Isolate.create` moved), so on 3.50 nothing that imports them builds or tests.
-Don't override or patch `nativeapi`; moving to a newer Flutter waits for a `nativeapi` that builds
-on it. Keep importing `package:flutter/material.dart`, so the code still builds on 3.47.
+Build the app, desktop and Android, with **Flutter 3.50.0** (Dart 3.14), as `.github/workflows/`
+pins it. `window_manager` 0.7 and `tray_manager` 0.9 are built on `nativeapi` 0.6, and all three
+need it: on an older Flutter, `flutter pub get` can't get them. (Until 17 November 2026 the app was
+on Flutter 3.47.9, because `nativeapi` 0.5.10 didn't compile on 3.50.)
+
+Flutter 3.50 moves Material and Cupertino into packages of their own (`material_ui` and
+`cupertino_ui`), so `flutter analyze` lists each `package:flutter/material.dart` import as a
+deprecation info. They still work; CI runs the analyser with `--no-fatal-infos`. Moving the imports
+over is a change of its own.
 
 ## The project
 
@@ -233,7 +237,7 @@ To try it on a phone over USB, `flutter run` with the phone plugged in and USB d
 GitHub Actions builds every desktop installer when a release is published, and adds them to it
 (`.github/workflows/build-desktop.yml`; `release/README.md`). `desktop-check.yml` runs the
 analyser, a debug build on each system and the tests on every push to `desktop-flutter-rewrite`.
-To build one yourself, with Flutter 3.47.9, from this folder:
+To build one yourself, with Flutter 3.50.0, from this folder:
 
 | System | Needs | Build |
 |---|---|---|

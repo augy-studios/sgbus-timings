@@ -35,11 +35,11 @@ SSH into the machine, then:
      libgtk-3-dev libwebkit2gtk-4.1-dev libx11-dev libxi-dev libpulse-dev
    ```
 
-2. **Install Flutter 3.47.9**, the version the app is built with (`../../README.md`, "Flutter
-   3.47.9": not a newer one):
+2. **Install Flutter 3.50.0**, the version the app is built with (`../../README.md`, "Flutter
+   3.50.0"):
 
    ```bash
-   git clone --depth 1 --branch 3.47.9 https://github.com/flutter/flutter.git ~/flutter
+   git clone --depth 1 --branch 3.50.0 https://github.com/flutter/flutter.git ~/flutter
    echo 'export PATH="$HOME/flutter/bin:$PATH"' >> ~/.bashrc
    source ~/.bashrc
    flutter --version
@@ -119,7 +119,7 @@ the live map.
 | What happens | What to do |
 |---|---|
 | `flutter build linux` stops saying a package such as `gtk+-3.0` or `webkit2gtk-4.1` wasn't found | Install the build tools in step 1 again: one of the `-dev` packages is missing. |
-| `nativeapi` fails to compile, mentioning `Isolate` | The wrong Flutter: `flutter --version` must say 3.47.9. |
+| `flutter pub get` says a package `requires SDK version ^3.14.0` and suggests Flutter 3.50.0 | The wrong Flutter: `flutter --version` must say 3.50.0. |
 | `No build in build/linux/x64/release/bundle` or "isn't built for x64" | Run `flutter build linux --release` first, on a machine of that processor. |
 | `appimagetool not found` | Give its path: `APPIMAGETOOL=~/appimagetool` before the command, as above. |
 | `rpmbuild` is missing | `sudo apt install -y rpm`, then pack again. |

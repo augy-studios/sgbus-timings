@@ -66,7 +66,7 @@ desktop layer (`lib/desktop/`) with the Electron app's words, settings keys and 
 users update in place. `docs/desktop-features-spec.md` (its checklist, §21) and
 `docs/flutter-desktop-app-spec.md` are the spec; `DESKTOP-HANDOVER.md` says what's left.
 
-✅ here means built, tested with Flutter 3.47.9 and seen on macOS; the Windows and Linux builds
+✅ here means built, tested with Flutter 3.50.0 and seen on macOS; the Windows and Linux builds
 come from CI and haven't been run on a real machine yet (`DESKTOP-HANDOVER.md`, item 1).
 
 | Part | Electron | Dart | Status |

@@ -36,12 +36,12 @@ dependencies:
   # (packages/sgbus_desktop/).
   sgbus_desktop:
     path: packages/sgbus_desktop
-  nativeapi: ^0.5.10
-  nativeapi_flutter: ^0.5.10
+  nativeapi: ^0.6.1
+  nativeapi_flutter: ^0.6.1
   shared_preferences: ^2.5.6
   timezone: ^0.11.2
-  window_manager: ^0.6.0
-  tray_manager: ^0.8.3
+  window_manager: ^0.7.0
+  tray_manager: ^0.9.0
   flutter_local_notifications: ^23.0.0
   desktop_multi_window: ^0.3.1
   webview_all: ^1.4.12

@@ -8,7 +8,7 @@ macOS and Linux builds of this Flutter project, with every desktop feature kept,
 ## Where it stands (16 November 2026)
 
 Items 1 to 10 of "Left to do" below are done as far as this Mac can take them: every desktop part
-is built, tested with Flutter 3.47.9 and seen running on macOS, and the docs are written. What's
+is built, tested with Flutter 3.50.0 and seen running on macOS, and the docs are written. What's
 left needs a real Windows PC and a Linux desktop (item 1, and the Windows integration tests in
 item 9), and the release itself (item 11), which is Augy's. The Windows and Linux builds, their
 installers and the workflows have only been read and compiled where possible here; CI builds them.
@@ -43,7 +43,7 @@ Read first, in this order:
 | Git | Only the three specs go to `main` for now; everything else on this branch |
 | When it's done | Bump every platform to 2.5.0 (Android: version bump only), build the APK, commit and push to `main`, publish release `android-v2.5.0` with the APKs, and have GitHub Actions attach the desktop installers to it |
 | Layout | The desktop-style layout (navigation rail, split panes, dialogs instead of bottom sheets, right-click menus, the macOS menu bar) now, not later |
-| Flutter version | 3.47.9, as CI pins it: Flutter 3.50's Dart 3.14 can't compile `nativeapi` 0.5.10 (`window_manager` 0.6 and `tray_manager` 0.8 are built on it). Don't patch or override it; a newer Flutter waits for a `nativeapi` that builds on it |
+| Flutter version | 3.50.0, as CI pins it, with `nativeapi` 0.6, `window_manager` 0.7 and `tray_manager` 0.9 (Augy, on the progress page, 17 November 2026: upgrade now, as the API we use is the same). It was 3.47.9 until then: Flutter 3.50's Dart 3.14 can't compile `nativeapi` 0.5.10 |
 
 ## Done before 13 November
 
@@ -138,7 +138,8 @@ Read first, in this order:
   an empty `android/` folder may linger locally until VS Code lets go.
 - Visual Studio needed the "Desktop development with C++" workload (now installed on this PC).
 - window_manager 0.6 and tray_manager 0.8 are rewrites on nativeapi; their API isn't the 0.5 one
-  most examples show. nativeapi 0.5.10 doesn't compile on Flutter 3.50 (Dart 3.14): use 3.47.9.
+  most examples show. nativeapi 0.5.10 doesn't compile on Flutter 3.50 (Dart 3.14); the app is now on nativeapi 0.6
+  and Flutter 3.50.0.
 - Electron's real data on this PC: `%APPDATA%\SG Bus Timings\` (`settings.json`, `Local Storage\leveldb`),
   installed at `%LOCALAPPDATA%\Programs\SG Bus Timings\`. Copy the LevelDB without its `LOCK` file
   while the Electron app runs.

@@ -19,9 +19,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # Augy's Flutter version (flutter/.metadata's revision, c197ca5). Not newer: Flutter 3.50's
-  # Dart (3.14) can't compile nativeapi 0.5.10, which is written for Dart 3.13.
-  FLUTTER_VERSION: 3.47.9
+  # Flutter 3.50.0 (Dart 3.14), which nativeapi 0.6, window_manager 0.7 and tray_manager 0.9
+  # need: an older Flutter can't get the packages in flutter/pubspec.lock.
+  FLUTTER_VERSION: 3.50.0
 
 jobs:
   check:

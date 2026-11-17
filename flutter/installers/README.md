@@ -35,7 +35,7 @@ Debian 12 (GitHub Actions runs it after each one).
 
 ## The commands
 
-All from the `flutter` folder, with Flutter 3.47.9 (`README.md`, "Flutter 3.47.9").
+All from the `flutter` folder, with Flutter 3.50.0 (`README.md`, "Flutter 3.50.0").
 
 **Windows.** On an x64 PC and on an Arm64 PC, each:
 
