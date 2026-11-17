@@ -79,7 +79,7 @@ Everything here was read from the repo.
 | Version | `2.4.0+27` (versionName 2.4.0, versionCode 27) | `flutter/pubspec.yaml` (`version:`) |
 | minSdk | 24 (Android 7) | `flutter/android/variables.gradle` |
 | compileSdk / targetSdk | 36 / 36 | `flutter/android/variables.gradle` |
-| Build tools | Flutter 3.50, Android Gradle Plugin 9.1.0, JDK 21+ | `flutter/android/settings.gradle`, `flutter/pubspec.yaml` |
+| Build tools | Flutter 3.50, Android Gradle Plugin 9.1.1, JDK 21+ | `flutter/android/settings.gradle`, `flutter/pubspec.yaml` |
 | What the app is | A Flutter app with every screen in Dart (`lib/`), the site's own API, plus native plugins | `flutter/README.md`, `flutter/PORTING.md` |
 | Signing | Release APKs signed with `flutter/android.keystore`, read through `flutter/keystore.properties`. Both are kept out of git, and are not opened or copied in this guide | `build.gradle` (`signingConfigs.release`), `flutter/.gitignore` |
 | Signing key fingerprint (public) | SHA-256 `4E:D5:3F:F1:...:76:CB:44:EB`; `build-apk.ps1` refuses any other key | `flutter/README.md` |

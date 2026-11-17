@@ -18,10 +18,12 @@ pluginManagement {
     }
 }
 
+// Flutter 3.50 stops the build below Android Gradle Plugin 9.1.1 and Kotlin 2.4.10
+// (flutter_tools' DependencyVersionChecker.kt). Gradle itself is gradle/wrapper's 9.3.1.
 plugins {
     id "dev.flutter.flutter-plugin-loader" version "1.0.0"
-    id "com.android.application" version "9.1.0" apply false
-    id "org.jetbrains.kotlin.android" version "2.4.0" apply false
+    id "com.android.application" version "9.1.1" apply false
+    id "org.jetbrains.kotlin.android" version "2.4.20" apply false
 }
 
 include ":app"

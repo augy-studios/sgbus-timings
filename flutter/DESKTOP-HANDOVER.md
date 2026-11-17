@@ -8,7 +8,7 @@ macOS and Linux builds of this Flutter project, with every desktop feature kept,
 ## Where it stands (16 November 2026)
 
 Items 1 to 10 of "Left to do" below are done as far as this Mac can take them: every desktop part
-is built, tested with Flutter 3.50.0 and seen running on macOS, and the docs are written. What's
+is built and tested with Flutter 3.50.0 and was seen running on macOS (with 3.47.9), and the docs are written. What's
 left needs a real Windows PC and a Linux desktop (item 1, and the Windows integration tests in
 item 9), and the release itself (item 11), which is Augy's. The Windows and Linux builds, their
 installers and the workflows have only been read and compiled where possible here; CI builds them.
