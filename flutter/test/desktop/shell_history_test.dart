@@ -2,7 +2,7 @@
 // through the pages, and Forward comes back; a screen closed by Back can be opened again by
 // Forward only if it has its own site address; a screen that won't close (a PopScope) leaves
 // Forward as it was; and anything new clears Forward, as in a browser.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';
 

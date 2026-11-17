@@ -7,7 +7,7 @@
 // The desktop app's navigation rail (desktop/rail.dart) shows the same extras. An extra that
 // needs a phone (SimplyGo's app, the card reader, Offline Sharing, the phone's reminders) is
 // left out there, and out of Settings' Edge Tray buttons ([EdgeTray.offered]).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../api/net.dart';
 import '../data/favs.dart';

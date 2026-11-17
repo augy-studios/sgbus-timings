@@ -3,7 +3,7 @@
 // them, so each shows what a phone with them shows.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/api/net.dart';

@@ -1,6 +1,6 @@
 // Choices in a language with long words (bug reports 20261107-RUHF and FYAG): side by side while each
 // one's words fit, one under another where they don't, and never a word broken in two.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/features/alerts/alerts.dart';

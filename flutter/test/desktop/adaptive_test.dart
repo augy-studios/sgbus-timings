@@ -8,7 +8,7 @@
 // ...])` stands in for the desktop app's bridge host, as the guide's screenshots fake a phone's.
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';

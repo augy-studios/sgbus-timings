@@ -3,7 +3,7 @@
 // at full brightness, and the torch can be turned on, steady (SgBusPlugin.flag). Never a strobe:
 // flashing it at a driver would dazzle them. In the desktop app, the window goes full screen while
 // it's open, as the site's flag-down does.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/nav.dart';

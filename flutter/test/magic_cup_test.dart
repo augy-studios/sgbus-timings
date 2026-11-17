@@ -1,5 +1,5 @@
 // The magic cup: under a second, the language changing partway through, and never in the way of it.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/data/store.dart';

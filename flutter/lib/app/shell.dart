@@ -10,7 +10,7 @@
 // the list while it's open. Under 720 px, and always on Android, the shell is the phone's; a
 // window narrowed to it keeps what the detail pane had open, moved over the whole window (once
 // any full-screen screen open over the shell, such as Settings, is closed).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../api/net.dart';

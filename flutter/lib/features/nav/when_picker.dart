@@ -1,7 +1,7 @@
 // When a journey is for (the site's When.picker, js/when.js): Leave now, Leave at or Arrive by,
 // and for the last two a day (today and the six after it) and a time, in five-minute steps. A
 // first pick starts on the next five minutes, or half an hour on for Arrive by.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/when.dart';
 import '../../widgets/common.dart';

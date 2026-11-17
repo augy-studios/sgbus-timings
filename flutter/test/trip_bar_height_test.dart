@@ -1,7 +1,7 @@
 // The trip bar and the note under it (bug report 20261113-7K2S) keep to a small part of a
 // phone's screen, even with a long note, in Malay, and with Android's text made bigger: the
 // bar's text in three lines, the note's in two, with the whole note on the trip screen.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/location.dart';
 import 'package:sgbus_timings/data/store.dart';

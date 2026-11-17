@@ -2,7 +2,7 @@
 // your own if you like ("Gym", "Mum's"). Tapping a place plans the way there from where you are
 // (Navigate); its menu edits it, shares it as a "How to get to" link, or deletes it (clears Home
 // or Work). Every place is also a button under Navigate's ends, and a chip on Glance.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/nav.dart';
 import '../../data/places.dart';

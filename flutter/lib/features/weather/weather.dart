@@ -4,7 +4,7 @@
 // /api/weather (Open-Meteo and NEA). Fetched again after ten minutes.
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../api/api.dart';
 import '../../desktop/adaptive.dart';

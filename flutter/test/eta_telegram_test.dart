@@ -1,6 +1,6 @@
 // Someone's shared trip has Follow in Telegram while it's live, as on the website (js/share.js):
 // it opens their trip as a live widget in the Telegram bot (telegram-bot/src/bot_trips.py).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/data/when.dart';

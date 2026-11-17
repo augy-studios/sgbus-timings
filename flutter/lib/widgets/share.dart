@@ -1,6 +1,6 @@
 // A Share button's link: Android's share sheet (SgBusPlugin.share), or copied where there's no
 // app side, as the site's shareLink.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../app/nav.dart';

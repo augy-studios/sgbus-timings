@@ -166,9 +166,10 @@ need it: on an older Flutter, `flutter pub get` can't get them. (Until 17 Novemb
 on Flutter 3.47.9, because `nativeapi` 0.5.10 didn't compile on 3.50.)
 
 Flutter 3.50 moves Material and Cupertino into packages of their own (`material_ui` and
-`cupertino_ui`), so `flutter analyze` lists each `package:flutter/material.dart` import as a
-deprecation info. They still work; CI runs the analyser with `--no-fatal-infos`. Moving the imports
-over is a change of its own.
+`cupertino_ui`), and marks `package:flutter/material.dart` as deprecated. The app imports
+`package:material_ui/material_ui.dart` instead, and `lib/app/app.dart` takes the Material and
+Cupertino localisation delegates from those two packages (only `GlobalWidgetsLocalizations` from
+`flutter_localizations`). CI runs the analyser with `--no-fatal-infos`.
 
 ## The project
 

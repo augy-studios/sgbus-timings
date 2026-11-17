@@ -25,7 +25,7 @@
 // little after the app's opened, on Glance or Bus timings. Kept as { first, days, last }.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 

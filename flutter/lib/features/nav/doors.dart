@@ -3,7 +3,7 @@
 // glass split down the middle with the number on it, as on the real one) and where it leads;
 // at the foot a drawing of that kind of platform door with the number's spot ringed, and the
 // words. Navigate's panel folds to its heading; the live map's station card shows its rows open.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/doors.dart';
 import '../../i18n/i18n.dart';

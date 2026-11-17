@@ -1,6 +1,6 @@
 // A phone on its side (bug report 20261108-9RCW): the language sheet scrolls, so every language
 // can be reached and tapped, not just the ones that fit in the screen's height.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';

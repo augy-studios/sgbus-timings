@@ -1,7 +1,7 @@
 // uwuCoins with the Telegram bot (telegram-bot/src/coins.py), as the website has them (js/coins.js,
 // js/sync.js, js/share.js): an Easter egg link from the bot's wheel opened here, this phone's
 // balance in sync, and taking another's.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/app/nav.dart';

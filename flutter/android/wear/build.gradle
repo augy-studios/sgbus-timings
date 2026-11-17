@@ -4,7 +4,7 @@ plugins {
 
 // SG Bus Timings for Wear OS: a tile with the next buses at your nearest favourite stop, and a
 // small screen with all your favourites (wear/README.md). Built alongside the phone's app by
-// android/build-apk.ps1, into release/<version>/ as sg-bus-timings-<version>-watch.apk.
+// flutter/build-apk.ps1, into release/<version>/ as sg-bus-timings-<version>-watch.apk.
 //
 // The same application id and signing key as the phone's, which the Wearable Data Layer
 // needs to pair the two (the phone hands the watch your favourite stops), and the same
@@ -26,7 +26,7 @@ android {
         versionCode = phoneVersionCode
         versionName = phoneVersionName
     }
-    // The phone's key: android/keystore.properties and android/android.keystore.
+    // The phone's key: flutter/keystore.properties and flutter/android.keystore.
     def keystoreProps = new Properties()
     def keystoreFile = rootProject.file('../keystore.properties')
     if (keystoreFile.exists()) keystoreFile.withInputStream { keystoreProps.load(it) }

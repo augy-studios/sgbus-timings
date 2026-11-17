@@ -1,6 +1,6 @@
 // A phone on its side, with the navigation bar or the camera's cutout down the tray's side (bug
 // report 20261108-7CMX): the tray sits inside it, not under it, and the page keeps clear of both.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/edge_tray.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';

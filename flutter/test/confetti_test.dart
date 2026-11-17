@@ -1,6 +1,6 @@
 // Confetti ends (bug report 20261108-UZMT): when its time is up, none of it stays on the screen,
 // not even the slow pieces that used to stop mid-fall.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/features/coins/coins.dart';
 

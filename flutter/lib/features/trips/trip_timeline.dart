@@ -4,7 +4,7 @@
 // each stop. Only the part you're on has the dot. A bus stop's name opens its timings for the bus.
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../../data/network.dart';

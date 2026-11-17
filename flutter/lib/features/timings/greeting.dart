@@ -3,7 +3,7 @@
 // over two lines, with "Made with ♥ by Augy" under it.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/store.dart';
 import '../../data/when.dart';

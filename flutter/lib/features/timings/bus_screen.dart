@@ -4,7 +4,7 @@
 // From <stop> shows the stops still ahead, "Here", "+1", "+2"..., and the stop it came from is
 // picked out in the full list. Get Off Alert, then a stop tapped, starts a trip on this bus to it,
 // which alerts you two stops before you get off.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/links.dart';
 import '../../app/nav.dart';

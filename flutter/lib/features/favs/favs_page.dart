@@ -3,7 +3,7 @@
 // make (help desk #6) each group some of them: a tab each beside Favourites, with Choose what's
 // in it, Rename and Delete list; in a list, a chip's x takes it out of the list only. The list on
 // show is the one Glance shows too.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../api/net.dart';
 import '../tour/tour.dart';

@@ -1,7 +1,7 @@
 // Glance with the Edge Tray out, on a narrow phone, in Bahasa Melayu and Tamil (bug reports
 // 20261107-T2G5, ZFTN and A3Q2): the weather button stays inside the page, and "Arr" and "Arriving"
 // each on one line. With the real fonts: a layout that doesn't fit is what's being looked for.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/features/glance/glance_page.dart';

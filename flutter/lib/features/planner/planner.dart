@@ -6,7 +6,7 @@
 // side of the road is pointed out, with the one across to use instead.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/links.dart';
 import '../../app/nav.dart';

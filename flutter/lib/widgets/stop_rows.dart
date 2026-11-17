@@ -2,7 +2,7 @@
 // and code, favourites starred (and pinned, per Settings), and a stop with a bus straight to
 // where the route planner's going marked Direct. On the desktop, right-click a stop for its menu
 // (desktop/adaptive.dart).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/favs.dart';
 import '../data/geo.dart';

@@ -2,7 +2,7 @@
 // after the home (Settings' Custom home, sgbus_start). Glance, Service alerts and Your trips can
 // be turned off in Settings (sgbus_glance_off, sgbus_pages_off), which takes their tabs away;
 // a home that's off opens Bus timings instead.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../api/net.dart';
 import '../data/store.dart';

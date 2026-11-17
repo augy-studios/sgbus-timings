@@ -1,7 +1,7 @@
 // Back to Navigate, from a trip: the way or journey the trip was started from, not the list.
 import 'dart:convert';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/data/journeys.dart';

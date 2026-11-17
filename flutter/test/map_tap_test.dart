@@ -1,5 +1,5 @@
 // What a tap on the map opens, and pages clearing Android's navigation bar.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/features/map/live_map.dart';
 import 'package:sgbus_timings/widgets/common.dart';

@@ -1,4 +1,4 @@
-// The Android side of the Flutter app (android/README.md): the phone's app (app/, with
+// The Android side of the Flutter app (flutter/README.md): the phone's app (app/, with
 // Flutter's own Gradle plugin) and the Wear OS watch's (wear/, plain Android).
 pluginManagement {
     def flutterSdkPath = {
@@ -27,5 +27,5 @@ plugins {
 }
 
 include ":app"
-// The Wear OS app: built with the phone's, by android/build-apk.ps1 (wear/build.gradle).
+// The Wear OS app: built with the phone's, by flutter/build-apk.ps1 (wear/build.gradle).
 include ":wear"

@@ -1,7 +1,7 @@
 // Make it yours (lib/desktop/welcome.dart, desktop-features-spec §1): the choices it sends back on
 // Get started, the Theme it goes back to when Follow system theme is turned off, the System accent
 // swatch, the brand colours hiding while Your colours are on, and its own words per language.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/desktop/welcome.dart';
 

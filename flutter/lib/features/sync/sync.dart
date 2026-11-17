@@ -14,7 +14,7 @@
 //   { type: 'added', id, count }   the answer, with how many were new
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 

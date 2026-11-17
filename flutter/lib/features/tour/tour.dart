@@ -12,7 +12,7 @@
 // (the others' ids), as the site keeps them.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/edge_tray.dart';
 import '../../app/nav.dart';

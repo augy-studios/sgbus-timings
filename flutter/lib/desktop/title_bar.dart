@@ -13,7 +13,7 @@
 // out or spins by DeskChrome's notifiers (canBack, canForward, loading, maximized). chrome.dart
 // puts the bar along the window's top, and hides it in full screen.
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../app/nav.dart';

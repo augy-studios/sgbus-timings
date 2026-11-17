@@ -5,7 +5,7 @@
 // MRT or LRT. Kept under sgbus_trips, as on the site, so trips from before the Flutter app are here.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/places.dart';
 import '../../data/store.dart';

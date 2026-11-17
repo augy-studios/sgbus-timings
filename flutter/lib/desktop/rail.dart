@@ -10,7 +10,7 @@
 // app/edge_tray.dart, so it always offers what the Edge Tray would.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../api/net.dart';
 import '../app/edge_tray.dart';

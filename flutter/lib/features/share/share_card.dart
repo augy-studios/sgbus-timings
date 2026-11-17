@@ -3,7 +3,7 @@
 // with its map (/api/share-map) or the feat's card (/api/feat-card), and the ways to send it:
 // Android's share sheet, Telegram and WhatsApp straight to their chat pickers, Copy, and Offline
 // Sharing to a phone nearby (features/share/offline_share.dart).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../api/api.dart';

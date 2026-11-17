@@ -1,5 +1,5 @@
 // The uwuCoin: gold, with "uwu" on it, drawn as the site's icon is (main-site/js/icons.js, coin).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class CoinIcon extends StatelessWidget {
   const CoinIcon({super.key, this.size = 24});

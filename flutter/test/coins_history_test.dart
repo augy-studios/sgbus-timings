@@ -1,5 +1,5 @@
 // uwuCoins' History: every coin in and out and where it came from, kept in the log.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/gta6.dart';
 import 'package:sgbus_timings/data/rewards.dart';

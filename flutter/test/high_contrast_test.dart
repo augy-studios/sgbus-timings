@@ -1,7 +1,7 @@
 // High contrast's writing on the brand colour (theme/theme.dart), in the Android app and the desktop
 // app alike: black wherever black reads (4.5:1), as on every brand swatch and GTA VI, and white on
 // a brand colour too dark for black, such as a dark colour of Your colours.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/gta6.dart';
 import 'package:sgbus_timings/data/store.dart';

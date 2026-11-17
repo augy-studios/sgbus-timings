@@ -3,7 +3,7 @@
 // leave before you got there are greyed in the timings. The walk is the straight line with a
 // quarter more for corners, at 80 m a minute. Where you are is only looked up once you've asked
 // ("How far's my walk?", sgbus_makeit), and then each time a stop opens, at most a minute old.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/arrivals.dart';
 import '../../data/geo.dart';

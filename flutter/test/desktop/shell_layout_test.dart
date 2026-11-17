@@ -4,7 +4,7 @@
 // pane on a wide window, replacing what it showed, or on top of it when opened from inside it;
 // the departures board and screens without an address over the whole window, as on Android. A
 // dialog a pane's screen opened closes when another screen replaces that one.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/app/shell.dart';

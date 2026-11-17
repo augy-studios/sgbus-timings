@@ -2,7 +2,7 @@
 // opens (app/nav.dart's AppNav.open), so a link from anywhere lands the same way.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/geo.dart';
 import '../app/nav.dart';

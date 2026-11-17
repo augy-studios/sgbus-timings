@@ -2,7 +2,7 @@
 // laid out as the phone app under 720 px wide, and a window kept smaller by an older copy opens at
 // least that big. The title bar still fits: Copy link and the screenshots fold into a More menu,
 // and the command bar's list stays inside the window.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/nav.dart';

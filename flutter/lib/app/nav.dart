@@ -12,7 +12,7 @@
 // tests) needn't bring in the desktop's window packages.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Where the app goes, and how it gets there: the navigators, the page on show, and every
 /// feature's way in. Everything is static: there is one app.

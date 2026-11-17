@@ -6,9 +6,11 @@
 // (desktop/adaptive.dart).
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:cupertino_ui/cupertino_ui.dart' show GlobalCupertinoLocalizations;
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+// Flutter 3.50: the Material and Cupertino delegates come from material_ui and cupertino_ui.
+import 'package:flutter_localizations/flutter_localizations.dart' show GlobalWidgetsLocalizations;
 
 import '../desktop/adaptive.dart';
 import '../desktop/chrome.dart';

@@ -3,7 +3,7 @@
 // reads on it, over the site's own neutral background; Your colours still come first; and with it
 // off (always, on Android) nothing changes. The desktop's controls are compact. And the title
 // bar's writing (BarColours) reads at WCAG AA (4.5:1) on every bar colour there can be.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/gta6.dart';
 import 'package:sgbus_timings/data/store.dart';

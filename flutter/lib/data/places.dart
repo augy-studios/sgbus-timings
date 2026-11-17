@@ -3,7 +3,7 @@
 // lng, stop? }], `name` empty for none.
 import 'dart:math' as math;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';

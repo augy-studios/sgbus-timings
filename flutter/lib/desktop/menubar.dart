@@ -17,7 +17,7 @@
 //
 // The Mac's menu bar: the app's menu (About, Settings, Make it yours, updates, Hide, Quit), File,
 // Edit, View, Window and Help, each item with its shortcut.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../app/nav.dart';

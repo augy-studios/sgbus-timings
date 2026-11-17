@@ -1,6 +1,6 @@
 // GTA VI's colours: a swatch that carries a whole theme and a choice in Material You, every colour of
 // the logo with its text readable on it, set in time to keep or won on the wheel, and offered once.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/eggs_data.dart';
 import 'package:sgbus_timings/data/gta6.dart';

@@ -1,6 +1,6 @@
 // What the website has that the app came to have too: Citymapper, Bus only's link, your ends going
 // with you between Navigate's tabs, a trip's place by its name, and setting Home from Navigate.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/app/links.dart';
 import 'package:sgbus_timings/data/places.dart';

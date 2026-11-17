@@ -14,7 +14,7 @@
 // and what's printed is text with nothing but the commands' own colours.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/nav.dart';

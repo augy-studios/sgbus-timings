@@ -1,6 +1,6 @@
 // Switching language and back: a location message already on the page follows it, rather than
 // staying in the language it happened in (bug report 20261107-NQCT).
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/location.dart';
 import 'package:sgbus_timings/features/nav/nav_page.dart';

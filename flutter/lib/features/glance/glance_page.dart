@@ -7,7 +7,7 @@
 // Glance is on show.
 import 'dart:async';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';

@@ -3,7 +3,7 @@
 // stop by its code or name (LTA's shortened words matched in every form, a station's stops for
 // "Bedok MRT"), a bus by its number, and the stops near a six-digit postal code. With the
 // Android app's speech screen and camera, it takes a stop said aloud or read off its pole.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../data/campus.dart';
 import 'campus_ui.dart';

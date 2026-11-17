@@ -22,7 +22,7 @@
 // map to roles; their replacements take no CorePalette.
 // ignore_for_file: deprecated_member_use
 import 'package:dynamic_color/dynamic_color.dart' show DynamicColorPlugin;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:material_color_utilities/material_color_utilities.dart' show CorePalette, Scheme;
 
 import '../data/gta6.dart';

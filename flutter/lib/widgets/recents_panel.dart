@@ -2,7 +2,7 @@
 // searches, the last 24 hours then earlier, each with a menu to save it as a place, share it or
 // remove it, and Clear all; and a tab for your saved places, or, on Bus timings, your favourite
 // stops and buses.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../data/favs.dart';
 import '../data/network.dart';

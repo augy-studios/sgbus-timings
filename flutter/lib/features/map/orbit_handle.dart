@@ -3,7 +3,7 @@
 // button for as long as the finger stays down. A tap says what it's for, as a tooltip's long press
 // would take the hold from it.
 import 'package:flutter/gestures.dart' show DragStartBehavior;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
 
 /// Where a drag on the handle takes the camera, staying over the same spot: up tilts further, down

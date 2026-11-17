@@ -8,7 +8,7 @@
 //
 // And the link written onto a blank NFC sticker, so tapping it later opens it: a stop at the
 // front door, Bus home by the desk.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/services.dart';
 
 import '../../app/links.dart';

@@ -3,7 +3,7 @@
 // update…", "Starting…". Light or dark as the computer is, in its own colours. Dragged by
 // anywhere, as it has no title bar. Drawn in the main window, made small for it
 // (desktop_main.dart, splash), and again over the app for Restart to update.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../i18n/i18n.dart';

@@ -4,7 +4,7 @@
 // Get Off Alert and its sound, shake to refresh, picture-in-picture, reminders); Navigate
 // (restricted areas, immigration time, cycling, shuttle buses); Help and extras (tours, the
 // terminal, uwuCoins); Achievements; and Sync. Every setting is kept under the site's own key.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/edge_tray.dart';
 import '../../app/nav.dart';

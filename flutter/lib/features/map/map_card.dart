@@ -12,7 +12,7 @@
 //
 // Both end with Directions: Navigate's Bus and train, from where you are. A stop's has Show bus
 // timings above it.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../api/net.dart';
 import '../../data/campus.dart';

@@ -2,7 +2,7 @@
 // dark, however short its line. It sits in a Scaffold, which lets its body be narrower than the
 // window, so without filling it the panel was only as wide as "Starting…" and left a strip of
 // Flutter's own background beside it.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/desktop/splash.dart';
 import 'package:sgbus_timings/desktop/updater.dart';

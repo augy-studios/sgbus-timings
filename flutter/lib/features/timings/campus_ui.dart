@@ -4,7 +4,7 @@
 // next bus seen live where the operator shares it; a campus stop LTA hasn't got ("PGP") as a
 // stop of its own, with its shuttles and no public buses; and a route's own window, what its
 // timetable says now from where it starts and its stops in order.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../app/nav.dart';
 import '../../data/campus.dart';

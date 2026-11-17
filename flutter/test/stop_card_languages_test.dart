@@ -1,7 +1,7 @@
 // A stop's bus card in every language, on narrow phones (bug report 20261107-XPZU): each bus's time
 // no more than two lines, broken only between its minutes and seconds, and nothing reaching into the
 // next bus's column.
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/data/arrivals.dart';
