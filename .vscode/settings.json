@@ -1,4 +1,8 @@
 {
     "java.configuration.updateBuildConfiguration": "disabled",
-    "cmake.ignoreCMakeListsMissing": true
+    "cmake.ignoreCMakeListsMissing": true,
+    "[dart]": {
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false
+    }
 }
