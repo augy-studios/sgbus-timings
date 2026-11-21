@@ -126,9 +126,10 @@ class DeskMenus {
           ]),
         ]),
         PlatformMenu(label: tr('desktop.menu.file', 'File'), menus: [
-          PlatformMenuItemGroup(members: [
-            PlatformMenuItem(label: tr('desktop.tray.addWidget', 'Add a Bus timings widget'), onSelected: DeskWidgets.add),
-          ]),
+          if (DeskWidgets.enabled)
+            PlatformMenuItemGroup(members: [
+              PlatformMenuItem(label: tr('desktop.tray.addWidget', 'Add a Bus timings widget'), onSelected: DeskWidgets.add),
+            ]),
           PlatformMenuItemGroup(members: [
             PlatformMenuItem(label: tr('desktop.cmd.shot', 'Take a screenshot'), onSelected: () => DeskShot.take(long: false)),
             PlatformMenuItem(label: tr('desktop.cmd.longShot', 'Take a long screenshot'), onSelected: () => DeskShot.take(long: true)),

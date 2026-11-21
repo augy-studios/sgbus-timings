@@ -219,7 +219,7 @@ where they left off:
 The first time the new app opens, it brings across everything the old one kept:
 your favourites, places, past searches, trips, uwuCoins, settings and theme, and
 the desktop app's own choices: the window's size, **Start when I sign in**, your
-desktop widgets and where they were, the tray countdown, and your Make it yours
+desktop widgets and where they were (kept while widgets are off), the tray countdown, and your Make it yours
 picks, so that window doesn't ask again. It reads them once, and leaves the old
 app's copy where it was.
 

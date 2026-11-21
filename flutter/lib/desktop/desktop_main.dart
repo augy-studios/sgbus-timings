@@ -32,6 +32,7 @@ import 'splash.dart';
 import 'tray.dart';
 import 'updater.dart';
 import 'welcome.dart';
+import 'widget_process.dart';
 import 'widgets_window.dart';
 
 /// The desktop app's start-up, in order: the window, the update window, then everything around
@@ -118,6 +119,8 @@ class DeskStart {
     };
     DeskChrome.init();
     const WindowMethodChannel('sgbus/main', mode: ChannelMode.unidirectional).setMethodCallHandler(_fromWindows);
+    // The same, for the widgets that are copies of the app of their own (Windows).
+    WidgetHost.answer = (method, args) => _fromWindows(MethodCall(method, args));
     await DeskNotify.init();
     // Opening a page needs the app's navigator, made with its first frame. It's almost always
     // there by now; if not, the first frame is waited for (at most 2 s, as below).

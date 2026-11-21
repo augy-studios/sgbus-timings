@@ -52,8 +52,9 @@ command bar. Type to find:
 - **Bus stops**: a name, road or 5-digit code, as in [Bus timings](../android/search.md).
 - **Commands**: your pages, Settings, Theme, and everything the title bar and the
   tray do, such as **Bus stops near me**, **Copy link**, **Take a long screenshot**,
-  **Full screen**, **Add a Bus timings widget**, **Make it yours…** and **Check
-  for updates…**. With nothing typed, it lists them all.
+  **Full screen**, **Make it yours…** and **Check for updates…**. With nothing
+  typed, it lists them all. **Add a Bus timings widget** is off for now: see
+  [Bus timings widgets](tray-and-widgets.md#bus-timings-widgets).
 
 <figure>
 <img src="/screenshots/desktop/command-bar-dark.png" alt="The command bar open with nothing typed, in dark mode: Search stops, buses and commands, or paste a link, over a list of Commands: Glance, Bus timings, Favourites, Navigate, Service alerts, Your trips, Places, Settings with its shortcut, and Theme." width="1280" height="540" loading="lazy">
@@ -120,7 +121,8 @@ Right-click a stop, a bus or a favourite, in a list or a search, for:
 
 - **Open**, or **Open in split pane** on a wide window.
 - **Pin as a desktop widget**: a [widget](tray-and-widgets.md#bus-timings-widgets) for
-  that stop on your desktop (stops only).
+  that stop on your desktop (stops only). Off for now, along with the other
+  widgets.
 - **Set as tray countdown**: its next buses [in the tray](tray-and-widgets.md#a-stops-buses-in-the-tray)
   (stops only).
 - **Star** or **Unstar**, to add it to your favourites or take it away.
@@ -177,8 +179,9 @@ shortcut:
 - **SG Bus Timings**: About, **Settings…**, **Make it yours…**, **Check for
   updates…** (or **Restart to update** once one has downloaded), Hide, and
   **Quit**.
-- **File**: **Add a Bus timings widget**, **Take a screenshot**, **Take a long
-  screenshot** and **Close Window**.
+- **File**: **Take a screenshot**, **Take a long screenshot** and **Close
+  Window**. **Add a Bus timings widget** is off for now, along with the other
+  [widgets](tray-and-widgets.md#bus-timings-widgets).
 - **Edit**: Undo, Redo, Cut, Copy, Paste, Select All, **Copy link** and **Find…**,
   which opens the command bar.
 - **View**: **Reload**, **Back**, **Forward**, **Search Stops and Buses…**,

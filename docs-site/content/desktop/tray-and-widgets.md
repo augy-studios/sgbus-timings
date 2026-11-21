@@ -26,7 +26,8 @@ The menu has:
 - The [tray countdown](#a-stops-buses-in-the-tray), when one's set, and **Stop the
   tray countdown**.
 - **Open SG Bus Timings**, **Service alerts** and **Navigate**.
-- **Add a Bus timings widget**: see [Bus timings widgets](#bus-timings-widgets).
+- **Add a Bus timings widget**, which is off for now: see
+  [Bus timings widgets](#bus-timings-widgets).
 - **Make it yours…**, the [first window](install.md#make-it-yours) again.
 - **Check for updates…**: a notification says what it found, even if you're up
   to date.
@@ -54,6 +55,16 @@ timings. On Windows, hovering over the taskbar icon also gives **Refresh**, and
 the previous and next favourite stop, under its preview.
 
 ## Bus timings widgets
+
+> [!WARNING]
+> **Bus timings widgets are switched off in the desktop app for now**, as opening
+> one could crash the app on Windows. Until they're back, the app doesn't offer
+> them anywhere: not in the tray's menu, the command bar, the Mac's **File** menu,
+> a stop's buttons or its right-click menu. The widgets you had are kept, and come
+> back where they were once widgets return. This is only the desktop app: the
+> [Android app's widget](../android/widgets-and-shortcuts.md#the-bus-timings-widget)
+> and the [web app's widget](../web/shortcuts-and-widgets.md) for Windows 11's
+> Widgets board still work.
 
 <figure>
 <img src="/screenshots/desktop/widget.png" alt="A Bus timings widget for Bedok Int: 84009, Every bus, with round Refresh, Pick another stop, Keep on top and Remove buttons, then a row per bus with its next three times, such as 14 in 1 min, 11 min and 22 min, and Updated 08:30 at the bottom." width="320" height="300" loading="lazy">

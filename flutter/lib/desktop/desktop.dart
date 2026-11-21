@@ -37,6 +37,7 @@ import '../app/links.dart';
 import '../app/nav.dart';
 import '../app/version.dart';
 import 'settings.dart';
+import 'widget_process.dart';
 
 /// The desktop app's window, links, start at sign-in and small helpers, for every part of the
 /// desktop layer. Everything is static: one per engine (each window has its own).
@@ -93,8 +94,15 @@ class Desktop {
   /// Running from a build made with `flutter run`, not an installed copy.
   static bool get fromSource => !kReleaseMode;
 
-  /// Which window this engine draws, from desktop_multi_window's arguments.
-  static Future<void> identify() async {
+  /// Which window this engine draws: a widget's own copy of the app from its command line
+  /// ([args], Windows: widget_process.dart), otherwise from desktop_multi_window's arguments.
+  static Future<void> identify([List<String> args = const []]) async {
+    final widget = WidgetLink.parse(args);
+    if (widget != null) {
+      kind = 'widget';
+      windowArgs = {'kind': 'widget', 'id': widget.id, 'port': widget.port, 'token': widget.token};
+      return;
+    }
     try {
       controller = await WindowController.fromCurrentEngine();
       final raw = controller!.arguments;

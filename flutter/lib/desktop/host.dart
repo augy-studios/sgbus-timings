@@ -33,9 +33,10 @@ class DesktopHost implements NativeHost {
   /// 'notify': notifications for the trip and the rest. 'releases': "New versions of the app"
   /// (updater.dart says so itself). 'glance': the tray countdown, and 'widgets': Bus timings
   /// widgets on the desktop, which a stop's buttons and right-click menu offer (adaptive.dart's
-  /// DeskActions). Never a phone-only feature, such as Android's own updater.
+  /// DeskActions), only while [DeskWidgets.enabled]. Never a phone-only feature, such as
+  /// Android's own updater.
   @override
-  List<String> get features => const ['push', 'notify', 'releases', 'glance', 'widgets', 'desktop'];
+  List<String> get features => const ['push', 'notify', 'releases', 'glance', if (DeskWidgets.enabled) 'widgets', 'desktop'];
 
   /// The full screen the departures board and the flag screen ask for, which remembers how the
   /// window was before they asked.

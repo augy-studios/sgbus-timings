@@ -113,7 +113,7 @@ class DeskTray {
     // The two most-used pages, as the Electron app's menu had them.
     menu.addItem(_item(tr('tray.alerts', 'Service alerts'), () => Desktop.show('#alerts')));
     menu.addItem(_item(tr('tray.navigate', 'Navigate'), () => Desktop.show('#nav')));
-    menu.addItem(_item(tr('desktop.tray.addWidget', 'Add a Bus timings widget'), DeskWidgets.add));
+    if (DeskWidgets.enabled) menu.addItem(_item(tr('desktop.tray.addWidget', 'Add a Bus timings widget'), DeskWidgets.add));
     menu.addItem(_item(tr('desktop.tray.makeItYours', 'Make it yours…'), () => Welcome.open()));
     menu.addSeparator();
     menu.addItem(Updater.checking.value

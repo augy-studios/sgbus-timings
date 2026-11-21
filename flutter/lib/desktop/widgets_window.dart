@@ -9,12 +9,15 @@
 // when the app starts. Closing one with its × or Alt+F4 removes it; quitting the app, or the
 // computer shutting down, keeps them all ([WidgetClosing] tells the two apart).
 //
-// Each window runs its own engine (desktop_multi_window), and asks the main window, over the
-// 'sgbus/main' channel, for anything kept: the main window alone writes settings.json. So this
-// file has two halves: [DeskWidgets], in the main window, and [runBusWidget] and the screen it
+// Each widget runs its own engine, and asks the main window, over [mainChannel], for anything
+// kept: the main window alone writes settings.json. On macOS and Linux each is a window of the main
+// window's process (desktop_multi_window, asked over its 'sgbus/main' channel); on Windows each is
+// a copy of the app of its own, asked over a loopback socket (widget_process.dart says why). So
+// this file has two halves: [DeskWidgets], in the main window, and [runBusWidget] and the screen it
 // draws, in each widget's own window.
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show exit;
 import 'dart:math' as math;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
@@ -30,13 +33,44 @@ import '../i18n/i18n.dart';
 import '../theme/theme.dart';
 import 'desktop.dart';
 import 'settings.dart';
+import 'widget_process.dart';
 
-/// The channel the other windows use to ask the main window things (desktop_main.dart answers).
-const mainChannel = WindowMethodChannel('sgbus/main', mode: ChannelMode.unidirectional);
+/// How a widget asks the main window things (desktop_main.dart answers): desktop_multi_window's
+/// 'sgbus/main' channel, or on Windows its copy's [WidgetLink] (set as it starts).
+abstract class MainCalls {
+  Future<T?> invokeMethod<T>(String method, [Object? arguments]);
+}
+
+class _ChannelCalls implements MainCalls {
+  const _ChannelCalls();
+  static const _channel = WindowMethodChannel('sgbus/main', mode: ChannelMode.unidirectional);
+  @override
+  Future<T?> invokeMethod<T>(String method, [Object? arguments]) => _channel.invokeMethod<T>(method, arguments);
+}
+
+class _LinkCalls implements MainCalls {
+  const _LinkCalls(this.link);
+  final WidgetLink link;
+  @override
+  Future<T?> invokeMethod<T>(String method, [Object? arguments]) => link.invokeMethod<T>(method, arguments);
+}
+
+/// The way this widget asks the main window.
+MainCalls mainChannel = const _ChannelCalls();
+
+/// Whether widgets are copies of the app of their own (Windows) rather than windows of the main
+/// window's process.
+bool get widgetsAsProcesses => Desktop.windows;
 
 /// The main window's side: the kept list of widgets, opening their windows, and answering them.
 class DeskWidgets {
   DeskWidgets._();
+
+  /// Whether the desktop offers Bus timings widgets at all. Off for now: opening one still
+  /// crashed the app on Windows. While it's off, nothing offers a widget (the 'widgets' feature,
+  /// the tray, the menus, the command bar) and none is opened at start, but the kept ones stay in
+  /// settings.json, so turning it back on brings them back where they were.
+  static const enabled = false;
 
   /// The widget windows open now, by widget id.
   static final Map<String, WindowController> _open = {};
@@ -71,6 +105,7 @@ class DeskWidgets {
   /// (for "Pin as a desktop widget" on a stop's right-click menu, desktop-features-spec §8) it
   /// opens straight on that stop's timings, narrowed to [buses] if any are given.
   static Future<void> add({String? code, String name = '', List<String> buses = const []}) async {
+    if (!enabled) return;
     final stop = code != null && RegExp(r'^\d{5}$').hasMatch(code) ? code : null;
     final w = {
       'id': _newId(),
@@ -89,8 +124,9 @@ class DeskWidgets {
   /// access violation in flutter_windows.dll, StateManager11, and a black window), on most
   /// launches with a widget kept. Each widget gets [_firstFrames] to draw its own before the next.
   static Future<void> restore() async {
+    if (!enabled) return;
     for (final w in list()) {
-      if (_open.containsKey(w['id'])) continue;
+      if (_open.containsKey(w['id']) || WidgetHost.running('${w['id']}')) continue;
       await quiet();
       await _openWidget(w);
       await Future<void>.delayed(_firstFrames);
@@ -117,9 +153,11 @@ class DeskWidgets {
     }
   }
 
-  /// Opens a widget's window, its own engine, which starts in [runBusWidget] with the widget's id.
-  /// Windows closed any way (the × or the system) drop out of [_open] as they go.
+  /// Opens a widget's window, its own engine, which starts in [runBusWidget] with the widget's id:
+  /// on Windows, a copy of the app of its own (widget_process.dart); elsewhere a window of this
+  /// process, and windows closed any way (the × or the system) drop out of [_open] as they go.
   static Future<void> _openWidget(Map<String, dynamic> w) async {
+    if (widgetsAsProcesses) return WidgetHost.start('${w['id']}');
     final c = await WindowController.create(WindowConfiguration(hiddenAtLaunch: true, arguments: jsonEncode({'kind': 'widget', 'id': w['id']})));
     _open['${w['id']}'] = c;
     _watch ??= onWindowsChanged.listen((_) async {
@@ -154,6 +192,7 @@ class DeskWidgets {
         // time instead, as the Electron app's `quitting` flag had it (Desktop.quit sets it).
         if (!Desktop.quitting) remove(id);
         _open.remove(id);
+        WidgetHost.forget(id);
         return true;
       case 'widget-prefs':
         return {
@@ -189,11 +228,17 @@ class DeskWidgets {
 /// [DeskWidgets.handle]).
 class WidgetClosing {
   /// [ask] tells the main window to forget the widget; tests pass their own.
-  WidgetClosing(this.id, {Future<void> Function(String id)? ask}) : _ask = ask ?? _askMain;
+  WidgetClosing(this.id, {Future<void> Function(String id)? ask, this.end}) : _ask = ask ?? _askMain;
 
   /// The widget's id.
   final String id;
   final Future<void> Function(String id) _ask;
+
+  /// How a widget the main window has forgotten goes: null lets its window's close through (a
+  /// window of the main window's process); a copy of the app of its own (Windows) ends outright,
+  /// as closing its window starts its engine's teardown, which never finished after a held close
+  /// and left the copy running with no window.
+  final void Function()? end;
 
   /// This window's own (each widget window runs its own engine), set as it starts.
   static WidgetClosing? current;
@@ -229,7 +274,7 @@ class WidgetClosing {
     final decision = request.defer();
     // No decision: the request has already been cancelled or has ended, so nothing closes.
     if (decision == null) return;
-    forget().whenComplete(() => decision.accept());
+    forget().whenComplete(() => end != null ? end!() : decision.accept());
   }
 }
 
@@ -239,7 +284,16 @@ class WidgetClosing {
 /// person closes it ([WidgetClosing]).
 Future<void> runBusWidget(Map<String, Object?> args) async {
   final id = '${args['id']}';
-  final closing = WidgetClosing.current = WidgetClosing(id);
+  // A copy of the app of its own (Windows): it asks the main window over its link, and ends when
+  // the main window goes, kept for next time. With no main window to ask, there's nothing to show.
+  if (args['port'] is int && args['token'] is String) {
+    try {
+      mainChannel = _LinkCalls(await WidgetLink.connect(id, args['port'] as int, args['token'] as String, onGone: () => exit(0)));
+    } catch (_) {
+      exit(0);
+    }
+  }
+  final closing = WidgetClosing.current = WidgetClosing(id, end: args['port'] is int ? () => exit(0) : null);
   Map<String, dynamic>? saved;
   Map<String, Object?> prefs = const {};
   try {
@@ -525,7 +579,9 @@ class _BusWidgetState extends State<BusWidget> {
   /// The × button: the widget's forgotten, and its window closes. The close then asks no more
   /// (WidgetClosing asks the main window only once).
   Future<void> _close() async {
-    await (WidgetClosing.current ?? WidgetClosing(widget.id)).forget();
+    final closing = WidgetClosing.current ?? WidgetClosing(widget.id);
+    await closing.forget();
+    if (closing.end != null) return closing.end!();
     Desktop.window?.close();
   }
 

@@ -59,6 +59,20 @@ void main() {
       expect(request.decision!.accepted, isTrue, reason: 'then it closes');
     });
 
+    test("a widget that's a copy of the app of its own ends outright once forgotten, its window's close not let through", () async {
+      final asked = Completer<void>();
+      var ended = 0;
+      final closing = WidgetClosing('w1', ask: (_) => asked.future, end: () => ended++);
+      final request = _Request(cancelable: true);
+      closing.onCloseRequested(request);
+      await pumpEventQueue();
+      expect(ended, 0, reason: 'not before the main window answers');
+      asked.complete();
+      await pumpEventQueue();
+      expect(ended, 1);
+      expect(request.decision!.accepted, isFalse, reason: "its engine's teardown never finished after a held close");
+    });
+
     test('a close the system forces (shutting down, signing out) keeps the widget', () async {
       final ids = <String>[];
       final closing = WidgetClosing('w1', ask: (id) async => ids.add(id));

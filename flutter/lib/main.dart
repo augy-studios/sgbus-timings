@@ -35,7 +35,7 @@ Future<void> main(List<String> args) async {
     WidgetsFlutterBinding.ensureInitialized();
   }
   if (Desktop.on) {
-    await Desktop.identify();
+    await Desktop.identify(args);
     if (Desktop.kind == 'welcome') return runWelcome(Desktop.windowArgs);
     if (Desktop.kind == 'widget') {
       await Store.open();

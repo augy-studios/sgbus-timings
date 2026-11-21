@@ -11,6 +11,7 @@ import 'package:sgbus_timings/desktop/chrome.dart';
 import 'package:sgbus_timings/desktop/glance.dart';
 import 'package:sgbus_timings/desktop/host.dart';
 import 'package:sgbus_timings/desktop/settings.dart';
+import 'package:sgbus_timings/desktop/widgets_window.dart';
 import 'package:sgbus_timings/native/native_bridge.dart';
 
 /// A NativeError with the code 'invalid', as a call that isn't the right shape throws.
@@ -54,9 +55,10 @@ void main() {
     }
   });
 
-  test('the desktop offers the tray countdown and Bus timings widgets to the shared screens', () {
+  test('the desktop offers the tray countdown to the shared screens, and Bus timings widgets only while they are on', () {
     final features = DesktopHost().features;
-    expect(features, containsAll(['glance', 'widgets', 'desktop']));
+    expect(features, containsAll(['glance', 'desktop']));
+    expect(features.contains('widgets'), DeskWidgets.enabled);
   });
 
   group('the tray countdown (SgBus.setTrayStop)', () {

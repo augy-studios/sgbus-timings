@@ -4,8 +4,9 @@
 // Dart shows it once it's ready (lib/desktop/desktop.dart).
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
-#include <shobjidl.h>
 #include <windows.h>
+#include <shellapi.h>
+#include <shobjidl.h>
 
 #include "flutter_window.h"
 #include "utils.h"
@@ -23,8 +24,26 @@ const wchar_t kMutex[] = L"Local\\org.uwuapps.sgbus.single";
 // Marks a WM_COPYDATA message as a second copy's command line ("SGBU"), as the plugin expects.
 const ULONG_PTR kForwardTag = 0x53474255;
 
+// A Bus timings widget's window: on Windows each widget is a copy of the app of its own, started
+// by the main window with --widget (lib/desktop/widgets_window.dart), since engines sharing one
+// process share ANGLE's Direct3D 11 renderer and crashed it. It isn't the one copy, so it neither
+// takes the name nor hands over, and its window's title differs so a second copy never finds it.
+const wchar_t kWidgetTitle[] = L"SG Bus Timings widget";
+
+bool IsWidget() {
+  int argc = 0;
+  wchar_t** argv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+  bool widget = false;
+  for (int i = 1; argv && i < argc; i++) {
+    if (wcscmp(argv[i], L"--widget") == 0) widget = true;
+  }
+  if (argv) ::LocalFree(argv);
+  return widget;
+}
+
 // The first copy's main window: the runner's window class with the app's title. Flutter's other
-// windows (Make it yours, the widgets) have a class of their own, so they're never found here.
+// windows (Make it yours) have a class of their own, and a widget's copy a title of its own, so
+// they're never found here.
 HWND FindFirst() {
   return ::FindWindowW(L"FLUTTER_RUNNER_WIN32_WINDOW", kTitle);
 }
@@ -59,7 +78,8 @@ bool HandOver() {
 // (hidden) and runs until the app quits.
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
-  HANDLE single = ::CreateMutexW(nullptr, TRUE, kMutex);
+  const bool widget = IsWidget();
+  HANDLE single = widget ? nullptr : ::CreateMutexW(nullptr, TRUE, kMutex);
   if (single && ::GetLastError() == ERROR_ALREADY_EXISTS) {
     if (HandOver()) return EXIT_SUCCESS;
   }
@@ -88,7 +108,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(480, 880);
-  if (!window.Create(kTitle, origin, size)) {
+  if (!window.Create(widget ? kWidgetTitle : kTitle, origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);

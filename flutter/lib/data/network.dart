@@ -11,6 +11,7 @@ import '../api/api.dart';
 import '../i18n/i18n.dart';
 import 'geo.dart';
 import 'stops.dart';
+import 'when.dart';
 import 'package:path_provider/path_provider.dart';
 import 'nav_core.dart' show RouteRun, RouteService;
 
@@ -318,7 +319,7 @@ class BusNet {
 
   /// Singapore's day of the week, "Mon" .. "Sun".
   static String singaporeWeekday([DateTime? now]) {
-    final sg = (now ?? DateTime.now()).toUtc().add(const Duration(hours: 8));
+    final sg = (now ?? When.now()).toUtc().add(const Duration(hours: 8));
     return const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][sg.weekday - 1];
   }
 

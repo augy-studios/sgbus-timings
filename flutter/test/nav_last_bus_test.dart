@@ -38,6 +38,9 @@ void main() {
     await I18n.I.use('en', remember: false);
     BusNet.index(Map<String, dynamic>.from(_gz('bus-routes') as Map));
   });
+  // The day is that Thursday too: a stop's last bus (BusNet.firstLast) is for today's kind of day,
+  // and 96A runs only on weekdays, so the real clock failed these on a weekend.
+  setUp(() => When.now = () => DateTime.fromMillisecondsSinceEpoch(_sg(12, 0), isUtc: true));
   tearDown(() => When.now = DateTime.now);
 
   test('in the morning, every bus of the way runs', () {

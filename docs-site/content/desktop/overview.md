@@ -38,7 +38,7 @@ updates to the new app by itself and brings across everything you'd saved: see
 | [Screenshots](window.md#screenshots) | What's on screen, or the whole page top to bottom, copied and saved. |
 | [The tray](tray-and-widgets.md#the-tray) | Keeps running when you close the window, so alerts still reach you. |
 | [Tray countdown](tray-and-widgets.md#a-stops-buses-in-the-tray) | A stop's next buses in the tray, or beside the clock in a Mac's menu bar. |
-| [Bus timings widgets](tray-and-widgets.md#bus-timings-widgets) | A stop's live timings in a small window on your desktop. |
+| [Bus timings widgets](tray-and-widgets.md#bus-timings-widgets) | A stop's live timings in a small window on your desktop. Off for now. |
 | [Taskbar and Dock](tray-and-widgets.md#your-favourites-on-the-taskbar-and-dock) | Your favourite stops a right-click away on the app's icon. |
 | [Service alerts](tray-and-widgets.md#service-alerts-as-notifications) | Train disruptions, traffic and the newsfeed as desktop notifications. |
 | [Starts when you sign in](tray-and-widgets.md#starts-when-you-sign-in) | Ready in the tray from the moment you sign in. |
@@ -117,8 +117,8 @@ stop's code with the camera, voice search, reminders and routines with the app
 closed, trips that carry on with the screen off, picture-in-picture, Offline
 Sharing and NFC stickers, the flag-down torch, your phone's calendar, home screen
 widgets and Wear OS.
-The desktop app has its own [widgets](tray-and-widgets.md#bus-timings-widgets) and
-[tray countdown](tray-and-widgets.md#a-stops-buses-in-the-tray) instead.
+The desktop app has its own [widgets](tray-and-widgets.md#bus-timings-widgets) (off
+for now) and [tray countdown](tray-and-widgets.md#a-stops-buses-in-the-tray) instead.
 
 A trip and its Get Off Alert work while the app is open, as they do on the
 website. The [Telegram bot](../bot/routines.md) can send you timings at the same

@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 18 November 2026**
+**Latest update: 21 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -8,6 +8,16 @@
 Newest first. Each update covers the web app and the Telegram bot.
 
 ---
+
+## 21 November 2026: Desktop widgets off for now (2.5.2)
+
+### Desktop app 2.5.2
+
+- **Desktop widgets are off for now** - On Windows, opening a desktop widget could still crash the app, as 2.5.1 only made it less likely. Until that's fixed, the desktop app doesn't offer widgets anywhere, and opens none when it starts. The widgets you had are kept, and come back where they were once widgets return.
+
+### Linux command line 2.5.2
+
+- No changes of its own: numbered 2.5.2 to stay in step with the desktop app.
 
 ## 18 November 2026: A steadier start for the desktop app (2.5.1)
 
