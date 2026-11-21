@@ -32,6 +32,8 @@
   };
   // Each line's colour, as js/map.js has them; LRT lines and anything else grey.
   const LINE_COLOURS = { EW: '#009645', CG: '#009645', NS: '#d42e12', NE: '#9900aa', CC: '#fa9e0d', CE: '#fa9e0d', DT: '#005ec4', TE: '#9d5b25', JS: '#0099aa', JE: '#0099aa', JW: '#0099aa', CR: '#97c616', CP: '#97c616' };
+  // A line's colour, and black or white on it, whichever meets WCAG (js/campus.js, inkOn).
+  const lineStyle = (c) => `--line:${c};--line-ink:${window.inkOn ? window.inkOn(c) : '#fff'}`;
   const LRT = '#748477';
   const lineOf = (code) => String(code).toUpperCase().match(/^[A-Z]+/)?.[0] || '';
   const colourOf = (code) => LINE_COLOURS[lineOf(code).slice(0, 2)] || LRT;
@@ -219,11 +221,11 @@
     const rows = p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
       `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">${esc(I18n.t('doors.door', 'Door'))}</span><b>${n}</b></span>`).join('')}</span>` +
       `<span class="doorWhere">${esc(I18n.t('mapCard.typeTo', '{type} to {places}', { type: DOOR_TYPE[r.t] || r.t, places: listText(r.leads.map(leadText)) }))}</span></li>`).join('');
-    return `<div class="mcDir" style="--line:${colour}">` +
-      `<span class="lineCode" style="--line:${colour}">${esc(p.code)}</span>` +
+    return `<div class="mcDir" style="${lineStyle(colour)}">` +
+      `<span class="lineCode" style="${lineStyle(colour)}">${esc(p.code)}</span>` +
       `<span class="mcDirText"><b>${esc(p.last ? I18n.t('mapCard.endHere', 'Trains end here') : I18n.t('mapCard.towards', 'Towards {to}', { to: p.towards }))}</b>${p.next ? `<span>${esc(I18n.t('mapCard.next', 'Next: {stn}', { stn: p.next }))}</span>` : ''}</span></div>` +
       (rows
-        ? `<div class="legDoors" style="--line:${colour}"><ul class="doorRows">${rows}</ul>` +
+        ? `<div class="legDoors" style="${lineStyle(colour)}"><ul class="doorRows">${rows}</ul>` +
           `<div class="doorFoot">${p.numberAt ? doorNumberAt(p.numberAt) : ''}<span>${MrtDoors.numberAtHtml(p.numberAt)}</span></div></div>`
         : `<p class="mcNote">${esc(I18n.t('mapCard.noDoorsPlatform', 'No door details for this platform yet.'))}</p>`) +
       (p.cross.length ? `<p class="mcNote">${ico('swap')} ${esc(I18n.t('mapCard.across', 'Across the platform: {lines}', { lines: listText(p.cross) }))}</p>` : '');
@@ -234,7 +236,7 @@
     at = [st.lat, st.lng];
     dest = { label: I18n.t('mapCard.station', '{name} station', { name: st.name }), lat: st.lat, lng: st.lng };
     const mine = token;
-    const codes = st.codes.map((c) => `<span class="lineCode" style="--line:${colourOf(c)}">${esc(c)}</span>`).join('');
+    const codes = st.codes.map((c) => `<span class="lineCode" style="${lineStyle(colourOf(c))}">${esc(c)}</span>`).join('');
     const top = head(`<div class="mcTitle"><strong>${esc(st.name)}</strong><span class="mcCodes">${codes}</span></div>`);
     body.innerHTML = `${top}<p class="mcNote">${esc(I18n.t('mapCard.findingDoors', 'Finding the doors…'))}</p>${foot()}`;
     place();

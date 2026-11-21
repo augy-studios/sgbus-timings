@@ -171,7 +171,8 @@ class _MapCardBubbleState extends State<MapCardBubble> {
     final code = widget.pick.code!;
     final s = Stops.of(code);
     final buses = BusNet.ready ? BusNet.servicesAtStop(code) : const <String>[];
-    const colours = {'on': Color(0xFF1F9D55), 'last': Color(0xFFD1242F), 'off': Color(0xFF8A9590)};
+    // The site's (.svcPill): a darker green than before, 5:1 under white for WCAG.
+    const colours = {'on': Color(0xFF15803D), 'last': Color(0xFFD1242F), 'off': Color(0xFF8A9590)};
     Widget key(String st, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
           Container(width: 10, height: 10, decoration: BoxDecoration(color: colours[st], shape: BoxShape.circle)),
           const SizedBox(width: 4),
@@ -219,7 +220,7 @@ class _MapCardBubbleState extends State<MapCardBubble> {
                     onTap: () => widget.onTimings(code, no),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      child: Text(no, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                      child: Text(no, style: TextStyle(color: inkOn(colours[st]!), fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ),
@@ -394,7 +395,7 @@ class _MapCardBubbleState extends State<MapCardBubble> {
   Widget _code(String c) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(color: lineColour(c), borderRadius: BorderRadius.circular(6)),
-        child: Text(c, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
+        child: Text(c, style: TextStyle(color: inkOn(lineColour(c)), fontWeight: FontWeight.w700, fontSize: 12)),
       );
 }
 

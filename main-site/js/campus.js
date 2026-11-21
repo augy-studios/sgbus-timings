@@ -96,6 +96,9 @@
     const l = 0.2126 * lin(0) + 0.7152 * lin(2) + 0.0722 * lin(4);
     return (l + 0.05) / 0.05 > 1.05 / (l + 0.05) ? '#000' : '#fff';
   }
+  // Shared, for writing on a line's or a ride's colour elsewhere (station codes, doors, the map's
+  // bubbles), so it meets WCAG's 4.5:1: white on the Circle Line's orange is only 2.1:1.
+  window.inkOn = inkOn;
 
   // ---------- reading the timings ----------
 

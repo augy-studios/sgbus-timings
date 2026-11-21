@@ -10,6 +10,8 @@ import 'dart:ui' as ui;
 
 import 'package:material_ui/material_ui.dart';
 
+import '../../theme/theme.dart';
+
 /// An icon at a point on the map, `at` [lat, lng], over the lines and dots, higher [z] on top.
 class MapMark {
   MapMark(this.at, this.art, {this.z = 0});
@@ -82,7 +84,8 @@ class PinArt extends MarkArt {
   }
 }
 
-/// A speech bubble with a point at the bottom: "Get off", "Board 67". [fill] its colour.
+/// A speech bubble with a point at the bottom: "Get off", "Board 67". [fill] its colour, and
+/// its writing dark or white on it, whichever meets WCAG (inkOn, as the site's map-marks.js).
 class BubbleArt extends MarkArt {
   BubbleArt(this.text, {this.fill = _navy, this.icon});
   final String text;
@@ -93,7 +96,7 @@ class BubbleArt extends MarkArt {
   static const _padX = 10.0, _padY = 6.0, _tail = 7.0, _iconGap = 4.0;
 
   late final TextPainter _words = TextPainter(
-    text: TextSpan(text: text, style: const TextStyle(fontFamily: 'Roboto', color: Colors.white, fontSize: _font, fontWeight: FontWeight.w700, height: 1.1)),
+    text: TextSpan(text: text, style: TextStyle(fontFamily: 'Roboto', color: inkOn(fill), fontSize: _font, fontWeight: FontWeight.w700, height: 1.1)),
     textDirection: TextDirection.ltr,
     maxLines: 1,
   )..layout(maxWidth: 220);
@@ -102,7 +105,7 @@ class BubbleArt extends MarkArt {
       : (TextPainter(
           text: TextSpan(
               text: String.fromCharCode(icon!.codePoint),
-              style: TextStyle(fontFamily: icon!.fontFamily, package: icon!.fontPackage, fontSize: _font + 2, color: Colors.white, height: 1)),
+              style: TextStyle(fontFamily: icon!.fontFamily, package: icon!.fontPackage, fontSize: _font + 2, color: inkOn(fill), height: 1)),
           textDirection: TextDirection.ltr,
         )..layout());
 
@@ -171,7 +174,7 @@ class RideArt extends MarkArt {
     c.drawCircle(centre, 17, Paint()..color = Colors.white);
     c.drawCircle(centre, 14, Paint()..color = fill);
     final glyph = TextPainter(
-      text: TextSpan(text: String.fromCharCode(icon.codePoint), style: TextStyle(fontFamily: icon.fontFamily, package: icon.fontPackage, fontSize: 18, color: Colors.white, height: 1)),
+      text: TextSpan(text: String.fromCharCode(icon.codePoint), style: TextStyle(fontFamily: icon.fontFamily, package: icon.fontPackage, fontSize: 18, color: inkOn(fill), height: 1)),
       textDirection: TextDirection.ltr,
     )..layout();
     glyph.paint(c, centre - Offset(glyph.width / 2, glyph.height / 2));

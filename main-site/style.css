@@ -166,6 +166,11 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     --warn: #ffd27a;
     --ok: #8af0ad;
 }
+:root[data-contrast="more"][data-mode="dark"][data-color-theme="gta-6"] {
+    /* GTA VI's pink mixed into the dark surface left black on it at 2.7:1; solid pink is 6:1. */
+    --brand-fill: #ff2b90;
+    --brand-fill-strong: #ff4cb9;
+}
 :root[data-contrast="more"] .glass,
 :root[data-contrast="more"] .tripBar { backdrop-filter: none; -webkit-backdrop-filter: none; }
 :root[data-contrast="more"] .glass,
@@ -749,7 +754,8 @@ body.modal-open { overflow: hidden; }
 .glass-btn svg { width: 27px; height: 27px; }
 .glass-btn > [data-icon] { display: inline-flex; }
 .glass-btn.busy { opacity: 0.6; cursor: progress; }
-.telegramBtn { color: #229ED9; }
+.telegramBtn { color: #1a7fb5; } /* Telegram's blue, darker for 3:1 on light glass */
+:root[data-mode="dark"] .telegramBtn { color: #229ED9; }
 /* Already in Telegram, as the bot's Mini App (js/telegram.js). */
 html[data-telegram] .telegramBtn { display: none; }
 /* A button that's another app's own icon (SimplyGo): the icon is the whole button, edge to
@@ -2108,7 +2114,9 @@ details.legDoors > summary:focus-visible { outline: 2px solid var(--brand-ink); 
     align-self: stretch;
     padding: 1px 6px 2px;
     background: var(--line, var(--brand-ink));
-    color: #fff;
+    /* Black or white, whichever meets WCAG on the line's colour (js/campus.js, inkOn); with no
+       line, --bg on --brand-ink, which is dark in dark mode, where white was 1.2:1. */
+    color: var(--line-ink, var(--bg));
     font-size: 0.625rem;
     font-weight: 700;
     letter-spacing: 0.06em;
@@ -2614,7 +2622,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 /* Traffic on a bus leg (js/nav.js): orange, as slow roads are on the live map; on a way's own
    page, a button to the map. */
 .journeyTraffic, .legTraffic {
-    display: flex; align-items: flex-start; gap: 6px; font-size: 0.8125rem; color: #b35c00; text-align: left;
+    display: flex; align-items: flex-start; gap: 6px; font-size: 0.8125rem; color: #a35200; text-align: left;
 }
 .legTraffic {
     width: 100%; margin: 4px 0; padding: 8px 10px; border-radius: 10px; font: inherit; font-size: 0.8125rem; cursor: pointer;
@@ -2628,14 +2636,15 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
    you'd catch, live, each with its next three in the colours of how full it is. */
 .navSort { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
 .navSort .pill { cursor: pointer; font: inherit; font-size: 0.8125rem; }
-.navSort .pill.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.navSort .pill.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .wayTags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
 .wayTag {
     font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
     padding: 2px 7px; border-radius: 6px; color: var(--ok);
     background: color-mix(in srgb, var(--ok) 12%, transparent);
 }
-.wayTag-mine { color: #9a6700; background: color-mix(in srgb, #f5b800 20%, transparent); }
+.wayTag-mine { color: #7a5200; background: color-mix(in srgb, #f5b800 20%, transparent); }
+:root[data-mode="dark"] .wayTag-mine { color: #ffd166; }
 .wayLive {
     grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px;
     padding-top: 6px; border-top: 1px dashed var(--surface-border); font-size: 0.8125rem;
@@ -2651,9 +2660,10 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .wayBus { display: grid; grid-template-columns: 3.4em repeat(3, minmax(2.6em, auto)); gap: 10px; align-items: baseline; font-variant-numeric: tabular-nums; }
 .wayBusNo {
     justify-self: start; padding: 1px 6px; border-radius: 6px; font-weight: 700; font-size: 0.8125rem;
-    background: var(--ink); color: var(--surface);
+    background: var(--ink); color: var(--bg);
 }
-.wayEta { color: var(--muted-strong); }
+/* Grey only with no load: it came after .load-ok/-warn/-busy and turned every timing grey. */
+.wayEta:not(.load-ok):not(.load-warn):not(.load-busy) { color: var(--muted-strong); }
 .wayEta.first { font-weight: 700; font-size: 0.9375rem; }
 .wayLiveNone { color: var(--muted-strong); }
 .legLiveHead { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--muted-strong); margin-top: 4px; }
@@ -2709,7 +2719,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .markBubble {
     position: relative; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 7px;
     padding: 5px 10px; border-radius: 9px; white-space: nowrap;
-    background: var(--mark); color: #fff; font: 700 13px/1.1 system-ui, sans-serif;
+    background: var(--mark); color: var(--mark-ink, #fff); font: 700 13px/1.1 system-ui, sans-serif;
     box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
 }
 .markBubble::after {
@@ -2719,7 +2729,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .markBubble svg { width: 15px; height: 15px; }
 .markRide {
     display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%;
-    background: var(--mark); color: #fff; border: 3px solid #fff; box-shadow: 0 1.5px 4px rgb(0 0 0 / 0.35);
+    background: var(--mark); color: var(--mark-ink, #fff); border: 3px solid #fff; box-shadow: 0 1.5px 4px rgb(0 0 0 / 0.35);
 }
 .markRide svg { width: 18px; height: 18px; }
 /* The trip bar's strip (js/trip.js, tripStrip): the part you're on, stop by stop. */
@@ -2731,7 +2741,7 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .stripPart { display: inline-flex; padding: 2px; border-radius: 5px; }
 .stripPart svg { width: 14px; height: 14px; }
 .stripPart.done { opacity: 0.45; }
-.stripPart.on { background: var(--ink); color: var(--surface); }
+.stripPart.on { background: var(--ink); color: var(--bg); }
 .stripSep { font-size: 0.75rem; opacity: 0.5; }
 .stripLine { position: relative; height: 18px; margin: 2px 0; }
 .stripLine i { position: absolute; display: block; }
@@ -3964,7 +3974,7 @@ body.touring { overflow: hidden; }
     padding: 2px 8px;
     border-radius: 999px;
     background: var(--line, #748477);
-    color: #fff;
+    color: var(--line-ink, #fff); /* black on light lines such as CC, for WCAG (js/map-card.js) */
     font-size: 0.75rem;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -3982,14 +3992,14 @@ body.touring { overflow: hidden; }
     font-weight: 700;
     font-size: 0.875rem;
     color: #fff;
-    background: #1f9d55;
+    background: #15803d; /* 5:1 under white, for WCAG; #1f9d55 was 3.5:1 */
 }
 .svcPill.last { background: #d1242f; }
-.svcPill.off { background: color-mix(in srgb, var(--ink) 18%, var(--surface-strong)); color: var(--muted-strong); }
+.svcPill.off { background: color-mix(in srgb, var(--ink) 18%, var(--surface-strong)); color: var(--ink); } /* --muted-strong was 4:1 in dark mode */
 .svcPill:hover { filter: brightness(1.1); }
 .svcPill:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .mcKey { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin: 0; font-size: 0.75rem; color: var(--muted); }
-.mcKeyDot { width: 9px; height: 9px; border-radius: 50%; background: #1f9d55; margin-left: 6px; }
+.mcKeyDot { width: 9px; height: 9px; border-radius: 50%; background: #15803d; margin-left: 6px; }
 .mcKeyDot:first-child { margin-left: 0; }
 .mcKeyDot.last { background: #d1242f; }
 .mcKeyDot.off { background: color-mix(in srgb, var(--ink) 25%, var(--surface-strong)); }

@@ -927,7 +927,9 @@ function liveRows(leg, live) {
     const ms = left(b.eta_ms);
     // Whole minutes, so three fit side by side: Arr, 7 min, 21 min (or the clock time, by Settings).
     const text = LS.getClockTimes() ? etaText(ms) : ms < 60000 ? I18n.t('glance.arr', 'Arr') : I18n.t('trip.chipMin', '{m} min', { m: Math.floor(ms / 60000) });
-    return `<span class="wayEta ${loadTextClass(b.load)}${i === 0 ? ' first' : ''}" title="${escapeHtml(loadWords(b.load))}">${escapeHtml(text)}</span>`;
+    // How full it is in words too, for screen readers, not only in its colour (WCAG 1.4.1).
+    const words = loadWords(b.load);
+    return `<span class="wayEta ${loadTextClass(b.load)}${i === 0 ? ' first' : ''}" title="${escapeHtml(words)}">${escapeHtml(text)}${words ? `<span class="sr">, ${escapeHtml(words)}</span>` : ''}</span>`;
   };
   return rows.slice(0, NAV_LIVE_SHOWN).map((r) => `<span class="wayBus"><span class="wayBusNo">${escapeHtml(r.no)}</span>` +
     (r.buses.length ? r.buses.map(eta).join('') : `<span class="wayEta">-</span>`) + `</span>`).join('');
@@ -1060,7 +1062,8 @@ function doorsPanel(p, text, color, key = null) {
     : p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
         `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">${escapeHtml(I18n.t('doors.door', 'Door'))}</span><b>${n}</b></span>`).join('')}</span>` +
         `<span class="doorWhere">${escapeHtml(r.places.length ? I18n.t('mapCard.typeTo', '{type} to {places}', { type: DOOR_TYPE[r.t] || r.t, places: r.places.join(', ') }) : DOOR_TYPE[r.t] || r.t)}</span></li>`).join('');
-  const line = color ? ` style="--line:${escapeHtml(color)}"` : '';
+  // With black or white for the doors' labels on it, whichever meets WCAG (js/campus.js, inkOn).
+  const line = color ? ` style="--line:${escapeHtml(color)};--line-ink:${window.inkOn ? inkOn(color) : '#fff'}"` : '';
   // Folded away to its heading unless it's been opened (nav.doorsOpen, by `key`), so the doors
   // don't push the rest of the way down the screen; tapping the heading opens or folds it.
   // Explorer's (js/map-card.js) stays open, as it's in a card of its own.

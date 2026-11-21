@@ -9,6 +9,21 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 22 November 2026: Bus numbers you can read in dark mode (2.6.1)
+
+### Website, Android and desktop apps
+
+- **Bus numbers you can read in dark mode** - In Navigate's live timings, each bus number was white on white in dark mode. It's now dark on light, as it was meant to be. On the website, the sort button you've picked and the trip bar's current part had the same trouble, and are fixed too.
+- **Easier to read on every colour** - All the writing now meets WCAG's AA contrast (4.5:1). Station codes, door labels, and the trip map's Board, Change and Get off bubbles and your bus or train badge are black on light colours such as the Circle Line's orange, the Cross Island Line's green and the bus's green, where white was as low as 2:1. Door labels with no line colour are dark on light in dark mode. The Your bus tag is a darker gold, or a light one in dark mode, and Explorer's bus buttons a darker green, with a not-running bus's number in full black or white. On the website, the traffic note is a little darker and the Telegram button's blue too. In high contrast with GTA VI's colours in dark mode, buttons are solid pink so their black writing reads.
+
+### Website
+
+- **Live timings in colour** - Navigate's live timings are green, amber or red for how full each bus is, as the guide says, rather than all grey. Screen readers also say how full each bus is, not only its colour showing it.
+
+### Linux command line 2.6.1
+
+- No changes of its own: numbered 2.6.1 to stay in step with the apps.
+
 ## 22 November 2026: Ways sorted your way, with fares and live buses (2.6.0)
 
 ### Website, Android and desktop apps

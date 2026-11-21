@@ -12,6 +12,8 @@
   const RED = '#e4572e';
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const colour = (c) => (/^#[0-9a-f]{3,8}$/i.test(String(c)) ? c : NAVY);
+  // The colour, and black or white on it, whichever meets WCAG (js/campus.js, inkOn).
+  const paint = (c) => `--mark:${colour(c)};--mark-ink:${window.inkOn ? window.inkOn(colour(c)) : '#fff'}`;
 
   // A trip's start (navy) or end (red): a map pin with a white middle.
   function pin(end) {
@@ -28,7 +30,7 @@
   function bubble(text, fill = NAVY, icon = null) {
     return {
       anchor: 'bottom',
-      html: `<span class="markBubble" style="--mark:${colour(fill)}">${icon ? window.icon(icon) : ''}<span>${esc(text)}</span></span>`,
+      html: `<span class="markBubble" style="${paint(fill)}">${icon ? window.icon(icon) : ''}<span>${esc(text)}</span></span>`,
     };
   }
 
@@ -36,7 +38,7 @@
   function ride(kind, fill) {
     return {
       anchor: 'center',
-      html: `<span class="markRide" style="--mark:${colour(fill)}">${window.icon(kind)}</span>`,
+      html: `<span class="markRide" style="${paint(fill)}">${window.icon(kind)}</span>`,
     };
   }
 

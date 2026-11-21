@@ -230,6 +230,10 @@ class BrandSwatch {
 /// A colour as "#rrggbb", for Colours' sums.
 String hexOf(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0')}';
 
+/// The writing that meets WCAG on a line's or a ride's colour: dark or white, whichever reads
+/// better (white on the Circle Line's orange is only 2.1:1). As the site's inkOn (js/campus.js).
+Color inkOn(Color bg) => hexColor(Colours.onColour(hexOf(bg)));
+
 /// The desktop title bar's colours (desktop/title_bar.dart), from the theme in use: the bars'
 /// colour, writing that reads on it (the theme's own, held to WCAG AA), and the tints for the
 /// command bar's field and a button under the pointer. The tints only ever add contrast: lighter

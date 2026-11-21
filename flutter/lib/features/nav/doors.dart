@@ -67,7 +67,7 @@ class DoorChip extends StatelessWidget {
             color: line,
             padding: const EdgeInsets.fromLTRB(6, 1, 6, 2),
             child: Text(tr('doors.door', 'Door').toUpperCase(),
-                textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
+                textAlign: TextAlign.center, style: TextStyle(color: inkOn(line), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.6)),
           ),
           Stack(alignment: Alignment.center, children: [
             Positioned.fill(child: Center(child: Container(width: 2, color: sg.ink.withValues(alpha: 0.22)))),

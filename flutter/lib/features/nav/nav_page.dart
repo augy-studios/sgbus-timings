@@ -768,7 +768,9 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(names[t]!.toUpperCase(),
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .3, color: t == 'mine' ? const Color(0xFF9A6700) : sg.ok)),
+                // Your bus: dark gold, or light gold in dark mode, as the site's (.wayTag-mine), both
+                // over 4.5:1 for WCAG; the one gold was 4.1:1 in light mode and 2.2:1 in dark.
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .3, color: t == 'mine' ? (Theme.of(context).brightness == Brightness.dark ? const Color(0xFFFFD166) : const Color(0xFF7A5200)) : sg.ok)),
           ),
       ]),
     );
@@ -815,7 +817,8 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(color: sg.ink, borderRadius: BorderRadius.circular(6)),
-                  child: Text(r.no, style: TextStyle(color: sg.surface, fontWeight: FontWeight.w700, fontSize: 13)),
+                  // bg, not surface: surface is see-through in dark mode, so the number vanished.
+                  child: Text(r.no, style: TextStyle(color: sg.bg, fontWeight: FontWeight.w700, fontSize: 13)),
                 ),
               ),
             ),
