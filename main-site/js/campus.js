@@ -98,7 +98,7 @@
   }
   // Shared, for writing on a line's or a ride's colour elsewhere (station codes, doors, the map's
   // bubbles), so it meets WCAG's 4.5:1: white on the Circle Line's orange is only 2.1:1.
-  window.inkOn = inkOn;
+  root.inkOn = inkOn;
 
   // ---------- reading the timings ----------
 
