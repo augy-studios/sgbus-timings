@@ -1,0 +1,5 @@
+# Flutter writes its generated plugin files with LF line endings on every system. Keeping them LF
+# here too stops them showing as changed after every build or `flutter pub get` on Windows.
+flutter/linux/flutter/generated_plugin* text eol=lf
+flutter/macos/Flutter/GeneratedPluginRegistrant.swift text eol=lf
+flutter/windows/flutter/generated_plugin* text eol=lf

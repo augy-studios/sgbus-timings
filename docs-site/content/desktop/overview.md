@@ -1,6 +1,6 @@
 ---
 title: The Windows, Mac and Linux app
-description: SG Bus Timings for Windows, Mac and Linux, on Intel, AMD or Arm: the Android app's screens laid out for a computer, with a title bar and command bar, the tray, desktop widgets and Service alerts as notifications.
+description: SG Bus Timings for Windows, Mac and Linux, on Intel, AMD or Arm: the Android app's screens laid out for a computer, with a title bar and command bar, the tray, desktop widgets (disabled for now, as we work on improving your experience) and Service alerts as notifications.
 ---
 
 SG Bus Timings for Windows, Mac and Linux is an app of its own. From version 2.5.0
@@ -8,7 +8,8 @@ it has the same screens as the [Android app](../android/overview.md), drawn by t
 app itself and laid out for a computer: a title bar with a search box, a
 navigation rail down the side, and a stop or a bus opening beside your list on a
 wide window. Around them are the things only a desktop app can do, such as the
-tray, widgets on your desktop and Service alerts as notifications.
+tray, widgets on your desktop (disabled for now, as we work on improving your
+experience) and Service alerts as notifications.
 
 <figure>
 <img src="/screenshots/desktop/window.png" alt="The desktop app's window: the green title bar with Back, Forward and Reload, the command bar in the middle showing Bedok Int (84009), and Copy link and the two screenshot buttons; the navigation rail down the left with Bus timings picked; Bus timings' list with Stops near me; and Bedok Int's timings beside it." width="1280" height="860" loading="lazy">
@@ -22,7 +23,7 @@ updates to the new app by itself and brings across everything you'd saved: see
 <div class="cards">
 <a class="card-link glass" href="install.md"><span class="card-icon" data-icon="info"></span><span class="card-title">Install and update it</span><span class="card-text">The file for your computer, the first time it opens, and how it updates.</span></a>
 <a class="card-link glass" href="window.md"><span class="card-icon" data-icon="globe"></span><span class="card-title">The window and its shortcuts</span><span class="card-text">The title bar, the command bar, split panes, right-click menus and keys.</span></a>
-<a class="card-link glass" href="tray-and-widgets.md"><span class="card-icon" data-icon="clock"></span><span class="card-title">Tray, widgets and notifications</span><span class="card-text">Your next bus in the tray, a stop on your desktop, and Service alerts.</span></a>
+<a class="card-link glass" href="tray-and-widgets.md"><span class="card-icon" data-icon="clock"></span><span class="card-title">Tray, widgets and notifications</span><span class="card-text">Your next bus in the tray, a stop on your desktop (disabled for now, as we work on improving your experience), and Service alerts.</span></a>
 <a class="card-link glass" href="../android/main-screen.md"><span class="card-icon" data-icon="send"></span><span class="card-title">The screens</span><span class="card-text">Glance, Bus timings, Navigate and the rest, as the Android app has them.</span></a>
 </div>
 
