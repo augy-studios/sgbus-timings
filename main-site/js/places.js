@@ -212,10 +212,15 @@
     $('#placeBuses').value = editing.place ? Ways.placeBuses(editing.place).join(', ') : '';
     if (!$('#placesSection').hidden) render();
     else open();
-    const input = editing.place ? $('#placeName') : $('#placeSearch');
-    if (!$('#placeNameRow').hidden || input === $('#placeSearch')) {
+    // The form is under the list. Home and Work have no name to type, so nothing takes focus
+    // there: still bring the form into view, or with a long list it opens out of sight and Edit
+    // looks as if it did nothing.
+    const input = !editing.place ? $('#placeSearch') : $('#placeNameRow').hidden ? null : $('#placeName');
+    if (input) {
       input.scrollIntoView({ block: 'center' });
       input.focus({ preventScroll: true });
+    } else {
+      $('#placeForm').scrollIntoView({ block: 'start' });
     }
   }
 
