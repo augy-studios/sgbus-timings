@@ -2777,11 +2777,58 @@
     renderIca();
     const icon = $("#tripBar [data-icon]");
     icon.setAttribute("data-icon", legIcon(leg));
+    $("#tripStrip").innerHTML = tripStrip(leg);
     window.hydrateIcons($("#tripBar"));
     $("#tripBar").classList.remove("hidden");
     document.body.classList.add("on-trip");
     if (expanded && builtLeg !== trip.leg) buildTimeline();
     else kick();
+  }
+
+  // ---------- the strip ----------
+
+  // The trip bar's strip (in step with flutter/lib/features/trips/trip_strip.dart): the part
+  // you're on as a line from where it starts to where you get off, a dot for each stop or
+  // station, filled as you pass them, a ring where you are and a dark dot where you get off;
+  // over it, the stops left, the minutes and the distance to there, and an icon for every part
+  // of the trip, the one you're on picked out. So where you are is on the bar without opening it.
+  const STRIP_MAX_DOTS = 60;
+  function tripStrip(leg) {
+    const n = Math.max(2, leg.points.length);
+    const waiting = !isWalk(leg) && !trip.boarded && target() < 0.5;
+    const pos = waiting ? 0 : target();
+    const at = Math.min(1, Math.max(0, pos / (n - 1)));
+    // Metres left along the part, from where you are.
+    let left = 0;
+    const i = Math.min(n - 2, Math.floor(pos));
+    if (leg.points.length >= 2) {
+      left += metres(leg.points[i], leg.points[i + 1]) * (1 - (pos - i));
+      for (let k = i + 1; k < n - 1; k++) left += metres(leg.points[k], leg.points[k + 1]);
+    }
+    const stops = stopsLeft();
+    const stats = [
+      !isWalk(leg) && (stops === 1 ? I18n.t("trip.chipStop", "1 stop") : I18n.t("trip.chipStops", "{n} stops", { n: stops })),
+      I18n.t("trip.chipMin", "{m} min", { m: Math.max(1, Math.round(minutesTo(trip.leg + 1))) }),
+      formatDistance(left),
+    ].filter(Boolean);
+    const colour = nativeLook().color;
+    // Drawn in a box 100 wide, stretched to the bar; the dots kept round by drawing them in HTML.
+    const x = (share) => `calc(7px + (100% - 14px) * ${share.toFixed(4)})`;
+    const dots = !isWalk(leg) && n <= STRIP_MAX_DOTS
+      ? Array.from({ length: n - 2 }, (_, k) => {
+          const share = (k + 1) / (n - 1);
+          return `<i class="sDot${share <= at ? " passed" : ""}" style="left:${x(share)}"></i>`;
+        }).join("")
+      : "";
+    const parts = trip.legs.length > 1 && trip.legs.length <= 8
+      ? `<span class="stripParts">${trip.legs.map((l, k) => `<span class="stripPart${k === trip.leg ? " on" : k < trip.leg ? " done" : ""}" data-icon="${legIcon(l)}"></span>`).join(`<span class="stripSep">›</span>`)}</span>`
+      : "";
+    const names = (leg.names || []).filter(Boolean);
+    return `<div class="stripHead"><b>${esc(stats.join("  ·  "))}</b>${parts}</div>` +
+      `<div class="stripLine${isWalk(leg) ? " walk" : ""}" style="--strip:${esc(colour)}">` +
+      `<i class="sTrack"></i><i class="sDone" style="width:calc((100% - 14px) * ${at.toFixed(4)})"></i>${dots}` +
+      `<i class="sEnd sStart" style="left:${x(0)}"></i><i class="sEnd sOff" style="left:${x(1)}"></i><i class="sYou" style="left:${x(at)}"></i></div>` +
+      `<div class="stripNames"><span>${esc(names[0] || "")}</span><b>${esc(leg.to || "")}</b></div>`;
   }
 
   // ---------- the timeline ----------

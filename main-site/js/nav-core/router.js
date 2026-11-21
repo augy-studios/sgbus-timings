@@ -177,14 +177,19 @@ export function plan(graph, from, to, { open = null, customs = null, wait = null
     frontier = next;
   }
 
-  // The best way to the end for each mix.
+  // The best way to the end for each mix and each last ride: not only the quickest bus and
+  // train, but the quickest that ends on each bus or line, so a way on a bus that stops
+  // nearer the end is kept beside a quicker one that leaves a long walk (Kallang to Bedok
+  // Reservoir: 228 to the door, beside 225W and a 10-minute walk). Keep in step with
+  // _plan in flutter/lib/data/nav_core.dart.
   const byMix = new Map();
   for (const [node, end] of endAt) {
     for (const [mix, label] of best.get(node) || []) {
       if (!mix) continue;
       const total = label.t + end.min;
-      const old = byMix.get(mix);
-      if (!old || total < old.total) byMix.set(mix, { total, label, end });
+      const key = `${mix}|${lastRide(graph, label)?.key ?? ""}`;
+      const old = byMix.get(key);
+      if (!old || total < old.total) byMix.set(key, { total, label, end });
     }
   }
 

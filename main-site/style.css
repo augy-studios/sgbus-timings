@@ -2624,6 +2624,40 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 .journeyTraffic .ico, .legTraffic .ico { margin-top: 2px; }
 /* Each warning on a way in the list a line of its own, across the whole item. */
 .journeyItem .journeyWarn, .journeyItem .journeyTraffic { grid-column: 1 / -1; }
+/* Navigate's list (js/nav.js, js/ways.js): the sort over it, each way's tags, and the buses
+   you'd catch, live, each with its next three in the colours of how full it is. */
+.navSort { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+.navSort .pill { cursor: pointer; font: inherit; font-size: 0.8125rem; }
+.navSort .pill.on { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.wayTags { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px; }
+.wayTag {
+    font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+    padding: 2px 7px; border-radius: 6px; color: var(--ok);
+    background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+.wayTag-mine { color: #9a6700; background: color-mix(in srgb, #f5b800 20%, transparent); }
+.wayLive {
+    grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px;
+    padding-top: 6px; border-top: 1px dashed var(--surface-border); font-size: 0.8125rem;
+}
+.wayLiveHead { display: flex; align-items: center; gap: 6px; color: var(--muted-strong); }
+.wayLiveHead .liveDot, .legLiveHead .liveDot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--ok); flex: none;
+    animation: live-dot 1.6s ease-in-out infinite;
+}
+@keyframes live-dot { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .wayLiveHead .liveDot, .legLiveHead .liveDot { animation: none; } }
+.wayBuses { display: flex; flex-direction: column; gap: 3px; }
+.wayBus { display: grid; grid-template-columns: 3.4em repeat(3, minmax(2.6em, auto)); gap: 10px; align-items: baseline; font-variant-numeric: tabular-nums; }
+.wayBusNo {
+    justify-self: start; padding: 1px 6px; border-radius: 6px; font-weight: 700; font-size: 0.8125rem;
+    background: var(--ink); color: var(--surface);
+}
+.wayEta { color: var(--muted-strong); }
+.wayEta.first { font-weight: 700; font-size: 0.9375rem; }
+.wayLiveNone { color: var(--muted-strong); }
+.legLiveHead { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--muted-strong); margin-top: 4px; }
+.legLive .wayBuses { margin-top: 4px; font-size: 0.8125rem; }
 /* Walking or cycling the whole way, under the ways. */
 .navOthers { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
 .navOther { display: flex; align-items: center; gap: 8px; font-size: 0.875rem; padding: 8px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--surface-border); }
@@ -2666,6 +2700,33 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 }
 .tripText strong { font-size: 0.875rem; }
 .tripNote { font-size: 0.75rem; color: var(--muted-strong); }
+/* The trip bar's strip (js/trip.js, tripStrip): the part you're on, stop by stop. */
+.tripStrip { padding: 0 14px 10px; font-size: 0.75rem; }
+.tripStrip:empty { display: none; }
+.stripHead { display: flex; align-items: center; gap: 8px; }
+.stripHead b { flex: 1; min-width: 0; font-size: 0.8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stripParts { display: flex; align-items: center; gap: 2px; color: var(--muted-strong); }
+.stripPart { display: inline-flex; padding: 2px; border-radius: 5px; }
+.stripPart svg { width: 14px; height: 14px; }
+.stripPart.done { opacity: 0.45; }
+.stripPart.on { background: var(--ink); color: var(--surface); }
+.stripSep { font-size: 0.75rem; opacity: 0.5; }
+.stripLine { position: relative; height: 18px; margin: 2px 0; }
+.stripLine i { position: absolute; display: block; }
+.stripLine .sTrack, .stripLine .sDone { top: 7px; left: 7px; height: 4px; border-radius: 2px; }
+.stripLine .sTrack { right: 7px; background: color-mix(in srgb, var(--strip) 30%, transparent); }
+.stripLine.walk .sTrack { background: radial-gradient(circle, var(--muted-strong) 1.4px, transparent 1.6px) 0 50% / 7px 4px repeat-x; }
+.stripLine .sDone { background: var(--strip); }
+.stripLine .sDot, .stripLine .sEnd, .stripLine .sYou { top: 50%; border-radius: 50%; transform: translate(-50%, -50%); }
+.stripLine .sDot { width: 6px; height: 6px; background: #fff; border: 1.5px solid var(--strip); }
+.stripLine .sDot.passed { background: var(--strip); }
+.stripLine .sStart { width: 9px; height: 9px; background: var(--strip); }
+.stripLine .sOff { width: 9px; height: 9px; background: #14213d; box-shadow: 0 0 0 2px #fff; }
+.stripLine .sYou { width: 10px; height: 10px; background: #fff; border: 3px solid var(--strip); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); }
+.stripNames { display: flex; justify-content: space-between; gap: 8px; color: var(--muted-strong); }
+.stripNames span, .stripNames b { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stripNames b { text-align: right; color: var(--ink); }
+.tripBar.alerting .stripNames, .tripBar.alerting .stripNames b, .tripBar.alerting .stripParts { color: var(--on-brand); }
 /* Last bus soon: red, as the last three buses are on Explorer's stop cards. */
 .tripWarn { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 0; }
 .tripWarnLine {

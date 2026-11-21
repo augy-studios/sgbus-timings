@@ -8,6 +8,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/edge_tray.dart';
 import '../../app/nav.dart';
+import '../nav/ways.dart';
 import '../../app/pages.dart';
 import '../../data/favs.dart';
 import '../../data/network.dart';
@@ -160,6 +161,14 @@ class SettingsGroup extends StatefulWidget {
 
 class _SettingsGroupState extends State<SettingsGroup> {
   late final _name = TextEditingController(text: Store.I.get('sgbus_name') ?? '');
+  late final _prefBuses = TextEditingController(text: NavWays.preferred.join(', '));
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _prefBuses.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -471,6 +480,35 @@ class _SettingsGroupState extends State<SettingsGroup> {
           onChanged: (v) => _set('sgbus_shuttles', v == 'paid' ? 'paid' : null),
           note: tr('settings.shuttles_note',
               "Shuttle buses, such as NUS's and NTU's, IKEA's and Changi Airport's, in Navigate and on Explorer's map. Paid ones, such as Mandai's and the TS1 to Johor Bahru, only with Free and paid. A hotel's shuttle is only used to or from that hotel."),
+        ),
+        // Navigate's fares (ways.dart): the card fare of this type, by distance.
+        Choice(
+          label: tr('settings.fare_type', 'Fare type'),
+          value: NavWays.fareType,
+          options: [
+            ('adult', tr('fare.adult', 'Adult')),
+            ('student', tr('fare.student', 'Student')),
+            ('senior', tr('fare.seniorShort', 'Senior or PwD')),
+            ('workfare', tr('fare.workfare', 'Workfare')),
+          ],
+          onChanged: (v) => setState(() => NavWays.fareType = v),
+          note: tr('settings.fare_note', "Navigate shows what each way should cost by card, from the distance ridden, for this fare type. It's an estimate: your card's own fare can differ a little."),
+        ),
+        // Buses you'd rather take, going anywhere: marked Your bus and first in Best.
+        const SizedBox(height: 8),
+        TextField(
+          controller: _prefBuses,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(labelText: tr('settings.preferred_buses', 'Preferred buses'), hintText: '228, 69'),
+          onChanged: (v) => NavWays.preferred = NavWays.parseBuses(v),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          child: Text(
+            tr('settings.preferred_note',
+                "Bus numbers, with commas between. A way that rides one is marked Your bus and comes first when Navigate sorts by Best. For buses you'd rather take only to one place, such as home, add them to that place in Places."),
+            style: TextStyle(color: context.sg.muted, fontSize: 13),
+          ),
         ),
       ];
 

@@ -472,6 +472,10 @@
                             <label class="modal-section-label" for="placeName" data-i18n="places.name_optional">Name (optional)</label>
                             <input id="placeName" class="input" maxlength="40" autocomplete="off" enterkeyhint="done" />
                         </div>
+                        <!-- Buses you'd rather take to this place (js/ways.js, setPlaceBuses) -->
+                        <label class="modal-section-label" for="placeBuses" data-i18n="places.buses">Buses you like to take here (optional)</label>
+                        <input id="placeBuses" class="input" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="228" />
+                        <p class="mode-note" data-i18n="places.busesNote">Going here, Navigate marks a way on one of these as Your bus and puts it first in Best.</p>
                         <div class="tripActions">
                             <button id="placeSave" class="btn" type="submit" data-i18n="places.save">Save</button>
                             <button id="placeCancel" class="iconBtn" type="button" data-i18n="places.cancel">Cancel</button>
@@ -878,6 +882,19 @@
                     <button class="mode-btn" type="button" data-shuttles="paid" aria-pressed="false" data-i18n="settings.shuttles_paid">Free and paid</button>
                 </div>
                 <p class="mode-note" data-i18n="settings.shuttles_note">Shuttle buses, such as NUS's and NTU's, IKEA's and Changi Airport's, in Navigate and on Explorer's map. Paid ones, such as Mandai's and the TS1 to Johor Bahru, only with Free and paid. A hotel's shuttle is only used to or from that hotel.</p>
+                <!-- Navigate's fares (js/ways.js): the card fare of this type, by distance -->
+                <p class="modal-section-label" data-find="fare fares price cost student senior concession workfare pwd" data-i18n="settings.fare_type">Fare type</p>
+                <div class="mode-toggle farePick">
+                    <button class="mode-btn" type="button" data-fare="adult" aria-pressed="false" data-i18n="fare.adult">Adult</button>
+                    <button class="mode-btn" type="button" data-fare="student" aria-pressed="false" data-i18n="fare.student">Student</button>
+                    <button class="mode-btn" type="button" data-fare="senior" aria-pressed="false" data-i18n="fare.seniorShort">Senior or PwD</button>
+                    <button class="mode-btn" type="button" data-fare="workfare" aria-pressed="false" data-i18n="fare.workfare">Workfare</button>
+                </div>
+                <p class="mode-note" data-i18n="settings.fare_note">Navigate shows what each way should cost by card, from the distance ridden, for this fare type. It's an estimate: your card's own fare can differ a little.</p>
+                <!-- Buses you'd rather take (js/ways.js): marked Your bus and first in Best, going anywhere -->
+                <p class="modal-section-label" data-find="preferred favourite bus buses" data-i18n="settings.preferred_buses">Preferred buses</p>
+                <input id="setPrefBuses" class="input settingsInput" type="text" autocomplete="off" spellcheck="false" maxlength="120" enterkeyhint="done" placeholder="228, 69" data-i18n-aria-label="settings.preferred_buses" aria-label="Preferred buses" />
+                <p class="mode-note" data-i18n="settings.preferred_note">Bus numbers, with commas between. A way that rides one is marked Your bus and comes first when Navigate sorts by Best. For buses you'd rather take only to one place, such as home, add them to that place in Places.</p>
             </section>
 
             <section class="settingsView" data-settings-group="help" data-i18n-data-title="settings.help_and_extras" data-title="Help and extras" hidden>
@@ -1337,6 +1354,9 @@
             <button id="tripNext" class="iconBtn" type="button" data-i18n-title="trip.on_to_the_next_part" title="On to the next part" data-i18n-aria-label="trip.on_to_the_next_part" aria-label="On to the next part" hidden data-i18n="trip.next">Next</button>
             <button id="tripEnd" class="iconBtn" type="button" data-i18n-title="trip.end_the_trip" title="End the trip" data-i18n="trip.end_trip">End trip</button>
         </div>
+        <!-- The part you're on, stop by stop, with what's left of it (js/trip.js, tripStrip); the
+             status above says it all for a screen reader. -->
+        <div id="tripStrip" class="tripStrip" aria-hidden="true"></div>
         <!-- What a screen reader says of the trip: only when it changes (js/trip.js, render) -->
         <p id="tripSay" class="sr" aria-live="polite"></p>
     </div>
@@ -1697,6 +1717,7 @@
     <script src="/js/recents.js"></script>
     <script src="/js/calendar.js"></script>
     <script src="/js/mrt-doors.js"></script>
+    <script src="/js/ways.js"></script>
     <script src="/js/nav.js"></script>
     <script src="/js/share.js"></script>
     <script src="/script.js"></script>

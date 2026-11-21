@@ -116,6 +116,7 @@ const ASSETS = [
   "/vendor/leaflet/leaflet.css",
   "/js/calendar.js",
   "/js/mrt-doors.js",
+  "/js/ways.js",
   "/js/nav.js",
   // Bus and train planned on the phone offline (js/nav.js, planOnPhone): the router and graph
   // /api/nav uses, as ES modules, in their worker, and the rail network they ride on.

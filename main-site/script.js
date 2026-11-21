@@ -2023,6 +2023,8 @@ function openSettings(group) {
     syncCustomsButtons();
     syncBikeButtons();
     syncShuttleButtons();
+    syncFareButtons();
+    $('#setPrefBuses').value = Ways.preferred().join(', ');
     syncTimesButtons();
     syncMainButtons();
     prepareSync();
@@ -2252,6 +2254,24 @@ $$('[data-shuttles]').forEach(btn => btn.addEventListener('click', () => {
     syncShuttleButtons();
     window.dispatchEvent(new Event('shuttleschange'));
 }));
+// Fare type and Preferred buses (js/ways.js): Navigate's list draws itself again with them.
+function syncFareButtons() {
+    $$('[data-fare]').forEach(btn => {
+        const on = btn.dataset.fare === Ways.getFareType();
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
+    });
+}
+$$('[data-fare]').forEach(btn => btn.addEventListener('click', () => {
+    Ways.setFareType(btn.dataset.fare);
+    syncFareButtons();
+    if (!$('#navSection').hidden) renderNav();
+}));
+$('#setPrefBuses').addEventListener('change', (e) => {
+    Ways.setPreferred(Ways.parseBuses(e.target.value));
+    e.target.value = Ways.preferred().join(', ');
+    if (!$('#navSection').hidden) renderNav();
+});
 // The timings on show change over at once; Glance hears it too (timeschange).
 $$('[data-times]').forEach(btn => btn.addEventListener('click', () => {
     LS.setClockTimes(btn.dataset.times === 'clock');

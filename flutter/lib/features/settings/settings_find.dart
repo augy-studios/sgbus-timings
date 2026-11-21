@@ -39,6 +39,8 @@ class SettingsFind {
     FoundSetting('navigate', () => tr('settings.immigration_time', 'Immigration time'), 'customs causeway checkpoint jb johor woodlands'),
     FoundSetting('navigate', () => tr('settings.cycling', 'Cycling'), 'bike bicycle'),
     FoundSetting('navigate', () => tr('settings.shuttle_buses', 'Shuttle buses'), 'shuttle shuttles campus ikea mandai fare'),
+    FoundSetting('navigate', () => tr('settings.fare_type', 'Fare type'), 'fare fares price cost student senior concession workfare pwd'),
+    FoundSetting('navigate', () => tr('settings.preferred_buses', 'Preferred buses'), 'preferred favourite bus buses'),
     FoundSetting('help', () => tr('settings.show_me_around', 'Show me around'), 'tour tutorial'),
     FoundSetting('help', () => tr('settings.sgbus_terminal', 'sgbus terminal'), 'command line linux'),
     FoundSetting('help', () => tr('coins.title', 'uwuCoins'), 'coins uwucoins wheel spin easter eggs feats hide show pop-ups popups toast'),

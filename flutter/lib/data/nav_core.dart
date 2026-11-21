@@ -725,13 +725,17 @@ List<Map<String, dynamic>> plan(
     frontier = next;
   }
 
+  // The best way to the end for each mix and each last ride, so a bus that stops nearer the end is
+  // kept beside a quicker one that leaves a long walk. Keep in step with plan in
+  // main-site/js/nav-core/router.js.
   final byMix = <String, ({double total, _Label label, (double, double) end})>{};
   endAt.forEach((node, end) {
     (best[node] ?? const <String, _Label>{}).forEach((mix, label) {
       if (mix.isEmpty) return;
       final total = label.t + end.$1;
-      final old = byMix[mix];
-      if (old == null || total < old.total) byMix[mix] = (total: total, label: label, end: end);
+      final key = '$mix|${lastRide(label)?.key ?? ''}';
+      final old = byMix[key];
+      if (old == null || total < old.total) byMix[key] = (total: total, label: label, end: end);
     });
   });
 
