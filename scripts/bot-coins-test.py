@@ -113,19 +113,19 @@ async def main():
     await coins_view.send_wheel(A)
     w = tg('sendWidget')[-1][4]
     ok('/coins: a wheel of its own, not shared, with the balance', w.get('is_shared') is None and json.loads(w['chat_data']) == {'r': 1, 'b': 0, 's': -1})
-    ok('with Spin under it', w['reply_markup']['inline_keyboard'][0][0]['text'] == '🎡 Spin for 100')
+    ok('with Spin under it', w['reply_markup']['inline_keyboard'][0][0]['text'] == '🎡 Spin for 50')
     try:
         await coins_view.spin(A)
-        ok('no spin without 100 uwuCoins', False)
+        ok('no spin without 50 uwuCoins', False)
     except coins.CoinError as err:
-        ok('no spin without 100 uwuCoins', '100 more uwuCoins' in str(err), str(err))
+        ok('no spin without 50 uwuCoins', '50 more uwuCoins' in str(err), str(err))
     coins.add(A, 250, 'trip', {'trip': 't1'})
     random.seed(4)
     got = await coins_view.spin(A)
     state = json.loads(tg('editMessageWidgetData')[-1][4]['chat_data'])
     slot = coins.SLOTS[state['s']]
-    ok('a spin: 100 taken, the slot it stopped on, and the win, in the wheel\'s state',
-       state['f'] == 150 and state['b'] == 150 + slot.get('coins', 0) and state['w'] == slot.get('coins', 0) and state['t'] > 0, state)
+    ok('a spin: 50 taken, the slot it stopped on, and the win, in the wheel\'s state',
+       state['f'] == 200 and state['b'] == 200 + slot.get('coins', 0) and state['w'] == slot.get('coins', 0) and state['t'] > 0, state)
     ok('the balance is what the log adds up to', coins.balance(A) == state['b'])
     try:
         await coins_view.spin(A)

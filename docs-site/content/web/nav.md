@@ -167,13 +167,14 @@ nav.
 
 <figure>
 <img src="/screenshots/web/nav-ways.png" alt="Navigate from Bedok Mall to Botanic Gardens station listing 8 ways, quickest first: trains on the EW and DT lines, buses, and mixes of the two, each with its changes, walk and time." width="906" height="800" loading="lazy">
-<figcaption>Every worthwhile mix of bus and train, quickest first.</figcaption>
+<figcaption>Every worthwhile mix of bus and train.</figcaption>
 </figure>
 
-Navigate lists the ways to get there, quickest first. It doesn't stop at the
-fastest: it keeps the best journey for every mix of bus and train, up to four
-vehicles, so a train then two buses, or two trains then a bus, is there to
-compare. A mix that's clearly slower than another of the same kind, and no
+Navigate lists the ways to get there. It doesn't stop at the fastest: it keeps
+the best journey for every mix of bus and train, up to four vehicles, so a train
+then two buses, or two trains then a bus, is there to compare. It also keeps the
+best way ending on each bus or line, so a bus that stops at your door stays in
+the list beside a quicker one that leaves you a long walk. A mix that's clearly slower than another of the same kind, and no
 better in changes or walking, is left out as a detour.
 
 A change can be a short walk to another stop or station, or, at an interchange,
@@ -199,6 +200,59 @@ Each way shows:
 <img src="/screenshots/web/nav-traffic.png" alt="Navigate's 2 ways to get there: the EW Line, about 23 min, and bus 38, about 54 min, with Last 38 from Bedok Int at 23:48 and, in orange, Bus 38: about 6 min slower than usual: heavy traffic on Tampines Avenue 7 and Bedok North Road, and a vehicle breakdown. Under them, Cycle there: about 17 min, 4.3 km, quicker than any bus or train, with a Cycle it button." width="270" height="544" loading="lazy">
 <figcaption>A bus slowed by traffic, its last bus, and cycling there.</figcaption>
 </figure>
+
+### Sort the ways
+
+<figure>
+<img src="/screenshots/web/nav-sort.png" alt="Kallang Stn to Home, 6 ways to get there. Over them, Best picked, then Fastest, Least walking and Fewest changes. First, tagged Fastest and Your bus: the EW Line then 228, about 37 min, 1 change, 163 m walk, about S$1.86. Then, tagged Fewest changes: bus 21, about 41 min, no change, 270 m walk, about S$1.82, with Live, From Aft Lor 1 Geylang, and 21 in 7, 19 and 25 min. Then, tagged Least walking: 51 then 21, about 44 min, with Live, From Kallang Stn, and 51 in 9, 18 and 30 min." width="332" height="562" loading="lazy">
+<figcaption>Sorted by Best, each way tagged with what it's best at, and the buses you'd catch, live.</figcaption>
+</figure>
+
+Four buttons over the list sort it, and the one you pick is kept for next time:
+
+| Sort | Puts first |
+|---|---|
+| **Best**, the default | The ways on [your buses](#your-buses), then the quickest, with each minute of walking counted as a minute and a half. A way with a long walk in the sun sinks down the list. |
+| **Fastest** | The quickest, door to door. |
+| **Least walking** | The way with the shortest walks, then the quickest. Walking all the way goes last. |
+| **Fewest changes** | The way with the fewest changes of bus or train, then the quickest. |
+
+Each way is also tagged with what it's best at, among the ways by bus and train:
+**Fastest**, **Least walking** or **Fewest changes**, and **Your bus** where it
+rides one of your buses.
+
+<figure>
+<img src="/screenshots/web/nav-sort-walk.png" alt="The same ways sorted by Least walking: 51 then 21 with 84 m of walking first, then the EW Line and 228, then 21, and the rest." width="316" height="734" loading="lazy">
+<figcaption>The same ways, by Least walking.</figcaption>
+</figure>
+
+### Your buses
+
+If there's a bus you'd rather take, say so, and Navigate tags a way on it as
+**Your bus** and puts it first when sorting by **Best**:
+
+- **For one place**, such as the bus that stops by your home: add it to that
+  place in [Places](places.md#buses-you-like-to-take-there). It counts when
+  you're going to within 400 m of the place.
+- **Going anywhere**: add it to **Preferred buses** in
+  [Settings](settings.md#settings), Navigate.
+
+### Live buses and the fare
+
+Setting off soon, each way whose first ride is a bus shows **Live**, and under
+it every bus that goes straight from that stop to where you'd get off, not just
+the one the way was planned on. Each has its next three, the first in bold, in
+the colour of how full it is: green for seats, amber for standing room, red for
+limited standing. The timings stay fresh while the list is open.
+
+Each way also says roughly what it costs by card, such as **~S$1.86**: the
+distance fare for the whole way on buses and trains, one fare however many
+times you change, from PTC's fare table. Pick **Adult**, **Student**,
+**Senior citizen or PwD** or **Workfare** under **Fare type** in
+[Settings](settings.md#settings). It's an estimate from the distance between
+the stops, so your card can be charged a little more or less. An express bus
+adds $1 for adults, shuttle buses aren't counted, and ways across the Causeway
+show no fare.
 
 ### Traffic, walking and cycling
 
@@ -248,6 +302,11 @@ timed at about 15 km/h.
 <figcaption>A way part by part, with Start trip for the Get Off Alert.</figcaption>
 </figure>
 
+<figure>
+<img src="/screenshots/web/nav-leg-live.png" alt="A bus ride on an open way: 228, 7 stops, about 9 min, from Bedok Int (84009) to Aft Waterfront Waves (84639), towards Bedok Int. Under it, Live, buses straight to Aft Waterfront Waves, and 228 in 1, 10 and 19 min, then a 228 timings at Bedok Int button." width="316" height="183" loading="lazy">
+<figcaption>A bus ride's live timings: every bus straight to where you get off.</figcaption>
+</figure>
+
 Tap a way to see it part by part:
 
 - **Walks**, with the distance and roughly how long. **Directions** opens the
@@ -256,8 +315,9 @@ Tap a way to see it part by part:
 - **Trains**, with the line, the direction to take (**towards** its last
   station), how many stops, and where to get off. For almost every MRT
   station, it also says [which door to stand at](#which-door-to-stand-at).
-- **Buses**, with how many stops, where to get off, and the **live timings** of
-  that bus at the stop you board it. A button opens that stop's timings for the
+- **Buses**, with how many stops, where to get off, and the **live timings** at
+  the stop you board it: every bus that goes straight to where you get off,
+  each with its next three in the colour of how full it is. A button opens that stop's timings for the
   bus, with **Back to Navigate** on them to come back. If you'd be catching one
   of its last buses of the day, it says when the last one is. If traffic slows
   it, an orange box says by how much and why; tap it for the bus's road on the
@@ -464,4 +524,6 @@ chat with it.
 ## Also in Telegram
 
 The [Telegram bot](../bot/nav.md)'s `/nav` asks the same planner, so it finds the
-same ways.
+same ways, and sorts, tags and prices them as Navigate does, with the buses you'd
+catch, live. Its sort, fare type and preferred buses are its own, set in the bot's
+[/settings](../bot/settings.md) and [/places](../bot/places.md#buses-to-take-there).

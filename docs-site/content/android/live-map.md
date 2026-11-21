@@ -81,6 +81,19 @@ to take, where you change, and where it ends, with you on it. A bus ride follows
 and a train ride its line's track, and underground your dot moves along it by the time each ride should
 take.
 
+<figure>
+<img src="/screenshots/android/map-trip.png" alt="A trip on the map from Bedok to One Raffles Place: a navy pin where it starts, bus 7A in green with its stops, you as a round green bus badge four stops along, a green Change to 70 bubble where it meets bus 70, and a navy Get off bubble by the red pin of the end." width="412" height="892" loading="lazy">
+<figcaption>On a bus: you as a bus, and the bubbles where you change and get off.</figcaption>
+</figure>
+
+A pin marks where the trip starts, in navy, and another where it ends, in red. Over each stop still ahead
+where you get on or off, a speech bubble says what to do there: **Board 228** in the ride's colour,
+**Get off** in navy where you get off to walk, and **Change to 70** where one ride ends where the next
+begins.
+
+Once you're on a bus or a train, you're shown as one, a round badge in the ride's colour, in place of the
+arrow; on a part you drive or cycle, a car or a bike. On foot you're the arrow, turning with the phone.
+
 Tap a stop or station on the trip for its card, as in [Explorer](explorer.md).
 
 ## Traffic on a bus's way

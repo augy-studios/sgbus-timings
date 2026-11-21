@@ -324,7 +324,17 @@
       return null;
     },
 
-    // Adds a line, circle or fill layer from its maplibre_gl properties.
+    // Adds (or replaces) an image icons can name, from a base64 PNG.
+    async addImage(c, data) {
+      needStyle();
+      const bytes = Uint8Array.from(atob(String(data || '')), (ch) => ch.charCodeAt(0));
+      const image = await createImageBitmap(new Blob([bytes], { type: 'image/png' }));
+      if (map.hasImage(c.name)) map.removeImage(c.name);
+      map.addImage(c.name, image, { pixelRatio: c.pixelRatio || 1 });
+      return null;
+    },
+
+    // Adds a line, circle, fill or symbol layer from its maplibre_gl properties.
     addLayer(c) {
       needStyle();
       if (map.getLayer(c.layer)) throw fail('LAYER_ALREADY_EXISTS', `Layer "${c.layer}" already exists`);

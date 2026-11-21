@@ -25,7 +25,8 @@ search.
 | `/addfavbus` | Bus numbers, until you send `/done` |
 | `/addroutine` | The time, the days, the stop, then the buses |
 | `/route` | The start, then the end |
-| `/settings`, after **Set name** or **Set birthday** | Your name, or your birthday |
+| `/settings`, after **Set name**, **Set birthday** or **Set preferred buses** | Your name, your birthday, or bus numbers such as `228, 69` |
+| `/places`, after **Buses to take here** | Bus numbers, such as `228` |
 | Editing a routine | Its new time, days, stop or buses |
 
 Only one flow runs at a time. Starting another command that asks questions

@@ -34,6 +34,7 @@ def _row(row) -> dict:
         "lat": row["lat"],
         "lng": row["lng"],
         **({"stop": row["stop_code"]} if row["stop_code"] else {}),
+        "buses": [b for b in (row["buses"] or "").split(",") if b],
     }
 
 
@@ -41,7 +42,7 @@ def get_place(chat_id: int, kind: str) -> "dict | None":
     """{kind, name, icon, label, lat, lng}, with `stop` the stop code when it's a bus stop;
     None while unset (or for a place deleted since)."""
     row = db.execute(
-        "SELECT kind, name, label, lat, lng, stop_code FROM saved_places WHERE chat_id = ? AND kind = ?", (chat_id, kind)
+        "SELECT kind, name, label, lat, lng, stop_code, buses FROM saved_places WHERE chat_id = ? AND kind = ?", (chat_id, kind)
     ).fetchone()
     return _row(row) if row else None
 
@@ -49,7 +50,7 @@ def get_place(chat_id: int, kind: str) -> "dict | None":
 def list_places(chat_id: int) -> list:
     """Every place the chat has saved: Home and Work first, then the rest as they were saved."""
     rows = db.execute(
-        "SELECT kind, name, label, lat, lng, stop_code FROM saved_places WHERE chat_id = ? ORDER BY rowid", (chat_id,)
+        "SELECT kind, name, label, lat, lng, stop_code, buses FROM saved_places WHERE chat_id = ? ORDER BY rowid", (chat_id,)
     ).fetchall()
     places = [_row(r) for r in rows]
     return sorted(places, key=lambda p: (0 if p["kind"] == "home" else 1 if p["kind"] == "work" else 2))
@@ -95,6 +96,16 @@ def rename_place(chat_id: int, kind: str, name: str) -> None:
         db.execute(
             "UPDATE saved_places SET name = ?, updated_at = ? WHERE chat_id = ? AND kind = ?",
             (name.strip()[:40] or None, int(time.time() * 1000), chat_id, kind),
+        )
+
+
+def set_place_buses(chat_id: int, kind: str, buses: list) -> None:
+    """The buses the chat would rather take to a place (ways.py): going there, /nav tags a way on
+    one Your bus. They stay with the place when it moves."""
+    with db:
+        db.execute(
+            "UPDATE saved_places SET buses = ?, updated_at = ? WHERE chat_id = ? AND kind = ?",
+            (",".join(buses) or None, int(time.time() * 1000), chat_id, kind),
         )
 
 

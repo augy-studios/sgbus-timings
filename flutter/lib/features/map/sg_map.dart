@@ -72,6 +72,23 @@ abstract class SgMapController {
     bool enableInteraction = true,
   });
 
+  /// Adds an image the map's icons can name, from PNG [bytes] drawn at [pixelRatio] image pixels
+  /// to a logical pixel; one of the same name is replaced.
+  Future<void> addImage(String name, Uint8List bytes, {double pixelRatio = 1});
+
+  /// Adds a layer of icons (and their words) from the source [sourceId].
+  Future<void> addSymbolLayer(
+    String sourceId,
+    String layerId,
+    SymbolLayerProperties properties, {
+    String? belowLayerId,
+    String? sourceLayer,
+    double? minzoom,
+    double? maxzoom,
+    dynamic filter,
+    bool enableInteraction = true,
+  });
+
   /// Moves the camera smoothly by [cameraUpdate], over [duration] if given. Completes when the
   /// move ends: true if it got there, false if something (another move, a drag) cut it short.
   Future<bool?> animateCamera(CameraUpdate cameraUpdate, {Duration? duration});

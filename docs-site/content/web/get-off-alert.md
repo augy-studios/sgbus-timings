@@ -26,6 +26,11 @@ Any of these starts one:
 - **A bus's route**: open the route, tap **Get Off Alert**, then tap the stop
   you're getting off at. See [Bus routes](bus-routes.md).
 
+<figure>
+<img src="/screenshots/web/trip-strip.png" alt="The trip bar, To Home: Bus 228 is 1 min away from Bedok Int. Get ready to board, about 11 min left, with the map, share, Back, Next and End trip buttons. Under them, 7 stops, 10 min, 2.2 km, and an icon for each part of the trip, a train, a walk, the bus picked out, and a walk. Then a line with a dot for each stop from Bedok Int to a dark dot at Aft Waterfront Waves (84639), a ring at the start." width="404" height="194" loading="lazy">
+<figcaption>The trip bar's strip: the part you're on, stop by stop.</figcaption>
+</figure>
+
 A bar along the bottom of the screen shows where you are: the bus or line, how
 many stops are left, and which part of the journey you're on (each ride and
 each walk is a part). The first time, the
@@ -87,6 +92,15 @@ shows it with north at the top: **CW** for clockwise or **ACW** for
 anticlockwise on the timeline, and **(clockwise)** or **(anticlockwise)** on the
 bar. Platforms are signed by where the trains go, so it's a quick check you're
 on the right one.
+
+### The strip
+
+Under the bar's words, a strip shows the part you're on from where it starts to
+where you get off: a dot for each stop or station, filled in as you pass it, a
+ring where you are, and a dark dot where you get off. Over it, the stops left,
+the minutes and the distance to there, and an icon for each part of the trip,
+the one you're on picked out. You can see where you are at a glance, without
+opening the timeline.
 
 ## Walks
 

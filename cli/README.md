@@ -54,7 +54,7 @@ sgbus bedok int                  find a stop by name or road; sgbus 'Bedok MRT' 
 sgbus 519599                     the stops nearest a postal code
 sgbus 22                         bus 22's route; sgbus bus 9 --from 84031 from a stop on
 sgbus route 84009 66009          the route planner, bus only; --show 1 for a journey's steps
-sgbus nav "Bedok Mall" home      Navigate, bus and train; --way 2 for another way's steps, --via gym for a stop on the way
+sgbus nav "Bedok Mall" home      Navigate, bus and train; --way 2 for another way's steps, --via gym for a stop on the way, --sort walk
 sgbus nav home work --arrive 9am --day tomorrow
 sgbus favs                       every favourite stop's timings
 sgbus alerts                     train disruptions and traffic incidents
@@ -84,6 +84,14 @@ kept there.
 Journeys across the Causeway count time to clear immigration at both checkpoints, by the
 time of day (15 minutes quiet, up to an hour at the rush), or your own:
 `sgbus settings customs 30`. A routine's `--buses` can be a wildcard, `22*`.
+
+`sgbus nav` sorts and prices its ways as the web app's Navigate does, with the site's own
+`js/ways.js`: by `best` (each minute walked counts 1.5, your buses first), `fastest`, `walk`
+(least walking) or `changes` (fewest), kept with `sgbus settings sort walk` or picked for one
+go with `--sort`; each way tagged with what it's best at and its card fare by distance, for
+`sgbus settings fare student` (adult, student, senior, workfare). Your buses are
+`sgbus settings buses 228 69`, going anywhere, and a place's own,
+`sgbus place buses home 228`, going there: a way on one is tagged ★ Your bus.
 
 `--json` gives the data instead of the text, for scripts. `NO_COLOR=1` turns off colour.
 

@@ -46,6 +46,19 @@ A [past search](past-searches.md#a-searchs-menu) or a
 [calendar event](calendar.md#an-events-menu) can be saved as a place from its
 menu too.
 
+## Buses you like to take there
+
+<figure>
+<img src="/screenshots/web/places-buses.png" alt="Editing Home: Where, then Buses you like to take here (optional) with 228 in it, and a note that going here, Navigate marks a way on one of these as Your bus and puts it first in Best, then Save and Cancel." width="316" height="346" loading="lazy">
+<figcaption>Home's bus: 228, from the interchange to the door.</figcaption>
+</figure>
+
+Each place can have the buses you'd rather take to it, such as the one that
+stops by your home: edit the place and type them in **Buses you like to take
+here**, with commas between. Going to within 400 m of the place,
+[Navigate](nav.md#your-buses) tags a way on one of them as **Your bus** and
+puts it first when sorting by **Best**.
+
 ## Home and Work
 
 **Home** and **Work** are always first. Until one is set it says so, and its

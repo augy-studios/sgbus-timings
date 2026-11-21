@@ -54,7 +54,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/nav` | Starts a flow to get from any place to any other by bus and train, listing every worthwhile mix of the two |
 | `/mynavs` | Lists your favourite navs as paginated buttons; tap one to plan it again |
 | `/trip` | Shows the trip you're on again, as its live widget |
-| `/coins` | Your uwuCoins, as a wheel widget with **Spin for 100** under it |
+| `/coins` | Your uwuCoins, as a wheel widget with **Spin for 50** under it |
 | `/achievements` | The nine feats, done or how far along |
 | `/team` | `/team <name>` starts a team run, `/team <code>` joins one; alone, shows yours |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
@@ -65,10 +65,10 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/unsub` | Stops Service Alerts |
 | `/setname` | Sets (or clears) the name the bot calls you by |
 | `/sethome`, `/setwork` | Asks for your home or work place, for the Home and Work buttons on the `/nav` and `/route` panels |
-| `/places` | Lists Home, Work and your own places; tap one to get there (`/nav`), share it as a link, or rename, move or delete it |
+| `/places` | Lists Home, Work and your own places; tap one to get there (`/nav`), share it as a link, rename, move or delete it, or set the buses you'd rather take there |
 | `/addplace` | Asks for a new place (searched like a `/nav` end, or your location), then a name for it, or `/done` to keep it as it's called |
 | `/calendar` | Lists your calendar's events with a location for the next two weeks, each a button that plans the way there to arrive by its start; asks for the calendar's private iCal link the first time |
-| `/settings` | Lists your settings (name, birthday, home, work, routine notifications) with buttons to change them |
+| `/settings` | Lists your settings (name, birthday, home, work, routine notifications, cycling, bus times, fare type, preferred buses) with buttons to change them |
 | `/sync <code>` | Syncs with the web app or the Android app, by the code its Settings shows under Sync with the Telegram bot (also `/start sync_<code>`, from its Open the bot link): sends what the chat has, and saves what the device sends, for up to 10 minutes, through the site's `/api/sync` relay. `/sync stop` ends it |
 | `/done` | Finishes whatever multi-step flow the chat is in the middle of |
 | `/cancel` | Stops whatever multi-step flow the chat is in the middle of |
@@ -85,7 +85,8 @@ the right button jumps back to the first (**First ▶**).
 
 Some commands ask a question and wait for the reply - `/addfavbus` collecting
 bus numbers, `/addroutine` walking through time, frequency, stop and buses, `/route`
-asking for each end of a route, `/settings` asking for a name or birthday.
+asking for each end of a route, `/settings` asking for a name, a birthday or preferred buses, `/places`
+asking for a place's buses.
 While one of those is in progress the chat is
 "in a flow", and `/done` and `/cancel` apply to whichever one it happens to be:
 
@@ -495,8 +496,22 @@ left out as a detour. Times are estimates (no timetables are published for
 trains), and where OneMap's timetable-based router rides the same way, its time
 is shown too. A line LTA reports a disruption on is marked ⚠️.
 
-Tap a way to see it part by part, with the live timings of each bus at the stop
-it's boarded, and a **🚏** button opening that stop's timings for the bus.
+The ways are sorted by the chat's pick, kept in `user_settings.nav_sort`: **Best**
+(each minute walked counts 1.5, the chat's buses first), **Fastest**, **Least
+walking** or **Fewest changes**, with buttons under them. Each way is tagged with
+what it's best at, and **⭐ Your bus** where it rides one of the chat's preferred
+buses (`/settings`, `user_settings.pref_buses`) or one of a place's near the end
+(`/places`, `saved_places.buses`, within 400 m). Each says what it should cost by
+card for the chat's fare type (`user_settings.fare_type`), from PTC's distance
+fares, with $1 more for adults on an express bus (`bus_services.category`); and
+a way starting on a bus, setting off soon, lists every bus straight from its stop
+to where it's left, live, with 🟢 🟡 🔴 for how full each is. All in
+`src/ways.py`, in step with the web app's `js/ways.js` (`scripts/bot-ways-test.py`
+checks the two against each other).
+
+Tap a way to see it part by part, with its fare and the live timings at the stop
+each bus is boarded, every bus straight to where it's left, and a **🚏** button
+opening that stop's timings for the bus.
 **⭐ Add favourite** stars the nav, and `/mynavs` lists starred navs.
 
 ### Live trips
@@ -553,8 +568,8 @@ own as each phone's are:
   time, and for a bus along the way); each is judged as the trip moves on from it.
 - **uwuCoins** (`src/coins.py`): a trip got to the end of with a real ride earns
   the web app's amounts, counted up on its card (the widget's chat state `c`); each
-  feat 100. `/coins` sends a static wheel widget (`src/coins_widget.html`): **Spin**
-  is an inline button, the bot picks the slot and sets the widget's chat state, and
+  feat 100. `/coins` sends a static wheel widget (`src/coins_widget.html`): **Spin**, 50
+  uwuCoins a go, is an inline button, the bot picks the slot and sets the widget's chat state, and
   the wheel turns onto it while the balance counts up. The egg slot makes an Easter
   egg link (the site's share links, kind `egg`, `/egg/<id>`), opened once on the
   website or in the Android app for the web wheel's egg prize.
@@ -592,6 +607,11 @@ each one is set:
   stop). **Clear home** / **Clear work** unset them. `/places` lists them with
   any other places saved (`/addplace`, named as you like), which the panels
   carry too, as **📍 From Gym**, **📍 To Gym** and so on.
+- **Fare type** - Adult, Student, Senior citizen or PwD, or Workfare, a tap each:
+  the fare `/nav` shows for each way.
+- **Preferred buses** - tap **Set preferred buses** and reply with their numbers;
+  `/nav` tags a way on one ⭐ Your bus and puts it first in Best. A place's own
+  buses are set on it in `/places`.
 - **Routine notifications** - on by default; toggling it off pauses all
   `/addroutine` deliveries without deleting the routines themselves, and
   toggling it back on resumes them.

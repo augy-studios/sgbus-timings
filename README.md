@@ -19,11 +19,15 @@ and a Telegram bot.
   bus's whole route.
 - **Navigate**: ways by bus and train between any two places, leaving now, at a time
   or arriving by one, timed by the traffic right now and never on a bus that has
-  finished for the day. With a stop on the way, walking, cycling or driving instead,
-  and a **Bus only** route planner between two stops.
+  finished for the day. Sorted by Best (less walking), Fastest, Least walking or Fewest
+  changes, with your preferred buses first, each way's fare, and the buses you'd catch,
+  live, with how full each is. With a stop on the way, walking, cycling or driving
+  instead, and a **Bus only** route planner between two stops.
 - **Trips**: follow a way with the **Get Off Alert**, which says when your stop is
   next, reroutes when a last bus is missed or a faster way turns up, and shares your
-  progress live. Your trips are kept, with stats.
+  progress live. The trip bar shows the part you're on stop by stop, and the map pins
+  where to board, change and get off. On Android 16, a Live Update. Your trips are
+  kept, with stats.
 - **Favourites**: stops, buses, buses at one stop, routes and ways, in lists of your
   own, synced between your devices straight from one to the other.
 - **Explorer and the live map**: buses moving along their routes, trains on their

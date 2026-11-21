@@ -7,7 +7,7 @@ Every trip you take with the [Get Off Alert](get-off-alert.md) earns **uwuCoins*
 wins something.
 
 <figure>
-<img src="/screenshots/android/coins.png" alt="uwuCoins: a balance of 250, the wheel with eight slices, a Spin for 100 button, how many feats and Easter eggs are done, what a spin wins, See your achievements, History, and switches for Show uwuCoins and Coin pop-ups." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/coins.png" alt="uwuCoins: a balance of 250, the wheel with eight slices, a Spin for 50 button, how many feats and Easter eggs are done, what a spin wins, See your achievements, History, and switches for Show uwuCoins and Coin pop-ups." width="412" height="892" loading="lazy">
 <figcaption>The wheel, from the gold coin in the Edge Tray.</figcaption>
 </figure>
 
@@ -27,7 +27,7 @@ Some trips are feats, worth 100 more, once each. A coin floats up as they come i
 
 ## Spin the wheel
 
-Tap the gold coin, or open [Settings](settings.md#help-and-extras), **Help and extras**, **uwuCoins**. **Spin** costs 100 uwuCoins and
+Tap the gold coin, or open [Settings](settings.md#help-and-extras), **Help and extras**, **uwuCoins**. **Spin** costs 50 uwuCoins and
 lands on one of eight slices at random: an **Easter egg** you haven't found yet, or more coins. Once you've found every egg, its slice
 is coins too.
 
@@ -51,7 +51,7 @@ any more eggs, and stays that prize until you've won it.
 - **Trip**: which trip, and what made up its coins: getting there, the distance, changes, operators and lines.
 - **Feat**: which one, and your team run if it did it with you.
 - **Trips from before uwuCoins**: how many, and what they earned.
-- **A spin of the wheel**: the 100 it cost.
+- **A spin of the wheel**: the 50 it cost.
 - **Won on the wheel**: the coins, Easter egg or colours it won.
 
 **All**, **Earned** and **Spent** narrow the list, and it says how much you've earned and spent. It keeps your last 2,000, on this phone, as your coins are. A trip with no name kept and no longer in [Your trips](trips.md) says **A trip**.

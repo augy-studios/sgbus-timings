@@ -29,6 +29,17 @@ Every place is also a button under each end of Navigate, and a choice on
 A [past search](past-searches.md#a-searchs-menu) or a [calendar event](calendar.md#an-events-menu)
 can be saved as a place from its menu too.
 
+## Buses you like to take there
+
+<figure>
+<img src="/screenshots/android/place-buses.png" alt="Editing Home in a sheet over Places: Where, Bedok Mall, then Buses you like to take here (optional) with 228 in it, and a note that going here, Navigate marks a way on one of these as Your bus and puts it first in Best, then Cancel and Save." width="412" height="892" loading="lazy">
+<figcaption>Home's bus, in its form.</figcaption>
+</figure>
+
+Each place can have the buses you'd rather take to it, such as the one that stops by your home: edit the
+place and type them in **Buses you like to take here**, with commas between. Going to within 400 m of it,
+[Navigate](nav.md#sort-the-ways) tags a way on one as **Your bus** and puts it first in **Best**.
+
 ## Home and Work
 
 **Home** and **Work** are always first. Until one is set it says **Not set yet**; tap it to set it.

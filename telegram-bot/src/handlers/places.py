@@ -24,7 +24,9 @@ from ..saved_places import (
     nav_end,
     rename_place,
     set_place,
+    set_place_buses,
 )
+from ..ways import parse_buses
 from .nav import send_nav_panel
 from .settings import start_edit_place
 
@@ -79,7 +81,9 @@ def build_places_view(chat_id: int):
 
 def build_place_view(place: dict):
     own = place["kind"] not in KINDS
-    lines = [f"# {place['icon']} {escape_md(place['name'])}", escape_md(place["label"])]
+    buses = place.get("buses") or []
+    lines = [f"# {place['icon']} {escape_md(place['name'])}", escape_md(place["label"]),
+             *([f"🚌 Buses you like to take here: {escape_md(', '.join(buses))}"] if buses else [])]
     word = place["name"] if not own else "it"
     rows = [
         [Button.inline("🧭 Get me there", make_button("places_go", {"kind": place["kind"]}))],
@@ -87,6 +91,11 @@ def build_place_view(place: dict):
         [
             *([Button.inline("✏️ Rename", make_button("places_rename", {"kind": place["kind"]}))] if own else []),
             Button.inline("📌 Move", make_button("places_move", {"kind": place["kind"]})),
+        ],
+        # The buses to take here (ways.py): going here, /nav tags a way on one ⭐ Your bus.
+        [
+            Button.inline("🚌 Buses to take here", make_button("places_buses", {"kind": place["kind"]})),
+            *([Button.inline("🗑 Clear buses", make_button("places_buses_clear", {"kind": place["kind"]}))] if buses else []),
         ],
         [Button.inline("🗑 Delete" if own else f"🗑 Clear {place['name'].lower()}", make_button("places_delete", {"kind": place["kind"]}))],
         [Button.inline("🔙 All places", make_button("places_list", {}))],
@@ -204,6 +213,20 @@ async def handle_places_callback(client, event, action: str, payload: dict):
             link_preview=True,
             buttons=[[Button.url("📤 Send to a chat", f"https://t.me/share/url?url={quote(url)}&text={quote(text)}")]],
         )
+    elif action == "places_buses":
+        set_flow(chat_id, f"{FLOW}:buses:{kind}")
+        await event.answer()
+        await client.send_message(
+            chat_id,
+            f"Which buses would you rather take to {place['name']}? Send their numbers, such as 228. Going there, "
+            "/nav tags a way on one as ⭐ Your bus and puts it first when sorting by Best. Or /cancel to keep them as they are.",
+            parse_mode=None,
+        )
+    elif action == "places_buses_clear":
+        set_place_buses(chat_id, kind, [])
+        rich, buttons = build_place_view(get_place(chat_id, kind))
+        await edit_rich_message(client, event, rich, buttons)
+        await event.answer("Buses cleared")
     elif action == "places_rename":
         set_flow(chat_id, f"{FLOW}:name:{kind}")
         await event.answer()
@@ -253,6 +276,20 @@ def register_places(client):
             return
         chat_id = event.chat_id
         text = event.message.text.strip()
+
+        if step == "buses":
+            buses = parse_buses(text)
+            if not buses:
+                await event.respond("I couldn't find a bus number in that. Send them such as 228, 69, or /cancel.", parse_mode=None)
+                raise events.StopPropagation
+            set_place_buses(chat_id, kind, buses)
+            clear_flow(chat_id)
+            place = get_place(chat_id, kind)
+            if place:
+                await event.respond(f"Got it: {', '.join(buses)} to {place['name']}.", parse_mode=None)
+                rich, buttons = build_place_view(place)
+                await send_rich_message(client, chat_id, rich, buttons)
+            raise events.StopPropagation
 
         if step == "name":
             rename_place(chat_id, kind, text)

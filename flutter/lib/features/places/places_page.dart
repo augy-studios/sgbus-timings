@@ -14,6 +14,7 @@ import '../../widgets/common.dart';
 import '../tour/tour.dart';
 import '../../widgets/place_search.dart';
 import '../share/share_card.dart';
+import '../nav/ways.dart';
 
 class PlacesPage extends StatefulWidget {
   const PlacesPage({super.key});
@@ -51,6 +52,7 @@ class _PlacesPageState extends State<PlacesPage> {
       ),
     );
     if (ok != true) return;
+    NavWays.setPlaceBuses(p.lat, p.lng, const []);
     if (fixed) {
       Places.setFixed(p.key, null);
     } else {
@@ -120,12 +122,15 @@ class _PlacesPageState extends State<PlacesPage> {
 /// sheet, or a dialog on the desktop.
 Future<void> editPlace(BuildContext context, [Place? p]) async {
     final fixed = p != null && (p.key == 'home' || p.key == 'work');
-    final result = await AppSheet.show<({PlacePick place, String name})>(
+    final result = await AppSheet.show<({PlacePick place, String name, String buses})>(
       context: context,
       isScrollControlled: true,
       builder: (_) => _PlaceForm(place: p, fixed: fixed),
     );
     if (result == null) return;
+    // Its buses go with its point: moved, they're taken off the old one.
+    if (p != null && !p.unset) NavWays.setPlaceBuses(p.lat, p.lng, const []);
+    NavWays.setPlaceBuses(result.place.lat, result.place.lng, NavWays.parseBuses(result.buses));
     final clean = result.place.toJson();
     if (fixed) {
       Places.setFixed(p.key, clean);
@@ -155,6 +160,14 @@ class _PlaceForm extends StatefulWidget {
 class _PlaceFormState extends State<_PlaceForm> {
   PlacePick? _pick;
   late final _name = TextEditingController(text: widget.place != null && !widget.fixed && widget.place!.name != widget.place!.label ? widget.place!.name : '');
+  late final _buses = TextEditingController(text: widget.place != null && !widget.place!.unset ? NavWays.placeBuses(widget.place!.lat, widget.place!.lng).join(', ') : '');
+
+  @override
+  void dispose() {
+    _name.dispose();
+    _buses.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -196,12 +209,23 @@ class _PlaceFormState extends State<_PlaceForm> {
             ),
           ),
         ],
+        // Buses you'd rather take to this place (ways.dart): Your bus, and first in Best, going here.
+        const SizedBox(height: 12),
+        TextField(
+          controller: _buses,
+          textCapitalization: TextCapitalization.characters,
+          decoration: InputDecoration(labelText: tr('places.buses', 'Buses you like to take here (optional)'), hintText: '228'),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(tr('places.busesNote', 'Going here, Navigate marks a way on one of these as Your bus and puts it first in Best.'), style: TextStyle(color: sg.muted, fontSize: 13)),
+        ),
         const SizedBox(height: 12),
         Row(mainAxisAlignment: MainAxisAlignment.end, children: [
           TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('places.cancel', 'Cancel'))),
           const SizedBox(width: 8),
           FilledButton(
-            onPressed: _pick == null ? null : () => Navigator.pop(context, (place: _pick!, name: _name.text)),
+            onPressed: _pick == null ? null : () => Navigator.pop(context, (place: _pick!, name: _name.text, buses: _buses.text)),
             child: Text(tr('places.save', 'Save')),
           ),
         ]),

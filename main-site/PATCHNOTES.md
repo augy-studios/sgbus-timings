@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 21 November 2026**
+**Latest update: 22 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -8,6 +8,43 @@
 Newest first. Each update covers the web app and the Telegram bot.
 
 ---
+
+## 22 November 2026: Ways sorted your way, with fares and live buses (2.6.0)
+
+### Website, Android and desktop apps
+
+- **Sort the ways** - Four buttons over Navigate's ways sort them, and the one you pick is kept: Best (the default: the ways on your buses first, then the quickest, with each minute of walking counted as a minute and a half), Fastest, Least walking or Fewest changes. Each way is tagged with what it's best at: Fastest, Least walking, Fewest changes, and Your bus.
+- **Your buses** - Preferred buses in Settings, Navigate, going anywhere, and Buses you like to take here on each place in Places, counted when you're going to within 400 m of it. A way on one is tagged Your bus and comes first in Best.
+- **Each way's fare** - Roughly what a way costs by card, such as ~S$1.86: the distance fare for the whole way on buses and trains, one fare however many times you change, from PTC's fare table. Pick Adult, Student, Senior or PwD, or Workfare under Fare type in Settings. An express bus adds $1 for adults, shuttle buses aren't counted, and ways across the Causeway show no fare.
+- **The buses you'd catch, live** - Setting off soon, a way whose first ride is a bus shows Live and every bus that goes straight from that stop to where you'd get off, not just the one it was planned on, each with its next three in the colour of how full it is. An open way's bus rides show the same.
+- **A bus to your door stays** - Navigate keeps the best way ending on each bus or line, so a bus that stops at your door stays in the list beside a quicker one that leaves you a long walk.
+- **The trip bar's strip** - Under the trip bar's words, the part you're on from where it starts to where you get off: a dot for each stop, filled in as you pass it, a ring where you are and a dark dot where you get off, with the stops, minutes and distance left, and an icon for each part of the trip.
+- **Bubbles on the trip's map** - Over each stop still ahead where you get on or off, a speech bubble says what to do there: Board 228, Change to 70, or Get off. A navy pin marks where the trip starts and a red one where it ends.
+- **You as a bus** - On a bus or a train, the map shows you as a round badge in the ride's colour; on a part you drive or cycle, a car or a bike.
+- **A cheaper spin** - The uwuCoins wheel costs 50 a spin, not 100.
+
+### Android app 2.6.0
+
+- **Live Updates** - On Android 16 and later, a trip's notification can stay at the top of your notifications and on the lock screen, with a bar of the trip and a chip in the status bar. Most phones keep it off until you turn it on, so on your first trip the app says where, with Open settings. Live Updates in Settings, Trips and alerts, says whether it's on.
+
+### Telegram bot
+
+- **/nav sorts, tags and prices its ways** as Navigate does, with the buses you'd catch, live, and how full each is. The sort is kept for your next /nav.
+- **Fare type and Preferred buses** - In /settings: Fare type moves through Adult, Student, Senior citizen or PwD and Workfare, and Set preferred buses takes bus numbers.
+- **Buses to take here** - On each place in /places, the buses you'd rather take there. /sync doesn't copy these, the sort or the fare type yet.
+- **A cheaper spin** - /coins' wheel costs 50 a spin, as the apps' does.
+
+### Linux command line 2.6.0
+
+- **`sgbus nav` sorts and prices its ways** - `--sort best`, `fastest`, `walk` or `changes` for one go, or `sgbus settings sort` to keep one; each way tagged and with its card fare, for `sgbus settings fare student`. `sgbus settings buses 228 69` and `sgbus place buses home 228` set your buses. The web app's terminal has the same commands.
+
+### Wear OS 2.6.0
+
+- No changes of its own: numbered 2.6.0 to stay in step with the phone.
+
+### Guide
+
+- Navigate's pages (website, Android and the bot) cover sorting, the tags, your buses, the fare and the live buses, with new pictures. The trip bar's strip, the map's bubbles and Android's Live Updates have pictures of their own, and the uwuCoins pages say a spin costs 50.
 
 ## 21 November 2026: Desktop widgets off for now (2.5.2)
 

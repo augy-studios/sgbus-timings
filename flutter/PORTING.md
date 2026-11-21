@@ -36,6 +36,8 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | Disruptions bar, Service alerts, push | `js/alerts.js` | ✅ |
 | Board, Flag, Will I make it | `js/board.js`, `js/flag.js`, `js/make-it.js` | ✅ |
 | Navigate (bus and train), train doors, walks and traffic on the live map | `js/nav.js`, `js/mrt-doors.js` | ✅ |
+| Navigate's sort, tags, preferred buses, live buses and fares (`lib/features/nav/ways.dart`) | `js/ways.js` | ✅ |
+| The trip bar's strip (`lib/features/trips/trip_strip.dart`) and the live map's pins, bubbles and you riding (`lib/features/map/map_marks.dart`) | `js/trip.js` (`tripStrip`), `js/map-marks.js` | ✅ |
 | Route planner (bus only), journeys checked against the site's | `js/planner.js`, `js/journeys.js` | ✅ |
 | Live map, Explorer, station cards, Save the map (MapLibre), shuttle buses (NUS, NTU and the rest: routes, stops, cards, Layers, credits) | `js/map*.js`, `js/rail-tracks.js`, `js/campus.js` | ✅ |
 | Places and past searches | `js/places.js`, `js/recents.js` | ✅ |

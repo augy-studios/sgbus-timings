@@ -33,18 +33,25 @@
   // What load() last gave, so save() writes back only what a command changed.
   let loaded = null;
 
+  // A place's buses, by its point (js/ways.js), for the core's places.
+  const buses = (p) => {
+    const list = p ? Ways.placeBuses(p) : [];
+    return list.length ? { buses: list } : {};
+  };
+  const withBuses = (p) => (p ? { ...p, ...buses(p) } : p);
+
   function load() {
     const others = Places.all()
       .filter((p) => p.key.startsWith('p:'))
-      .map((p) => ({ id: p.id, name: p.name, label: p.label, lat: p.lat, lng: p.lng, ...(p.stop && { stop: p.stop }) }));
+      .map((p) => ({ id: p.id, name: p.name, label: p.label, lat: p.lat, lng: p.lng, ...(p.stop && { stop: p.stop }), ...buses(p) }));
     const config = {
       favs: LS.getFavs().map((f) => ({ code: f.code, name: f.name || nameOf(f.code) || f.code })),
       buses: LS.getFavBuses(),
       routes: LS.getFavRoutes(),
       navs: LS.getFavNavs(),
-      places: { home: LS.getPlace('home'), work: LS.getPlace('work'), others },
+      places: { home: withBuses(LS.getPlace('home')), work: withBuses(LS.getPlace('work')), others },
       routines: routinesHere() ? Reminders.routineList() : [],
-      settings: { pinStop: LS.getPin('stop'), pinBus: LS.getPin('bus'), restricted: LS.getRestricted(), customs: LS.getCustoms() },
+      settings: { pinStop: LS.getPin('stop'), pinBus: LS.getPin('bus'), restricted: LS.getRestricted(), customs: LS.getCustoms(), sort: Ways.getSort(), fare: Ways.getFareType(), buses: Ways.preferred() },
     };
     loaded = JSON.parse(JSON.stringify(config));
     return config;
@@ -62,12 +69,17 @@
       else Places.remove(kind);
     }
     if (!same(c.places.others, was.places?.others)) Places.setCustom(c.places.others);
+    // Each place's buses go by its point (js/ways.js); a place moved takes them with it.
+    for (const p of [c.places.home, c.places.work, ...c.places.others]) if (p) Ways.setPlaceBuses(p, p.buses || []);
     if (!same(c.routines, was.routines) && routinesHere()) Reminders.setRoutines(c.routines);
     if (!same(c.settings, was.settings)) {
       LS.setPin('stop', c.settings.pinStop);
       LS.setPin('bus', c.settings.pinBus);
       LS.setRestricted(c.settings.restricted);
       LS.setCustoms(c.settings.customs);
+      Ways.setSort(c.settings.sort);
+      Ways.setFareType(c.settings.fare);
+      Ways.setPreferred(c.settings.buses || []);
       syncPinButtons();
       syncRestrictedButtons();
       syncCustomsButtons();

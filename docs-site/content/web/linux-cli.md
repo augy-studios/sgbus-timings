@@ -91,6 +91,22 @@ its buses; `--way 3` shows the third instead. `--via gym` goes by a stop on the 
 `--save` it's saved with the stop, as Navigate's [Save nav](nav.md#save-it) does. A walk to or
 from a station says which exit, the one nearest the walk's other end.
 
+The ways are [sorted as Navigate sorts them](nav.md#sort-the-ways), each with its tags and
+roughly what it costs by card:
+
+```text
+1. 70 → DT → 228  09:00 → 09:44 · 2 changes · 266 m walk · ~S$1.86  ★ Your bus
+4. 7 → 21  09:00 → 09:41 · 1 change · 144 m walk · ~S$1.82  Fastest
+```
+
+| Send | What it does |
+|---|---|
+| `--sort walk` | Sorts this nav by `best` (the default: each minute walked counts a minute and a half, your buses first), `fastest`, `walk` (least walking) or `changes` (fewest changes). |
+| `sgbus settings sort fastest` | Keeps a sort for every nav. |
+| `sgbus settings fare student` | The fare shown: `adult`, `student`, `senior` (or PwD) or `workfare`. |
+| `sgbus settings buses 228 69` | Buses you'd rather take, going anywhere: a way on one is tagged ★ Your bus and comes first in `best`. `none` clears them. |
+| `sgbus place buses home 228` | Buses you'd rather take to one place, counted when you're going to within 400 m of it. |
+
 <figure>
 <img src="/screenshots/web/cli-route.png" alt="A terminal: sgbus route 98101 95099 --show 1 notes the quickest buses leave from the stop across the road, lists five journeys such as 89 on its own in about 26 minutes, each getting off at SAF Ferry Ter, then the first step by step with bus 89's next buses and when you'd arrive." width="1037" height="488" loading="lazy">
 <figcaption>The route planner, bus only, with the first journey step by step.</figcaption>
@@ -126,7 +142,7 @@ a step, as [Navigate does](nav.md#across-the-causeway): by the time of day, or y
 | `sgbus alerts` | Train disruptions and traffic incidents, as in [Service alerts](service-alerts.md). |
 | `sgbus weather` | Today's weather, PSI and PM2.5, as the web app's [weather button](weather.md). |
 | `sgbus calendar set <link>` | Links your [calendar](calendar.md) by its private iCal link. `sgbus calendar` lists your events with a place, and `sgbus calendar nav 1` plans the way to the first, to arrive by its start. |
-| `sgbus settings` | Where favourites pin, Restricted areas, and Immigration time (`customs`). |
+| `sgbus settings` | Where favourites pin, Restricted areas, Immigration time (`customs`), and Navigate's sort, fare type and preferred buses (`sort`, `fare`, `buses`). |
 
 Routines arrive as desktop notifications once their timer is on. From the `.deb`, once:
 

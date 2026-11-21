@@ -105,6 +105,53 @@ def set_clock_times(chat_id: int, on: bool) -> None:
         )
 
 
+def _get_text(chat_id: int, column: str) -> "str | None":
+    row = db.execute(f"SELECT {column} FROM user_settings WHERE chat_id = ?", (chat_id,)).fetchone()
+    return row[column] if row and row[column] else None
+
+
+def _set_text(chat_id: int, column: str, value: "str | None") -> None:
+    with db:
+        db.execute(
+            f"""
+            INSERT INTO user_settings (chat_id, {column}) VALUES (?, ?)
+            ON CONFLICT(chat_id) DO UPDATE SET {column} = excluded.{column}
+            """,
+            (chat_id, value),
+        )
+
+
+def get_nav_sort(chat_id: int) -> str:
+    """How /nav sorts its ways (ways.py, SORTS): Best unless picked."""
+    from .ways import SORTS
+    value = _get_text(chat_id, "nav_sort")
+    return value if value in SORTS else "best"
+
+
+def set_nav_sort(chat_id: int, sort: str) -> None:
+    _set_text(chat_id, "nav_sort", None if sort == "best" else sort)
+
+
+def get_fare_type(chat_id: int) -> str:
+    """The fare /nav's fares are for (ways.py, FARE_TYPES): Adult unless picked."""
+    from .ways import FARE_TYPES
+    value = _get_text(chat_id, "fare_type")
+    return value if value in FARE_TYPES else "adult"
+
+
+def set_fare_type(chat_id: int, fare_type: str) -> None:
+    _set_text(chat_id, "fare_type", None if fare_type == "adult" else fare_type)
+
+
+def get_preferred_buses(chat_id: int) -> list:
+    """The buses the chat would rather take, going anywhere: /nav tags a way on one Your bus."""
+    return [b for b in (_get_text(chat_id, "pref_buses") or "").split(",") if b]
+
+
+def set_preferred_buses(chat_id: int, buses: list) -> None:
+    _set_text(chat_id, "pref_buses", ",".join(buses) or None)
+
+
 def chats_with_birthday_today(month_day: str, today: str) -> list:
     """Rows for chats whose birthday's MM-DD matches `month_day` (today, GMT+8)
     and who haven't already been wished on `today` (YYYY-MM-DD)."""

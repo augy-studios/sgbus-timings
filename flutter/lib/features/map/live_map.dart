@@ -70,6 +70,7 @@ import '../timings/stop_screen.dart';
 import '../trips/trip.dart';
 import 'dead_reckon.dart';
 import 'map_card.dart';
+import 'map_marks.dart';
 import '../tour/tour.dart';
 import 'map_save.dart';
 import 'orbit_handle.dart';
@@ -176,6 +177,7 @@ class MapInk extends ChangeNotifier {
   final Map<String, List<MapLine>> lines = {};
   final Map<String, List<MapDot>> dots = {};
   final Map<String, List<MapDisc>> discs = {};
+  final Map<String, List<MapMark>> marks = {};
   List<({Color color, List<List<double>> points})> rails = [];
   List<({String key, String uni, Color color, List<List<double>> points})> shuttles = [];
   List<MapPoi> pois = [];
@@ -202,10 +204,19 @@ class MapInk extends ChangeNotifier {
     return d;
   }
 
+  /// An icon at a point (map_marks.dart): a pin, a speech bubble, you on what you're riding.
+  MapMark mark(String group, List<double> at, MarkArt art, {int z = 0}) {
+    final m = MapMark(at, art, z: z);
+    (marks[group] ??= []).add(m);
+    notifyListeners();
+    return m;
+  }
+
   void clear(String group) {
     lines.remove(group);
     dots.remove(group);
     discs.remove(group);
+    marks.remove(group);
     notifyListeners();
   }
 
@@ -213,6 +224,7 @@ class MapInk extends ChangeNotifier {
     lines.clear();
     dots.clear();
     discs.clear();
+    marks.clear();
     rails = [];
     pois = [];
     notifyListeners();
@@ -223,6 +235,7 @@ class MapInk extends ChangeNotifier {
   Iterable<MapLine> get allLines => lines.values.expand((l) => l);
   Iterable<MapDot> get allDots => dots.values.expand((l) => l);
   Iterable<MapDisc> get allDiscs => discs.values.expand((l) => l);
+  Iterable<MapMark> get allMarks => marks.values.expand((l) => l);
 }
 
 /// A fix's speed in km/h, from metres a second, if it has one.
@@ -645,7 +658,8 @@ class _LiveMapState extends State<LiveMap> {
     if (m == null) return;
     _styled = true;
     const empty = {'type': 'FeatureCollection', 'features': <Object>[]};
-    for (final s in ['sg-rail', 'sg-shuttle', 'sg-poi', 'sg-fill', 'sg-line', 'sg-dot']) {
+    _images.clear();
+    for (final s in ['sg-rail', 'sg-shuttle', 'sg-poi', 'sg-fill', 'sg-line', 'sg-dot', 'sg-mark']) {
       await m.addGeoJsonSource(s, empty);
     }
     final edgeOpacity = _dark ? 0.35 : 0.9;
@@ -726,6 +740,23 @@ class _LiveMapState extends State<LiveMap> {
       ),
       enableInteraction: false,
     );
+    // Pins, speech bubbles and you on what you're riding (map_marks.dart), over everything else,
+    // each image drawn at the screen's density.
+    await m.addSymbolLayer(
+      'sg-mark',
+      'sg-mark',
+      const SymbolLayerProperties(
+        iconImage: ['get', 'icon'],
+        iconAnchor: ['get', 'anchor'],
+        iconAllowOverlap: true,
+        iconIgnorePlacement: true,
+        symbolSortKey: ['get', 'z'],
+        symbolZOrder: 'source',
+        iconPitchAlignment: 'viewport',
+        iconRotationAlignment: 'viewport',
+      ),
+      enableInteraction: false,
+    );
     await _push();
     _track();
     // Explorer back on its card before the map was ready to go there.
@@ -783,7 +814,24 @@ class _LiveMapState extends State<LiveMap> {
         }),
     ]));
     _dotsPushed = dots;
+    final marks = ink.allMarks.toList()..sort((a, b) => a.z - b.z);
+    for (final k in marks) {
+      if (_images.add(k.art.key)) {
+        try {
+          await m.addImage(k.art.key, await k.art.png(_markRatio), pixelRatio: _markRatio);
+        } catch (_) {
+          _images.remove(k.art.key);
+        }
+      }
+    }
+    await m.setGeoJsonSource('sg-mark', collection([
+      for (final k in marks) feature({'type': 'Point', 'coordinates': _lngLat(k.at)}, {'icon': k.art.key, 'anchor': k.art.anchor, 'z': k.z}),
+    ]));
   }
+
+  /// The marks' images the map has, by name; drawn again for a new style.
+  final Set<String> _images = {};
+  double get _markRatio => MediaQuery.maybeDevicePixelRatioOf(context)?.clamp(1.0, 4.0) ?? 2.0;
 
   List<MapDot> _dotsPushed = [];
   MapPick? _leavingFrom;
@@ -908,13 +956,64 @@ class _LiveMapState extends State<LiveMap> {
     }
   }
 
+  /// What you're riding, for your icon (map_marks.dart, RideArt): on a trip, a bus or a train once
+  /// you're on it, a car or a bike on a part you drive or cycle; with directions, a car or a bike
+  /// to drive or cycle there. Null on foot, where MapLibre's arrow turning with the compass is you.
+  String? get _rideKind {
+    if (mode == MapMode.trip) {
+      final t = Trip.I;
+      final l = t.current;
+      if (!t.active || l == null) return null;
+      if (l.ride && t.boarded) return l.kind == 'train' ? 'train' : 'bus';
+      if (l.kind == 'walk' && l.foot == 'drive') return 'car';
+      if (l.kind == 'walk' && l.foot == 'cycle') return 'bike';
+      return null;
+    }
+    if (mode == MapMode.walk) return widget.drive ? 'car' : widget.cycle ? 'bike' : null;
+    return null;
+  }
+
+  Color _rideColour(String kind) {
+    if (kind == 'car') return LiveMap.driveColour;
+    if (kind == 'bike') return LiveMap.cycleColour;
+    final l = Trip.I.current;
+    return l != null && kind == 'train' ? _legColour(l, false) : LiveMap.busColour;
+  }
+
+  /// The ride your icon shows, as it's drawn: a change of it shows or hides MapLibre's own dot.
+  String? _shownRide;
+  void _rideChanged() {
+    if (_rideKind == _shownRide) return;
+    _shownRide = _rideKind;
+    _hideMe();
+    _track();
+    if (mounted) setState(() {});
+    _drawMe();
+  }
+
   // Your own dot where MapLibre can't draw its puck: in MapPreview, before location's allowed,
-  // and on the desktop, whose map has no puck (SgMap.drawsLocation).
+  // and on the desktop, whose map has no puck (SgMap.drawsLocation). On a ride, your icon instead.
   MapDot? _meDot;
   MapDisc? _meRing;
+  MapMark? _meMark;
   void _drawMe() {
     final f = here;
     if (f == null) return;
+    final ride = _rideKind;
+    if (ride != null) {
+      final at = [f.lat, f.lng];
+      final art = RideArt(ride, _rideColour(ride));
+      if (_meMark == null || _meMark!.art.key != art.key) {
+        ink.clear('me');
+        _meDot = null;
+        _meRing = null;
+        _meMark = ink.mark('me', at, art, z: 10);
+      } else {
+        _meMark!.at = at;
+        ink.changed();
+      }
+      return;
+    }
     if (!LiveMap.preview && _located && SgMap.drawsLocation) return; // MapLibre's own, with its compass arrow
     // On the desktop, the estimate's dot stands in for yours while it's shown, as MapLibre's
     // puck is hidden then on Android.
@@ -936,10 +1035,11 @@ class _LiveMapState extends State<LiveMap> {
   /// Takes your own dot off the map (the desktop's, while the estimate stands in for it); the next
   /// fix draws it again.
   void _hideMe() {
-    if (_meDot == null) return;
+    if (_meDot == null && _meMark == null) return;
     ink.clear('me');
     _meDot = null;
     _meRing = null;
+    _meMark = null;
   }
 
   /// Who's followed in the middle of the screen, where MapLibre isn't tracking them: someone's
@@ -974,7 +1074,8 @@ class _LiveMapState extends State<LiveMap> {
 
   MyLocationTrackingMode get _tracking {
     // The desktop's map has no puck to track: yours is kept in view as someone's shared trip is.
-    if (!_located || _estAt != null || LiveMap.preview || mode == MapMode.follow || !SgMap.drawsLocation) return MyLocationTrackingMode.none;
+    // On a ride your icon is drawn here and kept in view, as on the desktop.
+    if (!_located || _estAt != null || LiveMap.preview || mode == MapMode.follow || !SgMap.drawsLocation || _rideKind != null) return MyLocationTrackingMode.none;
     if (turning) return MyLocationTrackingMode.trackingCompass;
     return following && mode != MapMode.traffic ? MyLocationTrackingMode.tracking : MyLocationTrackingMode.none;
   }
@@ -1265,8 +1366,8 @@ class _LiveMapState extends State<LiveMap> {
 
   // ---------- a trip ----------
 
-  MapDot _flag(List<double> at, String label, {Color colour = LiveMap.flagColour, MapPick? pick}) =>
-      ink.dot('marks', at, radius: 9, fill: colour, label: label, pick: pick, z: 5);
+  MapDot _flag(List<double> at, String label, {Color colour = LiveMap.flagColour, MapPick? pick, double radius = 9}) =>
+      ink.dot('marks', at, radius: radius, fill: colour, label: label, pick: pick, z: 5);
 
   MapPick? _pickAt(TripLeg leg, int k) {
     if (leg.kind == 'bus' && leg.codes != null && leg.codes!.length == leg.points.length) return MapPick.stop(leg.codes![k]);
@@ -1396,11 +1497,19 @@ class _LiveMapState extends State<LiveMap> {
             last ? leg.to : (leg.kind != 'walk' ? tr('map.getOffAt', 'Get off at {place}', {'place': leg.to}) : tr('map.walkTo', 'Walk to {place}', {'place': leg.to})),
             colour: last ? LiveMap.flagColour : colour,
             pick: _pickAt(leg, leg.points.length - 1),
+            // The end's pin stands on it.
+            radius: last ? 3 : 9,
           );
         }
       }
+      // Where the trip starts and ends, as pins (map_marks.dart).
+      ink.mark('marks', t.legs.first.points.first, const PinArt.start(), z: 6);
+      ink.mark('marks', t.legs.last.points.last, const PinArt.end(), z: 7);
+      _bubblesFor = null;
       if (fit && here == null) _jump(LatLng(_tripAt()[0], _tripAt()[1]), LiveMap.streetZoom - 1);
     }
+    _drawBubbles(t);
+    _rideChanged();
     step = t.barText();
     // On a walk, ride or drive, the next turn says more than how long is left, which is above it.
     final foot = _footRoute;
@@ -1416,6 +1525,37 @@ class _LiveMapState extends State<LiveMap> {
       ink.dot('me', _tripAt(), fill: LiveMap.meColour, fillOpacity: 0.7, z: 9);
     }
     if (mounted) setState(() {});
+  }
+
+  /// What the bubbles were drawn for: the part you're on and whether you'd boarded it.
+  String? _bubblesFor;
+
+  /// A speech bubble over each stop still ahead where you get on or off (map_marks.dart): Board 67
+  /// in the ride's colour, Get off in navy, and Change to 960 where one ride ends where the next
+  /// begins. Not Get off at the very end, where the end's pin is; not Board on a ride you're on.
+  void _drawBubbles(Trip t) {
+    final key = '${t.leg}:${t.boarded}:${t.legs.length}';
+    if (_bubblesFor == key) return;
+    _bubblesFor = key;
+    ink.clear('bubbles');
+    String rideName(TripLeg l) => l.kind == 'bus' ? (l.service ?? l.label) : (l.route ?? l.label.split(' ').first);
+    IconData icon(TripLeg l) => l.kind == 'train' ? Icons.directions_subway_filled : Icons.directions_bus_filled;
+    for (var i = t.leg; i < t.legs.length; i++) {
+      final l = t.legs[i];
+      if (!l.ride) continue;
+      final colour = _legColour(l, false);
+      final before = i > 0 ? t.legs[i - 1] : null;
+      final changing = before != null && before.ride && metresAB(before.points.last, l.points.first) < 80;
+      if ((i > t.leg || !t.boarded) && !changing) {
+        ink.mark('bubbles', l.points.first, BubbleArt(tr('map.board', 'Board {ride}', {'ride': rideName(l)}), fill: colour, icon: icon(l)), z: 8);
+      }
+      final next = i + 1 < t.legs.length ? t.legs[i + 1] : null;
+      if (next != null && next.ride && metresAB(l.points.last, next.points.first) < 80) {
+        ink.mark('bubbles', l.points.last, BubbleArt(tr('map.changeTo', 'Change to {ride}', {'ride': rideName(next)}), fill: _legColour(next, false), icon: icon(next)), z: 9);
+      } else if (i < t.legs.length - 1) {
+        ink.mark('bubbles', l.points.last, BubbleArt(tr('map.getOff', 'Get off')), z: 9);
+      }
+    }
   }
 
   /// The route of a trip's walk, ride or drive, on its line, and kept if it's the part you're on.
@@ -1764,7 +1904,7 @@ class _LiveMapState extends State<LiveMap> {
             compassEnabled: true,
             compassViewPosition: CompassViewPosition.topRight,
             compassViewMargins: const math.Point(16, 200),
-            myLocationEnabled: _located && _estAt == null,
+            myLocationEnabled: _located && _estAt == null && _rideKind == null,
             myLocationRenderMode: _located ? MyLocationRenderMode.compass : MyLocationRenderMode.normal,
             onCameraTrackingDismissed: _trackingDismissed,
             attributionButtonPosition: AttributionButtonPosition.bottomLeft,
@@ -2114,6 +2254,13 @@ class _PreviewPainter extends CustomPainter {
       final c = at(d.at);
       canvas.drawCircle(c, d.radius, Paint()..color = d.fill.withValues(alpha: d.fillOpacity));
       canvas.drawCircle(c, d.radius, stroke(d.stroke, d.weight));
+    }
+    final marks = ink.allMarks.toList()..sort((a, b) => a.z - b.z);
+    for (final k in marks) {
+      canvas.save();
+      canvas.translate(at(k.at).dx - k.art.anchorOffset.dx, at(k.at).dy - k.art.anchorOffset.dy);
+      k.art.paint(canvas);
+      canvas.restore();
     }
   }
 

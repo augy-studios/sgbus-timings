@@ -58,7 +58,11 @@ class MapCommands {
   /// Replaces a GeoJSON source's data, sent as the run call's second argument (script).
   static Map<String, Object?> setSource(String sourceId) => {'cmd': 'setSource', 'source': sourceId};
 
-  /// Adds a layer of [type] ('line', 'circle' or 'fill') drawing from [sourceId], with
+  /// Adds an image icons can name: a PNG, sent base64 as the run call's second argument (script),
+  /// drawn at [pixelRatio] image pixels to a CSS pixel.
+  static Map<String, Object?> addImage(String name, {double pixelRatio = 1}) => {'cmd': 'addImage', 'name': name, 'pixelRatio': pixelRatio};
+
+  /// Adds a layer of [type] ('line', 'circle', 'fill' or 'symbol') drawing from [sourceId], with
   /// [properties] as maplibre_gl serialises them (toJson, nulls left out).
   static Map<String, Object?> addLayer(
     String type,

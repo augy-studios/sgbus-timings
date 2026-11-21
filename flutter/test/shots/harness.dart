@@ -206,7 +206,14 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
       case '/walk':
         return _json('walk');
       case '/road':
-        return _json('road');
+        // The saved road where it's that bus's (its stops as many as asked for), else straight
+        // between the stops asked for, so any other bus is drawn along its own stops.
+        final road = _json('road') as Map;
+        final asked = [
+          for (final p in (u.queryParameters['points'] ?? '').split(';'))
+            if (p.contains(',')) [for (final n in p.split(',')) double.parse(n)],
+        ];
+        return asked.isEmpty || (road['stops'] as List).length == asked.length ? road : {'path': asked, 'stops': const [], 'source': 'line'};
       case '/traffic':
         return _json('traffic');
       case final c when c.startsWith('/data/campus/'):

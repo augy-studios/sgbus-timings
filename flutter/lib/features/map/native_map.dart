@@ -2,6 +2,7 @@
 // unchanged, so the phone's map behaves exactly as it did before the desktop's WebView map was
 // added beside it (sg_map.dart).
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:maplibre_gl/maplibre_gl.dart';
@@ -70,6 +71,24 @@ class NativeSgMapController implements SgMapController {
     bool enableInteraction = true,
   }) =>
       map.addFillLayer(sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer, minzoom: minzoom, maxzoom: maxzoom, filter: filter, enableInteraction: enableInteraction);
+
+  @override
+  Future<void> addImage(String name, Uint8List bytes, {double pixelRatio = 1}) => map.addImage(name, bytes, false, pixelRatio);
+
+  @override
+  Future<void> addSymbolLayer(
+    String sourceId,
+    String layerId,
+    SymbolLayerProperties properties, {
+    String? belowLayerId,
+    String? sourceLayer,
+    double? minzoom,
+    double? maxzoom,
+    dynamic filter,
+    bool enableInteraction = true,
+  }) =>
+      map.addSymbolLayer(sourceId, layerId, properties,
           belowLayerId: belowLayerId, sourceLayer: sourceLayer, minzoom: minzoom, maxzoom: maxzoom, filter: filter, enableInteraction: enableInteraction);
 
   @override

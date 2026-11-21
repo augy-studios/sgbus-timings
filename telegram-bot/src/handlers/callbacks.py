@@ -25,6 +25,10 @@ from ..user_settings import (
     get_notifications_enabled,
     set_clock_times,
     set_has_bike,
+    get_fare_type,
+    set_fare_type,
+    set_nav_sort,
+    set_preferred_buses,
     set_notifications_enabled,
 )
 from .addroutine import build_bus_picker, clear_buses, finalize_stop, save_draft, toggle_bus
@@ -50,13 +54,14 @@ from .nav import arm_nav_field, arm_when as arm_nav_when, open_favourite_nav, re
 from .nav import set_end as set_nav_end, show_nav, show_option
 from ..flows import end_flow, get_flow, set_flow
 from ..nav_view import build_mynavs_view
+from ..ways import FARE_NAMES, FARE_TYPES, SORT_NAMES
 from ..navs import toggle_favourite_nav
 from ..route_drafts import get_route_draft
 from ..when import describe, picked
 from ..when_view import build_day_picker, build_hour_picker, build_minute_picker
 from ..when_view import build_when_menu
 from .settings import FLOW_PREFIX as SETTINGS_FLOW_PREFIX
-from .settings import build_settings_view, save_place, start_edit_birthday, start_edit_name, start_edit_place
+from .settings import build_settings_view, save_place, start_edit_birthday, start_edit_buses, start_edit_name, start_edit_place
 from .unfavbus import build_unfavbus_view
 from .unfavstop import build_unfavstop_view
 
@@ -539,6 +544,28 @@ def register_callbacks(client):
                 await event.answer("Cycling on: /nav says how long it takes" if get_has_bike(user_id) else "Cycling off")
                 return
 
+            if action == "settings_cycle_fare":
+                types = list(FARE_TYPES)
+                set_fare_type(user_id, types[(types.index(get_fare_type(user_id)) + 1) % len(types)])
+                sender = await event.get_sender()
+                rich, buttons = build_settings_view(user_id, sender)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer(f"Fare type: {FARE_NAMES[get_fare_type(user_id)]}")
+                return
+
+            if action == "settings_edit_buses":
+                await start_edit_buses(client, user_id)
+                await event.answer()
+                return
+
+            if action == "settings_clear_buses":
+                set_preferred_buses(user_id, [])
+                sender = await event.get_sender()
+                rich, buttons = build_settings_view(user_id, sender)
+                await edit_rich_message(client, event, rich, buttons)
+                await event.answer("Preferred buses cleared")
+                return
+
             if action == "settings_toggle_clock":
                 set_clock_times(user_id, not get_clock_times(user_id))
                 sender = await event.get_sender()
@@ -580,6 +607,13 @@ def register_callbacks(client):
 
             if action == "nav_show":
                 await event.answer("Finding ways there…")
+                await show_nav(client, event, payload["from"], payload["to"], payload.get("when"), payload.get("via"))
+                return
+
+            # Best, Fastest, Least walking or Fewest changes, kept for the chat's next /nav.
+            if action == "nav_sort":
+                set_nav_sort(event.chat_id, payload["sort"])
+                await event.answer(f"Sorted by {SORT_NAMES.get(payload['sort'], 'Best').lower()}")
                 await show_nav(client, event, payload["from"], payload["to"], payload.get("when"), payload.get("via"))
                 return
 

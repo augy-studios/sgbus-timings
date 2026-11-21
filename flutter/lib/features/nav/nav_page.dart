@@ -37,6 +37,7 @@ import '../map/live_map.dart';
 import '../share/share_card.dart';
 import '../timings/stop_screen.dart';
 import '../trips/trip.dart';
+import 'ways.dart';
 import 'when_picker.dart';
 import '../tour/tour.dart';
 
@@ -174,7 +175,47 @@ class NavState extends ChangeNotifier {
   String Function()? _error;
   String? get error => _error?.call();
   int _token = 0;
-  final Map<int, List<int>?> timings = {};
+
+  /// The arrivals at each bus leg's stop of the way open, every bus there, by the leg's index.
+  final Map<int, Arrivals?> timings = {};
+
+  /// The arrivals at each way's first stop for the list, by its code, and when they came; null
+  /// where they couldn't be had.
+  final Map<String, Arrivals?> listLive = {};
+  final Map<String, int> _listLiveAt = {};
+  static const listLiveFreshMs = 30000;
+
+  /// A way's first ride when it's a bus with live timings to show: leaving now, or soon enough
+  /// for them to be the buses you'd catch.
+  Map? firstBus(Map o) {
+    if (o['offline'] == true || offline) return null;
+    if (when != null && When.liveLead(When.span(when, (o['minutes'] as num?) ?? 0).leave) == null) return null;
+    final first = ((o['legs'] as List?) ?? const []).cast<Map>().where((l) => l['mode'] != 'walk').firstOrNull;
+    return first != null && first['mode'] == 'bus' && first['campus'] == null && (first['from'] as Map?)?['code'] != null ? first : null;
+  }
+
+  /// Fetches the arrivals at every way's first stop that are older than [listLiveFreshMs], and the
+  /// route list for the other buses that go straight there.
+  Future<void> loadListLive() async {
+    if (option != null) return;
+    final token = _token;
+    final codes = {for (final o in options) ?firstBus(o)}.map((l) => '${(l['from'] as Map)['code']}').toSet();
+    final stale = codes.where((c) => When.nowMs() - (_listLiveAt[c] ?? 0) > listLiveFreshMs).toList();
+    if (stale.isEmpty) return;
+    await Future.wait([
+      if (!BusNet.ready) BusNet.load().catchError((_) {}),
+      for (final code in stale)
+        () async {
+          try {
+            listLive[code] = await Arrivals.fetch(code);
+          } catch (_) {
+            listLive[code] = null;
+          }
+          _listLiveAt[code] = When.nowMs();
+        }(),
+    ]);
+    if (token == _token && option == null) notifyListeners();
+  }
 
   void changed() => notifyListeners();
 
@@ -235,6 +276,7 @@ class NavState extends ChangeNotifier {
       if (token == _token) {
         busy = false;
         notifyListeners();
+        unawaited(loadListLive());
       }
     }
   }
@@ -248,20 +290,18 @@ class NavState extends ChangeNotifier {
     if (!live) return;
     final legs = (o['legs'] as List).cast<Map>();
     final token = _token;
+    // Every bus at each bus leg's stop, for the others that go straight to where it's left too.
     await Future.wait([
+      if (!BusNet.ready) BusNet.load().catchError((_) {}),
       for (var k = 0; k < legs.length; k++)
         if (legs[k]['mode'] == 'bus' && legs[k]['campus'] == null && (legs[k]['from'] as Map?)?['code'] != null)
           () async {
-            final l = legs[k];
+            final code = '${(legs[k]['from'] as Map)['code']}';
             try {
-              final a = await Arrivals.fetch('${(l['from'] as Map)['code']}', '${l['route']}');
-              final s = a.services.where((s) => s.serviceNo == '${l['route']}').firstOrNull;
-              timings[k] = s == null
-                  ? null
-                  : [
-                      for (final b in s.buses)
-                        if (b?.etaMs != null) b!.etaMs!,
-                    ];
+              final a = await Arrivals.fetch(code);
+              timings[k] = a.services.isEmpty ? null : a;
+              listLive[code] = a;
+              _listLiveAt[code] = a.at;
             } catch (_) {
               timings[k] = null;
             }
@@ -319,6 +359,24 @@ String navMixText(Map o) {
       '${tr('nav.walkDist', '{d} walk', {'d': formatDistance(walkMetres(o))})}';
 }
 
+/// The buses that go straight from a bus leg's first stop to its last: its own first, then any other
+/// by the route list, as a trip's Also direct (the site's directAlong in js/nav.js).
+List<String> directAlong(Map leg) {
+  final own = '${leg['route']}';
+  final from = '${(leg['from'] as Map?)?['code'] ?? ''}';
+  final to = (leg['to'] as Map?)?['code'];
+  if (!BusNet.ready || to == null || from.isEmpty) return [own];
+  final others = BusNet.servicesAtStop(from).where((no) {
+    if (no.toUpperCase() == own.toUpperCase()) return false;
+    return BusNet.directions(no).any((dir) {
+      final stops = BusNet.runStops(no, dir);
+      final i = stops.indexOf(from);
+      return i != -1 && stops.indexOf('$to', i + 1) != -1;
+    });
+  });
+  return [own, ...others];
+}
+
 final _stationSuffix = RegExp(r'\s+(?:MRT|LRT)(?:\s+STATION)?(?:\s*\/\s*(?:MRT|LRT)(?:\s+STATION)?)?\s*$', caseSensitive: false);
 String stationName(String? name) {
   final s = (name ?? '').replaceAll(_stationSuffix, '').trim();
@@ -369,9 +427,15 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
   NavState get nav => NavState.I;
   String get _mode => Store.I.get(NavPage.modeKey) == 'bus' && NavPage.busOnly != null ? 'bus' : 'all';
 
+  // Keeps the list's live buses fresh while it's on show.
+  Timer? _liveTimer;
+
   @override
   void initState() {
     super.initState();
+    _liveTimer = Timer.periodic(const Duration(milliseconds: NavState.listLiveFreshMs), (_) {
+      if (mounted && AppNav.page.value == 'nav' && nav.option == null) unawaited(nav.loadListLive());
+    });
     nav.addListener(_redraw);
     Favs.I.addListener(_redraw);
     AppNav.page.addListener(_shown);
@@ -381,6 +445,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
+    _liveTimer?.cancel();
     nav.removeListener(_redraw);
     Favs.I.removeListener(_redraw);
     AppNav.page.removeListener(_shown);
@@ -559,11 +624,12 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
       Text(
         '${n == 1 ? tr('nav.waysOne', '1 way to get there') : tr('nav.waysMany', '{n} ways to get there', {'n': n})}'
         '${nav.when != null ? ', ${When.describe(nav.when).replaceFirstMapped(RegExp(r'^\w'), (m) => m[0]!.toLowerCase())}' : ''}'
-        '${tr('nav.waysTail', ', quickest first. Every mix of bus and train is listed, not just the fastest.')}',
+        '${tr('nav.waysTailSort', '. Every mix of bus and train is listed, not just the fastest.')}',
         style: TextStyle(color: sg.muted),
       ),
       const SizedBox(height: 8),
-      for (final o in nav.options) Padding(padding: const EdgeInsets.only(bottom: 8), child: _wayItem(o)),
+      if (n > 1) _sortRow(),
+      for (final o in NavWays.order(nav.options, buses: _preferred())) Padding(padding: const EdgeInsets.only(bottom: 8), child: _wayItem(o)),
       for (final (kind, what, go, icon) in [
         ('walk', tr('nav.walkThere', 'Walk there'), tr('nav.walkIt', 'Walk it'), Icons.directions_walk),
         ('cycle', tr('nav.cycleThere', 'Cycle there'), tr('nav.cycleIt', 'Cycle it'), Icons.pedal_bike),
@@ -603,6 +669,8 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
           if (nav.onemap) tr('nav.note.onemap', 'OneMap’s timetable-based estimate is shown where it rides the same way.'),
           if (nav.via != null) tr('nav.note.via', 'No time is counted at your stop: add what you’ll spend there.'),
           if (nav.offline) tr('nav.note.offline', 'Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.'),
+          if (nav.options.any((o) => NavWays.fare(o) != null))
+            tr('nav.note.fare', 'Fares are {type} card fares by distance, roughly: change the fare type in Settings.', {'type': fareTypeName(NavWays.fareType).toLowerCase()}),
         ].join(' '),
         style: TextStyle(color: sg.muted, fontSize: 12),
       ),
@@ -647,6 +715,165 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
           ),
       ];
 
+  // Your buses going to this end: Settings' and those of any saved place near it.
+  Set<String> _preferred() => NavWays.preferredFor(nav.to?.here == true ? null : nav.to?.lat, nav.to?.here == true ? null : nav.to?.lng);
+
+  // Best, Fastest, Least walking and Fewest changes, over the list; the one picked is kept.
+  Widget _sortRow() {
+    final on = NavWays.sort;
+    final names = {
+      'best': tr('nav.sort.best', 'Best'),
+      'fastest': tr('nav.sort.fastest', 'Fastest'),
+      'walk': tr('nav.sort.walk', 'Least walking'),
+      'changes': tr('nav.sort.changes', 'Fewest changes'),
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        label: tr('nav.sort.label', 'Sort the ways'),
+        child: Wrap(spacing: 6, runSpacing: 6, children: [
+          for (final k in NavWays.sorts)
+            ChoiceChip(
+              label: Text(names[k]!),
+              selected: k == on,
+              visualDensity: VisualDensity.compact,
+              onSelected: (_) {
+                NavWays.sort = k;
+                setState(() {});
+              },
+            ),
+        ]),
+      ),
+    );
+  }
+
+  Widget _tags(Map o, Map<Map, List<String>> all) {
+    final tags = all[o] ?? const [];
+    if (tags.isEmpty) return const SizedBox.shrink();
+    final sg = context.sg;
+    final names = {
+      'fastest': tr('nav.tag.fastest', 'Fastest'),
+      'walk': tr('nav.tag.walk', 'Least walking'),
+      'changes': tr('nav.tag.changes', 'Fewest changes'),
+      'mine': '★ ${tr('nav.tag.mine', 'Your bus')}',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Wrap(spacing: 4, runSpacing: 4, children: [
+        for (final t in tags)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+            decoration: BoxDecoration(
+              color: (t == 'mine' ? const Color(0xFFF5B800) : sg.ok).withValues(alpha: t == 'mine' ? .22 : .14),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(names[t]!.toUpperCase(),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: .3, color: t == 'mine' ? const Color(0xFF9A6700) : sg.ok)),
+          ),
+      ]),
+    );
+  }
+
+  String? _fare(Map o) {
+    final f = NavWays.fare(o, category: (no) => BusNet.serviceInfo(no)?.cat);
+    return f == null ? null : '~${NavWays.fareText(f.cents)}';
+  }
+
+  Color _loadColour(String? load) => switch ((load ?? '').toUpperCase()) {
+        'SEA' => context.sg.ok,
+        'SDA' => context.sg.warn,
+        'LSD' => context.sg.error,
+        _ => context.sg.muted,
+      };
+
+  // Each bus that goes straight from a bus leg's stop to where it's left, with its next three in
+  // the colours of how full each is, the one you'd catch bold (the site's liveRows in js/nav.js).
+  Widget _liveRows(Map leg, Arrivals a) {
+    final sg = context.sg;
+    final own = '${leg['route']}';
+    final rows = [
+      for (final no in directAlong(leg))
+        (no: no, buses: [for (final b in (a.services.where((s) => s.serviceNo.toUpperCase() == no.toUpperCase()).firstOrNull?.buses ?? const <Bus?>[])) if (b?.etaMs != null) b!]),
+    ].where((r) => r.buses.isNotEmpty || r.no == own).toList()
+      ..sort((x, y) => x.no == own ? -1 : y.no == own ? 1 : (x.buses.firstOrNull?.etaNow ?? 1 << 30).compareTo(y.buses.firstOrNull?.etaNow ?? 1 << 30));
+    if (!rows.any((r) => r.buses.isNotEmpty)) return Text(tr('nav.noLive', 'No live timings for this bus right now.'), style: TextStyle(color: sg.muted, fontSize: 13));
+    // Whole minutes, so three fit side by side: Arr, 7 min, 21 min (or the clock time, by Settings).
+    String eta(Bus b) => Eta.clockTimes
+        ? Eta.text(b.etaNow)
+        : (b.etaNow ?? 0) < 60000
+            ? tr('glance.arr', 'Arr')
+            : tr('trip.chipMin', '{m} min', {'m': ((b.etaNow ?? 0) / 60000).floor()});
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      for (final r in rows.take(4))
+        Padding(
+          padding: const EdgeInsets.only(top: 3),
+          child: Row(children: [
+            SizedBox(
+              width: 52,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(color: sg.ink, borderRadius: BorderRadius.circular(6)),
+                  child: Text(r.no, style: TextStyle(color: sg.surface, fontWeight: FontWeight.w700, fontSize: 13)),
+                ),
+              ),
+            ),
+            if (r.buses.isEmpty) Text('-', style: TextStyle(color: sg.muted)),
+            for (final (i, b) in r.buses.indexed)
+              SizedBox(
+                width: 64,
+                child: Semantics(
+                  label: '${eta(b)} ${Eta.loadWords(b.load)}',
+                  child: Text(eta(b),
+                      style: TextStyle(
+                        color: _loadColour(b.load),
+                        fontWeight: i == 0 ? FontWeight.w700 : FontWeight.w500,
+                        fontSize: i == 0 ? 15 : 13,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      )),
+                ),
+              ),
+          ]),
+        ),
+    ]);
+  }
+
+  // A pulsing green dot, as the site's: the timings are live.
+  Widget _liveDot() => Container(width: 8, height: 8, decoration: BoxDecoration(color: context.sg.ok, shape: BoxShape.circle));
+
+  // The buses you'd catch for a way in the list: "Live · From {stop}", then each straight there.
+  Widget _liveBlock(Map o) {
+    final leg = nav.firstBus(o);
+    if (leg == null) return const SizedBox.shrink();
+    final sg = context.sg;
+    final code = '${(leg['from'] as Map)['code']}';
+    final a = nav.listLive[code];
+    final has = nav.listLive.containsKey(code);
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Divider(height: 1, color: sg.muted.withValues(alpha: .3)),
+        const SizedBox(height: 6),
+        Row(children: [
+          if (a != null) ...[_liveDot(), const SizedBox(width: 6)],
+          Expanded(
+            child: Text(
+              '${a != null ? '${tr('nav.live', 'Live')} · ' : ''}${tr('nav.liveFrom', 'From {stop}', {'stop': (leg['from'] as Map)['name'] ?? code})}',
+              style: TextStyle(color: sg.muted, fontSize: 13),
+            ),
+          ),
+        ]),
+        if (!has)
+          Text(tr('nav.loadingLive', 'Loading live timings…'), style: TextStyle(color: sg.muted, fontSize: 13))
+        else if (a == null)
+          Text(tr('nav.noLive', 'No live timings for this bus right now.'), style: TextStyle(color: sg.muted, fontSize: 13))
+        else
+          _liveRows(leg, a),
+      ]),
+    );
+  }
+
   Widget _chip(Map leg) {
     final sg = context.sg;
     if (leg['campus'] is Map) {
@@ -675,6 +902,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
       if (o['via'] != null) tr('nav.stopAt', 'Stop at {place}', {'place': (o['via'] as Map)['label'] ?? nav.via?.label ?? ''}),
       if (o['onemapMinutes'] != null) tr('nav.onemapMin', 'OneMap ~{m} min', {'m': o['onemapMinutes']}),
       if (o['source'] == 'onemap') tr('nav.foundByOnemap', 'Found by OneMap'),
+      ?_fare(o),
     ].join(' · ');
     final halves = wayHalves(o);
     final chips = <Widget>[];
@@ -694,6 +922,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _tags(o, NavWays.tags(nav.options, buses: _preferred())),
           Wrap(crossAxisAlignment: WrapCrossAlignment.center, spacing: 2, runSpacing: 4, children: chips),
           const SizedBox(height: 6),
           Text(lead, style: Theme.of(context).textTheme.titleLarge),
@@ -714,6 +943,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
             ),
           for (final l in legs.where((l) => l['traffic'] is Map))
             _warn(tr('stop.svc.way.title', 'Bus {no}: {way}', {'no': l['route'], 'way': trafficText(l['traffic'] as Map)}), traffic: true),
+          _liveBlock(o),
         ],
       ),
     );
@@ -891,7 +1121,8 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
         steps.addAll(_crossings(leg));
         continue;
       }
-      final t = nav.timings.containsKey(k) ? nav.timings[k] : (live ? const <int>[-1] : null);
+      final has = nav.timings.containsKey(k);
+      final t = nav.timings[k];
       final board = (nav.when != null || o['offline'] == true) && leg['board'] != null
           ? tr('nav.boardAroundWait', 'Board around {time}, after an average wait.', {'time': When.clock(leaveMs + ((leg['board'] as num) * 60000).round())})
           : null;
@@ -919,15 +1150,23 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                     : tr('nav.busRide', 'From {from} to {to}', {'from': placeName(from), 'to': placeName(leg['to'])}),
               ),
               if (board != null) Text(board, style: TextStyle(color: sg.muted)),
-              if (live)
+              if (live && (!has || t == null))
                 Text(
-                  t != null && t.length == 1 && t.first == -1
-                      ? tr('nav.loadingLive', 'Loading live timings…')
-                      : t != null && t.isNotEmpty
-                      ? '${tr('nav.nextBus', 'Next {no}:', {'no': leg['route']})} ${t.map(Eta.text).join(' · ')}'
-                      : tr('nav.noLive', 'No live timings for this bus right now.'),
+                  !has ? tr('nav.loadingLive', 'Loading live timings…') : tr('nav.noLive', 'No live timings for this bus right now.'),
                   style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w600),
                 ),
+              if (live && t != null) ...[
+                const SizedBox(height: 4),
+                Row(children: [
+                  _liveDot(),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(tr('nav.liveStraight', 'Live · buses straight to {stop}', {'stop': (leg['to'] as Map?)?['name'] ?? tr('nav.itsStop', 'its stop')}),
+                        style: TextStyle(color: sg.muted, fontSize: 13)),
+                  ),
+                ]),
+                _liveRows(leg, t),
+              ],
               if (leg['lastBus'] != null)
                 _warn(tr('nav.lastBus', 'Last {no} from here today is at {time}. Don’t miss it.', {'no': leg['route'], 'time': leg['lastBus']})),
               if (leg['traffic'] is Map)
@@ -958,6 +1197,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
           onPressed: () {
             nav.option = null;
             nav.changed();
+            unawaited(nav.loadListLive());
           },
           icon: const Icon(Icons.arrow_back),
           label: Text(tr('nav.allWays', 'All ways'), overflow: TextOverflow.ellipsis),

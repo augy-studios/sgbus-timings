@@ -68,6 +68,7 @@ Material You or the UwU Apps theme, light or dark, and high contrast. See
 
 | Setting | What it does |
 |---|---|
+| **Live Updates** | Android 16 and later: whether the trip's notification can stay at the top and on the lock screen, with **Open settings** to turn it on. See [Live Updates](get-off-alert.md#live-updates). |
 | **Get Off Alert on a trip** | **On** (the default) or **Off**: see [Get Off Alert](get-off-alert.md). |
 | **Get Off Alert's sound** | **Out loud**, or **Earphones only**: with earphones in, the beeps play just in them; with none, the phone only buzzes. |
 | **Shake to refresh** | A firm shake refreshes the timings on screen. |
@@ -77,7 +78,7 @@ Material You or the UwU Apps theme, light or dark, and high contrast. See
 ## Navigate
 
 <figure>
-<img src="/screenshots/android/settings-nav.png" alt="Settings' Navigate: Restricted areas, Immigration time, Cycling and Shuttle buses, each with its choices and a line saying what it does." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/settings-nav.png" alt="Settings' Navigate: Restricted areas, Immigration time, Cycling, Shuttle buses and Fare type, each with its choices and a line saying what it does." width="412" height="892" loading="lazy">
 <figcaption>What Navigate plans with.</figcaption>
 </figure>
 
@@ -87,6 +88,8 @@ Material You or the UwU Apps theme, light or dark, and high contrast. See
 | **Immigration time** | What a journey across the Causeway counts for clearing both checkpoints. **By the time** (the default), about 15 minutes when it's quiet and up to an hour at the rush, or **15 min**, **30 min**, **45 min** or **1 hr**. |
 | **Cycling** | **No bike** (the default) or **I have a bike**: Navigate also says how long cycling takes, and a trip says when cycling the rest is quicker. |
 | **Shuttle buses** | **Free only** (the default) or **Free and paid**: which [shuttle buses](timings.md#shuttle-buses) Navigate rides and Explorer shows. |
+| **Fare type** | **Adult** (the default), **Student**, **Senior or PwD** or **Workfare**: the card fare [Navigate](nav.md#the-ways-there) shows for each way. |
+| **Preferred buses** | Bus numbers, with commas between: a way on one is tagged **Your bus** and comes first in Navigate's **Best**. For one place only, add them to it in [Places](places.md#buses-you-like-to-take-there). |
 
 ## Help and extras
 

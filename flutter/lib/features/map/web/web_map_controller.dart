@@ -204,6 +204,25 @@ class WebSgMapController implements SgMapController {
       send(MapCommands.addLayer('fill', sourceId, layerId, properties,
           belowLayerId: belowLayerId, sourceLayer: sourceLayer, minzoom: minzoom, maxzoom: maxzoom, filter: filter));
 
+  @override
+  Future<void> addImage(String name, Uint8List bytes, {double pixelRatio = 1}) =>
+      send(MapCommands.addImage(name, pixelRatio: pixelRatio), data: jsonEncode(base64Encode(bytes)));
+
+  @override
+  Future<void> addSymbolLayer(
+    String sourceId,
+    String layerId,
+    SymbolLayerProperties properties, {
+    String? belowLayerId,
+    String? sourceLayer,
+    double? minzoom,
+    double? maxzoom,
+    dynamic filter,
+    bool enableInteraction = true,
+  }) =>
+      send(MapCommands.addLayer('symbol', sourceId, layerId, properties,
+          belowLayerId: belowLayerId, sourceLayer: sourceLayer, minzoom: minzoom, maxzoom: maxzoom, filter: filter));
+
   /// Moves the camera smoothly; the page answers when the move ends, whether it arrived.
   @override
   Future<bool?> animateCamera(CameraUpdate cameraUpdate, {Duration? duration}) async {

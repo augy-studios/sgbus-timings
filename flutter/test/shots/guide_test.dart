@@ -5,6 +5,9 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sgbus_timings/data/places.dart';
+import 'package:sgbus_timings/features/trips/live_updates.dart';
+import 'package:sgbus_timings/features/nav/ways.dart';
 import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/api/net.dart';
 import 'package:sgbus_timings/app/nav.dart';
@@ -178,6 +181,10 @@ void main() {
       await settle(t);
     });
     await shot(t, 'places', () => onPage('places', const PlacesPage()));
+    // Home's buses, 228 to the door, in its form.
+    NavWays.setPlaceBuses(Places.all().first.lat, Places.all().first.lng, ['228']);
+    await shot(t, 'place-buses', () => onPage('places', const PlacesPage()), withNav: true, then: _sheet((c) => editPlace(c, Places.all().first)));
+    NavWays.setPlaceBuses(Places.all().first.lat, Places.all().first.lng, const []);
   });
 
   testWidgets('guide: navigate and map', timeout: _t, (t) async {
@@ -211,6 +218,9 @@ void main() {
   testWidgets('guide: settings and reminders', timeout: _t, (t) async {
     await _ready(t);
     await shot(t, 'settings-trips', () => const SettingsGroup(group: 'trips'));
+    // The first trip on Android 16, with Live Updates off.
+    await shot(t, 'live-updates', () => onPage('glance', const GlancePage()), withNav: true,
+        then: _sheet((c) => showDialog<bool>(context: c, builder: (_) => const LiveUpdatesDialog())));
     await shot(t, 'settings-nav', () => const SettingsGroup(group: 'navigate'));
     await shot(t, 'settings-help', () => const SettingsGroup(group: 'help'));
     await shot(t, 'near-stops', () => const NearStopsScreen());

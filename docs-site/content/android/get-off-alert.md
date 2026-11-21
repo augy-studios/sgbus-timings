@@ -23,12 +23,23 @@ Google Play doesn't ask: if your phone stops trips, turn battery optimisation of
 ## The trip bar
 
 <figure>
-<img src="/screenshots/android/trip-bar.png" alt="A green bar across the top of the app: To One Raffles Place, EW Line, 9 stops to Raffles Place station, part 2 of 2, about 25 min left, with buttons for the stops ahead, the part before, the next part and ending the trip. Glance is under it." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/trip-bar.png" alt="A green bar across the top of the app: To One Raffles Place, Bus 7A, 12 stops to Opp Grandlink Sq, part 1 of 3, with buttons for the stops ahead, the part before, the next part and ending the trip. Under them, 12 stops, 18 min, 4.3 km, an icon for each part, and a line of stops from Bedok Interchange to Opp Grandlink Sq, a ring at the start. Under the bar, Also direct: 7, then Glance." width="412" height="892" loading="lazy">
 <figcaption>The trip bar, along the top of every page.</figcaption>
 </figure>
 
 A bar along the top of the app says where you are: the bus or line, how many stops are left, which part of
 the journey you're on (each ride and each walk is a part), and the minutes left to the end of the whole trip.
+
+Under the words, a strip shows the part you're on from where it starts to where you get off: a dot for each
+stop or station, filled in as you pass it, a ring where you are and a dark dot where you get off. Over it, the
+stops left, the minutes and the distance to there, and an icon for each part of the trip, the one you're on
+picked out.
+
+<figure>
+<img src="/screenshots/android/trip-bar-riding.png" alt="The trip bar on the next ride, three stops along: Bus 70, the strip filled up to a ring at the fourth stop, with the stops, minutes and distance left over it." width="412" height="892" loading="lazy">
+<figcaption>Partway along a ride: the stops passed filled in.</figcaption>
+</figure>
+
 Its buttons:
 
 | Button | What it does |
@@ -74,6 +85,20 @@ The sound can be **Earphones only** in [Settings](settings.md#trips-and-alerts):
 just in them; with none, the phone only buzzes. Never out loud on a quiet bus.
 
 To turn the alert off, set **Get Off Alert on a trip** to **Off**. Trips still show how many stops are left.
+
+## Live Updates
+
+<figure>
+<img src="/screenshots/android/live-updates.png" alt="A window over the app: Turn on Live Updates. Your trip can stay at the top of your notifications and on the lock screen, with the stops left and a chip in the status bar. Android keeps this off until you turn it on: App info, then Notifications, then Live Updates. Then Not now and Open settings." width="412" height="892" loading="lazy">
+<figcaption>On your first trip, if Live Updates is off.</figcaption>
+</figure>
+
+On Android 16 and later, the trip's notification can be a **Live Update**: it stays at the top of your
+notifications and on the lock screen, with a bar of the trip and a chip in the status bar with the stops or
+minutes left. Most phones keep this off for an app until you turn it on, so on your first trip the app says
+where: **App info**, then **Notifications**, then **Live Updates**. **Open settings** goes straight there.
+It asks once; **Live Updates** in [Settings](settings.md#trips-and-alerts), Trips and alerts, says whether it's
+on, with the same button.
 
 ## With the screen off
 

@@ -94,8 +94,13 @@ even with no signal underground.
 ## Your trip on a map
 
 <figure>
-<img src="/screenshots/web/live-map-trip.png" alt="The overview of a trip from Bedok to ION Orchard: the East-West Line in green from Bedok to City Hall with a dot for each station, the North-South Line in red on to Orchard, and a pink pin at the end, with To ION Orchard, 28 min left at the top and Walk to the first bus stop, about 2 min, part 1 of 5 at the bottom." width="400" height="820" loading="lazy">
-<figcaption>A trip's overview: each line in its own colour, with its stops.</figcaption>
+<img src="/screenshots/web/live-map-trip.png" alt="The live map on a trip, close in at Bedok Interchange: the walk to the bus stop in green, and a green speech bubble, Board 228, over the stop, its point on it. To Home, 10 min left at the top, and Bus 228 is 1 min away from Bedok Int, get ready to board, at the bottom." width="400" height="820" loading="lazy">
+<figcaption>Close in: Board 228, over the stop to get on at.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/live-map-trip-whole.png" alt="The whole of a trip home: bus 228 in green from Bedok Interchange, with a Board 228 bubble there, up Bedok North Avenue 3 to Aft Waterfront Waves, with a navy Get off bubble over the stop and the red pin of the end just beyond it." width="400" height="820" loading="lazy">
+<figcaption>The whole way: Board 228 where it starts, Get off where you walk home.</figcaption>
 </figure>
 
 While a trip runs, tap the map button on the trip bar. The map shows the whole
@@ -107,6 +112,16 @@ to stop. A train ride follows its line's track, the way
 [sgraildata](https://github.com/cheeaun/sgraildata) maps it, from the station
 you board at to the one you get off at, and underground, where there's no GPS,
 your dot moves along the track too.
+
+A pin marks where the trip starts, in navy, and another where it ends, in red.
+Over each stop still ahead where you get on or off, a speech bubble says what to
+do there, its point on the stop: **Board 228** in the ride's colour where you
+get on, **Get off** in navy where you get off to walk, and **Change to 960**
+where one ride ends where the next begins.
+
+Once you're on a bus or a train, you're shown as one: a round badge with a bus
+or a train in the ride's colour, in place of your dot. On a part you drive or
+cycle, it's a car or a bike. On foot you're the dot as usual.
 
 Tap a stop or station on the trip for its card: a stop's buses, or a station's
 doors for each platform, as in [Explorer](explorer.md).

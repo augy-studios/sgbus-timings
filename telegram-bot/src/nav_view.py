@@ -1,5 +1,6 @@
-"""Messages and buttons for /nav: the panel with both ends and the ways between them, one
-way leg by leg with live bus timings, and the /mynavs list. The journeys come from the
+"""Messages and buttons for /nav: the panel with both ends and the ways between them, sorted,
+tagged, with their fares and the buses you'd catch, live (ways.py, as the web app's js/ways.js);
+one way leg by leg with live bus timings; and the /mynavs list. The journeys come from the
 site's /api/nav (nav_api.py), the same as the web app's Navigate."""
 
 from telethon import Button
@@ -8,6 +9,8 @@ import re
 from datetime import timedelta
 from urllib.parse import quote
 
+from . import ways as W
+from .bus_services import service_category
 from .bus_stops import get_bus_stop_by_code
 from .buttons import make_button
 from .config import config
@@ -15,6 +18,7 @@ from .format import _format_eta, escape_md
 from .navs import is_favourite_nav, list_favourite_navs, row_via
 from .pagination import nav_row, paginate
 from .saved_places import KINDS, list_places
+from .user_settings import get_fare_type, get_nav_sort, get_preferred_buses
 from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
 
 MAX_OPTIONS = 8
@@ -137,10 +141,71 @@ def _too_late(when, minutes) -> bool:
     return bool(when) and when["mode"] == "arrive" and span(when, minutes)[0] < now() - timedelta(minutes=1)
 
 
-def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, result: "dict | None" = None, error: "str | None" = None, when=None, via=None):
+# How full a bus is, as the web app colours its timings: seats, standing, limited standing.
+LOAD_DOTS = {"SEA": "🟢", "SDA": "🟡", "LSD": "🔴"}
+# The buses shown for a leg, its own and the others straight there.
+LIVE_SHOWN = 4
+
+
+def first_bus(option: dict, when) -> "dict | None":
+    """A way's first ride when it's a bus with live timings to show: leaving now, or soon
+    enough for them to be the buses you'd catch."""
+    if not option_is_live(option, when):
+        return None
+    first = next((leg for leg in option.get("legs") or [] if leg["mode"] != "walk"), None)
+    return first if first and first["mode"] == "bus" and not first.get("campus") and (first.get("from") or {}).get("code") else None
+
+
+def _eta_text(ms: int, clock_times: bool) -> str:
+    """Whole minutes, so three fit on a line ("Arr", "7 min"), or the clock time."""
+    if clock_times:
+        return _format_eta(ms, True)
+    return "Arr" if ms < 60000 else f"{ms // 60000} min"
+
+
+def live_lines(leg: dict, arrivals: "dict | None", direct: list, clock_times: bool = False) -> list:
+    """Each bus that goes straight from a bus leg's stop to where it's left, its own first then
+    the soonest, with its next three and how full each is: "🚌 21 · 7 min 🟢 · 19 min 🟢 · 25 min 🟡".
+    `direct` is every bus that does (journeys.direct_services). As the web app's liveRows."""
+    if not arrivals:
+        return []
+    own = str(leg["route"])
+    services = {str(s["serviceNo"]).upper(): s for s in arrivals.get("services") or []}
+    rows = []
+    for no in [own, *(b for b in direct if b.upper() != own.upper())]:
+        svc = services.get(no.upper())
+        buses = [b for b in ((svc or {}).get(k) for k in ("next", "next2", "next3")) if b and b.get("etaMs") is not None]
+        if buses or no == own:
+            rows.append((no, buses))
+    if not any(buses for _, buses in rows):
+        return []
+    rows.sort(key=lambda r: (r[0] != own, r[1][0]["etaMs"] if r[1] else float("inf")))
+    return [
+        f"🚌 {no} · " + (" · ".join(f"{_eta_text(b['etaMs'], clock_times)}{' ' + LOAD_DOTS[b['load']] if b.get('load') in LOAD_DOTS else ''}" for b in buses) or "no live timing")
+        for no, buses in rows[:LIVE_SHOWN]
+    ]
+
+
+def _fare(option: dict, fare_type: str) -> "str | None":
+    f = W.fare(option, fare_type, service_category)
+    return f"~{W.fare_text(f['cents'])}" if f else None
+
+
+def sort_rows(ends: dict, on: str) -> list:
+    """Best, Fastest, Least walking and Fewest changes, two to a row, the one picked ticked."""
+    buttons = [Button.inline(f"{'✅ ' if k == on else ''}{W.SORT_NAMES[k]}", make_button("nav_sort", {**ends, "sort": k})) for k in W.SORTS]
+    return [buttons[:2], buttons[2:]]
+
+
+def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, result: "dict | None" = None, error: "str | None" = None, when=None, via=None,
+                    live: "dict | None" = None, direct: "dict | None" = None, clock_times: bool = False):
     """The /nav panel. With both ends set and `result` from the API, the ways between them,
-    a button each; otherwise a prompt for the end it's waiting on. `when` is the time picked
-    (when.py), None for Leave now; `via` a stop on the way, from a starred nav."""
+    in the chat's sort, a button each; otherwise a prompt for the end it's waiting on. `when` is
+    the time picked (when.py), None for Leave now; `via` a stop on the way, from a starred nav.
+    `live` maps a stop code to its arrivals (lta.fetch_arrivals), for each way's first bus, and
+    `direct` a (from, to) pair of codes to the buses straight between them."""
+    live = live or {}
+    direct = direct or {}
     md_ends, plain_ends = _ends_lines(start, end, when, via)
     md = ["# 🧭 Navigate by bus and train", "", *md_ends, ""]
     plain = ["🧭 Navigate by bus and train", "", *plain_ends, ""]
@@ -154,18 +219,27 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
         md.append(escape_md(error))
         plain.append(error)
     elif result is not None:
-        options = (result.get("options") or [])[:MAX_OPTIONS]
+        sort = get_nav_sort(chat_id)
+        fare_type = get_fare_type(chat_id)
+        own = [{**p, "buses": p.get("buses") or []} for p in list_places(chat_id)]
+        buses = W.preferred_for(end, get_preferred_buses(chat_id), own)
+        options = W.order((result.get("options") or [])[:MAX_OPTIONS], sort, buses)
+        tagged = W.tags(options, buses)
         if not options:
             line = (f"No way by bus or train running {'at that time' if when else 'right now'} was found between "
                     "these two places. Try another time, or somewhere nearby.")
             md.append(line)
             plain.append(line)
         else:
-            head = f"{len(options)} way{'s' if len(options) != 1 else ''} to get there, quickest first. Every mix of bus and train, not just the fastest:"
+            head = (f"{len(options)} way{'s' if len(options) != 1 else ''} to get there, by {W.SORT_NAMES[sort].lower()}. "
+                    "Every mix of bus and train, not just the fastest:")
             md += [head, ""]
             plain += [head, ""]
             for i, o in enumerate(options, 1):
                 extra = []
+                fare = _fare(o, fare_type)
+                if fare:
+                    extra.append(fare)
                 if o.get("onemapMinutes") is not None:
                     extra.append(f"OneMap ~{o['onemapMinutes']} min")
                 if o.get("source") == "onemap":
@@ -179,9 +253,17 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 late = " (too late)" if _too_late(when, o["minutes"]) else ""
                 # With a time picked, the clock times lead.
                 lead = f"{_clocks(when, o['minutes'])}{late} · ~{o['minutes']} min" if when else f"~{o['minutes']} min"
+                tags = " ".join(W.TAG_NAMES[t] for t in tagged[i - 1])
                 text = f"{i}. {lead} · {option_summary(o)}{' · ' + ', '.join(extra) if extra else ''}{warn}"
-                md.append(escape_md(text))
-                plain.append(text)
+                lines = [text, *([f"   {tags}"] if tags else [])]
+                # The buses you'd catch, live, for a way whose first ride is a bus.
+                leg = first_bus(o, when)
+                if leg:
+                    rows = live_lines(leg, live.get(leg["from"]["code"]), direct.get((leg["from"]["code"], (leg.get("to") or {}).get("code"))) or [], clock_times)
+                    if rows:
+                        lines += [f"   🟢 Live from {leg['from'].get('name') or leg['from']['code']}:", *(f"   {r}" for r in rows)]
+                md += [escape_md(line) for line in lines]
+                plain += lines
                 short = _clocks(when, o["minutes"]) if when else f"~{o['minutes']} min"
                 buttons.append(
                     [Button.inline(f"{i} · {short} · {' → '.join(leg['route'] for leg in _rides(o)) or 'walk'}"[:64],
@@ -201,12 +283,16 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 plain += ["", *lines]
             traffic = " Bus times allow for the traffic right now, from LTA; 🚦 marks a bus it slows." if result.get("traffic") else ""
             stop = " No time is counted at your stop on the way." if via else ""
+            fares = (f" Fares are {W.FARE_NAMES[fare_type].lower()} card fares by distance, roughly; 🟢 🟡 🔴 say how full a bus is. "
+                     "Pick your fare type and the buses you'd rather take in /settings.") if any(_fare(o, fare_type) for o in options) else ""
             note = ("Times include walking and an average wait to board. Only buses and trains running at the time "
-                    f"are used. ⚠️ marks a line LTA reports a disruption on, ⏰ a last bus of the day.{traffic}{stop}")
+                    f"are used. ⚠️ marks a line LTA reports a disruption on, ⏰ a last bus of the day.{traffic}{stop}{fares}")
             md += ["", f"_{escape_md(note)}_"]
             plain += ["", note]
 
     ends = _ends_payload(start, end, when, via)
+    if result is not None and len(result.get("options") or []) > 1 and not awaiting and not error:
+        buttons += sort_rows(ends, get_nav_sort(chat_id))
     if start and end:
         fav = is_favourite_nav(chat_id, start, end, via)
         buttons.append([
@@ -253,14 +339,18 @@ def option_is_live(option: dict, when) -> bool:
     return not when or live_lead(span(when, option["minutes"])[0]) is not None
 
 
-def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_times=False, via=None):
-    """One way, leg by leg. `timings` maps a bus leg's index to its next ETAs in ms (or None
-    when LTA has none); for a way setting off too far ahead for those (option_is_live), each
-    bus and train says when it's boarded instead, by the clock. `clock_times` shows the ETAs as
-    the time each bus comes (Settings' Bus times)."""
+def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_times=False, via=None, direct: "dict | None" = None, fare_type: str = "adult"):
+    """One way, leg by leg. `timings` maps a bus leg's index to the arrivals at its stop
+    (lta.fetch_arrivals, or None when LTA has none), and `direct` that index to the buses that
+    go straight to where it's left; for a way setting off too far ahead for those
+    (option_is_live), each bus and train says when it's boarded instead, by the clock.
+    `clock_times` shows the ETAs as the time each bus comes (Settings' Bus times)."""
+    direct = direct or {}
     ends = [start["label"], *([via["label"]] if via else []), end["label"]]
-    md = [f"# 🧭 ~{option['minutes']} min", " → ".join(escape_md(x) for x in ends), ""]
-    plain = [f"🧭 ~{option['minutes']} min", " → ".join(ends), ""]
+    fare = _fare(option, fare_type)
+    head = f"~{option['minutes']} min" + (f" · {fare}" if fare else "")
+    md = [f"# 🧭 {escape_md(head)}", " → ".join(escape_md(x) for x in ends), ""]
+    plain = [f"🧭 {head}", " → ".join(ends), ""]
     buttons = []
     legs = option["legs"]
     live = option_is_live(option, when)
@@ -313,12 +403,12 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
             md.append(escape_md(line))
             plain.append(line)
             if live:
-                etas = timings.get(k)
-                eta_line = (f"   Next {leg['route']}: {' · '.join(_format_eta(ms, clock_times) for ms in etas)}" if etas
-                            else "   No live timings for this bus right now.")
+                rows = live_lines(leg, timings.get(k), direct.get(k) or [], clock_times)
+                eta_lines = ([f"   🟢 Live, buses straight to {_place_name(leg.get('to')) or 'its stop'}:", *(f"   {r}" for r in rows)] if rows
+                             else ["   No live timings for this bus right now."])
             else:
-                eta_line = board_line(leg, after_wait=True)
-            if eta_line:
+                eta_lines = [line] if (line := board_line(leg, after_wait=True)) else []
+            for eta_line in eta_lines:
                 md.append(escape_md(eta_line))
                 plain.append(eta_line)
             if leg.get("lastBus"):
@@ -343,9 +433,11 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
                 way = {**_ends_payload(start, end, when, via), "option": option}
                 buttons.append([Button.inline(f"🚏 {leg['route']} at {leg['from']['name']}"[:64],
                                               make_button("stop", {"code": leg["from"]["code"], "bus_no": leg["route"], "nav": way}))])
-    note = ("Train times are estimates from distance; bus timings are live from LTA." if live
+    note = ("Train times are estimates from distance; bus timings are live from LTA, 🟢 🟡 🔴 for how full each bus is." if live
             else "Times are estimates from distance, with an average wait to board. "
                  "Live bus timings show here from half an hour before you set off.")
+    if fare:
+        note += f" The fare is a {W.FARE_NAMES[fare_type].lower()} card fare by distance, roughly."
     md += ["", f"_{escape_md(note)}_"]
     plain += ["", note]
     # A live trip of this way, as a widget that updates by itself and can be shared

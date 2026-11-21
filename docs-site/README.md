@@ -46,7 +46,13 @@ python3 screenshots/sizes.py nav-home-work,nav-tabs   # their width and height i
 ```
 
 Take the ones with live timings (`route-live`, `nav-live`, `install-tour`) in the day, while
-buses run. Behind a proxy, start `serve.cjs` with `NODE_USE_ENV_PROXY=1`.
+buses run. Behind a proxy, start `serve.cjs` with `NODE_USE_ENV_PROXY=1`. Or, with no server to
+start, `ROUTED=1 node screenshots/shots.cjs ...`: each page serves `main-site` through
+Playwright's own routing, and `/api/*` from the live site.
+
+21 November 2026's groups (`ux-nov`: Navigate's sort, live buses and fares, the trip bar's strip,
+the trip's map; `ux-nov-settings`: Fare type, Preferred buses and a place's buses) are always
+still, Kallang to a home by Aft Waterfront Waves, planned with this checkout's own router.
 
 `STILL=1` takes any group still instead: the page's clock stopped on a Friday morning
 (`STILL_AT`) and every stop's timings made up from its real routes, so a shot comes out the

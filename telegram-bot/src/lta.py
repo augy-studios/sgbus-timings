@@ -76,6 +76,7 @@ async def fetch_all_bus_services() -> list[dict]:
                         "origin_code": s.get("OriginCode") or None,
                         "destination_code": s.get("DestinationCode") or None,
                         "loop_desc": (s.get("LoopDesc") or "").strip() or None,
+                        "category": s.get("Category") or None,
                     }
             if len(rows) < 500:
                 break

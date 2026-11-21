@@ -16,6 +16,10 @@
 // Leaflet (vendor/leaflet) where there's no WebGL at all, or MapLibre won't start: the map as it
 // was before, flat, north up, without turning.
 //
+// mark(group, at, { html, anchor, z }) puts HTML over the map at a point (js/map-marks.js: a
+// trip's pins, a stop's speech bubble, you on what you're riding), `anchor` 'bottom' or 'center'
+// on the point; it never takes a tap, which goes to the map under it.
+//
 // Explorer's stops and stations (js/map.js) are dots of their own, pois(list): every station
 // from zoom 11, every stop from zoom 15. An interchange is a pill instead, its lines' colours
 // side by side, left to right in the order js/map.js gives them. A tap on one, or on a dot drawn with a `pick`, goes to
@@ -233,8 +237,10 @@
       map.addImage(e.id, { width: 1, height: 1, data: new Uint8Array(4) });
     });
 
-    // What js/map.js has drawn: id -> { group, kind, geometry, props }.
+    // What js/map.js has drawn: id -> { group, kind, geometry, props }; and its marks, as
+    // MapLibre's markers, HTML kept on their point as the map moves.
     const items = new Map();
+    const marks = new Set();
     let nextId = 1;
     let dirty = false;
     let flushing = null;
@@ -485,8 +491,23 @@
         const h = item(group, 'fill', polyGeo(pts), { fill: s.fill, opacity: s.opacity });
         return { ...h, set: (p) => h.set(polyGeo(p)), get alive() { return h.alive; } };
       },
+      mark(group, at, m) {
+        const el = document.createElement('div');
+        el.className = 'sgMark';
+        el.innerHTML = m.html;
+        el.style.zIndex = String(m.z || 0);
+        const marker = new ml.Marker({ element: el, anchor: m.anchor || 'center', pitchAlignment: 'viewport', rotationAlignment: 'viewport' }).setLngLat(ll(at)).addTo(map);
+        const it = { group, marker };
+        marks.add(it);
+        return {
+          get alive() { return marks.has(it); },
+          set(p) { marker.setLngLat(ll(p)); },
+          remove() { if (marks.delete(it)) marker.remove(); },
+        };
+      },
       clear(group) {
         for (const [id, it] of items) if (it.group === group) items.delete(id);
+        for (const it of marks) if (it.group === group) { it.marker.remove(); marks.delete(it); }
         changed();
       },
       // Explorer's dots, [{ kind: 'stop' | 'station' | 'campus', lat, lng, color?, colors?, pick }],
@@ -703,6 +724,11 @@
       poly(g, pts, s) {
         const p = L.polygon(pts, { stroke: false, fillColor: s.fill, fillOpacity: s.opacity, interactive: false }).addTo(group(g));
         return wrap(p, g, (q) => p.setLatLngs(q));
+      },
+      mark(g, at, m) {
+        const icon = L.divIcon({ className: 'sgMark', html: `<div class="sgMarkAt ${m.anchor === 'bottom' ? 'onBottom' : 'onCentre'}">${m.html}</div>`, iconSize: [0, 0] });
+        const k = L.marker(at, { icon, interactive: false, keyboard: false, zIndexOffset: (m.z || 0) * 100 }).addTo(group(g));
+        return wrap(k, g, (p) => k.setLatLng(p));
       },
       clear: (g) => group(g).clearLayers(),
       pois(list) {

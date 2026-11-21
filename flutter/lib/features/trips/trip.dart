@@ -45,8 +45,10 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
+import 'live_updates.dart';
 import 'trip_change.dart';
 import 'trip_progress.dart';
+import 'trip_strip.dart';
 import 'trip_timeline.dart';
 import 'trip_watch.dart';
 
@@ -348,6 +350,8 @@ class Trip extends ChangeNotifier {
         final note = _note();
         _noteSaid = jsonEncode(note);
         await Native.call('Trip', 'start', note);
+        // The first trip on Android 16: where to turn on Live Updates, if it's off.
+        unawaited(LiveUpdates.askOnce());
       } on NativeError catch (e) {
         AppNav.say(e.message);
       }
@@ -1509,8 +1513,8 @@ class TripBar extends StatelessWidget {
               onTap: () => AppNav.push(const TripScreen(), name: 'trip'),
               child: SafeArea(bottom: false, child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 4, 6),
-                child: Row(children: [
-                  Icon(t.current?.kind == 'train' ? Icons.directions_subway_filled : t.current?.kind == 'walk' ? Icons.directions_walk : Icons.directions_bus, color: sg.onBar),
+                child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [Row(children: [
+                  Icon(t.current == null ? Icons.directions_bus : tripLegIcon(t.current!), color: sg.onBar),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1527,6 +1531,9 @@ class TripBar extends StatelessWidget {
                     IconButton(visualDensity: VisualDensity.compact, tooltip: tr('trip.on_to_the_next_part', 'On to the next part'), onPressed: t.leg >= t.legs.length - 1 ? null : () => t.step(1), icon: Icon(Icons.skip_next, color: t.leg >= t.legs.length - 1 ? sg.onBar.withValues(alpha: .4) : sg.onBar)),
                   ],
                   IconButton(visualDensity: VisualDensity.compact, tooltip: tr('trip.end_the_trip', 'End the trip'), onPressed: () => t.stop(), icon: Icon(Icons.close, color: sg.onBar)),
+                ]),
+                // The part you're on, stop by stop, with what's left of it (trip_strip.dart).
+                Padding(padding: const EdgeInsets.only(right: 12), child: TripStrip(trip: t, ink: sg.onBar)),
                 ]),
               )),
             ),

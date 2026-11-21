@@ -38,6 +38,8 @@ straight to one.
 | **Immigration time** | How long a journey across the Causeway counts for getting off, clearing both checkpoints and getting on again. **By the time** (the default): about 15 minutes when it's quiet, up to an hour at the rush. Or your own: **15 min**, **30 min**, **45 min** or **1 hr**. See [Navigate](nav.md#across-the-causeway). |
 | **Cycling** | **No bike** (the default) or **I have a bike**. With a bike, [Navigate](nav.md#traffic-walking-and-cycling) also says how long cycling there takes, and a [trip](get-off-alert.md#a-faster-way) tells you when cycling the rest of the way is quicker. |
 | **Shuttle buses** | **Free only** (the default) or **Free and paid**: which [shuttle buses](timings.md#shuttle-buses) Navigate rides and Explorer shows. A hotel's or a condo's shuttle is only used to or from it. |
+| **Fare type** | **Adult** (the default), **Student**, **Senior or PwD** or **Workfare**: the card fare [Navigate](nav.md#live-buses-and-the-fare) shows for each way. |
+| **Preferred buses** | Bus numbers, with commas between: a way on one is tagged **Your bus** and comes first in Navigate's [Best](nav.md#sort-the-ways). For a bus to one place only, add it to that place in [Places](places.md#buses-you-like-to-take-there). |
 | **Pin favourite stops in lists** | **Top** or **Bottom** of lists of stops. |
 | **Picture-in-picture** | The [Android app](../android/picture-in-picture.md) only. **On** (the default) or **Off**: whether leaving the app on a trip or the live map shrinks it into a small window over your other apps. |
 | **Edge Tray side** | **Right** (the default) or **Left**: which edge of the screen the Edge Tray, the column of buttons at the top of the screen, hangs from. Its arrow tucks it away at that edge. |
@@ -64,6 +66,11 @@ Changes save as you make them. There is no Save button.
 <figure>
 <img src="/screenshots/web/settings-shuttles.png" alt="Settings' Shuttle buses, with Free only and Free and paid, Free only picked, and a note that shuttle buses such as NUS's and NTU's, IKEA's and Changi Airport's are in Navigate and on Explorer's map, paid ones such as Mandai's and the TS1 to Johor Bahru only with Free and paid, and a hotel's shuttle only to or from that hotel." width="396" height="195" loading="lazy">
 <figcaption>Shuttle buses: free ones only, or paid ones too.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/settings-fare.png" alt="Settings' Fare type, with Adult, Student, Senior or PwD and Workfare, Student picked, and a note that Navigate shows what each way should cost by card for this fare type, as an estimate. Then Preferred buses with 69 in it, and a note on what it does." width="390" height="371" loading="lazy">
+<figcaption>Fare type and Preferred buses, for Navigate.</figcaption>
 </figure>
 
 <figure>

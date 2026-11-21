@@ -171,6 +171,12 @@ function initNav() {
     else nav.doorsOpen.delete(key);
   }, true);
   $('#navBody').addEventListener('click', (e) => {
+    const sort = e.target.closest('[data-nav-sort]');
+    if (sort) {
+      Ways.setSort(sort.dataset.navSort);
+      renderNav();
+      return;
+    }
     const option = e.target.closest('[data-nav-option]');
     if (option) {
       nav.option = nav.options[Number(option.dataset.navOption)] || null;
@@ -812,8 +818,9 @@ function renderNav() {
   body.innerHTML =
     (nav.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
     (nav.wayGone ? `<p class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.wayGone', 'The way you had open doesn’t run from now. These are the ways from now.'))}</p>` : '') +
-    plannerStatus((nav.options.length === 1 ? I18n.t('nav.waysOne', '1 way to get there') : I18n.t('nav.waysMany', '{n} ways to get there', { n: nav.options.length })) + (nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : '') + I18n.t('nav.waysTail', ', quickest first. Every mix of bus and train is listed, not just the fastest.')) +
-    `<div class="journeyList">${nav.options.map((o, i) => navOptionItem(o, i)).join('')}</div>` +
+    plannerStatus((nav.options.length === 1 ? I18n.t('nav.waysOne', '1 way to get there') : I18n.t('nav.waysMany', '{n} ways to get there', { n: nav.options.length })) + (nav.when ? `, ${When.describe(nav.when).replace(/^\w/, (c) => c.toLowerCase())}` : '') + I18n.t('nav.waysTailSort', '. Every mix of bus and train is listed, not just the fastest.')) +
+    navSortRow() +
+    `<div class="journeyList">${navOrdered().map((o) => navOptionItem(o, nav.options.indexOf(o))).join('')}</div>` +
     navOthers() +
     `<p class="estimateNote">${escapeHtml([
       nav.traffic ? I18n.t('nav.note.timesTraffic', 'Times include walking and an average wait to board, estimated from distance, with buses slowed by the traffic on their way right now, from LTA.') : I18n.t('nav.note.times', 'Times include walking and an average wait to board, estimated from distance.'),
@@ -821,8 +828,147 @@ function renderNav() {
       nav.onemap && I18n.t('nav.note.onemap', 'OneMap’s timetable-based estimate is shown where it rides the same way.'),
       nav.via && I18n.t('nav.note.via', 'No time is counted at your stop: add what you’ll spend there.'),
       nav.offline && I18n.t('nav.note.offline', 'Planned on your phone with no connection: walks are straight lines, and there’s no live traffic, last bus warning or train disruption. It plans again when you reconnect.'),
+      navFareNote(),
     ].filter(Boolean).join(' '))}</p>` +
     customsNote(nav.options);
+  showListLive();
+  loadListLive();
+}
+
+// ---- The list's order, tags, fares and live buses (js/ways.js) ----
+
+// Best, Fastest, Least walking and Fewest changes, over the list; the one picked is kept.
+const NAV_SORTS = {
+  best: () => I18n.t('nav.sort.best', 'Best'),
+  fastest: () => I18n.t('nav.sort.fastest', 'Fastest'),
+  walk: () => I18n.t('nav.sort.walk', 'Least walking'),
+  changes: () => I18n.t('nav.sort.changes', 'Fewest changes'),
+};
+function navSortRow() {
+  if (nav.options.length < 2) return '';
+  const on = Ways.getSort();
+  return `<div class="navSort" role="radiogroup" aria-label="${escapeHtml(I18n.t('nav.sort.label', 'Sort the ways'))}">` +
+    Ways.SORTS.map((k) => `<button type="button" class="pill${k === on ? ' on' : ''}" role="radio" aria-checked="${k === on}" data-nav-sort="${k}">${escapeHtml(NAV_SORTS[k]())}</button>`).join('') +
+    `</div>`;
+}
+
+// Your buses going to this end: Settings' and those of any saved place near it.
+const navPreferred = () => Ways.preferredFor(nav.to);
+const navOrdered = () => Ways.order(nav.options, Ways.getSort(), navPreferred());
+
+const NAV_TAGS = {
+  fastest: () => I18n.t('nav.tag.fastest', 'Fastest'),
+  walk: () => I18n.t('nav.tag.walk', 'Least walking'),
+  changes: () => I18n.t('nav.tag.changes', 'Fewest changes'),
+  mine: () => I18n.t('nav.tag.mine', 'Your bus'),
+};
+function navTags(o) {
+  const tags = (nav.tagsFor === nav.options ? nav.tags : (nav.tagsFor = nav.options, nav.tags = Ways.tags(nav.options, navPreferred()))).get(o) || [];
+  return tags.length ? `<span class="wayTags">${tags.map((t) => `<span class="wayTag wayTag-${t}">${t === 'mine' ? '★ ' : ''}${escapeHtml(NAV_TAGS[t]())}</span>`).join('')}</span>` : '';
+}
+
+// What a way should cost, by Settings' fare type: "~S$1.82".
+const NAV_FARE_TYPES = {
+  adult: () => I18n.t('fare.adult', 'Adult'),
+  student: () => I18n.t('fare.student', 'Student'),
+  senior: () => I18n.t('fare.senior', 'Senior citizen or PwD'),
+  workfare: () => I18n.t('fare.workfare', 'Workfare'),
+};
+const busCategory = (no) => (window.BusNet?.isReady() ? BusNet.serviceInfo(no)?.cat || null : null);
+function navFare(o) {
+  const f = Ways.fare(o, Ways.getFareType(), busCategory);
+  return f ? `~${Ways.fareText(f.cents)}` : '';
+}
+function navFareNote() {
+  if (!nav.options.some((o) => Ways.fare(o))) return '';
+  return I18n.t('nav.note.fare', 'Fares are {type} card fares by distance, roughly: change the fare type in Settings.', { type: NAV_FARE_TYPES[Ways.getFareType()]().toLowerCase() });
+}
+
+// The first bus of a way, the one you'd catch next, when it has live timings to show: leaving
+// now, or soon enough for them to be the buses you'd catch.
+function firstBus(o) {
+  if (o.offline || nav.offline) return null;
+  if (nav.when && When.liveLead(When.span(nav.when, o.minutes).leave) == null) return null;
+  const first = (o.legs || []).find((l) => l.mode !== 'walk');
+  return first?.mode === 'bus' && !first.campus && first.from?.code ? first : null;
+}
+
+// The buses that go straight from a bus leg's first stop to its last: its own first, then any
+// other by the route list (js/network.js), as a trip's Also direct.
+function directAlong(leg) {
+  const own = String(leg.route);
+  if (!window.BusNet?.isReady() || !leg.to?.code) return [own];
+  const others = BusNet.servicesAtStop(leg.from.code).filter((no) => no.toUpperCase() !== own.toUpperCase() && BusNet.directions(no).some((dir) => {
+    const stops = BusNet.runStops(no, dir);
+    const i = stops.indexOf(leg.from.code);
+    return i !== -1 && stops.indexOf(leg.to.code, i + 1) !== -1;
+  }));
+  return [own, ...others];
+}
+
+// Arrivals at a stop for the list, by its code: { at, services }, or { at, failed }.
+const navLive = new Map();
+const NAV_LIVE_FRESH_MS = 30000;
+const NAV_LIVE_SHOWN = 4;
+
+// Each bus that goes straight there, with its next three and how full each is, in the colours
+// the timings use: the bus you'd catch bold. "Live" leads it while the timings are fresh.
+function liveRows(leg, live) {
+  if (!live || live.failed) return '';
+  const left = (ms) => (ms == null ? null : Math.max(0, ms - (Date.now() - live.at)));
+  const rows = directAlong(leg).map((no) => {
+    const svc = live.services.find((s) => s.serviceNo.toUpperCase() === no.toUpperCase());
+    const buses = svc ? [svc.next, svc.next2, svc.next3].filter((b) => b && b.eta_ms != null) : [];
+    return { no, buses, first: left(buses[0]?.eta_ms) };
+  }).filter((r) => r.buses.length || r.no === String(leg.route));
+  if (!rows.some((r) => r.buses.length)) return `<span class="wayLiveNone">${escapeHtml(I18n.t('nav.noLive', 'No live timings for this bus right now.'))}</span>`;
+  rows.sort((a, b) => (a.no === String(leg.route) ? -1 : b.no === String(leg.route) ? 1 : (a.first ?? Infinity) - (b.first ?? Infinity)));
+  const eta = (b, i) => {
+    const ms = left(b.eta_ms);
+    // Whole minutes, so three fit side by side: Arr, 7 min, 21 min (or the clock time, by Settings).
+    const text = LS.getClockTimes() ? etaText(ms) : ms < 60000 ? I18n.t('glance.arr', 'Arr') : I18n.t('trip.chipMin', '{m} min', { m: Math.floor(ms / 60000) });
+    return `<span class="wayEta ${loadTextClass(b.load)}${i === 0 ? ' first' : ''}" title="${escapeHtml(loadWords(b.load))}">${escapeHtml(text)}</span>`;
+  };
+  return rows.slice(0, NAV_LIVE_SHOWN).map((r) => `<span class="wayBus"><span class="wayBusNo">${escapeHtml(r.no)}</span>` +
+    (r.buses.length ? r.buses.map(eta).join('') : `<span class="wayEta">-</span>`) + `</span>`).join('');
+}
+
+function liveBlock(o) {
+  const leg = firstBus(o);
+  if (!leg) return '';
+  const live = navLive.get(leg.from.code);
+  const fresh = live && !live.failed && Date.now() - live.at < 2 * NAV_LIVE_FRESH_MS;
+  return `<span class="wayLiveHead">${fresh ? `<span class="liveDot" aria-hidden="true"></span>${escapeHtml(I18n.t('nav.live', 'Live'))} · ` : ''}` +
+    `${escapeHtml(I18n.t('nav.liveFrom', 'From {stop}', { stop: leg.from.name || leg.from.code }))}</span>` +
+    (live ? `<span class="wayBuses">${liveRows(leg, live)}</span>` : `<span class="wayLiveNone">${escapeHtml(I18n.t('nav.loadingLive', 'Loading live timings…'))}</span>`);
+}
+
+// The live buses drawn into the list where it has them, without drawing the list again.
+function showListLive() {
+  for (const el of $$('#navBody [data-way-live]')) {
+    const o = nav.options[Number(el.dataset.wayLive)];
+    if (o) el.innerHTML = liveBlock(o);
+  }
+}
+
+// Fetches the arrivals at every way's first stop, once they're older than NAV_LIVE_FRESH_MS,
+// and the route list for the other buses that go straight there; then keeps them fresh while the
+// list is on show.
+let navLiveTimer = null;
+async function loadListLive() {
+  clearTimeout(navLiveTimer);
+  if (nav.option || $('#navSection').hidden) return;
+  const token = nav.token;
+  const codes = [...new Set(nav.options.map(firstBus).filter(Boolean).map((l) => l.from.code))];
+  if (!codes.length) return;
+  const routes = window.BusNet && !BusNet.isReady() ? BusNet.load().catch(() => {}) : null;
+  const stale = codes.filter((c) => !navLive.has(c) || Date.now() - navLive.get(c).at > NAV_LIVE_FRESH_MS);
+  await Promise.all([routes, ...stale.map((code) => fetchArrivals(code)
+    .then((data) => navLive.set(code, { at: Date.now(), services: data?.services || [] }))
+    .catch(() => navLive.set(code, { at: Date.now(), failed: true })))]);
+  if (token !== nav.token || nav.option) return;
+  showListLive();
+  navLiveTimer = setTimeout(loadListLive, NAV_LIVE_FRESH_MS);
 }
 
 // Walking, cycling or driving the whole way (/api/nav's `others`), under the ways in that order,
@@ -977,11 +1123,13 @@ function navOptionItem(o, i) {
   if (o.source === 'onemap') notes.push(I18n.t('nav.foundByOnemap', 'Found by OneMap'));
   // With a time picked, the clock times lead and the minutes go with the rest.
   const lead = nav.when ? navClocks(o) : I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes });
-  const detail = [...(nav.when ? [I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes })] : []), navMixText(o), ...notes].join(' · ');
+  const detail = [...(nav.when ? [I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes })] : []), navMixText(o), ...notes, navFare(o)].filter(Boolean).join(' · ');
   return `<button type="button" class="journeyItem${o.disrupted ? ' disrupted' : ''}" data-nav-option="${i}">` +
+    navTags(o) +
     `<span class="journeyBuses">${chips}</span>` +
     `<span class="journeyMeta">${escapeHtml(lead)}</span>` +
     `<span class="journeyDetail">${escapeHtml(detail)}</span>` +
+    (firstBus(o) ? `<span class="wayLive" data-way-live="${i}">${liveBlock(o)}</span>` : '') +
     (o.disrupted ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disruptedLine', 'A line on this journey has a disruption'))}</span>` : '') +
     farNotes(o).map((t) => `<span class="journeyWarn">${ico('walk')} ${escapeHtml(t)}</span>`).join('') +
     (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t("planner.tooLateBy", "Too late: you'd have had to leave by {time}", { time: When.clock(When.span(nav.when, o.minutes).leave) }))}</span>` : '') +
@@ -1034,7 +1182,8 @@ async function renderNavOption(o) {
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} ${escapeHtml(I18n.t('nav.startTrip', 'Start trip'))}</button>` +
     `</div>` +
     (o.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
-    `<p class="journeyHead">${escapeHtml(I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes }))} · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · ${escapeHtml(I18n.t('nav.onemapMin', 'OneMap ~{m} min', { m: o.onemapMinutes }))}` : ''}</p>` +
+    `<p class="journeyHead">${escapeHtml(I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes }))} · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · ${escapeHtml(I18n.t('nav.onemapMin', 'OneMap ~{m} min', { m: o.onemapMinutes }))}` : ''}` +
+    `${navFare(o) ? ` · <span title="${escapeHtml(navFareNote())}">${escapeHtml(navFare(o))}</span>` : ''}</p>` +
     farNotes(o).map((t) => `<p class="journeyWarn">${ico('walk')} ${escapeHtml(t)}.</p>`).join('') +
     // Leaving now: a bus of the way gone for the day since it was planned, said before anything.
     (!nav.when && wayStopped(o, Date.now()) ? `<p class="journeyWarn">${ico('alert')} ${escapeHtml(wayStoppedText(wayStopped(o, Date.now())))}</p>` : '') +
@@ -1100,7 +1249,8 @@ async function renderNavOption(o) {
       : '';
     const etas = !live ? board
       : t === undefined ? `${board}<div class="legNote">${escapeHtml(I18n.t('nav.loadingLive', 'Loading live timings…'))}</div>`
-      : t && t.length ? `${board}<div class="legEtas">${escapeHtml(I18n.t('nav.nextBus', 'Next {no}:', { no: leg.route }))} ${t.map((ms) => escapeHtml(etaText(ms))).join(' &middot; ')}</div>`
+      : t ? `${board}<div class="legLive"><span class="legLiveHead"><span class="liveDot" aria-hidden="true"></span>${escapeHtml(I18n.t('nav.liveStraight', 'Live · buses straight to {stop}', { stop: leg.to?.name || I18n.t('nav.itsStop', 'its stop') }))}</span>` +
+        `<span class="wayBuses">${liveRows(leg, t)}</span></div>`
       : `${board}<div class="legNote">${escapeHtml(I18n.t('nav.noLive', 'No live timings for this bus right now.'))}</div>`;
     return `<li class="step stepLeg">` +
       `<div class="legHead">${legChip(leg)}<span>${escapeHtml(leg.stops === 1 ? I18n.t('nav.oneStopMin', '1 stop · ~{min} min', { min: Math.round(leg.minutes) }) : I18n.t('nav.stopsMin', '{n} stops · ~{min} min', { n: leg.stops, min: Math.round(leg.minutes) }))}</span></div>` +
@@ -1133,14 +1283,18 @@ async function renderNavOption(o) {
   }
   if (!live) return;
 
+  // Every bus at each bus leg's stop, for the others that go straight to where it's left too
+  // (directAlong), each with its next three and how full it is.
   const busLegs = o.legs.map((l, k) => [l, k]).filter(([l]) => l.mode === 'bus' && !l.campus && l.from?.code);
-  const results = await Promise.allSettled(busLegs.map(([l]) => fetchArrivals(l.from.code, l.route)));
+  const routes = window.BusNet && !BusNet.isReady() ? BusNet.load().catch(() => {}) : null;
+  const [, ...results] = await Promise.allSettled([routes, ...busLegs.map(([l]) => fetchArrivals(l.from.code))]);
   if (token !== nav.token || nav.option !== o) return;
   const timings = {};
   busLegs.forEach(([l, k], j) => {
     const r = results[j];
-    const svc = r.status === 'fulfilled' ? (r.value?.services || []).find((s) => s.serviceNo === l.route) : null;
-    timings[k] = svc ? [svc.next, svc.next2, svc.next3].filter((n) => n && n.eta_ms != null).map((n) => n.eta_ms) : null;
+    const services = r.status === 'fulfilled' ? r.value?.services || [] : [];
+    timings[k] = services.length ? { at: Date.now(), services } : null;
+    if (timings[k]) navLive.set(l.from.code, timings[k]);
   });
   draw(timings);
 }

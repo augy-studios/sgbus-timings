@@ -251,6 +251,19 @@ if "has_bike" not in _user_settings_columns:
 if "clock_times" not in _user_settings_columns:
     with db:
         db.execute("ALTER TABLE user_settings ADD COLUMN clock_times INTEGER NOT NULL DEFAULT 0")
+# /nav's sort (ways.py, SORTS), the fare type its fares are for (FARE_TYPES), and the buses the
+# chat would rather take, comma-separated: NULL for Best, Adult and none.
+for _column in ("nav_sort", "fare_type", "pref_buses"):
+    if _column not in _user_settings_columns:
+        with db:
+            db.execute(f"ALTER TABLE user_settings ADD COLUMN {_column} TEXT")
+
+# A bus's LTA category (TRUNK, EXPRESS, FEEDER, ...), for /nav's express fare. Emptied rather
+# than back-filled, as for the terminals, so the startup cache check refetches the list with it.
+if "category" not in {row["name"] for row in db.execute("PRAGMA table_info(bus_services)").fetchall()}:
+    with db:
+        db.execute("ALTER TABLE bus_services ADD COLUMN category TEXT")
+        db.execute("DELETE FROM bus_services")
 
 # A stop on the way for a starred nav and the nav being planned (navs.py), as the web app's
 # Navigate keeps with a saved nav: NULL for none, as every nav from before has.
@@ -280,6 +293,11 @@ if "services" not in _routine_drafts_columns:
 if "name" not in {row["name"] for row in db.execute("PRAGMA table_info(saved_places)").fetchall()}:
     with db:
         db.execute("ALTER TABLE saved_places ADD COLUMN name TEXT")
+# The buses the chat would rather take to a place, comma-separated (ways.py): going there, /nav
+# tags a way on one as Your bus. NULL for none.
+if "buses" not in {row["name"] for row in db.execute("PRAGMA table_info(saved_places)").fetchall()}:
+    with db:
+        db.execute("ALTER TABLE saved_places ADD COLUMN buses TEXT")
 
 # /calendar: the chat's calendar, by its private iCal link (calendar_events.py). The link is as
 # good as a password to the calendar, so it's kept here and nowhere else, and only read to

@@ -38,6 +38,11 @@ Whenever something's sent to it, the bot says what it saved, such as
 Copying only adds: nothing is removed. Your name, birthday, calendar link, pin
 and cycling settings replace the other side's when you copy them.
 
+Not yet copied: how [/nav](nav.md#sort-the-ways) sorts its ways, your
+[fare type](settings.md#fare-type), your [preferred buses](settings.md#preferred-buses),
+and the [buses to take](places.md#buses-to-take-there) to each place. Set them on
+each side.
+
 ## Finish
 
 The sync ends when you tap **Stop** on the web app or close its Settings, when

@@ -92,8 +92,12 @@ void main() {
     n.from = const NavEnd('Bedok Mall', 1.324736, 103.929256);
     n.to = const NavEnd('One Raffles Place', 1.28435, 103.851073);
     n.when = const WhenPick('leave', '2026-10-30T08:35');
+    // Bus 9 a preferred bus (Settings), so the way on it is tagged Your bus and comes first.
+    Store.I.put('sgbus_pref_buses', '["9"]');
     await t.runAsync(n.run);
+    await t.runAsync(n.loadListLive);
     await shot(t, 'nav', () => onPage('nav', const NavPage()));
+    Store.I.put('sgbus_pref_buses', null);
     await t.runAsync(() => n.open(n.options[1]));
     await shot(t, 'nav-way', () => onPage('nav', const NavPage()));
     NavPage.busOnly = () => const PlannerTab();
@@ -113,10 +117,17 @@ void main() {
     n.to = const NavEnd('One Raffles Place', 1.28435, 103.851073);
     n.when = null;
     await t.runAsync(n.run);
-    final way = tripFromNav(n.options[1], n.from, n.to)!;
+    // A way whose first ride is a bus of a few stops, with a ride after it: its bubbles apart.
+    bool longBus(Map o) {
+      final rides = (o['legs'] as List).cast<Map>().where((l) => l['mode'] != 'walk').toList();
+      return rides.length > 1 && rides.first['mode'] == 'bus' && ((rides.first['stops'] as num?) ?? 0) >= 4;
+    }
+    final way = tripFromNav(n.options.firstWhere(longBus, orElse: () => n.options.firstWhere((o) => o['mix'] == 'BT')), n.from, n.to)!;
     await t.runAsync(() => Trip.I.start(title: way.title, legs: way.legs, from: n.from!.toJson(), to: n.to!.toJson()));
-    // On bus 9 at Bedok Int, the walk there done.
-    Trip.I.step(1);
+    // At the first stop of the way's first ride, waiting for it.
+    while (!Trip.I.current!.ride) {
+      Trip.I.step(1);
+    }
     Trip.I.onFix(Fix(Trip.I.current!.points.first[0], Trip.I.current!.points.first[1], accuracy: 8));
     Shell.top
       ..clear()
@@ -126,6 +137,25 @@ void main() {
     AppNav.page.value = 'glance';
     await shot(t, 'trip-bar', () => Shell(pages: {'glance': () => const GlancePage()}));
     await shot(t, 'trip', () => const TripScreen());
+    // On the bus, four stops along: on the trip's map, you as a bus, the trip's pins, and the
+    // bubble where you change to the next ride.
+    Trip.I.boarded = true;
+    Trip.I.pos = 4;
+    final ride = Trip.I.current!.points;
+    Locate.fake = Fix(ride[4][0], ride[4][1], accuracy: 8);
+    await shot(t, 'map-trip', () => const LiveMap(MapMode.trip), then: (t) async {
+      for (var i = 0; i < 6; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
+      await t.tap(find.byTooltip('Show the whole route'));
+    });
+    // On the next ride, three stops along: the strip partway.
+    Trip.I.step(1);
+    Trip.I.boarded = true;
+    Trip.I.pos = 3.4;
+    await shot(t, 'trip-bar-riding', () => Shell(pages: {'glance': () => const GlancePage()}));
+    Locate.fake = const Fix(1.324736, 103.929256, accuracy: 8);
     await t.runAsync(() => Trip.I.stop());
     await shot(t, 'trips', () => onPage('trips', const TripsPage()));
   });

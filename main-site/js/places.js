@@ -74,6 +74,8 @@
   }
 
   function remove(key) {
+    const was = get(key);
+    if (was) window.Ways?.setPlaceBuses(was, []);
     if (FIXED[key]) {
       LS.setPlace(key, null);
       changed();
@@ -207,6 +209,7 @@
     $('#placeSearch').value = editing.place?.label || '';
     $('#placeName').value = place?.name || (saved && !FIXED[key] && saved.name !== saved.label ? saved.name : '');
     $('#placeName').placeholder = editing.place?.label ? I18n.t('places.eg', 'e.g. {place}', { place: editing.place.label }) : I18n.t("places.egDefault", "e.g. Gym, Mum's place");
+    $('#placeBuses').value = editing.place ? Ways.placeBuses(editing.place).join(', ') : '';
     if (!$('#placesSection').hidden) render();
     else open();
     const input = editing.place ? $('#placeName') : $('#placeSearch');
@@ -227,6 +230,10 @@
   function save(e) {
     e.preventDefault();
     if (!editing?.place) return;
+    // Its buses go with its point (js/ways.js): moved, they're taken off the old one.
+    const was = editing.key ? get(editing.key) : null;
+    if (was) Ways.setPlaceBuses(was, []);
+    Ways.setPlaceBuses(editing.place, Ways.parseBuses($('#placeBuses').value));
     set(editing.key || null, { ...editing.place, name: $('#placeName').value });
     editing = null;
     render();

@@ -1,5 +1,6 @@
 // The guide's screenshots, at 3x, from this checkout's main-site with live data: start
-// serve.cjs first, then from docs-site/, `node screenshots/shots.cjs [group ...]` (every group
+// serve.cjs first (or set ROUTED=1, and the page is served through Playwright's own routing,
+// /api/* from the live site, with no server to start), then from docs-site/, `node screenshots/shots.cjs [group ...]` (every group
 // without any). Then `python3 screenshots/sizes.py <names>` to set their sizes in the pages.
 // Take the ones with live timings (*-live, install-tour) in the day, while buses run.
 // Needs Playwright (npm i -g playwright, or Chromium where Playwright finds it). CHROME=<path
@@ -21,6 +22,26 @@ let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
 const OUT = path.resolve(__dirname, '../public/screenshots/web') + '/';
 const SITE = `http://127.0.0.1:${Number(process.env.PORT) || 8766}/`;
+// ROUTED=1: what serve.cjs does, done by each page's routing instead (served()).
+const ROUTED = !!process.env.ROUTED;
+const LIVE = 'https://sgbus.uwuapps.org/';
+const ROOT = path.resolve(__dirname, '../../main-site');
+const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.ico': 'image/x-icon', '.svg': 'image/svg+xml', '.webp': 'image/webp' };
+async function served(route) {
+  const url = new URL(route.request().url());
+  if (url.pathname.startsWith('/api/')) {
+    try {
+      const r = await fetch(LIVE + url.pathname.slice(1) + url.search, { method: route.request().method(), body: route.request().postDataBuffer() || undefined, headers: { 'content-type': route.request().headers()['content-type'] || 'application/json' } });
+      return route.fulfill({ status: r.status, contentType: r.headers.get('content-type') || 'application/json', body: Buffer.from(await r.arrayBuffer()) });
+    } catch (e) {
+      return route.fulfill({ status: 502, body: String(e) });
+    }
+  }
+  const fs = require('fs');
+  const file = url.pathname === '/' ? path.join(ROOT, 'index.html') : path.join(ROOT, decodeURIComponent(url.pathname));
+  if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) return route.fulfill({ status: 404, body: '' });
+  route.fulfill({ status: 200, contentType: TYPES[path.extname(file)] || 'application/octet-stream', headers: { 'cache-control': 'no-store' }, body: fs.readFileSync(file) });
+}
 const only = process.argv.slice(2);
 const want = (n) => !only.length || only.includes(n);
 
@@ -99,7 +120,7 @@ function fakeApp(answers) {
 let NET = null;
 async function liveJson(api, tries = 4) {
   for (let i = 1; ; i++) {
-    const r = await fetch(`${SITE}api/${api}`);
+    const r = await fetch(`${ROUTED ? LIVE : SITE}api/${api}`);
     const text = await r.text();
     try { return JSON.parse(text); } catch {
       if (i >= tries) throw new Error(`/api/${api} answered ${r.status} ${text.slice(0, 80)}`);
@@ -150,6 +171,7 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
     ...(ua && { userAgent: ua }),
     ...(geo && { geolocation: geo, permissions: ['geolocation'] }),
   });
+  if (ROUTED) await ctx.route(`${SITE}**`, served);
   // Nothing from outside but the fonts and the live map's tiles.
   await ctx.route(/^(?!http:\/\/127\.0\.0\.1|https:\/\/fonts\.(googleapis|gstatic)\.com|https:\/\/tiles?\.(openfreemap|openstreetmap)\.org)/, (r) => r.abort());
   // A share card makes a short link: a made-up one here, not a real one on the live site.
@@ -1852,6 +1874,80 @@ async function drawConsole(browser, shots) {
     await blur(page);
     await page.waitForTimeout(400);
     await el(page, '#bugModal .modal', 'bug-report-pictures.png');
+    await ctx.close();
+  }
+
+  // 21 November 2026: Navigate's sort, tags, Your bus, live buses and fares; the trip bar's
+  // strip; the live map's pins, bubbles and you riding; Settings' Fare type and Preferred buses;
+  // a place's buses. Kallang to a home by Aft Waterfront Waves (Bedok Reservoir Road), 228 its
+  // bus, planned with this checkout's own router. Always still.
+  const HOME = { label: 'Home', lat: 1.3390, lng: 103.9297 };
+  const KALLANG = { label: 'Kallang Stn', lat: 1.311532, lng: 103.871372 };
+  // GTA VI's window, offered once till 15 December, not over these.
+  const homeState = { sgbus_home: JSON.stringify(HOME), sgbus_place_buses: JSON.stringify({ '1.33900,103.92970': ['228'] }), sgbus_gta6_offer: '1' };
+  if (want('ux-nov')) {
+    const ways = await ownWays();
+    const options = ways(KALLANG, HOME);
+    const { ctx, page } = await open(browser, { width: 420, height: 2600, still: true, extra: homeState, geo: { latitude: KALLANG.lat, longitude: KALLANG.lng } });
+    await answerNav(ctx, options);
+    await page.evaluate((h) => { location.hash = h; }, `#nav/${enc(KALLANG)}/${enc(HOME)}`);
+    await idle(page, '#navBody');
+    await page.waitForFunction(() => document.querySelector('#navBody .wayBus'), null, { timeout: 30000 }).catch(() => console.log('no live buses'));
+    await page.waitForTimeout(800);
+    await blur(page);
+    // The list, from the line saying how many to the third way.
+    const top = await page.locator('#navBody > :first-child').boundingBox();
+    const third = await page.locator('#navBody .journeyItem >> nth=2').boundingBox();
+    await page.screenshot({ path: OUT + 'nav-sort.png', clip: { x: top.x - 8, y: top.y - 10, width: top.width + 16, height: third.y + third.height + 10 - (top.y - 10) } });
+    console.log('wrote nav-sort.png', Math.round(top.width + 16), Math.round(third.y + third.height + 20 - top.y));
+    // The same, by Least walking.
+    await page.click('[data-nav-sort="walk"]');
+    await page.waitForTimeout(600);
+    await el(page, '#navBody .journeyList', 'nav-sort-walk.png');
+    await page.click('[data-nav-sort="best"]');
+    await page.waitForTimeout(600);
+    // The way on 228 opened: its bus ride, with every bus straight there.
+    await page.click('#navBody .journeyItem >> nth=0');
+    await page.waitForFunction(() => document.querySelector('#navBody .legLive'), null, { timeout: 30000 }).catch(() => console.log('no leg live'));
+    await page.waitForTimeout(800);
+    await el(page, '#navBody .stepLeg:has(.legLive)', 'nav-leg-live.png');
+    // Its trip, on to the bus: the trip bar's strip.
+    await page.click('#navBody [data-nav-action="trip"]');
+    await page.waitForTimeout(1000);
+    while (await page.evaluate(() => !document.getElementById('tripNext').hidden && !/^Bus/.test(document.getElementById('tripStatus').textContent))) {
+      await page.click('#tripNext');
+      await page.waitForTimeout(500);
+    }
+    await page.waitForTimeout(800);
+    await el(page, '#tripBar', 'trip-strip.png');
+    // On the map: the trip's pins and its bubbles.
+    await page.setViewportSize({ width: 400, height: 820 });
+    await page.click('#tripMap');
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: OUT + 'live-map-trip.png' });
+    console.log('wrote live-map-trip.png 400 820');
+    // The whole way: its start and end pins, Board 228, and where you get off.
+    await page.click('#mapOverview');
+    await page.waitForTimeout(6000);
+    await page.screenshot({ path: OUT + 'live-map-trip-whole.png' });
+    console.log('wrote live-map-trip-whole.png 400 820');
+    await ctx.close();
+  }
+  if (want('ux-nov-settings')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 2400, still: true, extra: { ...homeState, sgbus_pref_buses: JSON.stringify(['69']), sgbus_fare_type: JSON.stringify('student') } });
+    await settingsGroup(page, 'navigate');
+    await page.waitForTimeout(500);
+    const a = await page.locator('[data-i18n="settings.fare_type"]').boundingBox();
+    const b = await page.locator('[data-i18n="settings.preferred_note"]').boundingBox();
+    await page.screenshot({ path: OUT + 'settings-fare.png', clip: { x: a.x - 16, y: a.y - 12, width: b.width + 32, height: b.y + b.height + 12 - (a.y - 12) } });
+    console.log('wrote settings-fare.png', Math.round(b.width + 32), Math.round(b.y + b.height + 24 - a.y));
+    await page.evaluate(() => closeModal('settingsModal'));
+    await page.click('#placesBtn');
+    await page.waitForTimeout(500);
+    await page.evaluate(() => Places.edit('home'));
+    await page.waitForTimeout(600);
+    await blur(page);
+    await el(page, '#placeForm', 'places-buses.png');
     await ctx.close();
   }
   if (want('trip-ccl')) {

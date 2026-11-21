@@ -10,7 +10,7 @@
 //   fetch(url, init)        fetch, with init.timeout in ms; the host adds what it needs
 //   stops()                 the stop list as the site keeps it: code -> { n, road, lat, lng }
 //   scripts()               the site's scripts (BusNet, Journeys, When, Contractions,
-//                           StationSearch, MRT, Calendar): window in the browser
+//                           StationSearch, MRT, Calendar, Ways): window in the browser
 //   store                   { load(), save(config) }: what's saved, in the shape EMPTY has
 //   out(text), err(text), clear()
 //   savedIn                 where that is, for help and settings
@@ -37,7 +37,9 @@
     favs: [], buses: [], routes: [], navs: [],
     places: { home: null, work: null, others: [] },
     routines: [], calendar: null,
-    settings: { pinStop: 'top', pinBus: 'top', restricted: false, customs: 'auto' },
+    // sort, fare and buses: Navigate's (js/ways.js): how nav sorts its ways, the fare type its
+    // fares are for, and the buses you'd rather take, going anywhere. A place's own are its `buses`.
+    settings: { pinStop: 'top', pinBus: 'top', restricted: false, customs: 'auto', sort: 'best', fare: 'adult', buses: [] },
   };
 
   // Words, as a shell splits a line: "Bedok Mall" and 'Bedok Mall' are one. No globbing, so
@@ -650,11 +652,21 @@
       const stop = via ? `&via=${coord(via)}` : '';
       const data = await get(`/api/nav?from=${coord(from)}&to=${coord(to)}${stop}${at}${open}${customs}`, { timeout: 60000 });
       if (opts.json) return out(JSON.stringify({ from, to, ...(via && { via }), ...data }, null, 2));
-      const options = data.options || [];
+      // Sorted as Navigate sorts them, by --sort or the kept setting, each with its tags and fare
+      // (js/ways.js, the site's own).
+      const Ways = host.scripts().Ways;
+      const sort = opts.sort || config().settings.sort;
+      if (!Ways.SORTS.includes(sort)) throw new Fail(`--sort wants ${Ways.SORTS.join(', ')}.`);
+      const buses = preferredFor(to);
+      const options = Ways.order(data.options || [], sort, buses);
+      const tags = Ways.tags(options, buses);
+      const fareType = config().settings.fare;
+      const net = host.scripts().BusNet;
+      const category = (no) => (net?.isReady?.() ? net.serviceInfo(no)?.cat || null : null);
       const lines = [`${bold(from.label)} → ${via ? `${bold(via.label)} → ` : ''}${bold(to.label)}  ${dim(W.describe(when))}`];
       if (!options.length) return out(...lines, 'No way by bus or train found between those two. Try a time when buses are running, or somewhere nearer a stop.');
       if (data.alerts?.lines?.length) lines.push(red(`Train trouble now on ${data.alerts.lines.join(', ')}: see sgbus alerts.`));
-      lines.push(`${plural(options.length, 'way')} to get there, quickest first:`);
+      lines.push(`${plural(options.length, 'way')} to get there, by ${SORT_NAMES[sort].toLowerCase()}:`);
       const whenMs = data.when?.ms ?? Date.now();
       options.forEach((o, i) => {
         const rides = o.legs.filter((l) => l.mode !== 'walk');
@@ -664,12 +676,32 @@
           ? (() => { const leave = when.mode === 'arrive' ? whenMs - o.minutes * 60000 : whenMs; return `${W.clock(leave)} → ${W.clock(leave + o.minutes * 60000)}`; })()
           : `~${o.minutes} min`;
         const changes = Math.max(0, rides.length - 1);
-        lines.push(`${dim(`${i + 1}.`)} ${chips}  ${time} · ${o.walkOnly ? `${Math.round(walked)} m` : `${changes ? plural(changes, 'change') : 'No change'} · ${Math.round(walked)} m walk`}${o.disrupted ? red('  disrupted') : ''}${o.onemapMinutes ? dim(`  OneMap ~${o.onemapMinutes} min`) : ''}`);
+        const fare = Ways.fare(o, fareType, category);
+        const tagged = (tags.get(o) || []).map((t) => (t === 'mine' ? yellow(TAG_NAMES[t]) : green(TAG_NAMES[t]))).join(dim(', '));
+        lines.push(`${dim(`${i + 1}.`)} ${chips}  ${time} · ${o.walkOnly ? `${Math.round(walked)} m` : `${changes ? plural(changes, 'change') : 'No change'} · ${Math.round(walked)} m walk`}${fare ? ` · ~${Ways.fareText(fare.cents)}` : ''}${o.disrupted ? red('  disrupted') : ''}${o.onemapMinutes ? dim(`  OneMap ~${o.onemapMinutes} min`) : ''}${tagged ? `  ${tagged}` : ''}`);
       });
+      if (options.some((o) => Ways.fare(o, fareType))) lines.push(dim(`Fares: ${FARE_NAMES[fareType].toLowerCase()} card fares by distance, roughly (sgbus settings fare). --sort best|fastest|walk|changes to sort another way.`));
       const pick = Math.min(options.length, Math.max(1, Number(opts.way) || 1));
       lines.push('', bold(`Way ${pick}:`), ...(await waySteps(options[pick - 1], when, to.label, via?.label)));
       if (options.length > 1) lines.push(dim('--way N for another one step by step.'));
       out(...lines);
+    }
+
+    // Navigate's sorts, tags and fare types, as the site words them.
+    const SORT_NAMES = { best: 'Best', fastest: 'Fastest', walk: 'Least walking', changes: 'Fewest changes' };
+    const TAG_NAMES = { fastest: 'Fastest', walk: 'Least walking', changes: 'Fewest changes', mine: '★ Your bus' };
+    const FARE_NAMES = { adult: 'Adult', student: 'Student', senior: 'Senior citizen or PwD', workfare: 'Workfare' };
+
+    // The buses you'd rather take going to `to`: your own, and those of each place within the
+    // site's NEAR_PLACE_M of it (js/ways.js, preferredFor).
+    function preferredFor(to) {
+      const c = config();
+      const Ways = host.scripts().Ways;
+      const found = new Set(c.settings.buses || []);
+      for (const p of [c.places.home, c.places.work, ...c.places.others]) {
+        if (p?.buses?.length && haversine(p.lat, p.lng, to.lat, to.lng) <= Ways.NEAR_PLACE_M) for (const b of p.buses) found.add(b);
+      }
+      return found;
     }
 
     const LINE_COLOURS = { EW: green, CG: green, NS: red, NE: magenta, CC: yellow, DT: blue, TE: paint('33;2') };
@@ -795,23 +827,33 @@
       const c = config();
       const [op, name, ...rest] = args;
       if (!op || op === 'list') {
-        const row = (label, p) => `  ${pad(bold(label), 12)} ${p ? `${p.label}${p.stop ? dim(` (${p.stop})`) : ''}` : dim('not set')}`;
-        return out(bold('Places'), row('Home', c.places.home), row('Work', c.places.work), ...c.places.others.map((p) => row(p.name || p.label, p)), dim('Use one by its name in nav and route: sgbus nav home work'));
+        const row = (label, p) => `  ${pad(bold(label), 12)} ${p ? `${p.label}${p.stop ? dim(` (${p.stop})`) : ''}${p.buses?.length ? yellow(`  ★ ${p.buses.join(', ')}`) : ''}` : dim('not set')}`;
+        return out(bold('Places'), row('Home', c.places.home), row('Work', c.places.work), ...c.places.others.map((p) => row(p.name || p.label, p)), dim('Use one by its name in nav and route: sgbus nav home work'), dim('★ the buses you like to take there: sgbus place buses home 228'));
       }
       if (op === 'set') {
         if (!name || !rest.length) throw new Fail('sgbus place set <home|work|name> <address, postal code, stop, station, lat,lng or plus code>');
         const where = await resolvePlace(rest.join(' '), 'Place');
         const p = { label: where.label, lat: where.lat, lng: where.lng, ...(where.stop && { stop: where.stop }) };
         const key = name.toLowerCase();
-        if (key === 'home' || key === 'work') c.places[key] = p;
+        if (key === 'home' || key === 'work') c.places[key] = { ...p, ...(c.places[key]?.buses && { buses: c.places[key].buses }) };
         else {
           // Moved, it keeps what the host knows it by (the web app's id).
           const was = c.places.others.find((o) => o.name.toLowerCase() === key);
           c.places.others = c.places.others.filter((o) => o !== was);
-          c.places.others.push({ ...(was?.id && { id: was.id }), name, ...p });
+          c.places.others.push({ ...(was?.id && { id: was.id }), name, ...p, ...(was?.buses && { buses: was.buses }) });
         }
         saveConfig();
         return out(`${name}: ${p.label}`);
+      }
+      // The buses you'd rather take to a place: nav tags a way on one Your bus, first in Best.
+      if (op === 'buses') {
+        const key = String(name || '').toLowerCase();
+        const p = key === 'home' || key === 'work' ? c.places[key] : c.places.others.find((o) => o.name.toLowerCase() === key);
+        if (!p) throw new Fail(name ? `There's no place ${name}: sgbus places lists them.` : 'sgbus place buses <home|work|name> [bus ...]');
+        p.buses = host.scripts().Ways.parseBuses(rest.join(' '));
+        if (!p.buses.length) delete p.buses;
+        saveConfig();
+        return out(p.buses ? `Buses to ${p.name || name}: ${p.buses.join(', ')}` : `No buses kept for ${p.name || name}.`);
       }
       if (op === 'rm') {
         const key = String(name || '').toLowerCase();
@@ -1019,6 +1061,9 @@
         `  pin.bus     ${pad(c.settings.pinBus, 9)}${dim("favourite buses, top or bottom of a stop's timings")}`,
         `  restricted  ${pad(c.settings.restricted ? 'on' : 'off', 9)}${dim("on if you have a pass: Changi Airport's cargo area and MINDEF's stops")}`,
         `  customs     ${pad(c.settings.customs === 'auto' ? 'auto' : `${c.settings.customs} min`, 9)}${dim('immigration across the Causeway: auto by the time of day, or 15, 30, 45, 60')}`,
+        `  sort        ${pad(c.settings.sort, 9)}${dim("how nav sorts its ways: best (walking counts 1.5), fastest, walk, changes")}`,
+        `  fare        ${pad(c.settings.fare, 9)}${dim("nav's fares: adult, student, senior (or PwD), workfare")}`,
+        `  buses       ${pad(c.settings.buses.join(',') || 'none', 9)}${dim('buses you would rather take: nav tags them Your bus, first in Best')}`,
         dim(`Kept in ${host.savedIn}`),
       );
       if (!field) return show();
@@ -1028,7 +1073,16 @@
         saveConfig();
         return show();
       }
-      if (field === 'pin.stop' || field === 'pin.bus') {
+      const Ways = host.scripts().Ways;
+      if (field === 'sort') {
+        if (!Ways.SORTS.includes(value)) throw new Fail(`sgbus settings sort ${Ways.SORTS.join('|')}`);
+        c.settings.sort = value;
+      } else if (field === 'fare') {
+        if (!Ways.FARE_TYPES.includes(value)) throw new Fail(`sgbus settings fare ${Ways.FARE_TYPES.join('|')}`);
+        c.settings.fare = value;
+      } else if (field === 'buses') {
+        c.settings.buses = value === 'none' ? [] : Ways.parseBuses(args.slice(1).join(' '));
+      } else if (field === 'pin.stop' || field === 'pin.bus') {
         if (!['top', 'bottom'].includes(value)) throw new Fail(`sgbus settings ${field} top|bottom`);
         c.settings[field === 'pin.stop' ? 'pinStop' : 'pinBus'] = value;
       } else if (field === 'restricted') {
@@ -1041,7 +1095,7 @@
 
     // ---------- reading the command line ----------
 
-    const VALUE_FLAGS = new Set(['leave', 'arrive', 'day', 'days', 'buses', 'stop', 'time', 'dir', 'from', 'way', 'show', 'via']);
+    const VALUE_FLAGS = new Set(['leave', 'arrive', 'day', 'days', 'buses', 'stop', 'time', 'dir', 'from', 'way', 'show', 'via', 'sort']);
     const SWITCHES = new Set(['watch', 'details', 'json', 'help', 'version', 'save', 'all', 'notify']);
     const SHORT = { w: 'watch', d: 'details', j: 'json', h: 'help', v: 'version' };
 
@@ -1089,6 +1143,7 @@
       '    --show N                      journey N step by step, with live timings',
       '  sgbus nav <from> <to>           by bus and train, from anywhere to anywhere (Navigate)',
       '    --way N                       way N step by step (the first, unless picked)',
+      '    --sort best|fastest|walk|changes   as Navigate sorts (best: walking counts 1.5, your buses first)',
       '    --via <place>                 by way of a stop on the way, kept with --save too',
       '  Either takes --leave 08:30 or --arrive 6pm, with --day tomorrow, a weekday or a date,',
       '  and --save to keep it. Ends can be stops, places, postal codes, stations, lat,lng or',
@@ -1101,6 +1156,7 @@
       '  sgbus routes [N | rm N]         saved routes: list, plan one, or remove it; sgbus navs the same',
       '  sgbus places                    Home, Work and your own',
       '  sgbus place set <name> <where>  sgbus place set home 519599; sgbus place rm <name>',
+      '  sgbus place buses <name> <bus>  the buses you like to take there: sgbus place buses home 228',
       ['  sgbus routine add <stop> <HH:MM> [--days weekdays|weekends|daily|mon,wed] [--buses 14,60,22*]', 'routines'],
       ['  sgbus routines                  list them; sgbus routine edit N [--time --days --buses --stop],', 'routines'],
       ['                                  sgbus routine rm N', 'routines'],
@@ -1114,6 +1170,7 @@
       '  sgbus calendar nav N [--from <place>]   the way to event N, arriving by its start',
       '',
       '  sgbus settings [pin.stop|pin.bus top|bottom | restricted on|off | customs auto|15|30|45|60]',
+      '  sgbus settings [sort best|fastest|walk|changes | fare adult|student|senior|workfare | buses <bus ...>|none]',
       ['  sgbus update                    get the newest version', 'linux'],
       '  --json                          the data rather than the text, for scripts',
       '',

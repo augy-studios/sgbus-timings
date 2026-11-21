@@ -83,6 +83,8 @@ Every app shares one version number. Raise it in all three places together, or t
   places, and each year's go into all four: `js/when.js`, `js/nav-core/when.js`,
   `telegram-bot/src/when.py` and `flutter/lib/data/when.dart`. Each academic year's term dates go
   into `data/campus/config.json`.
+- **Fares:** PTC's distance fare tables are in `js/ways.js`, `flutter/lib/features/nav/ways.dart`
+  and `telegram-bot/src/ways.py`. Update all three at each fare review.
 - **Vendored data** is made by scripts, never edited by hand. Run them from the repo root:
   - `data/rail.json`, and `rail-stations.json`, which the bot shares (`scripts/vendor-rail.mjs`);
   - `data/rail-tracks.json` (`scripts/vendor-rail-tracks.mjs`);
@@ -155,7 +157,7 @@ Every app shares one version number. Raise it in all three places together, or t
     `node scripts/<name>`. The `.cjs` ones need Playwright with Chrome, installed outside the repo.
   - Apps: as above.
   - Bot: `python3 scripts/bot-<name>-test.py` from the repo root. They fake Telegram and the site,
-    and some need Node. Five make their own throwaway database. `bot-saved-navs-test.py` doesn't:
+    and some need Node. Six make their own throwaway database. `bot-saved-navs-test.py` doesn't:
     set `DB_PATH` (and the dummy values in its header) yourself, or it writes into the real
     `data/bot.db`.
 - **CI doesn't check `main` or pull requests.** `build-desktop.yml` runs `flutter test`, then builds

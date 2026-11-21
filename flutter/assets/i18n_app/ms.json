@@ -189,5 +189,13 @@
   "desktop.widget.stop": "Perhentian bas {code}",
   "desktop.widget.title": "Waktu bas",
   "desktop.widget.updated": "Dikemas kini {time}",
-  "desktop.widget.yourFavs": "Perhentian kegemaran anda"
+  "desktop.widget.yourFavs": "Perhentian kegemaran anda",
+  "liveUpdates.title": "Hidupkan Kemas Kini Langsung",
+  "liveUpdates.text": "Perjalanan anda boleh kekal di atas pemberitahuan dan pada skrin kunci, dengan baki hentian dan cip dalam bar status. Android mematikannya sehingga anda menghidupkannya: Maklumat apl, kemudian Pemberitahuan, kemudian Kemas Kini Langsung.",
+  "liveUpdates.later": "Bukan sekarang",
+  "liveUpdates.open": "Buka tetapan",
+  "liveUpdates.setting": "Kemas Kini Langsung",
+  "liveUpdates.on": "Hidup: perjalanan anda kekal di atas pemberitahuan dan pada skrin kunci.",
+  "liveUpdates.off": "Mati: hidupkannya dalam Maklumat apl, kemudian Pemberitahuan, kemudian Kemas Kini Langsung.",
+  "trip.stripSays": "{stats} ke {to}"
 }

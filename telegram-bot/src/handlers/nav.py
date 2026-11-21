@@ -1,12 +1,15 @@
+import asyncio
+
 from telethon import events
 
 from ..flows import Flow, end_flow, get_flow, register_flow, set_flow
+from ..journeys import direct_services
 from ..lta import fetch_arrivals
 from ..nav_api import NavError, places, plan
-from ..nav_view import NO_MATCH, build_mynavs_view, build_nav_option, build_nav_panel, nav_place_buttons, option_is_live
+from ..nav_view import MAX_OPTIONS, NO_MATCH, build_mynavs_view, build_nav_option, build_nav_panel, first_bus, nav_place_buttons, option_is_live
 from ..navs import clear_nav_draft, draft_place, draft_via, draft_when, get_favourite_nav, get_nav_draft, row_via, start_nav_draft
 from ..reply import edit_rich_message, send_rich_message
-from ..user_settings import get_clock_times, get_has_bike
+from ..user_settings import get_clock_times, get_fare_type, get_has_bike
 from ..when import parse_typed, problem
 from ..when_view import TYPED_HINT, build_when_prompt
 
@@ -26,17 +29,45 @@ def _armed_draft(chat_id, fields=("from", "to")):
     return draft if draft and draft["field"] in fields else None
 
 
+def _direct(from_code: str, to_code: "str | None") -> list:
+    """The buses straight from one stop to another, or none where the routes can't say."""
+    if not to_code:
+        return []
+    try:
+        return direct_services(from_code, to_code)
+    except Exception:
+        return []
+
+
+async def _arrivals(code: str) -> "dict | None":
+    try:
+        return await fetch_arrivals(code)
+    except Exception:
+        return None
+
+
+async def _live(chat_id, result: dict, when) -> dict:
+    """The arrivals at each way's first stop, where its first ride is a bus leaving soon, and
+    the buses straight from there to where it's left, as build_nav_panel takes them."""
+    legs = [leg for o in (result.get("options") or [])[:MAX_OPTIONS] if (leg := first_bus(o, when))]
+    codes = sorted({leg["from"]["code"] for leg in legs})
+    found = await asyncio.gather(*(_arrivals(c) for c in codes))
+    direct = {(leg["from"]["code"], (leg.get("to") or {}).get("code")): _direct(leg["from"]["code"], (leg.get("to") or {}).get("code")) for leg in legs}
+    return {"live": dict(zip(codes, found)), "direct": direct, "clock_times": bool(chat_id) and get_clock_times(chat_id)}
+
+
 async def _ways(start, end, when, chat_id=None, via=None) -> dict:
     """The ways between two ends at a time, by way of `via` if there's a stop on the way, as
-    build_nav_panel takes them: {"result": ...} from the API, or {"error": ...} saying why
-    there are none."""
+    build_nav_panel takes them: {"result": ...} from the API with the buses you'd catch, live,
+    or {"error": ...} saying why there are none."""
     late = problem(when)
     if late:
         return {"error": late}
     try:
-        return {"result": await plan(start, end, when, bike=bool(chat_id) and get_has_bike(chat_id), via=via)}
+        result = await plan(start, end, when, bike=bool(chat_id) and get_has_bike(chat_id), via=via)
     except NavError as err:
         return {"error": str(err)}
+    return {"result": result, **await _live(chat_id, result, when)}
 
 
 async def send_nav_panel(client, chat_id, start, end, awaiting=None, when=None, via=None):
@@ -100,21 +131,15 @@ async def arm_when(client, event, chat_id, payload):
 
 
 async def show_option(client, event, start, end, option, when=None, via=None):
-    """One way, leg by leg, with the live timings of each bus at the stop it's boarded, when
-    it sets off soon enough for those to matter."""
-    timings = {}
-    for k, leg in enumerate(option["legs"] if option_is_live(option, when) else ()):
-        code = (leg.get("from") or {}).get("code")
-        if leg["mode"] != "bus" or not code:
-            continue
-        try:
-            arrivals = await fetch_arrivals(code, leg["route"])
-            svc = next((s for s in arrivals["services"] if s["serviceNo"] == leg["route"]), None)
-            etas = [n["etaMs"] for n in (svc["next"], svc["next2"], svc["next3"]) if n] if svc else []
-            timings[k] = etas or None
-        except Exception:
-            timings[k] = None
-    rich, buttons = build_nav_option(start, end, option, timings, when, clock_times=get_clock_times(event.sender_id), via=via)
+    """One way, leg by leg, with the live timings at the stop each bus is boarded, every bus
+    that goes straight to where it's left, when it sets off soon enough for those to matter."""
+    buses = [(k, leg) for k, leg in enumerate(option["legs"] if option_is_live(option, when) else ())
+             if leg["mode"] == "bus" and not leg.get("campus") and (leg.get("from") or {}).get("code")]
+    found = await asyncio.gather(*(_arrivals(leg["from"]["code"]) for _, leg in buses))
+    timings = {k: a if a and a.get("services") else None for (k, _), a in zip(buses, found)}
+    direct = {k: _direct(leg["from"]["code"], (leg.get("to") or {}).get("code")) for k, leg in buses}
+    rich, buttons = build_nav_option(start, end, option, timings, when, clock_times=get_clock_times(event.sender_id), via=via,
+                                     direct=direct, fare_type=get_fare_type(event.chat_id))
     await edit_rich_message(client, event, rich, buttons)
 
 

@@ -1,5 +1,5 @@
 // uwuCoins, Achievements and the feat window (the site's js/coins.js, js/eggs.js, js/confetti.js
-// and js/celebrate.js): the wheel, a spin 100 coins, every spin winning something; each feat with
+// and js/celebrate.js): the wheel, a spin 50 coins, every spin winning something; each feat with
 // how far along it is and its Share once done; the window that says a feat's done, with
 // confetti; and for every MRT and LRT line ridden, the celebration: the whole network in its
 // lines' colours, tilted and turning slowly, a gold trophy over it and confetti falling.

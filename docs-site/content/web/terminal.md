@@ -95,7 +95,12 @@ It saves to the app's own lists, so the app and the terminal always agree:
 - `route ... --save` and `nav ... --save` add a favourite route or nav.
 - `calendar set <link>` links your [calendar](calendar.md), and `calendar` lists
   its events, from a linked file or the phone's calendar too.
-- `settings` changes Settings' pins, **Restricted areas** and **Immigration time**.
+- `settings` changes Settings' pins, **Restricted areas** and **Immigration time**, and
+  Navigate's sort (`settings sort walk`), **Fare type** (`settings fare student`) and
+  **Preferred buses** (`settings buses 228 69`), so `nav` here and [Navigate](nav.md#sort-the-ways)
+  sort and price the same way.
+- `place buses home 228` sets the [buses you like to take](places.md#buses-you-like-to-take-there)
+  to a place.
 
 **Routines** are set here only in the [Android app](../android/overview.md), which sends
 them with the app closed. A browser can't send them, so there it says so.

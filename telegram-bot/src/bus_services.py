@@ -9,15 +9,16 @@ async def refresh_bus_services() -> int:
     with db:
         db.executemany(
             """
-            INSERT INTO bus_services (service_no, operator, origin_code, destination_code, loop_desc)
-            VALUES (:service_no, :operator, :origin_code, :destination_code, :loop_desc)
+            INSERT INTO bus_services (service_no, operator, origin_code, destination_code, loop_desc, category)
+            VALUES (:service_no, :operator, :origin_code, :destination_code, :loop_desc, :category)
             ON CONFLICT(service_no) DO UPDATE SET
                 operator = excluded.operator,
                 origin_code = excluded.origin_code,
                 destination_code = excluded.destination_code,
-                loop_desc = excluded.loop_desc
+                loop_desc = excluded.loop_desc,
+                category = excluded.category
             """,
-            services,
+            [{"category": None, **svc} for svc in services],
         )
     invalidate_network()
     return len(services)
@@ -35,6 +36,12 @@ def service_terminals(service_no: str) -> "dict | None":
         (service_no,),
     ).fetchone()
     return dict(row) if row else None
+
+
+def service_category(service_no: str) -> "str | None":
+    """A bus's LTA category, such as TRUNK or EXPRESS, for /nav's express fare (ways.py)."""
+    row = db.execute("SELECT category FROM bus_services WHERE service_no = ?", (service_no,)).fetchone()
+    return row["category"] if row else None
 
 
 def is_valid_service(service_no: str) -> bool:

@@ -14,7 +14,12 @@
  *                            The first trip also asks to leave the app out of battery
  *                            optimisation, once (2.1.0).
  *   stop()                   the trip's over
- *   status()                 { running, location, background, notifications }
+ *   status()                 { running, location, background, notifications, liveUpdates }:
+ *                            `liveUpdates` on Android 16 and later only, whether the trip's
+ *                            notification may be a Live Update (promoted to the top and the
+ *                            status bar), which most phones leave off until it's turned on
+ *   liveUpdates()            opens the app's Live Updates setting (Android 16), or failing that
+ *                            its notification settings
  *
  * Events: "location" { lat, lng, accuracy, heading, speed, time, pace, kmh } for each fix, and
  * "end" when the notification's End trip is tapped. `pace` is "walking", "riding" or "still" by
@@ -24,11 +29,14 @@
 package org.uwuapps.sgbus;
 
 import android.Manifest;
+import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.os.Build;
+import android.provider.Settings;
 
 import androidx.core.content.ContextCompat;
 
@@ -196,12 +204,47 @@ public class TripPlugin extends Plugin {
         call.resolve(status());
     }
 
+    // The app's own Live Updates setting, where Android has one (16 and later), else its
+    // notification settings.
+    @PluginMethod
+    public void liveUpdates(PluginCall call) {
+        Context context = getContext();
+        String action = Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA
+                ? Settings.ACTION_APP_NOTIFICATION_PROMOTION_SETTINGS
+                : Settings.ACTION_APP_NOTIFICATION_SETTINGS;
+        Intent intent = new Intent(action)
+                .putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName())
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        try {
+            context.startActivity(intent);
+        } catch (RuntimeException e) {
+            try {
+                context.startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                        .putExtra(Settings.EXTRA_APP_PACKAGE, context.getPackageName())
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            } catch (RuntimeException again) {
+                call.reject("Couldn't open the notification settings", "settings");
+                return;
+            }
+        }
+        call.resolve();
+    }
+
+    // Whether the trip's notification may be a Live Update: Android 16 and later only.
+    private static Boolean liveUpdatesAllowed(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.BAKLAVA) return null;
+        NotificationManager nm = context.getSystemService(NotificationManager.class);
+        return nm == null ? null : nm.canPostPromotedNotifications();
+    }
+
     private JSObject status() {
         JSObject out = new JSObject();
         out.put("running", TripService.running());
         out.put("location", hasLocation(getContext()));
         out.put("background", hasBackground());
         out.put("notifications", Notifications.allowed(getContext()));
+        Boolean live = liveUpdatesAllowed(getContext());
+        if (live != null) out.put("liveUpdates", live.booleanValue());
         Location last = TripService.last();
         if (last != null) out.put("last", fix(last));
         return out;

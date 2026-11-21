@@ -1,6 +1,6 @@
 ---
 title: Navigate with /nav
-description: Get from any place to any other by bus and train, with every worthwhile mix of the two to choose from.
+description: Get from any place to any other by bus and train, every worthwhile mix sorted as you like, with fares and the buses you'd catch, live.
 ---
 
 `/route` links two bus stops. `/nav` goes further: from any place to any other, by
@@ -76,15 +76,54 @@ A new `/nav`, and a nav opened from `/mynavs`, starts at Leave now again.
 
 ## The ways there
 
-The panel lists the ways to get there, quickest first, each as a line and a
-button:
+The panel lists the ways to get there, each as a line and a button, with what each
+is best at, its fare, and for a way that starts on a bus, the buses you'd catch:
 
-> 1. ~35 min · EW → 25 · 1 change, 111 m walk
+> 1. ~41 min · 🚆 EW → 🚌 228 · 1 change, 211 m walk · ~S$1.86\
+> &nbsp;&nbsp;&nbsp;🚶 Least walking ⭐ Your bus
+> 2. ~45 min · 🚌 21 · no change, 270 m walk · ~S$1.82\
+> &nbsp;&nbsp;&nbsp;🔁 Fewest changes\
+> &nbsp;&nbsp;&nbsp;🟢 Live from Aft Lor 1 Geylang:\
+> &nbsp;&nbsp;&nbsp;🚌 21 · 7 min 🟢 · 19 min 🟡 · 25 min 🔴\
+> &nbsp;&nbsp;&nbsp;🚌 51 · 3 min 🟢
 
 It doesn't stop at the fastest: it keeps the best journey for every mix of bus and
 train, up to four vehicles, so a train then two buses, or two trains then a bus, is
-there to compare. A mix that's clearly slower than another of the same kind, and
+there to compare, and the best ending on each bus or line, so a bus to your door
+stays beside a quicker one that leaves you a long walk. A mix that's clearly slower than another of the same kind, and
 no better in changes or walking, is left out as a detour.
+
+### Sort the ways
+
+The buttons under the ways sort them, and the one you pick is kept for your next
+`/nav`:
+
+| Sort | Puts first |
+|---|---|
+| **Best**, the default | Ways on your buses, then the quickest, with each minute of walking counted as a minute and a half, so a long walk sinks down the list. |
+| **Fastest** | The quickest, door to door. |
+| **Least walking** | The shortest walks. |
+| **Fewest changes** | The fewest changes of bus or train. |
+
+Each way is tagged with what it's best at: **⚡ Fastest**, **🚶 Least walking** or
+**🔁 Fewest changes**, and **⭐ Your bus** where it rides one of your buses: those
+in **Preferred buses** in [/settings](settings.md#preferred-buses), going anywhere,
+and those of a place in [/places](places.md#buses-to-take-there), going there.
+
+### Live buses and the fare
+
+Setting off soon, a way whose first ride is a bus lists **🟢 Live** and every bus
+that goes straight from that stop to where you'd get off, not just the one the way
+was planned on, each with its next three and how full it is: 🟢 seats, 🟡 standing
+room, 🔴 limited standing.
+
+Each way also says roughly what it costs by card, such as **~S$1.86**: the distance
+fare for the whole way on buses and trains, one fare however many times you change,
+for the **Fare type** in [/settings](settings.md#fare-type). It's an estimate from
+the distance between the stops; an express bus adds $1 for adults, and ways across
+the Causeway show none.
+
+### Disruptions, last buses and traffic
 
 Where OneMap's timetable-based planner rides the same way, its time is shown too,
 as **OneMap ~42 min**. A warning sign marks a way on a line LTA reports a
@@ -103,9 +142,10 @@ takes, once you've said you have a bike in [Settings](settings.md#cycling).
 
 ## Open a way
 
-Tap a way to see it part by part: each walk, each train with the line, the direction
-to take and where to get off, and each bus with the **live timings** of that bus
-at the stop you board it. A button with the bus and stop opens that stop's
+Tap a way to see it part by part, with its fare at the top: each walk, each train
+with the line, the direction to take and where to get off, and each bus with the
+**live timings** at the stop you board it, for every bus that goes straight to
+where you get off, with how full each is. A button with the bus and stop opens that stop's
 timings for the bus, with **Back to the way** and **All ways** to come back.
 **Back to all ways** returns to the list.
 
@@ -153,5 +193,6 @@ you there with a live card, a Get Off Alert, and a link to share. See
 
 ## Also on the web
 
-The [web app's Navigate](../web/nav.md) uses the same planner, and can follow you
-on the trip with a [Get Off Alert](../web/get-off-alert.md).
+The [web app's Navigate](../web/nav.md) uses the same planner, sorts, tags and
+prices the ways the same way, and can follow you on the trip with a
+[Get Off Alert](../web/get-off-alert.md).

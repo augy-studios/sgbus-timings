@@ -1,6 +1,6 @@
 ---
 title: Settings
-description: Set the name the bot calls you, your birthday, your home and work, and whether routines are sent.
+description: Set the name the bot calls you, your birthday, your home and work, whether routines are sent, and your fare type and preferred buses for /nav.
 ---
 
 Send `/settings` to see everything the bot keeps for you, with buttons to
@@ -11,6 +11,8 @@ change it:
 - **Home** and **Work**: the places saved for them, or "not set".
 - **Routine notifications**: Enabled or Disabled.
 - **Bus times**: minutes and seconds, or clock time.
+- **Fare type**: the fare `/nav` shows for each way.
+- **Preferred buses**: the buses you'd rather take, or "none".
 - **Service Alerts**: your choice for trains and for traffic, or Off. Change it with
   `/sub` and `/unsub`; see [Service Alerts](service-alerts.md).
 - **Favourite buses** and **Favourite bus stops**: what you have saved, and
@@ -81,3 +83,17 @@ To change where favourites pin, use `/favouritepref`. See
 
 Tapping **Set name**, **Set birthday**, **Set home** or **Set work** waits for your reply. Send `/cancel` to
 stop without changing anything.
+
+## Fare type
+
+**💳 Fare type** moves through **Adult** (the default), **Student**, **Senior citizen
+or PwD** and **Workfare**, one a tap: the card fare [/nav](nav.md#live-buses-and-the-fare)
+shows for each way, by its distance.
+
+## Preferred buses
+
+Tap **🚌 Set preferred buses** and reply with their numbers, such as `228, 69`. A
+way on one is tagged **⭐ Your bus** in [/nav](nav.md#sort-the-ways) and comes first
+when sorting by **Best**, going anywhere. **🗑 Clear preferred buses** removes them.
+For buses you'd rather take only to one place, such as home, add them to that place
+in [/places](places.md#buses-to-take-there).

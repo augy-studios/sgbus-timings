@@ -16,14 +16,18 @@ from ..saved_places import KINDS as PLACE_KINDS
 from ..saved_places import get_place, set_place
 from ..service_alerts import get_modes as get_alert_modes
 from ..service_alerts_view import MODE_LABELS
+from ..ways import FARE_NAMES, parse_buses
 from ..user_settings import (
     get_birthday,
     get_clock_times,
     get_display_name,
+    get_fare_type,
     get_has_bike,
+    get_preferred_buses,
     get_notifications_enabled,
     set_birthday,
     set_display_name,
+    set_preferred_buses,
 )
 
 _POSITION_LABELS = {"top": "⬆️ Top", "bottom": "⬇️ Bottom"}
@@ -39,6 +43,11 @@ BIRTHDAY_PROMPT = (
     "`23/04/1998`, `23 Apr 1998` or `Apr 23rd 1998`, or /cancel to stop."
 )
 
+BUSES_PROMPT = (
+    "Which buses would you rather take, going anywhere? Send their numbers, such as `228, 69`. "
+    "/nav tags a way on one as ⭐ Your bus and puts it first when sorting by Best. For buses to one "
+    "place only, such as home, add them to that place in /places. Or /cancel to stop."
+)
 PLACE_PROMPT = (
     "Send your {name}: an address, a building, a postal code, an MRT station, a bus stop, "
     "a Google Maps link, GPS coordinates, a plus code, or your location. Or /cancel to stop."
@@ -83,6 +92,8 @@ def build_settings_view(chat_id: int, sender):
     notifications_on = get_notifications_enabled(chat_id)
     has_bike = get_has_bike(chat_id)
     clock_times = get_clock_times(chat_id)
+    fare_type = get_fare_type(chat_id)
+    pref_buses = get_preferred_buses(chat_id)
     alert_modes = get_alert_modes(chat_id)
     fav_buses = list_favourite_buses(chat_id)
     fav_stops = list_favourites(chat_id)
@@ -102,6 +113,8 @@ def build_settings_view(chat_id: int, sender):
         f"- **Routine notifications**: {'Enabled' if notifications_on else 'Disabled'}",
         f"- **Cycling**: {'I have a bike: /nav says how long cycling takes too' if has_bike else 'No bike'}",
         f"- **Bus times**: {'Clock time, such as 14:32' if clock_times else 'Minutes and seconds, such as 3m 20s'}",
+        f"- **Fare type**: {FARE_NAMES[fare_type]}, for /nav's fares",
+        f"- **Preferred buses**: {escape_md(', '.join(pref_buses)) if pref_buses else '_none_'}",
         f"- **Service Alerts**: "
         + (
             f"trains {MODE_LABELS[alert_modes['train']].lower()}, traffic {MODE_LABELS[alert_modes['traffic']].lower()}"
@@ -154,6 +167,12 @@ def build_settings_view(chat_id: int, sender):
         ],
         [Button.inline("🚲 I don't have a bike" if has_bike else "🚲 I have a bike", make_button("settings_toggle_bike", {}))],
         [Button.inline("⏱ Show minutes and seconds" if clock_times else "🕒 Show clock times", make_button("settings_toggle_clock", {}))],
+        # Each tap moves to the next: Adult, Student, Senior citizen or PwD, Workfare.
+        [Button.inline(f"💳 Fare type: {FARE_NAMES[fare_type]}", make_button("settings_cycle_fare", {}))],
+        [
+            Button.inline("🚌 Set preferred buses", make_button("settings_edit_buses", {})),
+            *([Button.inline("🗑 Clear preferred buses", make_button("settings_clear_buses", {}))] if pref_buses else []),
+        ],
     ]
     return rich, buttons
 
@@ -161,6 +180,11 @@ def build_settings_view(chat_id: int, sender):
 async def start_edit_name(client, chat_id):
     set_flow(chat_id, FLOW_PREFIX + "name")
     await client.send_message(chat_id, NAME_PROMPT)
+
+
+async def start_edit_buses(client, chat_id):
+    set_flow(chat_id, FLOW_PREFIX + "buses")
+    await client.send_message(chat_id, BUSES_PROMPT)
 
 
 async def start_edit_birthday(client, chat_id):
@@ -253,6 +277,16 @@ def register_settings(client):
             set_birthday(chat_id, parsed)
             clear_flow(chat_id)
             await event.respond(f"Got it, I've saved your birthday as {parsed}. Use /settings to view all your settings.")
+            raise events.StopPropagation
+
+        if field == "buses":
+            buses = parse_buses(text)
+            if not buses:
+                await event.respond("I couldn't find a bus number in that. " + BUSES_PROMPT)
+                raise events.StopPropagation
+            set_preferred_buses(chat_id, buses)
+            clear_flow(chat_id)
+            await event.respond(f"Got it, your preferred buses are {', '.join(buses)}. Use /settings to view all your settings.", parse_mode=None)
             raise events.StopPropagation
 
         if field in PLACE_KINDS:

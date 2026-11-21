@@ -189,5 +189,13 @@
   "desktop.widget.stop": "巴士站 {code}",
   "desktop.widget.title": "巴士时刻",
   "desktop.widget.updated": "更新于 {time}",
-  "desktop.widget.yourFavs": "你收藏的巴士站"
+  "desktop.widget.yourFavs": "你收藏的巴士站",
+  "liveUpdates.title": "开启实时动态",
+  "liveUpdates.text": "你的行程可以一直显示在通知最上方和锁屏上，附上剩下的站数，状态栏也会有一个小标签。Android 默认关闭这个功能，需要你自己开启：应用信息，然后通知，然后实时动态。",
+  "liveUpdates.later": "以后再说",
+  "liveUpdates.open": "打开设置",
+  "liveUpdates.setting": "实时动态",
+  "liveUpdates.on": "已开启：你的行程会一直显示在通知最上方和锁屏上。",
+  "liveUpdates.off": "已关闭：到应用信息，然后通知，然后实时动态开启。",
+  "trip.stripSays": "{stats}，到 {to}"
 }

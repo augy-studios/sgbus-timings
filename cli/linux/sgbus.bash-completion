@@ -9,12 +9,13 @@ _sgbus() {
   fi
   case "${COMP_WORDS[1]}" in
     fav) COMPREPLY=($(compgen -W "add rm bus list" -- "$cur")) ;;
-    place) COMPREPLY=($(compgen -W "set rm list home work" -- "$cur")) ;;
+    place) COMPREPLY=($(compgen -W "set rm list buses home work" -- "$cur")) ;;
     routine) COMPREPLY=($(compgen -W "add edit rm run list --days --buses --time --stop --notify" -- "$cur")) ;;
     routes|navs) COMPREPLY=($(compgen -W "rm" -- "$cur")) ;;
     calendar) COMPREPLY=($(compgen -W "set rm nav --from" -- "$cur")) ;;
-    settings) COMPREPLY=($(compgen -W "pin.stop pin.bus restricted top bottom on off" -- "$cur")) ;;
-    route|nav) COMPREPLY=($(compgen -W "--leave --arrive --day --save --show --way --json" -- "$cur")) ;;
+    settings) COMPREPLY=($(compgen -W "pin.stop pin.bus restricted customs sort fare buses top bottom on off auto best fastest walk changes adult student senior workfare none" -- "$cur")) ;;
+    route) COMPREPLY=($(compgen -W "--leave --arrive --day --save --show --way --json" -- "$cur")) ;;
+    nav) COMPREPLY=($(compgen -W "--leave --arrive --day --save --show --way --via --sort --json" -- "$cur")) ;;
     *) COMPREPLY=($(compgen -W "--watch --details --json" -- "$cur")) ;;
   esac
 }

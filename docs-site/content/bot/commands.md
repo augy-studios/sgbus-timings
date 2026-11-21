@@ -16,7 +16,7 @@ description: Every command the bot understands, and what you can send it without
 | `/unfavbus` | Remove favourite buses | [Favourites](favourites.md#favourite-buses) |
 | `/route` | Find the buses, or journeys, between two stops | [Routes and journeys](routes.md) |
 | `/myroutes` | Your favourite routes | [Routes and journeys](routes.md#save-a-route) |
-| `/nav` | Get from any place to any other by bus and train | [Navigate with /nav](nav.md) |
+| `/nav` | Get from any place to any other by bus and train: sorted as you like, with fares and the buses you'd catch, live | [Navigate with /nav](nav.md) |
 | `/mynavs` | Your favourite navs | [Navigate with /nav](nav.md#save-it) |
 | `/trip` | The trip you're on, as its live card | [Live trips](trips.md) |
 | `/coins` | Your uwuCoins, and the wheel | [uwuCoins](coins.md#spin-the-wheel) |
@@ -30,10 +30,10 @@ description: Every command the bot understands, and what you can send it without
 | `/unsub` | Stop Service Alerts | [Service Alerts](service-alerts.md#unsubscribe) |
 | `/setname` | Set or clear the name the bot calls you | [Settings](settings.md#your-name) |
 | `/sethome`, `/setwork` | Set your home or work, for the Home and Work buttons in `/nav` and `/route` | [Settings](settings.md#home-and-work) |
-| `/places` | Home, Work and your own places: get there, share, rename, move or delete | [Places](places.md) |
+| `/places` | Home, Work and your own places: get there, share, rename, move or delete, and the buses you'd rather take there | [Places](places.md) |
 | `/addplace` | Save a new place, with a name of your own | [Places](places.md#save-a-new-place) |
 | `/calendar` | Your calendar's events with a location, each a button to plan the way there | [Calendar](calendar.md) |
-| `/settings` | Your name, birthday, home, work, notifications and favourites | [Settings](settings.md) |
+| `/settings` | Your name, birthday, home, work, notifications, fare type, preferred buses and favourites | [Settings](settings.md) |
 | `/sync` | Sync with the web app or the Android app, by the code its Settings shows; `/sync stop` ends it | [Sync with the web app](sync.md) |
 | `/done` | Finish what you are in the middle of | [Flows](flows.md#done) |
 | `/cancel` | Stop what you are in the middle of | [Flows](flows.md#cancel) |

@@ -34,7 +34,7 @@ process.emitWarning = (warning, ...rest) => (/fetch/i.test(String(warning)) ? un
 const VERSION = typeof BUILT_VERSION !== 'undefined' ? BUILT_VERSION : require('./package.json').version;
 const SITE = (process.env.SGBUS_SITE || 'https://sgbus.uwuapps.org').replace(/\/+$/, '');
 const REPO = 'augy-studios/sgbus-timings';
-const SITE_FILES = ['when.js', 'network.js', 'journeys.js', 'contractions.js', 'station-search.js', 'mrt-stations.js', 'calendar.js'];
+const SITE_FILES = ['when.js', 'network.js', 'journeys.js', 'contractions.js', 'station-search.js', 'mrt-stations.js', 'calendar.js', 'ways.js'];
 const CORE_FILE = 'sgbus-core.js';
 
 const HOME = os.homedir();

@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v165";
+const VERSION = "v168";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -110,12 +110,14 @@ const ASSETS = [
   // The live map's engine (js/map-engine.js), and Leaflet, its fallback without WebGL, so the
   // map opens offline too. MapLibre's kept apart, in MAP_CACHE, once it's first used.
   "/js/map-engine.js",
+  "/js/map-marks.js",
   // Singapore's map saved for offline, from Explorer (js/map-save.js).
   "/js/map-save.js",
   "/vendor/leaflet/leaflet.js",
   "/vendor/leaflet/leaflet.css",
   "/js/calendar.js",
   "/js/mrt-doors.js",
+  "/js/ways.js",
   "/js/nav.js",
   // Bus and train planned on the phone offline (js/nav.js, planOnPhone): the router and graph
   // /api/nav uses, as ES modules, in their worker, and the rail network they ride on.

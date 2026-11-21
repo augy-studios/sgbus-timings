@@ -273,6 +273,11 @@ python -m src.main
 # Ctrl+b then d to detach again
 ```
 
+New database columns are added by the bot itself as it starts (`src/db.py`); there's
+nothing to run by hand. When a change adds a column to the bus service list, as the
+update that brought `/nav`'s fares did, the bot empties the list and downloads it again
+from LTA on that start, so the first minute or so after it may be slower.
+
 ## 7. Verifying it works
 
 1. Open a chat with your bot on Telegram and send `/start`. You should see
@@ -303,7 +308,10 @@ python -m src.main
    (also try alternate formats like `23/04/1998` or `Apr 23rd 1998`),
    confirm it's saved, then tap **Clear birthday** and confirm it's removed.
    Tap the notifications toggle and confirm it flips between
-   enabled/disabled.
+   enabled/disabled. Tap **💳 Fare type** and confirm it moves on from Adult to
+   Student, Senior citizen or PwD and Workfare. Tap **🚌 Set preferred buses**,
+   reply with `228, 69`, and confirm the view lists them; **🗑 Clear preferred
+   buses** removes them.
 10. Send `/addroutine`, answer the time/frequency/stop questions (try picking
    a favourite stop button as well as typing a search), tick a couple of buses
    on the grid and tap **Done**, and confirm the confirmation message matches.
@@ -335,9 +343,16 @@ python -m src.main
    and confirm both stop.
 15. Send `/nav`, reply with a place (e.g. `bugis`), tap one of the **Did you
    mean** buttons if they appear, then share your location or send a postal code
-   for the end. Confirm the panel lists several ways, quickest first, mixing
-   buses and trains, and that tapping one opens it part by part with live timings
-   for its bus rides. Tap **⭐ Add favourite**, send `/mynavs`, and confirm it's
+   for the end. Confirm the panel lists several ways, mixing buses and trains,
+   each with a fare (`~S$1.86`) and what it's best at (⚡ Fastest, 🚶 Least
+   walking, 🔁 Fewest changes), and that a way starting on a bus lists **🟢 Live**
+   with the buses straight from its stop and 🟢 🟡 🔴 for how full each is. Tap
+   **Fastest** under the ways and confirm they're sorted again with it ticked, and
+   that the next `/nav` keeps it. In `/places`, open Home, tap **🚌 Buses to take
+   here** and reply with a bus that serves it; then `/nav` to Home should tag the
+   way on that bus **⭐ Your bus** and list it first under **Best**. Tapping a way
+   opens it part by part with its fare and live timings for every bus straight to
+   where each ride ends. Tap **⭐ Add favourite**, send `/mynavs`, and confirm it's
    listed and reopens. If `/nav` says it couldn't plan, check `NAV_API_URL` and
    that `https://sgbus.uwuapps.org/api/nav` answers.
 16. In the Mini App, confirm Telegram's bar takes the web app's colour, and

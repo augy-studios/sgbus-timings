@@ -83,13 +83,13 @@ holidays counted as Sundays.
 ## The ways there
 
 <figure>
-<img src="/screenshots/android/nav.png" alt="Navigate from Bedok Mall to One Raffles Place, Leave at picked for today at 08:35, 7 ways to get there, quickest first: the EW Line at 08:35 to 09:06 with no change, then bus 9 and the EW Line, each with its time, changes and walk." width="412" height="892" loading="lazy">
-<figcaption>Every worthwhile mix of bus and train, quickest first.</figcaption>
+<img src="/screenshots/android/nav.png" alt="Navigate from Bedok Mall to One Raffles Place, Leave at picked for today at 08:35, 7 ways to get there, then Best, Fastest, Least walking and Fewest changes, Best picked. The first way, tagged Your bus: bus 9 then the EW Line, 08:35 to 09:11, about 36 min, 1 change, 121 m walk, about S$1.94, then Live, From Bedok Int, with 9 in 7, 21 and 35 min and 9A in 4, 15 and 27 min." width="412" height="892" loading="lazy">
+<figcaption>Every worthwhile mix of bus and train, sorted by Best, with the buses you'd catch.</figcaption>
 </figure>
 
-Navigate lists the ways to get there, quickest first. It keeps the best journey for every mix
-of bus and train, up to four vehicles, so a train then two buses is there to compare. Each way
-shows:
+Navigate lists the ways to get there. It keeps the best journey for every mix of bus and train,
+up to four vehicles, so a train then two buses is there to compare, and the best ending on each
+bus or line, so a bus to your door stays beside a quicker one with a long walk. Each way shows:
 
 - its trains and buses in order, each train line marked in its colour;
 - roughly how long it takes, door to door, walking and waiting included;
@@ -97,7 +97,30 @@ shows:
 - **OneMap ~42 min**, where OneMap's timetable-based planner rides the same way;
 - a warning when LTA reports a disruption on one of its lines;
 - **Last 38 from Bedok Int at 23:48**, when you'd catch a bus near its last of the day;
-- a bus slowed by traffic right now: by how much, and which roads.
+- a bus slowed by traffic right now: by how much, and which roads;
+- what it should cost by card, such as **~S$1.94**, for the **Fare type** in [Settings](settings.md#navigate);
+- setting off soon, with a bus first: **Live**, and every bus that goes straight from that stop to
+  where you'd get off, each with its next three in the colour of how full it is.
+
+### Sort the ways
+
+The buttons over the list sort it, and the one you pick is kept:
+
+| Sort | Puts first |
+|---|---|
+| **Best**, the default | Ways on your buses, then the quickest, with each minute of walking counted as a minute and a half. |
+| **Fastest** | The quickest, door to door. |
+| **Least walking** | The shortest walks. |
+| **Fewest changes** | The fewest changes of bus or train. |
+
+Each way is tagged with what it's best at: **Fastest**, **Least walking**, **Fewest changes**, and
+**Your bus** where it rides one of your buses: those in **Preferred buses** in
+[Settings](settings.md#navigate), going anywhere, and those of a place in
+[Places](places.md#buses-you-like-to-take-there), going there.
+
+The fare is the distance fare for the whole way on buses and trains, one fare however many times
+you change, from PTC's table: an estimate, as it goes by the distance between the stops. An express
+bus adds $1 for adults; shuttle buses aren't counted, and ways across the Causeway show none.
 
 ### Walking, cycling and driving
 
@@ -190,4 +213,7 @@ Tap **Share** at the top of Navigate, and pick what to send. See
 
 ## Also in Telegram
 
-The [Telegram bot](../bot/nav.md)'s `/nav` asks the same planner, so it finds the same ways.
+The [Telegram bot](../bot/nav.md)'s `/nav` asks the same planner, so it finds the same ways, and sorts,
+tags and prices them as Navigate does, with the buses you'd catch, live. Its sort, fare type and preferred
+buses are its own, set in the bot's [/settings](../bot/settings.md) and
+[/places](../bot/places.md#buses-to-take-there).

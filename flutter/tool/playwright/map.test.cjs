@@ -200,6 +200,31 @@ test('sources and layers go in, properties split into layout and paint', async (
   await page.close();
 });
 
+// A PNG of one pixel, as Dart sends an icon's image: base64 as the run call's second argument.
+const PIXEL = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
+test("icons: an image goes in at its pixel ratio, again replaces it, and a symbol layer names it", async () => {
+  const { page, outside, errors } = await readyMap();
+  assert.equal((await send(page, { id: 2, cmd: 'addSource', source: 'sg-mark' }, { type: 'FeatureCollection', features: [] })).error, undefined);
+  const image = await send(page, { id: 3, cmd: 'addImage', name: 'pin-end', pixelRatio: 3 }, PIXEL);
+  assert.equal(image.error, undefined, image.error);
+  assert.equal((await send(page, { id: 4, cmd: 'addImage', name: 'pin-end', pixelRatio: 2 }, PIXEL)).error, undefined, 'the same name again');
+  // As maplibre_gl's SymbolLayerProperties.toJson() gives them (live_map.dart's sg-mark).
+  const layer = await send(page, {
+    id: 5, cmd: 'addLayer', type: 'symbol', source: 'sg-mark', layer: 'sg-mark',
+    properties: { 'icon-image': ['get', 'icon'], 'icon-anchor': ['get', 'anchor'], 'icon-allow-overlap': true, 'icon-ignore-placement': true, 'symbol-sort-key': ['get', 'z'] },
+  });
+  assert.equal(layer.error, undefined, layer.error);
+  const got = await page.evaluate(() => {
+    const m = window.sgMap.map;
+    return { has: m.hasImage('pin-end'), ratio: m.style.getImage('pin-end')?.pixelRatio, image: m.getLayoutProperty('sg-mark', 'icon-image'), overlap: m.getLayoutProperty('sg-mark', 'icon-allow-overlap') };
+  });
+  assert.deepEqual(got, { has: true, ratio: 2, image: ['get', 'icon'], overlap: true });
+  assert.deepEqual(errors, []);
+  assert.deepEqual(outside, []);
+  await page.close();
+});
+
 test('the camera moves at once and smoothly, and reports where it is', async () => {
   const { page } = await readyMap();
   const jumped = await send(page, { id: 2, cmd: 'camera', update: ['newLatLngZoom', [1.355, 103.85], 15], animate: false });

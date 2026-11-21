@@ -356,6 +356,8 @@
     ink.clear('lines');
     ink.clear('stops');
     ink.clear('marks');
+    ink.clear('bubbles');
+    bubblesFor = null;
     if (mode !== 'explore') {
       ink.pois([]);
       ink.rails([]);
@@ -387,6 +389,8 @@
       ink.clear('lines');
       ink.clear('stops');
       ink.clear('marks');
+      ink.clear('bubbles');
+      bubblesFor = null;
       ink.rails([]);
       clearShuttles();
       hideMe();
@@ -448,11 +452,59 @@
     if (mode === 'walk') onWalkFix();
   }
 
+  // What you're riding, for your icon (js/map-marks.js): on a trip, a bus or a train once you're
+  // on it, a car or a bike on a part you drive or cycle; with directions, a car or a bike to
+  // drive or cycle there. Null on foot, where you're the dot and its cone. Keep in step with
+  // _rideKind in flutter/lib/features/map/live_map.dart.
+  function rideKind() {
+    if (mode === 'trip') {
+      const p = window.Trip?.progress();
+      const leg = window.Trip?.legs?.()?.[p?.legIndex];
+      if (!leg) return null;
+      if (leg.kind !== 'walk' && p.boarded) return leg.kind === 'train' ? 'train' : 'bus';
+      if (leg.kind === 'walk' && leg.drive) return 'car';
+      if (leg.kind === 'walk' && leg.cycle) return 'bike';
+      return null;
+    }
+    if (mode === 'walk') return walkDrive ? 'car' : walkCycle ? 'bike' : null;
+    return null;
+  }
+
+  function rideColour(kind) {
+    if (kind === 'car') return COLOURS.drive;
+    if (kind === 'bike') return COLOURS.cycle;
+    const p = window.Trip?.progress();
+    const leg = window.Trip?.legs?.()?.[p?.legIndex];
+    return kind === 'train' && leg ? legColour(leg, false) : COLOURS.bus;
+  }
+
+  // You on what you're riding, while you are (rideKind): made again when that changes.
+  let meMark = null;
+  let meRide = null;
+
   // You, as a dot with a ring for how sure the fix is and a cone for the way you face. Drawn
-  // on the timer, not on each fix, and only moved, never made again.
+  // on the timer, not on each fix, and only moved, never made again. On a ride, your icon.
   function drawMe() {
     if (!here || !ink) return;
     const at = [here.lat, here.lng];
+    const ride = rideKind();
+    if (ride) {
+      const look = `${ride}:${rideColour(ride)}`;
+      if (!meMark?.alive || meRide !== look) {
+        ink.clear('me');
+        meDot = meRing = meCone = null;
+        meRide = look;
+        meMark = ink.mark('me', at, { ...MapMarks.ride(ride, rideColour(ride)), z: 10 });
+      } else {
+        meMark.set(at);
+      }
+      keepInView(at);
+      return;
+    }
+    if (meMark) {
+      ink.clear('me');
+      meMark = meRide = null;
+    }
     const ring = Math.min(here.accuracy, 500);
     if (!meDot?.alive) {
       ink.clear('me');
@@ -492,6 +544,7 @@
   function hideMe() {
     ink?.clear('me');
     meDot = meRing = meCone = null;
+    meMark = meRide = null;
   }
 
   // ---------- a walk ----------
@@ -601,8 +654,8 @@
   // ---------- a trip ----------
 
   // A place on the map, its name on a tap, or its card for a stop or station (`pick`).
-  function flag(at, label, colour = '#d6336c', pick = null) {
-    return ink.dot('marks', at, { radius: 9, stroke: '#fff', weight: 3, fill: colour, label, ...(pick && { pick }) });
+  function flag(at, label, colour = '#d6336c', pick = null, radius = 9) {
+    return ink.dot('marks', at, { radius, stroke: '#fff', weight: radius > 4 ? 3 : 1, fill: colour, label, ...(pick && { pick }) });
   }
 
   async function trip() {
@@ -645,6 +698,45 @@
     });
   }
 
+  // A leg's colour on the map: grey once done, a walk's by how you go, a ride's line or kind.
+  function legColour(leg, done) {
+    return done ? COLOURS.done : leg.kind === 'walk' ? (leg.drive ? COLOURS.drive : leg.cycle ? COLOURS.cycle : COLOURS.walk)
+      : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
+  }
+
+  // A speech bubble over each stop still ahead where you get on or off (js/map-marks.js): Board
+  // 67 in the ride's colour, Get off in navy, and Change to 960 where one ride ends where the
+  // next begins. Not Get off at the very end, where the end's pin is; not Board on a ride you're
+  // on. Drawn again only when the part you're on, or whether you've boarded it, changes. Keep in
+  // step with _drawBubbles in flutter/lib/features/map/live_map.dart.
+  const CHANGE_M = 80;
+  let bubblesFor = null;
+  function drawBubbles(p, legs) {
+    const key = `${p.legIndex}:${p.boarded}:${legs.length}`;
+    if (bubblesFor === key) return;
+    bubblesFor = key;
+    ink.clear('bubbles');
+    const name = (l) => (l.kind === 'bus' ? l.service || l.label : l.route || String(l.label || '').split(' ')[0]);
+    const iconOf = (l) => (l.kind === 'train' ? 'train' : 'bus');
+    const first = (l) => l.points[0];
+    const last = (l) => l.points[l.points.length - 1];
+    for (let i = p.legIndex; i < legs.length; i++) {
+      const l = legs[i];
+      if (l.kind === 'walk') continue;
+      const before = legs[i - 1];
+      const changing = before && before.kind !== 'walk' && metres(last(before), first(l)) < CHANGE_M;
+      if ((i > p.legIndex || !p.boarded) && !changing) {
+        ink.mark('bubbles', first(l), { ...MapMarks.bubble(I18n.t('map.board', 'Board {ride}', { ride: name(l) }), legColour(l, false), iconOf(l)), z: 8 });
+      }
+      const next = legs[i + 1];
+      if (next && next.kind !== 'walk' && metres(last(l), first(next)) < CHANGE_M) {
+        ink.mark('bubbles', last(l), { ...MapMarks.bubble(I18n.t('map.changeTo', 'Change to {ride}', { ride: name(next) }), legColour(next, false), iconOf(next)), z: 9 });
+      } else if (i < legs.length - 1) {
+        ink.mark('bubbles', last(l), { ...MapMarks.bubble(I18n.t('map.getOff', 'Get off')), z: 9 });
+      }
+    }
+  }
+
   // Every leg from the one you're on, its stops, and where each ends. Redrawn only when you
   // move on to another leg; the status line every few seconds.
   function drawTrip(fit) {
@@ -667,8 +759,7 @@
       legs.forEach((leg, i) => {
         const done = i < p.legIndex;
         // A walk by bike or car (js/trip.js's footLeg) in its own colour, and a car's not dashed.
-        const colour = done ? COLOURS.done : leg.kind === 'walk' ? (leg.drive ? COLOURS.drive : leg.cycle ? COLOURS.cycle : COLOURS.walk)
-          : leg.color || (leg.kind === 'train' && LINE_COLOURS[String(leg.route || '').toUpperCase()]) || COLOURS[leg.kind] || COLOURS.bus;
+        const colour = legColour(leg, done);
         const line = ink.line('lines', leg.points, { color: colour, weight: leg.kind === 'walk' ? 4 : 6, opacity: done ? 0.6 : 0.95, dash: leg.kind === 'walk' && !leg.drive });
         // A train ride along its line's track (js/rail-tracks.js), once that's in; straight from
         // station to station till then.
@@ -701,11 +792,17 @@
         if (!done) {
           const end = leg.points[leg.points.length - 1];
           const last = i === legs.length - 1;
-          flag(end, last ? leg.to : leg.kind !== 'walk' ? I18n.t('map.getOffAt', 'Get off at {place}', { place: leg.to }) : leg.drive ? I18n.t('map.driveTo', 'Drive to {place}', { place: leg.to }) : leg.cycle ? I18n.t('map.cycleTo', 'Cycle to {place}', { place: leg.to }) : I18n.t('map.walkTo', 'Walk to {place}', { place: leg.to }), last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1));
+          flag(end, last ? leg.to : leg.kind !== 'walk' ? I18n.t('map.getOffAt', 'Get off at {place}', { place: leg.to }) : leg.drive ? I18n.t('map.driveTo', 'Drive to {place}', { place: leg.to }) : leg.cycle ? I18n.t('map.cycleTo', 'Cycle to {place}', { place: leg.to }) : I18n.t('map.walkTo', 'Walk to {place}', { place: leg.to }), last ? '#d6336c' : colour, pickAt(leg, leg.points.length - 1), last ? 3 : 9);
         }
       });
+      // Where the trip starts and ends, as pins (js/map-marks.js).
+      const end = legs[legs.length - 1].points;
+      ink.mark('marks', legs[0].points[0], { ...MapMarks.pin(false), z: 6 });
+      ink.mark('marks', end[end.length - 1], { ...MapMarks.pin(true), z: 7 });
+      bubblesFor = null;
       if (fit && !here) ink.setView(p.at, STREET_ZOOM);
     }
+    drawBubbles(p, legs);
     if (roadsDue.length) drawRoads(p.legIndex);
     const status = window.Trip.status?.() || '';
     $('#mapStep').textContent = status;
