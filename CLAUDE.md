@@ -171,7 +171,9 @@ Android app's update page reads the notes. In short:
 
 1. Raise the version in the three places.
 2. Write the notes in `announcement/release-notes-<version>.md`, and add them to
-   `main-site/PATCHNOTES.md`.
+   `main-site/PATCHNOTES.md`. Beside them, the announcement post (`announcement-<version>.md`)
+   and, when Android gets the version, the Play Console notes in all four languages
+   (`play-release-notes-<version>.md`). Copy the shape of the last of each.
 3. Commit and push, and let the website deploy before sharing the release.
 4. Publish a GitHub release tagged `android-v<version>`, targeting `main`. The Android app's
    updater finds releases by that prefix.
