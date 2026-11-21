@@ -94,7 +94,7 @@ never counted twice, and nor are trips another device syncs to this one later.
 </figure>
 
 The wheel is in [Settings](settings.md), **Help and extras**, and it works like
-gacha: a spin costs 100 uwuCoins and lands on one of eight slices at random: an **Easter egg** you haven't found
+gacha: a spin costs 50 uwuCoins and lands on one of eight slices at random: an **Easter egg** you haven't found
 yet, or more coins, up to 150. Once you've found every egg, its slice is coins
 too. Under the wheel, how many feats you've done and eggs you've found, and
 **See your achievements**.

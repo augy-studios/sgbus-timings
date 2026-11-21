@@ -44,7 +44,7 @@
   const PER_CHANGE = 3;
   const PER_OPERATOR = 4;
   const PER_LINE = 2;
-  const SPIN_COST = 100;
+  const SPIN_COST = 50;
   // Round the wheel, clockwise from the top.
   // One egg among them (Augy, 2 November 2026): an egg is one spin in eight.
   const SLOTS = [{ egg: true }, { coins: 20 }, { coins: 50 }, { coins: 30 }, { coins: 70 }, { coins: 40 }, { coins: 150 }, { coins: 60 }];

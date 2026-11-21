@@ -475,7 +475,7 @@ class Coins {
   // Enough for History (features/coins/coins.dart) to be every coin in and out.
   static const _logMax = 2000;
   static const _finish = 5, _kmPerCoin = 2, _kmCoinsMax = 30, _perChange = 3, _perOperator = 4, _perLine = 2;
-  static const spinCost = 100;
+  static const spinCost = 50;
   static const eggGoneCoins = 80;
   /// Round the wheel, clockwise from the top: null for the egg.
   static const slots = <int?>[null, 20, 50, 30, 70, 40, 150, 60];
