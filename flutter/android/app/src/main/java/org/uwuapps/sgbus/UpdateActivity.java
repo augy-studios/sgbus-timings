@@ -38,6 +38,13 @@
  * it from its notes on GitHub (main-site/api/app-release.js's `history`), as cards by heading.
  * The release you'd get opens by itself, or the one installed when there's nothing newer.
  *
+ * The Google Play build (build-apk.ps1 -Aab, BuildConfig.PLAY) has the same page and
+ * changelog, but never downloads or installs anything, as Play doesn't allow an app to update
+ * itself: a newer version brings Update on Google Play, which opens the app's page in the Play
+ * Store, and the newest one Google Play, for the same page. Its manifest (app/src/play/) drops
+ * REQUEST_INSTALL_PACKAGES and InstallStatus, and as PLAY is a constant, R8 drops the downloader
+ * and installer.
+ *
  * One of this app's own screens (see android/README.md).
  */
 package org.uwuapps.sgbus;
@@ -132,6 +139,9 @@ public class UpdateActivity extends AppCompatActivity {
 
     // Where the releases are listed, for the changelog's GitHub button with nothing to read.
     private static final String RELEASES_PAGE = "https://github.com/augy-studios/sgbus-timings/releases";
+    // A Google Play build: Play updates it, so this page sends you there (openPlay).
+    private static final boolean PLAY = BuildConfig.PLAY;
+    private static final String PLAY_STORE = "com.android.vending";
     // Debuggable builds only, never a release: a file in this app's cache to read the release
     // from instead of the site, and a version to be, so each step of the page can be seen on an
     // emulator (android/README.md, "The updater's page").
@@ -200,6 +210,8 @@ public class UpdateActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
+        // On Google Play nothing's installed here, so there's nothing to come back to.
+        if (PLAY) return;
         // Back from "Install unknown apps".
         if (mAskedToAllow && mWork == null) {
             mAskedToAllow = false;
@@ -305,9 +317,26 @@ public class UpdateActivity extends AppCompatActivity {
                 Release release = found != null ? found : latest();
                 if (found == null) ui(this::drawChangelog);
                 if (release == null) {
-                    ui(() -> show("You're up to date", null,
-                            "GitHub", R.drawable.update_ic_github, () -> browse(pageOf(installedVersion())),
-                            "Close", this::finish));
+                    ui(() -> {
+                        if (PLAY) {
+                            show("You're up to date", null,
+                                    "Google Play", R.drawable.update_ic_play, this::openPlay,
+                                    "Close", this::finish);
+                            // A way to read more, as GitHub is: outlined.
+                            filled(mPrimary, false);
+                        } else show("You're up to date", null,
+                                "GitHub", R.drawable.update_ic_github, () -> browse(pageOf(installedVersion())),
+                                "Close", this::finish);
+                    });
+                    return;
+                }
+                // On Google Play, from the update bar, a check or a notification alike: Play
+                // installs it, after its review, so it may come there a little after GitHub.
+                if (PLAY) {
+                    ui(() -> show("Update available", "Version " + release.version + " is out. Google Play "
+                                    + "updates the app: if it doesn't offer it yet, it will within a day or two.",
+                            "Update on Google Play", R.drawable.update_ic_play, this::openPlay,
+                            "Not now", this::finish));
                     return;
                 }
                 if (found == null && mCheckOnly) {
@@ -377,9 +406,10 @@ public class UpdateActivity extends AppCompatActivity {
         mHistory = Notes.listOf(json.optJSONArray("history"));
         String version = json.optString("version", "");
         if (version.isEmpty() || !newer(version, installedVersion())) return null;
-        Release release = new Release(version, json.getString("apk"),
-                json.optLong("size", -1), json.isNull("sha256") ? null : json.getString("sha256"));
-        if (!release.apk.startsWith(RELEASES)) {
+        Release release = new Release(version, json.optString("apk", ""),
+                json.optLong("size", -1), json.isNull("sha256") ? null : json.optString("sha256", null));
+        // On Google Play nothing's downloaded, so only the version matters.
+        if (!PLAY && !release.apk.startsWith(RELEASES)) {
             throw new Problem("The update isn't on SG Bus Timings' GitHub page, so it wasn't downloaded.");
         }
         return release;
@@ -683,6 +713,17 @@ public class UpdateActivity extends AppCompatActivity {
             startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (ActivityNotFoundException e) {
             Toast.makeText(this, "No browser to open " + url, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    // The app's page in the Play Store, or on Google Play's website where the Store isn't there.
+    // The window stays, for coming back to.
+    private void openPlay() {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=" + getPackageName()))
+                    .setPackage(PLAY_STORE));
+        } catch (ActivityNotFoundException e) {
+            browse("https://play.google.com/store/apps/details?id=" + getPackageName());
         }
     }
 

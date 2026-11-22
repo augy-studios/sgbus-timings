@@ -12,6 +12,9 @@ Website and apps:
 - Train times work offline
 - Places' form opens in a window of its own
 
+Android app from Google Play:
+- The update page, with what's new in each version, opening Google Play
+
 Desktop app:
 - Restart to update no longer hangs on Windows
 

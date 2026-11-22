@@ -51,11 +51,13 @@ class NativeListener {
   void cancel() => Native._remove(this);
 }
 
-/// A Google Play build (build-apk.ps1 -Aab): Play updates it, so it has no updater of its own, and
-/// it hasn't the permissions Play keeps for other kinds of app (app/src/play/AndroidManifest.xml):
-/// Timings near a stop's background location, and "On a bus?"'s activity recognition.
+/// A Google Play build (build-apk.ps1 -Aab): Play updates it, so its update page sends you to Play
+/// rather than installing anything (UpdateActivity's BuildConfig.PLAY), and it has no "New versions
+/// of the app" push, which would come before Play offered the version. It hasn't the permissions
+/// Play keeps for other kinds of app (app/src/play/AndroidManifest.xml): Timings near a stop's
+/// background location, and "On a bus?"'s activity recognition.
 const playBuild = bool.fromEnvironment('SGBUS_PLAY');
-const _notOnPlay = {'update', 'checkupdate', 'releases', 'nearstops', 'onabus'};
+const _notOnPlay = {'releases', 'nearstops', 'onabus'};
 
 /// The bridge to the app's native parts: Java on a phone, [host] on a computer.
 class Native {

@@ -21,6 +21,10 @@ Newest first. Each update covers the web app and the Telegram bot.
 - **Easier to read** - The last trains' red, and in dark mode the map's bubbles' quieter writing, meet WCAG's AA contrast (4.5:1), and a late train says New time in words, not only in colour.
 - **A place's own window** - Save a new place and Edit open the place's form in a window of its own, in Places and wherever else you save one.
 
+### Android app from Google Play
+
+- **The update page** - The app from Google Play now has the update bar, Check for app updates in the Edge Tray, and the update page with what's new in each version, as the app from GitHub does. Instead of downloading the new version, its **Update on Google Play** opens the app's page in the Play Store. Google Play can take a day or two to offer a new version after it's out.
+
 ### Desktop app 2.7.0
 
 - **Restart to update on Windows** - The app now closes the way a closed window does to install an update, rather than hanging as Not responding until the installer ended it.

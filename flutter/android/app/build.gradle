@@ -24,6 +24,13 @@ android {
         // there for a new version.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // A Google Play build (sgbusPlay, below): UpdateActivity sends you to Play rather than
+        // downloading the APK. A constant, so R8 drops the downloader and installer from it.
+        buildConfigField "boolean", "PLAY", project.hasProperty("sgbusPlay") ? "true" : "false"
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     // Signed with the same key as every version before, from flutter/keystore.properties and
@@ -54,8 +61,9 @@ android {
     }
 }
 
-// A Google Play build (build-apk.ps1 -Aab): the updater and its permission come out of the release's
-// manifest (src/play/), as Play doesn't allow them. Every other build is as ever.
+// A Google Play build (build-apk.ps1 -Aab): the installer and its permission come out of the release's
+// manifest (src/play/), as Play doesn't allow them, and the update page sends you to Play
+// (BuildConfig.PLAY, above). Every other build is as ever.
 if (project.hasProperty("sgbusPlay")) {
     android.sourceSets.release.manifest.srcFile "src/play/AndroidManifest.xml"
 }

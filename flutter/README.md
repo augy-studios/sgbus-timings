@@ -79,9 +79,11 @@ running in it. The website and PWA lose nothing.
 | Install unknown apps | First update | `UpdateActivity` |
 
 The Google Play build (`powershell -ExecutionPolicy Bypass -File flutter\build-apk.ps1 -Aab`, into
-`release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity` and
-`REQUEST_INSTALL_PACKAGES`, as Play updates apps itself: `app/src/play/AndroidManifest.xml`, and
-`playBuild` in `lib/native/native_bridge.dart` for the update bar and buttons. The same manifest
+`release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity`'s installer
+(`InstallStatus`) and `REQUEST_INSTALL_PACKAGES`, as Play updates apps itself:
+`app/src/play/AndroidManifest.xml`. It keeps the update bar and page, whose button opens the app in
+the Play Store rather than downloading the APK (`BuildConfig.PLAY` in `UpdateActivity`), but not the
+"New versions of the app" push (`playBuild` in `lib/native/native_bridge.dart`). The same manifest
 removes what Play keeps for other kinds of app, and `build-apk.ps1 -Aab` refuses a bundle that still
 has them:
 

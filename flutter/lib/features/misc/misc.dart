@@ -3,8 +3,9 @@
 //
 // Update bar: as the app opens, and again on coming back after six hours, /api/app-release says
 // the newest version; a newer one than this brings a bar to the top, whose Update opens the app's
-// own update window (UpdateActivity), and Not now puts it away while the app's open. Never in the
-// desktop app, which updates itself (desktop/updater.dart).
+// own update window (UpdateActivity), and Not now puts it away while the app's open. In the app from
+// Google Play the window sends you to Play to update (playBuild). Never in the desktop app, which
+// updates itself (desktop/updater.dart).
 //
 // Report a bug: what went wrong, a way to be reached if they'd like an answer, up to three
 // pictures (from the phone, or a screenshot of a page of the app), and what helps find it (the
@@ -56,7 +57,7 @@ void registerMisc() {
   });
   // The desktop app updates itself (desktop/updater.dart): nothing of Android's to open.
   AppNav.register('appUpdate', (a) {
-    if (playBuild || Native.has('desktop')) return;
+    if (Native.has('desktop')) return;
     if (a['version'] != null) {
       AppUpdate.check(version: '${a['version']}');
     } else {
@@ -81,9 +82,9 @@ void registerMisc() {
   }
   // What Bus and train needs to plan with no connection, kept while there is one.
   Timer(const Duration(seconds: 8), () => NavOffline.keepReady());
-  // On Google Play, Play says when there's a new version, and updates it. The desktop app has its
-  // own update window and title bar button instead (desktop/updater.dart), so never this bar.
-  if (!playBuild && !Native.has('desktop')) {
+  // On Google Play too, its Update opening Play (UpdateActivity). The desktop app has its own update
+  // window and title bar button instead (desktop/updater.dart), so never this bar.
+  if (!Native.has('desktop')) {
     Shell.top.add(AppUpdateBar.top);
     AppUpdate.check();
   }
@@ -91,11 +92,11 @@ void registerMisc() {
 }
 
 class _Resume extends WidgetsBindingObserver {
-  /// Coming back to the app after six hours: checks for a new version again (not on Google Play,
-  /// nor in the desktop app, which checks for itself).
+  /// Coming back to the app after six hours: checks for a new version again (not in the desktop
+  /// app, which checks for itself).
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!playBuild && !Native.has('desktop') && state == AppLifecycleState.resumed && When.nowMs() - AppUpdate._checkedAt > 6 * 3600 * 1000) AppUpdate.check();
+    if (!Native.has('desktop') && state == AppLifecycleState.resumed && When.nowMs() - AppUpdate._checkedAt > 6 * 3600 * 1000) AppUpdate.check();
   }
 }
 

@@ -5,9 +5,10 @@ description: How the Android app updates itself, how to hear about new versions,
 
 ## Update it
 
-The app from Google Play updates through Google Play, like any other app, and has no bar,
-update page or **Check for app updates** of its own. The rest of this section is for the app
-from GitHub.
+The app from Google Play updates through Google Play, like any other app. It has the same
+bar, update page and **Check for app updates**, but its update page sends you to Google Play
+to install the new version: see [From Google Play](#from-google-play). The steps below are for
+the app from GitHub.
 
 <figure>
 <img src="/screenshots/android/update-bar.png" alt="A green bar across the top of Glance: Version 9.9.9 of the Android app is out, with Update and Not now." width="412" height="892" loading="lazy">
@@ -52,6 +53,14 @@ While it downloads, a wavy line grows along its track, with how much has come; *
 stops it. With the newest version already, the page says **You're up to date**, with **GitHub**
 for its page there.
 
+### From Google Play
+
+In the app from Google Play, the bar and **Check for app updates** open the same page, with
+the same timeline of what's new. Instead of downloading the new version, it offers **Update on
+Google Play**, which opens the app's page in the Play Store: tap **Update** there. Google Play
+can take a day or two to offer a new version after it's out. With the newest version already,
+the page says **You're up to date**, with **Google Play** for the app's page there.
+
 ### Hear about new versions
 
 The app can tell you the moment a new version is out, even when it's closed: open
@@ -60,6 +69,8 @@ Android asks to allow notifications. Tap the notification and the app says which
 have and offers **Update**. A watch paired with your phone shows it too.
 
 It's off until you turn it on, and needs Google Play services, as most phones have.
+
+The app from Google Play doesn't have it: Google Play says when its update is ready.
 
 ## With no connection
 

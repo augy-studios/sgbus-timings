@@ -10,9 +10,10 @@
 # pubspec.yaml's.
 #
 # With -Aab, instead: the Android App Bundle for Google Play, sg-bus-timings-<version>.aab, kept out
-# of git as the APKs are. It's the phone's app only, signed with the same key, and with no updater of
-# its own, as Play doesn't allow one: its manifest (android/app/src/play/) and SGBUS_PLAY take it
-# out, and that's checked here. Build the APKs first: a bundle doesn't replace them.
+# of git as the APKs are. It's the phone's app only, signed with the same key, and it never installs an
+# update itself, as Play doesn't allow that: its update page sends you to Play instead
+# (UpdateActivity's BuildConfig.PLAY), and its manifest (android/app/src/play/) drops the installer and
+# its permission, which is checked here. Build the APKs first: a bundle doesn't replace them.
 #
 # Needs Flutter on the PATH (or FLUTTER_ROOT), a JDK 21 or later and the Android SDK. It finds
 # the JDK and SDK in JAVA_HOME and ANDROID_HOME if they're set, or else the newest JDK under
@@ -85,7 +86,7 @@ if ($Aab) {
     if ($certs -notmatch 'SHA256:\s*4E:D5:3F:F1:F4:CB:4E:5E:A7:CB:C1:28:46:48:F6:2E:B3:90:47:EB:C2:9B:25:20:F5:7D:FE:5B:76:CB:44:EB') {
         throw "The bundle isn't signed with the app's key: is keystore.properties right?"
     }
-    # And nothing of the updater left in what Play reads.
+    # And nothing of the installer left in what Play reads: the update page stays, sending you to Play.
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zip = [IO.Compression.ZipFile]::OpenRead($bundle)
     try {
@@ -97,7 +98,7 @@ if ($Aab) {
     } finally {
         $zip.Dispose()
     }
-    if ($manifest -match 'REQUEST_INSTALL_PACKAGES|UpdateActivity') { throw 'The bundle still has the updater in its manifest.' }
+    if ($manifest -match 'REQUEST_INSTALL_PACKAGES|InstallStatus') { throw 'The bundle still has the installer in its manifest.' }
     # Nor the permissions Play keeps for other kinds of app (app/src/play/AndroidManifest.xml).
     foreach ($permission in 'USE_EXACT_ALARM', 'ACCESS_BACKGROUND_LOCATION', 'ACTIVITY_RECOGNITION', 'REQUEST_IGNORE_BATTERY_OPTIMIZATIONS') {
         if ($manifest -match $permission) { throw "The bundle still has $permission in its manifest." }

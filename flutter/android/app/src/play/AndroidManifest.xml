@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- A Google Play build only (build-apk.ps1 -Aab, app/build.gradle's sgbusPlay). The APK on GitHub
      keeps everything removed here.
-     The updater: Play updates the app and doesn't allow it to update itself.
+     The installer: Play updates the app and doesn't allow it to update itself. The update page
+     (UpdateActivity) stays, with a button to the app on Play instead (BuildConfig.PLAY).
      USE_EXACT_ALARM: Play allows it only for alarm clock and calendar apps. SCHEDULE_EXACT_ALARM,
      which the person allows in Android's Alarms & reminders, takes its place on every Android.
      Background location, activity recognition and battery optimisation: Play allows them only for
@@ -17,7 +18,6 @@
     <uses-permission android:name="com.google.android.gms.permission.ACTIVITY_RECOGNITION" tools:node="remove" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" tools:node="remove" />
     <application>
-        <activity android:name=".UpdateActivity" tools:node="remove" />
         <receiver android:name=".UpdateActivity$InstallStatus" tools:node="remove" />
     </application>
 </manifest>

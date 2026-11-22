@@ -13,6 +13,7 @@ Play shows a tag here as one it doesn't know, change it to the one Play lists fo
 • A station on the map shows its trains
 • Train times work offline
 • Places' form opens in a window of its own
+• An update page with what's new in each version, opening Google Play
 </en-US>
 <zh-CN>
 • 每个地铁和轻轨站的列车时间：搜索车站，点按“列车时间”
@@ -22,15 +23,17 @@ Play shows a tag here as one it doesn't know, change it to the one Play lists fo
 • 地图上的车站显示其列车
 • 列车时间可离线使用
 • 地点表单在独立窗口中打开
+• 更新页面显示每个版本的新功能，并打开 Google Play
 </zh-CN>
 <ms>
 • Waktu kereta api di setiap stesen MRT dan LRT: cari stesen dan ketik Waktu kereta api
 • Tiga kereta api terakhir hari itu ditanda merah
 • Kereta api lewat dan dibatalkan semasa gangguan, daripada LTA
-• Perjalanan kereta api dalam Navigasi menyenaraikan kereta api seterusnya dan memberi amaran tentang yang terakhir
+• Perjalanan kereta api Navigasi menunjukkan kereta api seterusnya dan amaran kereta api terakhir
 • Stesen pada peta menunjukkan kereta apinya
 • Waktu kereta api berfungsi luar talian
 • Borang Tempat dibuka dalam tetingkap tersendiri
+• Halaman kemas kini membuka Google Play
 </ms>
 <ta-IN>
 • ஒவ்வொரு MRT, LRT நிலையத்திலும் ரயில் நேரங்கள்: நிலையத்தைத் தேடி ரயில் நேரங்கள் என்பதைத் தட்டவும்
@@ -40,5 +43,6 @@ Play shows a tag here as one it doesn't know, change it to the one Play lists fo
 • வரைபடத்தில் நிலையம் அதன் ரயில்களைக் காட்டும்
 • ரயில் நேரங்கள் இணையமின்றியும் இயங்கும்
 • இடங்கள் படிவம் தனிச் சாளரத்தில் திறக்கும்
+• புதுப்பிப்புப் பக்கம் Google Play-ஐத் திறக்கும்
 </ta-IN>
 ```

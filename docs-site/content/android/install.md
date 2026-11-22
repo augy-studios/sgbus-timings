@@ -28,7 +28,9 @@ the app. With the app closed, the app from Google Play plans
 [Time to leave](reminders.md#time-to-leave) from Home in [Places](places.md).
 
 Updates differ too: the app from GitHub [updates itself](updates.md), and the one
-from Google Play updates through Google Play, like any other app.
+from Google Play updates through Google Play, like any other app. Both say when
+there's a new version, and the one from Google Play
+[sends you there](updates.md#from-google-play) to install it.
 
 ## Download and install it
 

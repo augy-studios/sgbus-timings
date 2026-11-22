@@ -1,4 +1,4 @@
-Train times at every MRT and LRT station, by LTA's timetable and with a disruption's changes, from a station search, the map, Navigate's train rides, the Telegram bot and the command line, with the last trains marked in red, and offline too. Places opens its form in a window of its own, and Restart to update no longer hangs on Windows.
+Train times at every MRT and LRT station, by LTA's timetable and with a disruption's changes, from a station search, the map, Navigate's train rides, the Telegram bot and the command line, with the last trains marked in red, and offline too. Places opens its form in a window of its own, the app from Google Play has the update page too, and Restart to update no longer hangs on Windows.
 
 ## Download
 
@@ -39,6 +39,9 @@ Your favourites and settings stay when you update.
 ### Website, Android and desktop apps
 - **Easier to read**: the last trains' red and the map's bubbles in dark mode meet WCAG's AA contrast, and a late train says New time in words, not only in colour.
 - **A place's own window**: Save a new place and Edit open their form in a window of its own.
+
+### Android app from Google Play
+- **The update page**: the update bar, Check for app updates in the Edge Tray, and the update page with what's new in each version, as the app from GitHub has. Its **Update on Google Play** opens the app in the Play Store, which can take a day or two to offer a new version.
 
 ### Desktop app
 - **Restart to update on Windows**: the app closes cleanly to update, rather than hanging as Not responding.
