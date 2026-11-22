@@ -76,6 +76,8 @@ starred and come first.
 Not sure of the code? `sgbus bedok int` finds a stop by name or road, with LTA's short forms
 (`bukit batok` finds Bt Batok), `sgbus 'Bedok MRT'` lists the stops at a station, and
 `sgbus 519599` the stops nearest a postal code. `sgbus 22` shows bus 22's route.
+`sgbus trains tampines` (or `sgbus trains EW2`) lists a station's next trains on every line,
+each way, as [the web app's train times](search.md#train-times-at-a-station) do.
 
 ## Getting somewhere
 

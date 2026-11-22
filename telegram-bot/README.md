@@ -136,7 +136,10 @@ You don't need a command to search. Just type into the chat:
   station`, to list the bus stops within 250 m of its exits, nearest first,
   whatever they're named. Station exits come from sgraildata, copied from the web
   app's `main-site/api/_nav/rail.json` into `src/rail_stations.json` by
-  `scripts/vendor-rail.mjs`.
+  `scripts/vendor-rail.mjs`. A **🚆 Train times** button above them sends the
+  station's next trains, every line each way, from the site's `/api/trains` (LTA's
+  timetable, with a disruption's changes when LTA has any), with **🔄 Refresh**
+  (`src/trains.py`, `scripts/bot-trains-test.py`).
 
 Bus stop numbers and bus numbers never collide: a bus stop number is always
 exactly 5 digits, while a bus number is shorter and may contain letters, so

@@ -8,7 +8,8 @@ from ..favourite_prefs import set_pref
 from ..favourites import remove_favourite, toggle_favourite
 from ..journey_view import build_journey_view
 from ..list_view import rebuild_stop_list_view
-from ..reply import edit_rich_message, edit_rich_message_at
+from ..reply import edit_rich_message, edit_rich_message_at, send_rich_message
+from ..trains import build_trains_view
 from ..route_drafts import panel_awaiting, start_route_draft
 from ..route_view import build_route_view_async, toggle_route_favourite
 from ..routines import delete_routine
@@ -111,6 +112,18 @@ def register_callbacks(client):
                 return
             if action.startswith(("coin_", "team_")):
                 await handle_coin_callback(client, event, action, payload)
+                return
+
+            # A station's train times (trains.py): sent as a message of their own under the
+            # station's bus stops, refreshed in place.
+            if action in ("trains", "trains_refresh"):
+                rich, buttons = await build_trains_view(payload["codes"], payload["name"])
+                if action == "trains":
+                    await send_rich_message(client, event.chat_id, rich, buttons)
+                    await event.answer()
+                else:
+                    await edit_rich_message(client, event, rich, buttons)
+                    await event.answer("Refreshed")
                 return
 
             if action in ("stop", "refresh", "navigate"):

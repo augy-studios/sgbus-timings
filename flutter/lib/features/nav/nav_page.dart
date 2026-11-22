@@ -7,6 +7,7 @@
 // way; walking, cycling or driving the whole way under the ways. Its tab beside Bus only (the
 // route planner, features/planner/).
 import 'dart:async';
+import 'leg_trains.dart';
 import 'dart:convert';
 import 'dart:math' as math;
 
@@ -1087,6 +1088,9 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                     tr('nav.boardAround', 'Board around {time}.', {'time': When.clock(leaveMs + ((leg['board'] as num) * 60000).round())}),
                     style: TextStyle(color: sg.muted),
                   ),
+                // Its next trains, from when you're on the platform (leg_trains.dart).
+                if (leg['board'] is num)
+                  LegTrains(leg: leg, reachMs: leaveMs + (((leg['board'] as num) - ((leg['wait'] as num?) ?? 0)) * 60000).round()),
                 ?TrainDoors.build?.call(context, leg, legs.skip(k + 1).where((l) => l['mode'] != 'walk').firstOrNull),
                 if (leg['disrupted'] == true) _warn(tr('nav.disrupted', 'LTA reports a disruption on this line. Check Service alerts.')),
               ],

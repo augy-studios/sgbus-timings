@@ -38,6 +38,8 @@ import 'settings/settings_screen.dart';
 import 'settings/theme_screen.dart';
 import 'timings/board_screen.dart';
 import 'timings/campus_ui.dart';
+import 'timings/trains_screen.dart';
+import '../data/stations.dart';
 import 'timings/bus_screen.dart';
 import 'timings/flag_screen.dart';
 import 'timings/make_it.dart';
@@ -165,6 +167,12 @@ void registerFeatures() {
   AppNav.register('theme', (_) => ThemeScreen.open());
   MakeIt.hook();
   AppNav.register('board', (a) => BoardScreen.open(a['code'] as String));
+  // A station's train times, by any of its codes ("EW2" or "EW2,DT32").
+  AppNav.register('trains', (a) {
+    final codes = '${a['codes'] ?? a['code'] ?? ''}'.split(',').where((c) => c.isNotEmpty).toList();
+    final station = (Stations.all ?? const <Station>[]).where((s) => s.codes.any(codes.contains)).firstOrNull;
+    if (station != null) TrainsScreen.open(station);
+  });
   AppNav.register('flag', (a) => FlagScreen.open(a['no'] as String));
   AppNav.register('nav', (_) => AppNav.showPage('nav'));
   AppNav.register('navHash', (a) => openNav(

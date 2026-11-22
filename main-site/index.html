@@ -457,30 +457,6 @@
                     <p class="alertsIntro" data-i18n="places.tap_a_place_for_the">Tap a place for the way there from where you are. Each one is also a button under Navigate's From and To.</p>
                     <div id="placesList" class="placesList"></div>
                     <button id="placeNewBtn" class="btn placeNewBtn" type="button"><span data-icon="pin"></span> <span data-i18n="places.save_a_new_place">Save a new place</span></button>
-                    <form id="placeForm" class="placeForm" hidden>
-                        <p id="placeFormTitle" class="statsHead"></p>
-                        <label class="modal-section-label" for="placeSearch" data-i18n="places.where">Where</label>
-                        <div class="plannerInputRow">
-                            <div class="ac">
-                                <input id="placeSearch" class="input" data-i18n-placeholder="places.address_place_postal_code_station" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="search" />
-                                <div id="placeSearchAc" class="acList" hidden></div>
-                            </div>
-                            <button id="placeHere" class="iconBtn" type="button" data-i18n-title="places.use_where_i_am" title="Use where I am" data-i18n-aria-label="places.use_where_i_am" aria-label="Use where I am"><span data-icon="pin"></span></button>
-                        </div>
-                        <p id="placeChosen" class="mode-note" role="status"></p>
-                        <div id="placeNameRow">
-                            <label class="modal-section-label" for="placeName" data-i18n="places.name_optional">Name (optional)</label>
-                            <input id="placeName" class="input" maxlength="40" autocomplete="off" enterkeyhint="done" />
-                        </div>
-                        <!-- Buses you'd rather take to this place (js/ways.js, setPlaceBuses) -->
-                        <label class="modal-section-label" for="placeBuses" data-i18n="places.buses">Buses you like to take here (optional)</label>
-                        <input id="placeBuses" class="input" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="228" />
-                        <p class="mode-note" data-i18n="places.busesNote">Going here, Navigate marks a way on one of these as Your bus and puts it first in Best.</p>
-                        <div class="tripActions">
-                            <button id="placeSave" class="btn" type="submit" data-i18n="places.save">Save</button>
-                            <button id="placeCancel" class="iconBtn" type="button" data-i18n="places.cancel">Cancel</button>
-                        </div>
-                    </form>
                     <p class="estimateNote" data-i18n="places.places_are_kept_on_this">Places are kept on this device. Sync with another device, in Settings, copies them to another.</p>
                 </div>
             </div>
@@ -616,6 +592,54 @@
                 </button>
             </div>
             <div id="stopListBody" class="stopList"></div>
+        </div>
+    </div>
+
+    <!-- A place's form, new or edited, from Places' buttons and anywhere a place is saved: js/places.js -->
+    <div id="placeFormModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="placeFormTitle">
+            <div class="modal-head">
+                <h2 id="placeFormTitle" data-i18n="places.save_a_new_place">Save a new place</h2>
+                <button class="icon-btn small" type="button" data-close-modal="placeFormModal" data-i18n-aria-label="bug.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <form id="placeForm" class="placeForm">
+                <label class="modal-section-label" for="placeSearch" data-i18n="places.where">Where</label>
+                <div class="plannerInputRow">
+                    <div class="ac">
+                        <input id="placeSearch" class="input" data-i18n-placeholder="places.address_place_postal_code_station" placeholder="Address, place, postal code, station or stop" autocomplete="off" enterkeyhint="search" />
+                        <div id="placeSearchAc" class="acList" hidden></div>
+                    </div>
+                    <button id="placeHere" class="iconBtn" type="button" data-i18n-title="places.use_where_i_am" title="Use where I am" data-i18n-aria-label="places.use_where_i_am" aria-label="Use where I am"><span data-icon="pin"></span></button>
+                </div>
+                <p id="placeChosen" class="mode-note" role="status"></p>
+                <div id="placeNameRow">
+                    <label class="modal-section-label" for="placeName" data-i18n="places.name_optional">Name (optional)</label>
+                    <input id="placeName" class="input" maxlength="40" autocomplete="off" enterkeyhint="done" />
+                </div>
+                <!-- Buses you'd rather take to this place (js/ways.js, setPlaceBuses) -->
+                <label class="modal-section-label" for="placeBuses" data-i18n="places.buses">Buses you like to take here (optional)</label>
+                <input id="placeBuses" class="input" maxlength="120" autocomplete="off" spellcheck="false" enterkeyhint="done" placeholder="228" />
+                <p class="mode-note" data-i18n="places.busesNote">Going here, Navigate marks a way on one of these as Your bus and puts it first in Best.</p>
+                <div class="tripActions">
+                    <button id="placeSave" class="btn" type="submit" data-i18n="places.save">Save</button>
+                    <button id="placeCancel" class="iconBtn" type="button" data-i18n="places.cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- A station's train times, from a station search: js/trains.js -->
+    <div id="trainsModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="trainsTitle">
+            <div class="modal-head">
+                <h2 id="trainsTitle" data-i18n="trains.title">Train times</h2>
+                <button class="icon-btn small" type="button" data-close-modal="trainsModal" data-i18n-aria-label="bug.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div id="trainsBody" class="trainsBody" aria-live="polite"></div>
         </div>
     </div>
 
@@ -1681,6 +1705,7 @@
     <script src="/js/network.js"></script>
     <script src="/js/contractions.js"></script>
     <script src="/js/station-search.js"></script>
+    <script src="/js/trains.js"></script>
     <script src="/js/journeys.js"></script>
     <script src="/js/planner.js"></script>
     <script src="/js/p2p.js"></script>

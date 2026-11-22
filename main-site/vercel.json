@@ -4,6 +4,8 @@
         "api/push/poll.js": { "maxDuration": 300 },
         "api/push/trip-poll.js": { "maxDuration": 60 },
         "api/nav.js": { "maxDuration": 60 },
+        "api/trains.js": { "maxDuration": 30 },
+        "api/trains-all.js": { "maxDuration": 30 },
         "api/places.js": { "maxDuration": 30 },
         "api/calendar.js": { "maxDuration": 60 },
         "api/traffic.js": { "maxDuration": 120 },

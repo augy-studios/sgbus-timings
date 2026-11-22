@@ -189,16 +189,19 @@
     renderForm();
   }
 
+  // The form is a window of its own (#placeFormModal), open while a place is being edited.
   function renderForm() {
-    const form = $('#placeForm');
-    form.hidden = !editing;
-    $('#placeNewBtn').hidden = !!editing;
-    if (!editing) return;
+    const modal = $('#placeFormModal');
+    if (!editing) {
+      if (!modal.classList.contains('hidden')) closeModal('placeFormModal');
+      return;
+    }
     const fixed = FIXED[editing.key];
     $('#placeFormTitle').textContent = editing.key ? I18n.t('places.editName', 'Edit {place}', { place: fixed ? fixed.name : get(editing.key)?.name || I18n.t('places.place', 'place') }) : I18n.t('places.saveNew', 'Save a new place');
     $('#placeNameRow').hidden = !!fixed;
     $('#placeChosen').textContent = editing.place ? I18n.t('places.saving', 'Saving: {place}', { place: editing.place.label }) : I18n.t('places.searchOrHere', 'Search for the place, or use where you are.');
     $('#placeSave').disabled = !editing.place;
+    if (modal.classList.contains('hidden')) openModal('placeFormModal');
   }
 
   // The form, for a new place (`key` null) or one saved, `place` filled in if given.
@@ -210,18 +213,13 @@
     $('#placeName').value = place?.name || (saved && !FIXED[key] && saved.name !== saved.label ? saved.name : '');
     $('#placeName').placeholder = editing.place?.label ? I18n.t('places.eg', 'e.g. {place}', { place: editing.place.label }) : I18n.t("places.egDefault", "e.g. Gym, Mum's place");
     $('#placeBuses').value = editing.place ? Ways.placeBuses(editing.place).join(', ') : '';
-    if (!$('#placesSection').hidden) render();
-    else open();
-    // The form is under the list. Home and Work have no name to type, so nothing takes focus
-    // there: still bring the form into view, or with a long list it opens out of sight and Edit
-    // looks as if it did nothing.
+    // A window over whatever's open: Places' list, Navigate, a past search, the calendar.
+    renderForm();
+    // The search box takes the focus for a place not set yet, the name for one that is. Home and
+    // Work, set, have no name to type: nothing does, or the search's suggestions would cover the
+    // form.
     const input = !editing.place ? $('#placeSearch') : $('#placeNameRow').hidden ? null : $('#placeName');
-    if (input) {
-      input.scrollIntoView({ block: 'center' });
-      input.focus({ preventScroll: true });
-    } else {
-      $('#placeForm').scrollIntoView({ block: 'start' });
-    }
+    input?.focus();
   }
 
   function choose(place) {
@@ -276,6 +274,7 @@
     showPanel('placesSection', false);
     editing = null;
     menuFor = null;
+    renderForm();
   }
 
   function init() {
@@ -287,6 +286,8 @@
       editing = null;
       render();
     });
+    // Closed by its X, Esc or Back: nothing saved.
+    $('#placeFormModal').addEventListener('modalclose', () => { editing = null; });
     $('#placeForm').addEventListener('submit', save);
     $('#placeHere').addEventListener('click', useHere);
     attachPlaceSearch($('#placeSearch'), $('#placeSearchAc'), choose, { recents: true });

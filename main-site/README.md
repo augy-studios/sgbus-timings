@@ -245,6 +245,8 @@ From the repo's root, `node scripts/<name>`. The `.cjs` ones run the page in Chr
 - `campus-roads-test.mjs`: every shuttle route's kept road, for its stops as they are and through each stop; needs the network
 - `team-api-test.mjs`: `api/team.js` against a stand-in for Supabase
 - `trip-live-test.mjs`: the Get Off Alert's server half leaves a trip to the app while the app has your location
+- `trains-a11y-test.cjs`: train times, the map's station card, a Navigate ride's trains and the place form meet WCAG AA contrast in light, dark and High contrast, and say in words what their colours mean (`SHOTS=<folder>` saves each)
+- `trains-test.mjs`: `api/trains.js` and `api/trains-all.js`'s train times from a made-up timetable and disruption feed: which days run which trains, after midnight, interchanges, and a disruption's cancellations and delays
 - `achievements-words-test.cjs`: Achievements' feats and notes in every language
 - `auto-update-test.cjs`: a new version put in at a safe moment, and no words from before an update
 - `bug-report-test.cjs`: Report a bug, and the function that sends it (stand-ins for Telegram and Redis)
@@ -266,6 +268,7 @@ From the repo's root, `node scripts/<name>`. The `.cjs` ones run the page in Chr
 - `ride-check-test.cjs`: only rides really taken do the every-line feat
 - `team-run-test.cjs`: team runs, on three phones
 - `train-handoff-test.cjs`: trains on a trip, and the stop on the way
+- `trains-test.cjs`: train times from a station search, a disruption's changes, offline at a station never opened, and the last train and last three marked on the window, the map's station card and a Navigate ride (`SHOTS=<folder>` saves screenshots)
 - `trip-widget-test.cjs`: the bot's live trip widget and Follow in Telegram; needs the bot's packages (`telegram-bot/requirements.txt`)
 
 The bot's own are `scripts/bot-*-test.py` (`telegram-bot/README.md`), and the planner's against the app's, `flutter test test/nav_core_test.dart`.

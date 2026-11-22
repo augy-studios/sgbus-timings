@@ -328,6 +328,14 @@ class Desktop {
         await f();
       } catch (_) {}
     }
+    // Windows: the message loop ends and the runner closes the engine, as for a closed window
+    // (SgbusDesktop.quit). exit(0) from here could hang the window as it went, with Restart to
+    // update's window drawing: "Not responding" until the installer ended it after 10 s. Should
+    // the loop not end, exit(0) after all.
+    if (Platform.isWindows) {
+      await SgbusDesktop.quit();
+      await Future<void>.delayed(const Duration(seconds: 3));
+    }
     exit(0);
   }
 

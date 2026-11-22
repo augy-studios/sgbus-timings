@@ -9,9 +9,12 @@
 //                all that's left: its last bus is no later than the third coming (live
 //                timings), or within LAST_MIN while fewer than three are on their way.
 //   A station    its name, its codes in their lines' colours, and a page for each platform, a
-//                direction each, with arrows at the sides (or a swipe): the doors nearest the
-//                escalators, lifts and stairs, and where each leads (js/mrt-doors.js), drawn as
-//                Navigate draws them (js/nav.js).
+//                direction each, with arrows at the sides (or a swipe): its next trains, the
+//                last three of the day marked and its last train today, as the bus pills are
+//                (js/trains.js); then the doors nearest the escalators, lifts and stairs, and
+//                where each leads (js/mrt-doors.js), drawn as Navigate draws them (js/nav.js).
+//                Platforms the doors don't know (or a station they've none for) are listed under
+//                the pages, trains only.
 //
 //   A campus     a stop of NUS's or NTU's shuttles that LTA hasn't got (js/campus.js): its name
 //   stop         and university, and each shuttle route there with what its timetable says now,
@@ -216,7 +219,34 @@
     return /\b(Line|LRT)$/.test(x) ? I18n.t('mapCard.theLine', 'the {line}', { line: x }) : x;
   };
 
-  function slideHtml(p) {
+  // ---------- a station's trains ----------
+  const stationName = (code) => window.MRT?.stationName(code) || null;
+  // The train platforms (/api/trains) going the way a doors page does: its line's code, and its
+  // next station the first a train calls at, or its end where a train goes.
+  function trainsOf(data, p) {
+    if (!data?.platforms || p.last) return [];
+    return data.platforms.filter((t) => t.code === p.code &&
+      (t.ways.some((w) => stationName(w[0]) === p.next) || (!p.next && t.heads.includes(p.towards))));
+  }
+  function trainsHtml(data, list) {
+    if (!window.Trains || !data) return '';
+    return list.map((t) => Trains.compactHtml(data, t)).join('');
+  }
+  // A platform no doors page has: its line and way, then its trains.
+  function platformTrainsHtml(data, t) {
+    const colour = t.colour || colourOf(t.code);
+    return `<div class="mcDir" style="${lineStyle(colour)}"><span class="lineCode" style="${lineStyle(colour)}">${esc(t.code)}</span>` +
+      `<span class="mcDirText"><b>${esc(I18n.t('mapCard.towards', 'Towards {to}', { to: t.heads.join(' · ') }))}</b>` +
+      `${t.platform ? `<span>${esc(I18n.t('trains.platform', 'Platform {p}', { p: t.platform }))}</span>` : ''}</span></div>` +
+      Trains.compactHtml(data, t);
+  }
+  const trainsNote = (data) => (data?.usual
+    ? `<p class="mcNote">${esc(I18n.t('trains.usualNote', 'Offline: LTA’s usual timetable for today. Works or a disruption may change it.'))}</p>`
+    : data?.live
+      ? `<p class="mcNote">${esc(I18n.t('trains.liveNote', 'Live: LTA reports a disruption here. Changed and cancelled trains are marked.'))}</p>`
+      : data ? `<p class="mcNote">${esc(I18n.t('mapCard.trainsTimetable', 'Train times are LTA’s timetable.'))}</p>` : '');
+
+  function slideHtml(p, trains = null) {
     const colour = colourOf(p.code);
     const rows = p.rows.map((r) => `<li class="doorRow">${ico(DOOR_TYPE[r.t] ? r.t : 'train')}` +
       `<span class="doorChips">${r.doors.map((n) => `<span class="doorChip"><span class="doorTop">${esc(I18n.t('doors.door', 'Door'))}</span><b>${n}</b></span>`).join('')}</span>` +
@@ -224,6 +254,7 @@
     return `<div class="mcDir" style="${lineStyle(colour)}">` +
       `<span class="lineCode" style="${lineStyle(colour)}">${esc(p.code)}</span>` +
       `<span class="mcDirText"><b>${esc(p.last ? I18n.t('mapCard.endHere', 'Trains end here') : I18n.t('mapCard.towards', 'Towards {to}', { to: p.towards }))}</b>${p.next ? `<span>${esc(I18n.t('mapCard.next', 'Next: {stn}', { stn: p.next }))}</span>` : ''}</span></div>` +
+      trainsHtml(trains, trainsOf(trains, p)) +
       (rows
         ? `<div class="legDoors" style="${lineStyle(colour)}"><ul class="doorRows">${rows}</ul>` +
           `<div class="doorFoot">${p.numberAt ? doorNumberAt(p.numberAt) : ''}<span>${MrtDoors.numberAtHtml(p.numberAt)}</span></div></div>`
@@ -240,24 +271,48 @@
     const top = head(`<div class="mcTitle"><strong>${esc(st.name)}</strong><span class="mcCodes">${codes}</span></div>`);
     body.innerHTML = `${top}<p class="mcNote">${esc(I18n.t('mapCard.findingDoors', 'Finding the doors…'))}</p>${foot()}`;
     place();
-    await MrtDoors.load();
+    // The doors and the trains together; the trains asked again every half a minute while the
+    // card's open, the minutes counting down between.
+    let trains = null;
+    const [, got] = await Promise.all([MrtDoors.load(), window.Trains ? Trains.load(st.codes).catch(() => null) : null]);
+    trains = got;
     if (mine !== token) return;
     const slides = MrtDoors.station(st.codes);
+    // Train platforms no doors page goes the way of: listed under the pages.
+    const others = () => (trains?.platforms || []).filter((t) => !slides.some((p) => trainsOf(trains, p).includes(t)));
+    const othersHtml = () => others().map((t) => platformTrainsHtml(trains, t)).join('');
+    const keep = () => {
+      const timer = setInterval(async () => {
+        if (mine !== token) return clearInterval(timer);
+        const fresh = window.Trains ? await Trains.load(st.codes).catch(() => null) : null;
+        if (mine !== token) return clearInterval(timer);
+        if (fresh) trains = fresh;
+        redraw();
+      }, 15 * 1000);
+    };
+    let redraw = () => {};
     if (!slides.length) {
-      body.innerHTML = `${top}<p class="mcNote">${esc(I18n.t('mapCard.noDoorsStation', 'No door details for this station yet.'))}</p>${foot()}`;
-      return place();
+      redraw = () => {
+        body.innerHTML = top + (trains?.platforms?.length ? trainsNote(trains) + othersHtml() : '') +
+          `<p class="mcNote">${esc(I18n.t('mapCard.noDoorsStation', 'No door details for this station yet.'))}</p>${foot()}`;
+        place();
+      };
+      redraw();
+      return keep();
     }
     let i = 0;
     body.innerHTML = top +
+      trainsNote(trains) +
       `<div class="mcCarousel">` +
       `<button class="mcArrow" type="button" data-mc-step="-1" aria-label="Previous direction">${ico('back')}</button>` +
       `<div class="mcSlide" aria-live="polite"></div>` +
       `<button class="mcArrow" type="button" data-mc-step="1" aria-label="Next direction">${ico('forward')}</button>` +
-      `</div><p class="mcCount"></p>${foot()}`;
+      `</div><p class="mcCount"></p><div class="mcOthers"></div>${foot()}`;
     const slide = body.querySelector('.mcSlide');
     const show = (step = 0) => {
       i = (i + step + slides.length) % slides.length;
-      slide.innerHTML = slideHtml(slides[i]);
+      slide.innerHTML = slideHtml(slides[i], trains);
+      body.querySelector('.mcOthers').innerHTML = othersHtml();
       slide.classList.remove('fromLeft', 'fromRight');
       if (step) {
         void slide.offsetWidth;
@@ -279,6 +334,8 @@
       x0 = null;
     });
     show();
+    redraw = () => show(0);
+    keep();
   }
 
   // ---------- opening ----------

@@ -7,6 +7,8 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../data/campus.dart';
 import 'campus_ui.dart';
+import 'trains_screen.dart';
+import '../../data/stations.dart';
 
 import '../../api/api.dart';
 import '../../app/nav.dart';
@@ -169,6 +171,8 @@ class _TimingsPageState extends State<TimingsPage> {
     // The shuttle buses' routes and the campus stops LTA hasn't got, fetched the first time.
     if (searching && !Campus.ready) Campus.load().then((_) => mounted ? setState(() {}) : null).catchError((_) => null);
     final campus = searching && Campus.ready ? Campus.search(q) : null;
+    // A station search: its train times first (trains_screen.dart).
+    final station = searching ? Stations.find(q.trim().toLowerCase()) : null;
 
     return SafeArea(
       child: ListView(
@@ -198,6 +202,16 @@ class _TimingsPageState extends State<TimingsPage> {
             SgCard(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                if (station != null)
+                  _Suggestion(
+                    icon: Icons.train_outlined,
+                    code: tr('trains.title', 'Train times'),
+                    name: tr('trains.searchItem', 'Next trains at {station}', {'station': Stations.label(station)}),
+                    onTap: () {
+                      _focus.unfocus();
+                      TrainsScreen.open(station);
+                    },
+                  ),
                 if (match!.note.isNotEmpty) Padding(padding: const EdgeInsets.all(6), child: Text(match.note, style: TextStyle(color: sg.muted, fontSize: 13))),
                 if (postal != null)
                   _Suggestion(icon: Icons.place_outlined, code: postal, name: tr('search.nearPostal', 'Bus stops near this postal code'), onTap: () => _postal(postal)),
@@ -245,7 +259,7 @@ class _TimingsPageState extends State<TimingsPage> {
                       CampusStopScreen.open(c.key);
                     },
                   ),
-                if (match.stops.isEmpty && services.isEmpty && postal == null && (campus == null || (campus.routes.isEmpty && campus.stops.isEmpty)))
+                if (match.stops.isEmpty && services.isEmpty && postal == null && station == null && (campus == null || (campus.routes.isEmpty && campus.stops.isEmpty)))
                   EmptyNote(tr('search.noMatch', 'No bus stops matched that. Try a bus stop number or part of its name.')),
               ]),
             ),

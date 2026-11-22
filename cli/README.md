@@ -52,6 +52,7 @@ sgbus 84009 174,175              just those buses; sgbus 84009 '22*' every bus s
 sgbus 84009 -w                   on screen, refreshed every 30 seconds (-w 15 for 15)
 sgbus bedok int                  find a stop by name or road; sgbus 'Bedok MRT' a station's
 sgbus 519599                     the stops nearest a postal code
+sgbus trains tampines            a station's next trains, every line; sgbus trains EW2 by code
 sgbus 22                         bus 22's route; sgbus bus 9 --from 84031 from a stop on
 sgbus route 84009 66009          the route planner, bus only; --show 1 for a journey's steps
 sgbus nav "Bedok Mall" home      Navigate, bus and train; --way 2 for another way's steps, --via gym for a stop on the way, --sort walk

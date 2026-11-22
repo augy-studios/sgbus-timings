@@ -667,7 +667,8 @@ class AppLook extends ChangeNotifier {
 
   /// Each look's background (under the window's own effect, or where there's none), cards,
   /// stronger cards, card edges, writing and quieter writing, light and dark. The quieter
-  /// writing meets WCAG AA on the background and on the cards.
+  /// writing meets WCAG AA on the background, the cards and the stronger cards
+  /// (test/trains_contrast_test.dart).
   static const _deskTokens = {
     DeskStyle.fluent: {
       'light': [Color(0xFFF3F3F3), Color(0xB3FFFFFF), Color(0xE6FFFFFF), Color(0x14000000), Color(0xFF1B1B1B), Color(0xFF5E5E5E)],
@@ -675,7 +676,8 @@ class AppLook extends ChangeNotifier {
     },
     DeskStyle.tahoe: {
       'light': [Color(0xFFF5F5F7), Color(0x8CFFFFFF), Color(0xC7FFFFFF), Color(0xB3FFFFFF), Color(0xFF1D1D1F), Color(0xFF636366)],
-      'dark': [Color(0xFF1E1E1E), Color(0x1AFFFFFF), Color(0x29FFFFFF), Color(0x2EFFFFFF), Color(0xFFF5F5F7), Color(0xFFA1A1A6)],
+      // The quieter writing #B5B5BA, 4.9:1 on the stronger cards (the map's bubble); #A1A1A6 was 3.9:1.
+      'dark': [Color(0xFF1E1E1E), Color(0x1AFFFFFF), Color(0x29FFFFFF), Color(0x2EFFFFFF), Color(0xFFF5F5F7), Color(0xFFB5B5BA)],
     },
     DeskStyle.frosted: {
       'light': [Color(0xFFEEF0F4), Color(0x99FFFFFF), Color(0xD1FFFFFF), Color(0xB3FFFFFF), Color(0xFF1F2329), Color(0xFF575E6A)],

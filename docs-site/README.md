@@ -54,6 +54,11 @@ Playwright's own routing, and `/api/*` from the live site.
 the trip's map; `ux-nov-settings`: Fare type, Preferred buses and a place's buses) are always
 still, Kallang to a home by Aft Waterfront Waves, planned with this checkout's own router.
 
+22 November 2026's `trains` (a station search's Train times, the station's window and a
+Navigate ride's next trains) is always still; with `LTA_ACCOUNT_KEY` set its times come from this
+checkout's `api/trains.js` and LTA's timetable, otherwise from the live site. `place-form` is the
+place form in its own window.
+
 `STILL=1` takes any group still instead: the page's clock stopped on a Friday morning
 (`STILL_AT`) and every stop's timings made up from its real routes, so a shot comes out the
 same whenever it's taken. The help desk #13 groups (`near-me`, `bug-report`, `explorer-back`,

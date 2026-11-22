@@ -1077,6 +1077,34 @@ function doorsPanel(p, text, color, key = null) {
     `</details>`;
 }
 
+// Each boarding station's train times (js/trains.js), once in, by its codes: null when there
+// are none to be had.
+const navTrains = new Map();
+
+// The next trains on a train ride that reach its stop, from `reachMs`, when you're on the
+// platform: LTA's timetable, or a disruption's changes to it. Empty until they're in.
+function legTrainsHtml(leg, reachMs) {
+  if (!window.Trains || !leg.from?.code || !leg.to?.code) return '';
+  const data = navTrains.get(Trains.codesKey(leg.from.code.split('/')));
+  const next = data && Trains.forLeg(data, leg.to.code, reachMs);
+  if (!next) return '';
+  const head = next.live
+    ? I18n.t('nav.trainsLive', 'Trains to {stop}, with LTA’s disruption changes:', { stop: leg.to.name })
+    : I18n.t('nav.trainsTimetable', 'Trains to {stop} by the timetable:', { stop: leg.to.name });
+  // The day's last train there, as the bus rides' last bus: a warning once the one you'd catch is
+  // one of the last three, else said plainly.
+  const last = next.rank
+    ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(next.rank === 1
+      ? I18n.t('nav.lastTrain', 'Last train to {stop} from here today is at {time}. Don’t miss it.', { stop: leg.to.name, time: When.clock(next.lastMs) })
+      : I18n.t('nav.lastTrains', 'Only the last {n} trains to {stop} are left today. The last is at {time}.', { n: next.rank, stop: leg.to.name, time: When.clock(next.lastMs) }))}</div>`
+    : `<div class="legNote">${escapeHtml(I18n.t('nav.lastTrainAt', 'Last train there today at {time}.', { time: When.clock(next.lastMs) }))}</div>`;
+  return `<div class="legNote legTrains">${ico('clock')}<span>${escapeHtml(head)}</span>` +
+    next.trains.map((x, i) => `<span class="legTrain${x.state === 1 ? ' changed' : ''}${next.rank && i < next.rank ? ' last' : ''}">${escapeHtml(When.clock(x.ms))}` +
+      // A new time from the disruption feed, in words too (WCAG 1.4.1).
+      `${x.state === 1 ? `<small>${escapeHtml(I18n.t('trains.changedShort', '(new time)'))}</small>` : ''}</span>`).join('') +
+    `</div>` + last;
+}
+
 // A shuttle bus (js/nav-core/campus.js) in its route's colour, with whose it is: "NUS A1".
 function legChip(leg) {
   if (leg.campus) return `<span class="busChip shuttleChip" style="--route:${escapeHtml(leg.campus.colour || '#7a4fd6')};--route-ink:${shuttleInk(leg.campus.colour)}">${ico('bus')} ${escapeHtml(`${leg.campus.name} ${leg.route}`)}</span>`;
@@ -1230,6 +1258,7 @@ async function renderNavOption(o) {
           ? I18n.t('nav.trainRideTowards', 'From {from}, towards {towards}: {n} stops to {to}, ~{min} min', { from: placeName(leg.from), towards: leg.towards, n: leg.stops, to: placeName(leg.to), min: Math.round(leg.minutes) })
           : I18n.t('nav.trainRide', 'From {from}: {n} stops to {to}, ~{min} min', { from: placeName(leg.from), n: leg.stops, to: placeName(leg.to), min: Math.round(leg.minutes) }))}</div>` +
         ((nav.when || o.offline) && leg.board != null ? `<div class="legNote">${escapeHtml(I18n.t('nav.boardAround', 'Board around {time}.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>` : '') +
+        (leg.board != null ? legTrainsHtml(leg, leaveMs + (leg.board - (leg.wait || 0)) * 60000) : '') +
         doors +
         (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disrupted', 'LTA reports a disruption on this line. Check Service alerts.'))}</div>` : '') +
         `</li>`;
@@ -1283,6 +1312,14 @@ async function renderNavOption(o) {
   // The doors for its train rides, drawn in once they're in, if it's still this way on show.
   if (window.MrtDoors && !MrtDoors.ready() && o.legs.some((l) => l.mode === 'train')) {
     MrtDoors.load().then(() => { if (token === nav.token && nav.option === o && MrtDoors.ready()) draw(shown); });
+  }
+  // Its train rides' times (js/trains.js), drawn in the same way; a kept copy when offline.
+  const trainFroms = window.Trains ? [...new Set(o.legs.filter((l) => l.mode === 'train' && l.from?.code).map((l) => l.from.code))] : [];
+  const wanted = trainFroms.filter((c) => !navTrains.has(Trains.codesKey(c.split('/'))));
+  if (wanted.length) {
+    Promise.all(wanted.map((c) => Trains.load(c.split('/')).then((d) => navTrains.set(Trains.codesKey(c.split('/')), d)))).then(() => {
+      if (token === nav.token && nav.option === o) draw(shown);
+    });
   }
   if (!live) return;
 

@@ -500,6 +500,7 @@ function matchStops(q, limit = 20) {
         return {
             stops: atStation.map(s => ({ code: s.code, name: nameOf(s.code), road: stopsIndex[s.code]?.road || '', distance: s.distance })),
             note: tr('search.stopsAt', 'Bus stops at {station}', { station: StationSearch.label(station) }),
+            station,
         };
     }
 
@@ -534,12 +535,19 @@ const isPostalCode = v => /^\d{6}$/.test(v.trim());
 // `direct` (stop code to bus numbers) marks the stops with a bus straight to the other end of
 // a planned route; `note` says so above them.
 // `campus` ({ routes, stops }, Campus.search) adds the campus shuttles' routes and the campus
-// stops LTA hasn't got (js/campus.js), after the buses.
-function renderAcList(box, stops, services = [], postal = null, direct = null, note = '', campus = null) {
+// stops LTA hasn't got (js/campus.js), after the buses. `station`, for a station search, puts
+// its train times first (js/trains.js).
+function renderAcList(box, stops, services = [], postal = null, direct = null, note = '', campus = null, station = null) {
     const campusRoutes = campus?.routes || [];
     const campusStops = campus?.stops || [];
-    if (!stops.length && !services.length && !postal && !campusRoutes.length && !campusStops.length) { box.hidden = true; box.innerHTML = ''; return; }
+    if (!stops.length && !services.length && !postal && !campusRoutes.length && !campusStops.length && !station) { box.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML =
+        (station
+            ? `<div class="acItem acService acTrains" data-trains="${escapeHtml(station.codes.join(','))}">` +
+              `<span class="code">${ico('train')} ${escapeHtml(tr('trains.title', 'Train times'))}</span>` +
+              `<span class="name">${escapeHtml(tr('trains.searchItem', 'Next trains at {station}', { station: StationSearch.label(station) }))}</span>` +
+              `</div>`
+            : '') +
         (note ? `<div class="acNote">${escapeHtml(note)}</div>` : '') +
         (postal
             ? `<div class="acItem acService" data-postal="${escapeHtml(postal)}">` +
@@ -585,7 +593,7 @@ function renderAcList(box, stops, services = [], postal = null, direct = null, n
 // near it to pick one from. With `directFor` (a stop code to the buses running straight to
 // where the route planner is going, or null), those stops go first and are marked, and
 // `directNote` (given how many) says so above them.
-function attachAutocomplete(input, box, { withServices = false, withCampus = false, onStop, onService, onEnter, onPostal, directFor, directNote }) {
+function attachAutocomplete(input, box, { withServices = false, withCampus = false, withTrains = false, onStop, onService, onEnter, onPostal, directFor, directNote }) {
     window.wireCombobox?.(input, box);
     onPostal ??= code => postalStops(code)
         .then(({ title, stops }) => openStopList(title, stops, { pin: false, onPick: onStop }))
@@ -604,11 +612,12 @@ function attachAutocomplete(input, box, { withServices = false, withCampus = fal
     };
     const render = () => {
         const v = input.value;
-        const { stops, direct, note } = suggest(v);
+        const { stops, direct, note, station } = suggest(v);
         // The campus shuttles, fetched the first time they're wanted (js/campus.js).
         if (withCampus && window.Campus && !Campus.isReady()) Campus.load().then(() => { if (document.activeElement === input) render(); }).catch(() => {});
         renderAcList(box, stops, withServices && BusNet.isReady() ? BusNet.matchServices(v, 4) : [],
-            isPostalCode(v) ? v.trim() : null, direct, note, withCampus && window.Campus?.isReady() ? Campus.search(v) : null);
+            isPostalCode(v) ? v.trim() : null, direct, note, withCampus && window.Campus?.isReady() ? Campus.search(v) : null,
+            withTrains && window.Trains ? station || StationSearch.find(v) : null);
     };
     input.addEventListener('input', render);
     input.addEventListener('focus', render);
@@ -630,6 +639,13 @@ function attachAutocomplete(input, box, { withServices = false, withCampus = fal
         if (postal) { box.hidden = true; onPostal(postal.getAttribute('data-postal')); return; }
         const svc = e.target.closest('[data-svc]');
         if (svc) { box.hidden = true; onService?.(svc.getAttribute('data-svc')); return; }
+        const trains = e.target.closest('[data-trains]');
+        if (trains) {
+            box.hidden = true;
+            const station = StationSearch.find(input.value) || { name: trains.dataset.trains, codes: trains.dataset.trains.split(',') };
+            window.Trains?.open(station);
+            return;
+        }
         const campusRoute = e.target.closest('[data-campus-route]');
         if (campusRoute) { box.hidden = true; openCampusRoute(campusRoute.dataset.campusRoute); return; }
         const campusStop = e.target.closest('[data-campus-stop]');
@@ -2309,6 +2325,7 @@ const searchPostal = code => { Recents.add(Recents.postalItem(code)); openPostal
 attachAutocomplete($('#q'), $('#acList'), {
     withServices: true,
     withCampus: true,
+    withTrains: true,
     onStop: searchStop,
     onService: searchBus,
     onEnter: runSearch,

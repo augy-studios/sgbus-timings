@@ -203,6 +203,9 @@ Future<void> stillData({Map<String, String> state = const {}, String lang = 'en'
         return _json('nav');
       case '/mrt-doors':
         return _json('mrt-doors');
+      case '/trains':
+        // Tampines at STILL_AT, from LTA's timetable through main-site/api/trains.js.
+        return _json('trains-tampines');
       case '/walk':
         return _json('walk');
       case '/road':

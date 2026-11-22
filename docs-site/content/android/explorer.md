@@ -42,13 +42,16 @@ The cross closes the card, and so does tapping the map elsewhere.
 ## A station
 
 Tap a station for its card: its name and its codes, each in its line's colour, then one platform at a time.
-Each says which way its trains go and the next stop, then the doors to stand at for the escalators, lifts and
+Each says which way its trains go and the next stop, then its next trains by LTA's timetable, green, or red once
+only the day's last three are left, and when its last train leaves today, as on
+[the web app](../web/explorer.md#a-station). Then the doors to stand at for the escalators, lifts and
 stairs, and where each leads: the exit, another line, or a mall or terminal. The door number is the one on the
 platform door, and the card shows where on the door to find it.
 
 Tap the arrows at the sides, or swipe across, for the station's other platforms.
 
-A station with no door details yet says so. Its name, codes and **Directions** are still there. If stops and
+A station with no door details yet says so, under each platform's trains. Its name, codes and **Directions**
+are still there. If stops and
 stations are close together, a tap goes to the station first.
 
 ## Shuttle buses

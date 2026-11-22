@@ -44,6 +44,7 @@ still opens without a connection: on the MRT between stations, say.
 | Searching bus stops by name or code | Yes, from the last copy downloaded |
 | Bus routes and the route planner | Yes, from the last copy downloaded |
 | Live arrival timings | No |
+| [Train times at a station](search.md#train-times-at-a-station) | Yes: every station's usual timetable, kept on your device; a station you opened today keeps its day's times |
 | The Service alerts card | No; notifications still arrive once you're back online |
 | Stops near me | Usually: it needs only your device's location and the saved list of stops |
 | The live map and Explorer | Places you've looked at before, or all of Singapore once you've [saved the map](explorer.md#save-the-map-for-offline) |

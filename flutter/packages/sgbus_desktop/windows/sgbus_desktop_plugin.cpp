@@ -237,6 +237,12 @@ class SgbusDesktopPlugin : public flutter::Plugin {
       result->Success();
     } else if (name == "trayFront") {
       result->Success(EncodableValue(TrayFront()));
+    } else if (name == "quit") {
+      // Ends the main window's message loop (windows/runner/main.cpp), so the runner shuts the
+      // engine down as it does for a closed window. Called on the loop's own thread, so the
+      // WM_QUIT is its. The answer goes first: Dart is waiting for it.
+      result->Success();
+      PostQuitMessage(0);
     } else {
       result->NotImplemented();
     }

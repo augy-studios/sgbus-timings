@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v171";
+const VERSION = "v178";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -52,6 +52,8 @@ const ASSETS = [
   "/js/contractions.js",
   // A search for "Bedok MRT" lists the stops at the station's exits (js/station-search.js).
   "/js/station-search.js",
+  // A station's train times (js/trains.js), from a station search and on Navigate's train rides.
+  "/js/trains.js",
   "/data/rail-stations.json",
   "/js/journeys.js",
   "/js/planner.js",
@@ -559,6 +561,9 @@ self.addEventListener("fetch", (event) => {
     // arrival time or disruption shown as live is worse than an error saying the
     // network is down.
     if (url.pathname === "/api/bus-arrivals" || url.pathname === "/api/service-alerts") return;
+    // Train times keep their own offline copy, for their service day only (js/trains.js): an
+    // older one from here would be another day's.
+    if (url.pathname === "/api/trains") return;
     // Service Alerts sign-up talks to the server and nothing else: a cached answer
     // could hand back a key from before the server's keys changed.
     if (url.pathname.startsWith("/api/push/")) return;
@@ -575,7 +580,8 @@ self.addEventListener("fetch", (event) => {
     // Syncing with the Telegram bot: what it's said is only ever news.
     if (url.pathname === "/api/sync") return;
     // The MRT doors (js/mrt-doors.js) change as rarely, and are as useful underground.
-    if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops" || url.pathname === "/api/mrt-doors") {
+    // Every station's usual trains (js/trains.js) are kept the same way, for offline.
+    if (url.pathname === "/api/bus-routes" || url.pathname === "/api/bus-stops" || url.pathname === "/api/mrt-doors" || url.pathname === "/api/trains-all") {
       event.respondWith(staleWhileRevalidate(event, request));
       return;
     }

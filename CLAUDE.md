@@ -83,6 +83,13 @@ Every app shares one version number. Raise it in all three places together, or t
   places, and each year's go into all four: `js/when.js`, `js/nav-core/when.js`,
   `telegram-bot/src/when.py` and `flutter/lib/data/when.dart`. Each academic year's term dates go
   into `data/campus/config.json`.
+- **Train times:** `api/trains.js` (a station) and `api/trains-all.js` (every station's usual
+  day, for offline) read LTA's GTFS timetable and its disruption-only trip updates at run time
+  (`api/_trains/`), never vendored. LTA has no live train times outside a disruption, so they're
+  labelled timetable. `js/trains.js`, `flutter/lib/data/trains.dart` and
+  `telegram-bot/src/trains.py` read them in step. Checks: `scripts/trains-test.mjs`, `.cjs` and
+  `trains-a11y-test.cjs` (WCAG AA in light, dark and High contrast); the app's
+  `test/trains_contrast_test.dart` (every look).
 - **Fares:** PTC's distance fare tables are in `js/ways.js`, `flutter/lib/features/nav/ways.dart`
   and `telegram-bot/src/ways.py`. Update all three at each fare review.
 - **Vendored data** is made by scripts, never edited by hand. Run them from the repo root:

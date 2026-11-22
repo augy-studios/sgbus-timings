@@ -12,6 +12,7 @@ from ..reply import send_rich_message
 from ..routines import bus_filter
 from ..stations import find_station, station_label
 from ..stop_view import build_stop_view
+from ..trains import trains_button
 
 # Bus stop codes are always 5 digits and postal codes 6; bus service numbers are
 # shorter and may carry letters (e.g. 22, 971E, NR7), so none of them collide.
@@ -107,11 +108,15 @@ def register_search(client):
             return
 
         station = find_station(text)
-        if station and "distance" in matches[0].keys():
+        at_station = station and "distance" in matches[0].keys()
+        if at_station:
             title = f"Bus stops at {station_label(station)}"
         else:
             # Saying which shortened forms were searched too, as LTA's names use them.
             note = search_note(text, matches)
             title = f"Did you mean ({note[0].lower()}{note[1:]})" if note else "Did you mean"
         rich, buttons = build_stop_list_view(event.chat_id, title, matches)
+        # A station's train times, above its bus stops (trains.py).
+        if at_station:
+            buttons = [[trains_button(station)], *buttons]
         await send_rich_message(client, event.chat_id, rich, buttons)

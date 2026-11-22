@@ -357,6 +357,54 @@
       ];
     }
 
+    // ---------- train times ----------
+
+    // A station's next trains (main-site/api/trains.js): LTA's timetable, with a disruption's
+    // changes over it when LTA's feed has any. Asked for by name ("Tampines", "Tampines MRT",
+    // "Senja LRT") or code ("EW2"); a station gives every line through it. In step with
+    // js/trains.js, which the web app reads the same answer with.
+    async function trains(words, opts) {
+      const s = host.scripts();
+      const q = words.join(' ').trim();
+      if (!q) throw new Fail('sgbus trains <station>: sgbus trains tampines, sgbus trains EW2');
+      await s.StationSearch.load();
+      const code = /^[a-z]{1,3}\d{1,2}[a-z]?$/i.test(q) ? q.toUpperCase() : null;
+      const station = code
+        ? (s.StationSearch.all() || []).find((st) => st.codes.includes(code)) || { name: s.MRT?.stationName(code) || code, codes: [code] }
+        : s.StationSearch.find(q) || s.StationSearch.find(`${q} MRT`);
+      if (!station) throw new Fail(`No MRT or LRT station matched "${q}". Try its name, such as Tampines, or its code, such as EW2.`);
+      const data = await get(`/api/trains?codes=${encodeURIComponent(station.codes.join(','))}`);
+      if (opts.json) return out(JSON.stringify(data, null, 2));
+      const now = Date.now();
+      const at = (t) => data.start + t * 1000;
+      const lines = [bold(`Trains at ${station.name}`), dim(data.live
+        ? 'Live: LTA reports a disruption here. Changed and cancelled trains are marked.'
+        : 'Timetable times from LTA. LTA gives live train times only during a disruption.')];
+      for (const p of data.platforms) {
+        const next = p.trains.filter((x) => at(x[0]) >= now - 30000).slice(0, 4);
+        const heads = [...new Set(next.map((x) => p.heads[x[1]]))];
+        lines.push('', `${bold(p.line || p.code)} towards ${(heads.length ? heads : p.heads).join(' · ')}${p.platform ? dim(`  platform ${p.platform}`) : ''}`);
+        // Its last train today, red once only its last three are left; those three marked.
+        const runs = p.trains.filter((x) => x[3] !== 2);
+        const ranks = new Map(runs.slice(-3).reverse().map((x, i) => [x[0], i + 1]));
+        const left = runs.filter((x) => at(x[0]) >= now - 30000).length;
+        if (runs.length) lines.push(`  ${(left && left <= 3 ? red : dim)(`Last train today at ${sgClock(at(runs[runs.length - 1][0]))}`)}`);
+        if (!next.length) {
+          lines.push(dim(p.first ? `  No more trains today. First train tomorrow at ${sgClock(at(p.first[0] + 86400))}.` : '  No more trains today.'));
+          continue;
+        }
+        for (const [t, h, , state] of next) {
+          const s2 = (at(t) - now) / 1000;
+          const when = state === 2 ? red('Cancelled') : s2 <= 30 ? green('Now') : s2 >= 3600 ? sgClock(at(t)) : `${Math.round(s2 / 60)} min`;
+          const rank = ranks.get(t);
+          lines.push(`  ${pad(when, 10)} ${dim(sgClock(at(t)))}${state === 1 ? yellow('  changed') : ''}${heads.length > 1 ? `  ${p.heads[h]}` : ''}${rank ? red(`  ${['', 'last train', '2nd last', '3rd last'][rank]}`) : ''}`);
+        }
+      }
+      return out(...lines);
+    }
+    // "08:31", by Singapore's clock.
+    const sgClock = (ms) => new Date(ms + SG_OFFSET_MS).toISOString().slice(11, 16);
+
     async function postalPlace(code) {
       const p = await get(`/api/postal-code?code=${code}`);
       if (!p) throw new Fail(`No address has the postal code ${code}.`);
@@ -1136,6 +1184,7 @@
       "  sgbus <name, road or station>   find stops: sgbus bedok int, sgbus 'Bedok MRT'",
       '  sgbus <postal code>             the stops nearest an address: sgbus 519599',
       '  sgbus near <postal | lat,lng>   the same, or from a point',
+      '  sgbus trains <station>          the next trains: sgbus trains tampines, sgbus trains EW2',
       "  sgbus bus <bus> [--dir 2] [--from <stop>]   a bus's route; just sgbus 22 works too",
       '',
       'Getting somewhere',
@@ -1230,6 +1279,7 @@
           return out(...stopListLines(`Bus stops near ${p.address}`, near));
         }
         case 'bus': return showBus(rest[0] || '', opts);
+        case 'trains': case 'train': return trains(rest, opts);
         case 'route': case 'routeplan':
           if (rest.length < 2) throw new Fail('sgbus route <start> <end>');
           return routePlan(rest[0], rest.slice(1).join(' '), opts);

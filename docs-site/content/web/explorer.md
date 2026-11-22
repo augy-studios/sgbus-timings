@@ -47,13 +47,16 @@ bus's [timings](timings.md) at the stop, on Bus timings.
 ## A station
 
 <figure>
-<img src="/screenshots/web/explorer-station.png" alt="Explorer with Dhoby Ghaut's card open: its codes NS24, NE6 and CC1 in red, purple and orange, then the North-South Line platform towards Jurong East, next stop Somerset: the escalators at doors 8 and 17, the lift at door 13 and the stairs at doors 5, 11, 14 and 20, each to the exit, the North-East Line and the Circle Line, with arrows at the sides for the other platforms." width="390" height="844" loading="lazy">
-<figcaption>Dhoby Ghaut: one platform at a time, with the doors nearest each way off it.</figcaption>
+<img src="/screenshots/web/explorer-station.png" alt="Explorer with Dhoby Ghaut's card open: its codes NS24, NE6 and CC1 in red, purple and orange, a note that train times are LTA's timetable, then the North-South Line platform towards Jurong East, next stop Somerset: trains in 1, 3 and 5 min in green, last train today at 00:12, then the escalators at doors 8 and 17, the lift at door 13 and the stairs at doors 5, 11 and 14, each to the exit, the North-East Line and the Circle Line, with arrows at the sides for the other platforms." width="390" height="844" loading="lazy">
+<figcaption>Dhoby Ghaut: one platform at a time, with its next trains and the doors nearest each way off it.</figcaption>
 </figure>
 
 Tap a station for its card: its name and its codes, each in its line's colour,
 then one platform at a time. Each says which way its trains go and the next
-stop, then the doors to stand at for the escalators, lifts and stairs, and where
+stop, then its next trains by LTA's timetable, as
+[a station search](search.md#train-times-at-a-station) has them: green, or red
+once only the day's last three are left, each marked 3rd last, 2nd last or Last
+train, and when its last train leaves today. Then the doors to stand at for the escalators, lifts and stairs, and where
 each leads: the exit, another line, or a mall or terminal. The door number is
 the one on the platform door, and the card shows where on the door to find it,
 as [Navigate](nav.md) does.
@@ -62,12 +65,13 @@ Tap the arrows at the sides, or swipe across, for the station's other platforms,
 the way each line goes.
 
 <figure>
-<img src="/screenshots/web/explorer-station-next.png" alt="Dhoby Ghaut's card on its next platform, the North-South Line towards Marina South Pier, next stop City Hall, with its own doors for the escalators, lift and stairs, and 2 of 6 under it." width="340" height="562" loading="lazy">
+<img src="/screenshots/web/explorer-station-next.png" alt="Dhoby Ghaut's card on its next platform, the North-South Line towards Marina South Pier, next stop City Hall, with its next trains and last train, its own doors for the escalators, lift and stairs, and 2 of 6 under it." width="340" height="562" loading="lazy">
 <figcaption>The next platform: the other way on the North-South Line.</figcaption>
 </figure>
 
-A station with no door details yet says so. Its name, codes and Directions are
-still there.
+A station with no door details yet says so, under each platform's trains. A
+platform the door details don't cover, such as an LRT one at an interchange, is
+listed under the pages with its trains.
 
 ## Shuttle buses
 

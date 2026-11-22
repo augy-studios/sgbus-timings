@@ -47,6 +47,7 @@ fine if you type it anyway):
 84009 -w              kept up to date, every 30 seconds
 bedok int             find a stop by its name, road or station
 519599                the stops nearest a postal code
+trains tampines       a station's next trains, every line
 22                    bus 22's route
 nav home work         by bus and train, between two of your places
 nav "Bedok Mall" 6PH57RQ8+X2 --arrive 9am --day mon

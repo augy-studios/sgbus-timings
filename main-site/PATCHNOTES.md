@@ -9,6 +9,38 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 22 November 2026: Train times at every station (2.7.0)
+
+### Website, Android and desktop apps
+
+- **Train times at a station** - A station search offers **Train times** first: every line through the station, each way, with its platform, where its trains go and the minutes until the next four. The times are LTA's timetable, as LTA gives live train times only during a disruption. Then the window says Live, and LTA's changes show over the timetable: a late train in orange with its new time, and a cancelled one, or one not stopping here, crossed out. After the last train it says when tomorrow's first one is.
+- **The last trains** - Each platform says when its last train leaves today. Its last three trains are marked 3rd last, 2nd last and Last train in red, and once only those are left the last train line turns red too. Trains after midnight count as the day before's, until 3am.
+- **Trains on the map** - A station's card on the map and in Explorer has each platform's next trains and its last train, above the doors to stand at.
+- **Trains in Navigate** - Under a train ride, the next three trains that reach where you get off, from when you'd be on the platform, and when the last one there leaves today. If the one you'd catch is one of the last three, it warns you in orange, as a bus ride's last bus does.
+- **Offline** - Every station's usual timetable is kept on your device, and a station you opened today keeps its day's times.
+- **Easier to read** - The last trains' red, and in dark mode the map's bubbles' quieter writing, meet WCAG's AA contrast (4.5:1), and a late train says New time in words, not only in colour.
+- **A place's own window** - Save a new place and Edit open the place's form in a window of its own, in Places and wherever else you save one.
+
+### Desktop app 2.7.0
+
+- **Restart to update on Windows** - The app now closes the way a closed window does to install an update, rather than hanging as Not responding until the installer ended it.
+
+### Telegram bot
+
+- **🚆 Train times** - A station search has a button above its bus stops for the station's next trains, every line each way, with a disruption's changes when LTA has any, and 🔄 Refresh.
+
+### Linux command line 2.7.0
+
+- **`sgbus trains`** - `sgbus trains tampines`, or `sgbus trains EW2` by code, lists a station's next trains on every line, each way. The web app's terminal has it too.
+
+### Wear OS 2.7.0
+
+- No changes of its own: numbered 2.7.0 to stay in step with the phone.
+
+### Guide
+
+- The search, Explorer, Navigate, Places, offline and command-line pages cover train times and the last trains, with new pictures.
+
 ## 22 November 2026: Bus numbers you can read in dark mode (2.6.1)
 
 ### Website, Android and desktop apps

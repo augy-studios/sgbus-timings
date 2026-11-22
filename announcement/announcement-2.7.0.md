@@ -1,0 +1,18 @@
+✨UPDATE✨ SG Bus Timings 2.7.0
+sgbus.uwuapps.org
+
+Website, apps, Telegram bot and command line:
+- Train times at every MRT and LRT station, every line each way
+- The last trains of the day marked in red
+- A disruption's late and cancelled trains, from LTA
+
+Website and apps:
+- Navigate's train rides list the next trains, and warn you about the last ones
+- A station's card on the map has its trains too
+- Train times work offline
+- Places' form opens in a window of its own
+
+Desktop app:
+- Restart to update no longer hangs on Windows
+
+Download the apps and view patch notes: github.com/augy-studios/sgbus-timings/releases/latest

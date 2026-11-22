@@ -23,7 +23,7 @@ suggestion, and the stop's timings open underneath.
 | A stop code and some buses | `84009 174, 175`, `84009 22*` | Opens that stop narrowed to those buses |
 | A bus number | `22`, `NR7`, `971E` | Opens [that bus's route](bus-routes.md) |
 | A 6-digit postal code | `519599` | Lists the 8 stops nearest that address |
-| An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists the stops at its exits |
+| An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists its [train times](#train-times-at-a-station) and the stops at its exits |
 | A shuttle bus route | `A1`, `CL-B`, `M2` | Opens [that shuttle's route](#shuttle-buses) |
 | A shuttle bus stop | `PGP`, `IKEA` | Opens its shuttle times |
 
@@ -56,6 +56,44 @@ LTA names the stops at a station "Bedok Stn", or after a block or a road, never
 `Bedok MRT`, `Senja LRT` or `Botanic Gardens station`, and the list is the stops
 within about 250 m of its exits, nearest first, with how far each one is.
 **Enter** opens them as a list to pick from.
+
+### Train times at a station
+
+<figure>
+<img src="/screenshots/web/search-trains.png" alt="The search box with Tampines MRT typed in, and under it Train times, Next trains at Tampines MRT station, above Bus stops at Tampines MRT station and the stops at its exits: Tampines Stn Exit D, Tampines Int and more." width="247" height="350" loading="lazy">
+<figcaption>A station search: its train times first, then its bus stops.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/trains-station.png" alt="Trains at Tampines: a note that these are timetable times from LTA, which gives live train times only during a disruption. Then each platform: EW towards Pasir Ris, platform A, in 2, 4, 6 and 9 min; EW towards Tuas Link, platform B; DT towards Bukit Panjang, platform A, the first one Now; and DT towards Expo, platform B, each time with its clock time." width="396" height="786" loading="lazy">
+<figcaption>Every line at the station, each way, with the next four trains.</figcaption>
+</figure>
+
+A station search also offers **Train times** at the top of the list. Tap it for
+the station's next trains: every line through it, each way, with its platform,
+where its trains go, and how many minutes until each. Where a platform's trains
+don't all go as far, such as Joo Koon or Tuas Link, each says which it is.
+
+The times are LTA's **timetable**, as LTA gives live train times only while a
+line is disrupted. During a disruption the window says **Live**, and LTA's
+changes show over the timetable: a late train in orange with its new time, and
+a cancelled one, or one not stopping here, crossed out. After the last train it
+says when tomorrow's first one is.
+
+### The last trains
+
+<figure>
+<img src="/screenshots/web/trains-last.png" alt="Trains at Tampines just after midnight. EW towards Pasir Ris, last train today at 00:38, in 2, 6, 10 and 14 min, the 10 and 14 marked 3rd last and 2nd last in red. EW towards Tuas Link and DT towards Bukit Panjang: no more trains today, with tomorrow's first. DT towards Expo, last train today at 00:35 in red, in 7 min marked 2nd last and 16 min marked Last train." width="396" height="534" loading="lazy">
+<figcaption>Just after midnight: each platform's last trains, marked in red.</figcaption>
+</figure>
+
+Each platform says when its **last train** leaves today, as a stop's timings say
+its last bus. Its last three trains of the day are marked in red: **3rd last**,
+**2nd last** and **Last train**. Once only those three are left, the last train
+line turns red too. Trains after midnight count as the day before's, until 3am.
+
+Train times work [offline](updates.md#offline) too: every station's usual
+timetable is kept on your device.
 
 > [!TIP]
 > The stop code is printed on the pole at every bus stop, and never changes.

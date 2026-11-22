@@ -29,11 +29,11 @@ more lines once there are more than fit.
 ## Save a new place
 
 <figure>
-<img src="/screenshots/web/places-new.png" alt="The Save a new place form: Jewel Changi Airport found in Where, Saving: Jewel Changi Airport under it, Airport typed as the name, and Save and Cancel buttons." width="406" height="305" loading="lazy">
+<img src="/screenshots/web/places-new.png" alt="The Save a new place form: Jewel Changi Airport found in Where, Saving: Jewel Changi Airport under it, Airport typed as the name, and Save and Cancel buttons." width="396" height="445" loading="lazy">
 <figcaption>Find the place, then name it if you like.</figcaption>
 </figure>
 
-1. Tap **Save a new place**.
+1. Tap **Save a new place**. Its form opens in a window of its own.
 2. In **Where**, type an address, a building, a postal code, a station or a stop,
    or paste a Google Maps link, and pick it from the suggestions. Or tap the pin
    to use where you are now. Tapping into the box first shows your
@@ -49,7 +49,7 @@ menu too.
 ## Buses you like to take there
 
 <figure>
-<img src="/screenshots/web/places-buses.png" alt="Editing Home: Where, then Buses you like to take here (optional) with 228 in it, and a note that going here, Navigate marks a way on one of these as Your bus and puts it first in Best, then Save and Cancel." width="316" height="346" loading="lazy">
+<img src="/screenshots/web/places-buses.png" alt="Editing Home: Where, then Buses you like to take here (optional) with 228 in it, and a note that going here, Navigate marks a way on one of these as Your bus and puts it first in Best, then Save and Cancel." width="396" height="371" loading="lazy">
 <figcaption>Home's bus: 228, from the interchange to the door.</figcaption>
 </figure>
 
@@ -69,7 +69,8 @@ it. Their menus edit, share or clear them.
 
 Tap the menu, the three dots, beside a place:
 
-- **Edit** changes where it is, or its name.
+- **Edit** changes where it is, its name, or its buses, in the same window as a
+  new place.
 - **Share** makes a "How to get to" link: whoever opens it gets Navigate with the
   place in **To**, from wherever they are. See [Links you can share](links.md).
 - **Delete** removes it; for Home and Work, **Clear** unsets it.

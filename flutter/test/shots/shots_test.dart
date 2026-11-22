@@ -25,6 +25,7 @@ import 'package:sgbus_timings/features/timings/bus_screen.dart';
 import 'package:sgbus_timings/features/timings/stop_screen.dart';
 import 'package:sgbus_timings/theme/theme.dart';
 import 'package:sgbus_timings/features/timings/timings_page.dart';
+import 'package:sgbus_timings/features/timings/trains_screen.dart';
 
 import 'harness.dart';
 
@@ -61,6 +62,12 @@ void main() {
     await shot(t, 'bus', () => const BusScreen(no: '14', fromStop: '84009'));
     await shot(t, 'alerts', () => onPage('alerts', const AlertsPage()));
     await shot(t, 'weather', () => const Scaffold(body: WeatherSheet()));
+  });
+
+  // A station's train times (trains_screen.dart), from a station search: Tampines at STILL_AT.
+  testWidgets('trains', timeout: _t, (t) async {
+    await t.runAsync(() => stillData(state: sam));
+    await shot(t, 'trains', () => const TrainsScreen(name: 'Tampines', codes: ['EW2', 'DT32']));
   });
 
   testWidgets('settings', timeout: _t, (t) async {

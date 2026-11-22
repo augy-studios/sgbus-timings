@@ -131,6 +131,12 @@ class SgbusDesktop {
   /// running app's own path, so [exe] isn't needed today; it's kept for a platform that might.
   static Future<void> setStartAtLogin(bool on, {String? exe}) => _invoke('setLogin', {'on': on, 'exe': exe});
 
+  /// Windows: quits the way a closed window does, the message loop ending and the runner closing
+  /// the engine (windows/runner/main.cpp). Dart's exit() tore the engine down from inside one of
+  /// its own tasks instead, and with the update window drawing that could hang the window ("Not
+  /// responding") until the installer ended it. Null elsewhere.
+  static Future<void> quit() => _invoke('quit');
+
   /// Brings the app's window in front of other apps, after a link or a second copy brought it up
   /// (Windows: the window; macOS: the app; Linux: the window).
   static Future<void> bringToFront() => _invoke('front');

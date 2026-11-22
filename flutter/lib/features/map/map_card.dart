@@ -7,11 +7,15 @@
 //                (outside today's first and last bus), red once its last three buses of the day
 //                are all that's left.
 //   A station    its name, its codes in their lines' colours, and a page for each platform, a
-//                direction each, with arrows at the sides (or a swipe): the doors nearest the
-//                escalators, lifts and stairs, and where each leads (data/doors.dart).
+//                direction each, with arrows at the sides (or a swipe): its next trains, the
+//                last three of the day red and its last train today (data/trains.dart), then
+//                the doors nearest the escalators, lifts and stairs, and where each leads
+//                (data/doors.dart). Platforms the doors don't know are listed under the pages.
 //
 // Both end with Directions: Navigate's Bus and train, from where you are. A stop's has Show bus
 // timings above it.
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../api/net.dart';
@@ -19,11 +23,14 @@ import '../../data/campus.dart';
 import '../../data/arrivals.dart';
 import '../../data/doors.dart';
 import '../../data/network.dart';
+import '../../data/mrt.dart';
 import '../../data/stops.dart';
+import '../../data/trains.dart';
 import '../../i18n/i18n.dart';
 import '../../theme/theme.dart';
 import '../nav/doors.dart';
 import '../timings/campus_ui.dart';
+import '../timings/trains_screen.dart';
 import 'live_map.dart';
 
 class MapCardBubble extends StatefulWidget {
@@ -55,6 +62,60 @@ class _MapCardBubbleState extends State<MapCardBubble> {
   Size _size = const Size(300, 200);
   Map<String, List<double>>? _etas;
   int _page = 0;
+  // A station's trains, asked for again every 15 seconds while the card's open.
+  TrainsData? _trains;
+  Timer? _trainsTick;
+
+  Future<void> _loadTrains() async {
+    final got = await Trains.load(widget.pick.codes).catchError((_) => null);
+    if (mounted && got != null) setState(() => _trains = got);
+  }
+
+  @override
+  void dispose() {
+    _trainsTick?.cancel();
+    super.dispose();
+  }
+
+  /// The train platforms going the way a doors page does: its line's code, and its next station
+  /// the first a train calls at, or its end where a train goes.
+  List<TrainPlatform> _trainsOf(Platform s) {
+    final data = _trains;
+    if (data == null || s.last) return const [];
+    return [
+      for (final t in data.platforms)
+        if (t.code == s.code && (t.ways.any((w) => w.isNotEmpty && Mrt.stationName(w.first) == s.next) || (s.next == null && t.heads.contains(s.towards)))) t,
+    ];
+  }
+
+  /// A platform no doors page has: its line and way, then its trains.
+  Widget _platformTrains(TrainPlatform t) => Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Row(children: [
+            _code(t.code),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(tr('mapCard.towards', 'Towards {to}', {'to': t.heads.join(' · ')}), style: const TextStyle(fontWeight: FontWeight.w700)),
+                if (t.platform.isNotEmpty) Text(tr('trains.platform', 'Platform {p}', {'p': t.platform}), style: TextStyle(color: context.sg.muted, fontSize: 13)),
+              ]),
+            ),
+          ]),
+          TrainsCompact(data: _trains!, platform: t, on: Color.alphaBlend(context.sg.surfaceStrong, context.sg.bg)),
+        ]),
+      );
+
+  Widget _trainsNote() {
+    final data = _trains;
+    if (data == null) return const SizedBox.shrink();
+    final text = data.usual
+        ? tr('trains.usualNote', 'Offline: LTA’s usual timetable for today. Works or a disruption may change it.')
+        : data.live
+            ? tr('trains.liveNote', 'Live: LTA reports a disruption here. Changed and cancelled trains are marked.')
+            : tr('mapCard.trainsTimetable', 'Train times are LTA’s timetable.');
+    return Padding(padding: const EdgeInsets.only(bottom: 4), child: Text(text, style: TextStyle(color: context.sg.muted, fontSize: 13)));
+  }
 
   @override
   void initState() {
@@ -75,8 +136,10 @@ class _MapCardBubbleState extends State<MapCardBubble> {
       }).catchError((_) {});
     } else if (widget.pick.kind == 'campus') {
       // Nothing to fetch: the shuttles' times come from the timetable.
-    } else if (!MrtDoors.ready) {
-      MrtDoors.load().then((_) => mounted ? setState(() {}) : null);
+    } else {
+      if (!MrtDoors.ready) MrtDoors.load().then((_) => mounted ? setState(() {}) : null);
+      _loadTrains();
+      _trainsTick = Timer.periodic(const Duration(seconds: 15), (_) => _loadTrains());
     }
     WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
   }
@@ -297,11 +360,17 @@ class _MapCardBubbleState extends State<MapCardBubble> {
     final p = widget.pick;
     final name = tr('mapCard.station', '{name} station', {'name': p.name});
     final slides = MrtDoors.ready ? MrtDoors.station(p.codes) : const <Platform>[];
+    // Train platforms no doors page goes the way of: listed under the pages.
+    final matched = {for (final s in slides) ..._trainsOf(s)};
+    final others = [for (final t in _trains?.platforms ?? const <TrainPlatform>[]) if (!matched.contains(t)) t];
     Widget body;
     if (!MrtDoors.ready) {
       body = Text(tr('mapCard.findingDoors', 'Finding the doors…'), style: TextStyle(color: sg.muted));
     } else if (slides.isEmpty) {
-      body = Text(tr('mapCard.noDoorsStation', 'No door details for this station yet.'), style: TextStyle(color: sg.muted));
+      body = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        if (others.isNotEmpty) ...[_trainsNote(), for (final t in others) _platformTrains(t), const SizedBox(height: 8)],
+        Text(tr('mapCard.noDoorsStation', 'No door details for this station yet.'), style: TextStyle(color: sg.muted)),
+      ]);
     } else {
       final i = _page % slides.length;
       final s = slides[i];
@@ -317,6 +386,7 @@ class _MapCardBubbleState extends State<MapCardBubble> {
             ]),
           ),
         ]),
+        for (final t in _trainsOf(s)) TrainsCompact(data: _trains!, platform: t, on: Color.alphaBlend(context.sg.surfaceStrong, context.sg.bg)),
         const SizedBox(height: 8),
         if (s.rows.isEmpty)
           Text(tr('mapCard.noDoorsPlatform', 'No door details for this platform yet.'), style: TextStyle(color: sg.muted))
@@ -343,7 +413,8 @@ class _MapCardBubbleState extends State<MapCardBubble> {
             ]),
           ),
       ]);
-      body = Column(children: [
+      body = Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _trainsNote(),
         GestureDetector(
           onHorizontalDragEnd: (d) {
             final v = d.primaryVelocity ?? 0;
@@ -370,7 +441,8 @@ class _MapCardBubbleState extends State<MapCardBubble> {
                   icon: const Icon(Icons.chevron_right)),
           ]),
         ),
-        if (slides.length > 1) Text('${i + 1} of ${slides.length}', style: TextStyle(color: sg.muted, fontSize: 12)),
+        if (slides.length > 1) Center(child: Text('${i + 1} of ${slides.length}', style: TextStyle(color: sg.muted, fontSize: 12))),
+        for (final t in others) _platformTrains(t),
       ]);
     }
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

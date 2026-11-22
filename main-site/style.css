@@ -3087,17 +3087,15 @@ body.on-trip .container { padding-bottom: calc(var(--trip-h, 96px) + 16px); }
 .placeMore svg, .recentMore svg { transition: transform 0.22s ease; }
 .open > .placeMore svg, .open > .recentMore svg { transform: rotate(90deg); }
 .placeNewBtn { display: inline-flex; align-items: center; gap: 8px; }
+/* A place's form, in its own window (#placeFormModal). */
 .placeForm {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 12px;
-    border-radius: 14px;
-    border: 1px solid var(--surface-border);
-    background: var(--surface);
 }
 .placesSection .card { overflow: visible; }
-.placesSection .acList {
+.placesSection .acList,
+#placeFormModal .acList {
     background: color-mix(in srgb, var(--brand) 6%, var(--bg));
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
@@ -4487,7 +4485,8 @@ body.coins-hidden #coinsBtn { display: none !important; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.update-notice, .app-update-notice, .offline-notice) { --brand: #e6953e; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .plannerSection .acList { --brand: #2b60da; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .navSection .acList { --brand: #ffbc24; }
-:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .placesSection .acList { --brand: #e6953e; }
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .placesSection .acList,
+:root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) #placeFormModal .acList { --brand: #e6953e; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.tripRowMain:hover, .placeMain:hover) { --brand: #ffbc24; }
 /* The bus numbers, going through the colours. */
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.svc:nth-child(4n+1) .svcNo, .incomingBusItem:nth-child(4n+1) .incomingBusNo) { --brand-fill-strong: #ff2b90; }
@@ -4517,3 +4516,45 @@ body.coins-hidden #coinsBtn { display: none !important; }
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] .tray .glass-btn:nth-child(5n) { color: #d98be0; }
 /* The page you're on has its orange, and the text that reads on it, not its place's colour. */
 :root[data-color-theme="gta-6"]:not([data-contrast="more"]):not([data-custom-colours]) .tray .glass-btn[role="tab"][aria-selected="true"]:nth-child(n) { color: var(--on-brand); }
+
+/* A station's train times (js/trains.js): each platform's next trains. */
+.trainsBody { display: flex; flex-direction: column; gap: 12px; }
+.trainsNote { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; color: var(--muted-strong); margin: 0; }
+.trainsNote.warn { color: var(--warn); }
+.trainPlatform { display: flex; flex-direction: column; gap: 4px; }
+.trainLine { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 0.9375rem; margin: 0; }
+.trainTowards { flex: 1; min-width: 0; font-weight: 600; }
+.trainPlat { font-size: 0.75rem; font-weight: 400; color: var(--muted-strong); }
+.trainRows { list-style: none; margin: 0; padding: 0; }
+.trainRow { display: flex; align-items: baseline; gap: 8px; padding: 4px 8px; border-radius: 8px; font-size: 0.875rem; }
+.trainRow:nth-child(odd) { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+.trainWhen { min-width: 4.5em; font-weight: 600; font-variant-numeric: tabular-nums; }
+.trainHead { flex: 1; min-width: 0; color: var(--muted-strong); }
+.trainClock { margin-left: auto; color: var(--muted-strong); font-variant-numeric: tabular-nums; }
+.trainRow.changed .trainWhen { color: var(--warn); }
+.trainRow.gone .trainWhen, .trainRow.gone .trainClock { text-decoration: line-through; color: var(--muted-strong); }
+.trainRow.none { color: var(--muted-strong); }
+/* On a Navigate train ride: the next trains that reach its stop. */
+.legTrains { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.legTrains .legTrain { font-variant-numeric: tabular-nums; font-weight: 600; }
+.legTrains .legTrain.changed { color: var(--warn); }
+
+/* A platform's last three trains of the day (js/trains.js), in the bus pills' red (.svcPill.last):
+   the line saying when the last one is, a mark on each of the three, and on the map's card the
+   chips of its next trains. */
+.trainLastLine { margin: 0 0 2px; font-size: 0.8125rem; color: var(--muted-strong); }
+.trainLastLine.lastThree { color: #b91c1c; font-weight: 600; } /* 4.5:1 on the window's stripes; #d1242f was 4:1 */
+.trainRank { flex: none; padding: 1px 7px; border-radius: 999px; background: #d1242f; color: #fff; font-size: 0.75rem; font-weight: 600; }
+.trainRow.last .trainWhen { color: #b91c1c; }
+/* A train LTA's disruption feed gave a new time, said in words as well as orange (WCAG 1.4.1). */
+.trainTag { flex: none; padding: 1px 7px; border-radius: 999px; border: 1px solid currentColor; font-size: 0.75rem; font-weight: 600; color: var(--warn); }
+.trainCompact { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
+.trainChips { display: flex; flex-wrap: wrap; gap: 6px; }
+.trainChip { display: inline-flex; flex-direction: column; align-items: center; min-width: 3.6em; padding: 4px 9px; border-radius: 10px; background: #15803d; color: #fff; font-weight: 700; font-size: 0.875rem; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.trainChip small { font-size: 0.6875rem; font-weight: 600; }
+.trainChip.last { background: #d1242f; }
+.trainChip.changed { outline: 2px solid var(--warn); outline-offset: 1px; }
+.legTrains .legTrain.last { color: #b91c1c; }
+.legTrains .legTrain small { font-weight: 600; margin-left: 3px; }
+/* Dark: a lighter red, 4.5:1 on dark cards and their stripes (#ff7b72 was 4.2:1). */
+:root[data-mode="dark"] .trainLastLine.lastThree, :root[data-mode="dark"] .trainRow.last .trainWhen, :root[data-mode="dark"] .legTrains .legTrain.last { color: #ffa198; }

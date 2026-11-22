@@ -7,12 +7,15 @@
 // desktop's own parts around them (desktop/, desktop/desktop.dart has the list), where 2.0.0 to
 // 2.4.x were the site in Electron. Its other windows (the widgets, Make it yours) start here too,
 // each in an engine of its own, and draw only themselves.
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import 'app/app.dart';
 import 'data/migrate.dart';
 import 'data/network.dart';
 import 'data/stations.dart';
+import 'data/trains.dart';
 import 'data/stops.dart';
 import 'data/store.dart';
 import 'desktop/adaptive.dart';
@@ -56,6 +59,8 @@ Future<void> main(List<String> args) async {
   // time anything wants them.
   Stops.load().then((_) => BusNet.load()).catchError((_) {});
   Stations.load();
+  // Every station's usual trains for offline, once a day, after the app's settled (data/trains.dart).
+  Timer(const Duration(seconds: 15), Trains.warm);
   // The desktop's update window, while they load.
   if (Desktop.on) {
     await DeskStart.window();

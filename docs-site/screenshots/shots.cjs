@@ -1947,7 +1947,7 @@ async function drawConsole(browser, shots) {
     await page.evaluate(() => Places.edit('home'));
     await page.waitForTimeout(600);
     await blur(page);
-    await el(page, '#placeForm', 'places-buses.png');
+    await el(page, '#placeFormModal .modal', 'places-buses.png');
     await ctx.close();
   }
   if (want('trip-ccl')) {
@@ -1961,6 +1961,107 @@ async function drawConsole(browser, shots) {
     await page.waitForTimeout(1200);
     await el(page, '#tripBar', 'trip-ccl.png');
     await ctx.close();
+  }
+  // A place's form, in its own window since 22 November 2026 (main-site/js/places.js): Save a
+  // new place with Jewel found and a name typed. Places' search is the live site's.
+  if (want('place-form')) {
+    const { ctx, page } = await open(browser, { width: 420, height: 1000, extra: { sgbus_gta6_offer: '1' } });
+    await page.click('#placesBtn');
+    await page.waitForTimeout(500);
+    await page.click('#placeNewBtn');
+    await page.waitForTimeout(400);
+    await page.type('#placeSearch', 'Jewel Changi Airport', { delay: 30 });
+    await page.waitForSelector('#placeSearchAc [data-place], #placeSearchAc .acItem', { timeout: 20000 }).catch(() => console.log('no places found'));
+    await page.waitForTimeout(800);
+    await page.locator('#placeSearchAc .acItem').first().click();
+    await page.fill('#placeName', 'Airport');
+    await page.waitForTimeout(300);
+    await blur(page);
+    await el(page, '#placeFormModal .modal', 'places-new.png');
+    await ctx.close();
+  }
+  // Train times (main-site/js/trains.js), 22 November 2026: a station search's Train times, the
+  // station's window, and a Navigate ride's next trains, Our Tampines Hub to NEX planned with
+  // this checkout's own router as nav-exits is. Always still. With LTA_ACCOUNT_KEY set, the
+  // times are this checkout's api/trains.js, from LTA's timetable for STILL_AT; without, the
+  // live site's /api/trains.
+  if (want('trains')) {
+    const { pathToFileURL } = require('url');
+    const site = path.resolve(__dirname, '../../main-site');
+    const own = process.env.LTA_ACCOUNT_KEY ? await import(pathToFileURL(path.join(site, 'api/trains.js')).href) : null;
+    const index = own ? await own.getTimetable() : null;
+    const answerTrains = (ctx, at = STILL_AT) => (own ? ctx.route(/\/api\/trains\?/, (r) => {
+      const codes = (new URL(r.request().url()).searchParams.get('codes') || '').split(',');
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify(own.answer(index, { timestamp: null, updates: [] }, codes, at.getTime())) });
+    }) : null);
+
+    // No GTA 6 offer over it (it takes the focus, and the list closes).
+    const quiet = { sgbus_gta6_offer: '1' };
+    const { ctx, page } = await open(browser, { width: 420, height: 1100, touch: true, still: true, extra: quiet });
+    await answerTrains(ctx);
+    await page.click('#timingsBtn');
+    await page.waitForTimeout(500);
+    await page.type('#q', 'Tampines MRT', { delay: 30 });
+    await page.waitForSelector('#acList .acTrains', { timeout: 20000 }).catch(() => console.log('no Train times'));
+    await page.waitForTimeout(500);
+    const q = await page.locator('#q').boundingBox();
+    const list = await page.locator('#acList').boundingBox();
+    await page.screenshot({ path: OUT + 'search-trains.png', clip: { x: q.x - 8, y: q.y - 8, width: q.width + 16, height: list.y + list.height + 8 - (q.y - 8) } });
+    console.log('wrote search-trains.png', Math.round(q.width + 16), Math.round(list.y + list.height + 16 - q.y));
+    await page.click('#acList .acTrains');
+    await page.waitForSelector('#trainsBody .trainPlatform', { timeout: 30000 }).catch(() => console.log('no trains'));
+    await page.waitForTimeout(600);
+    await el(page, '#trainsModal .modal', 'trains-station.png');
+    await ctx.close();
+
+    const ways = await ownWays();
+    const all = ways(HUB, NEX);
+    const byTrain = all.filter((o) => o.legs.some((l) => l.mode === 'train'));
+    const second = await open(browser, { width: 420, height: 2400, still: true, extra: quiet });
+    await answerTrains(second.ctx);
+    await answerNav(second.ctx, [...byTrain, ...all.filter((o) => !byTrain.includes(o))]);
+    await second.page.evaluate((h) => { location.hash = h; }, `#nav/${enc(HUB)}/${enc(NEX)}`);
+    await idle(second.page, '#navBody');
+    await second.page.click('#navBody [data-nav-option="0"]');
+    await second.page.waitForSelector('#navBody .legTrains', { timeout: 30000 }).catch(() => console.log('no trains on the ride'));
+    await second.page.waitForTimeout(800);
+    await blur(second.page);
+    await el(second.page, '#navBody .stepLeg:has(.legTrains) >> nth=0', 'nav-trains.png');
+    await second.ctx.close();
+
+    // Explorer's station card (main-site/js/map-card.js), "you" at Dhoby Ghaut, which Explorer
+    // opens on: each direction's next trains, the last three red, and its last train, over its
+    // doors; then the next direction's page. Taken still, as the rest of this group; replaces
+    // explorer-live's station shots, which were from before trains were on the card.
+    const third = await open(browser, { width: 390, height: 844, touch: true, still: true, geo: { latitude: 1.298786, longitude: 103.84502 }, extra: quiet });
+    await answerTrains(third.ctx);
+    await third.page.click('#explorerBtn');
+    await third.page.waitForTimeout(7000);
+    const box = await third.page.locator('#liveMap').boundingBox();
+    await third.page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await third.page.waitForSelector('.mcBubble .trainCompact', { timeout: 30000 }).catch(() => console.log('no trains on the card'));
+    await third.page.waitForTimeout(1500);
+    await third.page.screenshot({ path: OUT + 'explorer-station.png' });
+    console.log('wrote explorer-station.png 390 844');
+    await third.page.click('.mcArrow[data-mc-step="1"]');
+    await third.page.waitForTimeout(800);
+    await el(third.page, '.mcBubble', 'explorer-station-next.png');
+    await third.ctx.close();
+
+    // Just after midnight, the end of Friday's trains: the window's last trains marked, red.
+    const late = new Date('2026-10-31T00:20:00+08:00');
+    const fourth = await open(browser, { width: 420, height: 1600, touch: true, still: true, extra: quiet });
+    await fourth.ctx.clock.setFixedTime(late);
+    await answerTrains(fourth.ctx, late);
+    await fourth.page.click('#timingsBtn');
+    await fourth.page.waitForTimeout(500);
+    await fourth.page.type('#q', 'Tampines MRT', { delay: 30 });
+    await fourth.page.waitForSelector('#acList .acTrains', { timeout: 20000 }).catch(() => console.log('no Train times'));
+    await fourth.page.click('#acList .acTrains');
+    await fourth.page.waitForSelector('#trainsBody .trainPlatform', { timeout: 30000 }).catch(() => console.log('no trains'));
+    await fourth.page.waitForTimeout(900);
+    await el(fourth.page, '#trainsModal .modal', 'trains-last.png');
+    await fourth.ctx.close();
   }
   await browser.close();
 })();

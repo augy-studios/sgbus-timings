@@ -307,14 +307,23 @@ timed at about 15 km/h.
 <figcaption>A bus ride's live timings: every bus straight to where you get off.</figcaption>
 </figure>
 
+<figure>
+<img src="/screenshots/web/nav-trains.png" alt="A train ride on an open way: the Downtown Line from Tampines station, towards Bukit Panjang, 6 stops to MacPherson station, about 15 min. Under it, Trains to MacPherson by the timetable: 08:37, 08:40 and 08:42, and Last train there today at 23:46." width="316" height="221" loading="lazy">
+<figcaption>A train ride's next trains to where you get off.</figcaption>
+</figure>
+
 Tap a way to see it part by part:
 
 - **Walks**, with the distance and roughly how long. **Directions** opens the
   walk on the [live map](live-map.md), or in Citymapper. A walk to or from a
   station goes by [its nearest exit](#the-nearest-exit).
 - **Trains**, with the line, the direction to take (**towards** its last
-  station), how many stops, and where to get off. For almost every MRT
-  station, it also says [which door to stand at](#which-door-to-stand-at).
+  station), how many stops, and where to get off. Under it, the next three
+  trains that reach where you get off, by LTA's timetable, from when you'd be
+  on the platform (during a disruption, with LTA's changes), and when the last
+  train there leaves today. If the one you'd catch is one of the last three, it
+  warns you in orange, as a bus ride's last bus does. For almost every
+  MRT station, it also says [which door to stand at](#which-door-to-stand-at).
 - **Buses**, with how many stops, where to get off, and the **live timings** at
   the stop you board it: every bus that goes straight to where you get off,
   each with its next three in the colour of how full it is. A button opens that stop's timings for the

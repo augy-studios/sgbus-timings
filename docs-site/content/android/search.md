@@ -22,7 +22,7 @@ stops near you under it.
 | A stop code and some buses | `84009 174`, `84009 174, 175`, `84009 22*` | Press enter to open that stop, narrowed to those buses |
 | A bus number | `22`, `NR7`, `971E` | Offers [that bus's route](bus-routes.md) |
 | A 6-digit postal code | `519599` | Offers **Bus stops near this postal code** |
-| An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists the stops at its exits |
+| An MRT or LRT station | `Bedok MRT`, `Senja LRT` | Lists its [train times](#train-times-at-a-station) and the stops at its exits |
 | A shuttle bus route | `A1`, `CL-B`, `M2` | Offers [that shuttle's route](#shuttle-buses) |
 | A shuttle bus stop | `PGP`, `IKEA` | Offers its shuttle times |
 
@@ -46,6 +46,23 @@ Shuttle buses come up as you type too: a route by its code, such as `A1` for NUS
 and a stop only shuttles use by its name, marked **Shuttle buses only**. A stop opens
 with its [shuttle times](timings.md#shuttle-buses). A route opens on a screen of its
 own, with what its timetable says now and its stops in order.
+
+### Train times at a station
+
+<figure>
+<img src="/screenshots/android/trains.png" alt="Trains at Tampines: a note that these are timetable times from LTA, which gives live train times only during a disruption, then a card for each platform: EW towards Pasir Ris, platform A, in 2, 4, 6 and 9 min; EW towards Tuas Link, platform B; DT towards Bukit Panjang, platform A, the first one Now; and DT towards Expo, platform B, each with its clock time, and under each platform when its last train leaves today." width="412" height="892" loading="lazy">
+<figcaption>Every line at the station, each way, with the next four trains.</figcaption>
+</figure>
+
+A station search also offers **Train times** first. Tap it for the station's next
+trains: every line through it, each way, with its platform and the minutes until
+each, and when each platform's last train leaves today, its last three trains
+marked in red. Pull down to refresh. The times are LTA's timetable; during a disruption,
+LTA's changes show over them, a late train in orange and a cancelled one crossed
+out. In [Navigate](nav.md), a train ride lists the next trains that reach where
+you get off, and warns you when the one you'd catch is one of the last three.
+Tap a station on the [live map](live-map.md) for its trains too. Both work offline, from every station's usual timetable kept on the
+phone, as on the [web app](../web/search.md#train-times-at-a-station).
 
 ## Say it, or scan it
 
