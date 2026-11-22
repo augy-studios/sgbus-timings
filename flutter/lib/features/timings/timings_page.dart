@@ -199,7 +199,10 @@ class _TimingsPageState extends State<TimingsPage> {
           )),
           if (searching) ...[
             const SizedBox(height: 8),
-            SgCard(
+            // Part of the search box for a click: on a computer, a mouse button going down outside
+            // the box takes its focus, which hid the list before the button came up, so a click
+            // on a suggestion did nothing. Each suggestion lets go of the focus itself.
+            TextFieldTapRegion(child: SgCard(
               padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 if (station != null)
@@ -262,10 +265,11 @@ class _TimingsPageState extends State<TimingsPage> {
                 if (match.stops.isEmpty && services.isEmpty && postal == null && station == null && (campus == null || (campus.routes.isEmpty && campus.stops.isEmpty)))
                   EmptyNote(tr('search.noMatch', 'No bus stops matched that. Try a bus stop number or part of its name.')),
               ]),
-            ),
+            )),
           ] else if (_focus.hasFocus) ...[
             const SizedBox(height: 8),
-            RecentsPanel(
+            // As the suggestions: a click on a recent search mustn't hide the panel first.
+            TextFieldTapRegion(child: RecentsPanel(
               favs: true,
               accepts: (r) => r.kind == 'stop' || r.kind == 'bus' || r.kind == 'postal',
               onPick: (r) {
@@ -283,7 +287,7 @@ class _TimingsPageState extends State<TimingsPage> {
                 _focus.unfocus();
                 BusScreen.open(no);
               },
-            ),
+            )),
           ] else ...[
             const SizedBox(height: 8),
             TourTarget(id: 'timings.near', child: SectionLabel(
@@ -335,7 +339,9 @@ class _Suggestion extends StatelessWidget {
   final VoidCallback onTap;
   final DeskTarget? menu;
 
-  /// The row: its code (with an icon) on the left, its name and road beside it.
+  /// The row: its code (with an icon) on the left, its name and road beside it. The codes take at
+  /// least 92 px, so the names line up; a longer one ("Train times") takes what it needs, on one
+  /// line, with a gap before its name.
   @override
   Widget build(BuildContext context) {
     final sg = context.sg;
@@ -345,13 +351,14 @@ class _Suggestion extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 9),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(
-            width: 92,
-            child: Row(children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(minWidth: 92),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
               if (icon != null) ...[Icon(icon, size: 16, color: sg.brandInk), const SizedBox(width: 4)],
-              Flexible(child: Text(code, style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w700))),
+              Text(code, softWrap: false, style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w700)),
             ]),
           ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text.rich(TextSpan(children: [
               TextSpan(text: name),

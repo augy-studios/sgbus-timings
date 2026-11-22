@@ -9,7 +9,7 @@ publish_to: 'none'
 # app, 2.0.0 to 2.3.1 (4 to 26) the Capacitor one, and from 2.4.0 (27) this Flutter one. The
 # watch app (android/wear/) and the desktop installers (installers/) read it here too, and
 # lib/app/version.dart's appVersion and cli/package.json's version are raised to the same.
-version: 2.7.0+51
+version: 2.7.1+52
 
 environment:
   sdk: ^3.13.0

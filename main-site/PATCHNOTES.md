@@ -9,6 +9,17 @@ Newest first. Each update covers the web app and the Telegram bot.
 
 ---
 
+## 22 November 2026: Clicking a search's suggestions on the desktop (2.7.1)
+
+### Desktop app 2.7.1
+
+- **Search suggestions open with a click** - In Bus timings' search, clicking a suggestion, such as a station's Train times, a stop or a bus, or a recent search, did nothing: the list closed as the mouse button went down. It now opens what you clicked.
+- **Train times' row spaced out** - The Train times suggestion has a gap between its label and Next trains at the station, rather than running them together.
+
+### Linux command line 2.7.1
+
+- No changes of its own: numbered 2.7.1 to stay in step with the desktop app.
+
 ## 22 November 2026: Train times at every station (2.7.0)
 
 ### Website, Android and desktop apps
