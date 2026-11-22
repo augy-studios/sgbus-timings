@@ -48,6 +48,12 @@
 // and the bar. The server does the same while the app's in the background (api/_push/trip.js),
 // and each side hears of the other's (`readied`), so it's said only once.
 //
+// Last train soon: each train ride still to board is checked the same way, against its station's
+// train times (js/trains.js): once the train you'd catch is one of the day's last three that
+// reach where you get off, the bar says so; once the last one leaves before you'd be on the
+// platform, or has gone, it says that, and the trip finds another way, as for a lost last bus.
+// A notification and a buzz the first time for each, as for buses.
+//
 // Last bus soon: each bus leg still to board has its last bus of the day at the stop you get on
 // at (the route list's, js/network.js) checked against its live timings there, about once a
 // minute. Down to its last three buses, as Explorer's stop cards tell it (js/map-card.js), its
@@ -1312,6 +1318,38 @@
     return i >= trip.leg && leg?.kind === "bus" && !!leg.service && !!leg.board && !(i === trip.leg && (trip.boarded || target() >= 0.5));
   };
 
+  // Whether leg i is a train ride still to board, with its stations known (js/nav.js, tripOf).
+  const trainToBoard = (i) => {
+    const leg = trip.legs[i];
+    return i >= trip.leg && leg?.kind === "train" && !!leg.trainFrom && !!leg.trainTo && !(i === trip.leg && (trip.boarded || target() >= 0.5));
+  };
+
+  // What the bar says of a train ride, if anything, as lastBusWord does of a bus: its last train
+  // to where you get off gone, leaving before you'd be on the platform `reach` minutes from now,
+  // or the one you'd catch among the day's last three. Null when the station's trains can't be
+  // had, or the day's last is hours off.
+  async function lastTrainWord(leg, reach) {
+    if (!window.Trains) return null;
+    const data = await Trains.load(leg.trainFrom.split("/"));
+    if (!data?.platforms) return null;
+    const words = { line: leg.label || leg.route, stop: leg.to || leg.trainTo, from: leg.names?.[0] || leg.trainFrom };
+    const now = Trains.forLeg(data, leg.trainTo, Date.now());
+    // None left today that reach there: the last has gone. The station's answer lists only the
+    // trains still to come, so there's no time to give for it.
+    if (!now) return { kind: "gone", train: true, text: I18n.t("trip.lastTrainGone", "No more {line} trains to {stop} from {from} today: the last has gone.", words) };
+    const next = Trains.forLeg(data, leg.trainTo, Date.now() + reach * 60000);
+    const time = When.clock(now.lastMs);
+    if (!next) return { kind: "miss", train: true, text: I18n.t("trip.lastTrainMiss", "The last {line} train to {stop} from {from} is at {time}, before you'll get there.", { ...words, time }) };
+    if (!next.rank) return null;
+    return {
+      kind: "soon",
+      train: true,
+      text: next.rank === 1
+        ? I18n.t("trip.lastTrainSoonText", "Last train soon: the next {line} train to {stop} from {from} is the last, at {time}.", { ...words, time })
+        : I18n.t("trip.lastTrainsSoonText", "Last train soon: only {n} more {line} trains to {stop} from {from} today, the last at {time}.", { ...words, time, n: next.rank }),
+    };
+  }
+
   let lastCheckedAt = 0;
   // What was found for each leg, by its index: { kind, text }.
   let lastHeard = {};
@@ -1322,6 +1360,13 @@
     const asked = trip;
     const heard = {};
     await Promise.all(trip.legs.map(async (leg, i) => {
+      if (trainToBoard(i)) {
+        try {
+          const word = await lastTrainWord(leg, minutesTo(i));
+          if (word) heard[i] = word;
+        } catch {}
+        return;
+      }
       if (!toBoard(i)) return;
       const last = lastBusAt(leg.service, leg.board);
       const reach = minutesTo(i);
@@ -1354,7 +1399,9 @@
       trip.lastWarned[i] = true;
       if (navigator.vibrate) navigator.vibrate(BOARD_VIBRATION);
       const instead = word.kind !== "soon" && another ? ` ${anotherText()}` : "";
-      notify({ title: word.kind === "soon" ? I18n.t("trip.lastSoon", "Last bus soon") : I18n.t("settings.short.last_bus", "Last bus"), body: word.text + instead, tag: `lastbus-${i}`, vibrate: BOARD_VIBRATION, channel: "board" });
+      const title = word.train ? (word.kind === "soon" ? I18n.t("trip.lastTrainSoon", "Last train soon") : I18n.t("trip.lastTrain", "Last train"))
+        : word.kind === "soon" ? I18n.t("trip.lastSoon", "Last bus soon") : I18n.t("settings.short.last_bus", "Last bus");
+      notify({ title, body: word.text + instead, tag: `lastbus-${i}`, vibrate: BOARD_VIBRATION, channel: "board" });
       save();
     }
     render();
@@ -1404,13 +1451,14 @@
   // or from where you are (k null). `way` is null if there's none.
   async function findAnother(lostAt) {
     if (typeof fetchWays !== "function") return;
-    const key = lostAt.map((i) => rideKey("bus", trip.legs[i].service, trip.legs[i].board)).join(">");
+    // A lost bus by its service and stop, a lost train by its line and station.
+    const key = lostAt.map((i) => (trip.legs[i].kind === "train" ? rideKey("train", trip.legs[i].route, trip.legs[i].trainFrom) : rideKey("bus", trip.legs[i].service, trip.legs[i].board))).join(">");
     if (another?.key === key && Date.now() - another.at < ANOTHER_EVERY_MS) return;
     const asked = trip;
     const g = goal();
     const to = g.to;
     const skip = new Set(key.split(">"));
-    const pick = (data) => (data.options || []).find((o) => !o.walkOnly && !o.legs.some((l) => l.mode === "bus" && skip.has(rideKey("bus", l.route, l.from?.code)))) ||
+    const pick = (data) => (data.options || []).find((o) => !o.walkOnly && !o.legs.some((l) => (l.mode === "bus" || l.mode === "train") && skip.has(rideKey(l.mode, l.route, l.from?.code)))) ||
       (data.options || []).find((o) => o.walkOnly) || null;
     // The waypoint: where the last ride before the first lost bus ends, if there's one from here on.
     const tries = [];
@@ -2741,7 +2789,7 @@
     $("#tripNote").textContent = notes.join(" ");
     $("#tripNote").hidden = !notes.length;
     // Last bus soon, for the rides still to board (watchLastBus), with another way for a lost one.
-    const warns = Object.entries(lastHeard).filter(([i]) => toBoard(Number(i))).map(([, w]) => w);
+    const warns = Object.entries(lastHeard).filter(([i]) => toBoard(Number(i)) || trainToBoard(Number(i))).map(([, w]) => w);
     const lost = warns.some((w) => w.kind !== "soon");
     $("#tripWarn").innerHTML = warns.map((w) => `<p class="tripWarnLine">${window.icon("alert")}<span>${esc(w.text)}</span></p>`).join("") +
       (lost && another

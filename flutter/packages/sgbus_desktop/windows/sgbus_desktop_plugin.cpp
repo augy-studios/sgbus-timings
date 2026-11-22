@@ -23,10 +23,14 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <thread>
 #include <variant>
 #include <vector>
 
 #pragma comment(lib, "propsys.lib")
+
+// How long a quit may take to close the engine before the process is ended anyway ("quit").
+constexpr DWORD kQuitGraceMs = 2500;
 
 namespace {
 
@@ -241,8 +245,18 @@ class SgbusDesktopPlugin : public flutter::Plugin {
       // Ends the main window's message loop (windows/runner/main.cpp), so the runner shuts the
       // engine down as it does for a closed window. Called on the loop's own thread, so the
       // WM_QUIT is its. The answer goes first: Dart is waiting for it.
+      //
+      // Shutting the engine down can itself hang (seen on Restart to update in 2.7.0 and 2.7.1):
+      // with the loop gone, nothing answers the window, Windows calls it "Not responding", and
+      // the installer waiting for this copy to close waits too. Everything's saved by now
+      // (Desktop.quit), so a watchdog ends the process if it's still here after kQuitGraceMs,
+      // well inside the 5 s before Windows calls a window hung.
       result->Success();
       PostQuitMessage(0);
+      std::thread([] {
+        Sleep(kQuitGraceMs);
+        TerminateProcess(GetCurrentProcess(), 0);
+      }).detach();
     } else {
       result->NotImplemented();
     }

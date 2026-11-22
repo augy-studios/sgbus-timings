@@ -165,5 +165,17 @@ rich, _ = build_nav_option(start, home, straight, {1: None})
 ok('no live timings: says so', 'No live timings for this bus right now.' in rich['fallback'])
 ok('a bus with no timing still listed when it\'s the way\'s own', live_lines({'route': '21'}, {'services': [{'serviceNo': '51', 'next': nb(3, 'SEA'), 'next2': None, 'next3': None}]}, ['51'])[0] == '🚌 21 · no live timing')
 
+# ---------- the last trains (the site's api/_nav/last-trains.js) ----------
+import copy
+late = copy.deepcopy(quick)
+late['legs'][1].update(lastTrain='00:12', lastTrainRank=2)
+rich, _ = build_nav_panel(CHAT, start, home, result={'options': [late], 'traffic': None, 'others': {}}, live=live, direct=direct)
+ok('a way whose train is among the last three says so in its line', '⏰ 2nd last EW train, last 00:12' in rich['fallback'], rich['fallback'])
+rich, _ = build_nav_option(start, home, late, {3: None})
+ok('and its ride says how many are left, and when the last leaves', 'Only the last 2 trains to Bedok station are left today. The last is at 00:12.' in rich['fallback'], rich['fallback'])
+late['legs'][1].update(lastTrainRank=1)
+rich, _ = build_nav_option(start, home, late, {3: None})
+ok("the last one: don't miss it", "Last train to Bedok station from here today is at 00:12. Don't miss it." in rich['fallback'], rich['fallback'])
+
 print('\nAll passed' if not fails else f'\n{fails} failed')
 sys.exit(1 if fails else 0)

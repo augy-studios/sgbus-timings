@@ -1165,9 +1165,19 @@ function navOptionItem(o, i) {
     farNotes(o).map((t) => `<span class="journeyWarn">${ico('walk')} ${escapeHtml(t)}</span>`).join('') +
     (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t("planner.tooLateBy", "Too late: you'd have had to leave by {time}", { time: When.clock(When.span(nav.when, o.minutes).leave) }))}</span>` : '') +
     o.legs.filter((l) => l.lastBus).map((l) => `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.lastFrom', 'Last {no} from {stop} at {time}', { no: l.route, stop: l.from?.name || I18n.t('nav.itsStop', 'its stop'), time: l.lastBus }))}</span>`).join('') +
+    o.legs.filter((l) => l.lastTrain).map((l) => `<span class="journeyWarn">${ico('alert')} ${escapeHtml(lastTrainText(l))}</span>`).join('') +
     // Why it's slower, in a line; tapped, the way's own page has it on the map.
     o.legs.filter((l) => l.traffic).map((l) => `<span class="journeyTraffic">${ico('alert')} ${escapeHtml(I18n.t('stop.svc.way.title', 'Bus {no}: {way}', { no: l.route, way: trafficText(l.traffic) }))}</span>`).join('') +
     `</button>`;
+}
+
+// A train ride whose train is one of the day's last three there (api/_nav/last-trains.js): which
+// of them, as the train times mark them, and when the last one leaves.
+function lastTrainText(leg) {
+  const words = { to: placeName(leg.to), from: placeName(leg.from), time: leg.lastTrain };
+  return leg.lastTrainRank === 3 ? I18n.t('nav.lastTrain3From', '3rd last train to {to} from {from}. The last is at {time}', words)
+    : leg.lastTrainRank === 2 ? I18n.t('nav.lastTrain2From', '2nd last train to {to} from {from}. The last is at {time}', words)
+    : I18n.t('nav.lastTrainFrom', 'Last train to {to} from {from} at {time}', words);
 }
 
 // A station by its own name: OneMap's ways, and navs saved before api/_nav/onemap-check.js
@@ -1258,7 +1268,15 @@ async function renderNavOption(o) {
           ? I18n.t('nav.trainRideTowards', 'From {from}, towards {towards}: {n} stops to {to}, ~{min} min', { from: placeName(leg.from), towards: leg.towards, n: leg.stops, to: placeName(leg.to), min: Math.round(leg.minutes) })
           : I18n.t('nav.trainRide', 'From {from}: {n} stops to {to}, ~{min} min', { from: placeName(leg.from), n: leg.stops, to: placeName(leg.to), min: Math.round(leg.minutes) }))}</div>` +
         ((nav.when || o.offline) && leg.board != null ? `<div class="legNote">${escapeHtml(I18n.t('nav.boardAround', 'Board around {time}.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>` : '') +
-        (leg.board != null ? legTrainsHtml(leg, leaveMs + (leg.board - (leg.wait || 0)) * 60000) : '') +
+        (() => {
+          const trains = leg.board != null ? legTrainsHtml(leg, leaveMs + (leg.board - (leg.wait || 0)) * 60000) : '';
+          // Until the ride's own trains are in (or with none to be had), the plan's last train.
+          if (trains || !leg.lastTrain) return trains;
+          const stop = leg.to?.name || I18n.t('nav.itsStop', 'its stop');
+          return `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(leg.lastTrainRank > 1
+            ? I18n.t('nav.lastTrains', 'Only the last {n} trains to {stop} are left today. The last is at {time}.', { n: leg.lastTrainRank, stop, time: leg.lastTrain })
+            : I18n.t('nav.lastTrain', 'Last train to {stop} from here today is at {time}. Don’t miss it.', { stop, time: leg.lastTrain }))}</div>`;
+        })() +
         doors +
         (leg.disrupted ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disrupted', 'LTA reports a disruption on this line. Check Service alerts.'))}</div>` : '') +
         `</li>`;
@@ -1498,7 +1516,8 @@ function tripFromNav(o, to, from = nav.from) {
       // them), only the plan's; its stops still open their shuttle times.
       ...(l.campus && { shuttle: { name: l.campus.name, colour: l.campus.colour, route: l.route }, codes: busCodes(l) }),
       // The line, for Your trips' chips and Trip Modes.
-      ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt }),
+      // Its stations' codes, for Last train soon (js/trip.js, watchLastTrain).
+      ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt, trainFrom: l.from?.code, trainTo: l.to?.code }),
     });
   });
   const stop = o.via && legs[viaAt] ? viaPlace(o) : null;

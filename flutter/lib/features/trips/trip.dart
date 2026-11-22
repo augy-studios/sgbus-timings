@@ -54,7 +54,8 @@ import 'trip_watch.dart';
 
 class TripLeg {
   TripLeg({required this.kind, required this.label, required this.to, required this.points, required this.names, required this.minutes,
-      this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false, this.foot = 'walk', this.afterVia});
+      this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false, this.foot = 'walk', this.afterVia,
+      this.trainFrom, this.trainTo});
   final String kind; // bus, train, walk
   final String label;
   final String to;
@@ -74,6 +75,11 @@ class TripLeg {
 
   /// Navigate's stop on the way, on the part just after it: { label, lat, lng }.
   final Map<String, Object?>? afterVia;
+
+  /// A train ride's stations, by their codes ("NS22", "NS24/NE6/CC1"), for Last train soon
+  /// (trip_watch.dart), as the site's trip legs have them.
+  final String? trainFrom;
+  final String? trainTo;
 
   bool get ride => kind != 'walk';
 
@@ -97,6 +103,8 @@ class TripLeg {
       color: color,
       lrt: lrt,
       afterVia: afterVia,
+      trainFrom: trainFrom,
+      trainTo: trainTo,
     );
   }
 
@@ -105,6 +113,8 @@ class TripLeg {
         'service': service, 'board': board, 'alight': alight, 'codes': codes, 'route': route, 'color': color, 'lrt': lrt,
         if (foot != 'walk') 'foot': foot,
         'afterVia': ?afterVia,
+        'trainFrom': ?trainFrom,
+        'trainTo': ?trainTo,
       };
 
   static TripLeg from(Map j) => TripLeg(
@@ -124,6 +134,8 @@ class TripLeg {
         lrt: j['lrt'] == true,
         foot: j['foot'] as String? ?? 'walk',
         afterVia: (j['afterVia'] as Map?)?.cast<String, Object?>(),
+        trainFrom: j['trainFrom'] as String?,
+        trainTo: j['trainTo'] as String?,
       );
 }
 
@@ -1462,6 +1474,8 @@ class TripDone {
       color: l['color'] as String?,
       lrt: l['lrt'] == true,
       afterVia: takeVia(k),
+      trainFrom: l['mode'] == 'train' ? ((l['from'] as Map?)?['code'] as String?) : null,
+      trainTo: l['mode'] == 'train' ? ((l['to'] as Map?)?['code'] as String?) : null,
     ));
   }
   if (legs.isEmpty) return null;

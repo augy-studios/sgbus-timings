@@ -234,6 +234,18 @@ shows a red warning when:
 The first warning for each bus also buzzes twice and comes as a notification.
 Once you're on that bus, its warning goes.
 
+Trains get the same, for every train on the trip you've still to get on, by
+LTA's timetable for the station you get on at:
+
+| Warning | When |
+|---|---|
+| **Last train soon: only 2 more NS Line trains to Bedok station from Orchard today, the last at 00:12.** | The train you'd catch is one of the last three of the day that reach where you get off. With one left, it says the next one is the last. |
+| **The last NS Line train to Bedok station from Orchard is at 00:12, before you'll get there.** | The last one leaves before the trip gets you to the platform. |
+| **No more NS Line trains to Bedok station from Orchard today: the last has gone.** | Its last train has gone. |
+
+A last train you'll miss, or have missed, has the trip find another way, as a
+last bus does below.
+
 ### Another way, found for you
 
 <figure>
@@ -241,8 +253,8 @@ Once you're on that bus, its warning goes.
 <figcaption>Switched to another way by itself, with why, what to do now, and Undo.</figcaption>
 </figure>
 
-When a last bus is lost, there's nothing to look up or decide: the trip finds
-another way by bus and train to where you're going, leaving out that bus, and
+When a last bus or train is lost, there's nothing to look up or decide: the trip finds
+another way by bus and train to where you're going, leaving out that bus or train, and
 switches to it straight away. The phone buzzes twice, a notification says why
 and what to do first, and the trip bar says it too:
 

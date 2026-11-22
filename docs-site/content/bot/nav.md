@@ -128,8 +128,9 @@ the Causeway show none.
 Where OneMap's timetable-based planner rides the same way, its time is shown too,
 as **OneMap ~42 min**. A warning sign marks a way on a line LTA reports a
 disruption on, ⏰ a bus you'd catch near its last of the day (**⏰ last 38
-23:48**), and 🚦 a bus slowed by the traffic right now (**🚦 38 +6 min in
-traffic**).
+23:48**), ⏰ a train you'd catch among the last three of the day to where you get
+off (**⏰ 2nd last EW train, last 00:12**), and 🚦 a bus slowed by the traffic
+right now (**🚦 38 +6 min in traffic**).
 
 Setting off now, bus times allow for the traffic right now, from LTA's live
 speeds on every road. Under the ways, **🚶 Walk there** says how long walking the
@@ -137,8 +138,8 @@ whole way takes, where it might compete, and **🚲 Cycle there** how long cycli
 takes, once you've said you have a bike in [Settings](settings.md#cycling).
 
 > [!NOTE]
-> No timetables are published for trains, so train times are estimates from the
-> distance between stations, with an average wait to board.
+> A train ride's minutes are estimates from the distance between stations, with
+> an average wait to board. Its last trains come from LTA's timetable.
 
 ## Open a way
 
@@ -149,7 +150,8 @@ where you get off, with how full each is. A button with the bus and stop opens t
 timings for the bus, with **Back to the way** and **All ways** to come back.
 **Back to all ways** returns to the list.
 
-A bus near its last of the day says when the last one is. A bus slowed by
+A bus near its last of the day says when the last one is, and a train among the
+last three of the day says how many are left and when the last one leaves. A bus slowed by
 traffic says by how much and why, the roads by name and any accident or
 breakdown on its way:
 

@@ -945,6 +945,9 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                 'time': l['lastBus'],
               }),
             ),
+          // A train ride whose train is one of the day's last three there (leg_trains.dart).
+          for (final l in legs)
+            if (lastTrainCardText(l, placeName) case final text?) _warn(text),
           for (final l in legs.where((l) => l['traffic'] is Map))
             _warn(tr('stop.svc.way.title', 'Bus {no}: {way}', {'no': l['route'], 'way': trafficText(l['traffic'] as Map)}), traffic: true),
           _liveBlock(o),
@@ -1090,7 +1093,9 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                   ),
                 // Its next trains, from when you're on the platform (leg_trains.dart).
                 if (leg['board'] is num)
-                  LegTrains(leg: leg, reachMs: leaveMs + (((leg['board'] as num) - ((leg['wait'] as num?) ?? 0)) * 60000).round()),
+                  LegTrains(leg: leg, reachMs: leaveMs + (((leg['board'] as num) - ((leg['wait'] as num?) ?? 0)) * 60000).round())
+                else if (lastTrainRideText(leg) case final text?)
+                  lastTrainWarning(context, text),
                 ?TrainDoors.build?.call(context, leg, legs.skip(k + 1).where((l) => l['mode'] != 'walk').firstOrNull),
                 if (leg['disrupted'] == true) _warn(tr('nav.disrupted', 'LTA reports a disruption on this line. Check Service alerts.')),
               ],

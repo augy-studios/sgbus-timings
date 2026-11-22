@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 22 November 2026**
+**Latest update: 23 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -8,6 +8,29 @@
 Newest first. Each update covers the web app and the Telegram bot.
 
 ---
+
+## 23 November 2026: The last trains, on Navigate's ways and trips (2.7.2)
+
+### Website, Android and desktop apps
+
+- **The last trains on each way** - A way whose train is one of the day's last three to where you get off says so on its card, as a bus near its last does: **3rd last train**, **2nd last train** or **Last train** to the station from where you board, and when the last one leaves, by LTA's timetable. Its train ride says it too.
+- **Last train soon, on a trip** - A trip keeps an eye on the last train for every train you've still to get on, as it does for buses: the bar warns once yours is one of the last three, when the last leaves before you'd get to the platform, or once it's gone, buzzing and with a notification the first time. A last train you'll miss has the trip find another way, as a last bus does.
+
+### Desktop app 2.7.2
+
+- **Restart to update doesn't hang** - On Windows, if closing to update stalls, the app now ends itself after a couple of seconds, so the update carries on rather than the window showing Not responding.
+
+### Telegram bot
+
+- **/nav's last trains** - A way whose train is one of the last three says so (**⏰ 2nd last EW train, last 00:12**), and its ride says how many are left.
+
+### Linux command line 2.7.2
+
+- **`sgbus nav`'s last buses and trains** - A way near its last bus, or with one of the last three trains, says so in red, in the list and step by step.
+
+### Wear OS 2.7.2
+
+- No changes of its own: numbered 2.7.2 to stay in step with the phone.
 
 ## 22 November 2026: Clicking a search's suggestions on the desktop (2.7.1)
 

@@ -35,6 +35,19 @@ NO_MATCH = ("Nothing matched that. Try an address, a building, a postal code, a 
 PLACE_ICONS = {"station": "🚆", "stop": "🚌", "place": "📍"}
 
 
+# A train ride whose train is one of the day's last three there (the site's
+# api/_nav/last-trains.js: `lastTrainRank` 3, 2 or 1, and `lastTrain` when the last leaves). As
+# the site's way cards and rides word it (js/nav.js); keep in step.
+_RANK_SHORT = {3: "3rd last", 2: "2nd last", 1: "last"}
+
+
+def last_train_text(leg: dict) -> str:
+    to = _place_name(leg.get("to")) or "its stop"
+    rank = leg.get("lastTrainRank")
+    if rank in (2, 3):
+        return f"Only the last {rank} trains to {to} are left today. The last is at {leg['lastTrain']}."
+    return f"Last train to {to} from here today is at {leg['lastTrain']}. Don't miss it."
+
 def place_button_text(p: dict) -> str:
     """A found place as its Did you mean button reads, with what tells it apart from the
     others: a stop's code and road ("🚌 Blk 109 · 84221 · Bedok Nth Rd"), a station's codes,
@@ -247,6 +260,8 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 for leg in _rides(o):
                     if leg.get("lastBus"):
                         extra.append(f"⏰ last {leg['route']} {leg['lastBus']}")
+                    if leg.get("lastTrain"):
+                        extra.append(f"⏰ {_RANK_SHORT.get(leg.get('lastTrainRank'), 'last')} {leg['route']} train, last {leg['lastTrain']}")
                     if (leg.get("traffic") or {}).get("extra", 0) >= 1:
                         extra.append(f"🚦 {leg['route']} +{leg['traffic']['extra']} min in traffic")
                 warn = " ⚠️" if o.get("disrupted") else ""
@@ -392,6 +407,10 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
             if board:
                 md.append(escape_md(board))
                 plain.append(board)
+            if leg.get("lastTrain"):
+                note = f"   ⏰ {last_train_text(leg)}"
+                md.append(escape_md(note))
+                plain.append(note)
             if leg.get("disrupted"):
                 note = "   ⚠️ LTA reports a disruption on this line. Send /alerts for details."
                 md.append(escape_md(note))

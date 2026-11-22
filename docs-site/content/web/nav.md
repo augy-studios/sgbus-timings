@@ -193,6 +193,10 @@ Each way shows:
 - a warning when LTA reports a disruption on one of its lines;
 - **Last 38 from Bedok Int at 23:48**, when you'd catch a bus within half an
   hour of its last of the day there;
+- **2nd last train to Bedok station from Tanah Merah station. The last is at
+  00:12**, when the train you'd catch is one of the last three of the day that
+  reach where you get off, by LTA's timetable: **3rd last**, **2nd last** or
+  **Last train**, as the [train times](search.md#the-last-trains) mark them;
 - in orange, a bus slowed by the traffic right now: by how much, and why, the
   roads by name and any accident or breakdown on its way.
 

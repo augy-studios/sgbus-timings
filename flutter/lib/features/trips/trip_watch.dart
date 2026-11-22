@@ -9,6 +9,10 @@
 //                       another way to where it ends without that bus, from where the last ride
 //                       before it ends if there's one, and switch to it by itself, with Undo. With
 //                       none, it says so, with Navigate from here or See all ways.
+//   Last train soon     each train ride still to board, with it, by its station's train times
+//                       (data/trains.dart): the one you'd catch among the day's last three to where
+//                       you get off, the last one leaving before you'd be on the platform, or gone.
+//                       A lost one finds another way, as a lost last bus does.
 //   Traffic             every 5 minutes, each bus leg still ahead, by LTA's live speeds: one
 //                       slowed by 2 min or more, or with an incident, says so; tapped, the live
 //                       map shows its road.
@@ -36,6 +40,7 @@ import '../../data/arrivals.dart';
 import '../../data/network.dart';
 import '../../data/stops.dart';
 import '../../data/store.dart';
+import '../../data/trains.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
 import '../../native/native_bridge.dart';
@@ -215,6 +220,30 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     return m;
   }
 
+  /// What the bar says of a train ride, as of a bus: its last train to where you get off gone,
+  /// leaving before you'd be on the platform `reach` minutes from now, or the one you'd catch
+  /// among the day's last three. As the site's lastTrainWord (main-site/js/trip.js); keep in step.
+  static Future<({String kind, String text})?> lastTrainWord(TripLeg leg, double reach) async {
+    final data = await Trains.load(Trains.codesOf(leg.trainFrom!));
+    if (data == null) return null;
+    final words = {'line': leg.label, 'stop': leg.to.isNotEmpty ? leg.to : leg.trainTo!, 'from': leg.names.isNotEmpty ? leg.names.first : leg.trainFrom!};
+    final now = Trains.forLeg(data, leg.trainTo!, When.nowMs());
+    // None left today that reach there: the last has gone. The station's answer lists only the
+    // trains still to come, so there's no time to give for it.
+    if (now == null) return (kind: 'gone', text: tr('trip.lastTrainGone', 'No more {line} trains to {stop} from {from} today: the last has gone.', words));
+    final next = Trains.forLeg(data, leg.trainTo!, When.nowMs() + (reach * 60000).round());
+    final time = When.clock(now.lastMs);
+    if (next == null) return (kind: 'miss', text: tr('trip.lastTrainMiss', "The last {line} train to {stop} from {from} is at {time}, before you'll get there.", {...words, 'time': time}));
+    final rank = next.rank;
+    if (rank == null) return null;
+    return (
+      kind: 'soon',
+      text: rank == 1
+          ? tr('trip.lastTrainSoonText', 'Last train soon: the next {line} train to {stop} from {from} is the last, at {time}.', {...words, 'time': time})
+          : tr('trip.lastTrainsSoonText', 'Last train soon: only {n} more {line} trains to {stop} from {from} today, the last at {time}.', {...words, 'time': time, 'n': '$rank'}),
+    );
+  }
+
   Future<void> _watchLastBus() async {
     final t = Trip.I;
     if (!BusNet.ready || When.nowMs() - _lastAt < _lastEvery - 7500) return;
@@ -222,6 +251,14 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     final id = t.id;
     final heard = <int, ({String kind, String text})>{};
     await Future.wait([
+      for (final (i, leg) in t.legs.indexed)
+        if (i >= t.leg && leg.kind == 'train' && leg.trainFrom != null && leg.trainTo != null && !(i == t.leg && t.boarded))
+          () async {
+            try {
+              final word = await lastTrainWord(leg, _minutesTo(i));
+              if (word != null) heard[i] = word;
+            } catch (_) {}
+          }(),
       for (final (i, leg) in t.legs.indexed)
         if (i >= t.leg && leg.kind == 'bus' && leg.service != null && leg.board != null && !(i == t.leg && t.boarded))
           () async {
@@ -264,7 +301,13 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     for (final e in heard.entries) {
       if (!_lastWarned.add(e.key)) continue;
       final instead = e.value.kind != 'soon' && _another != null ? ' ${_anotherText()}' : '';
-      _notify(e.value.kind == 'soon' ? tr('trip.lastSoon', 'Last bus soon') : tr('settings.short.last_bus', 'Last bus'), '${e.value.text}$instead', 'board');
+      final train = t.legs[e.key].kind == 'train';
+      _notify(
+          train
+              ? (e.value.kind == 'soon' ? tr('trip.lastTrainSoon', 'Last train soon') : tr('trip.lastTrain', 'Last train'))
+              : (e.value.kind == 'soon' ? tr('trip.lastSoon', 'Last bus soon') : tr('settings.short.last_bus', 'Last bus')),
+          '${e.value.text}$instead',
+          'board');
     }
   }
 
@@ -340,18 +383,21 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
   String? _keptWay;
   String? _switchKey;
 
-  static String _rideKey(String route, String? code) => 'bus:${route.toUpperCase()}@${code ?? ''}';
+  static String _rideKey(String route, String? code, [String mode = 'bus']) => '$mode:${route.toUpperCase()}@${code ?? ''}';
 
   Future<void> _findAnother(List<int> lostAt) async {
     final t = Trip.I;
     final id = t.id;
-    final key = lostAt.map((i) => _rideKey(t.legs[i].service ?? '', t.legs[i].board)).join('>');
+    // A lost bus by its service and stop, a lost train by its line and station.
+    final key = lostAt
+        .map((i) => t.legs[i].kind == 'train' ? _rideKey(t.legs[i].route ?? '', t.legs[i].trainFrom, 'train') : _rideKey(t.legs[i].service ?? '', t.legs[i].board))
+        .join('>');
     if (_another?.key == key && When.nowMs() - _another!.at < _anotherEvery) return;
     final g = _goal();
     final skip = key.split('>').toSet();
     Map<String, dynamic>? pick(Map<String, dynamic> data) {
       final options = (data['options'] as List? ?? const []).whereType<Map>().map((o) => Map<String, dynamic>.from(o)).toList();
-      return options.where((o) => o['walkOnly'] != true && !(o['legs'] as List).cast<Map>().any((l) => l['mode'] == 'bus' && skip.contains(_rideKey('${l['route']}', (l['from'] as Map?)?['code'] as String?)))).firstOrNull ??
+      return options.where((o) => o['walkOnly'] != true && !(o['legs'] as List).cast<Map>().any((l) => (l['mode'] == 'bus' || l['mode'] == 'train') && skip.contains(_rideKey('${l['route']}', (l['from'] as Map?)?['code'] as String?, '${l['mode']}')))).firstOrNull ??
           options.where((o) => o['walkOnly'] == true).firstOrNull;
     }
 

@@ -97,6 +97,8 @@ bus or line, so a bus to your door stays beside a quicker one with a long walk. 
 - **OneMap ~42 min**, where OneMap's timetable-based planner rides the same way;
 - a warning when LTA reports a disruption on one of its lines;
 - **Last 38 from Bedok Int at 23:48**, when you'd catch a bus near its last of the day;
+- **2nd last train to Bedok station from Tanah Merah station**, with when the last one leaves, when the train you'd
+  catch is one of the last three of the day that reach where you get off;
 - a bus slowed by traffic right now: by how much, and which roads;
 - what it should cost by card, such as **~S$1.94**, for the **Fare type** in [Settings](settings.md#navigate);
 - setting off soon, with a bus first: **Live**, and every bus that goes straight from that stop to

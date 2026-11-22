@@ -7,7 +7,8 @@
 // Setting off now (or within LIVE_MIN), buses are timed by the traffic right now, each bus leg
 // says if it's near its last bus or slowed by traffic (and why), and walking and cycling the
 // whole way are given where they might compete, cycling only with &bike=1, and driving it
-// always (_nav/live.js).
+// always (_nav/live.js). Each train leg says when its last train leaves, if the one you'd catch is
+// one of the day's last three that reach where you get off (_nav/last-trains.js).
 //
 // Answers { options: [...], alerts: { lines }, when: { mode, ms }, traffic: { at } | null,
 // others: { walk?, cycle?, drive? } }, each option { minutes, mix, routes, legs, onemapMinutes?,
@@ -31,6 +32,8 @@ import { checkWithOneMap } from "./_nav/onemap-check.js";
 import { readWhen } from "./_nav/when.js";
 import { annotate, othersFor, running, withTraffic } from "./_nav/live.js";
 import { joinWays } from "./_nav/via.js";
+import { lastTrains } from "./_nav/last-trains.js";
+import { getTimetable } from "./trains.js";
 import { getTraffic } from "./_lib/traffic.js";
 
 const RATE_LIMIT = 30; // navs per IP per minute
@@ -41,6 +44,9 @@ const BEHIND_MS = 2 * 60000;
 // Setting off within this many minutes counts as now, for the live traffic and walking,
 // cycling or driving instead.
 const LIVE_MIN = 30;
+// How long a plan waits, once made, for LTA's train timetable (for the last trains), which a
+// newly started function fetches while it plans. Past this, the plan goes without them.
+const TIMETABLE_WAIT_MS = 3000;
 
 // The ways with a stop on the way: OneMap checks each half from when it sets off, three calls
 // a half, and the best of each are joined.
@@ -97,6 +103,8 @@ export default async function handler(req, res) {
 
   try {
     const live = when.mode !== "arrive" && Math.abs(when.ms - Date.now()) <= LIVE_MIN * 60000;
+    // Fetched alongside the plan, kept for six hours (api/trains.js); none without the key.
+    const timetable = process.env.LTA_ACCOUNT_KEY ? getTimetable().catch(() => null) : Promise.resolve(null);
     const [graph, alerts, traffic] = await Promise.all([
       // &restricted=1: Settings' Restricted areas, riding to and through the stops behind a
       // checkpoint (_nav/network.js).
@@ -125,6 +133,17 @@ export default async function handler(req, res) {
     }
     options = running(options, { graph, setOff });
     annotate(options, { graph, traffic, setOff });
+    let waited;
+    const index = await Promise.race([timetable, new Promise((r) => { waited = setTimeout(r, TIMETABLE_WAIT_MS, null); })]);
+    clearTimeout(waited);
+    if (index) {
+      try {
+        lastTrains(options, { index, setOff });
+      } catch (err) {
+        // The plan goes without them rather than not at all.
+        console.error("nav last trains:", err);
+      }
+    }
 
     // Lines LTA reports trouble on, as the router's line codes.
     const disrupted = new Set((alerts?.AffectedSegments || []).flatMap((s) => LTA_LINES[s.Line] || []));

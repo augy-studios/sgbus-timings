@@ -87,7 +87,8 @@ Every app shares one version number. Raise it in all three places together, or t
   day, for offline) read LTA's GTFS timetable and its disruption-only trip updates at run time
   (`api/_trains/`), never vendored. LTA has no live train times outside a disruption, so they're
   labelled timetable. `js/trains.js`, `flutter/lib/data/trains.dart` and
-  `telegram-bot/src/trains.py` read them in step. Checks: `scripts/trains-test.mjs`, `.cjs` and
+  `telegram-bot/src/trains.py` read them in step. `api/nav.js` marks a way's train among the
+  day's last three from the same timetable (`api/_nav/last-trains.js`). Checks: `scripts/trains-test.mjs`, `.cjs` and
   `trains-a11y-test.cjs` (WCAG AA in light, dark and High contrast); the app's
   `test/trains_contrast_test.dart` (every look).
 - **Fares:** PTC's distance fare tables are in `js/ways.js`, `flutter/lib/features/nav/ways.dart`

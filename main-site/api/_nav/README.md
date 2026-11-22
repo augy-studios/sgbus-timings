@@ -51,3 +51,9 @@ is only boarded between its first and last bus at that stop, and a train between
 way's time to set off, then keeps each way only if it runs from its own.
 A way OneMap's check adds is dropped if one of its buses won't be running by the time it's
 reached (`live.js`, `running`), as OneMap's timetables don't follow LTA's first and last buses.
+
+Each bus leg near its last bus of the day carries `lastBus` (`live.js`, `annotate`). Each train
+leg whose train is one of the day's last three to where you get off, by LTA's timetable
+(`api/_trains/gtfs.js`), carries `lastTrainRank` (3, 2 or 1) and `lastTrain`, when the last one
+leaves (`last-trains.js`). `api/nav.js` waits up to 3 s for that timetable, which a newly started
+function fetches while it plans, and goes without the last trains past that.

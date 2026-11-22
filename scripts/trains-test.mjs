@@ -7,6 +7,7 @@ import { buildIndex, serviceDay, unzip } from "../main-site/api/_trains/gtfs.js"
 import { decodeFeed } from "../main-site/api/_trains/rt.js";
 import { answer } from "../main-site/api/trains.js";
 import { network, usualDay } from "../main-site/api/trains-all.js";
+import { lastTrains, trainsLeft } from "../main-site/api/_nav/last-trains.js";
 
 let failed = 0;
 const test = (name, fn) => {
@@ -223,6 +224,35 @@ test("the whole network's usual trains, by kind of day", () => {
   assert.equal(a1.parent, "A1");
   // Platforms nothing leaves from aren't listed.
   assert.ok(!n.platforms.some((p) => p.id === "A3_A" || p.id === "A1_B"));
+});
+
+// ---------- the last trains, for Navigate's ways ----------
+test("the trains left today to a station, and when the last one leaves", () => {
+  // To A3: 8:00, 8:10 and 00:30 (the short 8:05 ends at A2).
+  const left = trainsLeft(index, ["A1"], ["A3"], at("2026-11-24T07:00:00"));
+  assert.equal(left.count, 3);
+  assert.equal(left.lastMs, at("2026-11-25T00:30:00"));
+  assert.equal(trainsLeft(index, ["A1"], ["A2"], at("2026-11-24T07:00:00")).count, 4);
+  assert.equal(trainsLeft(index, ["A1"], ["A3"], at("2026-11-25T00:20:00")).count, 1);
+  assert.equal(trainsLeft(index, ["A1"], ["A3"], at("2026-11-25T00:40:00")), null);
+});
+
+test("a way's train ride: its rank among the last three, from when you're on the platform", () => {
+  const way = (minutes) => ({ legs: [
+    { mode: "walk", minutes },
+    { mode: "train", route: "AL", board: minutes + 3, wait: 3, minutes: 6, from: { code: "A1" }, to: { code: "A3" } },
+  ] });
+  const early = way(5);
+  const late = way(5);
+  const busy = { legs: [{ mode: "train", route: "AL", board: 0, wait: 0, minutes: 3, from: { code: "A1" }, to: { code: "A2" } }] };
+  lastTrains([early, busy], { index, setOff: at("2026-11-24T07:00:00") });
+  assert.equal(early.legs[1].lastTrainRank, 3);
+  assert.equal(early.legs[1].lastTrain, "00:30");
+  assert.equal(busy.legs[0].lastTrain, undefined, "four trains left to A2: not yet");
+  // On the platform at 8:07: only 8:10 and 00:30 are left.
+  lastTrains([late], { index, setOff: at("2026-11-24T08:02:00") });
+  assert.equal(late.legs[1].lastTrainRank, 2);
+  assert.equal(late.legs[1].lastTrain, "00:30");
 });
 
 if (failed) { console.log(`\n${failed} failed`); process.exit(1); }

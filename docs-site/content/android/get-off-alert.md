@@ -151,9 +151,11 @@ While you wait for a bus on your trip, when it's **1 minute away** the phone buz
 174 is 1 min away from Tampines Int. Get ready to board." It comes once for each bus, and only while you're still
 waiting.
 
-### Your last bus
+### Your last bus or train
 
-The trip keeps an eye on the last bus of the day for every bus on it you've still to get on. If you're going to miss one,
+The trip keeps an eye on the last bus of the day for every bus on it you've still to get on, and the last train for every
+train, by LTA's timetable. A warning across the top says when one is down to its last three, as **Last bus soon** or
+**Last train soon**, buzzing twice and with a notification the first time. If you're going to miss one,
 it looks for another way from where your last ride ends and says what to do first. It switches by itself, with **Undo**,
 or offers:
 

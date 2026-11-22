@@ -727,12 +727,26 @@
         const fare = Ways.fare(o, fareType, category);
         const tagged = (tags.get(o) || []).map((t) => (t === 'mine' ? yellow(TAG_NAMES[t]) : green(TAG_NAMES[t]))).join(dim(', '));
         lines.push(`${dim(`${i + 1}.`)} ${chips}  ${time} · ${o.walkOnly ? `${Math.round(walked)} m` : `${changes ? plural(changes, 'change') : 'No change'} · ${Math.round(walked)} m walk`}${fare ? ` · ~${Ways.fareText(fare.cents)}` : ''}${o.disrupted ? red('  disrupted') : ''}${o.onemapMinutes ? dim(`  OneMap ~${o.onemapMinutes} min`) : ''}${tagged ? `  ${tagged}` : ''}`);
+        // Its last buses and last trains, as the web app's way cards say them.
+        for (const l of o.legs) {
+          if (l.lastBus) lines.push(`   ${red(`Last ${l.route} from ${placeLabel(l.from)} at ${l.lastBus}`)}`);
+          if (l.lastTrain) lines.push(`   ${red(lastTrainLine(l))}`);
+        }
       });
       if (options.some((o) => Ways.fare(o, fareType))) lines.push(dim(`Fares: ${FARE_NAMES[fareType].toLowerCase()} card fares by distance, roughly (sgbus settings fare). --sort best|fastest|walk|changes to sort another way.`));
       const pick = Math.min(options.length, Math.max(1, Number(opts.way) || 1));
       lines.push('', bold(`Way ${pick}:`), ...(await waySteps(options[pick - 1], when, to.label, via?.label)));
       if (options.length > 1) lines.push(dim('--way N for another one step by step.'));
       out(...lines);
+    }
+
+    // A train ride whose train is one of the day's last three there (api/_nav/last-trains.js), as
+    // the web app's way card words it (js/nav.js, lastTrainText).
+    function lastTrainLine(l) {
+      const words = `train to ${placeLabel(l.to)} from ${placeLabel(l.from)}`;
+      return l.lastTrainRank === 3 ? `3rd last ${words}. The last is at ${l.lastTrain}`
+        : l.lastTrainRank === 2 ? `2nd last ${words}. The last is at ${l.lastTrain}`
+        : `Last ${words} at ${l.lastTrain}`;
     }
 
     // Navigate's sorts, tags and fare types, as the site words them.
@@ -784,11 +798,13 @@
           lines.push(`  Walk ${Math.round(l.metres)} m to ${to}${l.toExit?.name && l.to?.kind === 'station' ? `, Exit ${l.toExit.name}` : ''}, ~${Math.round(l.minutes)} min`);
         } else if (l.mode === 'train') {
           lines.push(`  ${lineChip(l)} ${l.name || ''}${l.towards ? ` towards ${l.towards}` : ''}: ${placeLabel(l.from)} to ${placeLabel(l.to)}, ${plural(l.stops, 'stop')}, ~${Math.round(l.minutes)} min${l.disrupted ? red('  disrupted') : ''}`);
+          if (l.lastTrain) lines.push(`    ${red(lastTrainLine(l))}`);
         } else {
           lines.push(`  ${bold(`Bus ${l.route}`)}${l.towards ? dim(` towards ${l.towards}`) : ''}: ${placeLabel(l.from)} to ${placeLabel(l.to)}, ${plural(l.stops, 'stop')}, ~${Math.round(l.minutes)} min`);
           const k = buses.indexOf(l);
           const svc = live[k]?.services?.find((s) => s.serviceNo === l.route);
           if (!when) lines.push(svc ? `    Next: ${[svc.next, svc.next2, svc.next3].map(etaCell).join(' ')}` : dim('    No live timings for this bus right now.'));
+          if (l.lastBus) lines.push(`    ${red(`Last ${l.route} from here today is at ${l.lastBus}. Don't miss it.`)}`);
           lines.push(...(l.customs || []).map(crossingLine));
         }
       });

@@ -91,7 +91,8 @@ Either end can be an address, a building, a postal code, a station, a stop's cod
 your places by name, such as `home`. The first way comes step by step, with live timings for
 its buses; `--way 3` shows the third instead. `--via gym` goes by a stop on the way, and with
 `--save` it's saved with the stop, as Navigate's [Save nav](nav.md#save-it) does. A walk to or
-from a station says which exit, the one nearest the walk's other end.
+from a station says which exit, the one nearest the walk's other end. A way whose bus is near
+its last of the day, or whose train is one of the last three, says so in red under it.
 
 The ways are [sorted as Navigate sorts them](nav.md#sort-the-ways), each with its tags and
 roughly what it costs by card:
