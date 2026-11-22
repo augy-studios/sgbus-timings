@@ -558,8 +558,9 @@ def register_callbacks(client):
                 return
 
             if action == "settings_cycle_fare":
-                types = list(FARE_TYPES)
-                set_fare_type(user_id, types[(types.index(get_fare_type(user_id)) + 1) % len(types)])
+                # Not `types`: that name in this function would hide telethon's for all of it.
+                fares = list(FARE_TYPES)
+                set_fare_type(user_id, fares[(fares.index(get_fare_type(user_id)) + 1) % len(fares)])
                 sender = await event.get_sender()
                 rich, buttons = build_settings_view(user_id, sender)
                 await edit_rich_message(client, event, rich, buttons)

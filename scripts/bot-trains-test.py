@@ -2,7 +2,7 @@
 # /api/trains answer, as the web app's js/trains.js reads it: minutes and clock times, where each
 # train goes when a platform's don't all go as far, a disruption's changes and cancellations, and
 # tomorrow's first train after the last, and its last train and last three marked. And a station
-# search puts Train times above its stops.
+# search puts Train times above its stops, and tapping that button sends them.
 #
 #   python3 scripts/bot-trains-test.py
 #
@@ -69,6 +69,53 @@ btn = trains.trains_button({'name': 'Tampines', 'codes': ['EW2', 'DT32']})
 # Telethon 1.46 keeps a button's data under its type; older ones on the button.
 got = resolve_button(getattr(btn, 'data', None) or btn.type.data)
 ok('7. a station search\'s button carries the station', btn.text == '🚆 Train times at Tampines' and got == {'action': 'trains', 'payload': {'codes': ['EW2', 'DT32'], 'name': 'Tampines'}}, str(got))
+
+# Tapping it, through the bot's own button handler, sends the trains and answers the tap.
+import asyncio
+from src.handlers import callbacks
+
+
+class FakeClient:
+    def __init__(self):
+        self.handlers, self.sent = [], []
+
+    def on(self, _ev):
+        def deco(f):
+            self.handlers.append(f)
+            return f
+        return deco
+
+    def build_reply_markup(self, buttons):
+        return buttons
+
+    async def __call__(self, req):
+        self.sent.append(req.message)
+
+
+class FakeTap:
+    data = getattr(btn, 'data', None) or btn.type.data
+    sender_id = chat_id = 1
+    query = None
+
+    def __init__(self):
+        self.answers = []
+
+    async def answer(self, *a, **k):
+        self.answers.append(a)
+
+
+async def _tampines(_codes):
+    return tampines()
+
+trains.fetch_trains = _tampines
+client, tap = FakeClient(), FakeTap()
+callbacks.register_callbacks(client)
+try:
+    asyncio.run(client.handlers[0](tap))
+    err = ''
+except Exception as e:
+    err = repr(e)
+ok('8. tapping it sends the trains and answers the tap', not err and len(client.sent) == 1 and client.sent[0].startswith('Trains at Tampines') and tap.answers == [()], err or str((client.sent, tap.answers)))
 
 print('\nall passed' if not fails else f'\n{fails} failed')
 sys.exit(1 if fails else 0)
