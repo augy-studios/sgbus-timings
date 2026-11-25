@@ -572,6 +572,18 @@ jobs:
           path: repo
           name: github-pages-${{ github.run_attempt }}
 
+      # GitHub's list of a run's artifacts can lag behind an upload, and deploy-pages looks only
+      # once: wait until the list has it, so the deploy doesn't fail with "Found 0 artifact(s)".
+      - name: Wait for the artifact to be listed
+        if: steps.newest.outputs.go == 'true'
+        run: |
+          for try in $(seq 1 30); do
+            n="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=github-pages-$GITHUB_RUN_ATTEMPT" --jq .total_count || echo 0)"
+            [ "$n" = 1 ] && exit 0
+            echo "Listed: $n (try $try of 30)"; sleep 10
+          done
+          echo "::warning::The artifact still isn't listed; deploying anyway."
+
       - uses: actions/deploy-pages@v4
         id: deploy
         if: steps.newest.outputs.go == 'true'
