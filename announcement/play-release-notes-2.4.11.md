@@ -5,11 +5,11 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • Easter egg links from the Telegram bot's uwuCoins wheel open in the app, once, for an egg or GTA VI's colours
 • Sync offers your uwuCoins: taking another phone's or the bot's adds them to yours
 • Team runs have Join in Telegram, for the same team in the bot
-</en-US>
+</en-GB>
 <zh-CN>
 • 来自 Telegram 机器人 uwuCoins 转盘的复活节彩蛋链接可在应用中打开一次，获得彩蛋或 GTA VI 配色
 • 同步会提供你的 uwuCoins：接收其他手机或机器人的，会加到你的余额

@@ -5,7 +5,7 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 Fixes for tablets and phones on their side:
 • See it on the map, for traffic on your ride, zooms in on where it's slow or jammed
 • Turned sideways, the Edge Tray keeps clear of the navigation bar, and the language list and other menus scroll
@@ -13,7 +13,7 @@ Fixes for tablets and phones on their side:
 • In Navigate, Add a stop sits between From and To
 • Confetti clears away after a spin
 • Train door numbers wrap instead of running off the edge
-</en-US>
+</en-GB>
 <zh-CN>
 针对平板和横屏手机的修正：
 • 行程遇到交通拥堵时，“在地图上查看”会放大到缓慢或拥堵的路段

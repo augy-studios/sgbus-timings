@@ -5,11 +5,11 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • Navigate's ways say when their train is one of the day's last three
 • Last train soon on a trip, as for the last bus
 • Another way if you'd miss the last train
-</en-US>
+</en-GB>
 <zh-CN>
 • 导航路线会标示列车是否为当天最后三班之一
 • 行程中提示末班列车快到了，就像末班巴士一样

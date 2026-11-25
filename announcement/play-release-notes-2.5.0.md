@@ -5,14 +5,14 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • A shorter trip bar and note, with no gap under the bars at the top
 • Pick a bus puts your favourite buses first, each with a star
 • Your trip's notification sits with your others, not under Silent
 • Navigate never offers a bus that will have finished for the day
 • GTA VI colours: set them by 14 December to keep them
 • Causeway Link's buses in Bus timings, and no crash coming back to the app
-</en-US>
+</en-GB>
 <zh-CN>
 • 行程栏和提示更短，顶部栏下方不再留空
 • “选择巴士”会把你收藏的巴士排在最前，并标上星号

@@ -5,7 +5,7 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • Navigate sorts its ways: Best, Fastest, Least walking or Fewest changes
 • Each way's fare by card, and the buses you'd catch, live, with how full each is
 • Your preferred buses, and a place's own, come first
@@ -13,7 +13,7 @@ Play shows a tag here as one it doesn't know, change it to the one Play lists fo
 • Map bubbles say where to board, change and get off
 • Live Updates on Android 16
 • A spin of the uwuCoins wheel costs 50
-</en-US>
+</en-GB>
 <zh-CN>
 • 导航可排序路线：最佳、最快、步行最少或换乘最少
 • 每条路线显示刷卡车费，以及可搭乘巴士的实时到站和拥挤程度

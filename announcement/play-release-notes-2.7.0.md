@@ -5,7 +5,7 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • Train times at every MRT and LRT station: search for a station and tap Train times
 • The day's last three trains marked in red
 • A disruption's late and cancelled trains, from LTA
@@ -14,7 +14,7 @@ Play shows a tag here as one it doesn't know, change it to the one Play lists fo
 • Train times work offline
 • Places' form opens in a window of its own
 • An update page with what's new in each version, opening Google Play
-</en-US>
+</en-GB>
 <zh-CN>
 • 每个地铁和轻轨站的列车时间：搜索车站，点按“列车时间”
 • 当天最后三班列车以红色标示

@@ -5,10 +5,10 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • Bus numbers you can read in dark mode, in Navigate's live timings
 • Easier to read on every colour: station codes, door labels and map bubbles meet WCAG's contrast
-</en-US>
+</en-GB>
 <zh-CN>
 • 深色模式下，导航实时到站中的巴士号码清晰可见
 • 各种颜色上的文字更易读：车站代码、车门标签和地图气泡符合 WCAG 对比度标准

@@ -720,7 +720,7 @@ pick them from Play's own list, which was not checked here.
   each of the four languages and upload each set under its language.
 - The native part of the app (notification buttons, the "Press back again to exit" text) is English
   only (`res/values/strings.xml`); everything on screen is the site and is translated.
-- Release notes: write them in each language too (`<en-US>`-style tags in the box, or one language
+- Release notes: write them in each language too (`<en-GB>`-style tags in the box, or one language
   at a time).
 
 ### 11.4 App content (the "Dashboard" tasks) ([prepare for review][review])

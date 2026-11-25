@@ -5,13 +5,13 @@ stays under Play's 500 characters. The tags must match the languages the store l
 Play shows a tag here as one it doesn't know, change it to the one Play lists for that language.
 
 ```text
-<en-US>
+<en-GB>
 • The last call: a trip buzzes NOW in Morse code a stop before you get off
 • Trip ended: END in Morse code as you arrive, with the fare, distance and coins
 • Route on the map for every bus in Navigate
 • A bus's timings show every bus straight to where you get off
 • New versions of the app now works from Google Play
-</en-US>
+</en-GB>
 <zh-CN>
 • 最后提醒：下车前一站，行程会以摩斯密码震动 NOW
 • 行程结束：到达时以摩斯密码震动 END，并显示车费、距离和金币
