@@ -222,7 +222,16 @@ jobs:
         run: |
           # upgrade installs it, or brings an older copy on the machine up to date (the shortcuts
           # need Include\Win\COM.nsh, which only recent versions have).
-          choco upgrade nsis -y --no-progress
+          # Chocolatey's feed sometimes times out (504), and choco then exits 0 with nothing
+          # installed, so try a few times and stop here if makensis still isn't there.
+          $makensis = Join-Path ${env:ProgramFiles(x86)} 'NSIS\makensis.exe'
+          foreach ($try in 1..5) {
+            choco upgrade nsis -y --no-progress
+            if (Test-Path $makensis) { break }
+            Write-Host "NSIS not installed (try $try of 5); waiting before trying again."
+            Start-Sleep -Seconds (30 * $try)
+          }
+          if (-not (Test-Path $makensis)) { throw 'NSIS did not install: Chocolatey may be down. Re-run the job later.' }
           dotnet tool install --global wix --version 5.0.2
           "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
           & "$env:USERPROFILE\.dotnet\tools\wix.exe" extension add --global WixToolset.UI.wixext/5.0.2
@@ -555,11 +564,16 @@ jobs:
           apt-cache show sgbus-timings-desktop sgbus-timings-cli > /dev/null
           sudo rm /etc/apt/sources.list.d/sgbus-timings-check.list /etc/apt/keyrings/sgbus-timings-check.gpg
 
+      # Named for the attempt: a re-run keeps the earlier attempts' artifacts, and deploy-pages
+      # refuses a run with two of the same name.
       - uses: actions/upload-pages-artifact@v3
         if: steps.newest.outputs.go == 'true'
         with:
           path: repo
+          name: github-pages-${{ github.run_attempt }}
 
       - uses: actions/deploy-pages@v4
         id: deploy
         if: steps.newest.outputs.go == 'true'
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
