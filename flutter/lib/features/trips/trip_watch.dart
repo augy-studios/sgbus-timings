@@ -725,6 +725,14 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
         'getOffManyChange': tr('trip.getOffManyChange', 'Get off in {n} stops, at {stop}, to change.'),
         'boardArriving': tr('trip.boardArriving', '{ride} is arriving at {stop}. Get ready to board.'),
         'boardOneMin': tr('trip.boardOneMin', '{ride} is 1 min away from {stop}. Get ready to board.'),
+        'ringNow': tr('trip.ringNow', 'Ring the bell NOW'),
+        'getOffNext': tr('trip.getOffNext', 'Get off at the next station'),
+        'nextStop': tr('trip.nextStop', 'Next stop: {stop}.'),
+        'nextStation': tr('trip.nextStation', 'Next station: {stop}.'),
+        'endTitle': tr('trip.endTitle', 'Trip ended'),
+        'arrivedAt': tr('trip.arrivedAt', "You've arrived at {to}."),
+        // The trip's fare and distance, for the server's end of the trip; the coins are kept here.
+        if (Trip.I.active) 'endSummary': Trip.I.summaryText(null),
       };
 
   Future<void> _sync() async {
@@ -758,6 +766,8 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
       'clockRuns': t.current?.kind != 'bus' || t.boarded,
       'fixAt': t.lastFixAt,
       'alerted': [for (var i = 0; i < t.legs.length; i++) t.alerted.contains(i)],
+      // The last call: the server sends it, and the trip's end, only to an app that sends this.
+      'nowAlerted': [for (var i = 0; i < t.legs.length; i++) t.nowAlerted.contains(i)],
       'readied': [for (var i = 0; i < t.legs.length; i++) readied.contains(i)],
       'quiet': const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones')),
       'words': _words(),
@@ -781,6 +791,9 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     for (final (i, r) in (state['readied'] as List? ?? const []).indexed) {
       if (r == true) readied.add(i);
     }
+    for (final (i, a) in (state['nowAlerted'] as List? ?? const []).indexed) {
+      if (a == true && !(ahead && i >= t.leg)) t.nowAlerted.add(i);
+    }
     if (!ahead && leg > t.leg && leg < t.legs.length) t.moveTo(leg, (state['legStartedAt'] as num?)?.toInt());
   }
 
@@ -796,6 +809,19 @@ class TripWatch extends ChangeNotifier with WidgetsBindingObserver {
     if (type == 'board') {
       readied.add(leg);
       if (leg == t.leg) boardText = text;
+    } else if (type == 'trip-end') {
+      // The server's had you arrive: said once, here or there.
+      t.endAlerted = true;
+    } else if (type == 'get-off-now') {
+      if (!t.nowAlerted.contains(leg)) {
+        t.nowAlerted.add(leg);
+        t.alerted.add(leg);
+        final l = leg < t.legs.length ? t.legs[leg] : null;
+        if (leg == t.leg && l != null) {
+          final (:title, :body) = Trip.lastCallText(l, math.min(Trip.nowStops, t.stopsLeft()));
+          t.soundAlert(body, title: title, kind: 'now');
+        }
+      }
     } else if (!t.alerted.contains(leg)) {
       // Android shows nothing for a push with the app in front: sounded here, as if found here.
       t.alerted.add(leg);

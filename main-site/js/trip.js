@@ -159,6 +159,9 @@
   const LOCK = "sgbus-trip";
 
   const ALERT_STOPS = 2;
+  // The last call, a stop before the end of a ride: "Ring the bell NOW" on a bus, "Get off at
+  // the next station" on a train, buzzing "NOW" in Morse code. Keep api/_push/trip.js in step.
+  const NOW_STOPS = 1;
   // A fix this accurate counts; a rough one (indoors, underground) is ignored.
   const GOOD_FIX_M = 150;
   // A rough fix up to this is still good enough to tell you're nowhere near where the trip
@@ -202,6 +205,18 @@
     360, 120, 360, 120, 360, 360, // O  ---
     120, 120, 120, 120, 360, 120, 120, 360, // F  ..-.
     120, 120, 120, 120, 360, 120, 120, // F  ..-.
+  ];
+  // "NOW" (-. --- .--) for the last call, and "END" (. -. -..) as the trip ends: the same dot,
+  // dash and gaps. Keep sw.js and Notifications.java in step.
+  const NOW_VIBRATION = [
+    360, 120, 120, 360, // N  -.
+    360, 120, 360, 120, 360, 360, // O  ---
+    120, 120, 360, 120, 360, // W  .--
+  ];
+  const END_VIBRATION = [
+    120, 360, // E  .
+    360, 120, 120, 360, // N  -.
+    360, 120, 120, 120, 120, // D  -..
   ];
 
   // The timeline's dot closes this share of the gap to where you are every FRAME_MS, at
@@ -513,6 +528,8 @@
       legStartedAt: now,
       lastFixAt: 0,
       alerted: legs.map(() => false),
+      // Whether each ride's last call (NOW_STOPS) was given.
+      nowAlerted: legs.map(() => false),
       // Whether each leg's Get ready to board was given.
       readied: legs.map(() => false),
       // Whether each leg's last bus warning was sent as a notification (watchLastBus).
@@ -999,6 +1016,7 @@
       trip.alerted[trip.leg] = false;
       trip.alertText = null;
     }
+    if (trip.at < last - NOW_STOPS) nowAlerted()[trip.leg] = false;
     shown = null; // the dot jumps rather than gliding back across the stops
     save();
     sync();
@@ -1031,6 +1049,7 @@
       trip.alerted[trip.leg] = false;
       trip.alertText = null;
     }
+    nowAlerted()[trip.leg] = false;
     shown = null;
     save();
     sync();
@@ -1539,7 +1558,7 @@
   // ---------- switched by itself ----------
 
   // What a trip is, for putting it back as it was (Undo).
-  const SNAPSHOT = ["legs", "alerted", "readied", "lastWarned", "roads", "times", "left", "leg", "at", "pos", "anchor", "boarded", "moves", "legStartedAt"];
+  const SNAPSHOT = ["legs", "alerted", "nowAlerted", "readied", "lastWarned", "roads", "times", "left", "leg", "at", "pos", "anchor", "boarded", "moves", "legStartedAt"];
 
   function autoSwitch(words) {
     const reason = words.map((w) => w.text).join(" ");
@@ -1589,6 +1608,7 @@
     const n = j + cut.length;
     const pad = (xs, keepCut, blank) => [...(xs || []).slice(0, j), ...(cut.length ? [keepCut ? xs?.[j] ?? blank() : blank()] : []), ...legs.map(blank)];
     trip.alerted = pad(trip.alerted, false, () => false);
+    trip.nowAlerted = pad(nowAlerted(), false, () => false);
     trip.readied = pad(trip.readied, true, () => false);
     trip.lastWarned = pad(trip.lastWarned, true, () => false);
     trip.roads = pad(trip.roads, false, () => null);
@@ -2141,6 +2161,7 @@
     arrivedTimer = null;
     for (let i = trip.leg; i < trip.legs.length; i++) {
       if (i > trip.leg || trip.at < last - ALERT_STOPS) trip.alerted[i] = false;
+      if (i > trip.leg || trip.at < last - NOW_STOPS) nowAlerted()[i] = false;
       if (i > trip.leg || !trip.boarded) trip.readied[i] = false;
     }
     handMoved();
@@ -2195,7 +2216,13 @@
     const left = stopsLeft();
     const leg = trip.legs[trip.leg];
     const next = trip.legs[trip.leg + 1];
-    if (!isWalk(leg) && left <= ALERT_STOPS && !trip.alerted[trip.leg]) {
+    // The last call, once you're on board: it stands for the Get Off Alert too, if that's not
+    // been given, so a short ride doesn't buzz twice at once.
+    if (!isWalk(leg) && left <= NOW_STOPS && underWay(leg) && !nowAlerted()[trip.leg]) {
+      nowAlerted()[trip.leg] = true;
+      trip.alerted[trip.leg] = true;
+      if (enabled()) lastCallNow(left);
+    } else if (!isWalk(leg) && left <= ALERT_STOPS && !trip.alerted[trip.leg]) {
       trip.alerted[trip.leg] = true;
       if (enabled()) alertNow(left);
     }
@@ -2218,6 +2245,11 @@
         // the old railway (js/eggs.js).
         try { window.Coins?.tripDone(trip); } catch (err) { console.warn("couldn't count the coins:", err); }
         try { window.Eggs?.tripDone(trip); } catch (err) { console.warn("couldn't look for feats:", err); }
+        // "END" in Morse code, with the trip's summary and its coins, unless the server already
+        // said so while the page was away.
+        if (enabled() && !trip.endAlerted) endAlert();
+        trip.endAlerted = true;
+        save();
       }
       render(I18n.t("trip.arrived", "You've arrived."));
       arrivedTimer ??= setTimeout(() => {
@@ -2277,6 +2309,141 @@
     else notify({ title: I18n.t("route.get_off_alert", "Get Off Alert"), body: text, tag: "get-off", vibrate: VIBRATION, channel: "get_off" });
   }
 
+  // Each ride's last call (NOW_STOPS), kept with the trip; a trip saved before it had none.
+  function nowAlerted() {
+    if (!Array.isArray(trip.nowAlerted) || trip.nowAlerted.length !== trip.legs.length) {
+      trip.nowAlerted = trip.legs.map((_, i) => Boolean(trip.nowAlerted?.[i]));
+    }
+    return trip.nowAlerted;
+  }
+
+  // The last call's title and text: on a bus, ring the bell for the next stop; on a train, get
+  // off at the next station. Already at the stop (left 0), get off now. The same as
+  // lastCallText in api/_push/trip.js.
+  function lastCallText(leg, left) {
+    const bus = leg.kind === "bus";
+    const title = bus ? I18n.t("trip.ringNow", "Ring the bell NOW")
+      : left === 0 ? I18n.t("route.get_off_alert", "Get Off Alert") : I18n.t("trip.getOffNext", "Get off at the next station");
+    const body = left === 0 ? I18n.t("trip.getOffNow", "Get off now at {stop}.", { stop: leg.to })
+      : bus ? I18n.t("trip.nextStop", "Next stop: {stop}.", { stop: leg.to }) : I18n.t("trip.nextStation", "Next station: {stop}.", { stop: leg.to });
+    return { title, body };
+  }
+
+  function lastCallNow(left) {
+    const { title, body } = lastCallText(trip.legs[trip.leg], left);
+    const text = `${title}. ${body}`;
+    soundLastCall(title, body);
+    flash();
+    trip.alertText = text;
+    trip.alertLeft = left;
+    render(text);
+    sync();
+  }
+
+  // As soundAlert, buzzing "NOW", on its own channel (get_off_now) in the app.
+  function soundLastCall(title, body) {
+    const quiet = nativeSubs && Boolean(window.Reminders?.earphonesOnly());
+    if (navigator.vibrate) navigator.vibrate(NOW_VIBRATION);
+    if (!quiet) beep();
+    if (nativeSubs) AppBridge.call("Trip", "alert", { title, body, quiet, kind: "now" }).catch(() => {});
+    else notify({ title, body, tag: "get-off", vibrate: NOW_VIBRATION, channel: "get_off_now" });
+  }
+
+  // The trip's sums, for its end: what its rides cost by card, roughly, as Navigate has it
+  // (js/ways.js, by the fare type in Settings), or null with nothing to pay (walks, shuttles) or
+  // no fare known (across the Causeway); and how far it went, rides along their stops and walks
+  // straight, each with the fare's allowance for bends (ROAD_FACTOR, TRACK_FACTOR in js/ways.js).
+  // The same as tripSums in flutter/lib/features/trips/trip.dart.
+  const SUM_ROAD_FACTOR = 1.15;
+  const SUM_TRACK_FACTOR = 1.1;
+  function tripSums() {
+    const across = trip.legs.some((l) => l.kind === "bus" && window.BusNet && [l.board, l.alight].some((c) => c && BusNet.isCheckpoint(c)));
+    const way = {
+      legs: trip.legs.map((l) => ({
+        mode: isWalk(l) ? "walk" : l.kind,
+        path: l.points,
+        route: l.service || l.route,
+        ...(l.shuttle && { campus: l.shuttle }),
+        ...(across && { customs: [{}] }),
+      })),
+    };
+    let fare = null;
+    try {
+      // nav.js's, a top-level function rather than on window.
+      const category = typeof busCategory === "function" ? busCategory : null; // eslint-disable-line no-undef
+      fare = window.Ways?.fare(way, Ways.getFareType(), category) || null;
+    } catch {}
+    let m = 0;
+    for (const l of trip.legs) {
+      let along = 0;
+      for (let i = 1; i < (l.points?.length || 0); i++) along += metres(l.points[i - 1], l.points[i]);
+      m += along * (l.kind === "train" ? SUM_TRACK_FACTOR : SUM_ROAD_FACTOR);
+    }
+    return { cents: fare?.cents ?? null, metres: Math.round(m) };
+  }
+
+  // The summary under the trip's end: "About S$1.68 in fares · 12.3 km travelled · 23 uwuCoins
+  // earned", each part left out when there's none. `coins` null leaves the coins out.
+  function summaryText(coins) {
+    const { cents, metres: m } = tripSums();
+    const distance = m >= 1000 ? `${(m / 1000).toFixed(1)} km` : `${Math.round(m / 10) * 10} m`;
+    const fare = cents == null ? null : window.Ways ? Ways.fareText(cents) : `S$${(cents / 100).toFixed(2)}`;
+    return [
+      fare && I18n.t("trip.endFare", "About {fare} in fares", { fare }),
+      m > 0 && I18n.t("trip.endDistance", "{distance} travelled", { distance }),
+      coins > 0 && I18n.t("trip.endCoins", "{n} uwuCoins earned", { n: coins }),
+    ].filter(Boolean).join(" · ");
+  }
+
+  // The coins this trip earned (js/coins.js), while coins are shown: none for a trip with no ride
+  // seen on its way.
+  function coinsEarned() {
+    try {
+      if (!window.Coins || !Coins.shown()) return null;
+      return Coins.forTrip(trip)?.n || 0;
+    } catch {
+      return null;
+    }
+  }
+
+  // The trip's over: "END" in Morse code, and a notification saying so (trip_end in the app),
+  // with its summary on a line of its own.
+  function endAlert() {
+    const title = I18n.t("trip.endTitle", "Trip ended");
+    const arrivedAt = I18n.t("trip.arrivedAt", "You've arrived at {to}.", { to: tripEnd()?.label || trip.legs.at(-1)?.to || "" });
+    const summary = summaryText(coinsEarned());
+    const body = summary ? `${arrivedAt}\n${summary}` : arrivedAt;
+    if (navigator.vibrate) navigator.vibrate(END_VIBRATION);
+    if (nativeSubs) AppBridge.call("Trip", "alert", { title, body, quiet: false, kind: "end" }).catch(() => {});
+    else notify({ title, body, tag: "trip-end", vibrate: END_VIBRATION, channel: "trip_end" });
+  }
+
+  // The server sent the last call or the end of the trip while the page was away (sw.js): taken
+  // as given, so it isn't sounded again.
+  function lastCallElsewhere({ tripId, leg, text }, sound = false) {
+    if (!trip || tripId !== trip.tripId || nowAlerted()[leg]) return;
+    nowAlerted()[leg] = true;
+    trip.alerted[leg] = true;
+    if (leg === trip.leg) {
+      if (sound && enabled()) {
+        const { title, body } = lastCallText(trip.legs[leg], Math.min(NOW_STOPS, stopsLeft()));
+        soundLastCall(title, body);
+      }
+      trip.alertText = text;
+      trip.alertLeft = stopsLeft();
+      flash();
+    }
+    save();
+    render();
+  }
+
+  function endedElsewhere({ tripId }, sound = false) {
+    if (!trip || tripId !== trip.tripId || trip.endAlerted) return;
+    trip.endAlerted = true;
+    if (sound && enabled()) endAlert();
+    save();
+  }
+
   // The server sent the alert (it follows the bus too, from LTA's live positions): shown on
   // the bar. From sw.js, which has already shown it as a notification, it isn't sounded again;
   // from the app while it's in front (`sound`), where Android shows nothing for a push, it's
@@ -2308,6 +2475,7 @@
   // app's place stands over the bus it was following (realignedAt, as realign does).
   function overrule() {
     trip.alerted[trip.leg] = false;
+    nowAlerted()[trip.leg] = false;
     trip.alertText = null;
     trip.realignedAt = Date.now();
     save();
@@ -2342,6 +2510,15 @@
       getOffManyChange: t("trip.getOffManyChange", "Get off in {n} stops, at {stop}, to change."),
       boardArriving: t("trip.boardArriving", "{ride} is arriving at {stop}. Get ready to board."),
       boardOneMin: t("trip.boardOneMin", "{ride} is 1 min away from {stop}. Get ready to board."),
+      ringNow: t("trip.ringNow", "Ring the bell NOW"),
+      getOffNext: t("trip.getOffNext", "Get off at the next station"),
+      nextStop: t("trip.nextStop", "Next stop: {stop}."),
+      nextStation: t("trip.nextStation", "Next station: {stop}."),
+      endTitle: t("trip.endTitle", "Trip ended"),
+      arrivedAt: t("trip.arrivedAt", "You've arrived at {to}."),
+      // The trip's fare and distance, worked out here, for the server's end of the trip. Its
+      // coins are kept on the phone, so they aren't in it.
+      endSummary: trip ? summaryText(null) : "",
     };
   }
 
@@ -2381,6 +2558,7 @@
       // its place stands over the server's clock (api/push/trips/[id].js, api/push/trip-poll.js).
       fixAt: trip.lastFixAt || 0,
       alerted: trip.alerted,
+      nowAlerted: nowAlerted(),
       readied: trip.readied,
       // Settings' earphones only, in the app: the server's Get Off Alert goes on the app's
       // quiet channel, which buzzes and never sounds out loud (api/_push/fcm.js).
@@ -2420,6 +2598,9 @@
     });
     state.readied?.forEach((r, i) => {
       if (r) trip.readied[i] = true;
+    });
+    state.nowAlerted?.forEach((a, i) => {
+      if (a && !(wrong && i === trip.leg) && !(ahead && i >= trip.leg)) nowAlerted()[i] = true;
     });
     // Moved on by the server's clock while a fresh fix has the app following you itself: the
     // app's place stands, and the server's told so (realignedAt).
@@ -2859,7 +3040,7 @@
     const stats = [
       !isWalk(leg) && (stops === 1 ? I18n.t("trip.chipStop", "1 stop") : I18n.t("trip.chipStops", "{n} stops", { n: stops })),
       I18n.t("trip.chipMin", "{m} min", { m: Math.max(1, Math.round(minutesTo(trip.leg + 1))) }),
-      formatDistance(left),
+      formatDistance(Math.round(left)),
     ].filter(Boolean);
     const colour = nativeLook().color;
     // Drawn in a box 100 wide, stretched to the bar; the dots kept round by drawing them in HTML.
@@ -3241,11 +3422,15 @@
     });
     navigator.serviceWorker?.addEventListener("message", (event) => {
       if (event.data?.type === "get-off") alertedElsewhere(event.data);
+      if (event.data?.type === "get-off-now") lastCallElsewhere(event.data);
+      if (event.data?.type === "trip-end") endedElsewhere(event.data);
       if (event.data?.type === "board") readiedElsewhere(event.data);
     });
     // The same from the server through the app (js/alerts.js), while it's in front, where
     // Android leaves the push for the app to show.
     window.addEventListener("push:get-off", (e) => alertedElsewhere(e.detail, true));
+    window.addEventListener("push:get-off-now", (e) => lastCallElsewhere(e.detail, true));
+    window.addEventListener("push:trip-end", (e) => endedElsewhere(e.detail, true));
     window.addEventListener("push:board", (e) => readiedElsewhere(e.detail, true));
     // A reload mid-trip carries on, and so does opening again after the app was closed.
     try {

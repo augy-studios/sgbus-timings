@@ -194,8 +194,11 @@
   "liveUpdates.text": "Your trip can stay at the top of your notifications and on the lock screen, with the stops left and a chip in the status bar. Android keeps this off until you turn it on: App info, then Notifications, then Live Updates.",
   "liveUpdates.later": "Not now",
   "liveUpdates.open": "Open settings",
+  "exactAlarms.title": "Allow Alarms & reminders",
+  "exactAlarms.text": "Last bus, Time to leave and routines come on time to the minute with Alarms & reminders allowed. Without it, Android can hold them back. Android keeps this off until you turn it on: Alarms & reminders, then Allow setting alarms and reminders.",
   "liveUpdates.setting": "Live Updates",
   "liveUpdates.on": "On: your trip stays at the top of your notifications and on the lock screen.",
   "liveUpdates.off": "Off: turn it on in App info, then Notifications, then Live Updates.",
-  "trip.stripSays": "{stats} to {to}"
+  "trip.stripSays": "{stats} to {to}",
+  "alerts.releasesPlay": "Once Google Play has it for your phone. It checks once a day."
 }

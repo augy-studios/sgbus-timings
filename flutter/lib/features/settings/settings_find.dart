@@ -28,7 +28,7 @@ class SettingsFind {
     FoundSetting('pages', () => tr('settings.pin_favourite_stops_in_lists', 'Pin favourite stops in lists'), 'top bottom favourites'),
     FoundSetting('pages', () => tr('settings.pin_favourite_buses_in_timings', 'Pin favourite buses in timings'), 'top bottom favourites'),
     FoundSetting('pages', () => tr('settings.bus_times', 'Bus times'), 'clock countdown minutes seconds hh:mm arrival time eta'),
-    FoundSetting('trips', () => tr('settings.get_off_alert_on_a', 'Get Off Alert on a trip'), 'morse beep buzz vibrate'),
+    FoundSetting('trips', () => tr('settings.get_off_alert_on_a', 'Get Off Alert on a trip'), 'morse beep buzz vibrate bell end'),
     FoundSetting('trips', () => tr('settings.get_off_alerts_sound', "Get Off Alert's sound"), 'earphones out loud'),
     FoundSetting('trips', () => tr('settings.shake_to_refresh', 'Shake to refresh'), 'shake'),
     FoundSetting('trips', () => tr('liveUpdates.setting', 'Live Updates'), 'live updates notification lock screen promoted android 16 status bar chip'),

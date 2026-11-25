@@ -20,7 +20,8 @@ const FCM_RE = /^[A-Za-z0-9_:\-]{100,400}$/;
 const B64URL_RE = /^[A-Za-z0-9_-]+=*$/;
 
 // The words an app may send for its alerts (js/trip.js, serverWords; api/_push/trip.js, say).
-export const WORD_KEYS = ['lang', 'alertTitle', 'boardTitle', 'getOffNow', 'getOffOne', 'getOffOneChange', 'getOffMany', 'getOffManyChange', 'boardArriving', 'boardOneMin'];
+export const WORD_KEYS = ['lang', 'alertTitle', 'boardTitle', 'getOffNow', 'getOffOne', 'getOffOneChange', 'getOffMany', 'getOffManyChange', 'boardArriving', 'boardOneMin',
+  'ringNow', 'getOffNext', 'nextStop', 'nextStation', 'endTitle', 'arrivedAt', 'endSummary'];
 
 export class ValidationError extends Error {}
 
@@ -108,6 +109,9 @@ export function parseTrip(body, now = Date.now(), { fromBot = false } = {}) {
   if (!Array.isArray(body.alerted) || body.alerted.length !== legs.length) fail('alerted must have one entry per leg');
   // Get ready to board, given or not, per leg. An app from before it doesn't send it.
   if (body.readied != null && (!Array.isArray(body.readied) || body.readied.length !== legs.length)) fail('readied must have one entry per leg');
+  // Each ride's last call ("Ring the bell NOW"), given or not. An app from before it doesn't
+  // send it, and is sent neither it nor the trip's end, having no channel for them.
+  if (body.nowAlerted != null && (!Array.isArray(body.nowAlerted) || body.nowAlerted.length !== legs.length)) fail('nowAlerted must have one entry per leg');
   // Where the app's clock goes on from: { pos, t }, t possibly ahead while it waits for the bus.
   let anchor = null;
   if (body.anchor != null) {
@@ -148,6 +152,7 @@ export function parseTrip(body, now = Date.now(), { fromBot = false } = {}) {
     clockRuns: body.clockRuns !== false,
     alerted: body.alerted.map(Boolean),
     readied: body.readied ? body.readied.map(Boolean) : legs.map(() => false),
+    nowAlerted: body.nowAlerted ? body.nowAlerted.map(Boolean) : null,
     share: parseShare(body.share),
     // Settings' earphones only, in the app: its Get Off Alert on the quiet channel
     // (api/_push/fcm.js). An older page doesn't say.

@@ -11,6 +11,7 @@
 //
 // Kept as the site kept them (sgbus_lastbus, sgbus_nearstops, sgbus_routines), and handed to the
 // app again as the app opens, after an update or a clear of its data.
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:material_ui/material_ui.dart';
@@ -26,6 +27,7 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../settings/settings_screen.dart';
 import '../timings/stop_screen.dart';
+import 'exact_alarms.dart';
 
 class Reminders {
   Reminders._();
@@ -72,6 +74,8 @@ class Reminders {
     try {
       await _call(method, {'on': on});
       await refresh();
+      // Time to leave goes by exact alarms: the first time, where to allow them if they're off.
+      if (on && method == 'leaveTime') unawaited(ExactAlarms.askOnce());
       return null;
     } catch (e) {
       await refresh();
@@ -92,8 +96,10 @@ class Reminders {
       list = list.skip(math.max(0, list.length - 20)).toList();
     }
     Store.I.putJson(lastKey, list);
+    final added = isLast(code, service);
     await _call('lastBus', {'list': list}).catchError((_) => null);
     changes.value++;
+    if (added) unawaited(ExactAlarms.askOnce());
   }
 
   static Future<void> removeLast(int i) async {
@@ -111,6 +117,7 @@ class Reminders {
     try {
       await _call('routines', {'list': list});
       await refresh();
+      if (list.isNotEmpty) unawaited(ExactAlarms.askOnce());
       return null;
     } catch (e) {
       return failed(e).text;

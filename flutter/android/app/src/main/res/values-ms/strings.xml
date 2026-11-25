@@ -43,6 +43,12 @@
     <string name="ch_trip_about">Dipaparkan semasa perjalanan mengikut lokasi anda, untuk Amaran Turun</string>
     <string name="ch_get_off_quiet">Amaran Turun, fon telinga sahaja</string>
     <string name="ch_get_off_quiet_about">Amaran Turun apabila Tetapan memainkan bunyinya dalam fon telinga sahaja: ia bergetar di sini</string>
+    <string name="ch_get_off_now">Amaran Turun, panggilan akhir</string>
+    <string name="ch_get_off_now_about">Satu perhentian sebelum anda turun: tekan loceng dalam bas, atau turun di stesen seterusnya. Bergetar NOW dalam kod Morse</string>
+    <string name="ch_get_off_now_quiet">Amaran Turun, panggilan akhir, fon telinga sahaja</string>
+    <string name="ch_get_off_now_quiet_about">Panggilan akhir apabila Tetapan memainkan bunyinya dalam fon telinga sahaja: ia bergetar di sini</string>
+    <string name="ch_trip_end">Perjalanan tamat</string>
+    <string name="ch_trip_end_about">Apabila anda tiba di penghujung perjalanan. Bergetar END dalam kod Morse</string>
     <string name="ch_near">Berhampiran perhentian</string>
     <string name="ch_near_about">Bas seterusnya di perhentian yang anda pilih, semasa anda berjalan ke situ</string>
     <string name="ch_last_bus">Bas terakhir</string>

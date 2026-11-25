@@ -103,9 +103,10 @@ Tap a stop or station on the trip for its card, as in [Explorer](explorer.md).
 <figcaption>The traffic on a bus's way, from LTA's live speeds.</figcaption>
 </figure>
 
-Wherever the app says a bus is slowed by traffic, in [Navigate](nav.md) or on a
-[trip](get-off-alert.md#traffic-and-faster-ways), tap **See it on the map** for why: the bus's road,
-coloured by LTA's live speeds. Once the speeds are in, the map closes in on the
+Tap **Route on the map** on any bus in [Navigate](nav.md) for the part of its way you ride.
+Wherever the app says a bus is slowed by traffic, in Navigate or on a
+[trip](get-off-alert.md#traffic-and-faster-ways), tap **See it on the map** for why. Either way
+you get the bus's stops and road, coloured by LTA's live speeds. Once the speeds are in, the map closes in on the
 slow and jammed stretches and any accidents or breakdowns.
 
 - **Green**: moving freely.

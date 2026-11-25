@@ -62,14 +62,15 @@ Tapping a notification opens this page. It needs Google Play services, as most p
 
 ### New versions of the app
 
-**New versions of the app** tells you the moment a new version is out. It's off until you turn it on. See
+**New versions of the app** tells you the moment a new version is out. In the app from Google Play, it tells
+you once Google Play has the new version for your phone. It's off until you turn it on. See
 [Hear about new versions](updates.md#hear-about-new-versions).
 
 ## The app's notifications
 
 Android's settings for the app list every kind of notification, and each can be turned off on its own: **Service alerts**, **Get Off Alert**, **Get
-ready to board**, **Trip in progress**, the [reminders](reminders.md) (**Near a stop**, **Last bus**, **Time to leave**, **On a bus?** and **Get Off
-Alert, earphones only**) and **New versions**.
+Off Alert, last call**, **Trip ended**, **Get ready to board**, **Trip in progress**, the [reminders](reminders.md) (**Near a stop**, **Last bus**,
+**Time to leave**, **On a bus?**, **Get Off Alert, earphones only** and **Get Off Alert, last call, earphones only**) and **New versions**.
 
 If the app says notifications are off, turn them on in Android's settings for the app, then pick again.
 

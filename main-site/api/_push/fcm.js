@@ -75,13 +75,18 @@ class PushError extends Error {
 }
 
 // `payload` is the same JSON string a Web Push carries: { type: 'service-alert', title, body,
-// url }, { type: 'get-off', tripId, leg, body, quiet } or { type: 'board', title, tripId, leg, body }.
+// url }, { type: 'get-off', tripId, leg, body, quiet }, { type: 'get-off-now', title, tripId, leg,
+// body, quiet }, { type: 'trip-end', title, tripId, leg, body } or { type: 'board', title, tripId,
+// leg, body }.
 export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' } = {}) {
   if (!fcmConfigured()) throw new PushError(503, 'FIREBASE_SERVICE_ACCOUNT is not set');
   const msg = JSON.parse(payload);
   const getOff = msg.type === 'get-off';
+  const lastCall = msg.type === 'get-off-now';
+  const end = msg.type === 'trip-end';
   const board = msg.type === 'board';
-  const title = msg.title || (getOff ? 'Get Off Alert' : board ? 'Get ready to board' : 'Service Alerts');
+  const title = msg.title || (getOff ? 'Get Off Alert' : lastCall ? 'Ring the bell NOW' : end ? 'Trip ended' : board ? 'Get ready to board' : 'Service Alerts');
+  const quiet = msg.quiet === true;
   const data = {};
   for (const [k, v] of Object.entries({ ...msg, title })) if (v != null) data[k] = String(v);
 
@@ -96,11 +101,15 @@ export async function sendFcm(fcmToken, payload, { ttl = 60, urgency = 'normal' 
         // The app's channels (Notifications.java): the Get Off Alert's buzzes "OFF". An app from
         // before 2.0.4 has no board channel, and Android puts it on its default one. With
         // Settings' earphones only (`quiet`, sent only by an app from 2.1.0, which has the
-        // channel), get_off_quiet: it buzzes, and never sounds out loud.
-        channel_id: getOff ? (msg.quiet === true ? 'get_off_quiet' : 'get_off') : board ? 'board' : 'alerts',
-        tag: getOff ? 'get-off' : board ? 'board' : 'service-alert',
+        // channel), get_off_quiet: it buzzes, and never sounds out loud. The last call buzzes
+        // "NOW" (get_off_now, or get_off_now_quiet), and the trip's end "END" (trip_end), sent only
+        // to an app that has them (api/_push/trip.js).
+        channel_id: getOff ? (quiet ? 'get_off_quiet' : 'get_off') : lastCall ? (quiet ? 'get_off_now_quiet' : 'get_off_now')
+          : end ? 'trip_end' : board ? 'board' : 'alerts',
+        // The last call replaces the Get Off Alert, as it does in the app.
+        tag: getOff || lastCall ? 'get-off' : end ? 'trip-end' : board ? 'board' : 'service-alert',
         icon: 'ic_notification_icon',
-        notification_priority: getOff ? 'PRIORITY_MAX' : board ? 'PRIORITY_HIGH' : 'PRIORITY_DEFAULT',
+        notification_priority: getOff || lastCall ? 'PRIORITY_MAX' : board || end ? 'PRIORITY_HIGH' : 'PRIORITY_DEFAULT',
         visibility: 'PUBLIC',
       },
     },

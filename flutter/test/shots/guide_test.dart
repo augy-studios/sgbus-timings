@@ -13,6 +13,9 @@ import 'package:sgbus_timings/api/net.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/app/shell.dart';
 import 'package:sgbus_timings/data/doors.dart';
+import 'package:sgbus_timings/data/location.dart';
+import 'package:sgbus_timings/data/network.dart';
+import 'package:sgbus_timings/data/stops.dart';
 import 'package:sgbus_timings/data/store.dart';
 import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/features/alerts/alerts.dart';
@@ -27,6 +30,7 @@ import 'package:sgbus_timings/features/misc/misc.dart';
 import 'package:sgbus_timings/features/nav/nav_page.dart';
 import 'package:sgbus_timings/features/places/places_page.dart';
 import 'package:sgbus_timings/features/planner/planner.dart';
+import 'package:sgbus_timings/features/reminders/exact_alarms.dart';
 import 'package:sgbus_timings/features/reminders/reminders.dart';
 import 'package:sgbus_timings/features/settings/settings_screen.dart';
 import 'package:sgbus_timings/features/share/offline_share.dart';
@@ -40,6 +44,7 @@ import 'package:sgbus_timings/features/timings/make_it.dart';
 import 'package:sgbus_timings/features/timings/stop_screen.dart';
 import 'package:sgbus_timings/features/timings/timings_page.dart';
 import 'package:sgbus_timings/features/tour/tour.dart';
+import 'package:sgbus_timings/features/trips/trip.dart';
 import 'package:sgbus_timings/features/weather/weather.dart';
 import 'package:sgbus_timings/native/native_bridge.dart';
 
@@ -226,6 +231,49 @@ void main() {
     await shot(t, 'near-stops', () => const NearStopsScreen());
     await shot(t, 'routines', () => const RoutinesScreen());
     await shot(t, 'calendar', () => const CalendarSettings());
+  });
+
+  // 25 November 2026: a stop's timings from Navigate for every bus straight to where you get off,
+  // the trip's last call a stop before, and asking for Alarms & reminders.
+  testWidgets('guide: last call and direct buses', timeout: _t, (t) async {
+    await _ready(t);
+    // A real ride from the route list: Bedok Int (84009) to Tampines Int (75009).
+    ({String no, List<String> codes})? ride;
+    for (final no in BusNet.servicesAtStop('84009')) {
+      for (final dir in BusNet.directions(no)) {
+        final stops = BusNet.runStops(no, dir);
+        final i = stops.indexOf('84009');
+        final j = i == -1 ? -1 : stops.indexOf('75009', i + 1);
+        if (j != -1 && j - i <= 30) ride ??= (no: no, codes: stops.sublist(i, j + 1));
+      }
+    }
+    final r = ride!;
+    // The report's own (help desk, 25 November 2026): 65 from Opp Mattar Stn Exit B (70231) to Bef
+    // Siemens Ctr (60219), which 61 and 154 also go straight to.
+    final direct = directAlong({'route': '65', 'from': {'code': '70231'}, 'to': {'code': '60219'}});
+    await shot(t, 'stop-direct', () => StopScreen(code: '70231', service: direct.join(','), ctx: const StopContext('nav')));
+
+    // On the bus, a stop before Tampines Int: the last call on the trip bar.
+    final pts = [for (final c in r.codes) [Stops.of(c)!.lat!, Stops.of(c)!.lng!]];
+    final leg = TripLeg(kind: 'bus', label: 'Bus ${r.no}', to: Stops.nameOf('75009'), points: pts, names: [for (final c in r.codes) Stops.nameOf(c)],
+        minutes: r.codes.length * 1.2, service: r.no, board: '84009', alight: '75009', codes: r.codes);
+    await t.runAsync(() => Trip.I.start(title: 'To Our Tampines Hub', legs: [leg], to: const {'label': 'Our Tampines Hub', 'lat': 1.353134, 'lng': 103.940408}));
+    Trip.I.boarded = true;
+    Trip.I.pos = pts.length - 2.0;
+    Locate.fake = Fix(pts[pts.length - 2][0], pts[pts.length - 2][1], accuracy: 8);
+    // The trip's own tick, as it goes with no fix just then: the last call.
+    Trip.I.debugTick();
+    Shell.top
+      ..clear()
+      ..add(TripBar.top);
+    AppNav.page.value = 'glance';
+    await shot(t, 'trip-last-call', () => Shell(pages: {'glance': () => const GlancePage()}));
+    await t.runAsync(() => Trip.I.stop(record: false));
+    Shell.top.clear();
+
+    // A last bus reminder turned on, on a Google Play build with Alarms & reminders off.
+    await shot(t, 'exact-alarms', () => onPage('glance', const GlancePage()), withNav: true,
+        then: _sheet((c) => showDialog<bool>(context: c, builder: (_) => const ExactAlarmsDialog())));
   });
 
   testWidgets('guide: phone extras', timeout: _t, (t) async {

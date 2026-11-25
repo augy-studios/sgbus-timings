@@ -194,8 +194,11 @@
   "liveUpdates.text": "Perjalanan anda boleh kekal di atas pemberitahuan dan pada skrin kunci, dengan baki hentian dan cip dalam bar status. Android mematikannya sehingga anda menghidupkannya: Maklumat apl, kemudian Pemberitahuan, kemudian Kemas Kini Langsung.",
   "liveUpdates.later": "Bukan sekarang",
   "liveUpdates.open": "Buka tetapan",
+  "exactAlarms.title": "Benarkan Penggera & peringatan",
+  "exactAlarms.text": "Bas terakhir, Masa untuk bertolak dan rutin tiba tepat pada minitnya apabila Penggera & peringatan dibenarkan. Tanpanya, Android boleh melambatkannya. Android mematikan ini sehingga anda menghidupkannya: Penggera & peringatan, kemudian Benarkan penetapan penggera dan peringatan.",
   "liveUpdates.setting": "Kemas Kini Langsung",
   "liveUpdates.on": "Hidup: perjalanan anda kekal di atas pemberitahuan dan pada skrin kunci.",
   "liveUpdates.off": "Mati: hidupkannya dalam Maklumat apl, kemudian Pemberitahuan, kemudian Kemas Kini Langsung.",
-  "trip.stripSays": "{stats} ke {to}"
+  "trip.stripSays": "{stats} ke {to}",
+  "alerts.releasesPlay": "Apabila Google Play mempunyainya untuk telefon anda. Ia menyemak sekali sehari."
 }

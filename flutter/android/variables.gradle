@@ -28,6 +28,9 @@ ext {
     // Notifications from the server (PushNotificationsPlugin, MessagingService) and
     // SgBusPlugin's "new versions" topic (2.1.1).
     firebaseMessagingVersion = '25.0.1'
+    // "New versions of the app" on Google Play: whether Play has a newer version for this phone
+    // (PlayUpdateWorker). Only the Play build calls it; R8 drops it from GitHub's APK.
+    playAppUpdateVersion = '2.1.0'
     // Java's newer library on older Androids, which flutter_local_notifications needs.
     desugarJdkLibsVersion = '2.1.5'
 }

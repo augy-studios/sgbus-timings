@@ -956,17 +956,47 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
     );
   }
 
-  Widget _warn(String text, {bool traffic = false}) => Padding(
+  // `link`, underlined after the text, says the warning opens something, as the site's <u> does.
+  Widget _warn(String text, {bool traffic = false, String? link}) => Padding(
     padding: const EdgeInsets.only(top: 4),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.warning_amber_rounded, size: 16, color: traffic ? context.sg.warn : context.sg.error),
         const SizedBox(width: 6),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 13))),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: text),
+              if (link != null) ...[
+                const TextSpan(text: ' '),
+                TextSpan(
+                  text: link,
+                  style: TextStyle(color: context.sg.brandInk, fontWeight: FontWeight.w600, decoration: TextDecoration.underline),
+                ),
+              ],
+            ]),
+            style: const TextStyle(fontSize: 13),
+          ),
+        ),
       ],
     ),
   );
+
+  // A bus leg's stops and road on the live map, coloured by its traffic (the site's
+  // data-nav-route and data-nav-traffic, js/nav.js). Null without its stops to draw.
+  VoidCallback? _routeMap(Map leg) => leg['path'] is List && (leg['path'] as List).length >= 2
+      ? () => LiveMap.traffic(LiveMap.pathOf(leg['path']),
+          names: (leg['names'] as List?)?.map((e) => '$e').toList(),
+          title: tr('trip.busTo', 'Bus {no} to {stop}', {'no': leg['route'], 'stop': (leg['to'] as Map?)?['name'] ?? tr('nav.itsStop', 'its stop')}))
+      : null;
+
+  // Every bus leg's own button to its way on the map, there whether or not it's slowed.
+  Widget? _routeButton(Map leg) {
+    final open = _routeMap(leg);
+    if (open == null) return null;
+    return TextButton.icon(onPressed: open, icon: const Icon(Icons.map_outlined), label: Text(tr('nav.routeMap', 'Route on the map')));
+  }
 
   List<Widget> _way(Map<String, dynamic> o) {
     final sg = context.sg;
@@ -1126,6 +1156,7 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                     icon: const Icon(Icons.schedule),
                     label: Text(tr('nav.shuttle.times', 'Shuttle times at {stop}', {'stop': from?['name']})),
                   ),
+                ?_routeButton(leg),
               ],
             ),
           ),
@@ -1183,19 +1214,17 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
                 _warn(tr('nav.lastBus', 'Last {no} from here today is at {time}. Don’t miss it.', {'no': leg['route'], 'time': leg['lastBus']})),
               if (leg['traffic'] is Map)
                 InkWell(
-                  onTap: leg['path'] is List
-                      ? () => LiveMap.traffic(LiveMap.pathOf(leg['path']),
-                          names: (leg['names'] as List?)?.map((e) => '$e').toList(),
-                          title: tr('trip.busTo', 'Bus {no} to {stop}', {'no': leg['route'], 'stop': (leg['to'] as Map?)?['name'] ?? tr('nav.itsStop', 'its stop')}))
-                      : null,
-                  child: _warn('${trafficText(leg['traffic'] as Map)}${leg['path'] is List ? ' ${tr('trip.seeOnMap', 'See it on the map')}' : ''}', traffic: true),
+                  onTap: _routeMap(leg),
+                  child: _warn(trafficText(leg['traffic'] as Map), traffic: true, link: _routeMap(leg) != null ? tr('trip.seeOnMap', 'See it on the map') : null),
                 ),
               if (from?['code'] != null)
                 TextButton.icon(
-                  onPressed: () => StopScreen.open('${from['code']}', service: '${leg['route']}', ctx: const StopContext('nav')),
+                  // Every bus that goes straight to where it's left, as its live rows show, "65,154,61".
+                  onPressed: () => StopScreen.open('${from['code']}', service: directAlong(leg).join(','), ctx: const StopContext('nav')),
                   icon: const Icon(Icons.directions_bus_outlined),
                   label: Text(tr('planner.timingsAt', '{bus} timings at {stop}', {'bus': leg['route'], 'stop': from!['name']})),
                 ),
+              ?_routeButton(leg),
             ],
           ),
         ),

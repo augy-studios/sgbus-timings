@@ -40,7 +40,9 @@
  *   setReleases({ on })      turns it on or off, as the sgbus-releases FCM topic, which the
  *                            server pushes to when a release is published
  *                            (main-site/api/push/release.js), so it keeps no list of phones.
- *                            Rejects with a sentence when Firebase can't be reached (2.1.1)
+ *                            Rejects with a sentence when Firebase can't be reached (2.1.1).
+ *                            On Google Play, a daily check with Play instead (PlayUpdateWorker),
+ *                            so it's said once Play has the version for this phone (2.7.3)
  *   phoneColours()           the phone's own colours, Material You's, from its wallpaper or the
  *                            colours picked in its settings, for the secret "Your phone's
  *                            colours" (js/colours.js): { accent1, accent2, accent3, neutral1,
@@ -181,10 +183,10 @@ public class SgBusPlugin extends Plugin {
         features.put("flutter");
         features.put("materialyou"); // Material You, on by default: no longer an Easter egg's
         // Firebase is set up for this build (google-services.json): the server can push.
-        if (firebaseReady()) {
-            features.put("push");
-            features.put("releases"); // setReleases, "New versions of the app" (2.1.1)
-        }
+        if (firebaseReady()) features.put("push");
+        // setReleases, "New versions of the app" (2.1.1): from the server, or on Google Play from
+        // Play itself (PlayUpdateWorker, 2.7.3).
+        if (firebaseReady() || BuildConfig.PLAY) features.put("releases");
         out.put("features", features);
         out.put("android", Build.VERSION.SDK_INT);
         out.put("lang", appLanguage());
@@ -336,6 +338,16 @@ public class SgBusPlugin extends Plugin {
     @PluginMethod
     public void setReleases(PluginCall call) {
         boolean on = Boolean.TRUE.equals(call.getBoolean("on", false));
+        // Google Play: Play says when it has the version, not the server (PlayUpdateWorker).
+        if (BuildConfig.PLAY) {
+            if (on) PlayUpdateWorker.schedule(getContext());
+            else PlayUpdateWorker.cancel(getContext());
+            getContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("on", on).apply();
+            JSObject out = new JSObject();
+            out.put("on", on);
+            call.resolve(out);
+            return;
+        }
         if (!firebaseReady()) {
             call.reject("This copy of the app can't get notifications from the server yet.");
             return;
@@ -360,6 +372,7 @@ public class SgBusPlugin extends Plugin {
     @Override
     public void load() {
         sPlugin = new java.lang.ref.WeakReference<>(this);
+        PlayUpdateWorker.clearIfUpdated(getContext());
         if (sPendingOpen != null) {
             String url = sPendingOpen;
             sPendingOpen = null;

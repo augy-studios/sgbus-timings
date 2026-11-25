@@ -158,7 +158,8 @@ breakdown on its way:
 > 🚦 ~6 min slower than usual: heavy traffic on Tampines Avenue 7. Vehicle
 > breakdown on Tampines Avenue 7 (towards Tampines Avenue 5).
 
-Its **🗺 Traffic on 38's way** button opens the bus's road on the web app's [live
+Each bus has a **🗺 38's route on the map** button, slowed or not. It opens the
+bus's stops and road on the web app's [live
 map](../web/live-map.md#traffic-on-a-buss-way), orange where it's slow and red
 where it's jammed.
 

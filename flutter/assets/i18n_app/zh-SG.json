@@ -194,8 +194,11 @@
   "liveUpdates.text": "你的行程可以一直显示在通知最上方和锁屏上，附上剩下的站数，状态栏也会有一个小标签。Android 默认关闭这个功能，需要你自己开启：应用信息，然后通知，然后实时动态。",
   "liveUpdates.later": "以后再说",
   "liveUpdates.open": "打开设置",
+  "exactAlarms.title": "允许闹钟和提醒",
+  "exactAlarms.text": "允许闹钟和提醒后，末班车、出发时间和例行提醒会准时到分钟。没有它，Android 可能会延迟提醒。Android 默认关闭此项，直到你开启：闹钟和提醒，然后允许设置闹钟和提醒。",
   "liveUpdates.setting": "实时动态",
   "liveUpdates.on": "已开启：你的行程会一直显示在通知最上方和锁屏上。",
   "liveUpdates.off": "已关闭：到应用信息，然后通知，然后实时动态开启。",
-  "trip.stripSays": "{stats}，到 {to}"
+  "trip.stripSays": "{stats}，到 {to}",
+  "alerts.releasesPlay": "当 Google Play 为你的手机提供新版本时通知。每天检查一次。"
 }

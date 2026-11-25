@@ -53,8 +53,9 @@ tells you to get off at each checkpoint for immigration, as everyone does. The t
 to clear counts as the wait before you get on again: see
 [Immigration time](settings.md).
 
-Tap a bus stop on the timeline to see that stop's timings for your bus: the
-timeline closes and the page scrolls down to them, with the trip still running.
+Tap a bus stop on the timeline to see that stop's timings for your bus and the
+other buses that go straight from there to where you get off: the timeline
+closes and the page scrolls down to them, with the trip still running.
 
 While you wait at the stop for a bus, the bar also lists the other buses that go
 straight to the same stop, with how long each is: **Also direct: 51 in 3 min**.
@@ -176,6 +177,24 @@ Two stops before you get off, the phone:
 - **beeps** three times;
 - shows a **notification**, "Get off in 2 stops, at Bedok Int";
 - and the trip bar lights up with the same.
+
+<figure>
+<img src="/screenshots/web/trip-last-call.png" alt="The trip bar to Our Tampines Hub saying Ring the bell NOW. Next stop: Tampines Int (75009), about 8 min left, with 1 stop to go on bus 38 from Bedok Int." width="366" height="190" loading="lazy">
+<figcaption>The last call, a stop before you get off a bus.</figcaption>
+</figure>
+
+A stop before you get off, the **last call**: the phone buzzes **"NOW" in Morse
+code** (– ·  – – –  · – –), and the notification and the bar say **Ring the bell
+NOW** on a bus, with the stop it's for, or **Get off at the next station** on a
+train. It takes the Get Off Alert's place, so a ride of a stop or two buzzes
+once, not twice. When you arrive at the end of the trip, the phone buzzes **"END"
+in Morse code** (·  – ·  – · ·) and says **Trip ended**. Under where you arrived,
+it sums the trip up: about what its rides cost by card, as
+[Navigate](nav.md#live-buses-and-the-fare) works out fares, how far you went, and
+the [uwuCoins](uwucoins.md) it earned. There's no fare for a trip across the
+Causeway, and no coins while they're hidden. Both come with the site in the
+background too, as the Get Off Alert does, though the trip's end from there has
+no coins: they're kept in your browser.
 
 At a change, the trip moves on to the next part by itself once you're near its
 first stop, or once you're on the next bus even if it never saw you reach the

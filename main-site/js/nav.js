@@ -197,10 +197,11 @@ function initNav() {
       LiveMap.walkTo(nav.to, { from: nav.from, cycle: other.dataset.navOther === 'cycle', drive: other.dataset.navOther === 'drive' });
       return;
     }
-    // A bus leg's traffic: its road on the live map, coloured by how jammed it is.
-    const jam = e.target.closest('[data-nav-traffic]');
+    // A bus leg's way, from its traffic warning or its own Route on the map button: its stops
+    // and road on the live map, the road coloured by how jammed it is.
+    const jam = e.target.closest('[data-nav-traffic], [data-nav-route]');
     if (jam && nav.option) {
-      const leg = nav.option.legs[Number(jam.dataset.navTraffic)];
+      const leg = nav.option.legs[Number(jam.dataset.navTraffic ?? jam.dataset.navRoute)];
       if (leg?.path) LiveMap.traffic({ points: leg.path, names: leg.names, title: I18n.t('trip.busTo', 'Bus {no} to {stop}', { no: leg.route, stop: leg.to?.name || I18n.t('nav.itsStop', 'its stop') }) });
       return;
     }
@@ -213,10 +214,14 @@ function initNav() {
     }
     const stop = e.target.closest('[data-nav-stop]');
     // The stop's timings and the trip bar are on the page, so Navigate gets out of their way,
-    // with Back to Navigate on the timings to come back to this way (backToNav).
+    // with Back to Navigate on the timings to come back to this way (backToNav). A bus leg's
+    // are for every bus that goes straight to where it's left, as its live rows show, "65,154,61"
+    // (directAlong, worked out now, as the routes may have come in since it was drawn).
     if (stop) {
+      const leg = stop.dataset.navLeg != null ? nav.option?.legs[Number(stop.dataset.navLeg)] : null;
+      const service = leg ? directAlong(leg).join(',') : stop.dataset.navBus;
       closeNav();
-      loadStop(stop.dataset.navStop, { service: stop.dataset.navBus, scroll: true, ctx: { kind: 'nav' } });
+      loadStop(stop.dataset.navStop, { service, scroll: true, ctx: { kind: 'nav' } });
       return;
     }
     const action = e.target.closest('[data-nav-action]')?.dataset.navAction;
@@ -1244,6 +1249,11 @@ async function renderNavOption(o) {
   const viaStep = o.via
     ? `<li class="step stepArrive">${ico('pin')}<span>${escapeHtml(I18n.t('nav.stopAround', 'Stop at {place}, around {time}', { place: viaName(o), time: When.clock(leaveMs + o.via.minutes * 60000) }))}</span></li>`
     : '';
+  // Every bus leg's stops and road on the live map, with its traffic: a button of its own, so
+  // it's there whether or not the bus is slowed, and plainly something to tap.
+  const routeButton = (leg, k) => leg.path?.length >= 2
+    ? `<button type="button" class="iconBtn" data-nav-route="${k}">${ico('map')} ${escapeHtml(I18n.t('nav.routeMap', 'Route on the map'))}</button>`
+    : '';
   const legStep = (leg, k, timings) => {
     if (leg.mode === 'walk') {
       const where = k === o.legs.length - 1 ? escapeHtml(nav.to?.label || I18n.t('nav.theEnd', 'the end')) : escapeHtml(exitPlaceName(o, leg.to, leg.toExit));
@@ -1290,6 +1300,7 @@ async function renderNavOption(o) {
         (leg.board != null ? `<div class="legNote">${escapeHtml(I18n.t('nav.shuttle.board', 'Board around {time}, after the timetable’s average wait.', { time: When.clock(leaveMs + leg.board * 60000) }))}</div>` : '') +
         `<div class="legNote">${escapeHtml([leg.campus.label || I18n.t('campus.routeTitle', '{uni} shuttle {route}', { uni: leg.campus.name, route: leg.route }), shuttleTerms(leg.campus)].filter(Boolean).join(' · '))}</div>` +
         (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}">${ico('clock')} ${escapeHtml(I18n.t('nav.shuttle.times', 'Shuttle times at {stop}', { stop: leg.from.name }))}</button>` : '') +
+        routeButton(leg, k) +
         `</li>` +
         navCrossingSteps(leg);
     }
@@ -1310,7 +1321,8 @@ async function renderNavOption(o) {
       etas +
       (leg.lastBus ? `<div class="legNote legWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.lastBus', 'Last {no} from here today is at {time}. Don’t miss it.', { no: leg.route, time: leg.lastBus }))}</div>` : '') +
       (leg.traffic ? `<button type="button" class="legTraffic" data-nav-traffic="${k}">${ico('alert')}<span>${escapeHtml(trafficText(leg.traffic))} <u>${escapeHtml(I18n.t('trip.seeOnMap', 'See it on the map'))}</u></span></button>` : '') +
-      (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}">${ico('bus')} ${escapeHtml(I18n.t('planner.timingsAt', '{bus} timings at {stop}', { bus: leg.route, stop: leg.from.name }))}</button>` : '') +
+      (leg.from?.code ? `<button type="button" class="iconBtn" data-nav-stop="${escapeHtml(leg.from.code)}" data-nav-bus="${escapeHtml(leg.route)}" data-nav-leg="${k}">${ico('bus')} ${escapeHtml(I18n.t('planner.timingsAt', '{bus} timings at {stop}', { bus: leg.route, stop: leg.from.name }))}</button>` : '') +
+      routeButton(leg, k) +
       `</li>` +
       navCrossingSteps(leg);
   };

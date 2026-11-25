@@ -54,6 +54,12 @@ Playwright's own routing, and `/api/*` from the live site.
 the trip's map; `ux-nov-settings`: Fare type, Preferred buses and a place's buses) are always
 still, Kallang to a home by Aft Waterfront Waves, planned with this checkout's own router.
 
+25 November 2026's `last-call` (a bus leg's Route on the map, with and without traffic, its stop's
+timings for every bus straight to where you get off, and the trip bar's last call) is always
+still, from made-up feeds around real rides from the route list. The trip's last call comes from
+the page itself: its location stood in for and its clock moved on by hand, the bus ridden from
+its first stop.
+
 22 November 2026's `trains` (a station search's Train times, the station's window and a
 Navigate ride's next trains) is always still; with `LTA_ACCOUNT_KEY` set its times come from this
 checkout's `api/trains.js` and LTA's timetable, otherwise from the live site. `place-form` is the

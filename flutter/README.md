@@ -82,8 +82,10 @@ The Google Play build (`powershell -ExecutionPolicy Bypass -File flutter\build-a
 `release\<version>\sg-bus-timings-<version>.aab`) drops `UpdateActivity`'s installer
 (`InstallStatus`) and `REQUEST_INSTALL_PACKAGES`, as Play updates apps itself:
 `app/src/play/AndroidManifest.xml`. It keeps the update bar and page, whose button opens the app in
-the Play Store rather than downloading the APK (`BuildConfig.PLAY` in `UpdateActivity`), but not the
-"New versions of the app" push (`playBuild` in `lib/native/native_bridge.dart`). The same manifest
+the Play Store rather than downloading the APK (`BuildConfig.PLAY` in `UpdateActivity`). Its "New
+versions of the app" doesn't join the server's push, which comes before Play offers the version.
+Instead, `PlayUpdateWorker` asks Play once a day (Play's in-app updates library) and says so once a
+version is there for that phone. The same manifest
 removes what Play keeps for other kinds of app, and `build-apk.ps1 -Aab` refuses a bundle that still
 has them:
 

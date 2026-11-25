@@ -1064,6 +1064,113 @@ async function drawConsole(browser, shots) {
     console.log('wrote live-map-traffic.png 390 844');
     await ctx.close();
   }
+  // 25 November 2026 (`last-call`): a bus leg's Route on the map, with and without traffic; its
+  // stop's timings for every bus straight to where you get off; and the trip's last call, a stop
+  // before. Always still: the made-up feeds above, around a real ride from the route list.
+  if (want('last-call')) {
+    // The GTA VI offer (js/gta6.js) kept out of the way.
+    const quietOffer = { sgbus_gta6_offer: '1' };
+    let { ctx, page } = await open(browser, { width: 390, height: 1400, touch: true, geo: bedokGeo, extra: quietOffer });
+    // The help desk's own ride (25 November 2026): 65 from Opp Mattar Stn Exit B (70231) to Bef
+    // Siemens Ctr (60219), which 61 and 154 also go straight to.
+    let ride = await page.evaluate(async () => {
+      await BusNet.load(typeof stopsIndex === 'undefined' ? undefined : stopsIndex); // eslint-disable-line no-undef
+      for (const dir of BusNet.directions('65')) {
+        const stops = BusNet.runStops('65', dir);
+        const i = stops.indexOf('70231');
+        const j = i === -1 ? -1 : stops.indexOf('60219', i + 1);
+        if (j === -1) continue;
+        const codes = stops.slice(i, j + 1);
+        const at = (c) => stopsIndex[c]; // eslint-disable-line no-undef
+        return { route: '65', dir, codes, path: codes.map((c) => [at(c).lat, at(c).lng]), names: codes.map((c) => at(c).n) };
+      }
+      return null;
+    });
+    let nav = liveNav(ride);
+    nav.options[1].legs[1].traffic = undefined;
+    nav.options[1].legs[1].towards = 'HarbourFront Int';
+    // Every bus straight from Bedok Int to Tampines Int, with its next two.
+    const direct = await page.evaluate((leg) => directAlong(leg), nav.options[1].legs[1]); // eslint-disable-line no-undef
+    const etas = Object.fromEntries(direct.map((no, i) => [no, [3 + i * 4, 14 + i * 5]]));
+    await liveMocks(ctx, ride, { nav, etas });
+    await page.evaluate(([a, b]) => { location.hash = `#nav/${a}/${b}`; }, [enc(P.bedokMall), enc(LIVE_TO)]);
+    await idle(page, '#navBody');
+    await page.click('[data-nav-option="1"]');
+    await page.waitForTimeout(1500);
+    await blur(page);
+    await el(page, '#navBody .stepLeg:has([data-nav-route])', 'nav-leg-route.png');
+    // Its timings button: the stop, for those buses.
+    await page.click('#navBody [data-nav-leg]');
+    await page.waitForSelector('#services .svc', { timeout: 20000 });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForTimeout(1500);
+    // From the stop's name down, a little room over it.
+    await page.evaluate(() => {
+      const name = document.querySelector('#stopName');
+      const box = name?.closest('section, .card') || name;
+      box?.scrollIntoView({ block: 'start' });
+      window.scrollBy(0, -16);
+    });
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: OUT + 'stop-direct.png' });
+    console.log('wrote stop-direct.png 390 844', direct.join(','));
+    await ctx.close();
+
+    // The same leg slowed by traffic: its warning, and the button under it.
+    ({ ctx, page } = await open(browser, { width: 390, height: 1400, touch: true, geo: bedokGeo, extra: quietOffer }));
+    ride = await liveRide(page);
+    nav = liveNav(ride);
+    await liveMocks(ctx, ride, { nav, etas: { [ride.route]: [5, 17] } });
+    await page.evaluate(([a, b]) => { location.hash = `#nav/${a}/${b}`; }, [enc(P.bedokMall), enc(LIVE_TO)]);
+    await idle(page, '#navBody');
+    await page.click('[data-nav-option="1"]');
+    await page.waitForTimeout(1500);
+    await blur(page);
+    await el(page, '#navBody .stepLeg:has(.legTraffic)', 'nav-leg-traffic.png');
+    await ctx.close();
+
+    // On the bus, a stop before Tampines Int. The page's location stood in for (window.__fix) and
+    // its clock moved on by hand (window.__later), as scripts/train-handoff-test.cjs does, and the
+    // bus ridden from its first stop: the trip finds you a stop before the end, and gives the last
+    // call itself.
+    ({ ctx, page } = await open(browser, { width: 390, height: 844, touch: true, geo: bedokGeo, extra: quietOffer }));
+    await ctx.addInitScript(() => {
+      const real = Date.now.bind(Date);
+      let ahead = 0;
+      Date.now = () => real() + ahead;
+      window.__later = (ms) => { ahead += ms; };
+      let onFix = null;
+      Object.defineProperty(navigator, 'geolocation', { value: {
+        watchPosition: (ok) => { onFix = ok; return 1; },
+        clearWatch: () => { onFix = null; },
+        getCurrentPosition: (ok) => ok({ coords: { latitude: 1.324736, longitude: 103.929256, accuracy: 10 } }),
+      } });
+      window.__fix = (lat, lng) => onFix?.({ coords: { latitude: lat, longitude: lng, accuracy: 10 } });
+    });
+    await page.reload();
+    await page.waitForTimeout(1500);
+    ride = await liveRide(page);
+    nav = liveNav(ride);
+    nav.options[1].legs[1].traffic = undefined;
+    await liveMocks(ctx, ride, { nav, etas: {} });
+    await startLiveTrip(page, nav);
+    await page.waitForTimeout(1500);
+    // At the first stop, then along the road to a stop before the end, a fix every 20 s.
+    const along = [];
+    for (let i = 0; i < ride.path.length - 1; i++) {
+      for (const f of [0, 0.5]) along.push([ride.path[i][0] + (ride.path[i + 1][0] - ride.path[i][0]) * f, ride.path[i][1] + (ride.path[i + 1][1] - ride.path[i][1]) * f]);
+    }
+    const upTo = along.slice(0, along.length - 1);
+    await page.evaluate((pts) => { window.__fix(pts[0][0], pts[0][1]); window.__later(60000); window.__fix(pts[0][0], pts[0][1]); }, upTo);
+    for (const [lat, lng] of upTo) {
+      await page.evaluate(([a, b]) => { window.__later(20000); window.__fix(a, b); }, [lat, lng]);
+      await page.waitForTimeout(60);
+    }
+    await page.waitForFunction(() => /Ring the bell NOW/.test(document.querySelector('#tripBar')?.textContent || ''), null, { timeout: 30000 }).catch(() => console.log('no last call'));
+    await page.waitForTimeout(800);
+    await bar(page, 'trip-last-call.png');
+    await ctx.close();
+  }
   // Settings' Cycling.
   if (want('cycling')) {
     const { ctx, page } = await open(browser, { width: 420, height: 2800, extra: { sgbus_bike: 'on' } });

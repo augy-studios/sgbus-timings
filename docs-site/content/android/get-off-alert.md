@@ -1,6 +1,6 @@
 ---
 title: Get Off Alert
-description: Trips in the Android app: followed with the screen off, the trip bar and timeline, buzzing OFF in Morse two stops before you get off, last buses, traffic and faster ways.
+description: Trips in the Android app: followed with the screen off, the trip bar and timeline, buzzing OFF in Morse two stops before you get off and NOW one stop before, last buses, traffic and faster ways.
 ---
 
 Dozing on the bus, or deep in your phone on the train? Start a trip and the app follows your location
@@ -58,7 +58,8 @@ Its buttons:
 
 Tap the trip bar for the trip's own screen, with every stop on the way, a blue dot gliding along the line as
 you move, and the stops you've passed greyed out. It marks **Alert** where the alert goes off, and **Get off**
-or **Change**. Tap a bus stop for its timings for your bus, with the trip still running.
+or **Change**. Tap a bus stop for its timings, with the trip still running: your bus and every other bus that
+goes straight from there to where you get off.
 
 At the top, the **map** button shows the trip on the [live map](live-map.md#your-trip-on-a-map), the **share**
 button sends your [live progress](sharing.md#share-my-eta), and the **stop** button ends the trip.
@@ -80,6 +81,21 @@ Two stops before you get off, the phone:
 - **beeps** three times;
 - shows a **notification**, "Get off in 2 stops, at Bedok Int";
 - and the trip bar says the same.
+
+<figure>
+<img src="/screenshots/android/trip-last-call.png" alt="The trip bar over Glance: To Our Tampines Hub, Ring the bell NOW. Next stop: Tampines Int, about 1 min left, with 1 stop to go on its strip from Bedok Int." width="412" height="892" loading="lazy">
+<figcaption>The last call on the trip bar, a stop before you get off a bus.</figcaption>
+</figure>
+
+A stop before you get off, the **last call**: the phone buzzes **"NOW" in Morse code** (– ·  – – –  · – –)
+and the notification says **Ring the bell NOW** on a bus, with the stop it's for, or **Get off at the next
+station** on a train. It takes the Get Off Alert's place, so a ride of a stop or two buzzes once, not twice.
+
+When you arrive at the end of the trip, the phone buzzes **"END" in Morse code** (·  – ·  – · ·) and says
+**Trip ended**, without a sound. Under where you arrived, it sums the trip up: about what its rides cost by
+card, as [Navigate](nav.md) works out fares, how far you went, and the [uwuCoins](uwucoins.md) it earned, such as
+"About S$1.68 in fares · 6.2 km travelled · 23 uwuCoins earned". There's no fare for a trip across the
+Causeway, and no coins while they're hidden.
 
 The sound can be **Earphones only** in [Settings](settings.md#trips-and-alerts): with earphones in, the beeps play
 just in them; with none, the phone only buzzes. Never out loud on a quiet bus.

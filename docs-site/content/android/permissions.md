@@ -10,7 +10,7 @@ The app asks for each permission only when you first use what needs it, and work
 |---|---|---|
 | **Location** | The first time you use Stops near me, Your location, the live map or a trip | Finding stops near you, the live map, and following your trip. The app from Google Play has only this one, used while the app is open or a trip is running |
 | **Location all the time** | The app from GitHub only: once, on your first trip, and when you pick stops for **Timings near a stop** | Asked so trips can keep your location in the background; trips work without it too. Timings near a stop needs it |
-| **Alarms & reminders** | The app from Google Play only, when you tap **Allow** on Routines or in Settings | Routines, last bus reminders and Time to leave on time. They still come without it, perhaps late |
+| **Alarms & reminders** | The app from Google Play only: asked the first time you turn on a last bus reminder, Time to leave or a routine, and when you tap **Allow** on Routines or in Settings | Routines, last bus reminders and Time to leave on time. They still come without it, perhaps late |
 | **Notifications** | Your first trip, turning on Service alerts, or a reminder | Service alerts, the Get Off Alert, the "On a trip" notification while a trip runs, and the [reminders](reminders.md) |
 | **Calendar** | Only if you choose **Use this phone's calendar**, or turn on **Time to leave** | Listing your events with a location in Navigate, and planning when to leave for them |
 | **Physical activity** | The app from GitHub only, if you turn on **"On a bus?"** | Noticing you're riding |

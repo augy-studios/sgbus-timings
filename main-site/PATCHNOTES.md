@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 23 November 2026**
+**Latest update: 25 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -8,6 +8,33 @@
 Newest first. Each update covers the web app and the Telegram bot.
 
 ---
+
+## 25 November 2026: The last call, and every bus's route on the map (2.8.0)
+
+### Website, Android and desktop apps
+
+- **The last call** - A stop before you get off, the phone buzzes **"NOW" in Morse code** and says **Ring the bell NOW** on a bus, with the stop it's for, or **Get off at the next station** on a train. It takes the Get Off Alert's place, so a ride of a stop or two buzzes once, not twice.
+- **Trip ended** - As you arrive, the phone buzzes **"END" in Morse code** and sums the trip up: about what its rides cost by card, how far you went and the uwuCoins it earned.
+- **Route on the map** - Every bus on a Navigate way has a **Route on the map** button for the part you ride: its stops, and its road coloured by the traffic, whether or not it's slowed.
+- **Every direct bus in the timings** - A bus's timings button in Navigate, and a bus stop tapped on a trip's timeline, show that stop's timings for every bus that goes straight to where you get off.
+
+### Android app 2.8.0
+
+- **Alarms & reminders, asked once** - In the app from Google Play, the first time you turn on a last bus reminder, Time to leave or a routine, the app asks you to allow Alarms & reminders, with **Open settings** straight to it.
+- **New versions from Google Play** - In the app from Google Play, **New versions of the app** asks Google Play once a day and tells you once it has the new version for your phone.
+
+### Telegram bot
+
+- **Buttons work again** - Since 2.6.0, tapping an inline button, such as Train times, a stop list or Refresh, did nothing. They all answer again.
+- **/nav's route on the map** - Each bus on a way has a **🗺 route on the map** button, slowed or not.
+
+### Desktop app and Linux command line 2.8.0
+
+- Numbered 2.8.0 to stay in step; the desktop app has the trip and Navigate changes above.
+
+### Wear OS 2.8.0
+
+- No changes of its own: numbered 2.8.0 to stay in step with the phone.
 
 ## 23 November 2026: The last trains, on Navigate's ways and trips (2.7.2)
 

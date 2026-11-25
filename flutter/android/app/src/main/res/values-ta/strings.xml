@@ -43,6 +43,12 @@
     <string name="ch_trip_about">இறங்கும் எச்சரிக்கைக்காக, பயணம் உங்கள் இருப்பிடத்தைப் பின்தொடரும்போது காட்டப்படும்</string>
     <string name="ch_get_off_quiet">இறங்கும் எச்சரிக்கை, காதணிகளில் மட்டும்</string>
     <string name="ch_get_off_quiet_about">அமைப்புகளில் ஒலி காதணிகளில் மட்டும் என இருக்கும்போது இறங்கும் எச்சரிக்கை: இங்கே அதிரும்</string>
+    <string name="ch_get_off_now">இறங்கும் எச்சரிக்கை, இறுதி அழைப்பு</string>
+    <string name="ch_get_off_now_about">நீங்கள் இறங்குவதற்கு ஒரு நிறுத்தம் முன்: பேருந்தில் மணியை அழுத்துங்கள், அல்லது அடுத்த நிலையத்தில் இறங்குங்கள். மோர்ஸ் குறியீட்டில் NOW என அதிரும்</string>
+    <string name="ch_get_off_now_quiet">இறங்கும் எச்சரிக்கை, இறுதி அழைப்பு, காதணிகளில் மட்டும்</string>
+    <string name="ch_get_off_now_quiet_about">அமைப்புகளில் ஒலி காதணிகளில் மட்டும் என இருக்கும்போது இறுதி அழைப்பு: இங்கே அதிரும்</string>
+    <string name="ch_trip_end">பயணம் முடிந்தது</string>
+    <string name="ch_trip_end_about">பயணத்தின் முடிவை அடைந்ததும். மோர்ஸ் குறியீட்டில் END என அதிரும்</string>
     <string name="ch_near">நிறுத்தத்திற்கு அருகில்</string>
     <string name="ch_near_about">நீங்கள் தேர்ந்தெடுத்த நிறுத்தத்திற்கு நடக்கும்போது அங்கு அடுத்த பேருந்துகள்</string>
     <string name="ch_last_bus">கடைசி பேருந்து</string>

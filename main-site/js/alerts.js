@@ -677,13 +677,14 @@
     });
 
     // In the app: a push that came while it was in front, which FCM leaves to the app to
-    // show, and a tapped one. The Get Off Alert's and Get ready to board's go to js/trip.js.
+    // show, and a tapped one. The Get Off Alert's, its last call's, the trip's end and Get ready
+    // to board's go to js/trip.js.
     if (inApp()) {
       const fromPush = (n) => ({ ...(n?.data || {}), title: n?.title ?? n?.data?.title, body: n?.body ?? n?.data?.body });
       AppBridge.on("PushNotifications", "pushNotificationReceived", (n) => {
         const d = fromPush(n);
-        if (d.type === "get-off") {
-          window.dispatchEvent(new CustomEvent("push:get-off", { detail: { tripId: d.tripId, leg: Number(d.leg), text: d.body } }));
+        if (d.type === "get-off" || d.type === "get-off-now" || d.type === "trip-end") {
+          window.dispatchEvent(new CustomEvent(`push:${d.type}`, { detail: { tripId: d.tripId, leg: Number(d.leg), text: d.body } }));
         } else if (d.type === "board") {
           window.dispatchEvent(new CustomEvent("push:board", { detail: { tripId: d.tripId, leg: Number(d.leg), text: d.body } }));
         } else if (d.type === "service-alert") {

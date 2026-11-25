@@ -330,16 +330,27 @@ Tap a way to see it part by part:
   MRT station, it also says [which door to stand at](#which-door-to-stand-at).
 - **Buses**, with how many stops, where to get off, and the **live timings** at
   the stop you board it: every bus that goes straight to where you get off,
-  each with its next three in the colour of how full it is. A button opens that stop's timings for the
-  bus, with **Back to Navigate** on them to come back. If you'd be catching one
-  of its last buses of the day, it says when the last one is. If traffic slows
-  it, an orange box says by how much and why; tap it for the bus's road on the
-  [live map](live-map.md#traffic-on-a-buss-way), orange where it's slow and red
-  where it's jammed.
+  each with its next three in the colour of how full it is. A button opens that stop's timings for
+  those same buses, with **Back to Navigate** on them to come back. If you'd be catching one
+  of its last buses of the day, it says when the last one is. **Route on the
+  map** shows just the part you ride on the
+  [live map](live-map.md#traffic-on-a-buss-way): its stops, and its road orange
+  where it's slow and red where it's jammed. If traffic slows it, an orange box
+  says by how much and why; tapping the box does the same.
 
 <figure>
-<img src="/screenshots/web/nav-leg-traffic.png" alt="One way's bus 38: 28 stops, about 38 min, from Bedok Int to Tampines Int, its last from here today at 23:48, and an orange box: about 6 min slower than usual: heavy traffic on Tampines Avenue 7 and Bedok North Road, a vehicle breakdown on Tampines Avenue 7, See it on the map. Then the 38 timings at Bedok Int button." width="254" height="325" loading="lazy">
+<img src="/screenshots/web/nav-leg-traffic.png" alt="One way's bus 38: 28 stops, about 38 min, from Bedok Int to Tampines Int, its next two live in 4 and 16 min, and an orange box: about 6 min slower than usual: heavy traffic on Tampines Avenue 7 and Bedok North Road, a vehicle breakdown on Tampines Avenue 7, See it on the map. Then the 38 timings at Bedok Int and Route on the map buttons." width="286" height="353" loading="lazy">
 <figcaption>A bus's traffic, tapped for its road on the map.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/nav-leg-route.png" alt="One way's bus 65: 6 stops, about 14 min, from Opp Mattar Stn Exit B to Bef Siemens Ctr, towards HarbourFront Int, with the live times of 65, 61 and 154, every bus straight to Bef Siemens Ctr. Then the 65 timings at Opp Mattar Stn Exit B and Route on the map buttons." width="286" height="287" loading="lazy">
+<figcaption>Route on the map, on every bus, slowed or not.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/stop-direct.png" alt="Opp Mattar Stn Exit B's timings, opened from the way: Back to Navigate, Show all services, and only buses 65, 61 and 154 coming, in 3, 7 and 11 min, each with its card below." width="390" height="844" loading="lazy">
+<figcaption>The timings button: every bus straight to where you get off.</figcaption>
 </figure>
 
 

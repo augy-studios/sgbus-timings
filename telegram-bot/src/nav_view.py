@@ -438,8 +438,9 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
                 line = f"   🚦 {traffic_text(leg['traffic'])}"
                 md.append(escape_md(line))
                 plain.append(line)
-                if leg.get("path"):
-                    buttons.append([Button.url(f"🗺 Traffic on {leg['route']}'s way"[:64], traffic_url(leg))])
+            # Every bus's stops and road on the map, slowed or not (the site's Route on the map).
+            if len(leg.get("path") or []) >= 2:
+                buttons.append([Button.url(f"🗺 {leg['route']}'s route on the map"[:64], traffic_url(leg))])
             # Each crossing of the Causeway (/api/nav's `customs`): off, through both, on again.
             for c in leg.get("customs") or []:
                 first, second = ("Singapore's", "Malaysia's") if c["way"] == "out" else ("Malaysia's", "Singapore's")

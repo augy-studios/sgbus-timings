@@ -245,6 +245,7 @@ From the repo's root, `node scripts/<name>`. The `.cjs` ones run the page in Chr
 - `campus-roads-test.mjs`: every shuttle route's kept road, for its stops as they are and through each stop; needs the network
 - `team-api-test.mjs`: `api/team.js` against a stand-in for Supabase
 - `trip-live-test.mjs`: the Get Off Alert's server half leaves a trip to the app while the app has your location
+- `trip-last-call-test.mjs`: the Get Off Alert's server half sends the last call ("Ring the bell NOW", "Get off at the next station") and the trip's end, only to an app that has them
 - `trains-a11y-test.cjs`: train times, the map's station card, a Navigate ride's trains and the place form meet WCAG AA contrast in light, dark and High contrast, and say in words what their colours mean (`SHOTS=<folder>` saves each)
 - `trains-test.mjs`: `api/trains.js` and `api/trains-all.js`'s train times from a made-up timetable and disruption feed: which days run which trains, after midnight, interchanges, and a disruption's cancellations and delays
 - `achievements-words-test.cjs`: Achievements' feats and notes in every language

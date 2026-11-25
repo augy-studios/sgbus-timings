@@ -5,7 +5,11 @@
 // minute by minute. Trains, and buses LTA isn't tracking, go by the clock, as the app does
 // underground.
 //
-// Keep ALERT_STOPS, ON_ROUTE_M and the alert's wording in step with js/trip.js.
+// Keep ALERT_STOPS, NOW_STOPS, ON_ROUTE_M and the alerts' wording in step with js/trip.js.
+//
+// The last call too, a stop before the end of each ride ("Ring the bell NOW" on a bus, "Get off
+// at the next station" on a train), and the trip's end: only for an app that has them, which
+// sends nowAlerted (api/_push/validate.js). The service worker and the app buzz "NOW" and "END".
 //
 // Get ready to board, too: while the app hasn't seen you get on (clockRuns false) and no bus
 // has been seen leaving the stop with you, the bus's next arrival at the stop you wait at
@@ -13,6 +17,7 @@
 // runs once a minute, so this tells you a little earlier than the app does (BOARD_MS there).
 
 export const ALERT_STOPS = 2;
+export const NOW_STOPS = 1;
 // Near enough to the leg to be on it: the straight line between two stops, or as much of it
 // as the road may bend away from it (BEND_SHARE), on a long stretch like an expressway.
 const ON_ROUTE_M = 250;
@@ -68,6 +73,12 @@ const ENGLISH = {
   getOffManyChange: 'Get off in {n} stops, at {stop}, to change.',
   boardArriving: '{ride} is arriving at {stop}. Get ready to board.',
   boardOneMin: '{ride} is 1 min away from {stop}. Get ready to board.',
+  ringNow: 'Ring the bell NOW',
+  getOffNext: 'Get off at the next station',
+  nextStop: 'Next stop: {stop}.',
+  nextStation: 'Next station: {stop}.',
+  endTitle: 'Trip ended',
+  arrivedAt: "You've arrived at {to}.",
 };
 
 // The trip's words for `key`, in the app's language, filled in.
@@ -83,6 +94,16 @@ export function alertText(trip, left) {
   if (left === 0) return say(trip, 'getOffNow', { stop });
   if (left === 1) return say(trip, last ? 'getOffOne' : 'getOffOneChange', { stop });
   return say(trip, last ? 'getOffMany' : 'getOffManyChange', { stop, n: left });
+}
+
+// The last call's title and text, the same as lastCallText in js/trip.js.
+export function lastCallText(trip, left) {
+  const leg = trip.legs[trip.leg];
+  const bus = leg.kind === 'bus';
+  const stop = leg.to;
+  const title = bus ? say(trip, 'ringNow') : left === 0 ? say(trip, 'alertTitle') : say(trip, 'getOffNext');
+  const body = left === 0 ? say(trip, 'getOffNow', { stop }) : say(trip, bus ? 'nextStop' : 'nextStation', { stop });
+  return { title, body };
 }
 
 // The same as boardText in js/trip.js.
@@ -166,7 +187,7 @@ export const LIVE_MS = 150 * 1000;
 export const live = (trip, now) => now - (trip.fixAt || 0) <= LIVE_MS;
 
 // One minute of a trip. Updates it in place, and says what to send: the alert's text, if
-// it's time, and whether the trip is over.
+// it's time, the last call's, and whether the trip is over.
 export function step(trip, buses, now) {
   const leg = trip.legs[trip.leg];
   const last = leg.points.length - 1;
@@ -175,21 +196,39 @@ export function step(trip, buses, now) {
   trip.est = pos;
 
   let alert = null;
-  // No alert for a walk: it's by the clock here, and there's nothing to get off.
-  if (leg.kind !== 'walk' && pos >= last - ALERT_STOPS - LEAD_STOPS && !trip.alerted[trip.leg]) {
+  let lastCall = null;
+  const left = Math.max(0, Math.round(last - pos));
+  // No alert for a walk: it's by the clock here, and there's nothing to get off. The last call,
+  // for an app that has it, stands for the Get Off Alert if that's not gone yet, as in the app.
+  // On a bus, only once it's left the first stop: not while you wait for it.
+  const nowDue = trip.nowAlerted && leg.kind !== 'walk' && pos >= last - NOW_STOPS - LEAD_STOPS && pos > 0
+    && !trip.nowAlerted[trip.leg];
+  if (nowDue) {
+    trip.nowAlerted[trip.leg] = true;
     trip.alerted[trip.leg] = true;
-    alert = { text: alertText(trip, Math.max(0, Math.round(last - pos))), leg: trip.leg };
+    lastCall = { ...lastCallText(trip, Math.min(NOW_STOPS, left)), leg: trip.leg };
+  } else if (leg.kind !== 'walk' && pos >= last - ALERT_STOPS - LEAD_STOPS && !trip.alerted[trip.leg]) {
+    trip.alerted[trip.leg] = true;
+    alert = { text: alertText(trip, left), leg: trip.leg };
   }
 
   let done = false;
+  let end = null;
   if (pos >= last - 0.2) {
     if (trip.leg < trip.legs.length - 1) {
       Object.assign(trip, { leg: trip.leg + 1, at: 0, pos: 0, legStartedAt: now, seenAt: now, anchor: null, track: null, est: 0 });
     } else {
       done = true;
+      if (trip.nowAlerted) {
+        // With the trip's fare and distance on a line of their own, as the app worked them out
+        // (words.endSummary): the server has no fares, and the coins are kept on the phone.
+        const arrived = say(trip, 'arrivedAt', { to: leg.to });
+        const summary = trip.words?.endSummary;
+        end = { title: say(trip, 'endTitle'), body: summary ? `${arrived}\n${summary}` : arrived };
+      }
     }
   }
-  return { alert, done };
+  return { alert, lastCall, end, done };
 }
 
 // How long a trip is kept without word from the app: twice what's left of it, plus half an

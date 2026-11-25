@@ -1,7 +1,7 @@
-// A Google Play build has the update bar and page, which send you to Play (UpdateActivity), but no
-// "New versions of the app" push, nor what needs the permissions Play keeps for other kinds of
-// app; the APK on GitHub has them all. Run both ways: flutter test test/play_build_test.dart, and
-// with --dart-define=SGBUS_PLAY=true.
+// A Google Play build has the update bar and page, which send you to Play (UpdateActivity), and
+// "New versions of the app", from Play itself (PlayUpdateWorker), but not what needs the
+// permissions Play keeps for other kinds of app; the APK on GitHub has them all. Run both ways:
+// flutter test test/play_build_test.dart, and with --dart-define=SGBUS_PLAY=true.
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sgbus_timings/native/native_bridge.dart';
 
@@ -9,11 +9,10 @@ void main() {
   setUp(() => Native.fake(const ['update', 'checkupdate', 'releases', 'nearstops', 'onabus', 'card', 'pip', 'routines', 'leavetime', 'lastbus'], (_, _, _) async => null));
   tearDown(() => Native.fake(const [], null));
 
-  test('the update bar and page are there either way, the push only off Play', () {
-    for (final feature in ['update', 'checkupdate']) {
+  test('the update bar and page, and New versions of the app, are there either way', () {
+    for (final feature in ['update', 'checkupdate', 'releases']) {
       expect(Native.has(feature), isTrue, reason: feature);
     }
-    expect(Native.has('releases'), !playBuild);
   });
 
   test('Timings near a stop and “On a bus?” are there only off Play', () {

@@ -59,5 +59,12 @@ If notifications are off for the app, the screens say so: turn them on in Androi
 
 ## If they come late
 
+<figure>
+<img src="/screenshots/android/exact-alarms.png" alt="A window over Glance: Allow Alarms & reminders. Last bus, Time to leave and routines come on time to the minute with Alarms & reminders allowed. Without it, Android can hold them back. Android keeps this off until you turn it on. Then Not now and Open settings." width="412" height="892" loading="lazy">
+<figcaption>The first time you turn one on, in the app from Google Play.</figcaption>
+</figure>
+
 In the app from Google Play, routines, last bus reminders and Time to leave come on time only if you allow **Alarms & reminders** for it. Without that they still come,
-but Android can hold them back, by up to an hour or more when the phone's saving battery. If it isn't allowed, Routines and Settings say so, with **Allow**.
+but Android can hold them back, by up to an hour or more when the phone's saving battery. Android keeps it off until you turn it on, so the
+first time you turn on a last bus reminder, Time to leave or a routine, the app asks, once, with **Open settings** straight to **Alarms &
+reminders**: turn on **Allow setting alarms and reminders** there. After that, Routines and Settings say so while it's off, with **Allow**.

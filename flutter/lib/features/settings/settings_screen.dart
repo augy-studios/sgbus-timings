@@ -424,7 +424,8 @@ class _SettingsGroupState extends State<SettingsGroup> {
           value: _onOff('sgbus.getOffAlert'),
           options: _onOffOptions,
           onChanged: (v) => _set('sgbus.getOffAlert', v == 'on' ? null : 'off'),
-          note: tr('settings.get_off_note_app', 'Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification, even with the screen off.'),
+          note: '${tr('settings.get_off_note_app', 'Two stops before you get off or change, the phone buzzes "OFF" in Morse code, beeps and shows a notification, even with the screen off.')} '
+              '${tr('settings.lastCallNote', 'A stop before, it buzzes "NOW": ring the bell on a bus, or get off at the next station. As the trip ends, it buzzes "END".')}',
         ),
         if (Native.has('earphones'))
           Choice(

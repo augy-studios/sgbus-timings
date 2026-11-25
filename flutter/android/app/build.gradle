@@ -95,6 +95,7 @@ dependencies {
     implementation "androidx.work:work-runtime:$workVersion"
     implementation "com.google.android.material:material:$materialVersion"
     implementation "com.google.firebase:firebase-messaging:$firebaseMessagingVersion"
+    implementation "com.google.android.play:app-update:$playAppUpdateVersion"
 }
 
 // Firebase is set up for this build: the server can push to it (android/FIREBASE-SETUP.md).

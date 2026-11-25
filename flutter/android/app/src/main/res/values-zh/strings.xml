@@ -43,6 +43,12 @@
     <string name="ch_trip_about">行程跟随您的位置时显示，用于下车提醒</string>
     <string name="ch_get_off_quiet">下车提醒（仅耳机）</string>
     <string name="ch_get_off_quiet_about">设置为仅在耳机中发声时的下车提醒：在此振动</string>
+    <string name="ch_get_off_now">下车提醒（最后提醒）</string>
+    <string name="ch_get_off_now_about">在您下车前一站：在巴士上按铃，或在下一站下车。以摩斯电码振动 NOW</string>
+    <string name="ch_get_off_now_quiet">下车提醒（最后提醒，仅耳机）</string>
+    <string name="ch_get_off_now_quiet_about">设置为仅在耳机中发声时的最后提醒：在此振动</string>
+    <string name="ch_trip_end">行程结束</string>
+    <string name="ch_trip_end_about">当您到达行程终点时。以摩斯电码振动 END</string>
     <string name="ch_near">车站附近</string>
     <string name="ch_near_about">您走向所选车站时，显示该站接下来的巴士</string>
     <string name="ch_last_bus">末班车</string>

@@ -252,7 +252,8 @@ class Alerts {
   }
 
   /// A push that came while the app's in front, which FCM leaves to the app to show; and a
-  /// tapped one. The Get Off Alert's and Get ready to board's go to the trip.
+  /// tapped one. The Get Off Alert's, its last call's, the trip's end and Get ready to board's go
+  /// to the trip.
   static void listen() {
     Native.on('PushNotifications', 'pushNotificationReceived', (n) {
       final d = {...((n['data'] as Map?) ?? const {}), 'title': n['title'] ?? (n['data'] as Map?)?['title'], 'body': n['body'] ?? (n['data'] as Map?)?['body']};
@@ -265,7 +266,7 @@ class Alerts {
           'body': d['body'] ?? '',
           'url': 'https://sgbus.uwuapps.org${d['url'] ?? '/#alerts'}',
         }).catchError((_) => null);
-      } else if (type == 'get-off' || type == 'board') {
+      } else if (const ['get-off', 'get-off-now', 'trip-end', 'board'].contains(type)) {
         AppNav.open('tripPush', {'type': type, 'tripId': d['tripId'], 'leg': int.tryParse('${d['leg']}'), 'text': d['body']});
       } else if (type == 'release') {
         AppNav.open('appUpdate', {'version': d['version']});
@@ -712,6 +713,8 @@ class _AlertsPageState extends State<AlertsPage> {
                   value: _releases!,
                   onChanged: _setReleases,
                   title: Text(tr('html.new_versions_of_the_app', 'New versions of the app')),
+                  // Google Play's copy asks Play once a day (PlayUpdateWorker), not the server.
+                  subtitle: playBuild ? Text(tr('alerts.releasesPlay', 'Once Google Play has it for your phone. It checks once a day.')) : null,
                 ),
               const SizedBox(height: 8),
               Text(_problem ?? _note(_modes), style: TextStyle(color: _problem != null ? sg.error : sg.muted, fontSize: 13)),

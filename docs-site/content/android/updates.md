@@ -70,7 +70,12 @@ have and offers **Update**. A watch paired with your phone shows it too.
 
 It's off until you turn it on, and needs Google Play services, as most phones have.
 
-The app from Google Play doesn't have it: Google Play says when its update is ready.
+In the app from Google Play, **New versions of the app** waits for Google Play instead. Once a
+day it asks Google Play whether it has a newer version for your phone, and tells you once when it
+does. Tap the notification to open the app's page in the Play Store, then tap **Update**. It can
+come a day or two after a new version is out, because Google Play checks each version first and
+then offers it to phones a few at a time. If Google Play updates the app by itself first, there's
+nothing to tell you.
 
 ## With no connection
 

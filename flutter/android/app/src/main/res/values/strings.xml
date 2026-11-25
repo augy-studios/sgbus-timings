@@ -52,6 +52,12 @@
     <string name="ch_trip_about">Shown while a trip follows where you are, for the Get Off Alert</string>
     <string name="ch_get_off_quiet">Get Off Alert, earphones only</string>
     <string name="ch_get_off_quiet_about">The Get Off Alert when Settings has its sound in earphones only: it buzzes here</string>
+    <string name="ch_get_off_now">Get Off Alert, last call</string>
+    <string name="ch_get_off_now_about">A stop before you get off: ring the bell on a bus, or get off at the next station. Buzzes NOW in Morse code</string>
+    <string name="ch_get_off_now_quiet">Get Off Alert, last call, earphones only</string>
+    <string name="ch_get_off_now_quiet_about">The last call when Settings has its sound in earphones only: it buzzes here</string>
+    <string name="ch_trip_end">Trip ended</string>
+    <string name="ch_trip_end_about">When you arrive at the end of a trip. Buzzes END in Morse code</string>
     <string name="ch_near">Near a stop</string>
     <string name="ch_near_about">The next buses at a stop you picked, as you walk up to it</string>
     <string name="ch_last_bus">Last bus</string>

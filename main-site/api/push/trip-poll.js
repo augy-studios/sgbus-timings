@@ -77,9 +77,12 @@ async function poll(accountKey) {
       }
       const leg = trip.legs[trip.leg];
       const buses = leg.kind === 'bus' && leg.service && leg.alight ? await positions(leg.alight, leg.service) : null;
-      const { alert, done } = step(trip, buses?.length ? buses : null, now);
+      const { alert, lastCall, end, done } = step(trip, buses?.length ? buses : null, now);
 
       if (alert && (await send(id, trip, { type: 'get-off', title: say(trip, 'alertTitle'), tripId: trip.tripId, leg: alert.leg, body: alert.text, quiet: trip.quiet || undefined }))) sent++;
+      // The last call ("NOW" in Morse code) and the trip's end ("END"): sw.js and the app buzz them.
+      if (lastCall && (await send(id, trip, { type: 'get-off-now', title: lastCall.title, tripId: trip.tripId, leg: lastCall.leg, body: lastCall.body, quiet: trip.quiet || undefined }))) sent++;
+      if (end && (await send(id, trip, { type: 'trip-end', title: end.title, tripId: trip.tripId, leg: trip.leg, body: end.body }))) sent++;
       // Still waiting for the bus, after this minute's step: is it a minute away?
       if (!done && waitingToBoard(trip)) {
         const l = trip.legs[trip.leg];
@@ -110,8 +113,9 @@ async function shareProgress(trip, done, now) {
   }
 }
 
-// `message` is { type: 'get-off' | 'board', tripId, leg, body }, and a title for 'board'; a
-// 'get-off' for an app with Settings' earphones only has quiet: true (api/_push/fcm.js).
+// `message` is { type: 'get-off' | 'get-off-now' | 'trip-end' | 'board', tripId, leg, body }, and
+// a title for all but 'get-off'; a 'get-off' or 'get-off-now' for an app with Settings' earphones
+// only has quiet: true (api/_push/fcm.js).
 async function send(id, trip, message) {
   // The Telegram bot's trip: nothing to push to. The bot tells you itself, from the ETA link.
   if (trip.subscription?.bot) return false;

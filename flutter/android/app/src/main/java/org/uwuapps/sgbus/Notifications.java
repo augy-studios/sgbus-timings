@@ -8,12 +8,18 @@
  *   trip     the trip being followed, while it runs (TripService): silent
  *   get_off_quiet  the Get Off Alert when its sound is for earphones only: buzzes, and the
  *            app plays the sound itself, in the earphones, if there are any (EarBeep)
+ *   get_off_now  the Get Off Alert's last call, a stop before you get off: "Ring the bell NOW"
+ *            on a bus, "Get off at the next station" on a train, buzzing "NOW" in Morse code
+ *            (2.7.3)
+ *   get_off_now_quiet  the last call when its sound is for earphones only, as get_off_quiet
+ *   trip_end the trip has ended, as you arrive: buzzes "END" in Morse code, with no sound (2.7.3)
  *   near     a picked favourite stop's timings as you walk up to it (NearStops): silent
  *   last_bus a heads-up before the last bus (LastBus)
  *   leave    time to leave for a calendar event (LeaveTime)
  *   on_a_bus "On a bus?", offering a trip when you seem to be riding (OnABus): silent
  *   releases a new version of the app is out, from the server (main-site/api/push/release.js),
- *            to the phones that turned it on (SgBusPlugin.setReleases) (2.1.1)
+ *            to the phones that turned it on (SgBusPlugin.setReleases) (2.1.1); on Google Play,
+ *            once Play has it for this phone (PlayUpdateWorker) (2.7.3)
  *   routine  a routine's stop timings, at the time you set (Routines) (2.2.0)
  *
  * The server's pushes name the same channels (main-site/api/_push/fcm.js), and Android only
@@ -44,6 +50,9 @@ final class Notifications {
     static final String TRIP = "trip_live";
     private static final String TRIP_SILENT = "trip";
     static final String GET_OFF_QUIET = "get_off_quiet";
+    static final String GET_OFF_NOW = "get_off_now";
+    static final String GET_OFF_NOW_QUIET = "get_off_now_quiet";
+    static final String TRIP_END = "trip_end";
     static final String NEAR = "near";
     static final String LAST_BUS = "last_bus";
     static final String LEAVE = "leave";
@@ -57,6 +66,19 @@ final class Notifications {
             0, 360, 120, 360, 120, 360, 360,
             120, 120, 120, 120, 360, 120, 120, 360,
             120, 120, 120, 120, 360, 120, 120,
+    };
+
+    // "NOW" (-. --- .--) for the last call and "END" (. -. -..) as the trip ends, as
+    // main-site/js/trip.js buzzes them (NOW_VIBRATION, END_VIBRATION): the same dot and dash.
+    static final long[] NOW = {
+            0, 360, 120, 120, 360,
+            360, 120, 360, 120, 360, 360,
+            120, 120, 360, 120, 360,
+    };
+    static final long[] END = {
+            0, 120, 360,
+            360, 120, 120, 360,
+            360, 120, 120, 120, 120,
     };
 
     // Two short buzzes for Get ready to board, as main-site/js/trip.js buzzes it in the page.
@@ -114,6 +136,35 @@ final class Notifications {
         getOffQuiet.setSound(null, null);
         getOffQuiet.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
 
+        NotificationChannel getOffNow = new NotificationChannel(GET_OFF_NOW, context.getString(R.string.ch_get_off_now),
+                NotificationManager.IMPORTANCE_HIGH);
+        getOffNow.setDescription(context.getString(R.string.ch_get_off_now_about));
+        getOffNow.enableVibration(true);
+        getOffNow.setVibrationPattern(NOW);
+        getOffNow.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+        getOffNow.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),
+                new AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build());
+
+        NotificationChannel getOffNowQuiet = new NotificationChannel(GET_OFF_NOW_QUIET, context.getString(R.string.ch_get_off_now_quiet),
+                NotificationManager.IMPORTANCE_HIGH);
+        getOffNowQuiet.setDescription(context.getString(R.string.ch_get_off_now_quiet_about));
+        getOffNowQuiet.enableVibration(true);
+        getOffNowQuiet.setVibrationPattern(NOW);
+        getOffNowQuiet.setSound(null, null);
+        getOffNowQuiet.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
+        // High, so it shows over what you're doing, but silent: the buzz says it.
+        NotificationChannel tripEnd = new NotificationChannel(TRIP_END, context.getString(R.string.ch_trip_end),
+                NotificationManager.IMPORTANCE_HIGH);
+        tripEnd.setDescription(context.getString(R.string.ch_trip_end_about));
+        tripEnd.enableVibration(true);
+        tripEnd.setVibrationPattern(END);
+        tripEnd.setSound(null, null);
+        tripEnd.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+
         NotificationChannel near = new NotificationChannel(NEAR, context.getString(R.string.ch_near),
                 NotificationManager.IMPORTANCE_LOW);
         near.setDescription(context.getString(R.string.ch_near_about));
@@ -147,6 +198,9 @@ final class Notifications {
         manager.createNotificationChannel(trip);
         manager.deleteNotificationChannel(TRIP_SILENT);
         manager.createNotificationChannel(getOffQuiet);
+        manager.createNotificationChannel(getOffNow);
+        manager.createNotificationChannel(getOffNowQuiet);
+        manager.createNotificationChannel(tripEnd);
         manager.createNotificationChannel(near);
         manager.createNotificationChannel(lastBus);
         manager.createNotificationChannel(leave);
@@ -216,6 +270,7 @@ final class Notifications {
     static boolean post(Context context, String channel, String tag, String title, String body, String url) {
         if (!allowed(context)) return false;
         boolean getOff = GET_OFF.equals(channel) || GET_OFF_QUIET.equals(channel);
+        boolean lastCall = GET_OFF_NOW.equals(channel) || GET_OFF_NOW_QUIET.equals(channel);
         NotificationCompat.Builder n = new NotificationCompat.Builder(context, channel)
                 .setSmallIcon(R.drawable.ic_notification_icon)
                 .setContentTitle(title)
@@ -230,6 +285,17 @@ final class Notifications {
                     .setVibrate(OFF);
             // Before Android 8, where there are no channels: sound only from the loud one.
             if (GET_OFF.equals(channel)) n.setDefaults(NotificationCompat.DEFAULT_SOUND);
+        } else if (lastCall) {
+            n.setPriority(NotificationCompat.PRIORITY_MAX)
+                    .setCategory(NotificationCompat.CATEGORY_ALARM)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setVibrate(NOW);
+            if (GET_OFF_NOW.equals(channel)) n.setDefaults(NotificationCompat.DEFAULT_SOUND);
+        } else if (TRIP_END.equals(channel)) {
+            n.setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setVibrate(END);
         } else if (BOARD.equals(channel)) {
             n.setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setCategory(NotificationCompat.CATEGORY_REMINDER)

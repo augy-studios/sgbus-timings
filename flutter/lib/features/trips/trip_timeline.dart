@@ -253,7 +253,7 @@ class _LegColumnState extends State<_LegColumn> {
       KeyedSubtree(
         key: _rows[i],
         child: InkWell(
-          onTap: code == null || l.service == null ? null : () => StopScreen.open(code, service: l.service),
+          onTap: code == null || l.service == null ? null : () => StopScreen.open(code, service: busesAt(l, code)),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 44),
             child: Padding(
@@ -341,6 +341,20 @@ class _Rail extends CustomPainter {
 
   @override
   bool shouldRepaint(_Rail old) => old.line != line || old.done != done || old.node != node || old.fill != fill || old.shown != shown || old.mids != mids;
+}
+
+/// The buses for a stop's timings from the timeline: the leg's own, then those of its direct buses
+/// (Trip.directBuses) that call there on their way from its first stop to its last, as "65,154,61"
+/// (the site's busesAt in js/trip.js).
+String busesAt(TripLeg leg, String code) {
+  final also = Trip.directBuses(leg).where((no) => BusNet.directions(no).any((dir) {
+        final stops = BusNet.runStops(no, dir);
+        final from = stops.indexOf(leg.board ?? '');
+        if (from == -1) return false;
+        final at = stops.indexOf(code, from);
+        return at != -1 && stops.indexOf(leg.alight ?? '', at) != -1;
+      }));
+  return [?leg.service, ...also].join(',');
 }
 
 /// The buses that also go straight from a bus leg's first stop to its last, as BusNet has them.

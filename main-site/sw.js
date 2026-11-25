@@ -1,7 +1,7 @@
 // Bump on every deploy that changes anything this worker serves. The browser
 // compares this file byte for byte, so an unchanged VERSION means nobody is
 // offered the update bar and the old cache keeps answering.
-const VERSION = "v179";
+const VERSION = "v182";
 const CACHE = `sgbus-${VERSION}`;
 
 const ASSETS = [
@@ -237,6 +237,8 @@ self.addEventListener("push", (event) => {
     data = event.data?.json();
   } catch {}
   if (data?.type === "get-off") return event.waitUntil(getOff(data));
+  if (data?.type === "get-off-now") return event.waitUntil(lastCall(data));
+  if (data?.type === "trip-end") return event.waitUntil(tripEnd(data));
   if (data?.type === "board") return event.waitUntil(board(data));
   if (data?.type !== "service-alert") return;
 
@@ -281,6 +283,50 @@ async function getOff(data) {
   });
 }
 
+/* -- Push: the last call and the trip's end, from the same cron -- */
+
+// "NOW" (-. --- .--) and "END" (. -. -..) in Morse code: see NOW_VIBRATION and END_VIBRATION
+// in js/trip.js. The last call replaces the Get Off Alert (its tag), as the page's own does.
+const NOW_VIBRATION = [
+  360, 120, 120, 360, // N  -.
+  360, 120, 360, 120, 360, 360, // O  ---
+  120, 120, 360, 120, 360, // W  .--
+];
+const END_VIBRATION = [
+  120, 360, // E  .
+  360, 120, 120, 360, // N  -.
+  360, 120, 120, 120, 120, // D  -..
+];
+
+async function lastCall(data) {
+  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  clients.forEach((c) => c.postMessage({ type: "get-off-now", tripId: data.tripId, leg: data.leg, text: `${data.title}. ${data.body}` }));
+  await self.registration.showNotification(data.title || "Ring the bell NOW", {
+    body: data.body || "",
+    tag: "get-off",
+    renotify: true,
+    requireInteraction: true,
+    vibrate: NOW_VIBRATION,
+    icon: "/sgbusicon1.png",
+    badge: "/sgbusnotificon.png",
+    data: { url: "/", kind: "get-off" },
+  });
+}
+
+async function tripEnd(data) {
+  const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+  clients.forEach((c) => c.postMessage({ type: "trip-end", tripId: data.tripId }));
+  await self.registration.showNotification(data.title || "Trip ended", {
+    body: data.body || "",
+    tag: "trip-end",
+    renotify: true,
+    vibrate: END_VIBRATION,
+    icon: "/sgbusicon1.png",
+    badge: "/sgbusnotificon.png",
+    data: { url: "/", kind: "trip-end" },
+  });
+}
+
 /* -- Push: Get ready to board, from the same cron, when the bus you wait for is a minute away -- */
 
 // The same tag and two short buzzes as js/trip.js uses for it (BOARD_VIBRATION), and any open
@@ -305,7 +351,7 @@ async function board(data) {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const kind = event.notification.data?.kind || event.notification.tag;
-  const getOff = kind === "get-off" || kind === "board";
+  const getOff = kind === "get-off" || kind === "board" || kind === "trip-end";
   const url = new URL(event.notification.data?.url || (getOff ? "/" : "/#alerts"), self.location.origin).href;
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {

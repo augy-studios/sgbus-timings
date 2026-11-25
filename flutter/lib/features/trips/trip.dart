@@ -45,6 +45,7 @@ import '../../native/native_bridge.dart';
 import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
+import '../nav/ways.dart';
 import 'live_updates.dart';
 import 'trip_change.dart';
 import 'trip_progress.dart';
@@ -204,6 +205,9 @@ class Trip extends ChangeNotifier {
   static const savedKey = 'sgbus.trip';
   static const tripsKey = 'sgbus_trips';
   static const alertStops = 2;
+  /// The last call, a stop before the end of a ride: "Ring the bell NOW" on a bus, "Get off at the
+  /// next station" on a train, buzzing "NOW" in Morse code (the site's NOW_STOPS, js/trip.js).
+  static const nowStops = 1;
   static const goodFixM = 150.0;
   static const walkArriveM = 40.0;
 
@@ -254,6 +258,10 @@ class Trip extends ChangeNotifier {
   double pos = 0; // stops along the leg, fractional
   bool boarded = false;
   final Set<int> alerted = {};
+  /// The rides whose last call was given (nowStops).
+  final Set<int> nowAlerted = {};
+  /// Whether the trip's end was said ("END" in Morse code), here or by the server.
+  bool endAlerted = false;
   int startedAt = 0;
   int legStartedAt = 0;
   /// When the trip was last moved by hand (Back or Next), for the server.
@@ -329,6 +337,8 @@ class Trip extends ChangeNotifier {
     _me = null;
     _left.clear();
     alerted.clear();
+    nowAlerted.clear();
+    endAlerted = false;
     times.clear();
     arrived = false;
     seen = List.filled(legs.length, null);
@@ -378,7 +388,11 @@ class Trip extends ChangeNotifier {
     // The ride you're on is judged as the trip ends; a trip that got there earns its feats and
     // coins (data/rewards.dart).
     _judge(leg);
-    if (arrived) _rewards();
+    if (arrived) {
+      _rewards();
+      // After the last ride's judged, so its coins count.
+      _endAlert();
+    }
     if (record) _record();
     _tick?.cancel();
     _loc?.cancel();
@@ -410,6 +424,8 @@ class Trip extends ChangeNotifier {
     startedAt = (s['startedAt'] as num?)?.toInt() ?? When.nowMs();
     legStartedAt = (s['legStartedAt'] as num?)?.toInt() ?? startedAt;
     alerted.addAll(((s['alerted'] as List?) ?? const []).map((e) => (e as num).toInt()));
+    nowAlerted.addAll(((s['nowAlerted'] as List?) ?? const []).map((e) => (e as num).toInt()));
+    endAlerted = s['endAlerted'] == true;
     seen = [for (var i = 0; i < legs.length; i++) i < ((s['seen'] as List?)?.length ?? 0) ? ((s['seen'] as List)[i] as Map?)?.cast<String, dynamic>() : null];
     via = (s['via'] as Map?)?.cast<String, Object?>();
     origin = (s['origin'] as Map?)?.cast<String, Object?>();
@@ -425,6 +441,7 @@ class Trip extends ChangeNotifier {
   void _save() => Store.I.putJson(savedKey, {
         'id': id, 'title': title, 'legs': [for (final l in legs) l.toJson()], 'from': from, 'to': to, 'origin': origin, 'leg': leg, 'pos': pos,
         'boarded': boarded, 'startedAt': startedAt, 'legStartedAt': legStartedAt, 'alerted': alerted.toList(),
+        'nowAlerted': nowAlerted.toList(), 'endAlerted': endAlerted,
         'seen': seen, 'via': via, 'paceAsked': paceAsked, 'onLegAt': onLegAt, 'realignedAt': realignedAt,
         if (anchor != null) 'anchor': {'pos': anchor!.pos, 't': anchor!.t},
       });
@@ -509,6 +526,7 @@ class Trip extends ChangeNotifier {
     // Alerted well before the stop, by the server about another bus: it can go off again.
     if (alerted.contains(leg) && _wellShort()) {
       alerted.remove(leg);
+      nowAlerted.remove(leg);
       _alertText = null;
       realignedAt = now;
     }
@@ -678,6 +696,7 @@ class Trip extends ChangeNotifier {
       alerted.remove(leg);
       _alertText = null;
     }
+    if (pos.floor() < last - nowStops) nowAlerted.remove(leg);
     _changed();
     _check();
     return true;
@@ -706,6 +725,7 @@ class Trip extends ChangeNotifier {
     realignedAt = lastFixAt = onLegAt = now;
     times.remove(leg);
     if (alerted.remove(leg)) _alertText = null;
+    nowAlerted.remove(leg);
     _changed();
     return true;
   }
@@ -1091,9 +1111,20 @@ class Trip extends ChangeNotifier {
 
   void _checkAlert() {
     final l = current;
-    if (l == null || !l.ride || !boarded || alerted.contains(leg) || !enabled) return;
+    if (l == null || !l.ride || !boarded || !enabled) return;
     final left = (l.points.length - 1) - pos;
-    if (left > alertStops + 0.1) return;
+    // The last call, a stop before the end: it stands for the Get Off Alert too, if that's not
+    // gone yet, so a short ride doesn't buzz twice at once.
+    if (left <= nowStops + 0.1 && !nowAlerted.contains(leg)) {
+      nowAlerted.add(leg);
+      alerted.add(leg);
+      final (:title, :body) = lastCallText(l, left.round());
+      soundAlert(body, title: title, kind: 'now');
+      _alertText = '$title. $body';
+      _alertLeft = left.round();
+      return;
+    }
+    if (alerted.contains(leg) || left > alertStops + 0.1) return;
     alerted.add(leg);
     final change = leg < legs.length - 1;
     // To the nearest stop: it's said as you come up to the stop two before the end.
@@ -1110,19 +1141,98 @@ class Trip extends ChangeNotifier {
     _alertLeft = n;
   }
 
-  /// The alert's buzz ("OFF" in Morse code), sound and notification, over the lock screen, in
-  /// earphones only if Settings says so (TripPlugin.alert).
-  void soundAlert(String body) {
+  /// The last call's title and text: on a bus, ring the bell for the next stop; on a train, get off
+  /// at the next station. Already at the stop (left 0), get off now. As the site's lastCallText.
+  static ({String title, String body}) lastCallText(TripLeg l, int left) {
+    final bus = l.kind == 'bus';
+    final stop = l.names.isNotEmpty ? l.names.last : l.to;
+    final title = bus
+        ? tr('trip.ringNow', 'Ring the bell NOW')
+        : left == 0
+            ? tr('route.get_off_alert', 'Get Off Alert')
+            : tr('trip.getOffNext', 'Get off at the next station');
+    final body = left == 0
+        ? tr('trip.getOffNow', 'Get off now at {stop}.', {'stop': stop})
+        : bus
+            ? tr('trip.nextStop', 'Next stop: {stop}.', {'stop': stop})
+            : tr('trip.nextStation', 'Next station: {stop}.', {'stop': stop});
+    return (title: title, body: body);
+  }
+
+  /// The alert's buzz, sound and notification, over the lock screen, in earphones only if Settings
+  /// says so (TripPlugin.alert): the Get Off Alert's "OFF" in Morse code, or with `kind` 'now' the
+  /// last call's "NOW", or 'end' the trip's "END" (no sound).
+  void soundAlert(String body, {String? title, String? kind}) {
     if (Native.has('trip')) {
       Native.call('Trip', 'alert', {
-        'title': tr('route.get_off_alert', 'Get Off Alert'),
+        'title': title ?? tr('route.get_off_alert', 'Get Off Alert'),
         'body': body,
-        'quiet': const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones')),
+        'quiet': kind != 'end' && const ['true', 'on'].contains(Store.I.get('sgbus_getoff_earphones')),
+        'kind': ?kind,
       }).catchError((_) => null);
     } else {
       HapticFeedback.heavyImpact();
-      AppNav.say(body);
+      AppNav.say(title != null ? '$title. $body' : body);
     }
+  }
+
+  // The fare's allowance for bends (NavWays' road and track factors, the site's js/ways.js).
+  static const _sumRoadFactor = 1.15;
+  static const _sumTrackFactor = 1.1;
+
+  /// The trip's sums, for its end: what its rides cost by card, roughly, as Navigate has it
+  /// (NavWays.fare, by the fare type in Settings), or null with nothing to pay or no fare known
+  /// (across the Causeway); and how far it went, rides along their stops and walks straight, each
+  /// with the fare's allowance for bends. As the site's tripSums in js/trip.js. A bus that isn't one
+  /// of LTA's, once the routes are in, is a shuttle, and free.
+  ({int? cents, int metres}) tripSums() {
+    final across = legs.any((l) => l.kind == 'bus' && [l.board, l.alight].any((c) => c != null && BusNet.isCheckpoint(c)));
+    final way = {
+      'legs': [
+        for (final l in legs)
+          {
+            'mode': l.ride ? l.kind : 'walk',
+            'path': l.points,
+            'route': l.service ?? l.route,
+            if (l.kind == 'bus' && BusNet.ready && l.service != null && BusNet.serviceInfo(l.service!) == null) 'campus': true,
+            if (across) 'customs': const [{}],
+          },
+      ],
+    };
+    final fare = NavWays.fare(way, category: (no) => BusNet.serviceInfo(no)?.cat);
+    var m = 0.0;
+    for (final l in legs) {
+      var along = 0.0;
+      for (var i = 1; i < l.points.length; i++) {
+        along += metresAB(l.points[i - 1], l.points[i]);
+      }
+      m += along * (l.kind == 'train' ? _sumTrackFactor : _sumRoadFactor);
+    }
+    return (cents: fare?.cents, metres: m.round());
+  }
+
+  /// The summary under the trip's end: "About S$1.68 in fares · 12.3 km travelled · 23 uwuCoins
+  /// earned", each part left out when there's none. [coins] null leaves the coins out.
+  String summaryText(int? coins) {
+    final (:cents, :metres) = tripSums();
+    final distance = metres >= 1000 ? '${(metres / 1000).toStringAsFixed(1)} km' : '${(metres / 10).round() * 10} m';
+    return [
+      if (cents != null) tr('trip.endFare', 'About {fare} in fares', {'fare': NavWays.fareText(cents)}),
+      if (metres > 0) tr('trip.endDistance', '{distance} travelled', {'distance': distance}),
+      if (coins != null && coins > 0) tr('trip.endCoins', '{n} uwuCoins earned', {'n': coins}),
+    ].join(' · ');
+  }
+
+  /// The trip's over, as you arrive: "END" in Morse code, with its summary and the coins it earned
+  /// (data/rewards.dart, while coins are shown), unless the server said so already.
+  void _endAlert() {
+    if (endAlerted || !enabled) return;
+    endAlerted = true;
+    final end = (to?['label'] as String?) ?? (legs.isNotEmpty ? legs.last.to : '');
+    final arrivedAt = tr('trip.arrivedAt', "You've arrived at {to}.", {'to': end});
+    final coins = Coins.shown ? (Coins.forTrip([for (final l in legs) l.toJson()], seen)?.n ?? 0) : null;
+    final summary = summaryText(coins);
+    soundAlert(summary.isEmpty ? arrivedAt : '$arrivedAt\n$summary', title: tr('trip.endTitle', 'Trip ended'), kind: 'end');
   }
 
   void _next() {
@@ -1192,6 +1302,7 @@ class Trip extends ChangeNotifier {
     onLegAt = 0;
     arrived = false;
     alerted.removeWhere((i) => i > leg || (i == leg && pos.floor() < last - alertStops));
+    nowAlerted.removeWhere((i) => i > leg || (i == leg && pos.floor() < last - nowStops));
     _changed();
   }
 
@@ -1199,7 +1310,7 @@ class Trip extends ChangeNotifier {
   /// for Undo.
   void replan(List<TripLeg> next, {String? note}) {
     if (!active || next.isEmpty) return;
-    _before = {'legs': legs, 'leg': leg, 'pos': pos, 'boarded': boarded, 'alerted': alerted.toList(), 'seen': List.of(seen)};
+    _before = {'legs': legs, 'leg': leg, 'pos': pos, 'boarded': boarded, 'alerted': alerted.toList(), 'nowAlerted': nowAlerted.toList(), 'seen': List.of(seen)};
     next = acrossTheCauseway(next);
     legs = [...legs.take(leg), ...next];
     seen = [...seen.take(leg), ...List<Map<String, dynamic>?>.filled(next.length, null)];
@@ -1208,6 +1319,7 @@ class Trip extends ChangeNotifier {
     _resetLeg();
     _fetchRoads();
     alerted.removeWhere((i) => i >= leg);
+    nowAlerted.removeWhere((i) => i >= leg);
     legStartedAt = When.nowMs();
     switchedNote = note;
     _changed();
@@ -1219,12 +1331,13 @@ class Trip extends ChangeNotifier {
     if (!active || next.isEmpty || j < leg || j >= legs.length) return;
     final cut = k != null && k > 0 && (j > leg || k > pos) ? legs[j].cutAt(k) : null;
     if (cut == null && j == leg) return replan(next, note: note);
-    _before = {'legs': legs, 'leg': leg, 'pos': pos, 'boarded': boarded, 'alerted': alerted.toList(), 'seen': List.of(seen)};
+    _before = {'legs': legs, 'leg': leg, 'pos': pos, 'boarded': boarded, 'alerted': alerted.toList(), 'nowAlerted': nowAlerted.toList(), 'seen': List.of(seen)};
     next = acrossTheCauseway(next);
     legs = [...legs.take(j), ?cut, ...next];
     _fetchRoads();
     seen = [...seen.take(j), if (cut != null) j < seen.length ? seen[j] : null, ...List<Map<String, dynamic>?>.filled(next.length, null)];
     alerted.removeWhere((i) => i >= j);
+    nowAlerted.removeWhere((i) => i >= j);
     switchedNote = note;
     _changed();
   }
@@ -1239,6 +1352,9 @@ class Trip extends ChangeNotifier {
     alerted
       ..clear()
       ..addAll((b['alerted'] as List).cast<int>());
+    nowAlerted
+      ..clear()
+      ..addAll((b['nowAlerted'] as List).cast<int>());
     seen = (b['seen'] as List).cast<Map<String, dynamic>?>();
     _before = null;
     switchedNote = null;

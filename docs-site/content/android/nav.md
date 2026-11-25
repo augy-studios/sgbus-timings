@@ -153,8 +153,13 @@ connection first, so it can keep what it needs.
 ## Open a way
 
 <figure>
-<img src="/screenshots/android/nav-way.png" alt="One way, part by part: All ways, Refresh and Start trip at the top, about 36 min with 1 change, a walk to Bedok Int with a Live map button, bus 9 with its next three live times and a button for its timings at Bedok Int, a walk to Bedok station's Exit B, then the East-West Line, 9 stops to Raffles Place, and leaving by Exit A." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/nav-way.png" alt="One way, part by part: All ways, Refresh and Start trip at the top, about 36 min with 1 change, a walk to Bedok Int with a Live map button, bus 9 with the next three live times of 9 and 9A, both straight to Bedok Stn Exit B, and buttons for its timings at Bedok Int and Route on the map, a walk to Bedok station's Exit B, then the East-West Line, 9 stops to Raffles Place, and leaving by Exit A." width="412" height="892" loading="lazy">
 <figcaption>A way part by part, with Start trip for the Get Off Alert.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/stop-direct.png" alt="Opp Mattar Stn Exit B's timings, opened from a way, with Back to Navigate at the top and Show all services: only buses 61, 65 and 154 coming, each with its card and its next three buses." width="412" height="892" loading="lazy">
+<figcaption>A bus's timings button: every bus straight to where you get off.</figcaption>
 </figure>
 
 Tap a way to see it part by part:
@@ -165,9 +170,10 @@ Tap a way to see it part by part:
 - **Trains**, with the line, the direction to take, how many stops, and where to get off, with
   [which door to stand at](#which-door-to-stand-at).
 - **Buses**, with how many stops and where to get off, and the **live timings** of that bus at
-  the stop you board it. A button opens that stop's timings for the bus, with **Back to
-  Navigate** on them to come back. If traffic slows it, **See it on the map** shows
-  [the bus's road](live-map.md#traffic-on-a-buss-way).
+  the stop you board it. A button opens that stop's timings for the bus and every other bus that
+  goes straight to where you get off, with **Back to Navigate** on them to come back. **Route on the map** shows just the part you ride: its stops and
+  [the bus's road](live-map.md#traffic-on-a-buss-way), coloured by the traffic. If traffic slows
+  it, the warning says by how much and why, and tapping **See it on the map** in it does the same.
 
 Live timings reach about half an hour ahead, so a way setting off later says when you'd board
 instead. **All ways** goes back to the list, **Refresh** updates the timings, and **Start trip**

@@ -3,7 +3,8 @@
 // and takes it back when the trip ends (DELETE). The cron in api/push/trip-poll.js follows
 // it from there.
 //
-// The answer to a PUT is how far the server has got, { tripId, leg, legStartedAt, alerted, readied }, so
+// The answer to a PUT is how far the server has got, { tripId, leg, legStartedAt, alerted, readied,
+// nowAlerted }, so
 // an app coming back from the background picks up a change of leg, an alert or a Get ready to
 // board sent while it was away.
 
@@ -33,7 +34,7 @@ export default async function handler(req, res) {
       const sent = parseTrip(req.body, now, { fromBot: bot });
       const trip = merge(await trips.get(id), sent, now);
       await trips.set(id, trip, ttlSeconds(trip, now));
-      return res.status(200).json({ tripId: trip.tripId, leg: trip.leg, legStartedAt: trip.legStartedAt, alerted: trip.alerted, readied: trip.readied });
+      return res.status(200).json({ tripId: trip.tripId, leg: trip.leg, legStartedAt: trip.legStartedAt, alerted: trip.alerted, readied: trip.readied, nowAlerted: trip.nowAlerted ?? undefined });
     }
 
     if (req.method === 'DELETE') {
@@ -70,15 +71,17 @@ export function merge(old, sent, now = Date.now()) {
   // Get ready to board, once given by either, stays given, realigned or not.
   const readied = sent.readied.map((r, i) => r || Boolean(old.readied?.[i]));
   if (live(sent, now) && old.leg > sent.leg) {
-    const before = (xs, mine) => mine.map((x, i) => (i < sent.leg ? x || Boolean(xs?.[i]) : x));
-    return { ...sent, alerted: before(old.alerted, sent.alerted), readied: before(old.readied, sent.readied), track: null };
+    const before = (xs, mine) => mine && mine.map((x, i) => (i < sent.leg ? x || Boolean(xs?.[i]) : x));
+    return { ...sent, alerted: before(old.alerted, sent.alerted), readied: before(old.readied, sent.readied), nowAlerted: before(old.nowAlerted, sent.nowAlerted), track: null };
   }
   if (sent.realignedAt > (old.realignedAt || 0) && sent.leg >= old.leg) return { ...sent, readied, track: null };
   const alerted = sent.alerted.map((a, i) => a || Boolean(old.alerted[i]));
+  // The last call likewise, for an app that has it (nowAlerted null for one that doesn't).
+  const nowAlerted = sent.nowAlerted && sent.nowAlerted.map((a, i) => a || Boolean(old.nowAlerted?.[i]));
   // The share link always as the app has it: started, or stopped, since it last sent.
   // So is earphones only (quiet).
-  if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted, readied, share: sent.share, quiet: sent.quiet };
-  if (old.leg < sent.leg) return { ...sent, alerted, readied, track: null };
+  if (old.leg > sent.leg) return { ...old, subscription: sent.subscription, alerted, readied, nowAlerted, share: sent.share, quiet: sent.quiet };
+  if (old.leg < sent.leg) return { ...sent, alerted, readied, nowAlerted, track: null };
   // The bus being followed stays, unless the app has since seen you well past it: then it
   // was the wrong bus.
   const known = Math.max(sent.at, sent.pos);
@@ -88,6 +91,7 @@ export function merge(old, sent, now = Date.now()) {
     seenAt: Math.max(sent.seenAt, old.seenAt),
     alerted,
     readied,
+    nowAlerted,
     track,
   };
 }

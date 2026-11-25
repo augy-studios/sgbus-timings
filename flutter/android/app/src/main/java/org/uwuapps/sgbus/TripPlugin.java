@@ -9,8 +9,10 @@
  *                            of their own; the trip works without it. Rejects "permission" if
  *                            location is refused.
  *   update({ title, text })  the notification's text, as the trip goes on
- *   alert({ title, body, quiet })   the Get Off Alert, as a notification over the lock screen;
- *                            `quiet`, its sound in earphones only (2.1.0)
+ *   alert({ title, body, quiet, kind })   the Get Off Alert, as a notification over the lock screen;
+ *                            `quiet`, its sound in earphones only (2.1.0); `kind` "now", its
+ *                            last call, buzzing "NOW", or "end", the trip's end, buzzing "END"
+ *                            (2.7.3)
  *                            The first trip also asks to leave the app out of battery
  *                            optimisation, once (2.1.0).
  *   stop()                   the trip's over
@@ -172,14 +174,27 @@ public class TripPlugin extends Plugin {
 
     // `quiet`: Settings has the alert's sound in earphones only (2.1.0). It buzzes, and sounds in
     // earphones if there are any, never out loud (EarBeep: a call-only Bluetooth earpiece too,
-    // from 2.2.6).
+    // from 2.2.6). `kind` (2.7.3): "now" for the last call a stop before you get off, buzzing
+    // "NOW", in place of the Get Off Alert's notification; "end" as the trip ends, buzzing "END",
+    // with no sound; left out, the Get Off Alert, buzzing "OFF".
     @PluginMethod
     public void alert(PluginCall call) {
         boolean quiet = Boolean.TRUE.equals(call.getBoolean("quiet", false));
+        String kind = call.getString("kind", "");
         JSObject out = new JSObject();
-        out.put("shown", Notifications.post(getContext(), quiet ? Notifications.GET_OFF_QUIET : Notifications.GET_OFF, "get-off",
-                call.getString("title", "Get Off Alert"), call.getString("body", ""), null));
-        Notifications.buzz(getContext(), Notifications.OFF);
+        if ("end".equals(kind)) {
+            out.put("shown", Notifications.post(getContext(), Notifications.TRIP_END, "trip-end",
+                    call.getString("title", "Trip ended"), call.getString("body", ""), null));
+            Notifications.buzz(getContext(), Notifications.END);
+            call.resolve(out);
+            return;
+        }
+        boolean now = "now".equals(kind);
+        String channel = now ? (quiet ? Notifications.GET_OFF_NOW_QUIET : Notifications.GET_OFF_NOW)
+                : (quiet ? Notifications.GET_OFF_QUIET : Notifications.GET_OFF);
+        out.put("shown", Notifications.post(getContext(), channel, "get-off",
+                call.getString("title", now ? "Ring the bell NOW" : "Get Off Alert"), call.getString("body", ""), null));
+        Notifications.buzz(getContext(), now ? Notifications.NOW : Notifications.OFF);
         if (quiet) EarBeep.beep(getContext());
         call.resolve(out);
     }
