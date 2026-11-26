@@ -18,6 +18,7 @@ import '../../api/net.dart';
 import '../../app/links.dart';
 import '../../app/nav.dart';
 import '../../data/arrivals.dart';
+import '../../data/campus.dart';
 import '../../data/favs.dart';
 import '../../data/geo.dart';
 import '../../data/location.dart';
@@ -36,6 +37,7 @@ import '../../widgets/common.dart';
 import '../../widgets/place_search.dart';
 import '../map/live_map.dart';
 import '../share/share_card.dart';
+import '../timings/campus_ui.dart' show ShuttleEndsNotice;
 import '../timings/stop_screen.dart';
 import '../trips/trip.dart';
 import 'ways.dart';
@@ -931,6 +933,8 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
           const SizedBox(height: 6),
           Text(lead, style: Theme.of(context).textTheme.titleLarge),
           Text(notes, style: TextStyle(color: sg.muted)),
+          // A shuttle on it that's ending (shuttles.json's `ends`): the details say it at the top.
+          for (final e in Campus.ending(legs, span.leave)) _warn(ShuttleEndsNotice.text(e), notice: true),
           if (o['disrupted'] == true) _warn(tr('nav.disruptedLine', 'A line on this journey has a disruption')),
           if ((o['far'] as Map?)?['from'] != null)
             _warn(tr('nav.farFrom', 'The nearest stop is {d} from where you’re starting', {'d': formatDistance((o['far'] as Map)['from'] as num)})),
@@ -957,12 +961,15 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
   }
 
   // `link`, underlined after the text, says the warning opens something, as the site's <u> does.
-  Widget _warn(String text, {bool traffic = false, String? link}) => Padding(
+  // A `notice` is news, not a warning: a shuttle that's ending.
+  Widget _warn(String text, {bool traffic = false, String? link, bool notice = false}) => Padding(
     padding: const EdgeInsets.only(top: 4),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.warning_amber_rounded, size: 16, color: traffic ? context.sg.warn : context.sg.error),
+        notice
+            ? Icon(Icons.event_busy_outlined, size: 16, color: context.sg.brandInk)
+            : Icon(Icons.warning_amber_rounded, size: 16, color: traffic ? context.sg.warn : context.sg.error),
         const SizedBox(width: 6),
         Expanded(
           child: Text.rich(
@@ -1250,6 +1257,8 @@ class _NavPageState extends State<NavPage> with WidgetsBindingObserver {
           label: Text(tr('nav.startTrip', 'Start trip')),
         ),
       ),
+      // A shuttle on it that's ending (shuttles.json's `ends`), before anything else.
+      ShuttleEndsNotice(Campus.ending(legs, leaveMs), padding: const EdgeInsets.only(bottom: 8)),
       Text('${tr('planner.aboutMin', '~{m} min', {'m': minutes})} · ${navMixText(o)}', style: Theme.of(context).textTheme.titleMedium),
       if (nav.when != null)
         Text(
@@ -1529,9 +1538,14 @@ void reopenNav(Map o) {
   n.run(keep: saved).then((_) {
     if (way == null || !identical(n.option, saved)) return;
     // The way as it was picked, if the new plan hasn't it: unless, leaving now, a bus of it has
-    // stopped running for the day, when the list's shown instead.
+    // stopped running for the day, or it rides a shuttle that has ended by then, when the list's
+    // shown instead.
     final again = n.options.where((w) => wayKey(w) == way).firstOrNull ??
-        (saved != null && (n.when != null || wayStopped(saved, When.nowMs()) == null) ? saved : null);
+        (saved != null &&
+                (n.when != null || wayStopped(saved, When.nowMs()) == null) &&
+                !Campus.ridesEnded((saved['legs'] as List? ?? const []).whereType<Map>(), When.msOf(n.when))
+            ? saved
+            : null);
     if (again != null) {
       n.open(again);
     } else if (saved != null) {
