@@ -112,7 +112,7 @@ NUS's or `CL-B` for NTU's, and a stop only shuttles use by its name, such as
 `PGP` or `IKEA Tampines`. A stop opens with its
 [shuttle times](timings.md#shuttle-buses). A route opens in a window of its
 own: what its timetable says now, and its stops in order. Tap a stop for its
-times.
+times. A route that has ended says **Discontinued** in place of its times.
 
 <figure>
 <img src="/screenshots/web/shuttle-route.png" alt="NUS shuttle A1 in a window of its own: every 4–6 min till 23:00, a note that shuttle times are from the timetable and live where the operator shares them, then its stops in order from Kent Ridge Ter, through LT 13, AS 5, BIZ 2 and PGP to Kent Ridge Stn Exit A/NUH and on to Ctrl Lib, and a note that it is a loop." width="396" height="808" loading="lazy">

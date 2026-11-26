@@ -2630,6 +2630,8 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
 }
 .legTraffic u { white-space: nowrap; }
 .journeyTraffic .ico, .legTraffic .ico { margin-top: 2px; }
+/* A shuttle on the way that's ending (help desk #22), at the top of the way's page. */
+p.shuttleEnds { margin: 2px 0 8px; font-weight: 600; }
 /* Each warning on a way in the list a line of its own, across the whole item. */
 .journeyItem .journeyWarn, .journeyItem .journeyTraffic { grid-column: 1 / -1; }
 /* Navigate's list (js/nav.js, js/ways.js): the sort over it, each way's tags, and the buses
@@ -2814,6 +2816,9 @@ select.settingsInput { appearance: auto; -webkit-appearance: auto; }
    Cancel. They wrap onto two lines rather than squeeze, with big text. */
 .tlChangeMode { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 10px; font-size: 0.8125rem; }
 .tlChangeMode .iconBtn svg { width: 16px; height: 16px; flex-shrink: 0; }
+/* A shuttle bus service on the trip that's ending (help desk #22), above everything. */
+.tlEnds { display: flex; align-items: flex-start; gap: 6px; margin: 0 0 10px; font-size: 0.8125rem; font-weight: 600; color: var(--warn); }
+.tlEnds svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
 .tlChange:hover { background: var(--brand-fill); color: var(--on-brand); }
 .tripChevron svg { width: 18px; height: 18px; color: var(--muted-strong); transition: transform 0.2s ease; }
 .tripBar.expanded .tripChevron svg { transform: rotate(180deg); }

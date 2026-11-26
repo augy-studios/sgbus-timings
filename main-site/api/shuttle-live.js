@@ -14,6 +14,10 @@
 // Only the stops data/campus/shuttles.json lists under a route's `live` can be asked for, so
 // this fetches nothing else. Cached 15 s at the edge, as the tracker's own page refreshes
 // every 10 s, so however many ask, the tracker sees a request a stop every 15 s at most.
+//
+// A route past its last day (its `ends`, or its group's, a Singapore date: help desk #22) has no
+// bus coming, and the tracker isn't asked: { eta: null, buses: [], ended: true }, for any copy of
+// the site or the app from before it knew `ends` that still asks.
 
 import { readFileSync } from "node:fs";
 
@@ -22,15 +26,20 @@ const PROVIDERS = {
   leisurefrontier: (param) => `https://leisurefrontier.solo-cloud.com/ext/locatebus.php?param=${encodeURIComponent(param)}`,
 };
 const TIMEOUT_MS = 6000;
+const SG_OFFSET_MS = 8 * 3600 * 1000;
 
-// The tracker's param for a route ("group:id") at a stop, and which tracker, or null.
+// Whether a route's last day, a Singapore date, is behind the moment `ms` (js/campus.js, ended).
+export const endedOn = (ends, ms = Date.now()) => !!ends && new Date(ms + SG_OFFSET_MS).toISOString().slice(0, 10) > ends;
+
+// The tracker's param for a route ("group:id") at a stop, and which tracker, or null. `ended`
+// once the route's past its last day.
 function trackerFor(routeKey, stop) {
   const [group, ...rest] = String(routeKey || "").split(":");
   const id = rest.join(":");
   const route = shuttles.groups?.[group]?.routes?.find((r) => String(r.id) === id);
   const param = route?.live?.stops?.[stop];
   const url = param && PROVIDERS[route.live.provider]?.(param);
-  return url ? { url } : null;
+  return url ? { url, ended: endedOn(route.ends ?? shuttles.groups[group].ends) } : null;
 }
 
 // The stop's page, read: its next bus ("4<i>mins</i>", "-" with none), and each marker on the
@@ -55,6 +64,10 @@ export function readPage(html) {
 export default async function handler(req, res) {
   const tracker = trackerFor(req.query.route, req.query.stop);
   if (!tracker) return res.status(404).json({ error: "No live times for that shuttle." });
+  if (tracker.ended) {
+    res.setHeader("Cache-Control", "public, s-maxage=3600");
+    return res.status(200).json({ eta: null, buses: [], ended: true, at: Date.now() });
+  }
   res.setHeader("Cache-Control", "public, s-maxage=15, stale-while-revalidate=30");
   try {
     const r = await fetch(tracker.url, { headers: { "user-agent": "sgbus-timings" }, signal: AbortSignal.timeout(TIMEOUT_MS) });

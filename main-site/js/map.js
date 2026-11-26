@@ -22,7 +22,11 @@
 //                           LAYERS_KEY).
 //                           NUS's and NTU's campus shuttles too (js/campus.js): each route a
 //                           thin line in its colour, and the campus stops LTA hasn't got as
-//                           dots of their own, whose card has the routes' timetables.
+//                           dots of their own, whose card has the routes' timetables. A route
+//                           past its last day (shuttles.json's `ends`, help desk #22), and its
+//                           own stops, are in a layer of their own, Discontinued shuttles: off
+//                           until turned on, its line dashed, and in Layers only once one has
+//                           ended.
 //   LiveMap.traffic(way)    the traffic on a bus's way, from wherever the site says there's
 //                           traffic (Navigate, a trip, #traffic/ links from the Telegram bot):
 //                           its road, orange where it's slow and red where it's jammed, by LTA's
@@ -1042,10 +1046,11 @@
   // file hasn't got for its stops is drawn straight from stop to stop, then along its road once
   // /api/road has it (as a trip's bus rides are), kept for the page view.
   const shuttleRoads = new Map(); // route key -> its road, [[lat, lng], ...]
-  let shuttlesDrawn = []; // [{ uni, color, points }]
+  let shuttlesDrawn = []; // [{ uni, color, muted, points }], muted once discontinued
   // Settings' Shuttle buses: paid ones (Mandai's, the TS1) only with Free and paid.
   const keepShuttle = (route) => route.fare !== 'paid' || (typeof LS !== 'undefined' && LS.getShuttlesPaid());
-  const shuttleDots = () => (window.Campus?.dots(keepShuttle) || []).map((c) => ({ kind: 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } }));
+  // A stop whose every route has ended is in Discontinued shuttles, not Shuttle bus stops.
+  const shuttleDots = () => (window.Campus?.dots(keepShuttle) || []).map((c) => ({ kind: 'campus', layer: c.ended ? 'discontinued' : 'campus', lat: c.lat, lng: c.lng, color: c.color, pick: { kind: 'campus', key: c.key } }));
 
   // Shuttle buses changed in Settings: Explorer's shuttles drawn again for it.
   window.addEventListener('shuttleschange', () => {
@@ -1065,9 +1070,12 @@
       const kept = window.Campus.road?.(l.key, l.points);
       if (kept) shuttleRoads.set(l.key, kept);
     }
+    // Each in its layer: Shuttle bus routes, or Discontinued shuttles once it's ended, dashed.
     const draw = () => {
-      if (mode !== 'explore' || layersOff().has('shuttles')) return;
-      shuttlesDrawn = list.map((l) => ({ uni: l.uni, color: l.color, points: shuttleRoads.get(l.key) || l.points }));
+      if (mode !== 'explore') return;
+      const off = layersOff();
+      shuttlesDrawn = list.filter((l) => !off.has(l.ended ? 'discontinued' : 'shuttles'))
+        .map((l) => ({ uni: l.uni, color: l.color, muted: l.ended, points: shuttleRoads.get(l.key) || l.points }));
       ink.shuttles(shuttlesDrawn);
       creditShuttles();
     };
@@ -1089,18 +1097,33 @@
   // ---------- Explorer's layers ----------
 
   // The layers turned off in Layers (#layersModal), by name, kept in this browser. Each is some
-  // of what explore() draws, kept here to draw again without it: the dots by their kind, the
-  // MRT and LRT lines, and the campus shuttles' routes.
+  // of what explore() draws, kept here to draw again without it: the dots by their kind (or the
+  // layer a dot says it's in), the MRT and LRT lines, and the campus shuttles' routes.
+  //
+  // A layer that's off until turned on (OFF_FIRST: Discontinued shuttles, help desk #22) is kept
+  // the other way round, under a key of its own, LAYERS_ON_KEY: the ones turned on. So it starts
+  // off, and LAYERS_KEY keeps its meaning for the app (flutter/lib/features/map/live_map.dart).
   const LAYERS_KEY = 'sgbus_explorer_layers';
+  const LAYERS_ON_KEY = 'sgbus_explorer_layers_on';
+  const OFF_FIRST = new Set(['discontinued']);
   const DOT_LAYERS = { stop: 'stops', station: 'stations', campus: 'campus' };
   let exploreRails = [];
   let exploreDots = [];
-  function layersOff() {
+  const keptSet = (key) => {
     try {
-      return new Set(JSON.parse(localStorage.getItem(LAYERS_KEY) || '[]'));
+      return new Set(JSON.parse(localStorage.getItem(key) || '[]'));
     } catch {
       return new Set();
     }
+  };
+  function layersOff() {
+    const off = keptSet(LAYERS_KEY);
+    const on = keptSet(LAYERS_ON_KEY);
+    for (const name of OFF_FIRST) {
+      if (on.has(name)) off.delete(name);
+      else off.add(name);
+    }
+    return off;
   }
   function drawRails() {
     if (mode === 'explore') ink.rails(layersOff().has('rails') ? [] : exploreRails);
@@ -1108,24 +1131,30 @@
   function drawDots() {
     if (mode !== 'explore') return;
     const off = layersOff();
-    ink.pois(exploreDots.filter((d) => !off.has(DOT_LAYERS[d.kind])));
+    ink.pois(exploreDots.filter((d) => !off.has(d.layer || DOT_LAYERS[d.kind])));
   }
   function setLayer(name, on) {
-    const off = layersOff();
-    if (on) off.delete(name);
-    else off.add(name);
+    // Off first: kept when it's on. Otherwise: kept when it's off.
+    const first = OFF_FIRST.has(name);
+    const key = first ? LAYERS_ON_KEY : LAYERS_KEY;
+    const kept = keptSet(key);
+    if (on === first) kept.add(name);
+    else kept.delete(name);
     try {
-      localStorage.setItem(LAYERS_KEY, JSON.stringify([...off]));
+      localStorage.setItem(key, JSON.stringify([...kept]));
     } catch {}
     syncLayers();
     if (mode !== 'explore') return;
     drawRails();
     drawDots();
-    if (off.has('shuttles')) clearShuttles();
-    else drawShuttles();
+    // Both shuttle layers, each drawn or not (drawShuttles), the credit with them.
+    drawShuttles();
   }
-  // The modal's switches as the layers are.
+  // The modal's switches as the layers are. Discontinued shuttles only once a route Explorer
+  // would draw has ended, so till then Layers is as it always was.
   function syncLayers() {
+    const gone = document.querySelector('#layersPick [data-layer="discontinued"]');
+    if (gone) gone.hidden = !(window.Campus?.lines(keepShuttle) || []).some((l) => l.ended);
     const off = layersOff();
     document.querySelectorAll('#layersPick [data-layer]').forEach((btn) => {
       const on = !off.has(btn.dataset.layer);

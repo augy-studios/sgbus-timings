@@ -114,6 +114,12 @@ both too.
 <figcaption>SGH's Orange, Blue and Car Park H shuttles at Outram.</figcaption>
 </figure>
 
+A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026. Once a
+shuttle has ended, its card still lists it but says **Discontinued** in place of
+its times, with no live times, and its routes and its own stops move to
+**Discontinued shuttles** in [Layers](#layers). A bus stop that public buses
+use stays a normal bus stop.
+
 ## Directions
 
 Every card ends with **Directions**. It closes the map and opens
@@ -149,6 +155,9 @@ on:
 - **MRT and LRT lines**
 - **Shuttle bus routes**, the [shuttle buses](#shuttle-buses)' routes
 - **Shuttle bus stops**, the shuttles' stops that aren't LTA bus stops
+- **Discontinued shuttles**, the routes and stops of shuttles that have ended,
+  with the routes drawn dashed. It only shows here once a shuttle has ended,
+  and it's off until you turn it on.
 
 The map changes as you tap. Your choice is kept on this device for next time.
 
