@@ -2,6 +2,8 @@
 // that need the phone's own parts (NFC, the camera, reminders), with Native.fake standing in for
 // them, so each shows what a phone with them shows.
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,8 +14,11 @@ import 'package:sgbus_timings/api/api.dart';
 import 'package:sgbus_timings/api/net.dart';
 import 'package:sgbus_timings/app/nav.dart';
 import 'package:sgbus_timings/app/shell.dart';
+import 'package:sgbus_timings/data/campus.dart';
 import 'package:sgbus_timings/data/doors.dart';
 import 'package:sgbus_timings/data/location.dart';
+import 'package:sgbus_timings/data/nav_core.dart';
+import 'package:sgbus_timings/data/nav_offline.dart';
 import 'package:sgbus_timings/data/network.dart';
 import 'package:sgbus_timings/data/stops.dart';
 import 'package:sgbus_timings/data/store.dart';
@@ -41,6 +46,7 @@ import 'package:sgbus_timings/features/terminal/terminal.dart';
 import 'package:sgbus_timings/features/timings/board_screen.dart';
 import 'package:sgbus_timings/features/timings/flag_screen.dart';
 import 'package:sgbus_timings/features/timings/make_it.dart';
+import 'package:sgbus_timings/features/timings/campus_ui.dart';
 import 'package:sgbus_timings/features/timings/stop_screen.dart';
 import 'package:sgbus_timings/features/timings/timings_page.dart';
 import 'package:sgbus_timings/features/tour/tour.dart';
@@ -329,6 +335,84 @@ void main() {
       await t.testTextInput.receiveAction(TextInputAction.done);
       await settle(t);
     });
+    When.now = () => stillAt;
+  });
+
+  // Help desk #22: IKEA's shuttles end after Thursday 31 December 2026. On its last day at 14:00,
+  // the way from NEX to IKEA Tampines on it (planned by the phone's own router, from the same
+  // files the site's are), the trip on it and the stop's times; on Friday 1 January at 14:00, the
+  // stop discontinued and Explorer's Discontinued shuttles. As the site's still group,
+  // shuttle-ends (docs-site/screenshots/shots.cjs), on the same days and at the same time.
+  testWidgets('guide: shuttle ends', timeout: _t, (t) async {
+    await _ready(t, const {'sgbus_explorer_layers_on': '["discontinued"]'});
+    DateTime sg(String at) => DateTime.parse('$at:00+08:00');
+    Object? gz(String name) => jsonDecode(utf8.decode(gzip.decode(File('test/fixtures/$name.json.gz').readAsBytesSync())));
+    Object? site(String name) => jsonDecode(File('../main-site/data/$name.json').readAsStringSync());
+    final lastDay = sg('2026-12-31T14:00'), dayAfter = sg('2027-01-01T14:00');
+    When.now = () => lastDay;
+    await t.runAsync(Campus.load);
+
+    // Navigate's list, by Least walking, and the way on IKEA's shuttle opened.
+    const nex = NavEnd('NEX', 1.350754, 103.872264), ikea = NavEnd('IKEA Tampines', 1.374015, 103.932576);
+    final graph = buildGraph(
+      site('rail') as Map,
+      [for (final r in (gz('bus-stops') as List).cast<Map>()) Stop('${r['c']}', '${r['n']}', '${r['r'] ?? ''}', (r['la'] as num?)?.toDouble(), (r['lo'] as num?)?.toDouble())],
+      NavOffline.servicesOf((gz('bus-routes') as Map).cast<String, dynamic>()),
+      campus: {for (final f in ['nus', 'ntu', 'config', 'shuttles']) f: site('campus/$f')},
+    );
+    final ways = [
+      for (final o in planOnPhone(graph, NavPoint(nex.lat, nex.lng), NavPoint(ikea.lat, ikea.lng), when: NavAt('now', lastDay.millisecondsSinceEpoch)))
+        {...o}..remove('offline'),
+    ];
+    final fakeApi = Api.fake!;
+    Api.fake = (path) => path.startsWith('nav') ? Future.value({'options': ways, 'onemap': false, 'alerts': {'lines': []}, 'traffic': null, 'others': {}}) : fakeApi(path);
+    NavWays.sort = 'walk';
+    final n = NavState.I
+      ..from = nex
+      ..to = ikea
+      ..via = null
+      ..when = null
+      ..option = null;
+    await t.runAsync(n.run);
+    await t.runAsync(n.loadListLive);
+    // Scrolled to the ways, the first of them, by Least walking, IKEA's.
+    await shot(t, 'nav-shuttle-ends-list', () => onPage('nav', const NavPage()), then: (t) async {
+      await t.drag(find.ancestor(of: find.textContaining('ways to get there'), matching: find.byType(Scrollable)).first, const Offset(0, -470));
+      await settle(t);
+    });
+    final onIkea = n.options.firstWhere((o) => (o['legs'] as List).cast<Map>().any((l) => (l['campus'] as Map?)?['uni'] == 'ikea'));
+    await t.runAsync(() => n.open(onIkea));
+    await shot(t, 'nav-shuttle-ends', () => onPage('nav', const NavPage()));
+
+    // The trip on it, from the trip bar.
+    final trip = tripFromNav(onIkea, nex, ikea)!;
+    await t.runAsync(() => Trip.I.start(title: trip.title, legs: trip.legs, from: nex.toJson(), to: ikea.toJson(), origin: navOrigin(onIkea)));
+    await shot(t, 'trip-shuttle-ends', () => const TripScreen());
+    await t.runAsync(() => Trip.I.stop());
+    n.option = null;
+    NavWays.sort = 'best';
+
+    // IKEA Tampines's times: until when, then Discontinued.
+    await shot(t, 'timings-shuttle-ends', () => const CampusStopScreen(stopKey: 'ikea-tampines'));
+    When.now = () => dayAfter;
+    await shot(t, 'timings-shuttle-discontinued', () => const CampusStopScreen(stopKey: 'ikea-tampines'));
+
+    // Explorer just south of IKEA Tampines: Layers with Discontinued shuttles, then the map with it
+    // on, IKEA's stop near the top, IKEA T down towards Tampines and IKEA S off west.
+    Locate.fake = const Fix(1.3690, 103.9335, accuracy: 8);
+    Future<void> drawn(WidgetTester t) async {
+      for (var i = 0; i < 12; i++) {
+        await t.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 50)));
+        await t.pump(const Duration(milliseconds: 100));
+      }
+    }
+    await shot(t, 'explorer-layers-discontinued', () => const LiveMap(MapMode.explore), withNav: true, then: (t) async {
+      await drawn(t);
+      await t.tap(find.byTooltip('Layers'));
+      await settle(t);
+    });
+    await shot(t, 'explorer-shuttle-discontinued', () => const LiveMap(MapMode.explore), then: drawn);
+    Locate.fake = const Fix(1.324736, 103.929256, accuracy: 8);
     When.now = () => stillAt;
   });
 }

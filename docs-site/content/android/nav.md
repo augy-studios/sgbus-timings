@@ -146,6 +146,21 @@ at the top of its trip's timeline when you tap the trip bar. From 1 Jan 2027 a w
 follows the date of the trip you're planning, not today's: a trip planned for 2 January leaves the IKEA shuttle out
 even in December, and one for 31 December at 7pm still uses it.
 
+<figure>
+<img src="/screenshots/android/nav-shuttle-ends-list.png" alt="Navigate's ways from NEX to IKEA Tampines on Thursday 31 December 2026, by Least walking. First, tagged Least walking: IKEA S in IKEA's blue, about 61 min, no change, 75 m walk, and under it: IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA. Then the NE Line and bus 27, about 49 min, and the other ways." width="412" height="892" loading="lazy">
+<figcaption>On the shuttles' last day, a way on IKEA's says it's ending, and which buses to take instead.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/nav-shuttle-ends.png" alt="The way on IKEA's shuttle, opened: All ways, Refresh and Start trip, then in a green box: IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA. Under it, about 61 min, no change, 75 m walk: a walk of about 75 m to Serangoon Stn Exit E, then IKEA S, 1 stop, about 28 min, to IKEA Tampines, boarding around 14:32 after the timetable's average wait, IKEA Tampines shuttle, Serangoon MRT, Free." width="412" height="892" loading="lazy">
+<figcaption>The way's page says it first, above the rest.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/trip-shuttle-ends.png" alt="The trip to IKEA Tampines, from the trip bar: at the top, in a green box: IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA. Then walk to Serangoon Stn Exit E, about 1 min, part 1 of 2, about 61 min left, Change my way and Back to Navigate, and the timeline: the walk from NEX, and bus IKEA S from Serangoon Stn Exit E to IKEA Tampines." width="412" height="892" loading="lazy">
+<figcaption>A trip on it says the same at the top of its timeline.</figcaption>
+</figure>
+
 ## With no connection
 
 With no connection, **Bus and train** plans on your phone, from the bus routes, trains and

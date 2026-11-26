@@ -162,6 +162,16 @@ its route: what its timetable says now, and its stops in order. On
 A shuttle that's ending says when under its times, such as **Ends on 31 Dec 2026** for IKEA's. Once it has ended,
 it stays in the list but says **Discontinued** in place of its times, with no live times.
 
+<figure>
+<img src="/screenshots/android/timings-shuttle-ends.png" alt="IKEA Tampines on Thursday 31 December 2026: a stop only shuttle buses use, then Shuttle buses, scheduled times, not live: IKEA T at 14:45, 15:45 and 16:30 and IKEA S at 14:40, 15:40 and 16:45, both leaving here, each with Ends on 31 Dec 2026 under it in orange." width="412" height="892" loading="lazy">
+<figcaption>IKEA Tampines on the shuttles' last day: each route says when it ends.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/timings-shuttle-discontinued.png" alt="IKEA Tampines on Friday 1 January 2027: Shuttle buses, scheduled times, not live: IKEA T and IKEA S, each greyed, saying Discontinued, IKEA." width="412" height="892" loading="lazy">
+<figcaption>The day after: Discontinued, with no times and nothing live.</figcaption>
+</figure>
+
 ## Coming from a list
 
 A stop opened from a [bus route](bus-routes.md), a [journey](route-planner.md),

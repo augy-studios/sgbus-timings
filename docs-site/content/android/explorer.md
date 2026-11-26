@@ -68,6 +68,11 @@ A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026, and until the
 its times, with no live times, and its routes and own stops move to
 **Discontinued shuttles** in [Layers](#layers). A bus stop that public buses use stays a normal bus stop.
 
+<figure>
+<img src="/screenshots/android/explorer-shuttle-discontinued.png" alt="Explorer just south of IKEA Tampines on Friday 1 January 2027 with Discontinued shuttles on: IKEA's two routes as faint dashed blue lines along their roads, one running south towards Tampines, and IKEA Tampines' own stop a faint dot edged in blue, among bus stops ringed in green." width="412" height="892" loading="lazy">
+<figcaption>Discontinued shuttles on, the day after IKEA's ended: its routes dashed.</figcaption>
+</figure>
+
 ## Directions
 
 Every card ends with **Directions**. It closes the map and opens [Navigate](nav.md) on **Bus and train**, from
@@ -96,6 +101,11 @@ kept for next time.
 
 **Discontinued shuttles** holds the routes and stops of shuttles that have ended, with the routes drawn dashed. Its
 switch only shows once a shuttle has ended, and it's off until you turn it on.
+
+<figure>
+<img src="/screenshots/android/explorer-layers-discontinued.png" alt="Explorer on Friday 1 January 2027 with the Layers sheet slid up: a switch each for Bus stops, MRT and LRT stations, MRT and LRT lines, Shuttle bus routes, Shuttle bus stops and Discontinued shuttles, all on." width="412" height="892" loading="lazy">
+<figcaption>Layers once a shuttle has ended, Discontinued shuttles turned on.</figcaption>
+</figure>
 
 ## Save the map for offline
 
