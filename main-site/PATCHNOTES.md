@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 25 November 2026**
+**Latest update: 27 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -8,6 +8,27 @@
 Newest first. Each update covers the web app and the Telegram bot.
 
 ---
+
+## 27 November 2026: IKEA's shuttle ends on 31 Dec 2026 (2.8.1)
+
+### Website, Android and desktop apps
+
+- **IKEA's shuttle ends on 31 Dec 2026** - Until then, a way or a trip that rides IKEA's Tampines shuttle says **IKEA's shuttle bus service ends on 31 Dec 2026.** at the top of the way, under it in the list of ways and at the top of the trip's timeline.
+- **Discontinued** - From 1 Jan 2027, an ended shuttle stays in Bus timings and on the map's cards, but says **Discontinued** in place of its times, with no live times.
+- **Never in Navigate once it's ended** - Judged by the date of the trip you're planning, not today's: a trip for 2 January leaves it out even in December, and one for 31 December at 7pm still uses it.
+- **Discontinued shuttles in Explorer** - A layer in Layers for ended shuttles' routes, drawn dashed, and their own stops. It only shows once a shuttle has ended, and it's off until you turn it on.
+
+### Telegram bot
+
+- **/nav says when a shuttle ends** - A way on IKEA's shuttle says **⚠️ IKEA's shuttle bus service ends on 31 Dec 2026.** under it and on its own page. After that date the bot stops offering ways on it.
+
+### Linux command line 2.8.1
+
+- **`sgbus nav` says when a shuttle ends** - The same notice, on a way that rides IKEA's shuttle.
+
+### Wear OS 2.8.1
+
+- No changes of its own: numbered 2.8.1 to stay in step with the phone.
 
 ## 25 November 2026: The last call, and every bus's route on the map (2.8.0)
 
