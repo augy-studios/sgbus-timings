@@ -50,10 +50,21 @@ class ShuttleEndsNotice extends StatelessWidget {
   final List<ShuttleEnding> ending;
   final EdgeInsets padding;
 
-  static String text(ShuttleEnding e) => [
-        tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", {'name': e.name, 'date': When.dateYear(e.ends)}),
-        if (e.instead case final i?) tr('nav.shuttle.instead', 'Buses {buses} from {from} stop near {name}.', {'buses': listText(i.buses), 'from': i.from, 'name': e.name}),
-      ].join(' ');
+  static String text(ShuttleEnding e) {
+    final ends = tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", {'name': e.name, 'date': When.dateYear(e.ends)});
+    final i = e.instead;
+    if (i == null) return ends;
+    final instead = tr('nav.shuttle.instead', 'Buses {buses} from {from} stop near {name}.', {'buses': busList(i.buses), 'from': i.from, 'name': e.name});
+    // Chinese's full stop needs no space after it, as the site's (js/campus.js, endsNotice).
+    return RegExp(r'[。！？]$').hasMatch(ends) ? '$ends$instead' : '$ends $instead';
+  }
+
+  /// Buses as a list in the language on show, as the site's Intl.ListFormat has it: "296, 460 and
+  /// 68", and in Chinese "296、460和68".
+  static String busList(List<String> buses) {
+    if (!I18n.I.lang.startsWith('zh') || buses.length < 2) return listText(buses);
+    return '${buses.sublist(0, buses.length - 1).join('、')}${tr('trip.and', ' and ').trim()}${buses.last}';
+  }
 
   @override
   Widget build(BuildContext context) {

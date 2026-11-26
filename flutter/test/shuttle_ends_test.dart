@@ -175,15 +175,28 @@ void main() {
       expect(When.dateYear('2026-12-31'), '31 Dec 2026');
       expect(When.dateYear('2027-01-05'), '5 Jan 2027');
       expect(When.dateYear('not a date'), 'not a date');
+      // As the site's toLocaleDateString and Intl.ListFormat say them.
+      const site = {
+        'zh-SG': ('2026年12月31日', '296、460和68'),
+        'ms': ('31 Dis 2026', '296, 460 dan 68'),
+        'ta': ('31 டிச., 2026', '296, 460 மற்றும் 68'),
+      };
       try {
-        for (final lang in ['zh-SG', 'ms', 'ta']) {
+        for (final MapEntry(key: lang, value: (date, list)) in site.entries) {
           await I18n.I.use(lang, remember: false);
-          expect(When.dateYear('2026-12-31'), contains('2026'), reason: lang);
-          expect(When.dateYear('2026-12-31'), contains('31'), reason: lang);
+          expect(When.dateYear('2026-12-31'), date, reason: lang);
+          expect(ShuttleEndsNotice.busList(const ['296', '460', '68']), list, reason: lang);
         }
+        // Chinese: no space after its full stop.
+        await I18n.I.use('zh-SG', remember: false);
+        final zh = ShuttleEndsNotice.text((name: 'IKEA', ends: '2026-12-31', instead: (buses: const ['296', '460', '68'], from: 'Tampines Interchange')));
+        expect(zh, contains('。从'));
+        expect(zh, contains('296、460和68'));
       } finally {
         await I18n.I.use('en', remember: false);
       }
+      expect(ShuttleEndsNotice.busList(const ['296', '460', '68']), '296, 460 and 68');
+      expect(ShuttleEndsNotice.busList(const ['296']), '296');
     });
 
     test('the notice, until the end and not after', () {
