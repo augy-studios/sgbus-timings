@@ -19,6 +19,7 @@ import 'package:sgbus_timings/data/store.dart';
 import 'package:sgbus_timings/data/when.dart';
 import 'package:sgbus_timings/features/map/live_map.dart';
 import 'package:sgbus_timings/features/nav/nav_page.dart';
+import 'package:sgbus_timings/features/terminal/core.dart';
 import 'package:sgbus_timings/features/timings/campus_ui.dart';
 import 'package:sgbus_timings/features/trips/trip.dart';
 import 'package:sgbus_timings/i18n/i18n.dart';
@@ -119,6 +120,25 @@ void main() {
       expect(Campus.endedBy('2026-12-31', DateTime.utc(2026, 12, 31, 7).millisecondsSinceEpoch), isFalse);
       expect(Campus.endedBy(null, _sg(_firstMorning)), isFalse);
       expect(Campus.endedBy('soon', _sg(_firstMorning)), isFalse);
+    });
+
+    test("past the end its status is 'ended', said as Discontinued, and no bus is next after its last day", () {
+      final r = Campus.route('ikea:IKEA T')!;
+      final st = Campus.status(r, 0, _sg(_firstMorning));
+      expect(st.state, 'ended');
+      expect(st.ends, '2026-12-31');
+      expect(st.season, isNull);
+      final d = Campus.describe(st);
+      expect((d.main, d.sub), ('Discontinued', ''));
+      // After the last bus on its last day: no next one.
+      final last = Campus.status(r, 0, _sg('2026-12-31T22:00'));
+      expect(last.state, 'done');
+      expect(last.next, isNull);
+      expect(Campus.describe(last).sub, 'No buses in the next week');
+      // A week before, the next day's first bus, as ever.
+      expect(Campus.status(r, 0, _sg('2026-12-24T22:00')).next, isNotNull);
+      // Every other route as it was.
+      expect(Campus.status(Campus.route('nus:A1')!, 0, _sg(_firstMorning)).state, isNot('ended'));
     });
 
     test('a bad end is a problem, and ignored', () {
@@ -347,6 +367,36 @@ void main() {
       expect(find.text(_notice), findsNothing);
       await t.runAsync(() => Trip.I.stop());
       await settle(t);
+    });
+  });
+
+  group('the command line', () {
+    final printed = <String>[];
+
+    Future<String> nav(String at) async {
+      await stillData();
+      _clock(at);
+      final real = Api.fake!;
+      Api.fake = (path) async {
+        if (!path.startsWith('nav')) return real(path);
+        return {...(await real(path) as Map), 'options': [_ikeaWay()]};
+      };
+      printed.clear();
+      final core = SgbusCore(out: printed.add, clear: printed.clear, version: '2.8.0');
+      await core.run(SgbusCore.wordsOf('nav 84009 17009'));
+      return SgbusCore.visible(printed.join('\n'));
+    }
+
+    test('sgbus nav says it under the way and first in its steps, till the end', () async {
+      final said = await nav(_lastEvening);
+      expect(_notice.allMatches(said), hasLength(2), reason: said);
+      final lines = said.split('\n');
+      expect(lines[lines.indexWhere((l) => l.contains('Way 1:')) + 1].trim(), _notice);
+      expect(SgbusCore.endingLines(_ikeaWay(ends: false)), isEmpty, reason: 'only by the leg it gives');
+    });
+
+    test('and not once it has ended', () async {
+      expect(await nav(_firstMorning), isNot(contains('shuttle bus service ends')));
     });
   });
 

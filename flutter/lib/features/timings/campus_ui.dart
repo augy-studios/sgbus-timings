@@ -120,16 +120,19 @@ class _CampusListState extends State<CampusList> {
     final rows = <Widget>[];
     for (final x in stop.routes) {
       final r = x.route;
-      // Ended: listed still, as Discontinued in place of its times.
-      final gone = Campus.ended(r, ms);
       final st = Campus.status(r, x.i, ms);
-      if (st.season != null && !gone) seasons.add('${r.uni}:${st.season}');
-      final d = gone ? (main: tr('campus.discontinued', 'Discontinued'), sub: '') : Campus.describe(st, Campus.nameIn(r));
+      if (st.season != null) seasons.add('${r.uni}:${st.season}');
+      final d = Campus.describe(st, Campus.nameIn(r));
+      // Ended: listed still, as Discontinued in place of its times, with nothing on what it cost
+      // and no live times.
+      final gone = st.state == 'ended';
       final off = gone || st.state == 'done' || st.state == 'notToday';
       final terms = [
-        if (r.fare == 'paid') r.fareText.isNotEmpty ? r.fareText : tr('nav.shuttle.paid', 'Paid'),
-        if (r.access == 'guests') tr('nav.shuttle.guests', 'Hotel guests only'),
-        if (r.access == 'residents') tr('nav.shuttle.residents', 'Residents only'),
+        if (!gone) ...[
+          if (r.fare == 'paid') r.fareText.isNotEmpty ? r.fareText : tr('nav.shuttle.paid', 'Paid'),
+          if (r.access == 'guests') tr('nav.shuttle.guests', 'Hotel guests only'),
+          if (r.access == 'residents') tr('nav.shuttle.residents', 'Residents only'),
+        ],
       ];
       final live = gone ? null : _live[r.key];
       rows.add(InkWell(
@@ -270,9 +273,8 @@ class CampusRouteScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sg = context.sg;
     final r = Campus.route(routeKey)!;
-    final now = Campus.ended(r)
-        ? (main: tr('campus.discontinued', 'Discontinued'), sub: '')
-        : Campus.describe(Campus.status(r, 0, When.nowMs()), Campus.nameIn(r));
+    // Discontinued, with nothing after it, once it has ended.
+    final now = Campus.describe(Campus.status(r, 0, When.nowMs()), Campus.nameIn(r));
     return Scaffold(
       appBar: AppBar(title: Text(tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': Campus.uniName(r.uni), 'route': r.code}), overflow: TextOverflow.ellipsis)),
       body: ListView(padding: EdgeInsets.fromLTRB(16, 0, 16, 32 + MediaQuery.paddingOf(context).bottom), children: [

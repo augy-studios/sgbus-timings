@@ -16,10 +16,11 @@
 // a holiday itself. NUS's term or vacation is by config.json's dates.
 //
 // A route or a group may say `ends`, the last day it runs ("2026-12-31", Singapore's). From the
-// day after, it has ended: it stays listed, as Discontinued in place of its times and with no live
-// lookups; Navigate never rides it (data/nav_core.dart); and Explorer draws it in its own layer,
-// Discontinued shuttles (features/map/live_map.dart). Until then, a way or a trip that rides it
-// says when it ends (ending). Keep in step with the site's js/campus.js.
+// day after, its status is 'ended': it stays listed, as Discontinued in place of its times and with
+// no live lookups; Navigate never rides it (data/nav_core.dart's meanWait); and Explorer draws it
+// in its own layer, Discontinued shuttles (features/map/live_map.dart). Until then, a way or a
+// trip that rides it says when it ends (ending), and the next bus is never looked for past its
+// last day. Keep in step with the site's js/campus.js.
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart';
@@ -108,8 +109,8 @@ class CampusRoute {
 
 /// What the timetable says at a stop of a route at a moment.
 class CampusStatus {
-  CampusStatus(this.state, {this.season, this.min, this.max, this.last, this.at, this.from, this.here = false, this.end = false, this.times = const [], this.next});
-  final String state; // every, first, gap, departs, done, notToday
+  CampusStatus(this.state, {this.season, this.min, this.max, this.last, this.at, this.from, this.here = false, this.end = false, this.times = const [], this.next, this.ends});
+  final String state; // every, first, gap, departs, done, notToday, ended (past its last day)
   final String? season;
   final num? min;
   final num? max;
@@ -120,6 +121,7 @@ class CampusStatus {
   final bool end;
   final List<int> times;
   final ({int inDays, int dow, int at, String? from})? next;
+  final String? ends; // an ended route's last day
 }
 
 class CampusModel {
@@ -453,9 +455,11 @@ class Campus {
     return list == null || list.isEmpty ? null : list.first;
   }
 
+  /// When it runs next after today, within a week; never after its last day.
   static ({int inDays, int dow, int at, String? from})? _nextRun(CampusRoute route, int i, int ms, Map config) {
     for (var d = 1; d <= 7; d++) {
       final day = sgDay(ms + d * _dayMs);
+      if (route.ends != null && day.ymd.compareTo(route.ends!) > 0) return null;
       final slot = _slotFor(route, day.ymd, day.dow, config).slot;
       final at = slot == null ? null : _firstOf(route, i, slot);
       if (at != null) return (inDays: d, dow: day.dow, at: at, from: slot!.departs != null ? _terminalFor(route, i, slot) : null);
@@ -465,6 +469,7 @@ class Campus {
 
   /// What the timetable says at the `i`th stop of `route` at the moment `ms`.
   static CampusStatus status(CampusRoute route, int i, int ms, [Map? config]) {
+    if (ended(route, ms)) return CampusStatus('ended', ends: route.ends);
     final conf = config ?? model?.config ?? const {};
     final now = sgDay(ms);
     final today = _slotFor(route, now.ymd, now.dow, conf);
@@ -528,6 +533,8 @@ class Campus {
         return (main: times, sub: st.end ? '$sub · ${tr('campus.endsHere', 'ends here')}' : sub);
       case 'done':
         return (main: tr('campus.done', 'No more buses today'), sub: _nextText(st.next, name));
+      case 'ended':
+        return (main: tr('campus.discontinued', 'Discontinued'), sub: '');
       default:
         return (main: tr('campus.notToday', 'Not running today'), sub: _nextText(st.next, name));
     }
@@ -729,10 +736,18 @@ class Campus {
   static bool keep(CampusRoute r) => r.fare != 'paid' || Store.I.get('sgbus_shuttles') == 'paid';
 
   /// Each route as a line through its stops, for Explorer.
-  static List<({String key, String uni, Color color, List<List<double>> points})> lines([bool Function(CampusRoute)? keepIt]) => [
+  /// Each route as a line through its stops, for Explorer: `ended` once it's past its last day at
+  /// [ms], now without it (Discontinued shuttles).
+  static List<({String key, String uni, Color color, bool ended, List<List<double>> points})> lines([bool Function(CampusRoute)? keepIt, int? ms]) => [
         for (final r in model?.routes ?? const <CampusRoute>[])
           if (keepIt == null || keepIt(r))
-            (key: r.key, uni: r.uni, color: r.color, points: [for (final k in r.keys) if (k != null && model!.stops[k] != null) [model!.stops[k]!.lat, model!.stops[k]!.lng]])
+            (
+              key: r.key,
+              uni: r.uni,
+              color: r.color,
+              ended: ended(r, ms),
+              points: [for (final k in r.keys) if (k != null && model!.stops[k] != null) [model!.stops[k]!.lat, model!.stops[k]!.lng]],
+            )
       ].where((l) => l.points.length >= 2).toList();
 
   /// The campus stops LTA hasn't got, for Explorer's dots.
@@ -740,6 +755,11 @@ class Campus {
         for (final s in model?.stops.values ?? const <CampusStop>[])
           if (!s.lta && (keepIt == null || s.routes.any((x) => keepIt(x.route)))) s
       ];
+
+  /// Whether every route kept at a stop is past its last day at [ms], now without it: then it's
+  /// in Discontinued shuttles, not Shuttle bus stops.
+  static bool stopEnded(CampusStop s, [bool Function(CampusRoute)? keepIt, int? ms]) =>
+      s.routes.where((x) => keepIt == null || keepIt(x.route)).every((x) => ended(x.route, ms));
 
   /// The credits for the map: those with a line in view.
   static List<({String uni, String text, String url})> credits(List<List<double>>? view, [List<({String uni, List<List<double>> points})>? list]) =>

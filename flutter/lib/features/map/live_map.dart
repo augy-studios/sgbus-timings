@@ -1765,25 +1765,24 @@ class _LiveMapState extends State<LiveMap> {
     }
     if (!mounted) return;
     final now = When.nowMs();
-    bool live(CampusRoute r) => Campus.keep(r) && !Campus.ended(r, now);
-    bool ended(CampusRoute r) => Campus.keep(r) && Campus.ended(r, now);
-    final list = Campus.lines(Campus.keep);
-    final goneKeys = {for (final r in Campus.model?.routes ?? const <CampusRoute>[]) if (ended(r)) r.key};
+    final list = Campus.lines(Campus.keep, now);
     final roads = <String, List<List<double>>>{};
     void draw() {
-      final drawn = [for (final l in list) (key: l.key, uni: l.uni, color: l.color, points: roads[l.key] ?? Campus.road(l.key, l.points) ?? l.points)];
-      ink.shuttles = drawn.where((l) => !goneKeys.contains(l.key)).toList();
-      ink.gone = drawn.where((l) => goneKeys.contains(l.key)).toList();
+      // Each in its layer: Shuttle bus routes, or Discontinued shuttles once it has ended.
+      List<({String key, String uni, Color color, List<List<double>> points})> drawn(bool ended) => [
+            for (final l in list)
+              if (l.ended == ended) (key: l.key, uni: l.uni, color: l.color, points: roads[l.key] ?? Campus.road(l.key, l.points) ?? l.points),
+          ];
+      ink.shuttles = drawn(false);
+      ink.gone = drawn(true);
       ink.changed();
       if (mounted) setState(() {});
     }
 
-    final liveDots = Campus.dots(live);
     ink.pois = [
       ...ink.pois.where((p) => p.kind != 'campus' && p.kind != 'discontinued'),
-      for (final c in liveDots) MapPoi('campus', c.lat, c.lng, color: Campus.uniColour(c.uni), pick: MapPick.campus(c.key)),
-      for (final c in Campus.dots(ended))
-        if (!liveDots.contains(c)) MapPoi('discontinued', c.lat, c.lng, color: Campus.uniColour(c.uni), pick: MapPick.campus(c.key)),
+      for (final c in Campus.dots(Campus.keep))
+        MapPoi(Campus.stopEnded(c, Campus.keep, now) ? 'discontinued' : 'campus', c.lat, c.lng, color: Campus.uniColour(c.uni), pick: MapPick.campus(c.key)),
     ];
     draw();
     if (LiveMap.preview) return;
