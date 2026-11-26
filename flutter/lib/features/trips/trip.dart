@@ -32,6 +32,7 @@ import '../../api/api.dart';
 import '../../app/nav.dart';
 import '../../app/shell.dart';
 import '../../data/arrivals.dart';
+import '../../data/campus.dart';
 import '../../data/geo.dart';
 import '../../data/journeys.dart';
 import '../../data/location.dart';
@@ -46,6 +47,7 @@ import '../../theme/theme.dart';
 import '../../widgets/common.dart';
 import '../nav/nav_page.dart';
 import '../nav/ways.dart';
+import '../timings/campus_ui.dart' show ShuttleEndsNotice;
 import 'live_updates.dart';
 import 'trip_change.dart';
 import 'trip_progress.dart';
@@ -56,7 +58,7 @@ import 'trip_watch.dart';
 class TripLeg {
   TripLeg({required this.kind, required this.label, required this.to, required this.points, required this.names, required this.minutes,
       this.wait = 0, this.service, this.board, this.alight, this.codes, this.route, this.color, this.lrt = false, this.foot = 'walk', this.afterVia,
-      this.trainFrom, this.trainTo});
+      this.trainFrom, this.trainTo, this.shuttle});
   final String kind; // bus, train, walk
   final String label;
   final String to;
@@ -82,7 +84,15 @@ class TripLeg {
   final String? trainFrom;
   final String? trainTo;
 
+  /// A shuttle ride's service, as its Navigate leg's `campus` has it: { uni, name, ends? }, for
+  /// the trip's notice that it's ending (Campus.ending). Null on any other ride.
+  final Map<String, Object?>? shuttle;
+
   bool get ride => kind != 'walk';
+
+  /// As Navigate's leg, for Campus.ending: its mode, route, the stop it's boarded at and its
+  /// shuttle.
+  Map<String, Object?> get asNavLeg => {'mode': kind, 'route': service ?? route, 'from': {'code': board}, 'campus': shuttle};
 
   /// The ride cut short at its `k`th stop, for getting off there and going on another way.
   TripLeg cutAt(int k) {
@@ -106,6 +116,7 @@ class TripLeg {
       afterVia: afterVia,
       trainFrom: trainFrom,
       trainTo: trainTo,
+      shuttle: shuttle,
     );
   }
 
@@ -116,6 +127,7 @@ class TripLeg {
         'afterVia': ?afterVia,
         'trainFrom': ?trainFrom,
         'trainTo': ?trainTo,
+        'shuttle': ?shuttle,
       };
 
   static TripLeg from(Map j) => TripLeg(
@@ -137,6 +149,7 @@ class TripLeg {
         afterVia: (j['afterVia'] as Map?)?.cast<String, Object?>(),
         trainFrom: j['trainFrom'] as String?,
         trainTo: j['trainTo'] as String?,
+        shuttle: (j['shuttle'] as Map?)?.cast<String, Object?>(),
       );
 }
 
@@ -1018,6 +1031,7 @@ class Trip extends ChangeNotifier {
           color: l.color,
           lrt: l.lrt,
           afterVia: a == 0 ? l.afterVia : null,
+          shuttle: l.shuttle,
         ));
       }
     }
@@ -1592,6 +1606,13 @@ class TripDone {
       afterVia: takeVia(k),
       trainFrom: l['mode'] == 'train' ? ((l['from'] as Map?)?['code'] as String?) : null,
       trainTo: l['mode'] == 'train' ? ((l['to'] as Map?)?['code'] as String?) : null,
+      shuttle: l['campus'] is Map
+          ? {
+              'uni': (l['campus'] as Map)['uni'],
+              'name': (l['campus'] as Map)['name'],
+              'ends': ?((l['campus'] as Map)['ends'] as String?),
+            }
+          : null,
     ));
   }
   if (legs.isEmpty) return null;
@@ -1701,6 +1722,8 @@ class _TripScreenState extends State<TripScreen> {
             }, icon: const Icon(Icons.stop_circle_outlined)),
             ],
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
+              // A shuttle on the trip that's ending (shuttles.json's `ends`), before anything else.
+              ShuttleEndsNotice(Campus.ending([for (final l in t.legs) l.asNavLeg], When.nowMs(), byStop: true), padding: const EdgeInsets.only(bottom: 8)),
               SgCard(child: Text(t.barText(), style: Theme.of(context).textTheme.titleMedium)),
               Padding(
                 padding: const EdgeInsets.only(top: 8),

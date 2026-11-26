@@ -14,6 +14,13 @@
 // A day is Singapore's: a weekday, Saturday, or Sunday and public holidays together. A route
 // with times for ph_eve runs them on the day before a public holiday, unless that's a Sunday or
 // a holiday itself. NUS's term or vacation is by config.json's dates.
+//
+// A route or a group may say `ends`, the last day it runs ("2026-12-31", Singapore's). From the
+// day after, its status is 'ended': it stays listed, as Discontinued in place of its times and with
+// no live lookups; Navigate never rides it (data/nav_core.dart's meanWait); and Explorer draws it
+// in its own layer, Discontinued shuttles (features/map/live_map.dart). Until then, a way or a
+// trip that rides it says when it ends (ending), and the next bus is never looked for past its
+// last day. Keep in step with the site's js/campus.js.
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart';
@@ -69,6 +76,7 @@ class CampusRoute {
     this.place = const [],
     this.kmh,
     this.navigate = true,
+    this.ends,
   });
   final String key; // "nus:A1"
   final String uni;
@@ -90,6 +98,10 @@ class CampusRoute {
   /// False: not in Navigate, only Bus timings (shuttles.json's `navigate`, the site's).
   final bool navigate;
 
+  /// The last day it runs, "2026-12-31" by Singapore's calendar, or null (shuttles.json's `ends`,
+  /// the route's or its group's).
+  final String? ends;
+
   bool get loop => ids.first == ids.last;
   bool get seasonal => timings.containsKey('term') || timings.containsKey('vacation');
   Color get color => Campus.colorOf(colour);
@@ -97,8 +109,8 @@ class CampusRoute {
 
 /// What the timetable says at a stop of a route at a moment.
 class CampusStatus {
-  CampusStatus(this.state, {this.season, this.min, this.max, this.last, this.at, this.from, this.here = false, this.end = false, this.times = const [], this.next});
-  final String state; // every, first, gap, departs, done, notToday
+  CampusStatus(this.state, {this.season, this.min, this.max, this.last, this.at, this.from, this.here = false, this.end = false, this.times = const [], this.next, this.ends});
+  final String state; // every, first, gap, departs, done, notToday, ended (past its last day)
   final String? season;
   final num? min;
   final num? max;
@@ -109,6 +121,7 @@ class CampusStatus {
   final bool end;
   final List<int> times;
   final ({int inDays, int dow, int at, String? from})? next;
+  final String? ends; // an ended route's last day
 }
 
 class CampusModel {
@@ -125,6 +138,7 @@ class Campus {
 
   static const mergeM = 10.0;
   static const _dayMs = 86400000;
+  static final _ymdRe = RegExp(r'^\d{4}-\d{2}-\d{2}$');
   static const _seasons = ['term', 'vacation'];
   static const _dayKeys = {
     'weekday': 'weekday', 'weekdays': 'weekday', 'mon_fri': 'weekday', 'sat': 'sat', 'saturday': 'sat', 'sun_ph': 'sun_ph',
@@ -365,6 +379,13 @@ class Campus {
             return n == null || n == 0 ? null : n;
           }(),
           navigate: (r['navigate'] ?? conf['navigate']) != false,
+          ends: () {
+            final e = r['ends'] ?? conf['ends'];
+            if (e == null) return null;
+            if (e is String && _ymdRe.hasMatch(e)) return e;
+            problems.add('$where: ends "$e" isn\'t a date (YYYY-MM-DD)');
+            return null;
+          }(),
         );
         routes.add(route);
         for (var i = 0; i < keys.length; i++) {
@@ -434,9 +455,11 @@ class Campus {
     return list == null || list.isEmpty ? null : list.first;
   }
 
+  /// When it runs next after today, within a week; never after its last day.
   static ({int inDays, int dow, int at, String? from})? _nextRun(CampusRoute route, int i, int ms, Map config) {
     for (var d = 1; d <= 7; d++) {
       final day = sgDay(ms + d * _dayMs);
+      if (route.ends != null && day.ymd.compareTo(route.ends!) > 0) return null;
       final slot = _slotFor(route, day.ymd, day.dow, config).slot;
       final at = slot == null ? null : _firstOf(route, i, slot);
       if (at != null) return (inDays: d, dow: day.dow, at: at, from: slot!.departs != null ? _terminalFor(route, i, slot) : null);
@@ -446,6 +469,7 @@ class Campus {
 
   /// What the timetable says at the `i`th stop of `route` at the moment `ms`.
   static CampusStatus status(CampusRoute route, int i, int ms, [Map? config]) {
+    if (ended(route, ms)) return CampusStatus('ended', ends: route.ends);
     final conf = config ?? model?.config ?? const {};
     final now = sgDay(ms);
     final today = _slotFor(route, now.ymd, now.dow, conf);
@@ -509,10 +533,63 @@ class Campus {
         return (main: times, sub: st.end ? '$sub · ${tr('campus.endsHere', 'ends here')}' : sub);
       case 'done':
         return (main: tr('campus.done', 'No more buses today'), sub: _nextText(st.next, name));
+      case 'ended':
+        return (main: tr('campus.discontinued', 'Discontinued'), sub: '');
       default:
         return (main: tr('campus.notToday', 'Not running today'), sub: _nextText(st.next, name));
     }
   }
+
+  // ---------- a route's end ----------
+
+  /// Whether a service whose last day is [ends] ("2026-12-31") has ended by the moment [ms]:
+  /// Singapore's date then is after it. No end, or one that isn't a date: never.
+  static bool endedBy(Object? ends, int ms) => ends is String && _ymdRe.hasMatch(ends) && sgDay(ms).ymd.compareTo(ends) > 0;
+
+  /// Whether [route] has ended by the moment [ms], now without it.
+  static bool ended(CampusRoute route, [int? ms]) => endedBy(route.ends, ms ?? When.nowMs());
+
+  /// The route a shuttle ride is on, by its university or group and its code ("ikea", "IKEA T").
+  static CampusRoute? routeBy(String uni, String code) => model?.routes.where((r) => r.uni == uni && r.code == code).firstOrNull;
+
+  /// The shuttle route of code [code] that stops at the stop of key [stop], or null.
+  static CampusRoute? rideAt(String code, Object? stop) =>
+      stop is String ? model?.stops[stop]?.routes.where((x) => x.route.code == code).firstOrNull?.route : null;
+
+  /// The shuttle services the rides of a way or a trip ([legs], as /api/nav gives them) are on that
+  /// end but haven't by the moment [ms], each once, as (name, ends): its group's name ("IKEA") and
+  /// its last day. A ride's `campus` says them ({uni, name, ends}, from /api/nav and
+  /// data/nav_core.dart); one without `ends`, kept from before there was one, goes by its route in
+  /// the files. With [byStop], a bus ride with no `campus` is looked for among the shuttles at the
+  /// stop it's boarded at, as a trip from before it kept its shuttle has none.
+  static List<({String name, String ends})> ending(Iterable<Map> legs, int ms, {bool byStop = false}) {
+    final out = <({String name, String ends})>[];
+    for (final l in legs) {
+      if (l['mode'] == 'walk') continue;
+      final c = l['campus'];
+      final code = '${l['route'] ?? ''}';
+      String? ends, name;
+      if (c is Map) {
+        final uni = '${c['uni'] ?? ''}';
+        ends = c['ends'] is String ? c['ends'] as String : routeBy(uni, code)?.ends;
+        name = '${c['name'] ?? ''}'.isNotEmpty ? '${c['name']}' : uniName(uni);
+      } else if (byStop && l['mode'] == 'bus') {
+        final r = rideAt(code, (l['from'] as Map?)?['code']);
+        ends = r?.ends;
+        name = r == null ? null : uniName(r.uni);
+      }
+      if (ends == null || name == null || !_ymdRe.hasMatch(ends) || endedBy(ends, ms)) continue;
+      if (!out.any((e) => e.name == name && e.ends == ends)) out.add((name: name, ends: ends));
+    }
+    return out;
+  }
+
+  /// Whether a way ([legs], as /api/nav gives them) rides a shuttle that has ended by [ms].
+  static bool ridesEnded(Iterable<Map> legs, int ms) => legs.any((l) {
+        final c = l['campus'];
+        if (c is! Map) return false;
+        return endedBy(c['ends'] is String ? c['ends'] : routeBy('${c['uni'] ?? ''}', '${l['route'] ?? ''}')?.ends, ms);
+      });
 
   // ---------- the credits ----------
 
@@ -659,10 +736,18 @@ class Campus {
   static bool keep(CampusRoute r) => r.fare != 'paid' || Store.I.get('sgbus_shuttles') == 'paid';
 
   /// Each route as a line through its stops, for Explorer.
-  static List<({String key, String uni, Color color, List<List<double>> points})> lines([bool Function(CampusRoute)? keepIt]) => [
+  /// Each route as a line through its stops, for Explorer: `ended` once it's past its last day at
+  /// [ms], now without it (Discontinued shuttles).
+  static List<({String key, String uni, Color color, bool ended, List<List<double>> points})> lines([bool Function(CampusRoute)? keepIt, int? ms]) => [
         for (final r in model?.routes ?? const <CampusRoute>[])
           if (keepIt == null || keepIt(r))
-            (key: r.key, uni: r.uni, color: r.color, points: [for (final k in r.keys) if (k != null && model!.stops[k] != null) [model!.stops[k]!.lat, model!.stops[k]!.lng]])
+            (
+              key: r.key,
+              uni: r.uni,
+              color: r.color,
+              ended: ended(r, ms),
+              points: [for (final k in r.keys) if (k != null && model!.stops[k] != null) [model!.stops[k]!.lat, model!.stops[k]!.lng]],
+            )
       ].where((l) => l.points.length >= 2).toList();
 
   /// The campus stops LTA hasn't got, for Explorer's dots.
@@ -670,6 +755,11 @@ class Campus {
         for (final s in model?.stops.values ?? const <CampusStop>[])
           if (!s.lta && (keepIt == null || s.routes.any((x) => keepIt(x.route)))) s
       ];
+
+  /// Whether every route kept at a stop is past its last day at [ms], now without it: then it's
+  /// in Discontinued shuttles, not Shuttle bus stops.
+  static bool stopEnded(CampusStop s, [bool Function(CampusRoute)? keepIt, int? ms]) =>
+      s.routes.where((x) => keepIt == null || keepIt(x.route)).every((x) => ended(x.route, ms));
 
   /// The credits for the map: those with a line in view.
   static List<({String uni, String text, String url})> credits(List<List<double>>? view, [List<({String uni, List<List<double>> points})>? list]) =>
@@ -694,11 +784,9 @@ class Campus {
   static CampusRoute? route(String key) => model?.routes.where((r) => r.key == key).firstOrNull;
 
   /// The next bus seen live at a stop, in minutes (0 arriving), or null: none seen, or none
-  /// coming. Only for a route the operator shares.
+  /// coming. Only for a route the operator shares, and not once it has ended.
   static Future<int?> live(CampusRoute route, String key) async {
-    final stops = route.live?['stops'];
-    final stop = model?.stops[key];
-    if (stops is! Map || (stops[stop?.id] == null && stops[key] == null)) return null;
+    if (!canLive(route, key)) return null;
     try {
       final got = await Api.get('shuttle-live', query: {'route': route.key, 'stop': key});
       return got is Map && got['eta'] is num ? (got['eta'] as num).round() : null;
@@ -709,7 +797,7 @@ class Campus {
 
   static bool canLive(CampusRoute route, String key) {
     final stops = route.live?['stops'];
-    return stops is Map && (stops[model?.stops[key]?.id] != null || stops[key] != null);
+    return stops is Map && (stops[model?.stops[key]?.id] != null || stops[key] != null) && !ended(route);
   }
 }
 

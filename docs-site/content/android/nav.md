@@ -139,6 +139,12 @@ colour, with whose it is and what it costs. **Free only**, the default for **Shu
 [Settings](settings.md#navigate), uses only the free ones. A hotel's or a condo's shuttle is only
 used on a way that starts or ends there.
 
+A shuttle that's ending says so. IKEA's shuttle bus service ends on 31 Dec 2026, and until then a way that rides it
+says **IKEA's shuttle bus service ends on 31 Dec 2026.** at the top of its page, under it in the list of ways, and
+at the top of its trip's timeline when you tap the trip bar. From 1 Jan 2027 a way never uses it. The cut-off
+follows the date of the trip you're planning, not today's: a trip planned for 2 January leaves the IKEA shuttle out
+even in December, and one for 31 December at 7pm still uses it.
+
 ## With no connection
 
 With no connection, **Bus and train** plans on your phone, from the bus routes, trains and

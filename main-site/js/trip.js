@@ -3101,7 +3101,11 @@
     const mode = canChange && choosingChange
       ? `<p class="tlChangeMode"><span>${esc(I18n.t("trip.tapChangeHere", "Tap Change here by the stop to get off at."))}</span><button type="button" class="iconBtn" data-tl-change-mode="off">${esc(I18n.t("common.cancel", "Cancel"))}</button></p>`
       : change || back ? `<p class="tlChangeMode">${change}${back}</p>` : "";
-    box.innerHTML = mode + trip.legs
+    // A shuttle bus service on the trip that's ending, at the top (help desk #22): "IKEA's
+    // shuttle bus service ends on 31 Dec 2026." From its legs' `shuttle` (js/nav.js,
+    // tripFromNav; js/campus.js, endsNotice), so a trip saved and resumed says it too.
+    const ending = (window.Campus?.endsNotice?.(trip.legs) || []).map((t) => `<p class="tlEnds">${window.icon("alert")}<span>${esc(t)}</span></p>`).join("");
+    box.innerHTML = ending + mode + trip.legs
       .slice(trip.leg)
       .map((leg, k) => {
         const last = leg.points.length - 1;

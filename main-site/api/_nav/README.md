@@ -44,6 +44,8 @@ stations (calibrated so Jurong East to Tanah Merah is about the 52 minutes it
 takes), an average wait to board (5 minutes for a bus, 3 for a train), 3 minutes
 to change trains inside an interchange, and 2 minutes between a station's exit
 and its platform. OneMap's check shows a timetable-based time where it can.
+A shuttle past its last day (shuttles.json's `ends`) is never boarded, judged by
+the date it would be boarded, so the graph kept for hours still follows it.
 
 With a time picked (`&when=leave|arrive&at=2026-10-09T08:30`), and for Leave now too, a bus
 is only boarded between its first and last bus at that stop, and a train between about

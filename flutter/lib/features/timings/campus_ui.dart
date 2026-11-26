@@ -3,7 +3,9 @@
 // its timetable says, under a heading that says they're scheduled times, not live, with the
 // next bus seen live where the operator shares it; a campus stop LTA hasn't got ("PGP") as a
 // stop of its own, with its shuttles and no public buses; and a route's own window, what its
-// timetable says now from where it starts and its stops in order.
+// timetable says now from where it starts and its stops in order. A route that has ended
+// (shuttles.json's `ends`) stays, as Discontinued in place of its times, and isn't looked up live.
+// ShuttleEndsNotice tops a way or a trip that rides one that's ending.
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/nav.dart';
@@ -32,6 +34,43 @@ class CampusBadge extends StatelessWidget {
         decoration: BoxDecoration(color: route.color, borderRadius: BorderRadius.circular(8)),
         child: Text(route.code, textAlign: TextAlign.center, style: TextStyle(color: Campus.inkOn(route.colour), fontWeight: FontWeight.w800, fontSize: size)),
       );
+}
+
+/// At the top of a way or a trip that rides a shuttle service that's ending (Campus.ending): "IKEA's
+/// shuttle bus service ends on 31 Dec 2026.", a line for each such service. Nothing when there's
+/// none, as after the end, when no way rides it.
+class ShuttleEndsNotice extends StatelessWidget {
+  const ShuttleEndsNotice(this.ending, {super.key, this.padding = const EdgeInsets.only(top: 8)});
+  final List<({String name, String ends})> ending;
+  final EdgeInsets padding;
+
+  static String text(({String name, String ends}) e) =>
+      tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", {'name': e.name, 'date': When.dateYear(e.ends)});
+
+  @override
+  Widget build(BuildContext context) {
+    if (ending.isEmpty) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: padding,
+      child: Semantics(
+        container: true,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+          decoration: BoxDecoration(color: scheme.secondaryContainer, borderRadius: BorderRadius.circular(12)),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Icon(Icons.event_busy_outlined, size: 20, color: scheme.onSecondaryContainer),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                for (final e in ending) Text(text(e), style: TextStyle(color: scheme.onSecondaryContainer, fontWeight: FontWeight.w600)),
+              ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
 }
 
 /// The shuttle buses at a stop, by its key (an LTA code, or a campus stop's id): nothing when it
@@ -63,6 +102,7 @@ class _CampusListState extends State<CampusList> {
     setState(() {});
     final stop = Campus.at(widget.stopKey);
     for (final x in stop?.routes ?? const <({CampusRoute route, int i})>[]) {
+      // Not one that has ended (canLive says so).
       if (!Campus.canLive(x.route, widget.stopKey)) continue;
       Campus.live(x.route, widget.stopKey).then((eta) {
         if (mounted) setState(() => _live[x.route.key] = eta);
@@ -83,13 +123,18 @@ class _CampusListState extends State<CampusList> {
       final st = Campus.status(r, x.i, ms);
       if (st.season != null) seasons.add('${r.uni}:${st.season}');
       final d = Campus.describe(st, Campus.nameIn(r));
-      final off = st.state == 'done' || st.state == 'notToday';
+      // Ended: listed still, as Discontinued in place of its times, with nothing on what it cost
+      // and no live times.
+      final gone = st.state == 'ended';
+      final off = gone || st.state == 'done' || st.state == 'notToday';
       final terms = [
-        if (r.fare == 'paid') r.fareText.isNotEmpty ? r.fareText : tr('nav.shuttle.paid', 'Paid'),
-        if (r.access == 'guests') tr('nav.shuttle.guests', 'Hotel guests only'),
-        if (r.access == 'residents') tr('nav.shuttle.residents', 'Residents only'),
+        if (!gone) ...[
+          if (r.fare == 'paid') r.fareText.isNotEmpty ? r.fareText : tr('nav.shuttle.paid', 'Paid'),
+          if (r.access == 'guests') tr('nav.shuttle.guests', 'Hotel guests only'),
+          if (r.access == 'residents') tr('nav.shuttle.residents', 'Residents only'),
+        ],
       ];
-      final live = _live[r.key];
+      final live = gone ? null : _live[r.key];
       rows.add(InkWell(
         borderRadius: BorderRadius.circular(10),
         onTap: () => CampusRouteScreen.open(r.key),
@@ -106,7 +151,7 @@ class _CampusListState extends State<CampusList> {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(d.main, style: const TextStyle(fontWeight: FontWeight.w700)),
-                  Text([Campus.uniName(r.uni), d.sub, ...terms].join(' · '), style: TextStyle(color: sg.muted, fontSize: 13)),
+                  Text([Campus.uniName(r.uni), if (d.sub.isNotEmpty) d.sub, ...terms].join(' · '), style: TextStyle(color: sg.muted, fontSize: 13)),
                   if (live != null)
                     Text(live <= 0 ? tr('campus.liveNow', 'Live: arriving') : tr('campus.liveMin', 'Live: {n} min', {'n': '$live'}),
                         style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w600, fontSize: 13)),
@@ -228,6 +273,7 @@ class CampusRouteScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final sg = context.sg;
     final r = Campus.route(routeKey)!;
+    // Discontinued, with nothing after it, once it has ended.
     final now = Campus.describe(Campus.status(r, 0, When.nowMs()), Campus.nameIn(r));
     return Scaffold(
       appBar: AppBar(title: Text(tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': Campus.uniName(r.uni), 'route': r.code}), overflow: TextOverflow.ellipsis)),
@@ -239,7 +285,7 @@ class CampusRouteScreen extends StatelessWidget {
             Expanded(
               child: Text.rich(TextSpan(children: [
                 TextSpan(text: now.main, style: const TextStyle(fontWeight: FontWeight.w700)),
-                TextSpan(text: ' · ${now.sub}', style: TextStyle(color: sg.muted)),
+                if (now.sub.isNotEmpty) TextSpan(text: ' · ${now.sub}', style: TextStyle(color: sg.muted)),
               ])),
             ),
           ]),

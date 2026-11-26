@@ -173,6 +173,17 @@ class When {
     return '${c.day} ${_months[c.month]}';
   }
 
+  /// "31 Dec 2026", a day given as "2026-12-31", in the language picked, as the site's short date
+  /// with its year (js/map-save.js); the text as it is if it isn't a date.
+  static String dateYear(String ymd) {
+    final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(ymd);
+    if (m == null) return ymd;
+    final y = int.parse(m[1]!), mo = int.parse(m[2]!), d = int.parse(m[3]!);
+    if (mo < 1 || mo > 12) return ymd;
+    if (I18n.I.lang != 'en') return DateFormat('d MMM y', I18n.I.current.locale.toLanguageTag()).format(DateTime.utc(y, mo, d));
+    return '$d ${_months[mo - 1]} $y';
+  }
+
   static String clockDay(int ms) =>
       sgClock(ms).ymd == sgClock(nowMs()).ymd ? clock(ms) : tr('when.clockDay', '{time} {day}', {'time': clock(ms), 'day': dayLabel(ms)});
 

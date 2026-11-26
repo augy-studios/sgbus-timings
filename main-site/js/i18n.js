@@ -33,7 +33,7 @@
   // The words' revision, set by scripts/i18n-check.mjs --write from every language's file: a
   // copy kept from another revision is old, and the file's fetched there and then instead, so
   // words added or changed in an update are never shown in English, or as they were, first.
-  var WORDS_REV = "d0ddeb0c748c";
+  var WORDS_REV = "ba3706493e8b";
   // { code: its name in itself }. Add a language here and its i18n/<code>.json.
   var LANGUAGES = { en: "English", "zh-SG": "中文", ms: "Bahasa Melayu", ta: "தமிழ்" };
   // data-title is a Settings group's heading (script.js).

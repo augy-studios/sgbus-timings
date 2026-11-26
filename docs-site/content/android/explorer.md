@@ -63,6 +63,10 @@ its timetable says now, and the next bus live where the operator shows it. Paid 
 on **Free and paid** in [Settings](settings.md#navigate). The operators' credits show while their routes are in
 view.
 
+A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026. Once a shuttle has ended, its card still lists
+it but says **Discontinued** in place of its times, with no live times, and its routes and own stops move to
+**Discontinued shuttles** in [Layers](#layers). A bus stop that public buses use stays a normal bus stop.
+
 ## Directions
 
 Every card ends with **Directions**. It closes the map and opens [Navigate](nav.md) on **Bus and train**, from
@@ -88,6 +92,9 @@ same cards when you tap them.
 
 **Layers**, the stacked-sheets button, picks what Explorer shows. The map changes as you tap, and your choice is
 kept for next time.
+
+**Discontinued shuttles** holds the routes and stops of shuttles that have ended, with the routes drawn dashed. Its
+switch only shows once a shuttle has ended, and it's off until you turn it on.
 
 ## Save the map for offline
 

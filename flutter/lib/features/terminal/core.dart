@@ -684,11 +684,35 @@ class SgbusCore {
       final changes = math.max(0, rides.length - 1);
       lines.add('${dim('${i + 1}.')} $chips  $time · ${walkOnly ? '${walked.round()} m' : '${changes != 0 ? plural(changes, 'change') : 'No change'} · ${walked.round()} m walk'}'
           '${o['disrupted'] == true ? red('  disrupted') : ''}${o['onemapMinutes'] != null ? dim('  OneMap ~${o['onemapMinutes']} min') : ''}');
+      // A shuttle on it that's ending, as the web app's way cards say it.
+      lines.addAll(endingLines(o).map((t) => '   ${yellow(t)}'));
     }
     final pick = math.min(options.length, math.max(1, int.tryParse('${opts['way'] ?? 1}') ?? 1));
     lines.addAll(['', bold('Way $pick:'), ...await waySteps(options[pick - 1], when, to.label, via?.label)]);
     if (options.length > 1) lines.add(dim('--way N for another one step by step.'));
     _out(lines);
+  }
+
+  /// A shuttle bus service on a way that's ending (help desk #22: shuttles.json's `ends`, which
+  /// /api/nav puts on a shuttle leg's `campus`), a line each, as the web app says it at the top of
+  /// a way (the site's sgbus-core.js, endingLines; keep in step): "IKEA's shuttle bus service ends
+  /// on 31 Dec 2026." None once the day's past, by Singapore's date, as Navigate no longer rides it
+  /// then. In English, as the rest.
+  static List<String> endingLines(Map? o) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final today = When.sgClock(When.nowMs()).ymd;
+    final seen = <String>{};
+    final out = <String>[];
+    for (final l in (o?['legs'] as List? ?? const [])) {
+      final c = l is Map ? l['campus'] : null;
+      final ends = c is Map ? c['ends'] : null;
+      final m = ends is String ? RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(ends) : null;
+      if (m == null || today.compareTo(ends as String) > 0 || !seen.add('${c['name']}|$ends')) continue;
+      final month = int.parse(m[2]!);
+      final date = month >= 1 && month <= 12 ? '${int.parse(m[3]!)} ${months[month - 1]} ${m[1]}' : ends;
+      out.add("${clean(c['name'] ?? '')}'s shuttle bus service ends on $date.");
+    }
+    return out;
   }
 
   static final Map<String, String Function(Object)> _lineColours = {
@@ -718,7 +742,8 @@ class SgbusCore {
     try {
       await _stops();
     } catch (_) {}
-    final lines = <String>[];
+    // A shuttle on it that's ending, first.
+    final lines = [for (final t in endingLines(o)) '  ${yellow(t)}'];
     final legs = [for (final l in (o['legs'] as List? ?? const [])) if (l is Map) l];
     final buses = [for (final l in legs) if (l['mode'] == 'bus' && l['from'] is Map && l['from']['code'] != null) l];
     final live = when != null ? <Arrivals?>[] : await Future.wait(buses.map((l) => _arrivals('${l['from']['code']}')));

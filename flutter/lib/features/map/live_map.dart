@@ -16,8 +16,12 @@
 //   LiveMap.explore()      Explorer, from its Edge Tray button: every bus stop and MRT and LRT
 //                          station as a dot over the lines in their colours, and you. A tap on a
 //                          dot opens its card (map_card.dart). Layers turns each off or on
-//                          (sgbus_explorer_layers); Save the map keeps Singapore's for offline
-//                          (map_save.dart).
+//                          (sgbus_explorer_layers, the ones turned off); Save the map keeps
+//                          Singapore's for offline (map_save.dart). A shuttle route that has ended
+//                          (data/campus.dart), and its own stops, leave Shuttle bus routes and
+//                          Shuttle bus stops for Discontinued shuttles, drawn faint and dashed,
+//                          off until it's turned on (sgbus_explorer_layers_on) and in Layers only
+//                          once a route has ended.
 //   LiveMap.traffic(...)   the traffic on a bus's way: its road, orange where it's slow and red
 //                          where it's jammed, by LTA's live speeds (/api/traffic), its incidents.
 //
@@ -114,7 +118,7 @@ class MapDisc {
 /// A stop or station on the map, for Explorer: a dot from its zoom on.
 class MapPoi {
   const MapPoi(this.kind, this.lat, this.lng, {required this.pick, this.color, this.colors = const []});
-  final String kind; // stop, station, campus
+  final String kind; // stop, station, campus, discontinued (an ended shuttle's own stop)
   final double lat;
   final double lng;
   final MapPick pick;
@@ -180,8 +184,10 @@ class MapInk extends ChangeNotifier {
   final Map<String, List<MapMark>> marks = {};
   List<({Color color, List<List<double>> points})> rails = [];
   List<({String key, String uni, Color color, List<List<double>> points})> shuttles = [];
+  /// The shuttles' routes that have ended, for Discontinued shuttles.
+  List<({String key, String uni, Color color, List<List<double>> points})> gone = [];
   List<MapPoi> pois = [];
-  Set<String> off = {}; // layers turned off: stops, stations, rails, shuttles, campus
+  Set<String> off = {}; // layers turned off: stops, stations, rails, shuttles, campus, discontinued
 
   MapLine line(String group, List<List<double>> pts, {required Color color, double width = 5, double opacity = 1, bool dash = false, int z = 0}) {
     final l = MapLine(pts, color: color, width: width, opacity: opacity, dash: dash, z: z);
@@ -275,6 +281,11 @@ class LiveMap extends StatefulWidget {
   final String? title;
 
   static const layersKey = 'sgbus_explorer_layers';
+
+  /// The layers that are off until they're turned on, and those turned on, kept apart from
+  /// [layersKey], which lists the ones turned off.
+  static const offByDefault = {'discontinued'};
+  static const layersOnKey = 'sgbus_explorer_layers_on';
   static const streetZoom = 18.0;
   static const exploreZoom = 15.0;
   static const stationZoom = 10.0;
@@ -659,7 +670,7 @@ class _LiveMapState extends State<LiveMap> {
     _styled = true;
     const empty = {'type': 'FeatureCollection', 'features': <Object>[]};
     _images.clear();
-    for (final s in ['sg-rail', 'sg-shuttle', 'sg-poi', 'sg-fill', 'sg-line', 'sg-dot', 'sg-mark']) {
+    for (final s in ['sg-rail', 'sg-gone', 'sg-shuttle', 'sg-poi', 'sg-fill', 'sg-line', 'sg-dot', 'sg-mark']) {
       await m.addGeoJsonSource(s, empty);
     }
     final edgeOpacity = _dark ? 0.35 : 0.9;
@@ -667,8 +678,12 @@ class _LiveMapState extends State<LiveMap> {
     await m.addLineLayer('sg-rail', 'sg-rail-edge', LineLayerProperties(lineColor: '#ffffff', lineWidth: railWidth(2), lineOpacity: edgeOpacity, lineCap: 'round', lineJoin: 'round'),
         enableInteraction: false);
     await m.addLineLayer('sg-rail', 'sg-rail', LineLayerProperties(lineColor: ['get', 'color'], lineWidth: railWidth(0), lineCap: 'round', lineJoin: 'round'), enableInteraction: false);
-    // Shuttle buses' routes over the trains' lines, thinner at every zoom.
+    // Shuttle buses' routes over the trains' lines, thinner at every zoom; the ones that have
+    // ended (Discontinued shuttles) under them, faint and dashed.
     List<Object> shuttleWidth(double more) => ['interpolate', ['linear'], ['zoom'], 10, 1 + more, 12, 1.5 + more, 14, 2.5 + more, 18, 4.5 + more];
+    await m.addLineLayer('sg-gone', 'sg-gone',
+        LineLayerProperties(lineColor: ['get', 'color'], lineWidth: shuttleWidth(0), lineOpacity: 0.45, lineDasharray: [1.5, 1.5], lineJoin: 'round'),
+        enableInteraction: false);
     await m.addLineLayer('sg-shuttle', 'sg-shuttle-edge', LineLayerProperties(lineColor: '#ffffff', lineWidth: shuttleWidth(2), lineOpacity: edgeOpacity, lineCap: 'round', lineJoin: 'round'),
         enableInteraction: false);
     await m.addLineLayer('sg-shuttle', 'sg-shuttle', LineLayerProperties(lineColor: ['get', 'color'], lineWidth: shuttleWidth(0), lineCap: 'round', lineJoin: 'round'), enableInteraction: false);
@@ -694,6 +709,21 @@ class _LiveMapState extends State<LiveMap> {
       ),
       minzoom: LiveMap.campusZoom,
       filter: ['==', ['get', 'kind'], 'campus'],
+      enableInteraction: false,
+    );
+    await m.addCircleLayer(
+      'sg-poi',
+      'sg-poi-gone',
+      CircleLayerProperties(
+        circleRadius: grow(LiveMap.campusZoom, 3, 7),
+        circleColor: '#ffffff',
+        circleOpacity: 0.6,
+        circleStrokeColor: ['get', 'color'],
+        circleStrokeOpacity: 0.45,
+        circleStrokeWidth: grow(LiveMap.campusZoom, 2, 3.5),
+      ),
+      minzoom: LiveMap.campusZoom,
+      filter: ['==', ['get', 'kind'], 'discontinued'],
       enableInteraction: false,
     );
     await m.addCircleLayer(
@@ -775,6 +805,10 @@ class _LiveMapState extends State<LiveMap> {
     await m.setGeoJsonSource('sg-rail', collection([
       for (final r in rails) feature({'type': 'LineString', 'coordinates': r.points.map(_lngLat).toList()}, {'color': _hex(r.color)}),
     ]));
+    await m.setGeoJsonSource('sg-gone', collection([
+      if (!ink.off.contains('discontinued'))
+        for (final r in ink.gone) feature({'type': 'LineString', 'coordinates': r.points.map(_lngLat).toList()}, {'color': _hex(r.color)}),
+    ]));
     await m.setGeoJsonSource('sg-shuttle', collection([
       if (!ink.off.contains('shuttles'))
         for (final r in ink.shuttles) feature({'type': 'LineString', 'coordinates': r.points.map(_lngLat).toList()}, {'color': _hex(r.color)}),
@@ -843,7 +877,7 @@ class _LiveMapState extends State<LiveMap> {
     const pad = 10.0;
     final hits = await m.queryRenderedFeaturesInRect(
       Rect.fromLTRB(point.x - pad, point.y - pad, point.x + pad, point.y + pad),
-      ['sg-dot', 'sg-poi-station', 'sg-poi-stop', 'sg-poi-campus'],
+      ['sg-dot', 'sg-poi-station', 'sg-poi-stop', 'sg-poi-campus', 'sg-poi-gone'],
       null,
     );
     if (!mounted) return;
@@ -1659,13 +1693,26 @@ class _LiveMapState extends State<LiveMap> {
 
   // ---------- Explorer ----------
 
-  Set<String> _layersOff() => {for (final v in Store.I.list(LiveMap.layersKey)) '$v'};
+  /// The layers off: those turned off, and those off by default that aren't turned on.
+  Set<String> _layersOff() {
+    final on = {for (final v in Store.I.list(LiveMap.layersOnKey)) '$v'};
+    return {
+      for (final v in Store.I.list(LiveMap.layersKey)) '$v',
+      ...LiveMap.offByDefault.difference(on),
+    };
+  }
 
   void _setLayer(String name, bool on) {
-    final off = _layersOff();
-    on ? off.remove(name) : off.add(name);
-    Store.I.putJson(LiveMap.layersKey, off.toList());
-    ink.off = off;
+    if (LiveMap.offByDefault.contains(name)) {
+      final turnedOn = {for (final v in Store.I.list(LiveMap.layersOnKey)) '$v'};
+      on ? turnedOn.add(name) : turnedOn.remove(name);
+      Store.I.putJson(LiveMap.layersOnKey, turnedOn.isEmpty ? null : turnedOn.toList());
+    } else {
+      final off = {for (final v in Store.I.list(LiveMap.layersKey)) '$v'};
+      on ? off.remove(name) : off.add(name);
+      Store.I.putJson(LiveMap.layersKey, off.toList());
+    }
+    ink.off = _layersOff();
     ink.changed();
     setState(() {});
   }
@@ -1703,10 +1750,12 @@ class _LiveMapState extends State<LiveMap> {
     _shuttles();
   }
 
-  static String _poiLayer(String kind) => switch (kind) { 'stop' => 'stops', 'campus' => 'campus', _ => 'stations' };
+  static String _poiLayer(String kind) => switch (kind) { 'stop' => 'stops', 'campus' => 'campus', 'discontinued' => 'discontinued', _ => 'stations' };
 
   // The shuttle buses' routes, each along its road from roads.json, else straight from stop to
-  // stop and then along its road once /api/road has it; and the campus stops LTA hasn't got.
+  // stop and then along its road once /api/road has it; and the campus stops LTA hasn't got. A
+  // route that has ended goes to Discontinued shuttles, and so does a stop of its own, one whose
+  // every route has ended.
   Future<void> _shuttles() async {
     try {
       await Campus.load();
@@ -1715,17 +1764,25 @@ class _LiveMapState extends State<LiveMap> {
       return;
     }
     if (!mounted) return;
-    final list = Campus.lines(Campus.keep);
+    final now = When.nowMs();
+    final list = Campus.lines(Campus.keep, now);
     final roads = <String, List<List<double>>>{};
     void draw() {
-      ink.shuttles = [for (final l in list) (key: l.key, uni: l.uni, color: l.color, points: roads[l.key] ?? Campus.road(l.key, l.points) ?? l.points)];
+      // Each in its layer: Shuttle bus routes, or Discontinued shuttles once it has ended.
+      List<({String key, String uni, Color color, List<List<double>> points})> drawn(bool ended) => [
+            for (final l in list)
+              if (l.ended == ended) (key: l.key, uni: l.uni, color: l.color, points: roads[l.key] ?? Campus.road(l.key, l.points) ?? l.points),
+          ];
+      ink.shuttles = drawn(false);
+      ink.gone = drawn(true);
       ink.changed();
       if (mounted) setState(() {});
     }
 
     ink.pois = [
-      ...ink.pois.where((p) => p.kind != 'campus'),
-      for (final c in Campus.dots(Campus.keep)) MapPoi('campus', c.lat, c.lng, color: Campus.uniColour(c.uni), pick: MapPick.campus(c.key)),
+      ...ink.pois.where((p) => p.kind != 'campus' && p.kind != 'discontinued'),
+      for (final c in Campus.dots(Campus.keep))
+        MapPoi(Campus.stopEnded(c, Campus.keep, now) ? 'discontinued' : 'campus', c.lat, c.lng, color: Campus.uniColour(c.uni), pick: MapPick.campus(c.key)),
     ];
     draw();
     if (LiveMap.preview) return;
@@ -1742,13 +1799,17 @@ class _LiveMapState extends State<LiveMap> {
 
   /// The universities' credits while one of their routes is in view.
   List<({String uni, String text, String url})> _shuttleCredits(Size size) {
-    if (ink.shuttles.isEmpty || ink.off.contains('shuttles')) return const [];
+    final shown = [
+      if (!ink.off.contains('shuttles')) ...ink.shuttles,
+      if (!ink.off.contains('discontinued')) ...ink.gone,
+    ];
+    if (shown.isEmpty) return const [];
     final perPx = 360 / (512 * math.pow(2, _zoom));
     final dLng = size.width / 2 * perPx, dLat = size.height / 2 * perPx * math.cos(_centre.latitude * math.pi / 180);
     return Campus.credits([
       [_centre.latitude - dLat, _centre.longitude - dLng],
       [_centre.latitude + dLat, _centre.longitude + dLng],
-    ], [for (final l in ink.shuttles) (uni: l.uni, points: l.points)]);
+    ], [for (final l in shown) (uni: l.uni, points: l.points)]);
   }
 
   void _openLayers() {
@@ -1778,6 +1839,8 @@ class _LiveMapState extends State<LiveMap> {
                 row('rails', tr('layers.rails', 'MRT and LRT lines')),
                 row('shuttles', tr('layers.shuttles', 'Shuttle bus routes')),
                 row('campus', tr('layers.campus', 'Shuttle bus stops')),
+                // Only once a shuttle route has ended; off until it's turned on.
+                if (ink.gone.isNotEmpty || ink.pois.any((p) => p.kind == 'discontinued')) row('discontinued', tr('layers.discontinued', 'Discontinued shuttles')),
               ]),
             ),
           );
@@ -2081,6 +2144,8 @@ class _LiveMapState extends State<LiveMap> {
     MapPick? hit;
     for (final p in ink.pois) {
       if (p.kind == 'stop' && _zoom < LiveMap.stopZoom) continue;
+      // Not one in a layer that's off, as Discontinued shuttles is until it's turned on.
+      if (ink.off.contains(_poiLayer(p.kind))) continue;
       final s = MapPreview.toScreen([p.lat, p.lng], _centre, _zoom, size);
       final d = (s - at).distance;
       if (d < best) {
@@ -2208,6 +2273,12 @@ class _PreviewPainter extends CustomPainter {
         path(r.points, stroke(r.color, w));
       }
     }
+    if (!ink.off.contains('discontinued')) {
+      final w = (zoom - 10).clamp(1.0, 4.5);
+      for (final r in ink.gone) {
+        path(r.points, stroke(r.color, w, 0.45), dash: true);
+      }
+    }
     if (!ink.off.contains('shuttles')) {
       final w = (zoom - 10).clamp(1.0, 4.5);
       for (final r in ink.shuttles) {
@@ -2218,12 +2289,13 @@ class _PreviewPainter extends CustomPainter {
       }
     }
     for (final p in ink.pois) {
-      if (p.kind == 'campus') {
-        if (zoom < LiveMap.campusZoom || ink.off.contains('campus')) continue;
+      if (p.kind == 'campus' || p.kind == 'discontinued') {
+        if (zoom < LiveMap.campusZoom || ink.off.contains(p.kind)) continue;
+        final faint = p.kind == 'discontinued';
         final s = at([p.lat, p.lng]);
         final r = 3 + (zoom - LiveMap.campusZoom) / 5 * 4;
-        canvas.drawCircle(s, r, Paint()..color = Colors.white);
-        canvas.drawCircle(s, r, stroke(p.color ?? Colors.purple, 2 + (zoom - LiveMap.campusZoom) / 5 * 1.5));
+        canvas.drawCircle(s, r, Paint()..color = Colors.white.withValues(alpha: faint ? 0.6 : 1));
+        canvas.drawCircle(s, r, stroke(p.color ?? Colors.purple, 2 + (zoom - LiveMap.campusZoom) / 5 * 1.5, faint ? 0.45 : 1));
         continue;
       }
       if (p.kind == 'stop' && (zoom < LiveMap.stopZoom || ink.off.contains('stops'))) continue;

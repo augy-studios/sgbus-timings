@@ -234,7 +234,11 @@ class _TimingsPageState extends State<TimingsPage> {
                   _Suggestion(
                     icon: Icons.airport_shuttle_outlined,
                     code: r.code,
-                    name: tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': Campus.uniName(r.uni), 'route': r.code}),
+                    // One that has ended is still found, and says so.
+                    name: [
+                      tr('campus.routeTitle', '{uni} shuttle {route}', {'uni': Campus.uniName(r.uni), 'route': r.code}),
+                      if (Campus.ended(r)) tr('campus.discontinued', 'Discontinued'),
+                    ].join(' · '),
                     onTap: () {
                       _focus.unfocus();
                       CampusRouteScreen.open(r.key);

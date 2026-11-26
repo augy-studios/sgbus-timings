@@ -177,5 +177,24 @@ late['legs'][1].update(lastTrainRank=1)
 rich, _ = build_nav_option(start, home, late, {3: None})
 ok("the last one: don't miss it", "Last train to Bedok station from here today is at 00:12. Don't miss it." in rich['fallback'], rich['fallback'])
 
+# ---------- a shuttle that's ending (help desk #22, shuttles.json's `ends`) ----------
+from datetime import date
+from src.nav_view import ending_lines
+NOTICE = "⚠️ IKEA's shuttle bus service ends on 31 Dec 2026."
+ikea = {'minutes': 57, 'legs': [
+    {'mode': 'bus', 'route': 'IKEA S', 'stops': 1, 'minutes': 28, 'from': {'kind': 'stop', 'code': 'ikea-serangoon-mrt', 'name': 'Serangoon Stn Exit E'},
+     'to': {'kind': 'stop', 'code': 'ikea-tampines', 'name': 'IKEA Tampines'}, 'campus': {'uni': 'ikea', 'name': 'IKEA', 'ends': '2026-12-31'}},
+    {'mode': 'walk', 'metres': 30, 'minutes': 1, 'to': {'kind': 'place'}}]}
+ok('ending: a way on it says so on 31 Dec 2026', ending_lines(ikea, date(2026, 12, 31)) == [NOTICE], ending_lines(ikea, date(2026, 12, 31)))
+ok('…and not from 1 Jan 2027', ending_lines(ikea, date(2027, 1, 1)) == [])
+ok('…nor on a shuttle with no end, or a way with none', ending_lines({'legs': [{'mode': 'bus', 'route': 'A1', 'campus': {'name': 'NUS'}}, {'mode': 'bus', 'route': '21'}]}) == [])
+if date.today() <= date(2026, 12, 31):
+    rich, _ = build_nav_option(start, home, ikea, {})
+    ok('ending: at the top of the way, under its title', rich['fallback'].splitlines()[3] == NOTICE, rich['fallback'])
+    rich, _ = build_nav_panel(CHAT, start, home, result={'options': [ikea, straight], 'traffic': None, 'others': {}}, live=live, direct=direct)
+    lines = rich['fallback'].splitlines()
+    first = next(i for i, l in enumerate(lines) if 'IKEA S' in l)
+    ok('ending: under its way in the list, and only that one', NOTICE in [l.strip() for l in lines[first + 1:first + 3]] and rich['fallback'].count(NOTICE) == 1, rich['fallback'])
+
 print('\nAll passed' if not fails else f'\n{fails} failed')
 sys.exit(1 if fails else 0)

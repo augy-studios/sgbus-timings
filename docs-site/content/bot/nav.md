@@ -93,6 +93,9 @@ there to compare, and the best ending on each bus or line, so a bus to your door
 stays beside a quicker one that leaves you a long walk. A mix that's clearly slower than another of the same kind, and
 no better in changes or walking, is left out as a detour.
 
+A way that rides a shuttle that's ending says **⚠️ IKEA's shuttle bus service ends on 31 Dec 2026.** under it in the
+list, and again at the top of the way's own page. After that date the bot stops offering ways on it.
+
 ### Sort the ways
 
 The buttons under the ways sort them, and the one you pick is kept for your next

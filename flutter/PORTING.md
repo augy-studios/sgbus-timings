@@ -40,6 +40,7 @@ Status: ✅ done · 🚧 in progress · ⬜ not started
 | The trip bar's strip (`lib/features/trips/trip_strip.dart`) and the live map's pins, bubbles and you riding (`lib/features/map/map_marks.dart`) | `js/trip.js` (`tripStrip`), `js/map-marks.js` | ✅ |
 | Route planner (bus only), journeys checked against the site's | `js/planner.js`, `js/journeys.js` | ✅ |
 | Live map, Explorer, station cards, Save the map (MapLibre), shuttle buses (NUS, NTU and the rest: routes, stops, cards, Layers, credits) | `js/map*.js`, `js/rail-tracks.js`, `js/campus.js` | ✅ |
+| A shuttle's last day (shuttles.json's `ends`, help desk #22): Discontinued in place of its times with no live lookups, never in Navigate, Explorer's Discontinued shuttles layer (off by default, `sgbus_explorer_layers_on`), the notice on a way, a trip and `sgbus nav` | `js/campus.js`, `js/map.js`, `js/nav.js`, `js/trip.js`, `js/sgbus-core.js` | ✅ |
 | Places and past searches | `js/places.js`, `js/recents.js` | ✅ |
 | Calendar: the phone's, an iCal link or an .ics file, checked against the site's | `js/calendar.js` | ✅ |
 | Get Off Alert: follow, alert, arrive, get ready to board, last bus with rerouting and Undo, traffic, a faster way, the server following the bus, MyICA, Change here, Are you walking?, Your trips | `js/trip.js`, `js/history.js` | ✅ |

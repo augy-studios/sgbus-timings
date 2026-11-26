@@ -278,7 +278,9 @@ List<NavRun> _busRuns(List<NavNode> nodes, Map<String, int> busNode, Map<String,
 
   final runs = <NavRun>[];
   for (final route in model.routes) {
-    // Kept out of Navigate (shuttles.json's `navigate`: false), as the site's nav-core does.
+    // Kept out of Navigate (shuttles.json's `navigate`: false), as the site's nav-core does. One
+    // that `ends` stays in the graph, as the graph is kept between plans, and is never boarded on
+    // a day after its last (meanWait, by the moment it'd be boarded).
     if (!route.navigate) continue;
     final stops = <(int, int)>[];
     for (final (i, k) in route.keys.indexed) {
@@ -314,6 +316,8 @@ List<NavRun> _busRuns(List<NavNode> nodes, Map<String, int> busNode, Map<String,
           for (final k in route.place)
             if (model.stops[k] != null) {'lat': model.stops[k]!.lat, 'lng': model.stops[k]!.lng},
         ],
+        // Its last day, for the way's notice that it's ending (as /api/nav's leg has it).
+        'ends': ?route.ends,
       },
       towards: nodes[path.last].name,
       nodes: path,
@@ -458,7 +462,9 @@ bool rideable(NavRun run, NavPoint from, NavPoint to, {bool paid = false}) {
   return true;
 }
 
-/// The mean wait to board a shuttle at its i-th node at a moment, or null when it isn't running.
+/// The mean wait to board a shuttle at its i-th node at a moment, or null when it isn't running:
+/// as its timetable has it, and never on a day after its last (shuttles.json's `ends`: its status
+/// is then 'ended').
 double? meanWait(NavRun run, int i, int ms, Map<String, dynamic>? config) {
   final st = Campus.status(run.shuttle!, run.at![i], ms, config ?? const {});
   if (st.state == 'every') return (st.min! + st.max!) / 4;
