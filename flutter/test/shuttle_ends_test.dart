@@ -38,13 +38,17 @@ void _clock(String at) => When.now = () => DateTime.fromMillisecondsSinceEpoch(_
 // The last evening it runs, and the first morning after.
 const _lastEvening = '2026-12-31T18:00';
 const _firstMorning = '2027-01-01T10:00';
-const _notice = "IKEA's shuttle bus service ends on 31 Dec 2026.";
+const _ends = "IKEA's shuttle bus service ends on 31 Dec 2026.";
+const _notice = '$_ends Buses 296, 460 and 68 from Tampines Interchange stop near IKEA.';
+// Campus.ending's answer as words, as a record's list is only equal to itself.
+String _said(List<ShuttleEnding> got) => [for (final e in got) '${e.name} ${e.ends} ${e.instead?.buses.join(',')} ${e.instead?.from}'].join('; ');
+const _ikeaEnding = 'IKEA 2026-12-31 296,460,68 Tampines Interchange';
 
 const _tampinesB = {'kind': 'stop', 'code': 'ikea-tampines-mrt', 'name': 'Tampines Stn Exit B', 'lat': 1.353289, 'lng': 103.945161};
 const _ikea = {'kind': 'stop', 'code': 'ikea-tampines', 'name': 'IKEA Tampines', 'lat': 1.374015, 'lng': 103.932576};
 
 /// A way from Tampines MRT to IKEA on its shuttle, as /api/nav gives it.
-Map<String, dynamic> _ikeaWay({bool ends = true}) => {
+Map<String, dynamic> _ikeaWay({bool ends = true, bool instead = true}) => {
       'minutes': 24,
       'mix': 'B',
       'routes': ['IKEA T'],
@@ -76,6 +80,7 @@ Map<String, dynamic> _ikeaWay({bool ends = true}) => {
             'access': 'public',
             'place': const [],
             if (ends) 'ends': '2026-12-31',
+            if (instead) 'instead': {'buses': ['296', '460', '68'], 'from': 'Tampines Interchange'},
           },
         },
         {'mode': 'walk', 'metres': 60, 'minutes': 1, 'to': {'kind': 'place'}},
@@ -107,6 +112,22 @@ void main() {
         expect(r.ends, '2026-12-31', reason: r.key);
       }
       expect(m.routes.where((r) => r.uni != 'ikea' && r.ends != null), isEmpty);
+    });
+
+    test('and say what to take instead: the buses from Tampines Interchange', () {
+      final m = Campus.model!;
+      for (final r in m.routes.where((r) => r.uni == 'ikea')) {
+        expect(r.instead?.buses, ['296', '460', '68'], reason: r.key);
+        expect(r.instead?.from, 'Tampines Interchange', reason: r.key);
+        expect(r.insteadJson, {'buses': ['296', '460', '68'], 'from': 'Tampines Interchange'});
+      }
+      expect(m.routes.where((r) => r.uni != 'ikea' && r.instead != null), isEmpty);
+      final files = _files();
+      final shuttles = jsonDecode(jsonEncode(files['shuttles'])) as Map;
+      (shuttles['groups'] as Map)['ikea']['instead'] = {'buses': '296'};
+      final bad = Campus.build({...files, 'shuttles': shuttles}, Stops.index);
+      expect(bad.problems.where((p) => p.contains('instead')), isNotEmpty);
+      expect(bad.routes.where((r) => r.uni == 'ikea').every((r) => r.instead == null), isTrue);
     });
 
     test('ended is by Singapore\'s date, the day after the last', () {
@@ -167,10 +188,14 @@ void main() {
 
     test('the notice, until the end and not after', () {
       final legs = (_ikeaWay()['legs'] as List).cast<Map>();
-      expect(Campus.ending(legs, _sg(_lastEvening)), [(name: 'IKEA', ends: '2026-12-31')]);
+      expect(_said(Campus.ending(legs, _sg(_lastEvening))), _ikeaEnding);
       expect(Campus.ending(legs, _sg('2026-11-26T12:00')), hasLength(1));
       expect(Campus.ending(legs, _sg(_firstMorning)), isEmpty);
       expect(ShuttleEndsNotice.text(Campus.ending(legs, _sg(_lastEvening)).single), _notice);
+      // Without what to take instead, one sentence.
+      expect(ShuttleEndsNotice.text((name: 'IKEA', ends: '2026-12-31', instead: null)), _ends);
+      // A leg from before /api/nav carried `instead`: by the route's own.
+      expect(_said(Campus.ending((_ikeaWay(instead: false)['legs'] as List).cast<Map>(), _sg(_lastEvening))), _ikeaEnding);
       // Twice on IKEA's shuttles: said once.
       expect(Campus.ending([...legs, ...legs], _sg(_lastEvening)), hasLength(1));
       // A way kept from before /api/nav said `ends`: by the route's own.
@@ -182,14 +207,20 @@ void main() {
     test('a trip ride from before it kept its shuttle, by the stop it boards at', () {
       final ride = TripLeg(kind: 'bus', label: 'Bus IKEA T', to: 'IKEA Tampines', points: const [[1.353289, 103.945161], [1.374015, 103.932576]], names: const [], minutes: 12, service: 'IKEA T', board: 'ikea-tampines-mrt');
       expect(Campus.ending([ride.asNavLeg], _sg(_lastEvening)), isEmpty, reason: 'only with byStop');
-      expect(Campus.ending([ride.asNavLeg], _sg(_lastEvening), byStop: true), [(name: 'IKEA', ends: '2026-12-31')]);
+      expect(_said(Campus.ending([ride.asNavLeg], _sg(_lastEvening), byStop: true)), _ikeaEnding);
       expect(Campus.ending([ride.asNavLeg], _sg(_firstMorning), byStop: true), isEmpty);
     });
 
     test('a trip from Navigate keeps the shuttle and its end', () {
       final made = tripFromNav(_ikeaWay(), const NavEnd('Tampines', 1.3532, 103.9452), const NavEnd('IKEA', 1.3741, 103.9327))!;
       final ride = made.legs.firstWhere((l) => l.ride);
-      expect(ride.shuttle, {'uni': 'ikea', 'name': 'IKEA', 'ends': '2026-12-31'});
+      expect(ride.shuttle, {
+        'uni': 'ikea',
+        'name': 'IKEA',
+        'ends': '2026-12-31',
+        'instead': {'buses': ['296', '460', '68'], 'from': 'Tampines Interchange'},
+      });
+      expect(_said(Campus.ending([ride.asNavLeg], _sg(_lastEvening))), _ikeaEnding);
       expect(TripLeg.from(jsonDecode(jsonEncode(ride.toJson())) as Map).shuttle, ride.shuttle, reason: 'kept through a restart');
       expect(ride.cutAt(1).shuttle, ride.shuttle);
     });
@@ -218,9 +249,12 @@ void main() {
       ikeaT = graph.runs.firstWhere((r) => r.key == 'C:ikea:IKEA T');
     });
 
-    test('its leg says when it ends', () {
+    test('its leg says when it ends, and what to take instead', () {
       expect(ikeaT.campus?['ends'], '2026-12-31');
-      expect(graph.runs.firstWhere((r) => r.key.startsWith('C:nus:')).campus!.containsKey('ends'), isFalse);
+      expect(ikeaT.campus?['instead'], {'buses': ['296', '460', '68'], 'from': 'Tampines Interchange'});
+      final nus = graph.runs.firstWhere((r) => r.key.startsWith('C:nus:')).campus!;
+      expect(nus.containsKey('ends'), isFalse);
+      expect(nus.containsKey('instead'), isFalse);
     });
 
     test('boarded on its last day, never the day after', () {
@@ -240,7 +274,7 @@ void main() {
         final ways = planOnPhone(graph, serangoon, ikea, when: NavAt('leave', _sg(at)));
         expect(ways.any(_ridesIkea), isTrue, reason: 'leave $at');
         for (final o in ways.where(_ridesIkea)) {
-          expect(Campus.ending((o['legs'] as List).cast<Map>(), _sg(at)), [(name: 'IKEA', ends: '2026-12-31')]);
+          expect(_said(Campus.ending((o['legs'] as List).cast<Map>(), _sg(at))), _ikeaEnding);
         }
       }
       // Planned for after the end while it's still December: by the trip's own date.
@@ -275,12 +309,21 @@ void main() {
     });
     tearDown(() => Api.fake = null);
 
-    testWidgets('its last evening: its times, looked up live', (t) async {
+    testWidgets('its last evening: its times, looked up live, and when it ends', (t) async {
       _clock(_lastEvening);
       await pumpStop(t, 'ikea-tampines');
       expect(find.text('Discontinued'), findsNothing);
       expect(find.textContaining('18:'), findsWidgets);
       expect(asked.where((p) => p.startsWith('shuttle-live')), isNotEmpty);
+      // Both of IKEA's routes stop there.
+      expect(find.text('Ends on 31 Dec 2026'), findsNWidgets(2));
+    });
+
+    testWidgets('a route that isn\'t ending says nothing of it', (t) async {
+      _clock(_lastEvening);
+      final nus = Campus.model!.stops.values.firstWhere((s) => !s.lta && s.uni == 'nus');
+      await pumpStop(t, nus.key);
+      expect(find.textContaining('Ends on'), findsNothing);
     });
 
     testWidgets('from 1 January: Discontinued in place of its times, not looked up live', (t) async {
@@ -289,6 +332,7 @@ void main() {
       // Both of IKEA's routes stop there.
       expect(find.text('Discontinued'), findsNWidgets(2));
       expect(find.textContaining('12:'), findsNothing);
+      expect(find.textContaining('Ends on'), findsNothing);
       expect(asked.where((p) => p.startsWith('shuttle-live')), isEmpty);
     });
 
@@ -296,9 +340,11 @@ void main() {
       _clock(_firstMorning);
       await t.pumpWidget(MaterialApp(theme: AppLook.I.theme(Brightness.light), home: const CampusRouteScreen(routeKey: 'ikea:IKEA T')));
       expect(find.text('Discontinued'), findsOneWidget);
+      expect(find.textContaining('Ends on'), findsNothing);
       _clock(_lastEvening);
       await t.pumpWidget(MaterialApp(theme: AppLook.I.theme(Brightness.light), home: const CampusRouteScreen(routeKey: 'ikea:IKEA S')));
       expect(find.text('Discontinued'), findsNothing);
+      expect(find.text('Ends on 31 Dec 2026'), findsOneWidget);
     });
   });
 
@@ -393,6 +439,7 @@ void main() {
       final lines = said.split('\n');
       expect(lines[lines.indexWhere((l) => l.contains('Way 1:')) + 1].trim(), _notice);
       expect(SgbusCore.endingLines(_ikeaWay(ends: false)), isEmpty, reason: 'only by the leg it gives');
+      expect(SgbusCore.endingLines(_ikeaWay(instead: false)), [_ends]);
     });
 
     test('and not once it has ended', () async {

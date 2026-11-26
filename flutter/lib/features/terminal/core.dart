@@ -14,6 +14,7 @@ import 'dart:math' as math;
 import '../../api/api.dart';
 import '../../data/arrivals.dart';
 import '../../data/calendar.dart';
+import '../../data/campus.dart';
 import '../../data/favs.dart';
 import '../../data/journeys.dart';
 import '../../data/mrt.dart';
@@ -696,8 +697,9 @@ class SgbusCore {
   /// A shuttle bus service on a way that's ending (help desk #22: shuttles.json's `ends`, which
   /// /api/nav puts on a shuttle leg's `campus`), a line each, as the web app says it at the top of
   /// a way (the site's sgbus-core.js, endingLines; keep in step): "IKEA's shuttle bus service ends
-  /// on 31 Dec 2026." None once the day's past, by Singapore's date, as Navigate no longer rides it
-  /// then. In English, as the rest.
+  /// on 31 Dec 2026.", and what to take instead where the leg says (`instead`): "Buses 296, 460 and
+  /// 68 from Tampines Interchange stop near IKEA." None once the day's past, by Singapore's date,
+  /// as Navigate no longer rides it then. In English, as the rest.
   static List<String> endingLines(Map? o) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final today = When.sgClock(When.nowMs()).ymd;
@@ -710,7 +712,14 @@ class SgbusCore {
       if (m == null || today.compareTo(ends as String) > 0 || !seen.add('${c['name']}|$ends')) continue;
       final month = int.parse(m[2]!);
       final date = month >= 1 && month <= 12 ? '${int.parse(m[3]!)} ${months[month - 1]} ${m[1]}' : ends;
-      out.add("${clean(c['name'] ?? '')}'s shuttle bus service ends on $date.");
+      final name = clean(c['name'] ?? '');
+      final instead = Campus.insteadOf(c['instead']);
+      final buses = instead == null
+          ? ''
+          : instead.buses.length < 2
+              ? instead.buses.join()
+              : '${instead.buses.sublist(0, instead.buses.length - 1).join(', ')} and ${instead.buses.last}';
+      out.add("$name's shuttle bus service ends on $date.${instead == null ? '' : ' Buses ${clean(buses)} from ${clean(instead.from)} stop near $name.'}");
     }
     return out;
   }

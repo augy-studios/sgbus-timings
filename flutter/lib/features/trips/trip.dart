@@ -84,7 +84,7 @@ class TripLeg {
   final String? trainFrom;
   final String? trainTo;
 
-  /// A shuttle ride's service, as its Navigate leg's `campus` has it: { uni, name, ends? }, for
+  /// A shuttle ride's service, as its Navigate leg's `campus` has it: { uni, name, ends?, instead? }, for
   /// the trip's notice that it's ending (Campus.ending). Null on any other ride.
   final Map<String, Object?>? shuttle;
 
@@ -1611,6 +1611,7 @@ class TripDone {
               'uni': (l['campus'] as Map)['uni'],
               'name': (l['campus'] as Map)['name'],
               'ends': ?((l['campus'] as Map)['ends'] as String?),
+              'instead': ?((l['campus'] as Map)['instead'] as Map?),
             }
           : null,
     ));

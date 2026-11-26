@@ -19,8 +19,9 @@
 // day after, its status is 'ended': it stays listed, as Discontinued in place of its times and with
 // no live lookups; Navigate never rides it (data/nav_core.dart's meanWait); and Explorer draws it
 // in its own layer, Discontinued shuttles (features/map/live_map.dart). Until then, a way or a
-// trip that rides it says when it ends (ending), and the next bus is never looked for past its
-// last day. Keep in step with the site's js/campus.js.
+// trip that rides it says when it ends (ending), with the buses to take instead where it says
+// (`instead`: { buses, from }), its own times say "Ends on 31 Dec 2026", and the next bus is never
+// looked for past its last day. Keep in step with the site's js/campus.js.
 import 'dart:math' as math;
 
 import 'package:flutter/painting.dart';
@@ -31,6 +32,14 @@ import 'stations.dart';
 import 'stops.dart';
 import 'store.dart';
 import 'when.dart';
+
+/// What to take in place of a shuttle that's ending (shuttles.json's `instead`): its buses, and
+/// where they're from.
+typedef ShuttleInstead = ({List<String> buses, String from});
+
+/// A shuttle service a way or a trip rides that's ending (Campus.ending): its group's name, its
+/// last day, and what to take instead.
+typedef ShuttleEnding = ({String name, String ends, ShuttleInstead? instead});
 
 class CampusBand {
   const CampusBand(this.from, this.to, this.min, this.max);
@@ -77,6 +86,7 @@ class CampusRoute {
     this.kmh,
     this.navigate = true,
     this.ends,
+    this.instead,
   });
   final String key; // "nus:A1"
   final String uni;
@@ -101,6 +111,13 @@ class CampusRoute {
   /// The last day it runs, "2026-12-31" by Singapore's calendar, or null (shuttles.json's `ends`,
   /// the route's or its group's).
   final String? ends;
+
+  /// What to take instead once it's ended (shuttles.json's `instead`, the route's or its group's):
+  /// the buses, and where they're from ("Tampines Interchange"), or null.
+  final ShuttleInstead? instead;
+
+  /// [instead] as a leg's `campus` and a trip's shuttle carry it: { buses, from }.
+  Map<String, Object?>? get insteadJson => instead == null ? null : {'buses': instead!.buses, 'from': instead!.from};
 
   bool get loop => ids.first == ids.last;
   bool get seasonal => timings.containsKey('term') || timings.containsKey('vacation');
@@ -386,6 +403,13 @@ class Campus {
             problems.add('$where: ends "$e" isn\'t a date (YYYY-MM-DD)');
             return null;
           }(),
+          instead: () {
+            final v = r['instead'] ?? conf['instead'];
+            if (v == null) return null;
+            final got = insteadOf(v);
+            if (got == null) problems.add('$where: instead isn\'t { "buses": [...], "from": "..." }');
+            return got;
+          }(),
         );
         routes.add(route);
         for (var i = 0; i < keys.length; i++) {
@@ -542,6 +566,14 @@ class Campus {
 
   // ---------- a route's end ----------
 
+  /// `instead` as shuttles.json, a leg's `campus` or a trip's shuttle has it, { buses: ["296", ...],
+  /// from: "Tampines Interchange" }, or null when it isn't that.
+  static ShuttleInstead? insteadOf(Object? v) {
+    if (v is! Map || v['buses'] is! List || v['from'] is! String || '${v['from']}'.trim().isEmpty) return null;
+    final buses = [for (final b in v['buses'] as List) if ('${b ?? ''}'.trim().isNotEmpty) '$b'.trim()];
+    return buses.isEmpty ? null : (buses: buses, from: '${v['from']}'.trim());
+  }
+
   /// Whether a service whose last day is [ends] ("2026-12-31") has ended by the moment [ms]:
   /// Singapore's date then is after it. No end, or one that isn't a date: never.
   static bool endedBy(Object? ends, int ms) => ends is String && _ymdRe.hasMatch(ends) && sgDay(ms).ymd.compareTo(ends) > 0;
@@ -557,32 +589,42 @@ class Campus {
       stop is String ? model?.stops[stop]?.routes.where((x) => x.route.code == code).firstOrNull?.route : null;
 
   /// The shuttle services the rides of a way or a trip ([legs], as /api/nav gives them) are on that
-  /// end but haven't by the moment [ms], each once, as (name, ends): its group's name ("IKEA") and
-  /// its last day. A ride's `campus` says them ({uni, name, ends}, from /api/nav and
-  /// data/nav_core.dart); one without `ends`, kept from before there was one, goes by its route in
-  /// the files. With [byStop], a bus ride with no `campus` is looked for among the shuttles at the
-  /// stop it's boarded at, as a trip from before it kept its shuttle has none.
-  static List<({String name, String ends})> ending(Iterable<Map> legs, int ms, {bool byStop = false}) {
-    final out = <({String name, String ends})>[];
+  /// end but haven't by the moment [ms], each once, as (name, ends, instead): its group's name
+  /// ("IKEA"), its last day, and the buses to take instead where it says. A ride's `campus` says
+  /// them ({uni, name, ends, instead}, from /api/nav and data/nav_core.dart); one without `ends`,
+  /// kept from before there was one, goes by its route in the files, and so does one without
+  /// `instead` that has a route to go by. With [byStop], a bus ride with no `campus` is looked for
+  /// among the shuttles at the stop it's boarded at, as a trip from before it kept its shuttle has
+  /// none.
+  static List<ShuttleEnding> ending(Iterable<Map> legs, int ms, {bool byStop = false}) {
+    final out = <ShuttleEnding>[];
     for (final l in legs) {
       if (l['mode'] == 'walk') continue;
       final c = l['campus'];
       final code = '${l['route'] ?? ''}';
       String? ends, name;
+      ShuttleInstead? instead;
       if (c is Map) {
         final uni = '${c['uni'] ?? ''}';
-        ends = c['ends'] is String ? c['ends'] as String : routeBy(uni, code)?.ends;
+        final r = c['ends'] is String && c['instead'] is Map ? null : routeBy(uni, code);
+        ends = c['ends'] is String ? c['ends'] as String : r?.ends;
+        instead = insteadOf(c['instead']) ?? r?.instead;
         name = '${c['name'] ?? ''}'.isNotEmpty ? '${c['name']}' : uniName(uni);
       } else if (byStop && l['mode'] == 'bus') {
         final r = rideAt(code, (l['from'] as Map?)?['code']);
         ends = r?.ends;
+        instead = r?.instead;
         name = r == null ? null : uniName(r.uni);
       }
       if (ends == null || name == null || !_ymdRe.hasMatch(ends) || endedBy(ends, ms)) continue;
-      if (!out.any((e) => e.name == name && e.ends == ends)) out.add((name: name, ends: ends));
+      if (!out.any((e) => e.name == name && e.ends == ends)) out.add((name: name, ends: ends, instead: instead));
     }
     return out;
   }
+
+  /// Whether [route] is ending but still runs at [ms] (now without it): its own times say until
+  /// when ("Ends on 31 Dec 2026").
+  static bool isEnding(CampusRoute route, [int? ms]) => route.ends != null && !ended(route, ms);
 
   /// Whether a way ([legs], as /api/nav gives them) rides a shuttle that has ended by [ms].
   static bool ridesEnded(Iterable<Map> legs, int ms) => legs.any((l) {

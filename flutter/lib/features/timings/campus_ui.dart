@@ -4,11 +4,13 @@
 // next bus seen live where the operator shares it; a campus stop LTA hasn't got ("PGP") as a
 // stop of its own, with its shuttles and no public buses; and a route's own window, what its
 // timetable says now from where it starts and its stops in order. A route that has ended
-// (shuttles.json's `ends`) stays, as Discontinued in place of its times, and isn't looked up live.
-// ShuttleEndsNotice tops a way or a trip that rides one that's ending.
+// (shuttles.json's `ends`) stays, as Discontinued in place of its times, and isn't looked up live;
+// until then its times say when it ends ("Ends on 31 Dec 2026"). ShuttleEndsNotice tops a way or a
+// trip that rides one that's ending.
 import 'package:material_ui/material_ui.dart';
 
 import '../../app/nav.dart';
+import '../../data/arrivals.dart' show listText;
 import '../../data/campus.dart';
 import '../../data/when.dart';
 import '../../i18n/i18n.dart';
@@ -36,16 +38,22 @@ class CampusBadge extends StatelessWidget {
       );
 }
 
+/// Under an ending route's times, until its last day: "Ends on 31 Dec 2026".
+String campusEndsOn(CampusRoute r) => tr('campus.endsOn', 'Ends on {date}', {'date': When.dateYear(r.ends ?? '')});
+
 /// At the top of a way or a trip that rides a shuttle service that's ending (Campus.ending): "IKEA's
-/// shuttle bus service ends on 31 Dec 2026.", a line for each such service. Nothing when there's
-/// none, as after the end, when no way rides it.
+/// shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop
+/// near IKEA.", a line for each such service, its second sentence only where shuttles.json says
+/// what to take instead. Nothing when there's none, as after the end, when no way rides it.
 class ShuttleEndsNotice extends StatelessWidget {
   const ShuttleEndsNotice(this.ending, {super.key, this.padding = const EdgeInsets.only(top: 8)});
-  final List<({String name, String ends})> ending;
+  final List<ShuttleEnding> ending;
   final EdgeInsets padding;
 
-  static String text(({String name, String ends}) e) =>
-      tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", {'name': e.name, 'date': When.dateYear(e.ends)});
+  static String text(ShuttleEnding e) => [
+        tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", {'name': e.name, 'date': When.dateYear(e.ends)}),
+        if (e.instead case final i?) tr('nav.shuttle.instead', 'Buses {buses} from {from} stop near {name}.', {'buses': listText(i.buses), 'from': i.from, 'name': e.name}),
+      ].join(' ');
 
   @override
   Widget build(BuildContext context) {
@@ -152,6 +160,8 @@ class _CampusListState extends State<CampusList> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(d.main, style: const TextStyle(fontWeight: FontWeight.w700)),
                   Text([Campus.uniName(r.uni), if (d.sub.isNotEmpty) d.sub, ...terms].join(' · '), style: TextStyle(color: sg.muted, fontSize: 13)),
+                  // Ending: until when, till its last day is over.
+                  if (Campus.isEnding(r, ms)) Text(campusEndsOn(r), style: TextStyle(color: sg.warn, fontWeight: FontWeight.w600, fontSize: 13)),
                   if (live != null)
                     Text(live <= 0 ? tr('campus.liveNow', 'Live: arriving') : tr('campus.liveMin', 'Live: {n} min', {'n': '$live'}),
                         style: TextStyle(color: sg.brandInk, fontWeight: FontWeight.w600, fontSize: 13)),
@@ -283,10 +293,14 @@ class CampusRouteScreen extends StatelessWidget {
             CampusBadge(r, size: 16),
             const SizedBox(width: 12),
             Expanded(
-              child: Text.rich(TextSpan(children: [
-                TextSpan(text: now.main, style: const TextStyle(fontWeight: FontWeight.w700)),
-                if (now.sub.isNotEmpty) TextSpan(text: ' · ${now.sub}', style: TextStyle(color: sg.muted)),
-              ])),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text.rich(TextSpan(children: [
+                  TextSpan(text: now.main, style: const TextStyle(fontWeight: FontWeight.w700)),
+                  if (now.sub.isNotEmpty) TextSpan(text: ' · ${now.sub}', style: TextStyle(color: sg.muted)),
+                ])),
+                // Ending: until when, till its last day is over.
+                if (Campus.isEnding(r)) Text(campusEndsOn(r), style: TextStyle(color: sg.warn, fontWeight: FontWeight.w600, fontSize: 13)),
+              ]),
             ),
           ]),
         ),

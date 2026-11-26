@@ -318,6 +318,8 @@ List<NavRun> _busRuns(List<NavNode> nodes, Map<String, int> busNode, Map<String,
         ],
         // Its last day, for the way's notice that it's ending (as /api/nav's leg has it).
         'ends': ?route.ends,
+        // What to take instead, for the same notice (shuttles.json's `instead`).
+        'instead': ?route.insteadJson,
       },
       towards: nodes[path.last].name,
       nodes: path,
