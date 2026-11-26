@@ -1535,8 +1535,8 @@ function tripFromNav(o, to, from = nav.from) {
       ...(l.mode === 'bus' && !l.campus && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l), usual: l.usual }),
       // A shuttle bus: no LTA timings to follow it by (js/trip.js, which needs `service` for
       // them), only the plan's; its stops still open their shuttle times. `ends`, its last day
-      // while it's ending, for the trip's notice (js/campus.js, endsNotice).
-      ...(l.campus && { shuttle: { name: l.campus.name, colour: l.campus.colour, route: l.route, ...(l.campus.ends && { ends: l.campus.ends }) }, codes: busCodes(l) }),
+      // while it's ending, and `instead`, for the trip's notice (js/campus.js, endsNotice).
+      ...(l.campus && { shuttle: { name: l.campus.name, colour: l.campus.colour, route: l.route, ...(l.campus.ends && { ends: l.campus.ends }), ...(l.campus.instead && { instead: l.campus.instead }) }, codes: busCodes(l) }),
       // The line, for Your trips' chips and Trip Modes.
       // Its stations' codes, for Last train soon (js/trip.js, watchLastTrain).
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt, trainFrom: l.from?.code, trainTo: l.to?.code }),

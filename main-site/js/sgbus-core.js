@@ -755,7 +755,11 @@
         if (!c?.ends || today > c.ends || seen.has(`${c.name}|${c.ends}`)) continue;
         seen.add(`${c.name}|${c.ends}`);
         const date = new Date(`${c.ends}T12:00:00+08:00`).toLocaleDateString('en-GB', { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric' });
-        out.push(`${c.name}'s shuttle bus service ends on ${date}.`);
+        // And what to take instead, where it says (`campus.instead`): "Buses 296, 460 and 68 from
+        // Tampines Interchange stop near IKEA."
+        const buses = Array.isArray(c.instead?.buses) ? c.instead.buses.map(String).filter(Boolean) : [];
+        const instead = buses.length && c.instead?.from ? ` Buses ${new Intl.ListFormat('en-GB', { type: 'conjunction' }).format(buses)} from ${c.instead.from} stop near ${c.name}.` : '';
+        out.push(`${c.name}'s shuttle bus service ends on ${date}.${instead}`);
       }
       return out;
     }

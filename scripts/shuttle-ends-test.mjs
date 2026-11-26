@@ -5,17 +5,19 @@
 //
 //   node scripts/shuttle-ends-test.mjs    the real network, from the Flutter app's test fixtures
 //
-//   1. shuttles.json: IKEA's group ends on 31 December 2026, and its two routes read it.
-//   2. Bus timings (js/campus.js, status and describe): the times on 31 Dec at 18:00, and
-//      Discontinued, with no live times, on 1 Jan 2027 at 10:00; 31 Dec after the last bus
-//      looks for none in the new year.
+//   1. shuttles.json: IKEA's group ends on 31 December 2026, with the buses its notice says to
+//      take instead (`instead`), and its two routes read both.
+//   2. Bus timings (js/campus.js, status and describe): the times on 31 Dec at 18:00, with
+//      "Ends on 31 Dec 2026" under them, and Discontinued, with no live times, on 1 Jan 2027 at
+//      10:00; 31 Dec after the last bus looks for none in the new year.
 //   3. Explorer (lines, dots, anyEnded): IKEA's lines and its own stops ended only from 1 Jan.
 //   4. Navigate (js/nav-core, as /api/nav and the phone plan): Serangoon MRT to IKEA Tampines
 //      rides IKEA S on 31 Dec at 18:00 and 19:00, with `campus.ends` on its leg, and never on
 //      1 or 2 Jan 2027, whenever it's planned from: the graph is the same one throughout. And
 //      without `ends`, the same plans do ride it.
 //   4b. Live times (api/shuttle-live.js): the tracker asked on 31 Dec, never from 1 Jan.
-//   5. The notice (endingOn, endsNotice): on a way's legs and a trip's, before the end only.
+//   5. The notice (endingOn, endsNotice): on a way's legs and a trip's, before the end only, with
+//      the buses to take instead; in Chinese too.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
@@ -52,6 +54,23 @@ test("shuttles.json: IKEA's group ends on 31 December 2026", () => {
 test("both IKEA routes read it from their group; no other route ends", () => {
   assert.deepEqual(ikea.map((r) => [r.code, r.ends]), [["IKEA T", "2026-12-31"], ["IKEA S", "2026-12-31"]]);
   assert.deepEqual(model.routes.filter((r) => r.ends && r.uni !== "ikea"), []);
+});
+
+const INSTEAD = { buses: ["296", "460", "68"], from: "Tampines Interchange" };
+test("shuttles.json: IKEA's notice says to take 296, 460 or 68 from Tampines Interchange, and both routes read it", () => {
+  assert.deepEqual(raw.shuttles.groups.ikea.instead, INSTEAD);
+  assert.deepEqual(ikea.map((r) => r.instead), [INSTEAD, INSTEAD]);
+  assert.deepEqual(model.routes.filter((r) => r.instead && r.uni !== "ikea"), []);
+});
+
+test("a route's own `instead` comes before its group's, and one without buses or where from is a problem", () => {
+  const m = C.build({ shuttles: { groups: { x: { name: "X", instead: { buses: ["1"], from: "A Int" }, stops: [{ id: "a", name: "A", loc: "1.30,103.80" }, { id: "b", name: "B", loc: "1.31,103.81" }], routes: [
+    { id: "R1", stops: ["a", "b"], timings: { daily: ["0900"] } },
+    { id: "R2", instead: { buses: [2, "3"], from: "B Int" }, stops: ["a", "b"], timings: { daily: ["0900"] } },
+    { id: "R3", instead: { buses: [] }, stops: ["a", "b"], timings: { daily: ["0900"] } },
+  ] } } } }, {});
+  assert.deepEqual(m.routes.map((r) => r.instead), [{ buses: ["1"], from: "A Int" }, { buses: ["2", "3"], from: "B Int" }, null]);
+  assert.ok(m.problems.some((p) => /x R3: instead needs its buses/.test(p)), m.problems.join("; "));
 });
 
 test("a route's own `ends` comes before its group's, and one that isn't a date is a problem", () => {
@@ -124,19 +143,29 @@ test("Explorer: IKEA's three own stops go with them; no other stop does", () => 
   assert.deepEqual(ended(AFTER), ["ikea-serangoon-mrt", "ikea-tampines", "ikea-tampines-mrt"]);
 });
 
-test("Bus timings at IKEA Tampines: its times on 31 Dec, Discontinued with no live times on 1 Jan", () => {
+test("Bus timings at IKEA Tampines: its times on 31 Dec, each with when it ends, Discontinued with no live times on 1 Jan", () => {
   const before = C.listHtml("ikea-tampines", BEFORE);
   const after = C.listHtml("ikea-tampines", AFTER);
   assert.match(before, /data-live-route="ikea:IKEA T"/);
   assert.doesNotMatch(before, /Discontinued/);
+  assert.equal((before.match(/<span class="campusEnds">Ends on 31 Dec 2026<\/span>/g) || []).length, 2);
+  assert.doesNotMatch(after, /campusEnds|Ends on/);
   assert.equal((after.match(/<strong>Discontinued<\/strong>/g) || []).length, 2);
   assert.doesNotMatch(after, /data-live-route/);
   assert.match(after, /class="campusRow off ended"/);
 });
 
-test("a route's own window says Discontinued from 1 Jan", () => {
+test("a route's own window says when it ends till then, and Discontinued from 1 Jan", () => {
   assert.equal(C.route("ikea:IKEA T", AFTER).now.main, "Discontinued");
+  assert.equal(C.route("ikea:IKEA T", AFTER).ends, "");
   assert.notEqual(C.route("ikea:IKEA T", BEFORE).now.main, "Discontinued");
+  assert.equal(C.route("ikea:IKEA T", BEFORE).ends, "Ends on 31 Dec 2026");
+  assert.equal(C.route("ikea:IKEA T", sg("2026-12-31T23:59")).ends, "Ends on 31 Dec 2026");
+});
+
+test("no other shuttle's times say they end", () => {
+  assert.deepEqual(model.routes.filter((r) => r.uni !== "ikea" && C.endsOnText(r, BEFORE)), []);
+  assert.doesNotMatch(C.listHtml("ikea-tampines-mrt", AFTER) + C.listHtml("16181", BEFORE), /campusEnds/);
 });
 
 // ---------- 4. Navigate ----------
@@ -153,6 +182,7 @@ test("31 Dec 2026, leaving at 18:00: a way rides IKEA S, its leg carrying when i
   assert.ok(legs.length, "no way on IKEA's shuttle");
   assert.equal(legs[0].route, "IKEA S");
   assert.equal(legs[0].campus.ends, "2026-12-31");
+  assert.deepEqual(legs[0].campus.instead, INSTEAD);
   assert.equal(legs[0].campus.name, "IKEA");
 });
 
@@ -228,16 +258,46 @@ async function askLive(ms, route = "ikea:IKEA T", stop = "ikea-tampines") {
 
 const way = planFor(graph, FROM, TO, { mode: "leave", ms: BEFORE }, null).options.find((o) => o.legs.some((l) => l.campus?.uni === "ikea"));
 
-test("the notice: a way on it says, until it ends", () => {
-  assert.deepEqual(C.endsNotice(way.legs, BEFORE), ["IKEA's shuttle bus service ends on 31 Dec 2026."]);
-  assert.deepEqual(C.endsNotice(way.legs, sg("2026-12-31T23:59")), ["IKEA's shuttle bus service ends on 31 Dec 2026."]);
+const NOTICE = "IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA.";
+test("the notice: a way on it says, until it ends, with the buses to take instead", () => {
+  assert.deepEqual(C.endsNotice(way.legs, BEFORE), [NOTICE]);
+  assert.deepEqual(C.endsNotice(way.legs, sg("2026-12-31T23:59")), [NOTICE]);
   assert.deepEqual(C.endsNotice(way.legs, AFTER), []);
 });
 
+test("the notice: without `instead`, its first sentence alone", () => {
+  const legs = [{ mode: "bus", campus: { name: "IKEA", ends: "2026-12-31" } }];
+  assert.deepEqual(C.endsNotice(legs, BEFORE), ["IKEA's shuttle bus service ends on 31 Dec 2026."]);
+  assert.deepEqual(C.endsNotice([{ mode: "bus", campus: { name: "IKEA", ends: "2026-12-31", instead: { buses: [], from: "X" } } }], BEFORE), ["IKEA's shuttle bus service ends on 31 Dec 2026."]);
+});
+
+test("the notice: one bus, or two, said as a list", () => {
+  const one = [{ mode: "bus", campus: { name: "X", ends: "2026-12-31", instead: { buses: ["296"], from: "Y Int" } } }];
+  const two = [{ mode: "bus", campus: { name: "X", ends: "2026-12-31", instead: { buses: ["296", "460"], from: "Y Int" } } }];
+  assert.match(C.endsNotice(one, BEFORE)[0], /Buses 296 from Y Int stop near X\.$/);
+  assert.match(C.endsNotice(two, BEFORE)[0], /Buses 296 and 460 from Y Int stop near X\.$/);
+});
+
 test("the notice: a trip's legs (js/nav.js's tripFromNav, `shuttle`) too, once for two rides on it", () => {
-  const legs = [{ kind: "walk" }, { kind: "bus", shuttle: { name: "IKEA", route: "IKEA T", ends: "2026-12-31" } }, { kind: "bus", shuttle: { name: "IKEA", route: "IKEA S", ends: "2026-12-31" } }];
-  assert.deepEqual(C.endingOn(legs, BEFORE), [{ name: "IKEA", ends: "2026-12-31" }]);
+  const legs = [{ kind: "walk" }, { kind: "bus", shuttle: { name: "IKEA", route: "IKEA T", ends: "2026-12-31", instead: INSTEAD } }, { kind: "bus", shuttle: { name: "IKEA", route: "IKEA S", ends: "2026-12-31", instead: INSTEAD } }];
+  assert.deepEqual(C.endingOn(legs, BEFORE), [{ name: "IKEA", ends: "2026-12-31", instead: INSTEAD }]);
+  assert.deepEqual(C.endsNotice(legs, BEFORE), [NOTICE]);
   assert.deepEqual(C.endingOn(legs, AFTER), []);
+});
+
+test("the notice and the times' line in Chinese: its words, date and list", () => {
+  const zh = JSON.parse(readFileSync(new URL("../main-site/i18n/zh-SG.json", import.meta.url), "utf8"));
+  const fill = (text, vars) => text.replace(/\{(\w+)\}/g, (m, k) => vars[k] ?? m);
+  globalThis.I18n = { lang: () => "zh-SG", t: (key, en, vars) => fill(zh[key] ?? en, vars || {}) };
+  try {
+    const date = C.dateText("2026-12-31");
+    const buses = new Intl.ListFormat("zh-SG", { type: "conjunction" }).format(INSTEAD.buses);
+    assert.doesNotMatch(date, /Dec/);
+    assert.deepEqual(C.endsNotice(way.legs, BEFORE), [fill(zh["nav.shuttle.ends"], { name: "IKEA", date }) + fill(zh["nav.shuttle.instead"], { buses, from: INSTEAD.from, name: "IKEA" })]);
+    assert.equal(C.route("ikea:IKEA T", BEFORE).ends, fill(zh["campus.endsOn"], { date }));
+  } finally {
+    delete globalThis.I18n;
+  }
 });
 
 test("the notice: none on a shuttle that isn't ending, or on a way with no shuttle", () => {

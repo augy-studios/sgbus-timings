@@ -94,8 +94,9 @@ export function campusRuns(files, nodes, busNode, crossings = {}) {
         fareText: route.fareText,
         access: route.access,
         place,
-        // Its last day, while it's ending (Campus.endingOn).
+        // Its last day, while it's ending, and what to take instead (Campus.endingOn).
         ...(route.ends && { ends: route.ends }),
+        ...(route.instead && { instead: route.instead }),
       },
       towards: nodes[path[path.length - 1]].name,
       nodes: path,

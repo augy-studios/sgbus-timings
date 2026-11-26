@@ -48,12 +48,19 @@ def last_train_text(leg: dict) -> str:
         return f"Only the last {rank} trains to {to} are left today. The last is at {leg['lastTrain']}."
     return f"Last train to {to} from here today is at {leg['lastTrain']}. Don't miss it."
 
+def _list_text(items: list) -> str:
+    """"296, 460 and 68", as the web app's Intl.ListFormat says it in English."""
+    return items[0] if len(items) == 1 else f"{', '.join(items[:-1])} and {items[-1]}"
+
+
 def ending_lines(option: dict, today: "date | None" = None) -> list:
     """A shuttle bus service on a way that's ending (help desk #22), a line each: "⚠️ IKEA's
-    shuttle bus service ends on 31 Dec 2026." From each shuttle leg's `campus.ends`, its last day
-    as a Singapore date (the site's data/campus/shuttles.json, which /api/nav sends). None once
-    that day's past (`today`, Singapore's), as Navigate no longer rides it then. As the web app
-    says it at the top of a way (js/campus.js, endsNotice); keep in step."""
+    shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop
+    near IKEA." From each shuttle leg's `campus.ends`, its last day as a Singapore date (the site's
+    data/campus/shuttles.json, which /api/nav sends), and `campus.instead`, what to take instead,
+    where it has one. None once that day's past (`today`, Singapore's), as Navigate no longer
+    rides it then. As the web app says it at the top of a way (js/campus.js, endsNotice); keep in
+    step."""
     today = (today or now().astimezone(SG).date()).isoformat()
     out, seen = [], set()
     for leg in option.get("legs") or []:
@@ -67,7 +74,13 @@ def ending_lines(option: dict, today: "date | None" = None) -> list:
             day = f"{d.day} {d:%b} {d.year}"
         except ValueError:
             day = ends
-        out.append(f"⚠️ {c.get('name') or 'This'}'s shuttle bus service ends on {day}.")
+        name = c.get("name") or "This"
+        line = f"⚠️ {name}'s shuttle bus service ends on {day}."
+        instead = c.get("instead") or {}
+        buses = [str(b) for b in instead.get("buses") or [] if b]
+        if buses and instead.get("from"):
+            line += f" Buses {_list_text(buses)} from {instead['from']} stop near {name}."
+        out.append(line)
     return out
 
 

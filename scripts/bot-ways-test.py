@@ -180,14 +180,19 @@ ok("the last one: don't miss it", "Last train to Bedok station from here today i
 # ---------- a shuttle that's ending (help desk #22, shuttles.json's `ends`) ----------
 from datetime import date
 from src.nav_view import ending_lines
-NOTICE = "⚠️ IKEA's shuttle bus service ends on 31 Dec 2026."
+NOTICE = "⚠️ IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA."
 ikea = {'minutes': 57, 'legs': [
     {'mode': 'bus', 'route': 'IKEA S', 'stops': 1, 'minutes': 28, 'from': {'kind': 'stop', 'code': 'ikea-serangoon-mrt', 'name': 'Serangoon Stn Exit E'},
-     'to': {'kind': 'stop', 'code': 'ikea-tampines', 'name': 'IKEA Tampines'}, 'campus': {'uni': 'ikea', 'name': 'IKEA', 'ends': '2026-12-31'}},
+     'to': {'kind': 'stop', 'code': 'ikea-tampines', 'name': 'IKEA Tampines'}, 'campus': {'uni': 'ikea', 'name': 'IKEA', 'ends': '2026-12-31',
+                                                                                'instead': {'buses': ['296', '460', '68'], 'from': 'Tampines Interchange'}}},
     {'mode': 'walk', 'metres': 30, 'minutes': 1, 'to': {'kind': 'place'}}]}
 ok('ending: a way on it says so on 31 Dec 2026', ending_lines(ikea, date(2026, 12, 31)) == [NOTICE], ending_lines(ikea, date(2026, 12, 31)))
 ok('…and not from 1 Jan 2027', ending_lines(ikea, date(2027, 1, 1)) == [])
 ok('…nor on a shuttle with no end, or a way with none', ending_lines({'legs': [{'mode': 'bus', 'route': 'A1', 'campus': {'name': 'NUS'}}, {'mode': 'bus', 'route': '21'}]}) == [])
+plain = {'legs': [{'mode': 'bus', 'route': 'X1', 'campus': {'name': 'X', 'ends': '2026-12-31'}}]}
+ok('ending: without `instead`, its first sentence alone', ending_lines(plain, date(2026, 12, 31)) == ["⚠️ X's shuttle bus service ends on 31 Dec 2026."], ending_lines(plain, date(2026, 12, 31)))
+two = {'legs': [{'mode': 'bus', 'route': 'X1', 'campus': {'name': 'X', 'ends': '2026-12-31', 'instead': {'buses': ['296', '460'], 'from': 'Y Int'}}}]}
+ok('ending: two buses said as a list', ending_lines(two, date(2026, 12, 31))[0].endswith(' Buses 296 and 460 from Y Int stop near X.'), ending_lines(two, date(2026, 12, 31)))
 if date.today() <= date(2026, 12, 31):
     rich, _ = build_nav_option(start, home, ikea, {})
     ok('ending: at the top of the way, under its title', rich['fallback'].splitlines()[3] == NOTICE, rich['fallback'])

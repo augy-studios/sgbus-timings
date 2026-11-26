@@ -136,8 +136,19 @@ times. Narrowed to one bus, the list steps aside. On
 [Explorer](explorer.md#shuttle-buses), the shuttles' routes and their own stops
 are on the map.
 
-A shuttle that has ended, such as IKEA's after 31 Dec 2026, stays in the list but
-says **Discontinued** in place of its times, with no live times.
+A shuttle that's ending says when under its times, such as **Ends on 31 Dec
+2026** for IKEA's. Once it has ended, it stays in the list but says
+**Discontinued** in place of its times, with no live times.
+
+<figure>
+<img src="/screenshots/web/timings-shuttle-ends.png" alt="IKEA Tampines on Thursday 31 December 2026: a note that only shuttle buses stop here, then Shuttle buses, scheduled times, not live: IKEA T at 14:45, 15:45 and 16:30 and IKEA S at 14:40, 15:40 and 16:45, both leaving here, each saying Live: 6 min and, in orange, Ends on 31 Dec 2026." width="342" height="425" loading="lazy">
+<figcaption>IKEA Tampines on the shuttles' last day: each route says when it ends.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/timings-shuttle-discontinued.png" alt="IKEA Tampines on Friday 1 January 2027: Shuttle buses, scheduled times, not live: IKEA T and IKEA S, each greyed, saying Discontinued, IKEA." width="342" height="349" loading="lazy">
+<figcaption>The day after: Discontinued, with no times and nothing live.</figcaption>
+</figure>
 
 <figure>
 <img src="/screenshots/web/timings-shuttle-stop.png" alt="IKEA Tampines, a stop only shuttle buses use: a note that only shuttle buses stop here, then Shuttle buses, scheduled times, not live: IKEA T at 12:25, 13:05 and 13:45, leaving here, and IKEA S at 13:40, 14:40 and 15:40, leaving here, each saying Live: 6 min." width="342" height="391" loading="lazy">

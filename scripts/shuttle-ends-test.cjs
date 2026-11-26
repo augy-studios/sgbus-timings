@@ -12,14 +12,16 @@
 // IKEA Tampines, one on IKEA S (its leg's `campus.ends` as the API sends it) and one on bus 53.
 //
 // What it checks:
-//   1. 31 Dec 2026, 18:00: Navigate's list says IKEA's shuttle bus service ends on 31 Dec 2026
-//      under the IKEA way only; the way's page says it first, above the rest; a trip started from
-//      it says it at the top of its timeline. Bus timings at IKEA Tampines has its times, not
-//      Discontinued.
+//   1. 31 Dec 2026, 18:00: Navigate's list says IKEA's shuttle bus service ends on 31 Dec 2026,
+//      and which buses stop near IKEA instead, under the IKEA way only; the way's page says it
+//      first, above the rest; a trip started from it says it at the top of its timeline. Bus
+//      timings at IKEA Tampines has its times, not Discontinued, each with "Ends on 31 Dec 2026"
+//      under them, and so does IKEA S's own window.
 //   2. 1 Jan 2027, 10:00: the same way (as an old copy of the API might still send it) says
 //      nothing; Bus timings at IKEA Tampines says Discontinued for both routes, with no live
 //      times asked for; IKEA S's own window says Discontinued and nothing after it.
-//   3. In Chinese, the notice and Discontinued are in Chinese, the date too.
+//   3. In Chinese, the notice, "Ends on" and Discontinued are in Chinese, the date and the list
+//      of buses too.
 //   4. No page errors.
 const path = require('path');
 const fs = require('fs');
@@ -38,7 +40,8 @@ const SHOTS = process.env.SHOTS && path.resolve(process.env.SHOTS);
 const ORIGIN = 'https://sgbus.test';
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 const ZH = JSON.parse(fs.readFileSync(path.join(SITE, 'i18n/zh-SG.json'), 'utf8'));
-const NOTICE = "IKEA's shuttle bus service ends on 31 Dec 2026.";
+const NOTICE = "IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA.";
+const INSTEAD = { buses: ['296', '460', '68'], from: 'Tampines Interchange' };
 
 let fails = 0;
 const ok = (name, cond, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'} ${name}${extra ? ` :: ${extra}` : ''}`); if (!cond) fails++; };
@@ -56,7 +59,7 @@ const WAYS = [
     legs: [
       { mode: 'bus', route: 'IKEA S', towards: 'Serangoon Stn Exit E', from: SERANGOON, to: IKEA, stops: 1, minutes: 28, wait: 30, board: 30,
         path: [[SERANGOON.lat, SERANGOON.lng], [IKEA.lat, IKEA.lng]], names: [SERANGOON.name, IKEA.name], dir: undefined, codes: [SERANGOON.code, IKEA.code],
-        campus: { uni: 'ikea', name: 'IKEA', colour: '#0058a3', label: 'IKEA Tampines shuttle, Serangoon MRT', fare: 'free', fareText: '', access: 'public', place: [], ends: '2026-12-31' } },
+        campus: { uni: 'ikea', name: 'IKEA', colour: '#0058a3', label: 'IKEA Tampines shuttle, Serangoon MRT', fare: 'free', fareText: '', access: 'public', place: [], ends: '2026-12-31', instead: INSTEAD } },
       { mode: 'walk', metres: 40, minutes: 1, to: { kind: 'place' } },
     ],
   },
@@ -126,7 +129,7 @@ const listed = (page) => page.$$eval('#navBody .journeyItem', (els) => els.map((
   ends: [...el.querySelectorAll('.shuttleEnds')].map((x) => x.textContent.trim()),
 })));
 const ikeaIndex = (page) => page.$$eval('#navBody .journeyItem', (els) => els.find((el) => /IKEA S/.test(el.textContent))?.dataset.navOption);
-const campusRows = (page) => page.$$eval('#campusSvc .campusRow', (els) => els.map((el) => ({ no: el.querySelector('.campusNo').textContent, main: el.querySelector('strong').textContent, live: el.hasAttribute('data-live-route'), cls: el.className })));
+const campusRows = (page) => page.$$eval('#campusSvc .campusRow', (els) => els.map((el) => ({ no: el.querySelector('.campusNo').textContent, main: el.querySelector('strong').textContent, live: el.hasAttribute('data-live-route'), cls: el.className, ends: el.querySelector('.campusEnds')?.textContent || '' })));
 
 (async () => {
   const browser = await playwright.chromium.launch({ headless: true, ...(process.env.CHROME && { executablePath: process.env.CHROME }) });
@@ -166,6 +169,13 @@ const campusRows = (page) => page.$$eval('#campusSvc .campusRow', (els) => els.m
     await page.waitForFunction(() => document.querySelectorAll('#campusSvc .campusRow').length === 2, null, { timeout: 10000 });
     const rows = await campusRows(page);
     ok('1. Bus timings at IKEA Tampines: its times, live where seen, not Discontinued', rows.length === 2 && rows.every((r) => r.main !== 'Discontinued' && r.live), JSON.stringify(rows));
+    ok('1. …each saying when it ends', rows.every((r) => r.ends === 'Ends on 31 Dec 2026'), JSON.stringify(rows));
+    await shot(page, '1-timings.png', '#resultCard');
+    await page.evaluate(() => openCampusRoute('ikea:IKEA S'));
+    await page.waitForFunction(() => !document.getElementById('campusRouteModal').classList.contains('hidden'));
+    const now = await page.evaluate(() => ({ main: document.querySelector('#campusRouteNow strong')?.textContent, ends: document.querySelector('#campusRouteNow .campusEnds')?.textContent }));
+    ok("1. IKEA S's window: its times, and when it ends under them", now.main !== 'Discontinued' && now.ends === 'Ends on 31 Dec 2026', JSON.stringify(now));
+    await page.evaluate(() => closeModal('campusRouteModal'));
     ok('1. no page errors', errors.length === 0, errors.join(' | '));
     await context.close();
   }
@@ -183,7 +193,7 @@ const campusRows = (page) => page.$$eval('#campusSvc .campusRow', (els) => els.m
     await page.waitForFunction(() => document.querySelectorAll('#campusSvc .campusRow').length === 2, null, { timeout: 10000 });
     await page.waitForTimeout(500);
     const rows = await campusRows(page);
-    ok('2. Bus timings at IKEA Tampines: Discontinued, both, greyed', rows.length === 2 && rows.every((r) => r.main === 'Discontinued' && !r.live && /\boff\b/.test(r.cls) && /\bended\b/.test(r.cls)), JSON.stringify(rows));
+    ok('2. Bus timings at IKEA Tampines: Discontinued, both, greyed, and no "Ends on"', rows.length === 2 && rows.every((r) => r.main === 'Discontinued' && !r.live && /\boff\b/.test(r.cls) && /\bended\b/.test(r.cls) && !r.ends), JSON.stringify(rows));
     const sub = await page.$$eval('#campusSvc .campusWhen > span:not(.campusLive)', (els) => els.map((e) => e.textContent));
     ok('2. …with only whose they are under it', sub.every((t) => t === 'IKEA'), JSON.stringify(sub));
     ok('2. no live times asked for', asked.length === 0, asked.join(' '));
@@ -200,9 +210,14 @@ const campusRows = (page) => page.$$eval('#campusSvc .campusRow', (els) => els.m
     const { context, page, errors } = await site(browser, { at: '2026-12-31T18:00:00+08:00', lang: 'zh-SG' });
     await navTo(page);
     const date = new Date('2026-12-31T12:00:00+08:00').toLocaleDateString('zh-SG', { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric' });
-    const want = ZH['nav.shuttle.ends'].replace('{name}', 'IKEA').replace('{date}', date);
+    const buses = new Intl.ListFormat('zh-SG', { type: 'conjunction' }).format(INSTEAD.buses);
+    const want = ZH['nav.shuttle.ends'].replace('{name}', 'IKEA').replace('{date}', date) +
+      ZH['nav.shuttle.instead'].replace('{buses}', buses).replace('{from}', INSTEAD.from).replace('{name}', 'IKEA');
     const ikea = (await listed(page)).find((w) => /IKEA S/.test(w.ride));
-    ok('3. the notice in Chinese, its date too', ikea?.ends.join() === want && !/Dec/.test(want), `${ikea?.ends.join()} / ${want}`);
+    ok('3. the notice in Chinese, its date and buses too', ikea?.ends.join() === want && !/Dec| and /.test(want), `${ikea?.ends.join()} / ${want}`);
+    await page.evaluate(() => Campus.load().then(() => loadStop('ikea-tampines')));
+    await page.waitForFunction(() => document.querySelectorAll('#campusSvc .campusRow').length === 2, null, { timeout: 10000 });
+    ok('3. "Ends on" in Chinese', (await campusRows(page)).every((r) => r.ends === ZH['campus.endsOn'].replace('{date}', date)), JSON.stringify(await campusRows(page)));
     ok('3. no page errors', errors.length === 0, errors.join(' | '));
     await context.close();
   }

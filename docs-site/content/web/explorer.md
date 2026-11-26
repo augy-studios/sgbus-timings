@@ -114,11 +114,17 @@ both too.
 <figcaption>SGH's Orange, Blue and Car Park H shuttles at Outram.</figcaption>
 </figure>
 
-A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026. Once a
-shuttle has ended, its card still lists it but says **Discontinued** in place of
-its times, with no live times, and its routes and its own stops move to
+A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026, and until
+then their cards say **Ends on 31 Dec 2026** under their times. Once a shuttle
+has ended, its card still lists it but says **Discontinued** in place of its
+times, with no live times, and its routes and its own stops move to
 **Discontinued shuttles** in [Layers](#layers). A bus stop that public buses
 use stays a normal bus stop.
+
+<figure>
+<img src="/screenshots/web/explorer-shuttle-discontinued.png" alt="Explorer over Tampines on Friday 1 January 2027 with Discontinued shuttles on: IKEA's two routes as dashed blue lines, IKEA T looping from IKEA Tampines on Tampines North Drive 2 down to Tampines station and back, and IKEA S heading west along the TPE towards Serangoon, IKEA Tampines' stop a white dot edged in blue, over the East West and Downtown lines." width="390" height="844" loading="lazy">
+<figcaption>Discontinued shuttles on, the day after IKEA's ended: its routes dashed.</figcaption>
+</figure>
 
 ## Directions
 
@@ -158,6 +164,11 @@ on:
 - **Discontinued shuttles**, the routes and stops of shuttles that have ended,
   with the routes drawn dashed. It only shows here once a shuttle has ended,
   and it's off until you turn it on.
+
+<figure>
+<img src="/screenshots/web/explorer-layers-discontinued.png" alt="Explorer's Layers: What Explorer shows on its map. Tap one to turn it off or on. Bus stops, MRT and LRT stations, MRT and LRT lines, Shuttle bus routes, Shuttle bus stops and Discontinued shuttles, all on." width="366" height="253" loading="lazy">
+<figcaption>Layers once a shuttle has ended, Discontinued shuttles turned on.</figcaption>
+</figure>
 
 The map changes as you tap. Your choice is kept on this device for next time.
 

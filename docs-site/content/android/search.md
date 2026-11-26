@@ -45,8 +45,8 @@ Type either the full word or the short one, and the search finds both.
 Shuttle buses come up as you type too: a route by its code, such as `A1` for NUS's,
 and a stop only shuttles use by its name, marked **Shuttle buses only**. A stop opens
 with its [shuttle times](timings.md#shuttle-buses). A route opens on a screen of its
-own, with what its timetable says now and its stops in order. A route that has ended says **Discontinued** in
-place of its times.
+own, with what its timetable says now and its stops in order. A route that's ending says when, such as **Ends on
+31 Dec 2026**, and one that has ended says **Discontinued** in place of its times.
 
 ### Train times at a station
 

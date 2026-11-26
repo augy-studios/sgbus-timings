@@ -4041,6 +4041,9 @@ body.touring { overflow: hidden; }
 .campusWhen strong { font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 .campusWhen span { font-size: 0.75rem; color: var(--muted-strong); }
 .campusRow.off .campusWhen strong { color: var(--muted-strong); font-weight: 600; }
+/* A shuttle that's ending (help desk #22): "Ends on 31 Dec 2026", a line of its own, in its
+   row's times and its route's window. */
+.campusWhen .campusEnds, #campusRouteNow .campusEnds { display: block; font-size: 0.75rem; font-weight: 600; color: var(--warn); }
 .campusFoot { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .mapCard .campusRow { padding: 6px 8px; }
 @media (forced-colors: active) {

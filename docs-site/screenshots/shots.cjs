@@ -16,7 +16,8 @@
 // are 2.3.0's: coins, colours, shuttles, nav-shuttle and shuttle-setting, past-trips, and the
 // secret pages': eggs, secrets, material and console. 2 November 2026's (coins-switch, first-run,
 // feats-new, bug-pictures, trip-ccl) need no live data at all. 3 November 2026's (nav-exits,
-// nav-save-stop, bug-whole) are always still too.
+// nav-save-stop, bug-whole) are always still too. 27 November 2026's shuttle-ends (help desk #22,
+// IKEA's shuttles ending) is always still, at its own two moments.
 const path = require('path');
 let chromium;
 try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(path.join(require('child_process').execSync('npm root -g').toString().trim(), 'playwright'))); }
@@ -134,9 +135,9 @@ function stillNet() {
     .catch((e) => { NET = null; throw e; });
   return NET;
 }
-async function stillArrivals(stop) {
+async function stillArrivals(stop, when = STILL_AT) {
   const { at, runs, ops } = await stillNet();
-  const now = STILL_AT.toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' }).replace(':', '');
+  const now = when.toLocaleTimeString('en-GB', { timeZone: 'Asia/Singapore', hour: '2-digit', minute: '2-digit' }).replace(':', '');
   const services = [];
   for (const [no, dirs] of Object.entries(runs)) {
     for (const run of Object.values(dirs)) {
@@ -163,9 +164,10 @@ async function stillArrivals(stop) {
 }
 
 // `ua`: a browser to be, such as Chrome on Android for the app's download bar. `still`: see the
-// top. `mapHook`: the live map's MapLibre map kept as window.__map, to move by hand. `answers`:
-// what the fake app says, APP_ANSWERS unless given.
-async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, answers = APP_ANSWERS, ua = null, still = !!process.env.STILL, mapHook = false } = {}) {
+// top; `at`, the moment its clock stops (STILL_AT unless given). `mapHook`: the live map's
+// MapLibre map kept as window.__map, to move by hand. `answers`: what the fake app says,
+// APP_ANSWERS unless given.
+async function open(browser, { width = 1000, height = 1200, hash = '', extra = {}, geo = null, touch = false, app = false, answers = APP_ANSWERS, ua = null, still = !!process.env.STILL, at = STILL_AT, mapHook = false } = {}) {
   const ctx = await browser.newContext({
     viewport: { width, height }, deviceScaleFactor: 3, isMobile: touch, hasTouch: touch, colorScheme: 'light', locale: 'en-SG', timezoneId: 'Asia/Singapore',
     ...(ua && { userAgent: ua }),
@@ -179,10 +181,10 @@ async function open(browser, { width = 1000, height = 1200, hash = '', extra = {
     ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: 'k3v9q2x7ma', path: '/go/k3v9q2x7ma' }) })
     : r.continue()));
   if (still) {
-    await ctx.clock.setFixedTime(STILL_AT);
+    await ctx.clock.setFixedTime(at);
     await ctx.route(/\/api\/bus-arrivals\?/, async (r) => {
       const q = new URL(r.request().url()).searchParams;
-      const a = await stillArrivals(q.get('stop'));
+      const a = await stillArrivals(q.get('stop'), at);
       if (q.get('service')) a.services = a.services.filter((x) => x.serviceNo === q.get('service'));
       r.fulfill({ contentType: 'application/json', body: JSON.stringify(a) });
     });
@@ -2092,6 +2094,85 @@ async function drawConsole(browser, shots) {
   // this checkout's own router as nav-exits is. Always still. With LTA_ACCOUNT_KEY set, the
   // times are this checkout's api/trains.js, from LTA's timetable for STILL_AT; without, the
   // live site's /api/trains.
+  // Help desk #22: IKEA's shuttles end after Thursday 31 December 2026 (data/campus/shuttles.json,
+  // `ends`, and `instead`, the buses its notice says to take). The page's clock stopped on its last
+  // afternoon, Thu 31 Dec 14:00, then the day after, Fri 1 Jan 2027 14:00. On the last afternoon:
+  // a way from NEX by Serangoon station to IKEA Tampines on IKEA S, planned with this checkout's
+  // own router over the live stops and routes, with its notice in the list, on its page and at the
+  // top of its trip's timeline; Bus timings at IKEA Tampines, each route saying when it ends (its
+  // next bus live, made up). The day after: Bus timings there saying Discontinued; Explorer's
+  // Layers with Discontinued shuttles turned on, and the map with IKEA's lines dashed. Always still.
+  if (want('shuttle-ends')) {
+    const LAST = new Date('2026-12-31T14:00:00+08:00');
+    const AFTER = new Date('2027-01-01T14:00:00+08:00');
+    const { pathToFileURL } = require('url');
+    const fs = require('fs');
+    const site = path.resolve(__dirname, '../../main-site');
+    const core = (f) => import(pathToFileURL(path.join(site, 'js/nav-core', f)).href);
+    const [{ buildGraph }, { planFor }] = await Promise.all([core('network.js'), core('plan.js')]);
+    const j = (f) => JSON.parse(fs.readFileSync(path.join(site, f), 'utf8'));
+    const [stops, routes] = await Promise.all(['bus-stops', 'bus-routes'].map((a) => liveJson(a)));
+    const graph = buildGraph(j('data/rail.json'), stops, routes, { campus: { nus: j('data/campus/nus.json'), ntu: j('data/campus/ntu.json'), config: j('data/campus/config.json'), shuttles: j('data/campus/shuttles.json') } });
+    const ikea = { label: 'IKEA Tampines', lat: 1.37405, lng: 103.93255 };
+    const { options } = planFor(graph, NEX, ikea, { mode: 'leave', ms: LAST.getTime() }, null, {});
+    if (!options.some((o) => o.legs.some((l) => l.campus?.uni === 'ikea'))) console.log('no way on IKEA S');
+    const liveShuttle = (ctx) => ctx.route(/\/api\/shuttle-live\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ eta: 6, buses: [], at: Date.now() }) }));
+    const ikeaStop = async (page) => {
+      await page.evaluate(() => Campus.load().then(() => loadStop('ikea-tampines')));
+      await page.waitForSelector('#campusSvc:not([hidden]) .campusRow', { timeout: 20000 }).catch(() => console.log('no shuttles'));
+      await page.waitForTimeout(1200);
+      await blur(page);
+    };
+    {
+      const { ctx, page } = await open(browser, { width: 420, height: 2400, still: true, at: LAST });
+      await ctx.route(/\/api\/nav\?/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify({ options, onemap: false, alerts: { lines: [] }, when: { mode: 'now', ms: LAST.getTime() }, traffic: null, others: {} }) }));
+      await liveShuttle(ctx);
+      await page.evaluate(([a, b]) => { location.hash = `#nav/${a}/${b}`; }, [enc(NEX), enc(ikea)]);
+      await idle(page, '#navBody');
+      await blur(page);
+      await el(page, '#navBody .journeyItem:has(.shuttleEnds)', 'nav-shuttle-ends-list.png');
+      const i = await page.$eval('#navBody .journeyItem:has(.shuttleEnds)', (x) => x.dataset.navOption).catch(() => '0');
+      await page.click(`#navBody [data-nav-option="${i}"]`);
+      await page.waitForTimeout(1500);
+      await blur(page);
+      await el(page, '#navBody', 'nav-shuttle-ends.png');
+      await page.click('#navBody [data-nav-action="trip"]');
+      await page.waitForTimeout(800);
+      await page.click('#tripToggle');
+      await page.waitForTimeout(1500);
+      await el(page, '#tripBar', 'trip-shuttle-ends.png');
+      await page.evaluate(() => Trip.stop());
+      await page.waitForTimeout(500);
+      await ikeaStop(page);
+      await page.waitForSelector('#campusSvc .campusLive:not([hidden])', { timeout: 20000 }).catch(() => console.log('no live'));
+      await page.waitForTimeout(600);
+      await cardDown(page, '#resultCard', '#campusSvc', 'timings-shuttle-ends.png');
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser, { width: 420, height: 1200, still: true, at: AFTER });
+      await ikeaStop(page);
+      await cardDown(page, '#resultCard', '#campusSvc', 'timings-shuttle-discontinued.png');
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await open(browser, { width: 390, height: 844, touch: true, still: true, at: AFTER, mapHook: true });
+      await exploreOpen(page, 7000);
+      await page.click('#mapLayers');
+      await page.waitForTimeout(600);
+      await page.click('#layersPick [data-layer="discontinued"]');
+      await page.waitForTimeout(800);
+      await el(page, '#layersModal .modal', 'explorer-layers-discontinued.png');
+      await page.click('[data-close-modal="layersModal"]');
+      await page.waitForTimeout(500);
+      // IKEA T to Tampines station, and IKEA S heading off west to Serangoon.
+      await page.evaluate(() => window.__map?.jumpTo({ center: [103.939, 1.360], zoom: 13.5 }));
+      await page.waitForTimeout(9000);
+      await page.screenshot({ path: OUT + 'explorer-shuttle-discontinued.png' });
+      console.log('wrote explorer-shuttle-discontinued.png 390 844');
+      await ctx.close();
+    }
+  }
   if (want('trains')) {
     const { pathToFileURL } = require('url');
     const site = path.resolve(__dirname, '../../main-site');

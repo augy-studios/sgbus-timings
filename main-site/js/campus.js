@@ -34,7 +34,9 @@
 //
 // A route that's stopping for good (help desk #22: IKEA's, after 31 December 2026) has `ends`, its
 // last day, a Singapore date, on its route or its group in shuttles.json. Until then a way on it
-// says so at the top (endingOn, endsNotice: js/nav.js, js/trip.js). From the next day it's
+// says so at the top (endingOn, endsNotice: js/nav.js, js/trip.js), with the buses its operator
+// says to take instead where it has `instead` ({ buses, from }, the same way), and its own times
+// say "Ends on 31 Dec 2026" (endsOnText: listHtml, and route() for its window). From the next day it's
 // 'ended': kept in Bus timings and Explorer, said to be Discontinued in place of its times, with
 // no live times, drawn in Explorer's Discontinued shuttles layer (js/map.js), and never ridden by
 // Navigate (status, so js/nav-core/campus.js's meanWait never boards it). Keep in step with the
@@ -197,6 +199,17 @@
     return null;
   }
 
+  // A route's `instead`, what to take once it's gone, as { buses: ["296", ...], from: "Tampines
+  // Interchange" }, or null: none, or one that isn't that (a problem).
+  function insteadOf(v, where, problems) {
+    if (v == null) return null;
+    const buses = Array.isArray(v?.buses) ? v.buses.map((b) => String(b ?? '').trim()).filter(Boolean) : [];
+    const from = typeof v?.from === 'string' ? v.from.trim() : '';
+    if (buses.length && from) return { buses, from };
+    problems.push(`${where}: instead needs its buses and where they're from`);
+    return null;
+  }
+
   // The shuttles from Augy's files (`raw`: { nus, ntu, config }) against LTA's stops (`lta`:
   // code -> { n, road, lat, lng }, script.js's stopsIndex; {} without it). Gives
   //   stops     Map of key -> { key, lta, uni, id, name, road, lat, lng, routes: [{ route, i }] },
@@ -302,6 +315,8 @@
           source: r.source || conf.source || '',
           // Its last day, a Singapore date ("2026-12-31"), or null while it isn't ending.
           ends: endsOf(r.ends ?? conf.ends, where, problems),
+          // What to take once it's gone ({ buses, from }), or null.
+          instead: insteadOf(r.instead ?? conf.instead, where, problems),
         };
         routes.push(route);
         keys.forEach((key, i) => {
@@ -598,10 +613,13 @@
       // it's discontinued, and then nothing on what it cost either.
       const gone = st.state === 'ended';
       const live = !gone && (route.live?.stops?.[stop.id] || route.live?.stops?.[key]) ? ` data-live-route="${esc(route.key)}" data-live-stop="${esc(key)}"` : '';
+      // Ending, until its last day: a line of its own under the rest, "Ends on 31 Dec 2026".
+      const ending = endsOnText(route, ms);
       return `<div class="campusRow${off ? ' off' : ''}${gone ? ' ended' : ''}"${live} style="--route:${esc(route.colour)};--route-ink:${inkOn(route.colour)}">` +
         `<span class="campusNo" title="${esc(route.name || tr('campus.routeTitle', '{uni} shuttle {route}', { uni, route: route.code }))}">${esc(route.code)}</span>` +
         `<span class="campusWhen"><strong>${esc(main)}</strong><span>${esc([uni, sub, ...(gone ? [] : terms)].filter(Boolean).join(' · '))}</span>` +
-        (live ? `<span class="campusLive" hidden></span>` : '') + `</span></div>`;
+        (live ? `<span class="campusLive" hidden></span>` : '') +
+        (ending ? `<span class="campusEnds">${esc(ending)}</span>` : '') + `</span></div>`;
     }).join('');
     const notes = [...seasons].map((s) => {
       const [uni, which] = s.split(':');
@@ -681,7 +699,8 @@
   }
 
   // A route by its key ("nus:A1"), as Bus timings' route window wants it: its university, colour,
-  // stops in order, and what its timetable says now from where it starts. Null if there's none.
+  // stops in order, and what its timetable says now from where it starts, with `ends`, "Ends on
+  // 31 Dec 2026" while it's ending ('' otherwise). Null if there's none.
   function route(key, ms = Date.now()) {
     const r = model?.routes.find((x) => x.key === key);
     if (!r) return null;
@@ -695,6 +714,7 @@
       ink: inkOn(r.colour),
       loop: r.loop,
       now: { main, sub },
+      ends: endsOnText(r, ms),
       stops: r.keys.map((k, i) => (k && model.stops.get(k)) || { key: null, name: r.ids[i], lta: false }),
     };
   }
@@ -712,22 +732,45 @@
     }
   }
 
+  // A list in the site's language: "296, 460 and 68" (en-GB for English, Intl.ListFormat).
+  function listText(items) {
+    const lang = root.I18n?.lang?.() || 'en';
+    try {
+      return new Intl.ListFormat(lang === 'en' ? 'en-GB' : lang, { type: 'conjunction' }).format(items);
+    } catch {
+      return items.join(', ');
+    }
+  }
+
+  // A route's own times while it's ending, until its last day: "Ends on 31 Dec 2026"; '' for
+  // one that isn't ending, or has ended (Discontinued says it then).
+  const endsOnText = (route, ms = Date.now()) => (route?.ends && !ended(route, ms) ? tr('campus.endsOn', 'Ends on {date}', { date: dateText(route.ends) }) : '');
+
   // The shuttles on a way's or a trip's legs that are ending but still run at `ms`: [{ name,
-  // ends }], once each. A leg's shuttle is its `campus` (/api/nav's, js/nav-core/campus.js) or,
-  // on a trip, its `shuttle` (js/nav.js, tripFromNav); either has the group's `name` and `ends`.
+  // ends, instead }], once each. A leg's shuttle is its `campus` (/api/nav's,
+  // js/nav-core/campus.js) or, on a trip, its `shuttle` (js/nav.js, tripFromNav); either has the
+  // group's `name` and `ends`, and `instead` where it has one.
   function endingOn(legs, ms = Date.now()) {
     const out = [];
     for (const l of legs || []) {
       const c = l?.campus || l?.shuttle;
       if (!c?.ends || ended(c, ms) || out.some((x) => x.name === c.name && x.ends === c.ends)) continue;
-      out.push({ name: c.name || '', ends: c.ends });
+      const buses = Array.isArray(c.instead?.buses) ? c.instead.buses.map(String).filter(Boolean) : [];
+      out.push({ name: c.name || '', ends: c.ends, instead: buses.length && c.instead?.from ? { buses, from: String(c.instead.from) } : null });
     }
     return out;
   }
 
   // What a way or a trip on an ending shuttle says at its top, a line each: "IKEA's shuttle bus
-  // service ends on 31 Dec 2026."
-  const endsNotice = (legs, ms = Date.now()) => endingOn(legs, ms).map((x) => tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", { name: x.name, date: dateText(x.ends) }));
+  // service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near
+  // IKEA." The second sentence only where it has `instead`.
+  const endsNotice = (legs, ms = Date.now()) => endingOn(legs, ms).map((x) => {
+    const ends = tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", { name: x.name, date: dateText(x.ends) });
+    if (!x.instead) return ends;
+    const instead = tr('nav.shuttle.instead', 'Buses {buses} from {from} stop near {name}.', { buses: listText(x.instead.buses), from: x.instead.from, name: x.name });
+    // Chinese's full stop needs no space after it.
+    return `${ends}${/[。！？]$/.test(ends) ? '' : ' '}${instead}`;
+  });
 
   // The credits for the map's attribution: those of the universities with a line of `list`
   // (lines(), or the same drawn along the roads) in `view`, the map's [[south, west], [north,
@@ -736,7 +779,7 @@
 
   const api = {
     MERGE_M, hhmm, clock, parseLoc, readTimings, build, season, status, describe, inkOn, sgDay, creditsIn,
-    ended, dateText, endingOn, endsNotice, anyEnded,
+    ended, dateText, listText, endsOnText, endingOn, endsNotice, anyEnded,
     load, at, listHtml, live, lines, roadKey, loadRoads, road, uniName: (uni) => model?.config?.[uni]?.name || String(uni || '').toUpperCase(), dots, credits, search, route, isReady: () => !!model,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;

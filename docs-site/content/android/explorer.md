@@ -63,8 +63,9 @@ its timetable says now, and the next bus live where the operator shows it. Paid 
 on **Free and paid** in [Settings](settings.md#navigate). The operators' credits show while their routes are in
 view.
 
-A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026. Once a shuttle has ended, its card still lists
-it but says **Discontinued** in place of its times, with no live times, and its routes and own stops move to
+A shuttle can end. IKEA's shuttles stop running after 31 Dec 2026, and until then their cards say **Ends on 31 Dec
+2026** under their times. Once a shuttle has ended, its card still lists it but says **Discontinued** in place of
+its times, with no live times, and its routes and own stops move to
 **Discontinued shuttles** in [Layers](#layers). A bus stop that public buses use stays a normal bus stop.
 
 ## Directions

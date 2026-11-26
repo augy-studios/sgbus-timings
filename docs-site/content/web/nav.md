@@ -298,14 +298,31 @@ timed at about 15 km/h.
   and the TS1 to Johor Bahru.
 - A hotel's or a condo's shuttle is only used on a way that starts or ends
   there.
-- A shuttle that's ending says so. IKEA's shuttle bus service ends on 31 Dec
-  2026, and until then a way that rides it says **IKEA's shuttle bus service
-  ends on 31 Dec 2026.** at the top of its page, under it in the list of ways,
-  and at the top of its trip's timeline when you tap the trip bar.
+- A shuttle that's ending says so, and what to take instead where its
+  operator says. IKEA's shuttle bus service ends on 31 Dec 2026, and until
+  then a way that rides it says **IKEA's shuttle bus service ends on 31 Dec
+  2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA.** at
+  the top of its page, under it in the list of ways, and at the top of its
+  trip's timeline when you tap the trip bar.
 - From 1 Jan 2027 a way never uses it. The cut-off follows the date of the
   trip you're planning, not today's: a trip planned for 2 January leaves the
   IKEA shuttle out even in December, and one for 31 December at 7pm still
   uses it.
+
+<figure>
+<img src="/screenshots/web/nav-shuttle-ends-list.png" alt="A way in Navigate's list on Thursday 31 December 2026: Least walking, IKEA IKEA S in IKEA's blue, about 61 min, no change, 90 m walk, and under it in orange: IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA." width="316" height="159" loading="lazy">
+<figcaption>On the shuttles' last day, a way on IKEA's says it's ending, and which buses to take instead.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/nav-shuttle-ends.png" alt="The way from NEX to IKEA Tampines, opened: All ways, Refresh and Start trip, then in orange, IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA. Under it, about 61 min, no change, 90 m walk: walk about 90 m to Serangoon Stn Exit E, then IKEA S, 1 stop, about 28 min, to IKEA Tampines, board around 14:32 after the timetable's average wait, IKEA Tampines shuttle, Serangoon MRT, Free." width="316" height="576" loading="lazy">
+<figcaption>The way's page says it first, above the rest.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/trip-shuttle-ends.png" alt="The trip bar opened on the trip to IKEA Tampines: at the top, in orange, IKEA's shuttle bus service ends on 31 Dec 2026. Buses 296, 460 and 68 from Tampines Interchange stop near IKEA. Then Change my way and Back to Navigate, the walk from NEX to Serangoon Stn Exit E, and IKEA shuttle IKEA S from Serangoon Stn Exit E to IKEA Tampines." width="396" height="512" loading="lazy">
+<figcaption>A trip on it says the same at the top of its timeline.</figcaption>
+</figure>
 
 ## Open a way
 

@@ -1431,8 +1431,9 @@ function openCampusRoute(key) {
     $('#campusRouteBadge').textContent = r.code;
     $('#campusRouteBadge').style.setProperty('--route', r.colour);
     $('#campusRouteBadge').style.setProperty('--route-ink', r.ink);
-    // A discontinued route (help desk #22) says only that.
-    $('#campusRouteNow').innerHTML = `<strong>${escapeHtml(r.now.main)}</strong>${r.now.sub ? ` · ${escapeHtml(r.now.sub)}` : ''}`;
+    // A discontinued route (help desk #22) says only that; one that's ending says when, under it.
+    $('#campusRouteNow').innerHTML = `<strong>${escapeHtml(r.now.main)}</strong>${r.now.sub ? ` · ${escapeHtml(r.now.sub)}` : ''}` +
+        (r.ends ? `<span class="campusEnds">${escapeHtml(r.ends)}</span>` : '');
     $('#campusRouteStops').innerHTML = r.stops.map((s, i) => (s.key
         ? `<button type="button" class="routeStop" data-campus-open="${escapeHtml(s.key)}"><span class="name">${escapeHtml(s.name)}${s.road ? `<span class="road">${escapeHtml(s.road)}</span>` : ''}</span>${s.lta ? `<span class="pill">${escapeHtml(s.key)}</span>` : ''}</button>`
         : `<div class="routeStop"><span class="name">${escapeHtml(s.name)}</span></div>`)).join('');
