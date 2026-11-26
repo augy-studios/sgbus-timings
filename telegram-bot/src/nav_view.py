@@ -6,7 +6,7 @@ site's /api/nav (nav_api.py), the same as the web app's Navigate."""
 from telethon import Button
 
 import re
-from datetime import timedelta
+from datetime import date, timedelta
 from urllib.parse import quote
 
 from . import ways as W
@@ -19,7 +19,7 @@ from .navs import is_favourite_nav, list_favourite_navs, row_via
 from .pagination import nav_row, paginate
 from .saved_places import KINDS, list_places
 from .user_settings import get_fare_type, get_nav_sort, get_preferred_buses
-from .when import at_to_dt, clock, clock_day, describe, live_lead, now, span
+from .when import SG, at_to_dt, clock, clock_day, describe, live_lead, now, span
 
 MAX_OPTIONS = 8
 
@@ -47,6 +47,29 @@ def last_train_text(leg: dict) -> str:
     if rank in (2, 3):
         return f"Only the last {rank} trains to {to} are left today. The last is at {leg['lastTrain']}."
     return f"Last train to {to} from here today is at {leg['lastTrain']}. Don't miss it."
+
+def ending_lines(option: dict, today: "date | None" = None) -> list:
+    """A shuttle bus service on a way that's ending (help desk #22), a line each: "⚠️ IKEA's
+    shuttle bus service ends on 31 Dec 2026." From each shuttle leg's `campus.ends`, its last day
+    as a Singapore date (the site's data/campus/shuttles.json, which /api/nav sends). None once
+    that day's past (`today`, Singapore's), as Navigate no longer rides it then. As the web app
+    says it at the top of a way (js/campus.js, endsNotice); keep in step."""
+    today = (today or now().astimezone(SG).date()).isoformat()
+    out, seen = [], set()
+    for leg in option.get("legs") or []:
+        c = leg.get("campus") or {}
+        ends = c.get("ends")
+        if not ends or today > ends or (c.get("name"), ends) in seen:
+            continue
+        seen.add((c.get("name"), ends))
+        try:
+            d = date.fromisoformat(ends)
+            day = f"{d.day} {d:%b} {d.year}"
+        except ValueError:
+            day = ends
+        out.append(f"⚠️ {c.get('name') or 'This'}'s shuttle bus service ends on {day}.")
+    return out
+
 
 def place_button_text(p: dict) -> str:
     """A found place as its Did you mean button reads, with what tells it apart from the
@@ -270,7 +293,8 @@ def build_nav_panel(chat_id: int, start, end, awaiting: "str | None" = None, res
                 lead = f"{_clocks(when, o['minutes'])}{late} · ~{o['minutes']} min" if when else f"~{o['minutes']} min"
                 tags = " ".join(W.TAG_NAMES[t] for t in tagged[i - 1])
                 text = f"{i}. {lead} · {option_summary(o)}{' · ' + ', '.join(extra) if extra else ''}{warn}"
-                lines = [text, *([f"   {tags}"] if tags else [])]
+                # A shuttle on it that's ending, under it.
+                lines = [text, *([f"   {tags}"] if tags else []), *(f"   {t}" for t in ending_lines(o))]
                 # The buses you'd catch, live, for a way whose first ride is a bus.
                 leg = first_bus(o, when)
                 if leg:
@@ -366,6 +390,11 @@ def build_nav_option(start, end, option: dict, timings: dict, when=None, clock_t
     head = f"~{option['minutes']} min" + (f" · {fare}" if fare else "")
     md = [f"# 🧭 {escape_md(head)}", " → ".join(escape_md(x) for x in ends), ""]
     plain = [f"🧭 {head}", " → ".join(ends), ""]
+    # A shuttle on it that's ending, before anything else.
+    ending = ending_lines(option)
+    if ending:
+        md += [*(escape_md(t) for t in ending), ""]
+        plain += [*ending, ""]
     buttons = []
     legs = option["legs"]
     live = option_is_live(option, when)

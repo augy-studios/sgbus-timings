@@ -18,6 +18,10 @@
 //   5. Outside Explorer, its button isn't shown.
 //   6. In Malay, the window is in Malay.
 //   7. No page errors.
+//   8. Discontinued shuttles (help desk #22): not in Layers before a shuttle has ended. With the
+//      page's clock on 1 January 2027, after IKEA's last day: in Layers, off, IKEA's lines and its
+//      own stops drawn only once it's on, the lines dashed (`muted`); Shuttle bus routes and stops
+//      off leave them on; kept after a reload, in sgbus_explorer_layers_on.
 const path = require('path');
 const fs = require('fs');
 
@@ -121,8 +125,9 @@ const explorerReady = (page) => page.waitForFunction(() => window.LiveMap.mode()
     ok('2. its Layers button', await visible(page, '#mapLayers'));
     await page.click('#mapLayers');
     ok('2. the window opens', await shown(page, 'layersModal'));
-    const layers = await page.$$eval('#layersPick [data-layer]', (els) => els.map((el) => `${el.textContent.trim()}=${el.getAttribute('aria-pressed')}`));
+    const layers = await page.$$eval('#layersPick [data-layer]:not([hidden])', (els) => els.map((el) => `${el.textContent.trim()}=${el.getAttribute('aria-pressed')}`));
     ok('2. every layer, on', layers.join(' | ') === 'Bus stops=true | MRT and LRT stations=true | MRT and LRT lines=true | Shuttle bus routes=true | Shuttle bus stops=true', layers.join(' | '));
+    ok('8. no Discontinued shuttles while none has ended', !(await visible(page, '#layersPick [data-layer="discontinued"]')));
     ok('3. over the map', await page.evaluate(() => {
       const r = document.querySelector('#layersModal .modal').getBoundingClientRect();
       return !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest('#layersModal');
@@ -168,6 +173,52 @@ const explorerReady = (page) => page.waitForFunction(() => window.LiveMap.mode()
     ok('6. title in Malay', (await page.textContent('#layersTitle')).trim() === MS['layers.title']);
     ok('6. layers in Malay', (await page.textContent('#layersPick [data-layer="shuttles"]')).trim() === MS['layers.shuttles']);
     ok('7. no page errors (Malay)', errors.length === 0, errors.join(' | '));
+    await context.close();
+  }
+
+  // 8. After IKEA's shuttles' last day (31 December 2026).
+  {
+    const context = await browser.newContext({ viewport: { width: 400, height: 820 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+    await context.clock.setFixedTime(new Date('2027-01-01T10:00:00+08:00'));
+    const { page, errors } = await site(browser, 'en', context);
+    await page.click('#explorerBtn');
+    await explorerReady(page);
+    await page.waitForFunction(() => (window.__drawn.shuttles || []).length > 0, null, { timeout: 15000 }).catch(() => {});
+    const drawn = () => page.evaluate(() => {
+      const ikea = (window.__drawn.shuttles || []).filter((l) => l.uni === 'ikea');
+      const dots = (window.__drawn.pois || []).filter((d) => d.kind === 'campus' && /^ikea-/.test(d.pick?.key));
+      return { ikea: ikea.length, muted: ikea.every((l) => l.muted), others: (window.__drawn.shuttles || []).filter((l) => l.uni !== 'ikea').length, dots: dots.length };
+    });
+    let now = await drawn();
+    ok("8. after the end: IKEA's lines and stops not drawn, the other shuttles still are", now.ikea === 0 && now.dots === 0 && now.others > 0, JSON.stringify(now));
+    await page.click('#mapLayers');
+    ok('8. Discontinued shuttles in Layers, off', await visible(page, '#layersPick [data-layer="discontinued"]')
+      && await page.getAttribute('#layersPick [data-layer="discontinued"]', 'aria-pressed') === 'false'
+      && (await page.textContent('#layersPick [data-layer="discontinued"]')).trim() === 'Discontinued shuttles');
+    await page.click('#layersPick [data-layer="discontinued"]');
+    await page.waitForTimeout(300);
+    now = await drawn();
+    ok("8. turned on: IKEA's two lines, dashed, and its three stops", now.ikea === 2 && now.muted && now.dots === 3 && now.others > 0, JSON.stringify(now));
+    await page.click('#layersPick [data-layer="shuttles"]');
+    await page.click('#layersPick [data-layer="campus"]');
+    await page.waitForTimeout(300);
+    now = await drawn();
+    ok('8. Shuttle bus routes and stops off: the discontinued ones stay', now.ikea === 2 && now.others === 0 && now.dots === 3, JSON.stringify(now));
+    ok('8. kept in their own keys', await page.evaluate(() => JSON.stringify([JSON.parse(localStorage.getItem('sgbus_explorer_layers_on')), JSON.parse(localStorage.getItem('sgbus_explorer_layers')).sort()])) === JSON.stringify([['discontinued'], ['campus', 'shuttles']]));
+    await page.click('#layersPick [data-layer="shuttles"]');
+    await page.click('#layersPick [data-layer="campus"]');
+    await page.reload();
+    await page.waitForFunction(() => window.MainScreen && window.LiveMap && document.documentElement.hasAttribute('data-view'));
+    await page.evaluate(() => { document.querySelectorAll('.modal-backdrop:not(.hidden):not(.docked)').forEach((m) => window.closeModal?.(m.id)); LiveMap.explore(); });
+    await page.waitForFunction(() => LiveMap.mode() === 'explore' && (window.__drawn.shuttles || []).some((l) => l.uni === 'ikea'), null, { timeout: 15000 }).catch(() => {});
+    now = await drawn();
+    ok('8. still on after a reload', now.ikea === 2 && now.others > 0, JSON.stringify(now));
+    await page.click('#mapLayers');
+    await page.click('#layersPick [data-layer="discontinued"]');
+    await page.waitForTimeout(300);
+    now = await drawn();
+    ok('8. and off again', now.ikea === 0 && now.dots === 0 && now.others > 0 && await page.evaluate(() => localStorage.getItem('sgbus_explorer_layers_on')) === '[]', JSON.stringify(now));
+    ok('8. no page errors', errors.length === 0, errors.join(' | '));
     await context.close();
   }
 

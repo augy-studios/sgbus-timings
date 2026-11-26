@@ -36,7 +36,7 @@
 // edged in white the same way. credit(html) puts the credit for what's in view in the map's
 // attribution, apart from the lines, so it changes without drawing them again. A campus stop
 // LTA hasn't got is a poi of kind 'campus' (pois), a stop's dot edged in its university's colour,
-// from zoom 14.
+// from zoom 14. A discontinued shuttle (`muted`, help desk #22) is dashed, over its white edge.
 //
 // Everything's cached by sw.js: the library, the styles, fonts, sprites and every tile seen.
 //
@@ -304,7 +304,12 @@
         id: 'sg-shuttle-edge', type: 'line', source: 'sg-shuttle', layout: railLayout,
         paint: { 'line-color': '#ffffff', 'line-width': shuttleWidths(2), 'line-opacity': dark() ? 0.35 : 0.9 },
       });
-      add({ id: 'sg-shuttle', type: 'line', source: 'sg-shuttle', layout: railLayout, paint: { 'line-color': ['get', 'color'], 'line-width': shuttleWidths(0) } });
+      add({ id: 'sg-shuttle', type: 'line', source: 'sg-shuttle', layout: railLayout, filter: ['!=', ['get', 'muted'], true], paint: { 'line-color': ['get', 'color'], 'line-width': shuttleWidths(0) } });
+      // Discontinued (help desk #22): dashed, so it isn't taken for one still running.
+      add({
+        id: 'sg-shuttle-off', type: 'line', source: 'sg-shuttle', layout: { 'line-join': 'round' }, filter: ['==', ['get', 'muted'], true],
+        paint: { 'line-color': ['get', 'color'], 'line-width': shuttleWidths(0), 'line-dasharray': [2, 1.5] },
+      });
       if (!map.getSource('sg-poi')) map.addSource('sg-poi', { type: 'geojson', data: poiData });
       const grow = (small, big) => ['interpolate', ['linear'], ['zoom'], toGl(POI_STOP_ZOOM), small, toGl(19), big];
       add({
@@ -529,9 +534,9 @@
         railData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
         map.getSource('sg-rail')?.setData(railData);
       },
-      // Explorer's campus shuttles, [{ color, points }]; [] takes them away.
+      // Explorer's campus shuttles, [{ color, muted?, points }], `muted` dashed; [] takes them away.
       shuttles(list) {
-        shuttleData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color } })) };
+        shuttleData = { type: 'FeatureCollection', features: list.map((r) => ({ type: 'Feature', geometry: lineGeo(r.points), properties: { color: r.color, muted: !!r.muted } })) };
         map.getSource('sg-shuttle')?.setData(shuttleData);
       },
       // The credit for the data in view, as HTML ready for the attribution ('' for none). A
@@ -747,7 +752,8 @@
         const s = shuttleStyle();
         const opts = { pane: 'sgRails', renderer: railRenderer, lineCap: 'round', lineJoin: 'round', interactive: false };
         for (const r of list) L.polyline(r.points, { ...opts, ...s.edge, color: '#ffffff', sgEdge: true }).addTo(shuttleLayer);
-        for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1 }).addTo(shuttleLayer);
+        // Discontinued (`muted`, help desk #22): dashed.
+        for (const r of list) L.polyline(r.points, { ...opts, ...s.line, color: r.color, opacity: 1, ...(r.muted && { dashArray: '6 5', lineCap: 'butt' }) }).addTo(shuttleLayer);
       },
       credit(html = '') {
         if (html === creditHtml) return;

@@ -1120,6 +1120,12 @@ function legChip(leg) {
 
 const shuttleInk = (hex) => (window.Campus?.inkOn ? Campus.inkOn(hex) : '#fff');
 
+// A way on a shuttle bus service that's ending (shuttles.json's `ends`, help desk #22), a line
+// each: "IKEA's shuttle bus service ends on 31 Dec 2026." (js/campus.js, endsNotice), from each
+// leg's `campus`, as /api/nav and the phone's planning send it. None once it's ended, as Navigate
+// no longer rides it then.
+const endsNotice = (o) => (window.Campus?.endsNotice ? Campus.endsNotice(o.legs) : []);
+
 // What a shuttle costs and who may ride it, in words: "Free", "S$2.50", "Hotel guests only".
 function shuttleTerms(c) {
   const fare = c.fare === 'paid' ? (c.fareText || I18n.t('nav.shuttle.paid', 'Paid')) : I18n.t('nav.shuttle.free', 'Free');
@@ -1167,6 +1173,7 @@ function navOptionItem(o, i) {
     `<span class="journeyDetail">${escapeHtml(detail)}</span>` +
     (firstBus(o) ? `<span class="wayLive" data-way-live="${i}">${liveBlock(o)}</span>` : '') +
     (o.disrupted ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.disruptedLine', 'A line on this journey has a disruption'))}</span>` : '') +
+    endsNotice(o).map((t) => `<span class="journeyWarn shuttleEnds">${ico('alert')} ${escapeHtml(t)}</span>`).join('') +
     farNotes(o).map((t) => `<span class="journeyWarn">${ico('walk')} ${escapeHtml(t)}</span>`).join('') +
     (navTooLate(o) ? `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t("planner.tooLateBy", "Too late: you'd have had to leave by {time}", { time: When.clock(When.span(nav.when, o.minutes).leave) }))}</span>` : '') +
     o.legs.filter((l) => l.lastBus).map((l) => `<span class="journeyWarn">${ico('alert')} ${escapeHtml(I18n.t('nav.lastFrom', 'Last {no} from {stop} at {time}', { no: l.route, stop: l.from?.name || I18n.t('nav.itsStop', 'its stop'), time: l.lastBus }))}</span>`).join('') +
@@ -1227,6 +1234,8 @@ async function renderNavOption(o) {
     `<button type="button" class="iconBtn" data-nav-action="refresh">${escapeHtml(I18n.t('nav.refresh', 'Refresh'))}</button>` +
     `<button type="button" class="btn" data-nav-action="trip">${ico('bell')} ${escapeHtml(I18n.t('nav.startTrip', 'Start trip'))}</button>` +
     `</div>` +
+    // A shuttle on the way that's ending, first of all.
+    endsNotice(o).map((t) => `<p class="journeyWarn shuttleEnds">${ico('alert')} ${escapeHtml(t)}</p>`).join('') +
     (o.offline ? `<p class="navOffline">${ico('alert')} ${escapeHtml(I18n.t('nav.plannedOffline', 'Planned offline: times are estimates.'))}</p>` : '') +
     `<p class="journeyHead">${escapeHtml(I18n.t('planner.aboutMin', '~{m} min', { m: o.minutes }))} · ${escapeHtml(navMixText(o))}${o.onemapMinutes != null ? ` · ${escapeHtml(I18n.t('nav.onemapMin', 'OneMap ~{m} min', { m: o.onemapMinutes }))}` : ''}` +
     `${navFare(o) ? ` · <span title="${escapeHtml(navFareNote())}">${escapeHtml(navFare(o))}</span>` : ''}</p>` +
@@ -1525,8 +1534,9 @@ function tripFromNav(o, to, from = nav.from) {
       // `usual`, its minutes without traffic (api/_nav/live.js), for timing it by the traffic.
       ...(l.mode === 'bus' && !l.campus && { service: l.route, board: l.from?.code, alight: l.to?.code, codes: busCodes(l), usual: l.usual }),
       // A shuttle bus: no LTA timings to follow it by (js/trip.js, which needs `service` for
-      // them), only the plan's; its stops still open their shuttle times.
-      ...(l.campus && { shuttle: { name: l.campus.name, colour: l.campus.colour, route: l.route }, codes: busCodes(l) }),
+      // them), only the plan's; its stops still open their shuttle times. `ends`, its last day
+      // while it's ending, for the trip's notice (js/campus.js, endsNotice).
+      ...(l.campus && { shuttle: { name: l.campus.name, colour: l.campus.colour, route: l.route, ...(l.campus.ends && { ends: l.campus.ends }) }, codes: busCodes(l) }),
       // The line, for Your trips' chips and Trip Modes.
       // Its stations' codes, for Last train soon (js/trip.js, watchLastTrain).
       ...(l.mode === 'train' && { route: l.route, color: l.color, lrt: !!l.lrt, trainFrom: l.from?.code, trainTo: l.to?.code }),

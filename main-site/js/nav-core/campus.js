@@ -15,6 +15,13 @@
 // within START_GRACE_MIN is waited for. Between stops, ~15 km/h (CAMPUS_M_PER_MIN), the middle
 // of the 12 to 18 km/h shuttles keep to.
 //
+// A route past its last day (shuttles.json's `ends`, help desk #22) isn't running (Campus.status
+// says 'ended'), so it's never boarded: by the date of the moment it'd be boarded, not the day
+// the graph was built, as the API keeps its graph for hours. Its runs carry `campus.ends` till
+// then, so every way on one, from /api/nav or planned on the phone, can say when it ends (the
+// site's js/nav.js and js/trip.js, the bot's nav_view.py, the command line's sgbus-core.js, and
+// apps too old to know shuttles.json's `ends`). Keep in step with flutter/lib/data/nav_core.dart.
+//
 // An ES module, as the rest of nav-core: on the server (api/_nav/network.js reads the files) and
 // on the phone (offline.js fetches them; sw.js keeps them). js/campus.js is a plain script, so
 // it's loaded here for what it sets on globalThis, where the page hasn't already.
@@ -87,6 +94,8 @@ export function campusRuns(files, nodes, busNode, crossings = {}) {
         fareText: route.fareText,
         access: route.access,
         place,
+        // Its last day, while it's ending (Campus.endingOn).
+        ...(route.ends && { ends: route.ends }),
       },
       towards: nodes[path[path.length - 1]].name,
       nodes: path,
@@ -113,7 +122,8 @@ export function rideable(run, from, to, { paid = false } = {}) {
 }
 
 // The mean wait to board `run` at its i-th node at the moment `ms`, in minutes, or null when it
-// isn't running then. `isHoliday(ymd)` as when.js has the public holidays.
+// isn't running then, past its last day included. `isHoliday(ymd)` as when.js has the public
+// holidays.
 export function meanWait(run, i, ms, config, isHoliday) {
   const st = Campus.status(run.shuttle, run.at[i], ms, { config, isHoliday });
   if (st.state === "every") return (st.min + st.max) / 4;

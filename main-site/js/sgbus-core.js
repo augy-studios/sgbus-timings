@@ -727,7 +727,9 @@
         const fare = Ways.fare(o, fareType, category);
         const tagged = (tags.get(o) || []).map((t) => (t === 'mine' ? yellow(TAG_NAMES[t]) : green(TAG_NAMES[t]))).join(dim(', '));
         lines.push(`${dim(`${i + 1}.`)} ${chips}  ${time} · ${o.walkOnly ? `${Math.round(walked)} m` : `${changes ? plural(changes, 'change') : 'No change'} · ${Math.round(walked)} m walk`}${fare ? ` · ~${Ways.fareText(fare.cents)}` : ''}${o.disrupted ? red('  disrupted') : ''}${o.onemapMinutes ? dim(`  OneMap ~${o.onemapMinutes} min`) : ''}${tagged ? `  ${tagged}` : ''}`);
-        // Its last buses and last trains, as the web app's way cards say them.
+        // A shuttle on it that's ending, then its last buses and last trains, as the web app's
+        // way cards say them.
+        lines.push(...endingLines(o).map((t) => `   ${yellow(t)}`));
         for (const l of o.legs) {
           if (l.lastBus) lines.push(`   ${red(`Last ${l.route} from ${placeLabel(l.from)} at ${l.lastBus}`)}`);
           if (l.lastTrain) lines.push(`   ${red(lastTrainLine(l))}`);
@@ -738,6 +740,24 @@
       lines.push('', bold(`Way ${pick}:`), ...(await waySteps(options[pick - 1], when, to.label, via?.label)));
       if (options.length > 1) lines.push(dim('--way N for another one step by step.'));
       out(...lines);
+    }
+
+    // A shuttle bus service on a way that's ending (help desk #22: shuttles.json's `ends`, which
+    // /api/nav puts on a shuttle leg's `campus`), a line each, as the web app says it at the top of
+    // a way (js/campus.js, endsNotice; keep in step): "IKEA's shuttle bus service ends on 31 Dec
+    // 2026." None once the day's past, by Singapore's date, as Navigate no longer rides it then.
+    function endingLines(o) {
+      const today = new Date(Date.now() + SG_OFFSET_MS).toISOString().slice(0, 10);
+      const seen = new Set();
+      const out = [];
+      for (const l of o?.legs || []) {
+        const c = l.campus;
+        if (!c?.ends || today > c.ends || seen.has(`${c.name}|${c.ends}`)) continue;
+        seen.add(`${c.name}|${c.ends}`);
+        const date = new Date(`${c.ends}T12:00:00+08:00`).toLocaleDateString('en-GB', { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric' });
+        out.push(`${c.name}'s shuttle bus service ends on ${date}.`);
+      }
+      return out;
     }
 
     // A train ride whose train is one of the day's last three there (api/_nav/last-trains.js), as
@@ -783,7 +803,8 @@
     // `viaLabel`: the stop on the way's name, for the walks to and from it (api/_nav/via.js).
     async function waySteps(o, when, endLabel, viaLabel = null) {
       await stops().catch(() => {});
-      const lines = [];
+      // A shuttle on it that's ending, first.
+      const lines = endingLines(o).map((t) => `  ${yellow(t)}`);
       // Leave now: the live timings of each bus where it's boarded.
       const buses = o.legs.filter((l) => l.mode === 'bus' && l.from?.code);
       const live = when ? [] : await Promise.all(buses.map((l) => get(`/api/bus-arrivals?stop=${l.from.code}`).catch(() => null)));

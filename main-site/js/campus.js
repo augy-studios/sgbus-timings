@@ -32,6 +32,15 @@
 // is a Sunday or a holiday itself; a route without them keeps its usual day. A route with no times
 // for the day doesn't run that day. NUS's term or vacation is by config.json's dates.
 //
+// A route that's stopping for good (help desk #22: IKEA's, after 31 December 2026) has `ends`, its
+// last day, a Singapore date, on its route or its group in shuttles.json. Until then a way on it
+// says so at the top (endingOn, endsNotice: js/nav.js, js/trip.js). From the next day it's
+// 'ended': kept in Bus timings and Explorer, said to be Discontinued in place of its times, with
+// no live times, drawn in Explorer's Discontinued shuttles layer (js/map.js), and never ridden by
+// Navigate (status, so js/nav-core/campus.js's meanWait never boards it). Keep in step with the
+// app's flutter/lib/data/campus.dart, the command line's (js/sgbus-core.js, endingLines) and the
+// bot's (telegram-bot/src/nav_view.py, ending_lines).
+//
 // Campus.load() fetches the three files and builds the shuttles against LTA's stops; then
 // Campus.at(code), Campus.listHtml(code), Campus.lines(), Campus.dots() and Campus.credits(view,
 // list), for Bus timings (script.js), the map's cards (js/map-card.js) and Explorer (js/map.js);
@@ -39,8 +48,9 @@
 // campus stop's timings.
 // sw.js keeps the files.
 //
-// In Node (scripts/campus-test.mjs), module.exports is the same, for its pure parts: build,
-// readTimings, status, describe and creditsIn, given the files' contents and the time.
+// In Node (scripts/campus-test.mjs, scripts/shuttle-ends-test.mjs), module.exports is the same,
+// for its pure parts: build, readTimings, status, describe, creditsIn, ended and endingOn, given
+// the files' contents and the time.
 // Plain script: exports go on window.
 (function (root) {
   'use strict';
@@ -179,6 +189,14 @@
 
   // ---------- the stops and routes ----------
 
+  // A route's `ends` as a date ("2026-12-31"), or null: none, or one that isn't a date (a problem).
+  function endsOf(v, where, problems) {
+    if (v == null || v === '') return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) && !Number.isNaN(Date.parse(`${v}T00:00:00Z`))) return String(v);
+    problems.push(`${where}: ends "${v}" isn't a date`);
+    return null;
+  }
+
   // The shuttles from Augy's files (`raw`: { nus, ntu, config }) against LTA's stops (`lta`:
   // code -> { n, road, lat, lng }, script.js's stopsIndex; {} without it). Gives
   //   stops     Map of key -> { key, lta, uni, id, name, road, lat, lng, routes: [{ route, i }] },
@@ -282,6 +300,8 @@
           // Where its buses can be seen live (api/shuttle-live.js): { provider, stops: { id: param } }.
           live: r.live || null,
           source: r.source || conf.source || '',
+          // Its last day, a Singapore date ("2026-12-31"), or null while it isn't ending.
+          ends: endsOf(r.ends ?? conf.ends, where, problems),
         };
         routes.push(route);
         keys.forEach((key, i) => {
@@ -321,6 +341,10 @@
   // The date after a Singapore date, as YYYY-MM-DD.
   const nextYmd = (ymd) => new Date(Date.parse(`${ymd}T00:00:00Z`) + DAY_MS).toISOString().slice(0, 10);
 
+  // Whether a route's last day (`ends`, a Singapore date) is behind the moment `ms`: Singapore's
+  // date then is after it. A route (build's) or anything with `ends` (a way's leg's `campus`).
+  const ended = (route, ms = Date.now()) => !!route?.ends && sgDay(ms).ymd > route.ends;
+
   // A route's times on a day: { season (null all year), day, slot (null if it doesn't run) }.
   // The eve of a public holiday is 'ph_eve' where the route has times for it.
   function slotFor(route, ymd, dow, opts) {
@@ -349,9 +373,11 @@
   const firstOf = (route, i, slot) => (slot.bands ? slot.bands[0]?.from ?? null : slot.departs[terminalFor(route, i, slot)]?.[0] ?? null);
 
   // When the route runs next after today, within a week: { inDays, dow, at, from }, or null.
+  // Never after its last day.
   function nextRun(route, i, ms, opts) {
     for (let d = 1; d <= 7; d++) {
       const { ymd, dow } = sgDay(ms + d * DAY_MS);
+      if (route.ends && ymd > route.ends) return null;
       const { slot } = slotFor(route, ymd, dow, opts);
       const at = slot && firstOf(route, i, slot);
       if (at != null) return { inDays: d, dow, at, from: slot.departs ? terminalFor(route, i, slot) : null };
@@ -366,9 +392,11 @@
   //   { state: 'departs', from, here, end, times }  the next departures (up to 3) from `from`
   //   { state: 'done', next }                   no more today; `next` from nextRun
   //   { state: 'notToday', next }               doesn't run today
+  //   { state: 'ended', ends }                  past its last day (`ends`): discontinued
   // each with `season` ('term', 'vacation', or null for a route that runs the same all year).
   // `opts`: { config, isHoliday(ymd) }.
   function status(route, i, ms, opts = {}) {
+    if (ended(route, ms)) return { season: null, state: 'ended', ends: route.ends };
     const { ymd, dow, min } = sgDay(ms);
     const today = slotFor(route, ymd, dow, opts);
     const base = { season: today.season };
@@ -416,6 +444,7 @@
         return { main: times, sub: st.end ? `${sub} · ${tr('campus.endsHere', 'ends here')}` : sub };
       }
       case 'done': return { main: tr('campus.done', 'No more buses today'), sub: nextText(st.next, nameOf) };
+      case 'ended': return { main: tr('campus.discontinued', 'Discontinued'), sub: '' };
       default: return { main: tr('campus.notToday', 'Not running today'), sub: nextText(st.next, nameOf) };
     }
   }
@@ -561,15 +590,17 @@
       if (st.season) seasons.add(`${route.uni}:${st.season}`);
       const { main, sub } = describe(st, nameIn(route));
       const uni = model.config?.[route.uni]?.name || route.uni.toUpperCase();
-      const off = st.state === 'done' || st.state === 'notToday';
+      const off = st.state === 'done' || st.state === 'notToday' || st.state === 'ended';
       // What it costs and who may ride it, when it's not free to all.
       const terms = [route.fare === 'paid' ? route.fareText || tr('nav.shuttle.paid', 'Paid') : '',
         route.access === 'guests' ? tr('nav.shuttle.guests', 'Hotel guests only') : route.access === 'residents' ? tr('nav.shuttle.residents', 'Residents only') : ''].filter(Boolean);
-      // Seen live (api/shuttle-live.js): the next bus filled in by live() once it's in.
-      const live = route.live?.stops?.[stop.id] || route.live?.stops?.[key] ? ` data-live-route="${esc(route.key)}" data-live-stop="${esc(key)}"` : '';
-      return `<div class="campusRow${off ? ' off' : ''}"${live} style="--route:${esc(route.colour)};--route-ink:${inkOn(route.colour)}">` +
+      // Seen live (api/shuttle-live.js): the next bus filled in by live() once it's in. Not once
+      // it's discontinued, and then nothing on what it cost either.
+      const gone = st.state === 'ended';
+      const live = !gone && (route.live?.stops?.[stop.id] || route.live?.stops?.[key]) ? ` data-live-route="${esc(route.key)}" data-live-stop="${esc(key)}"` : '';
+      return `<div class="campusRow${off ? ' off' : ''}${gone ? ' ended' : ''}"${live} style="--route:${esc(route.colour)};--route-ink:${inkOn(route.colour)}">` +
         `<span class="campusNo" title="${esc(route.name || tr('campus.routeTitle', '{uni} shuttle {route}', { uni, route: route.code }))}">${esc(route.code)}</span>` +
-        `<span class="campusWhen"><strong>${esc(main)}</strong><span>${esc([uni, sub, ...terms].join(' · '))}</span>` +
+        `<span class="campusWhen"><strong>${esc(main)}</strong><span>${esc([uni, sub, ...(gone ? [] : terms)].filter(Boolean).join(' · '))}</span>` +
         (live ? `<span class="campusLive" hidden></span>` : '') + `</span></div>`;
     }).join('');
     const notes = [...seasons].map((s) => {
@@ -602,25 +633,35 @@
     }
   }
 
-  // Each route as a line through its stops, for Explorer: [{ key, uni, color, fare, points }].
+  // Each route as a line through its stops, for Explorer: [{ key, uni, color, fare, ended,
+  // points }], `ended` once it's past its last day at `ms` (Explorer's Discontinued shuttles).
   // `keep(route)`, when given, says which routes to draw (Settings' Shuttle buses, js/map.js).
-  function lines(keep = null) {
+  function lines(keep = null, ms = Date.now()) {
     if (!model) return [];
     return model.routes.filter((r) => !keep || keep(r)).map((r) => ({
       key: r.key,
       uni: r.uni,
       color: r.colour,
       fare: r.fare,
+      ended: ended(r, ms),
       points: r.keys.filter(Boolean).map((k) => model.stops.get(k)).map((s) => [s.lat, s.lng]),
     })).filter((l) => l.points.length >= 2);
   }
 
-  // The campus stops LTA hasn't got, for Explorer's dots: [{ key, lat, lng, color }]. Those LTA
-  // has are its stop dots already. With `keep`, only those with a route it keeps.
-  function dots(keep = null) {
+  // The campus stops LTA hasn't got, for Explorer's dots: [{ key, lat, lng, color, ended }]. Those
+  // LTA has are its stop dots already, whatever stops there. With `keep`, only those with a route
+  // it keeps. `ended` when every route kept there is past its last day at `ms`.
+  function dots(keep = null, ms = Date.now()) {
     if (!model) return [];
-    return [...model.stops.values()].filter((s) => !s.lta && (!keep || s.routes.some(({ route }) => keep(route)))).map((s) => ({ key: s.key, lat: s.lat, lng: s.lng, color: model.config?.[s.uni]?.colour || '#7a4fd6' }));
+    return [...model.stops.values()].filter((s) => !s.lta && (!keep || s.routes.some(({ route }) => keep(route)))).map((s) => ({
+      key: s.key, lat: s.lat, lng: s.lng, color: model.config?.[s.uni]?.colour || '#7a4fd6',
+      ended: s.routes.filter(({ route }) => !keep || keep(route)).every(({ route }) => ended(route, ms)),
+    }));
   }
+
+  // Whether any route is past its last day at `ms` (Explorer's Layers asks of the routes it'd
+  // draw, lines()).
+  const anyEnded = (ms = Date.now()) => !!model?.routes.some((r) => ended(r, ms));
 
   // ---------- search (Bus timings' box, script.js) ----------
 
@@ -658,6 +699,36 @@
     };
   }
 
+  // ---------- ending (help desk #22) ----------
+
+  // A Singapore date ("2026-12-31") as the site writes a short date with its year, in the site's
+  // language: "31 Dec 2026" (as js/history.js's shortFmt does).
+  function dateText(ymd) {
+    const lang = root.I18n?.lang?.() || 'en';
+    try {
+      return new Date(`${ymd}T12:00:00+08:00`).toLocaleDateString(lang === 'en' ? 'en-GB' : lang, { timeZone: 'Asia/Singapore', day: 'numeric', month: 'short', year: 'numeric' });
+    } catch {
+      return ymd;
+    }
+  }
+
+  // The shuttles on a way's or a trip's legs that are ending but still run at `ms`: [{ name,
+  // ends }], once each. A leg's shuttle is its `campus` (/api/nav's, js/nav-core/campus.js) or,
+  // on a trip, its `shuttle` (js/nav.js, tripFromNav); either has the group's `name` and `ends`.
+  function endingOn(legs, ms = Date.now()) {
+    const out = [];
+    for (const l of legs || []) {
+      const c = l?.campus || l?.shuttle;
+      if (!c?.ends || ended(c, ms) || out.some((x) => x.name === c.name && x.ends === c.ends)) continue;
+      out.push({ name: c.name || '', ends: c.ends });
+    }
+    return out;
+  }
+
+  // What a way or a trip on an ending shuttle says at its top, a line each: "IKEA's shuttle bus
+  // service ends on 31 Dec 2026."
+  const endsNotice = (legs, ms = Date.now()) => endingOn(legs, ms).map((x) => tr('nav.shuttle.ends', "{name}'s shuttle bus service ends on {date}.", { name: x.name, date: dateText(x.ends) }));
+
   // The credits for the map's attribution: those of the universities with a line of `list`
   // (lines(), or the same drawn along the roads) in `view`, the map's [[south, west], [north,
   // east]]; every one with a line, without a view.
@@ -665,6 +736,7 @@
 
   const api = {
     MERGE_M, hhmm, clock, parseLoc, readTimings, build, season, status, describe, inkOn, sgDay, creditsIn,
+    ended, dateText, endingOn, endsNotice, anyEnded,
     load, at, listHtml, live, lines, roadKey, loadRoads, road, uniName: (uni) => model?.config?.[uni]?.name || String(uni || '').toUpperCase(), dots, credits, search, route, isReady: () => !!model,
   };
   if (typeof module === 'object' && module.exports) module.exports = api;

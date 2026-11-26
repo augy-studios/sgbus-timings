@@ -159,6 +159,9 @@ line saying **Only shuttle buses stop here**, and **Directions**. Tap a shuttle 
 its route: what its timetable says now, and its stops in order. On
 [Explorer](explorer.md#shuttle-buses), their routes and own stops are on the map.
 
+A shuttle that has ended, such as IKEA's after 31 Dec 2026, stays in the list but says **Discontinued** in place of
+its times, with no live times.
+
 ## Coming from a list
 
 A stop opened from a [bus route](bus-routes.md), a [journey](route-planner.md),
