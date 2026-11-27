@@ -37,6 +37,7 @@ import 'package:material_color_utilities/material_color_utilities.dart' show Cor
 
 import '../data/gta6.dart';
 import '../data/store.dart';
+import '../i18n/i18n.dart';
 import '../native/native_bridge.dart';
 import 'colours.dart';
 
@@ -304,6 +305,7 @@ class AppLook extends ChangeNotifier {
     BrandSwatch('not-green-5', 0xFFCCFFFF, _ng5),
     BrandSwatch('really-light-green', 0xFFFFFFFF, _rl),
     BrandSwatch(gta6, 0xFFFF2B90, _gta6, dot: [Color(0xFF2B60DA), Color(0xFFFF2B90), Color(0xFFE6953E)]),
+    BrandSwatch(ikea, 0xFFFFDB00, _ikea, dot: [Color(0xFF0058A3), Color(0xFFFFDB00)]),
   ];
 
   /// GTA VI, for its release on 19 November 2026, set in time or won on the wheel (data/gta6.dart):
@@ -313,6 +315,19 @@ class AppLook extends ChangeNotifier {
     'light': {'--bg': '#fff0f7', '--ink': '#1d0030', '--muted': '#66406f', '--brand': '#ff2b90', '--on-brand': '#1d0030', '--brand-ink': '#bc0082'},
     'dark': {'--bg': '#1d0030', '--ink': '#fff4fa', '--muted': '#d9c2de', '--brand': '#ff2b90', '--on-brand': '#1d0030', '--brand-ink': '#ff7ccb'},
   };
+  /// The IKEA shuttle's, to see off the IKEA Tampines shuttle, last running on 31 December 2026,
+  /// set in time or won on the wheel (data/gta6.dart): IKEA's yellow as the brand, so its fills
+  /// take navy writing, and its blue for the page and the words, as style.css has them.
+  static const ikea = 'ikea';
+  static const _ikeaTokens = {
+    'light': {'--bg': '#eef5fc', '--ink': '#00264d', '--muted': '#3d5877', '--brand': '#ffdb00', '--on-brand': '#00264d', '--brand-ink': '#0058a3'},
+    'dark': {'--bg': '#001b36', '--ink': '#f2f7ff', '--muted': '#b9c9dd', '--brand': '#ffdb00', '--on-brand': '#00264d', '--brand-ink': '#ffdb00'},
+  };
+  static const _ikeaBlue = Color(0xFF0058A3), _ikeaYellow = Color(0xFFFFDB00);
+
+  /// The events' tokens, by swatch.
+  static const _eventTokens = {gta6: _gta6Tokens, ikea: _ikeaTokens};
+
   // The swatches' names, as the site has them (not translated there either).
   static String _classic() => 'Classic';
   static String _ng1() => 'Not green 1';
@@ -321,7 +336,8 @@ class AppLook extends ChangeNotifier {
   static String _ng4() => 'Not green 4';
   static String _ng5() => 'Not green 5';
   static String _rl() => 'Really really light green';
-  static String _gta6() => 'GTA VI';
+  static String _gta6() => tr('theme.gta6', 'GTA VI - Vice City');
+  static String _ikea() => tr('theme.ikea', 'IKEA');
 
   /// The phone's wallpaper colours (Android 12 and later), once read.
   ColorScheme? phoneLight;
@@ -333,20 +349,22 @@ class AppLook extends ChangeNotifier {
   String phoneHeadFont = 'sans-serif';
 
   /// In Material You: the wallpaper's colours ("phone", the default), Your colours ("yours") or
-  /// GTA VI's ("gta-6").
+  /// an event's ("gta-6", "ikea").
   static const youColoursKey = 'app.youColours';
 
-  /// Which colours Material You uses (above); Your colours only while they're set, GTA VI only
-  /// while it can be picked.
+  /// Which colours Material You uses (above); Your colours only while they're set, an event's
+  /// only while it can be picked.
   String get youColours {
     final v = Store.I.get(youColoursKey);
     if (v == 'yours' && yourColours != null) return v!;
-    return v == gta6 && Gta6.canPick ? gta6 : 'phone';
+    final ev = v == null ? null : EventColours.byTheme(v);
+    return ev != null && ev.canPick ? v! : 'phone';
   }
 
-  /// Picks Material You's colours; GTA VI only if it can be picked now.
+  /// Picks Material You's colours; an event's only if it can be picked now.
   set youColours(String v) {
-    if (v == gta6 && !Gta6.pick()) return;
+    final ev = EventColours.byTheme(v);
+    if (ev != null && !ev.pick()) return;
     Store.I.put(youColoursKey, v == 'phone' ? null : v);
     notifyListeners();
   }
@@ -422,16 +440,18 @@ class AppLook extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// The brand colour picked; Classic for GTA VI once it can't be picked.
+  /// The brand colour picked; Classic for an event's once it can't be picked.
   String get swatchId {
     final v = Store.I.get(colorKey) ?? 'classic';
-    return v == gta6 && !Gta6.canPick ? 'classic' : v;
+    final ev = EventColours.byTheme(v);
+    return ev != null && !ev.canPick ? 'classic' : v;
   }
 
-  /// Picks a brand colour. GTA VI while it's locked (as when Sync brings it from another
+  /// Picks a brand colour. An event's while it's locked (as when Sync brings it from another
   /// device) is Classic instead.
   set swatchId(String id) {
-    Store.I.put(colorKey, id == gta6 && !Gta6.pick() ? 'classic' : id);
+    final ev = EventColours.byTheme(id);
+    Store.I.put(colorKey, ev != null && !ev.pick() ? 'classic' : id);
     notifyListeners();
   }
 
@@ -504,12 +524,23 @@ class AppLook extends ChangeNotifier {
             ? _material(b, contrast)
             : _usual(b, contrast);
     if (isGta6 && !contrast) t = _gta6Dress(t, b);
+    if (isIkea && !contrast) t = _ikeaDress(t);
     if (compact) t = t.copyWith(visualDensity: VisualDensity.compact);
     return t;
   }
 
   /// GTA VI's colours are what's showing.
   bool get isGta6 => materialYou || deskLook ? youColours == gta6 : yourColours == null && _accentOverride == null && swatchId == gta6;
+
+  /// The IKEA shuttle's colours are what's showing.
+  bool get isIkea => materialYou || deskLook ? youColours == ikea : yourColours == null && _accentOverride == null && swatchId == ikea;
+
+  /// The IKEA shuttle's main buttons: IKEA's blue with yellow writing, as its signs are and
+  /// style.css has them (5.3:1). Not over High contrast or Your colours.
+  ThemeData _ikeaDress(ThemeData t) => t.copyWith(
+        filledButtonTheme: FilledButtonThemeData(style: FilledButton.styleFrom(backgroundColor: _ikeaBlue, foregroundColor: _ikeaYellow)),
+        floatingActionButtonTheme: t.floatingActionButtonTheme.copyWith(backgroundColor: _ikeaBlue, foregroundColor: _ikeaYellow),
+      );
 
   /// GTA VI uses every colour of the logo, a colour to each kind of thing, as style.css has it:
   /// pink for the main buttons, orange for what's picked, yellow for what's switched on, blue for
@@ -574,6 +605,8 @@ class AppLook extends ChangeNotifier {
       scheme = ColorScheme.fromSeed(seedColor: hexColor(yc['base'] as String), brightness: b);
     } else if (youColours == gta6) {
       scheme = _gta6Scheme(b);
+    } else if (youColours == ikea) {
+      scheme = _ikeaScheme(b);
     } else {
       // The phone's wallpaper colours; on the desktop, the computer's accent colour if it's
       // chosen; otherwise the app's green.
@@ -607,7 +640,7 @@ class AppLook extends ChangeNotifier {
     );
     // The phone's own fonts: its headline font for the big words, its body font for the rest,
     // and the phone's default (then Noto) for arrows and the other languages' letters.
-    const fallback = ['sans-serif', 'Roboto', 'Noto Sans'];
+    const fallback = ['sans-serif', 'Roboto', 'Noto Sans', 'Noto Color Emoji'];
     final base = Typography.material2021(platform: TargetPlatform.android);
     final plain = (dark ? base.white : base.black).apply(fontFamily: phoneBodyFont, fontFamilyFallback: fallback);
     TextStyle? head(TextStyle? t) => t?.copyWith(fontFamily: phoneHeadFont, fontFamilyFallback: fallback);
@@ -663,6 +696,22 @@ class AppLook extends ChangeNotifier {
     );
   }
 
+  /// The IKEA shuttle's in Material You: seeded from IKEA's blue, its yellow for the second
+  /// colour, and at night a deep navy for the surfaces.
+  static ColorScheme _ikeaScheme(Brightness b) {
+    final s = ColorScheme.fromSeed(seedColor: _ikeaBlue, brightness: b, dynamicSchemeVariant: DynamicSchemeVariant.fidelity)
+        .copyWith(secondaryContainer: _ikeaYellow, onSecondaryContainer: const Color(0xFF00264D));
+    if (b == Brightness.light) return s;
+    return s.copyWith(
+      surface: const Color(0xFF001B36),
+      surfaceContainerLowest: const Color(0xFF00152B),
+      surfaceContainerLow: const Color(0xFF00213F),
+      surfaceContainer: const Color(0xFF002649),
+      surfaceContainerHigh: const Color(0xFF002D57),
+      surfaceContainerHighest: const Color(0xFF003666),
+    );
+  }
+
   // ---------- the computer's own look (the desktop's) ----------
 
   /// Each look's background (under the window's own effect, or where there's none), cards,
@@ -699,6 +748,7 @@ class AppLook extends ChangeNotifier {
     final yc = yourColours;
     if (youColours == 'yours' && yc != null) return hexColor(yc['base'] as String);
     if (youColours == gta6) return const Color(0xFFFF2B90);
+    if (youColours == ikea) return _ikeaBlue;
     return _deskAccent ?? d.accent;
   }
 
@@ -879,7 +929,7 @@ class AppLook extends ChangeNotifier {
     final yc = yourColours;
     final tokens = yc != null
         ? (yc[dark ? 'dark' : 'light'] as Map?)?.cast<String, dynamic>()
-        : _accentTokens(b) ?? (swatchId == gta6 ? _gta6Tokens[dark ? 'dark' : 'light'] : null);
+        : _accentTokens(b) ?? _eventTokens[swatchId]?[dark ? 'dark' : 'light'];
     final brand = brandColor(tokens);
     var sg = SgColors(
       bg: _token(tokens, '--bg', dark ? const Color(0xFF0C100E) : const Color(0xFFEEF2F0)),
@@ -943,7 +993,7 @@ class AppLook extends ChangeNotifier {
       outlineVariant: sg.border,
     );
     // Jua has no "·", "→" or the other languages' letters: the phone's font stands in for them.
-    const fallback = ['Roboto', 'Noto Sans'];
+    const fallback = ['Roboto', 'Noto Sans', 'Noto Color Emoji'];
     final text = Typography.material2021(platform: TargetPlatform.android).black.apply(fontFamily: 'Jua', fontFamilyFallback: fallback);
     return ThemeData(
       useMaterial3: true,

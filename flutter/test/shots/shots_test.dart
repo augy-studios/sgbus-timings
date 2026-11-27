@@ -77,11 +77,17 @@ void main() {
     await shot(t, 'theme-dark', () => const ThemeScreen(), brightness: Brightness.dark);
     AppLook.I.youColours = AppLook.gta6;
     await shot(t, 'theme-gta6', () => const ThemeScreen(), brightness: Brightness.dark);
+    AppLook.I.youColours = AppLook.ikea;
+    await shot(t, 'theme-ikea', () => const ThemeScreen(), brightness: Brightness.dark);
     AppLook.I.youColours = 'phone';
     AppLook.I.swatchId = AppLook.gta6;
     await shot(t, 'stop-gta6-usual', () => const StopScreen(code: '84009'), material: false, brightness: Brightness.dark);
+    AppLook.I.swatchId = AppLook.ikea;
+    await shot(t, 'stop-ikea-usual', () => const StopScreen(code: '84009'), material: false);
+    await shot(t, 'stop-ikea-usual-dark', () => const StopScreen(code: '84009'), material: false, brightness: Brightness.dark);
     AppLook.I.swatchId = 'classic';
     await shot(t, 'gta6-offer', () => const Scaffold(body: Gta6Window()));
+    await shot(t, 'ikea-offer', () => const Scaffold(body: IkeaWindow()));
     await shot(t, 'settings', () => const SettingsScreen());
     await shot(t, 'settings-pages', () => const SettingsGroup(group: 'pages'));
     await shot(t, 'settings-you', () => const SettingsGroup(group: 'you'));

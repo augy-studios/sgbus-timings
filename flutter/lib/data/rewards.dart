@@ -16,9 +16,9 @@
 //
 // Coins: a trip taken with the Get Off Alert to the end, with a real ride on it, earns 5, and 1
 // for every 2 km ridden (up to 30), 3 a change, 4 for each bus operator and train operator, 2 for
-// each line. The wheel: 100 a spin, eight slots alike, one an egg not found yet (80 coins once
-// every egg's found, unless GTA VI's colours are still the wheel's to give, which come before any
-// more eggs: data/gta6.dart). sgbus_coins: { balance, log, spins }.
+// each line. The wheel: 75 a spin, eight slots alike, one an egg not found yet (80 coins once
+// every egg's found, unless an event's colours are still the wheel's to give, which come before any
+// more eggs: GTA VI's, then the IKEA shuttle's, data/gta6.dart). sgbus_coins: { balance, log, spins }.
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
@@ -475,7 +475,7 @@ class Coins {
   // Enough for History (features/coins/coins.dart) to be every coin in and out.
   static const _logMax = 2000;
   static const _finish = 5, _kmPerCoin = 2, _kmCoinsMax = 30, _perChange = 3, _perOperator = 4, _perLine = 2;
-  static const spinCost = 50;
+  static const spinCost = 75;
   static const eggGoneCoins = 80;
   /// Round the wheel, clockwise from the top: null for the egg.
   static const slots = <int?>[null, 20, 50, 30, 70, 40, 150, 60];
@@ -583,12 +583,13 @@ class Coins {
   static List<String> eggsLeft() => Feats.ids.where((id) => !Feats.eggs().contains(id)).toList();
 
   /// A slot as it is now: the egg's coins once every egg's found.
-  static int? slotNow(int i) => slots[i] == null && eggsLeft().isEmpty && !Gta6.due ? eggGoneCoins : slots[i];
+  static int? slotNow(int i) => slots[i] == null && eggsLeft().isEmpty && EventColours.due == null ? eggGoneCoins : slots[i];
 
   static final _rnd = math.Random();
 
-  /// A spin: the coins taken, a slot picked, and what it won given; null without enough coins.
-  static ({int index, int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6})? spin() {
+  /// A spin: the coins taken, a slot picked, and what it won given (`event`: the id of the event
+  /// whose colours it won); null without enough coins.
+  static ({int index, int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, String? event})? spin() {
     final v = _read();
     if ((v['balance'] as int) < spinCost) return null;
     v['balance'] = (v['balance'] as int) - spinCost;
@@ -597,23 +598,24 @@ class Coins {
     _write(v);
     final index = _rnd.nextInt(slots.length);
     final coins = slotNow(index);
-    if (coins == null && Gta6.due) {
-      Gta6.claim('wheel');
-      _prize({'why': 'gta6'});
-      return (index: index, coins: null, egg: null, got: null, gta6: true);
+    final ev = coins == null ? EventColours.due : null;
+    if (ev != null) {
+      ev.claim('wheel');
+      _prize({'why': ev.id});
+      return (index: index, coins: null, egg: null, got: null, event: ev.id);
     }
     if (coins == null) {
       final left = eggsLeft();
       final egg = left[_rnd.nextInt(left.length)];
       final got = Feats.found(egg);
       _prize({'why': 'egg', 'egg': egg});
-      return (index: index, coins: null, egg: egg, got: got, gta6: false);
+      return (index: index, coins: null, egg: egg, got: got, event: null);
     }
     final w = _read();
     w['balance'] = (w['balance'] as int) + coins;
     (w['log'] as List).insert(0, {'at': When.nowMs(), 'n': coins, 'why': 'wheel'});
     _write(w);
-    return (index: index, coins: coins, egg: null, got: null, gta6: false);
+    return (index: index, coins: coins, egg: null, got: null, event: null);
   }
 
   // ---------- sync, and the Telegram bot's Easter egg links ----------
@@ -634,23 +636,24 @@ class Coins {
   static List<Map<String, Object>> syncList() => balance > 0 ? [{'id': syncId, 'balance': balance}] : [];
 
   /// An Easter egg link opened here, once it's used up on the server (features/share/shared.dart):
-  /// the wheel's egg slot's prize, as js/coins.js's redeemEgg: GTA VI's colours while they're
+  /// the wheel's egg slot's prize, as js/coins.js's redeemEgg: an event's colours while they're
   /// due, else an egg not found yet, else [eggGoneCoins].
-  static ({int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6}) eggLinkPrize() {
-    if (Gta6.due) {
-      Gta6.claim('egglink');
-      _prize({'why': 'gta6'});
-      return (coins: null, egg: null, got: null, gta6: true);
+  static ({int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, String? event}) eggLinkPrize() {
+    final ev = EventColours.due;
+    if (ev != null) {
+      ev.claim('egglink');
+      _prize({'why': ev.id});
+      return (coins: null, egg: null, got: null, event: ev.id);
     }
     final left = eggsLeft();
     if (left.isNotEmpty) {
       final egg = left[_rnd.nextInt(left.length)];
       final got = Feats.found(egg);
       _prize({'why': 'egg', 'egg': egg});
-      return (coins: null, egg: egg, got: got, gta6: false);
+      return (coins: null, egg: egg, got: got, event: null);
     }
     add(eggGoneCoins, info: {'why': 'egglink'}, quiet: true);
-    return (coins: eggGoneCoins, egg: null, got: null, gta6: false);
+    return (coins: eggGoneCoins, egg: null, got: null, event: null);
   }
 
   @visibleForTesting

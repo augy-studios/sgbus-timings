@@ -323,7 +323,10 @@
         (a.done ? `<button type="button" class="iconBtn achievementShare" data-feat-share="${a.id}">${window.icon ? `<span class="ico" aria-hidden="true">${window.icon('share')}</span>` : ''}<span>${esc(tr('achievements.share', 'Share'))}</span></button>` : '') +
         `</li>`;
     }).join('');
-    document.getElementById('achievementsEggs').textContent = tr('eggs.count', '{n} of {all} Easter eggs found', { n: list().length, all: IDS.length });
+    document.getElementById('achievementsEggs').textContent = [
+      tr('eggs.count', '{n} of {all} Easter eggs found', { n: list().length, all: IDS.length }),
+      window.EventColours && tr('eggs.eventCount', '{n} of {all} event colours found', { n: EventColours.found().length, all: EventColours.all.length }),
+    ].filter(Boolean).join(' · ');
   }
 
   // ---------- a feat shared with you ----------
@@ -440,7 +443,7 @@
 
   function init() {
     renderAchievements();
-    for (const ev of ['eggs:feat', 'eggs:found', 'eggs:unlocked']) window.addEventListener(ev, renderAchievements);
+    for (const ev of ['eggs:feat', 'eggs:found', 'eggs:unlocked', 'eventcolours:change']) window.addEventListener(ev, renderAchievements);
     // Opened: brought up to date, rides counted since included.
     document.querySelector('[data-settings-open="achievements"]')?.addEventListener('click', renderAchievements);
     document.getElementById('coinAchievements')?.addEventListener('click', renderAchievements);

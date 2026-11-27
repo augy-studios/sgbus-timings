@@ -1,4 +1,4 @@
-// Theme system: 8 brand colour swatches + light/dark/time-based mode.
+// Theme system: brand colour swatches (the everyday ones, then the events') + light/dark/time-based mode.
 // Default is always light + classic (#ccffcc), regardless of OS preference.
 // Once the user picks something, it is persisted.
 // Plain script: this project does not use ES modules, so exports go on window.
@@ -15,8 +15,14 @@
     { id: "really-light-green", label: I18n.t('theme.reallyLight', 'Really really light green'), hex: "#ffffff" },
     // For its release on 19 November 2026, set in time or won on the wheel (js/gta6.js). The rest
     // of it is in style.css; its dot runs as the logo does.
-    { id: "gta-6", label: I18n.t('theme.gta6', 'GTA VI'), hex: "#ff2b90", dot: "linear-gradient(#2b60da, #ff2b90, #e6953e)" },
+    { id: "gta-6", label: I18n.t('theme.gta6', 'GTA VI - Vice City'), hex: "#ff2b90", dot: "linear-gradient(#2b60da, #ff2b90, #e6953e)" },
+    // To see off the IKEA Tampines shuttle, last running on 31 December 2026: IKEA's blue and
+    // yellow, set in time or won on the wheel (js/gta6.js). The rest of it is in style.css.
+    { id: "ikea", label: I18n.t('theme.ikea', 'IKEA'), hex: "#ffdb00", dot: "linear-gradient(#0058a3 50%, #ffdb00 50%)" },
   ];
+
+  // An event's colours (js/gta6.js), or null for an everyday swatch.
+  const eventOf = (id) => window.EventColours?.byTheme(id) || null;
 
   const STORAGE_KEY_COLOR = `${APP_KEY}.colorTheme`;
   const STORAGE_KEY_MODE = `${APP_KEY}.mode`;
@@ -90,7 +96,7 @@
   function applyColorTheme(id) {
     let theme = COLOR_THEMES.find((t) => t.id === id) || COLOR_THEMES[0];
     // Locked, as when Sync brings it from another device: Classic instead.
-    if (theme.id === window.Gta6?.THEME && !Gta6.pick()) theme = COLOR_THEMES[0];
+    if (eventOf(theme.id) && !eventOf(theme.id).pick()) theme = COLOR_THEMES[0];
     document.documentElement.setAttribute("data-color-theme", theme.id);
     document.documentElement.style.setProperty("--brand", theme.hex);
     document.documentElement.style.setProperty("--brand-rgb", hexToRgb(theme.hex));
@@ -195,10 +201,12 @@
 
   // ---- modal wiring ----
 
-  // GTA VI's word under its name: how to keep it, or where to win it. Null once it's theirs.
+  // An event's word under its name: how to keep it, or where to win it. Null once it's theirs.
   function swatchNote(t) {
-    if (t.id !== window.Gta6?.THEME || Gta6.owned()) return null;
-    return Gta6.open() ? I18n.t("gta6.setNote", "Set GTA VI by 14 December to keep it for good.") : I18n.t("gta6.locked", "Win GTA VI on the uwuCoins wheel.");
+    const ev = eventOf(t.id);
+    if (!ev || ev.owned()) return null;
+    if (ev.ID === "ikea") return ev.open() ? I18n.t("ikea.setNote", "Set IKEA by 31 December 2026 to keep it forever.") : I18n.t("ikea.locked", "Win IKEA on the uwuCoins wheel.");
+    return ev.open() ? I18n.t("gta6.setNote", "Set GTA VI - Vice City by 14 December to keep it for good.") : I18n.t("gta6.locked", "Win GTA VI - Vice City on the uwuCoins wheel.");
   }
 
   function renderSwatches() {
@@ -206,7 +214,7 @@
     grid.innerHTML = COLOR_THEMES.map((t) => {
       const note = swatchNote(t);
       // Locked, it goes to the wheel, so it goes with the wheel when uwuCoins are hidden.
-      const locked = t.id === window.Gta6?.THEME && !Gta6.canPick();
+      const locked = !!eventOf(t.id) && !eventOf(t.id).canPick();
       return `
       <button class="swatch${locked ? " locked coinsOnly" : ""}" data-theme-id="${t.id}" style="--swatch-color:${t.hex}${t.dot ? `;--swatch-dot:${t.dot}` : ""}" type="button" aria-label="${note ? `${t.label}. ${note}` : t.label}">
         <span class="swatch-dot"></span>
@@ -219,12 +227,12 @@
   function buildThemeModal() {
     const grid = document.getElementById("swatchGrid");
     renderSwatches();
-    window.addEventListener("gta6:change", renderSwatches);
+    window.addEventListener("eventcolours:change", renderSwatches);
 
     grid.addEventListener("click", (e) => {
       const btn = e.target.closest("[data-theme-id]");
       if (!btn) return;
-      if (btn.dataset.themeId === window.Gta6?.THEME && !Gta6.canPick()) {
+      if (eventOf(btn.dataset.themeId) && !eventOf(btn.dataset.themeId).canPick()) {
         window.closeModal("themeModal");
         window.Coins?.open();
         return;

@@ -33,11 +33,11 @@ ride with no location, or a trip ended early away from its end, earns nothing.
 ## Spin the wheel
 
 <figure>
-<img src="/screenshots/bot/coins-wheel.png" alt="The uwuCoins wheel in Telegram: a gold wheel of eight slices, an egg and 20, 50, 30, 70, 40, 150 and 60, with a red pointer at the top over 150; a coin and 280 under it, +150 uwuCoins!, and Spin for 100 with the button below." width="380" height="327" loading="lazy">
+<img src="/screenshots/bot/coins-wheel.png" alt="The uwuCoins wheel in Telegram: a gold wheel of eight slices, an egg and 20, 50, 30, 70, 40, 150 and 60, with a red pointer at the top over 150; a coin and 280 under it, +150 uwuCoins!, and Spin for 75 with the button below." width="380" height="327" loading="lazy">
 <figcaption>The wheel, after a spin that won 150.</figcaption>
 </figure>
 
-Send `/coins` for your wheel and your balance. **🎡 Spin for 100** under it
+Send `/coins` for your wheel and your balance. **🎡 Spin for 75** under it
 spins: the wheel turns onto the slice it lands on, and your balance counts up
 by what you won, 20 to 150. **📜 History** lists every coin in and out, and
 **🏆 Achievements** the feats.
@@ -47,7 +47,7 @@ by what you won, 20 to 150. **📜 History** lists every coin in and out, and
 One slice in eight is the egg. In the bot, it gives you a **link** to an Easter
 egg. Open it on the SG Bus Timings website, or tap it with the Android app
 installed, and that phone gets what the web app's wheel would give: GTA VI's
-colours while the wheel has them to give, otherwise an Easter egg that phone
+or the IKEA shuttle's colours while the wheel has them to give, otherwise an Easter egg that phone
 hasn't found yet, with what it unlocks, or 80 uwuCoins once it has them all.
 
 A link works **once**, on whichever phone opens it first, and doesn't expire.

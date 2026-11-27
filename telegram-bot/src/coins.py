@@ -11,7 +11,8 @@ A trip's coins (for_trip):
 
 The wheel: SPIN_COST a spin, SLOTS each as likely as the others. The egg slot gives a link that
 opens an Easter egg once, in the web app or the Android app, where it's the web wheel's egg
-slot's prize: GTA VI's colours while they're on offer, else an egg not found yet there, else
+slot's prize: an event's colours (GTA VI's, then the IKEA shuttle's) while they're the wheel's
+to give, else an egg not found yet there, else
 EGG_GONE_COINS uwuCoins (the site's api/share.js, kind egg). Keep the numbers in step with
 js/coins.js.
 
@@ -35,7 +36,7 @@ KM_COINS_MAX = 30
 PER_CHANGE = 3
 PER_OPERATOR = 4
 PER_LINE = 2
-SPIN_COST = 50
+SPIN_COST = 75
 SLOTS = [{"egg": True}, {"coins": 20}, {"coins": 50}, {"coins": 30}, {"coins": 70}, {"coins": 40}, {"coins": 150}, {"coins": 60}]
 EGG_GONE_COINS = 80
 SBS_LINES = ["NE", "DT", "SK", "PG"]

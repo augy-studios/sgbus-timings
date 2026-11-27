@@ -54,7 +54,7 @@ stop locations, arrival ETAs, load, wheelchair accessibility, and deck type.
 | `/nav` | Starts a flow to get from any place to any other by bus and train, listing every worthwhile mix of the two |
 | `/mynavs` | Lists your favourite navs as paginated buttons; tap one to plan it again |
 | `/trip` | Shows the trip you're on again, as its live widget |
-| `/coins` | Your uwuCoins, as a wheel widget with **Spin for 50** under it |
+| `/coins` | Your uwuCoins, as a wheel widget with **Spin for 75** under it |
 | `/achievements` | The nine feats, done or how far along |
 | `/team` | `/team <name>` starts a team run, `/team <code>` joins one; alone, shows yours |
 | `/favouritepref` | Choose whether favourite buses/stops pin to the top or bottom of the list |
@@ -571,7 +571,7 @@ own as each phone's are:
   time, and for a bus along the way); each is judged as the trip moves on from it.
 - **uwuCoins** (`src/coins.py`): a trip got to the end of with a real ride earns
   the web app's amounts, counted up on its card (the widget's chat state `c`); each
-  feat 100. `/coins` sends a static wheel widget (`src/coins_widget.html`): **Spin**, 50
+  feat 100. `/coins` sends a static wheel widget (`src/coins_widget.html`): **Spin**, 75
   uwuCoins a go, is an inline button, the bot picks the slot and sets the widget's chat state, and
   the wheel turns onto it while the balance counts up. The egg slot makes an Easter
   egg link (the site's share links, kind `egg`, `/egg/<id>`), opened once on the

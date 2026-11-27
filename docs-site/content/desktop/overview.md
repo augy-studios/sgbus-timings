@@ -85,7 +85,7 @@ colour:
 - **Deepin & COSMIC Frosted Glass** on Linux: frosted cards over soft pools of
   your accent colour.
 
-Its **Colours** can be your computer's, GTA VI's or Your colours, as Material
+Its **Colours** can be your computer's, GTA VI's, the IKEA shuttle's or Your colours, as Material
 You's can, and **Mode** picks light, dark, by the clock or your computer's. With
 **High contrast** on, it's solid rather than see-through, for easier reading. Turn
 the switch off for the UwU Apps theme.

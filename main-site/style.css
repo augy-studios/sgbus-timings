@@ -65,6 +65,7 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
 :root[data-color-theme="not-green-5"] { --brand: #ccffff; --brand-rgb: 204, 255, 255; }
 :root[data-color-theme="really-light-green"] { --brand: #ffffff; --brand-rgb: 255, 255, 255; }
 :root[data-color-theme="gta-6"] { --brand: #ff2b90; --brand-rgb: 255, 43, 144; }
+:root[data-color-theme="ikea"] { --brand: #ffdb00; --brand-rgb: 255, 219, 0; }
 
 /* ---- light / dark surface tokens ---- */
 :root,
@@ -135,6 +136,26 @@ button:disabled { cursor: not-allowed; opacity: 0.6; }
     --brand-ink: #ff7ccb;
     --brand-fill: #ff2b90;
     --brand-fill-strong: #ff4cb9;
+}
+
+/* The IKEA shuttle's: IKEA's yellow as the brand, so its tints and fills take navy text as the
+   pale swatches' do, and its blue for the page, the words and the main buttons. In dark mode a mix
+   of the yellow over the navy is too dark for --on-brand, so the fills are solid. High contrast
+   keeps its own tokens. */
+:root[data-color-theme="ikea"]:not([data-contrast="more"]) { --on-brand: #00264d; }
+:root[data-color-theme="ikea"][data-mode="light"]:not([data-contrast="more"]) {
+    --bg: #eef5fc;
+    --ink: #00264d;
+    --muted: #3d5877;
+    --brand-ink: #0058a3;
+}
+:root[data-color-theme="ikea"][data-mode="dark"]:not([data-contrast="more"]) {
+    --bg: #001b36;
+    --ink: #f2f7ff;
+    --muted: #b9c9dd;
+    --brand-ink: #ffdb00;
+    --brand-fill: #ffdb00;
+    --brand-fill-strong: #ffe347;
 }
 
 /* High contrast (help desk #6, js/colours.js): the phone's setting (prefers-contrast: more), or
@@ -404,6 +425,12 @@ body.modal-open { overflow: hidden; }
     color: var(--muted);
 }
 .swatch.locked .swatch-dot { opacity: 0.45; }
+.ikeaStrip {
+    height: 10px;
+    margin-bottom: 12px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #0058a3 50%, #ffdb00 50%);
+}
 .gta6Strip {
     height: 10px;
     margin-bottom: 12px;
@@ -4449,6 +4476,20 @@ body.coins-hidden #coinsBtn { display: none !important; }
 .bugShot img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .bugShotX { position: absolute; top: 2px; right: 2px; width: 24px; height: 24px; border-radius: 50%; border: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 16px; line-height: 24px; padding: 0; cursor: pointer; }
 .bugShotBtns { flex-wrap: wrap; gap: 8px; }
+
+/* The IKEA shuttle's look beyond its tokens: a blue and yellow page, the main buttons in IKEA's
+   blue with yellow words, as its signs are, and the wheel's slices going blue and yellow. Not over
+   High contrast or Your colours. */
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours]) body {
+    background-image: linear-gradient(165deg, #eef5fc, #fffbe0 60%, #e3eefa);
+    background-attachment: fixed;
+}
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours])[data-mode="dark"] body { background-image: linear-gradient(165deg, #001b36, #002a57 60%, #00366e); }
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours]) .btn { --brand-fill: #0058a3; --brand-fill-strong: #004a8a; --on-brand: #ffdb00; }
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice.even { fill: #0058a3; }
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice.odd { fill: #ffdb00; }
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours]) .coinSlice.even + .coinSliceText { fill: #ffdb00; }
+:root[data-color-theme="ikea"]:not([data-contrast="more"]):not([data-custom-colours]) :is(.coinSlice.odd, .coinSlice.egg) + .coinSliceText { fill: #00264d; }
 
 /* GTA VI uses every colour of the logo, a colour to each kind of thing: pink for the main buttons,
    orange for what's picked, yellow under a finger, blue for what's switched on, magenta for buses

@@ -96,7 +96,7 @@ window.__chat = (d) => { TelegramWidget.chatData = d; (window.__h.chatDataChange
     const wheel = await open('coins_widget.html', JSON.stringify({ r: 1, b: 250, s: -1 }), '');
     ok('1. the balance', (await wheel.textContent('#b')) === '250');
     ok('1. eight slices, the egg first', (await wheel.$$eval('#g path', (e) => e.length)) === 8 && (await wheel.$$eval('#g text', (e) => e.map((t) => t.textContent)))[0] === '🥚');
-    ok('1. a spin to be had', (await wheel.textContent('#n')).includes('Spin for 100'));
+    ok('1. a spin to be had', (await wheel.textContent('#n')).includes('Spin for 75'));
 
     // ---------- 2. a spin ----------
     await wheel.evaluate((d) => window.__chat(d), JSON.stringify({ r: 2, b: 200, f: 150, s: 2, w: 50, t: now() }));
@@ -121,7 +121,7 @@ window.__chat = (d) => { TelegramWidget.chatData = d; (window.__h.chatDataChange
     await egg.evaluate((d) => window.__chat(d), JSON.stringify({ r: 2, b: 40, f: 40, s: 0, w: 0, t: now() }));
     await egg.waitForTimeout(300);
     ok('2. the egg slot: its link is in the chat', (await egg.textContent('#w')).includes('Easter egg') && (await egg.textContent('#w')).includes('link'));
-    ok('2. 40 left: 60 more for a spin', (await egg.textContent('#n')).startsWith('60 more uwuCoins for a spin'));
+    ok('2. 40 left: 35 more for a spin', (await egg.textContent('#n')).startsWith('35 more uwuCoins for a spin'));
     await still.close();
 
     const old = await open('coins_widget.html', JSON.stringify({ r: 5, b: 120, f: 50, s: 4, w: 70, t: now() - 600 }), '');

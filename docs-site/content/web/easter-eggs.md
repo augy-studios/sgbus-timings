@@ -191,12 +191,12 @@ the feats you've had from it. A team run ends 14 days after its last ride.
 ## Spin for the eggs
 
 Each feat's window has **Spin the wheel**, and the wheel is in Settings, **Help
-and extras**. A spin costs 100 uwuCoins. One slice in eight is the egg: it
+and extras**. A spin costs 75 uwuCoins. One slice in eight is the egg: it
 gives you an egg you haven't found, picked at random, with what it unlocks.
 The other seven give back 20 to 150 coins.
 
 <figure>
-<img src="/screenshots/web/secret-wheel-egg.png" alt="The uwuCoins wheel stopped with its egg slice under the pointer, and under Spin for 100: An Easter egg: Down the old railway! You've unlocked a secret: Your colours: pick one colour, and the app makes the whole theme from it. Your colours has a new preset: KTM." width="358" height="607" loading="lazy">
+<img src="/screenshots/web/secret-wheel-egg.png" alt="The uwuCoins wheel stopped with its egg slice under the pointer, and under Spin for 75: An Easter egg: Ends of the island! You&#39;ve unlocked a secret: Your colours: pick one colour, and the app makes the whole theme from it. Your colours has a new preset: Compass." width="358" height="667" loading="lazy">
 <figcaption>The wheel on its egg.</figcaption>
 </figure>
 

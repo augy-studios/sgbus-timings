@@ -83,6 +83,7 @@ async function site(browser, m, api) {
     set('sgbus_tours', ['glance', 'timings', 'favs', 'nav', 'alerts', 'trips', 'places', 'explorer']);
     set('sgbus_start', 'timings');
     set('sgbus_gta6_offer', '1');
+    set('sgbus_ikea_offer', '1');
     set('sgbus.mode', mm.mode);
     set('sgbus_contrast', mm.contrast);
   }, m);

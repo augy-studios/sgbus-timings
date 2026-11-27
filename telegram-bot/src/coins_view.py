@@ -89,7 +89,7 @@ async def spin(chat_id: int) -> dict:
 def egg_message(link: str) -> str:
     return (f"🥚 You won an Easter egg! Open this link on the SG Bus Timings website or in the Android app to get it:\n{link}\n\n"
             "It works once, on whichever phone opens it first, and doesn't expire. "
-            "It's GTA VI's colours while they're on offer, otherwise an Easter egg that phone hasn't found yet.")
+            "It's GTA VI's or the IKEA shuttle's colours while the wheel has them to give, otherwise an Easter egg that phone hasn't found yet.")
 
 
 def history(chat_id: int) -> str:

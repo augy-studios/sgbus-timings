@@ -301,6 +301,11 @@ void main() {
     // GTA VI's colours, not set in time: the wheel's to give.
     When.now = () => DateTime.utc(2026, 12, 14, 16);
     await shot(t, 'coins-gta6', () => const CoinsScreen());
+    // The IKEA shuttle's colours, not set by 31 December, with GTA VI's already theirs.
+    When.now = () => DateTime.utc(2027, 1, 2, 4);
+    Store.I.putJson('sgbus_gta6', {'at': 1, 'how': 'set'});
+    await shot(t, 'coins-ikea', () => const CoinsScreen());
+    Store.I.remove('sgbus_gta6');
     When.now = () => stillAt;
     final ms = stillAt.millisecondsSinceEpoch;
     const hour = 3600000;
@@ -309,10 +314,10 @@ void main() {
       'spins': 2,
       'log': [
         {'at': ms - hour, 'n': 50, 'why': 'wheel'},
-        {'at': ms - hour - 5000, 'n': -100, 'why': 'spin'},
+        {'at': ms - hour - 5000, 'n': -75, 'why': 'spin'},
         {'at': ms - 3 * hour, 'n': 28, 'why': 'trip', 'trip': 't2', 'name': 'To One Raffles Place', 'parts': {'finish': 5, 'km': 9, 'changes': 3, 'busOps': 4, 'trainOps': 4, 'lines': 3}},
         {'at': ms - 26 * hour, 'n': 0, 'why': 'egg', 'egg': 'ktm'},
-        {'at': ms - 26 * hour - 5000, 'n': -100, 'why': 'spin'},
+        {'at': ms - 26 * hour - 5000, 'n': -75, 'why': 'spin'},
         {'at': ms - 27 * hour, 'n': 100, 'why': 'feat', 'feat': 'ktm'},
         {'at': ms - 50 * hour, 'n': 22, 'why': 'trip', 'trip': 't1', 'name': 'To Bedok Mall', 'parts': {'finish': 5, 'km': 11, 'busOps': 4, 'lines': 2}},
         {'at': ms - 200 * hour, 'n': 250, 'why': 'past', 'trips': 13},

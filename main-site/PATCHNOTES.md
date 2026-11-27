@@ -1,6 +1,6 @@
 # SG Bus Timings - Patch Notes
 
-**Latest update: 27 November 2026**
+**Latest update: 28 November 2026**
 **Live at: https://sgbus.uwuapps.org**
 **Guide: https://guide.sgbus.uwuapps.org**
 **Telegram bot: https://t.me/sgbus_app**
@@ -8,6 +8,34 @@
 Newest first. Each update covers the web app and the Telegram bot.
 
 ---
+
+## 28 November 2026: IKEA colours, and 75 coins a spin (2.8.2)
+
+### Website, Android and desktop apps
+
+- **IKEA colours** - IKEA's blue and yellow, to see off the free shuttle to IKEA Tampines, which runs for the last time on 31 Dec 2026: navy words on a pale blue page (deep navy in dark mode), yellow for what's picked, and blue main buttons with yellow words. It's the last of the brand colours in Theme, and under **Colours** in the apps' Material You. A window offers it once when the app opens.
+- **Yours to keep** - Set it at least once by 31 Dec 2026, Singapore time, and it's yours forever. After that it's locked until you win it on the uwuCoins wheel.
+- **GTA VI - Vice City** - GTA VI's colours have their full name in the brand colours.
+- **75 coins a spin** - The uwuCoins wheel costs 75 a spin everywhere.
+- **Event colours on the wheel** - Not set GTA VI's colours by 14 December, or IKEA's by 31 December? The egg slice wins them first, GTA VI's then IKEA's, before any more Easter eggs.
+- **Event colours found** - Under the wheel and in Achievements, beside the feats done and Easter eggs found.
+
+### Android app 2.8.2
+
+- **A train's bar on a trip** - Once your location has you along a train ride, the trip's bar and time left have you on the train, not still waiting at the start.
+- **Where you get off** - The stop's name sits under the right-hand end of the trip's bar.
+
+### Telegram bot
+
+- **Spin for 75** - The bot's wheel costs the same as the app's. Its egg link gives GTA VI's or IKEA's colours while the wheel has them to give.
+
+### Desktop app and Linux command line 2.8.2
+
+- Numbered 2.8.2 to stay in step; the desktop app has IKEA's colours and the wheel's changes above.
+
+### Wear OS 2.8.2
+
+- No changes of its own: numbered 2.8.2 to stay in step with the phone.
 
 ## 27 November 2026: IKEA's shuttle ends on 31 Dec 2026 (2.8.1)
 

@@ -28,7 +28,7 @@ import 'trip_progress.dart';
     }
   }
   final share = n < 2 ? 1.0 : pos / (n - 1);
-  final minutes = l.minutes * (1 - share) + (l.ride && !t.boarded ? l.wait : 0);
+  final minutes = l.minutes * (1 - share) + (t.waiting ? l.wait : 0);
   return (stops: t.stopsLeft(), minutes: minutes, metres: metres);
 }
 
@@ -87,10 +87,11 @@ class TripStrip extends StatelessWidget {
           ]),
           SizedBox(
             height: 16,
-            child: CustomPaint(painter: _StripPainter(stops: l.points.length, pos: trip.pos, colour: colour, ride: l.ride, waiting: l.ride && !trip.boarded, ink: ink)),
+            child: CustomPaint(painter: _StripPainter(stops: l.points.length, pos: trip.pos, colour: colour, ride: l.ride, waiting: trip.waiting, ink: ink)),
           ),
-          Row(children: [
-            Expanded(child: Text(start, maxLines: 1, overflow: TextOverflow.ellipsis, style: small)),
+          // Each name under its end of the line, the one where you get off at the right edge.
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+            Flexible(child: Text(start, maxLines: 1, overflow: TextOverflow.ellipsis, style: small)),
             const SizedBox(width: 8),
             Flexible(child: Text(end, maxLines: 1, overflow: TextOverflow.ellipsis, textAlign: TextAlign.end, style: small.copyWith(fontWeight: FontWeight.w700))),
           ]),

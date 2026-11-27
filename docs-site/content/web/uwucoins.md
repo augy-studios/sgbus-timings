@@ -89,37 +89,44 @@ never counted twice, and nor are trips another device syncs to this one later.
 ## Spin the wheel
 
 <figure>
-<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 50, then how it works, 1 of 9 feats done and 1 of 9 Easter eggs found, and See your achievements, and History." width="382" height="570" loading="lazy">
+<img src="/screenshots/web/settings-coins.png" alt="uwuCoins in Settings, Help and extras: 230 uwuCoins, a gold wheel of eight slices, one with an egg and the others 20, 50, 30, 70, 40, 150 and 60 coins, a pointer at the top, Spin for 75, then how it works, 1 of 9 feats done, 1 of 9 Easter eggs found and 0 of 2 event colours found, See your achievements, and History." width="358" height="582" loading="lazy">
 <figcaption>The wheel, in Settings' Help and extras.</figcaption>
 </figure>
 
 The wheel is in [Settings](settings.md), **Help and extras**, and it works like
-gacha: a spin costs 50 uwuCoins and lands on one of eight slices at random: an **Easter egg** you haven't found
+gacha: a spin costs 75 uwuCoins and lands on one of eight slices at random: an **Easter egg** you haven't found
 yet, or more coins, up to 150. Once you've found every egg, its slice is coins
-too. Under the wheel, how many feats you've done and eggs you've found, and
-**See your achievements**.
+too. Under the wheel, how many feats you've done, eggs you've found and event
+colours you have, and **See your achievements**. The event colours are GTA VI's
+and the IKEA shuttle's.
 
-If you didn't set [GTA VI's colours](settings.md#brand-colour) by 14 December, the egg
-slice shows a palette and wins them first, before any more eggs, and stays that prize
-until you've won it.
+If you didn't set [GTA VI's colours](settings.md#brand-colour) by 14 December, or the
+IKEA shuttle's by 31 December, the egg slice shows a palette and wins them first, GTA
+VI's then the IKEA shuttle's, before any more eggs, and stays that prize until you've
+won them.
 
 <figure>
-<img src="/screenshots/web/gta6-wheel.png" alt="The uwuCoins wheel with a palette on its egg slice, under the pointer, then Spin for 100, how a spin works, and The egg slice wins GTA VI's colours first." width="382" height="598" loading="lazy">
+<img src="/screenshots/web/gta6-wheel.png" alt="The uwuCoins wheel after 14 December with a palette on its egg slice, under the pointer, then Spin for 75, how a spin works, The egg slice wins GTA VI&#39;s colours first, and 0 of 2 event colours found." width="320" height="624" loading="lazy">
 <figcaption>The wheel with GTA VI's colours to win.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/ikea-wheel.png" alt="The uwuCoins wheel after 31 December, with GTA VI&#39;s colours already set: a palette on its egg slice, Spin for 75, The egg slice wins the IKEA shuttle&#39;s colours first, and 1 of 2 event colours found." width="320" height="624" loading="lazy">
+<figcaption>The wheel with the IKEA shuttle's colours to win, after 31 December.</figcaption>
 </figure>
 
 ### An Easter egg link from Telegram
 
 The [Telegram bot's wheel](../bot/coins.md#easter-egg-links) gives its egg as a
 link. Open it here and it's used up, once for everyone, and this device gets the
-egg slice's prize: GTA VI's colours while the wheel has them to give, otherwise
+egg slice's prize: an event's colours while the wheel has them to give, otherwise
 an egg you haven't found, or 80 uwuCoins once you've found them all. A link
 someone's already opened says so.
 
 ## History
 
 <figure>
-<img src="/screenshots/web/coins-history.png" alt="History under the wheel: All, Earned and Spent, Earned 450, Spent 200, then by the day: Won on the wheel +50, A spin of the wheel minus 100, Trip: To One Raffles Place +28 with what made it up, Won on the wheel: Down the old railway, an Easter egg, Feat: Down the old railway +100, and Trips from before uwuCoins +250, 13 trips." width="382" height="727" loading="lazy">
+<img src="/screenshots/web/coins-history.png" alt="History under the wheel: All, Earned and Spent, Earned 450, Spent 150, then by the day: Won on the wheel +50, A spin of the wheel minus 75, Trip: To One Raffles Place +28 with what made it up, Won on the wheel: Down the old railway, an Easter egg, a spin minus 75, Feat: Down the old railway +100, Trip: To Bedok Mall +22, and Trips from before uwuCoins +250, 13 trips." width="358" height="725" loading="lazy">
 <figcaption>Every coin in and out, and where it came from.</figcaption>
 </figure>
 
@@ -128,7 +135,7 @@ someone's already opened says so.
 - **Trip**: which trip, and what made up its coins: getting there, the distance, changes, operators and lines.
 - **Feat**: which one, and your team run if it did it with you.
 - **Trips from before uwuCoins**: how many, and what they earned.
-- **A spin of the wheel**: the 100 it cost.
+- **A spin of the wheel**: the 75 it cost.
 - **Won on the wheel**: the coins, Easter egg or colours it won.
 
 **All**, **Earned** and **Spent** narrow the list, and it says how much you've earned and spent. It keeps your last 2,000, on this device, as your coins are. A trip with no name kept and no longer in [Your trips](trips.md) says **A trip**.
@@ -136,7 +143,7 @@ someone's already opened says so.
 ## Achievements
 
 <figure>
-<img src="/screenshots/web/settings-achievements.png" alt="Settings&#39; Achievements: 1 of 9 feats done, then each feat as a card with a bar: Every line ridden, 6 of 9; 12, 34, 56, 78, 90, 3 of 5, its Easter egg found; 9, 87, 65, 43, 21, 2 of 5; There and back again and The long way round, Not yet; Down the old railway, Done; First to last, 100 rides and Ends of the island. Under them, 1 of 9 Easter eggs found." width="358" height="1161" loading="lazy">
+<img src="/screenshots/web/settings-achievements.png" alt="Settings&#39; Achievements: 1 of 9 feats done, then each feat as a card with a bar: Every line ridden, 6 of 9; 12, 34, 56, 78, 90, 3 of 5, its Easter egg found; 9, 87, 65, 43, 21, 2 of 5; There and back again and The long way round, Not yet; Down the old railway, Done; First to last, 100 rides and Ends of the island. Then Share your achievements, the team run, and 1 of 9 Easter eggs found and 0 of 2 event colours found." width="358" height="1547" loading="lazy">
 <figcaption>Achievements: each feat, and how far along it is.</figcaption>
 </figure>
 

@@ -185,8 +185,8 @@ Changing the language takes a sip from Singapore's famous language-changing cup.
 ## Themes
 
 <figure>
-<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark, Time-based and Phone's setting modes, eight brand colour swatches with GTA VI last, its note saying to set it by 14 December, and High contrast." width="420" height="647" loading="lazy">
-<figcaption>The theme picker: a mode, and one of eight colours.</figcaption>
+<img src="/screenshots/web/settings-themes.png" alt="The Theme window with Light, Dark, Time-based and Phone&#39;s setting modes, nine brand colour swatches with GTA VI - Vice City and IKEA last, each with its note on how to keep it, and High contrast." width="388" height="759" loading="lazy">
+<figcaption>The theme picker: a mode, and one of nine colours.</figcaption>
 </figure>
 
 Tap the sun or moon button at the bottom of the Edge Tray to open the theme picker.
@@ -204,7 +204,7 @@ Choices apply at once and are remembered on this device.
 
 ### Brand colour
 
-Eight colours tint the page, the buttons and the highlights:
+Nine colours tint the page, the buttons and the highlights:
 
 | Colour | Swatch |
 |---|---|
@@ -215,12 +215,13 @@ Eight colours tint the page, the buttons and the highlights:
 | Not green 4 | Pale pink |
 | Not green 5 | Pale cyan |
 | Really really light green | White |
-| GTA VI | Pink, blue, orange, yellow and violet |
+| GTA VI - Vice City | Pink, blue, orange, yellow and violet |
+| IKEA | IKEA's blue and yellow |
 
 Every colour works in both light and dark mode, and text stays readable in all
-sixteen combinations.
+eighteen combinations.
 
-**GTA VI** celebrates the game's release on 19 November 2026 with the colours of its logo: it goes
+**GTA VI - Vice City** celebrates the game's release on 19 November 2026 with the colours of its logo: it goes
 further than a tint, with a colour to each kind of thing: pink main buttons, orange for what's
 picked, blue for what's switched on, bus numbers going through them all, and a violet page in dark
 mode. Arrival times keep their usual colours. A window offers it once when the app
@@ -236,21 +237,59 @@ use. SG Bus Timings isn't connected with Rockstar Games.
 
 <figure>
 <img src="/screenshots/web/gta6-home-light.png" alt="The home page in GTA VI's colours in light mode: a pale pink page, a hot pink Use my location button, and the Edge Tray's buttons in blue, orange, magenta and violet." width="412" height="892" loading="lazy">
-<figcaption>GTA VI in light mode.</figcaption>
+<figcaption>GTA VI - Vice City in light mode.</figcaption>
 </figure>
 
 <figure>
 <img src="/screenshots/web/gta6-home-dark.png" alt="The same page in dark mode: a deep violet page, a hot pink Use my location button, the page you're on in orange, and the Edge Tray's other buttons in pink, blue and yellow." width="412" height="892" loading="lazy">
-<figcaption>GTA VI in dark mode.</figcaption>
+<figcaption>GTA VI - Vice City in dark mode.</figcaption>
 </figure>
 
 <figure>
-<img src="/screenshots/web/gta6-theme.png" alt="The Theme window in GTA VI's colours, dark: orange on the picked mode and on Phone's setting, and GTA VI picked among the eight brand colours." width="420" height="605" loading="lazy">
-<figcaption>The theme picker with GTA VI on.</figcaption>
+<img src="/screenshots/web/gta6-theme.png" alt="The Theme window in GTA VI - Vice City&#39;s colours, dark: orange on Dark and on Phone&#39;s setting, and GTA VI - Vice City picked among the brand colours, with IKEA&#39;s note under it." width="396" height="861" loading="lazy">
+<figcaption>The theme picker with GTA VI - Vice City on.</figcaption>
 </figure>
 
 <figure>
-<img src="/screenshots/web/gta6-locked.png" alt="The brand colours after 14 December, not set in time: GTA VI's dot faded, and under its name, Win GTA VI on the uwuCoins wheel." width="382" height="219" loading="lazy">
+<img src="/screenshots/web/gta6-locked.png" alt="The brand colours after 14 December, not set in time: GTA VI - Vice City&#39;s dot faded, and under its name, Win GTA VI - Vice City on the uwuCoins wheel. Under IKEA, Set IKEA by 31 December 2026 to keep it forever." width="320" height="466" loading="lazy">
+<figcaption>Not set in time: it's won on the wheel. Tap it to go there.</figcaption>
+</figure>
+
+**IKEA** sees off the free shuttle bus to IKEA Tampines, which runs for the last time on 31
+December 2026, in IKEA's blue and yellow: navy words on a pale blue page (deep navy in dark mode),
+yellow for what's picked and switched on, and the main buttons blue with yellow words. A window
+offers it once when the app opens. Set it at least once by 31 December 2026, Singapore time, and
+it's yours to keep forever. After that it's locked until you win it on the
+[uwuCoins wheel](uwucoins.md#spin-the-wheel), after GTA VI's if you haven't got those either. It's
+kept on each device. SG Bus Timings isn't connected with IKEA.
+
+<figure>
+<img src="/screenshots/web/ikea-offer.png" alt="A window titled The IKEA shuttle's colours: a strip half blue and half yellow, that the free shuttle to IKEA Tampines runs for the last time on 31 December, how to keep the theme by setting it by 31 December, and buttons for Set it and Not now." width="388" height="304" loading="lazy">
+<figcaption>The window that offers it, once.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/ikea-note.png" alt="The brand colours before 14 December: under GTA VI - Vice City, Set GTA VI - Vice City by 14 December to keep it for good, and under IKEA, last, Set IKEA by 31 December 2026 to keep it forever." width="350" height="482" loading="lazy">
+<figcaption>Before it's set: how to keep it.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/ikea-home-light.png" alt="The home page in the IKEA shuttle's colours in light mode: a pale blue page with navy words, the next bus in blue, and the page you're on in yellow in the Edge Tray." width="412" height="892" loading="lazy">
+<figcaption>IKEA in light mode.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/ikea-home-dark.png" alt="The same page in dark mode: a deep navy page, the next bus in yellow, and the Edge Tray's buttons on navy with the page you're on in yellow." width="412" height="892" loading="lazy">
+<figcaption>IKEA in dark mode.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/ikea-theme.png" alt="The Theme window in the IKEA shuttle's colours, dark: yellow on Dark and on Phone's setting, and IKEA picked, last of the brand colours, with GTA VI's note above it." width="388" height="759" loading="lazy">
+<figcaption>The theme picker with IKEA on.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/web/ikea-locked.png" alt="The brand colours after 31 December, not set in time: IKEA's dot faded, and under its name, Win IKEA on the uwuCoins wheel. GTA VI - Vice City, set in time, has no note." width="320" height="454" loading="lazy">
 <figcaption>Not set in time: it's won on the wheel. Tap it to go there.</figcaption>
 </figure>
 

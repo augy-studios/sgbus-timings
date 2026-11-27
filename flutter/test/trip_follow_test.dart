@@ -179,6 +179,17 @@ void main() {
       expect(Trip.I.alerted, contains(0));
     });
 
+    test('a train the fixes move along is boarded, so the bar has you there, not at its start', () async {
+      await _start([TripLeg(kind: 'train', label: 'EW Line', to: 'End', points: _pts, names: _names, minutes: 14, wait: 2)]);
+      _later(2 * 60 + 6 * 60 + 30);
+      _at(_pts[3]);
+      expect(Trip.I.pos, closeTo(3, 0.01));
+      expect(Trip.I.boarded, isTrue);
+      expect(Trip.I.waiting, isFalse);
+      // 2 minutes a stop, 4 stops left, and no wait added on.
+      expect(Trip.I.minutesLeft(), closeTo(8, 0.01));
+    });
+
     test('a good fix off the leg holds the clock to about where it can be', () async {
       await _start([_train()]);
       _at([1.40, 103.90]);

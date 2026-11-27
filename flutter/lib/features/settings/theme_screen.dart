@@ -93,19 +93,22 @@ class _ThemeScreenState extends State<ThemeScreen> {
           ),
         ],
         // ---- Material You's colours: the wallpaper's (the computer's accent colour in its own
-        // look), unless GTA VI's or Your colours are picked ----
+        // look), unless an event's or Your colours are picked ----
         if (look.materialYou || look.deskLook)
           Choice(
             label: tr('theme.youColours', 'Colours'),
             value: look.youColours,
             options: [
               ('phone', look.deskLook ? tr('desktop.theme.computerColours', "Your computer's") : tr('theme.youColours.phone', 'Your phone’s')),
-              if (Gta6.canPick) (AppLook.gta6, tr('theme.gta6', 'GTA VI')),
+              // Just "GTA VI" here, so the three choices fit on one line on a phone; the swatch and
+              // the notes keep its whole name.
+              if (Gta6.canPick) (AppLook.gta6, 'GTA VI'),
+              if (Ikea.canPick) (AppLook.ikea, tr('theme.ikea', 'IKEA')),
               if (yc != null) ('yours', tr('theme.youColours.yours', 'Your colours')),
             ],
             onChanged: (v) => setState(() => look.youColours = v),
           ),
-        if (look.materialYou || look.deskLook) ..._gta6Note(sg),
+        if (look.materialYou || look.deskLook) ..._eventNotes(sg),
         // ---- light or dark ----
         Choice(
           label: tr('theme.mode', 'Mode'),
@@ -128,18 +131,20 @@ class _ThemeScreenState extends State<ThemeScreen> {
           else
             Wrap(spacing: 10, runSpacing: 10, children: [
               for (final s in AppLook.swatches)
-                if (s.id != AppLook.gta6 || Gta6.canPick || Coins.shown)
+                if ((EventColours.byTheme(s.id)?.canPick ?? true) || Coins.shown)
                 Tooltip(
                   message: s.id == 'classic'
                       ? tr('theme.classic', 'Classic')
                       : s.id == 'really-light-green'
                           ? tr('theme.reallyLight', 'Really really light green')
                           : s.id == AppLook.gta6
-                              ? tr('theme.gta6', 'GTA VI')
-                              : tr('theme.notGreen', 'Not green {n}', {'n': s.id.split('-').last}),
+                              ? tr('theme.gta6', 'GTA VI - Vice City')
+                              : s.id == AppLook.ikea
+                                  ? tr('theme.ikea', 'IKEA')
+                                  : tr('theme.notGreen', 'Not green {n}', {'n': s.id.split('-').last}),
                   child: InkWell(
                     customBorder: const CircleBorder(),
-                    onTap: () => s.id == AppLook.gta6 && !Gta6.canPick ? AppNav.open('coins') : setState(() => look.swatchId = s.id),
+                    onTap: () => _locked(s.id) ? AppNav.open('coins') : setState(() => look.swatchId = s.id),
                     child: Container(
                       width: 44,
                       height: 44,
@@ -149,12 +154,12 @@ class _ThemeScreenState extends State<ThemeScreen> {
                         shape: BoxShape.circle,
                         border: Border.all(color: look.swatchId == s.id ? sg.ink : sg.border, width: look.swatchId == s.id ? 3 : 1),
                       ),
-                      child: s.id == AppLook.gta6 && !Gta6.canPick ? const Icon(Icons.lock_outline, color: Colors.white, size: 20) : null,
+                      child: _locked(s.id) ? Icon(Icons.lock_outline, color: s.id == AppLook.ikea ? const Color(0xFF00264D) : Colors.white, size: 20) : null,
                     ),
                   ),
                 ),
             ]),
-          if (yc == null) ..._gta6Note(sg),
+          if (yc == null) ..._eventNotes(sg),
           const SizedBox(height: 8),
         ],
         // ---- High contrast ----
@@ -185,21 +190,33 @@ class _ThemeScreenState extends State<ThemeScreen> {
     );
   }
 
-  // How to keep GTA VI's colours, or where to win them. Nothing once they're theirs.
-  List<Widget> _gta6Note(SgColors sg) {
-    if (Gta6.owned) return const [];
-    if (Gta6.open) {
+  // An event's brand colour that's only the wheel's to give now.
+  static bool _locked(String id) => !(EventColours.byTheme(id)?.canPick ?? true);
+
+  // How to keep each event's colours, or where to win them. Nothing for one once it's theirs.
+  List<Widget> _eventNotes(SgColors sg) => [
+        for (final ev in EventColours.list) ..._eventNote(sg, ev),
+      ];
+
+  List<Widget> _eventNote(SgColors sg, EventColour ev) {
+    if (ev.owned) return const [];
+    final ikea = ev.id == 'ikea';
+    if (ev.open) {
       return [
         Padding(
           padding: const EdgeInsets.only(top: 8, bottom: 8),
-          child: Text(tr('gta6.setNote', 'Set GTA VI by 14 December to keep it for good.'), style: TextStyle(color: sg.muted, fontSize: 13)),
+          child: Text(
+              ikea ? tr('ikea.setNote', 'Set IKEA by 31 December 2026 to keep it forever.') : tr('gta6.setNote', 'Set GTA VI - Vice City by 14 December to keep it for good.'),
+              style: TextStyle(color: sg.muted, fontSize: 13)),
         ),
       ];
     }
     if (!Coins.shown) return const [];
     return [
       Row(children: [
-        Expanded(child: Text(tr('gta6.locked', 'Win GTA VI on the uwuCoins wheel.'), style: TextStyle(color: sg.muted, fontSize: 13))),
+        Expanded(
+            child: Text(ikea ? tr('ikea.locked', 'Win IKEA on the uwuCoins wheel.') : tr('gta6.locked', 'Win GTA VI - Vice City on the uwuCoins wheel.'),
+                style: TextStyle(color: sg.muted, fontSize: 13))),
         TextButton(onPressed: () => AppNav.open('coins'), child: Text(tr('coins.spinGo', 'Spin the wheel'))),
       ]),
     ];

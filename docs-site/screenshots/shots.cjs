@@ -1069,7 +1069,7 @@ async function drawConsole(browser, shots) {
   // before. Always still: the made-up feeds above, around a real ride from the route list.
   if (want('last-call')) {
     // The GTA VI offer (js/gta6.js) kept out of the way.
-    const quietOffer = { sgbus_gta6_offer: '1' };
+    const quietOffer = { sgbus_gta6_offer: '1', sgbus_ikea_offer: '1' };
     let { ctx, page } = await open(browser, { width: 390, height: 1400, touch: true, geo: bedokGeo, extra: quietOffer });
     // The help desk's own ride (25 November 2026): 65 from Opp Mattar Stn Exit B (70231) to Bef
     // Siemens Ctr (60219), which 61 and 154 also go straight to.
@@ -1543,6 +1543,107 @@ async function drawConsole(browser, shots) {
   }
   // uwuCoins (main-site/js/coins.js): the Edge Tray's coin with its balance, and the wheel in
   // Settings' Help and extras, a feat done and an egg found. Always still.
+  // events: the event colours (main-site/js/gta6.js). The IKEA shuttle's window, the home page in
+  // its colours light and dark, the theme picker with it on, then after 31 December, never set:
+  // its swatch locked, and the wheel's egg slice to win it (GTA VI's already theirs). GTA VI's own
+  // wheel after 14 December too. Always still: the window and the home page on STILL_AT, the
+  // rest with the clock moved on.
+  if (want('events')) {
+    const coins = { sgbus_coins: JSON.stringify({ balance: 230, log: [], spins: 1 }), sgbus_gta6_offer: '1' };
+    let { ctx, page } = await open(browser, { width: 412, height: 892, extra: coins, still: true });
+    await page.waitForFunction(() => !document.getElementById('ikeaModal').classList.contains('hidden'), null, { timeout: 15000 });
+    await page.waitForTimeout(400);
+    await el(page, '#ikeaModal .modal', 'ikea-offer.png');
+    // Not now, then the brand colours with each event's note on how to keep it.
+    await page.click('#ikeaLater');
+    await page.waitForTimeout(400);
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await el(page, '#swatchGrid', 'ikea-note.png');
+    await el(page, '#themeModal .modal', 'settings-themes.png');
+    // Then picked there, as Set it would.
+    await page.click('#swatchGrid [data-theme-id="ikea"]');
+    await page.evaluate(() => window.closeModal('themeModal'));
+    // The next bus's timings in before the home page is taken.
+    await page.waitForFunction(() => !/Getting the times/.test(document.body.innerText), null, { timeout: 20000 }).catch(() => console.log('still getting the times'));
+    await page.waitForTimeout(800);
+    await page.screenshot({ path: OUT + 'ikea-home-light.png' });
+    console.log('wrote ikea-home-light.png 412 892');
+    // Dark, picked in Theme as anyone would, and the picker taken with it.
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await page.click('#themeModal [data-mode="dark"]');
+    await page.waitForTimeout(600);
+    await el(page, '#themeModal .modal', 'ikea-theme.png');
+    await page.evaluate(() => window.closeModal('themeModal'));
+    await page.waitForTimeout(600);
+    await page.screenshot({ path: OUT + 'ikea-home-dark.png' });
+    console.log('wrote ikea-home-dark.png 412 892');
+    await ctx.close();
+
+    // After 31 December, the IKEA shuttle's never set, GTA VI's set in time.
+    const after = { ...coins, sgbus_ikea_offer: '1', sgbus_gta6: JSON.stringify({ at: 1, how: 'set' }) };
+    ({ ctx, page } = await open(browser, { width: 382, height: 1400, extra: after, still: true }));
+    await ctx.clock.setFixedTime(new Date('2027-01-02T12:00:00+08:00'));
+    await page.reload();
+    await page.waitForTimeout(1500);
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await el(page, '#swatchGrid', 'ikea-locked.png');
+    await page.evaluate(() => window.closeModal('themeModal'));
+    await settingsGroup(page, 'help');
+    await page.waitForTimeout(500);
+    await el(page, '#coinsBox', 'ikea-wheel.png');
+    await ctx.close();
+
+    // GTA VI's after 14 December, never set: its wheel.
+    ({ ctx, page } = await open(browser, { width: 382, height: 1400, extra: { ...coins, sgbus_ikea_offer: '1' }, still: true }));
+    await ctx.clock.setFixedTime(new Date('2026-12-15T12:00:00+08:00'));
+    await page.reload();
+    await page.waitForTimeout(1500);
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await el(page, '#swatchGrid', 'gta6-locked.png');
+    await page.evaluate(() => window.closeModal('themeModal'));
+    await settingsGroup(page, 'help');
+    await page.waitForTimeout(500);
+    await el(page, '#coinsBox', 'gta6-wheel.png');
+    await ctx.close();
+
+    // GTA VI's on, dark, in Theme.
+    ({ ctx, page } = await open(browser, { width: 420, height: 1400, extra: { ...coins, sgbus_ikea_offer: '1' }, still: true }));
+    await page.click('#themeBtn');
+    await page.waitForTimeout(600);
+    await page.click('#swatchGrid [data-theme-id="gta-6"]');
+    await page.click('#themeModal [data-mode="dark"]');
+    await page.waitForTimeout(600);
+    await el(page, '#themeModal .modal', 'gta6-theme.png');
+    await ctx.close();
+  }
+  // coins-history: History under the wheel (main-site/js/coins.js), from a made-up log of trips,
+  // a feat, spins and what they won, as the Android app's coins-history has it. Always still.
+  if (want('coins-history')) {
+    const at = STILL_AT.getTime();
+    const hour = 3600000;
+    const log = [
+      { at: at - hour, n: 50, why: 'wheel' },
+      { at: at - hour - 5000, n: -75, why: 'spin' },
+      { at: at - 3 * hour, n: 28, why: 'trip', trip: 't2', name: 'To One Raffles Place', parts: { finish: 5, km: 9, changes: 3, busOps: 4, trainOps: 4, lines: 3 } },
+      { at: at - 26 * hour, n: 0, why: 'egg', egg: 'ktm' },
+      { at: at - 26 * hour - 5000, n: -75, why: 'spin' },
+      { at: at - 27 * hour, n: 100, why: 'feat', feat: 'ktm' },
+      { at: at - 50 * hour, n: 22, why: 'trip', trip: 't1', name: 'To Bedok Mall', parts: { finish: 5, km: 11, busOps: 4, lines: 2 } },
+      { at: at - 200 * hour, n: 250, why: 'past', trips: 13 },
+    ];
+    const extra = { sgbus_coins: JSON.stringify({ balance: 300, log, spins: 2 }), sgbus_feats: JSON.stringify({ ktm: at - 27 * hour }), sgbus_eggs: JSON.stringify({ ktm: at - 26 * hour }), sgbus_eggs_told: JSON.stringify(['feat:ktm', 'colours']), sgbus_gta6_offer: '1', sgbus_ikea_offer: '1' };
+    const { ctx, page } = await open(browser, { width: 420, height: 2400, extra, still: true });
+    await settingsGroup(page, 'help');
+    await page.waitForTimeout(500);
+    await page.evaluate(() => { document.getElementById('coinHistory').open = true; });
+    await page.waitForTimeout(500);
+    await el(page, '#coinHistory', 'coins-history.png');
+    await ctx.close();
+  }
   if (want('coins')) {
     const coins = {
       sgbus_coins: JSON.stringify({ balance: 230, log: [], spins: 1 }),
@@ -1551,7 +1652,8 @@ async function drawConsole(browser, shots) {
       sgbus_colours_unlocked: String(Date.now()),
       sgbus_eggs_told: JSON.stringify(['feat:ktm', 'colours']),
     };
-    const { ctx, page } = await open(browser, { width: 420, height: 1800, extra: coins, still: true });
+    // Tall enough for the whole of Achievements, its team run and the eggs and event colours under it.
+    const { ctx, page } = await open(browser, { width: 420, height: 2600, extra: coins, still: true });
     await el(page, '#coinsBtn', 'tray-coins.png');
     await settingsGroup(page, 'help');
     await page.waitForTimeout(500);
@@ -1991,7 +2093,7 @@ async function drawConsole(browser, shots) {
   const HOME = { label: 'Home', lat: 1.3390, lng: 103.9297 };
   const KALLANG = { label: 'Kallang Stn', lat: 1.311532, lng: 103.871372 };
   // GTA VI's window, offered once till 15 December, not over these.
-  const homeState = { sgbus_home: JSON.stringify(HOME), sgbus_place_buses: JSON.stringify({ '1.33900,103.92970': ['228'] }), sgbus_gta6_offer: '1' };
+  const homeState = { sgbus_home: JSON.stringify(HOME), sgbus_place_buses: JSON.stringify({ '1.33900,103.92970': ['228'] }), sgbus_gta6_offer: '1', sgbus_ikea_offer: '1' };
   if (want('ux-nov')) {
     const ways = await ownWays();
     const options = ways(KALLANG, HOME);
@@ -2072,7 +2174,7 @@ async function drawConsole(browser, shots) {
   // A place's form, in its own window since 22 November 2026 (main-site/js/places.js): Save a
   // new place with Jewel found and a name typed. Places' search is the live site's.
   if (want('place-form')) {
-    const { ctx, page } = await open(browser, { width: 420, height: 1000, extra: { sgbus_gta6_offer: '1' } });
+    const { ctx, page } = await open(browser, { width: 420, height: 1000, extra: { sgbus_gta6_offer: '1', sgbus_ikea_offer: '1' } });
     await page.click('#placesBtn');
     await page.waitForTimeout(500);
     await page.click('#placeNewBtn');
@@ -2103,7 +2205,7 @@ async function drawConsole(browser, shots) {
     }) : null);
 
     // No GTA 6 offer over it (it takes the focus, and the list closes).
-    const quiet = { sgbus_gta6_offer: '1' };
+    const quiet = { sgbus_gta6_offer: '1', sgbus_ikea_offer: '1' };
     const { ctx, page } = await open(browser, { width: 420, height: 1100, touch: true, still: true, extra: quiet });
     await answerTrains(ctx);
     await page.click('#timingsBtn');

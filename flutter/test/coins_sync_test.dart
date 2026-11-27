@@ -26,7 +26,7 @@ void main() {
     test('GTA VI\'s colours while they\'re the wheel\'s to give', () {
       if (!Gta6.due) return; // by 14 December they can still be set, and an egg's given
       final r = Coins.eggLinkPrize();
-      expect(r.gta6, isTrue);
+      expect(r.event, 'gta6');
     });
 
     test('an egg not found yet, otherwise; coins once every egg is found', () {

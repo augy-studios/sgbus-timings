@@ -29,6 +29,13 @@ void main() {
   });
   tearDown(() => When.now = DateTime.now);
 
+  test('counts as an event colour found once it\'s yours', () {
+    expect(EventColours.all, [AppLook.gta6, AppLook.ikea]);
+    expect(EventColours.found(), isEmpty);
+    Gta6.claim('set');
+    expect(EventColours.found(), [AppLook.gta6]);
+  });
+
   group('as a brand colour', () {
     setUp(() {
       AppLook.I.materialYou = false;
@@ -219,7 +226,7 @@ void main() {
   });
 
   group('or won on the wheel', () {
-    ({int index, int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6}) spinToEggSlice() {
+    ({int index, int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, String? event}) spinToEggSlice() {
       Coins.setBalance(100000);
       for (var i = 0; i < 2000; i++) {
         final r = Coins.spin()!;
@@ -231,7 +238,7 @@ void main() {
     test('in time, the wheel has nothing to do with it', () {
       expect(Gta6.due, isFalse);
       final r = spinToEggSlice();
-      expect(r.gta6, isFalse);
+      expect(r.event, isNull);
       expect(r.egg, isNotNull);
       expect(Gta6.owned, isFalse);
     });
@@ -239,7 +246,7 @@ void main() {
     test('afterwards, the egg slice gives it first, then eggs again', () {
       When.now = () => _after;
       final won = spinToEggSlice();
-      expect(won.gta6, isTrue);
+      expect(won.event, 'gta6');
       expect(won.egg, isNull);
       expect(Feats.eggs(), isEmpty);
       expect(Gta6.owned, isTrue);
@@ -254,39 +261,39 @@ void main() {
       expect(Coins.slotNow(0), Coins.eggGoneCoins, reason: 'in time: coins, as ever');
       When.now = () => _after;
       expect(Coins.slotNow(0), isNull);
-      expect(spinToEggSlice().gta6, isTrue);
+      expect(spinToEggSlice().event, 'gta6');
       expect(Coins.slotNow(0), Coins.eggGoneCoins);
     });
 
     test('already theirs: it never comes up', () {
       Gta6.claim('set');
       When.now = () => _after;
-      expect(spinToEggSlice().gta6, isFalse);
+      expect(spinToEggSlice().event, isNull);
     });
   });
 
   group('offered once', () {
     test('until it’s offered, it’s theirs, or the day’s gone', () {
-      expect(Gta6Offer.due, isTrue);
+      expect(EventOffer.gta6.due, isTrue);
       Store.I.put(Gta6.offerKey, '1');
-      expect(Gta6Offer.due, isFalse);
+      expect(EventOffer.gta6.due, isFalse);
       Store.memory();
       Gta6.claim('set');
-      expect(Gta6Offer.due, isFalse);
+      expect(EventOffer.gta6.due, isFalse);
       Store.memory();
       When.now = () => _after;
-      expect(Gta6Offer.due, isFalse);
+      expect(EventOffer.gta6.due, isFalse);
     });
 
     test('not over first open’s choice', () {
       Store.I.put('sgbus_first_run', 'ask');
-      expect(Gta6Offer.quiet(), isFalse);
+      expect(EventOffer.quiet(), isFalse);
     });
 
     test('Set it, in Material You: its choice, and Your colours kept', () {
       AppLook.I.materialYou = true;
       Store.I.putJson(AppLook.coloursKey, {'kind': 'base', 'base': '#123456'});
-      Gta6Offer.set();
+      EventOffer.gta6.set();
       expect(AppLook.I.youColours, AppLook.gta6);
       expect(AppLook.I.yourColours, isNotNull);
       expect(Gta6.owned, isTrue);
@@ -295,7 +302,7 @@ void main() {
     test('Set it, in the UwU Apps theme: its brand colour, in place of Your colours', () {
       AppLook.I.materialYou = false;
       Store.I.putJson(AppLook.coloursKey, {'kind': 'base', 'base': '#123456'});
-      Gta6Offer.set();
+      EventOffer.gta6.set();
       expect(AppLook.I.swatchId, AppLook.gta6);
       expect(AppLook.I.yourColours, isNull);
       expect(AppLook.I.isGta6, isTrue);
@@ -336,7 +343,7 @@ void main() {
     testWidgets('as a swatch', (t) async {
       AppLook.I.materialYou = false;
       await screen(t);
-      await t.tap(find.byTooltip('GTA VI'));
+      await t.tap(find.byTooltip('GTA VI - Vice City'));
       await t.pump();
       expect(AppLook.I.swatchId, AppLook.gta6);
     });
@@ -356,7 +363,7 @@ void main() {
       expect(find.byIcon(Icons.lock_outline), findsOneWidget);
       Coins.shown = false;
       await screen(t);
-      expect(find.byTooltip('GTA VI'), findsNothing);
+      expect(find.byTooltip('GTA VI - Vice City'), findsNothing);
       expect(find.textContaining('uwuCoins wheel'), findsNothing);
     });
   });

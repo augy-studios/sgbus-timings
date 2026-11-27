@@ -44,7 +44,7 @@ import '../trips/trip.dart';
 
 void registerExtras() {
   Pip.start();
-  Gta6Offer.start();
+  EventOffer.startAll();
   Shake.start();
   Donate.start();
 }
@@ -198,15 +198,24 @@ class Shake {
 
 // ---------- asking for a coffee ----------
 
-/// GTA VI's colours, offered once, the first time the app opens with them in it (the site's
-/// js/gta6.js): never over anything else (first open's choice, the welcome, a window, a trip, the
-/// live map), so it's tried every tryMs until it's quiet. Not once they're theirs, nor after
-/// Gta6.until.
-class Gta6Offer {
-  Gta6Offer._();
+/// An event's colours (data/gta6.dart), offered once, the first time the app opens with them in it
+/// (the site's js/gta6.js): never over anything else (first open's choice, the welcome, a window, a
+/// trip, the live map), so it's tried every tryMs until it's quiet, and only one a visit. Not once
+/// they're theirs, nor after the event's `until`.
+class EventOffer {
+  EventOffer._(this.event, this.window);
+  final EventColour event;
+  final Widget Function() window;
   static const tryMs = 3000;
 
-  static bool get due => Gta6.open && !Gta6.owned && Store.I.get(Gta6.offerKey) == null;
+  static final gta6 = EventOffer._(Gta6.event, () => const Gta6Window());
+  static final ikea = EventOffer._(Ikea.event, () => const IkeaWindow());
+  static final all = [gta6, ikea];
+
+  // One window a visit, if two events are both still to offer.
+  static bool _offeredNow = false;
+
+  bool get due => event.open && !event.owned && Store.I.get(event.offerKey) == null;
 
   static bool quiet() {
     if (Store.I.get('sgbus_first_run') == 'ask' || Tours.running) return false;
@@ -216,54 +225,65 @@ class Gta6Offer {
     return !(AppNav.nav?.canPop() ?? true);
   }
 
-  static void start() {
+  static void startAll() {
+    for (final o in all) {
+      o.start();
+    }
+  }
+
+  void start() {
     if (!due) return;
     Timer.periodic(const Duration(milliseconds: tryMs), (timer) {
-      if (!due || (quiet() && show())) timer.cancel();
+      if (!due || _offeredNow || (quiet() && show())) timer.cancel();
     });
   }
 
-  static bool show() {
+  bool show() {
     final context = AppNav.context;
     if (context == null) return false;
-    Store.I.put(Gta6.offerKey, '${When.nowMs()}');
-    showDialog<void>(context: context, builder: (_) => const Gta6Window());
+    _offeredNow = true;
+    Store.I.put(event.offerKey, '${When.nowMs()}');
+    showDialog<void>(context: context, builder: (_) => window());
     return true;
   }
 
   /// In Material You (and the desktop's own look), its choice under Colours. In the UwU Apps
   /// theme, its brand colour, which Your colours stand over, so they go.
-  static void set() {
+  void set() {
     final look = AppLook.I;
     if (look.materialYou || look.deskLook) {
-      look.youColours = AppLook.gta6;
+      look.youColours = event.theme;
     } else {
       Store.I.remove(AppLook.coloursKey);
-      look.swatchId = AppLook.gta6;
+      look.swatchId = event.theme;
     }
   }
 }
 
-class Gta6Window extends StatelessWidget {
-  const Gta6Window({super.key});
+/// An event's window: its colours as a strip, what it's for, and how to keep them.
+class _EventWindow extends StatelessWidget {
+  const _EventWindow({required this.offer, required this.title, required this.text, required this.keep, required this.strip, this.stops});
+  final EventOffer offer;
+  final String title;
+  final String text;
+  final String keep;
+  final List<Color> strip;
+  final List<double>? stops;
 
   @override
   Widget build(BuildContext context) {
     final replaces = !AppLook.I.materialYou && !AppLook.I.deskLook && AppLook.I.yourColours != null;
     return AlertDialog(
-      title: Text(tr('gta6.title', 'GTA VI’s colours')),
+      title: Text(title),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           height: 10,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            gradient: const LinearGradient(colors: [Color(0xFF2B60DA), Color(0xFFFF2B90), Color(0xFFE6953E)]),
-          ),
+          decoration: BoxDecoration(borderRadius: BorderRadius.circular(999), gradient: LinearGradient(colors: strip, stops: stops)),
         ),
         const SizedBox(height: 12),
-        Text(tr('gta6.text', 'To celebrate the game’s release on 19 November, there’s a new theme in its logo’s pink, blue, orange, yellow and violet.')),
+        Text(text),
         const SizedBox(height: 8),
-        Text(tr('gta6.keep', 'Set it by 14 December and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.')),
+        Text(keep),
         if (replaces) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('gta6.replace', 'This replaces Your colours. You can pick them again any time.'))),
       ]),
       actions: [
@@ -271,13 +291,41 @@ class Gta6Window extends StatelessWidget {
         FilledButton(
           onPressed: () {
             Navigator.of(context).pop();
-            Gta6Offer.set();
+            offer.set();
           },
           child: Text(tr('gta6.set', 'Set it')),
         ),
       ],
     );
   }
+}
+
+class Gta6Window extends StatelessWidget {
+  const Gta6Window({super.key});
+
+  @override
+  Widget build(BuildContext context) => _EventWindow(
+        offer: EventOffer.gta6,
+        title: tr('gta6.title', 'GTA VI’s colours'),
+        text: tr('gta6.text', 'To celebrate the game’s release on 19 November, there’s a new theme in its logo’s pink, blue, orange, yellow and violet.'),
+        keep: tr('gta6.keep', 'Set it by 14 December and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.'),
+        strip: const [Color(0xFF2B60DA), Color(0xFFFF2B90), Color(0xFFE6953E)],
+      );
+}
+
+class IkeaWindow extends StatelessWidget {
+  const IkeaWindow({super.key});
+
+  @override
+  Widget build(BuildContext context) => _EventWindow(
+        offer: EventOffer.ikea,
+        title: tr('ikea.title', 'The IKEA shuttle’s colours'),
+        text: tr('ikea.text', 'The free shuttle bus to IKEA Tampines runs for the last time on 31 December. To see it off, there’s a new theme in IKEA’s blue and yellow.'),
+        keep: tr('ikea.keep', 'Set it by 31 December and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.'),
+        // Half blue, half yellow, as the site's .ikeaStrip.
+        strip: const [Color(0xFF0058A3), Color(0xFF0058A3), Color(0xFFFFDB00), Color(0xFFFFDB00)],
+        stops: const [0, .5, .5, 1],
+      );
 }
 
 class Donate {

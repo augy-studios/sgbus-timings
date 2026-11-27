@@ -270,6 +270,10 @@ class Trip extends ChangeNotifier {
   int leg = 0;
   double pos = 0; // stops along the leg, fractional
   bool boarded = false;
+
+  /// Still waiting to get on the ride you're on: not boarded, and not half a stop along it either
+  /// (the site's tripStrip and minutesTo, in step with them).
+  bool get waiting => current?.ride == true && !boarded && pos < 0.5;
   final Set<int> alerted = {};
   /// The rides whose last call was given (nowStops).
   final Set<int> nowAlerted = {};
@@ -580,6 +584,9 @@ class Trip extends ChangeNotifier {
     }
     // The clock goes on from here if the fixes stop.
     anchor = (pos: pos, t: now);
+    // A train the fixes have half a station on: on board, as the clock has it once past the wait.
+    // Only a train gets here not yet boarded (a bus boards in _noteMove above).
+    if (!boarded && pos >= 0.5) _boardedNow(pos, l);
 
     // Off the bus: walking, by your pace, near its last stop, once you're nearly there.
     final last = (l.points.length - 1).toDouble();
@@ -1414,7 +1421,7 @@ class Trip extends ChangeNotifier {
       'icon': l.kind,
       'color': TripProgress.colourOf(l),
       'sub': l.ride ? _rideName(l) : '',
-      'chip': TripProgress.chip(leg: l, boarded: boarded, stopsLeft: stopsLeft(), minutesLeft: minutesLeft(), last: leg == legs.length - 1),
+      'chip': TripProgress.chip(leg: l, boarded: !waiting, stopsLeft: stopsLeft(), minutesLeft: minutesLeft(), last: leg == legs.length - 1),
       'progress': jsonEncode(TripProgress.progress(legs, leg, pos, alertStops: alertStops, alerts: enabled, alerted: alerted)),
     };
   }
@@ -1448,7 +1455,7 @@ class Trip extends ChangeNotifier {
     final l = current;
     if (l == null) return 0;
     final share = l.points.length < 2 ? 1.0 : pos / (l.points.length - 1);
-    var m = l.minutes * (1 - share) + (l.ride && !boarded ? l.wait : 0);
+    var m = l.minutes * (1 - share) + (waiting ? l.wait : 0);
     for (final after in legs.skip(leg + 1)) {
       m += after.minutes + after.wait;
     }

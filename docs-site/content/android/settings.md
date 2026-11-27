@@ -108,7 +108,7 @@ Material You or the UwU Apps theme, light or dark, and high contrast. See
 
 ## Achievements
 
-The feats, with how far along you are, and the Easter eggs found. See
+The feats, with how far along you are, the Easter eggs found and the event colours you have. See
 [Achievements](uwucoins.md#achievements).
 
 ## Sync

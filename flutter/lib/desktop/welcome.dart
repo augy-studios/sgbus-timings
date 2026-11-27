@@ -163,9 +163,9 @@ class Welcome {
       systemColour: await _systemColour(),
       colours: [
         for (final s in AppLook.swatches)
-          // GTA VI only until its offer ends, unless it's yours (data/gta6.dart).
-          if (s.id != AppLook.gta6 || Gta6.canPick)
-            WelcomeColour(s.id, s.label(), s.hex, dot: s.dot?.map((c) => c.toARGB32()).toList(), locked: s.id == AppLook.gta6 && !Gta6.canPick),
+          // An event's only until its offer ends, unless it's yours (data/gta6.dart).
+          if (EventColours.byTheme(s.id)?.canPick ?? true)
+            WelcomeColour(s.id, s.label(), s.hex, dot: s.dot?.map((c) => c.toARGB32()).toList()),
       ],
     );
   }

@@ -65,6 +65,11 @@ Navigate ride's next trains) is always still; with `LTA_ACCOUNT_KEY` set its tim
 checkout's `api/trains.js` and LTA's timetable, otherwise from the live site. `place-form` is the
 place form in its own window.
 
+27 November 2026's `events` (the IKEA shuttle's window, the home page and Theme in its colours,
+its swatch locked and the wheel to win it after 31 December, and GTA VI's wheel after 14
+December) and `coins-history` (History under the wheel, from a made-up log) are always still;
+the shots after an event's day move the page's clock on.
+
 `STILL=1` takes any group still instead: the page's clock stopped on a Friday morning
 (`STILL_AT`) and every stop's timings made up from its real routes, so a shot comes out the
 same whenever it's taken. The help desk #13 groups (`near-me`, `bug-report`, `explorer-back`,
@@ -82,7 +87,9 @@ The Android app's (`public/screenshots/android/`, `android/` in `content/`) are 
 Flutter's own test renderer from fixed data, so they come out the same whenever they're
 taken: from `flutter/`, `flutter test test/shots/`, or `SHOTS=stop,board flutter test
 test/shots/` for only those. `shots_test.dart` has the pages, and `guide_test.dart` the
-sheets and whatever needs the phone's own parts, with `Native.fake` standing in for them.
+sheets and whatever needs the phone's own parts, with `Native.fake` standing in for them. The
+wheel's egg and the History's emoji need Noto Color Emoji, which the harness loads from
+`/usr/share/fonts/truetype/noto/` where it's there.
 
 The desktop app's (`public/screenshots/desktop/`, `desktop/` in `content/`) come from the same
 renderer, at 2x: from `flutter/`, `flutter test test/shots/desktop_shots_test.dart` (or

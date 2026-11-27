@@ -7,7 +7,7 @@ Every trip you take with the [Get Off Alert](get-off-alert.md) earns **uwuCoins*
 wins something.
 
 <figure>
-<img src="/screenshots/android/coins.png" alt="uwuCoins: a balance of 250, the wheel with eight slices, a Spin for 50 button, how many feats and Easter eggs are done, what a spin wins, See your achievements, History, and switches for Show uwuCoins and Coin pop-ups." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/coins.png" alt="uwuCoins: a balance of 250, the wheel with an egg and 20, 50, 30, 70, 40, 150 and 60 coins, a Spin for 75 button, 0 of 9 feats done, 0 of 9 Easter eggs found and 0 of 2 event colours found, what a spin wins, See your achievements, History, and switches for Show uwuCoins and Coin pop-ups." width="412" height="892" loading="lazy">
 <figcaption>The wheel, from the gold coin in the Edge Tray.</figcaption>
 </figure>
 
@@ -27,22 +27,29 @@ Some trips are feats, worth 100 more, once each. A coin floats up as they come i
 
 ## Spin the wheel
 
-Tap the gold coin, or open [Settings](settings.md#help-and-extras), **Help and extras**, **uwuCoins**. **Spin** costs 50 uwuCoins and
+Tap the gold coin, or open [Settings](settings.md#help-and-extras), **Help and extras**, **uwuCoins**. **Spin** costs 75 uwuCoins and
 lands on one of eight slices at random: an **Easter egg** you haven't found yet, or more coins. Once you've found every egg, its slice
-is coins too.
+is coins too. Under the wheel, how many feats you've done, Easter eggs you've found and event colours you have: GTA VI's and
+the IKEA shuttle's.
 
-If you didn't set [GTA VI's colours](theme.md#gta-vi-colours) by 14 December, the egg slice shows a palette and wins them first, before
-any more eggs, and stays that prize until you've won it.
+If you didn't set [GTA VI's colours](theme.md#gta-vi-colours) by 14 December, or [the IKEA shuttle's](theme.md#ikea-colours) by
+31 December, the egg slice shows a palette and wins them first, GTA VI's then the IKEA shuttle's, before any more eggs, and stays that
+prize until you've won them.
 
 <figure>
-<img src="/screenshots/android/coins-gta6.png" alt="uwuCoins with a palette on the wheel's egg slice, and under it, The egg slice wins GTA VI's colours first." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/coins-gta6.png" alt="uwuCoins with a palette on the wheel's egg slice, Spin for 75, and under it, The egg slice wins GTA VI's colours first." width="412" height="892" loading="lazy">
 <figcaption>The wheel with GTA VI's colours to win.</figcaption>
+</figure>
+
+<figure>
+<img src="/screenshots/android/coins-ikea.png" alt="uwuCoins after 31 December, with GTA VI's colours already set: a palette on the wheel's egg slice, The egg slice wins the IKEA shuttle's colours first, and 1 of 2 event colours found." width="412" height="892" loading="lazy">
+<figcaption>The wheel with the IKEA shuttle's colours to win.</figcaption>
 </figure>
 
 ## History
 
 <figure>
-<img src="/screenshots/android/coins-history.png" alt="History: All, Earned and Spent, Earned 450, Spent 200, then by the day: Won on the wheel +50, A spin of the wheel minus 100, Trip: To One Raffles Place +28 with what made it up, Won on the wheel: Down the old railway, Feat: Down the old railway +100, and Trips from before uwuCoins +250, 13 trips." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/coins-history.png" alt="History: All, Earned and Spent, Earned 450, Spent 150, then by the day: Won on the wheel +50, A spin of the wheel minus 75, Trip: To One Raffles Place +28 with what made it up, Won on the wheel: Down the old railway, Feat: Down the old railway +100, and Trips from before uwuCoins +250, 13 trips." width="412" height="892" loading="lazy">
 <figcaption>Every coin in and out, and where it came from.</figcaption>
 </figure>
 
@@ -51,7 +58,7 @@ any more eggs, and stays that prize until you've won it.
 - **Trip**: which trip, and what made up its coins: getting there, the distance, changes, operators and lines.
 - **Feat**: which one, and your team run if it did it with you.
 - **Trips from before uwuCoins**: how many, and what they earned.
-- **A spin of the wheel**: the 50 it cost.
+- **A spin of the wheel**: the 75 it cost.
 - **Won on the wheel**: the coins, Easter egg or colours it won.
 
 **All**, **Earned** and **Spent** narrow the list, and it says how much you've earned and spent. It keeps your last 2,000, on this phone, as your coins are. A trip with no name kept and no longer in [Your trips](trips.md) says **A trip**.
@@ -67,7 +74,7 @@ On the same screen:
 ## Achievements
 
 <figure>
-<img src="/screenshots/android/achievements.png" alt="Achievements: 0 of 9 feats done, 0 of 9 Easter eggs found, then the feats with their progress: Every line ridden, 12, 34, 56, 78, 90, 9, 87, 65, 43, 21, There and back again, The long way round, Down the old railway and First to last." width="412" height="892" loading="lazy">
+<img src="/screenshots/android/achievements.png" alt="Achievements: 0 of 9 feats done, 0 of 9 Easter eggs found and 0 of 2 event colours found, then the feats with their progress: Every line ridden, 12, 34, 56, 78, 90, 9, 87, 65, 43, 21, There and back again, The long way round, Down the old railway and First to last." width="412" height="892" loading="lazy">
 <figcaption>The feats, in Settings' Achievements.</figcaption>
 </figure>
 

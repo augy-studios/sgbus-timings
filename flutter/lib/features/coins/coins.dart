@@ -1,5 +1,5 @@
 // uwuCoins, Achievements and the feat window (the site's js/coins.js, js/eggs.js, js/confetti.js
-// and js/celebrate.js): the wheel, a spin 50 coins, every spin winning something; each feat with
+// and js/celebrate.js): the wheel, a spin 75 coins, every spin winning something; each feat with
 // how far along it is and its Share once done; the window that says a feat's done, with
 // confetti; and for every MRT and LRT line ridden, the celebration: the whole network in its
 // lines' colours, tilted and turning slowly, a gold trophy over it and confetti falling.
@@ -23,11 +23,28 @@ import '../../widgets/common.dart';
 import '../nav/doors.dart' show lineColour;
 import '../share/share_card.dart';
 
+/// How many of the event colours are yours, beside the Easter eggs found (EventColours).
+String _eventCount() =>
+    tr('eggs.eventCount', '{n} of {all} event colours found', {'n': EventColours.found().length, 'all': EventColours.all.length});
+
 String _eggName(String id) => EggsData.byId(id)?.name() ?? id;
 
+/// An event's colours as won, in History, and in the line under the wheel while they're its to give.
+({String won, String log, String due}) _eventWords(String id) => id == 'ikea'
+    ? (
+        won: tr('coins.wonIkea', 'The IKEA shuttle’s colours!'),
+        log: tr('coins.log.ikea', 'Won on the wheel: the IKEA shuttle’s colours'),
+        due: tr('coins.ikeaDue', 'The egg slice wins the IKEA shuttle’s colours first.'),
+      )
+    : (
+        won: tr('coins.wonGta6', 'GTA VI’s colours!'),
+        log: tr('coins.log.gta6', 'Won on the wheel: GTA VI’s colours'),
+        due: tr('coins.gta6Due', 'The egg slice wins GTA VI’s colours first.'),
+      );
+
 /// What an Easter egg link gave, in words (features/share/shared.dart): (title, more).
-(String, String) eggLinkWords(({int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, bool gta6}) r) {
-  if (r.gta6) return (tr('coins.wonGta6', 'GTA VI’s colours!'), tr('coins.wonGta6More', 'They’re yours to keep. Pick them in Theme.'));
+(String, String) eggLinkWords(({int? coins, String? egg, ({List<String> secrets, EggPreset? preset})? got, String? event}) r) {
+  if (r.event != null) return (_eventWords(r.event!).won, tr('coins.wonGta6More', 'They’re yours to keep. Pick them in Theme.'));
   if (r.egg != null) {
     final lines = <String>[];
     if (r.got?.secrets.isNotEmpty == true) {
@@ -221,8 +238,8 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
     setState(() {
       _spinning = false;
       _held = 0;
-      if (r.gta6) {
-        _result = tr('coins.wonGta6', 'GTA VI’s colours!');
+      if (r.event != null) {
+        _result = _eventWords(r.event!).won;
         _resultMore = tr('coins.wonGta6More', 'They’re yours to keep. Pick them in Theme.');
         _confetti = true;
       } else if (r.egg != null) {
@@ -319,10 +336,15 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
                       ),
                   ]),
                 ),
-                if (Gta6.due) Padding(padding: const EdgeInsets.only(top: 8), child: Text(tr('coins.gta6Due', 'The egg slice wins GTA VI’s colours first.'), style: const TextStyle(fontWeight: FontWeight.w600))),
+                if (EventColours.due != null)
+                  Padding(padding: const EdgeInsets.only(top: 8), child: Text(_eventWords(EventColours.due!.id).due, style: const TextStyle(fontWeight: FontWeight.w600))),
                 const SizedBox(height: 8),
                 Text(
-                    '${tr('eggs.featCount', '{n} of {all} feats done', {'n': Feats.done().length, 'all': EggsData.all.length})} · ${tr('eggs.count', '{n} of {all} Easter eggs found', {'n': Feats.eggs().length, 'all': EggsData.all.length})}',
+                    [
+                      tr('eggs.featCount', '{n} of {all} feats done', {'n': Feats.done().length, 'all': EggsData.all.length}),
+                      tr('eggs.count', '{n} of {all} Easter eggs found', {'n': Feats.eggs().length, 'all': EggsData.all.length}),
+                      _eventCount(),
+                    ].join(' · '),
                     style: TextStyle(color: sg.muted)),
                 const SizedBox(height: 6),
                 Text(
@@ -410,7 +432,8 @@ class _CoinsScreenState extends State<CoinsScreen> with SingleTickerProviderStat
     case 'egg':
       return (what: tr('coins.log.egg', 'Won on the wheel: {name}', {'name': _eggName('${e['egg']}')}), more: tr('coins.log.eggNote', 'An Easter egg'));
     case 'gta6':
-      return (what: tr('coins.log.gta6', 'Won on the wheel: GTA VI’s colours'), more: '');
+    case 'ikea':
+      return (what: _eventWords('${e['why']}').log, more: '');
     case 'simulated':
       return (what: tr('coins.log.simulated', 'Added from the console'), more: '');
     case 'sync':
@@ -492,7 +515,7 @@ class _CoinsHistoryState extends State<CoinsHistory> {
                 final e = row as Map;
                 final n = e['n'] as num;
                 final words = coinEntryWords(e);
-                final amount = n > 0 ? '+${n.toInt()}' : n < 0 ? '−${(-n).toInt()}' : e['why'] == 'gta6' ? '🎨' : '🥚';
+                final amount = n > 0 ? '+${n.toInt()}' : n < 0 ? '−${(-n).toInt()}' : EventColours.byId('${e['why']}') != null ? '🎨' : '🥚';
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -545,8 +568,14 @@ class _WheelPainter extends CustomPainter {
       canvas.rotate(a + math.pi / 2);
       final tp = TextPainter(
         text: TextSpan(
-          text: coins == null ? (Gta6.due ? '🎨' : '🥚') : '$coins',
-          style: TextStyle(color: coins == null ? Colors.black : slice?.$2 ?? (i.isOdd ? sg.onBrand : sg.ink), fontSize: 20, fontWeight: FontWeight.w800),
+          text: coins == null ? (EventColours.due != null ? '🎨' : '🥚') : '$coins',
+          // The phone's own font, as the site's wheel has the system's, and its emoji for the egg.
+          style: TextStyle(
+              color: coins == null ? Colors.black : slice?.$2 ?? (i.isOdd ? sg.onBrand : sg.ink),
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              fontFamily: 'sans-serif',
+              fontFamilyFallback: const ['Noto Color Emoji']),
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -603,7 +632,7 @@ class AchievementsScreen extends StatelessWidget {
             ],
             body: ListView(padding: const EdgeInsets.fromLTRB(16, 0, 16, 32), children: [
               Text(tr('eggs.featCount', '{n} of {all} feats done', {'n': done, 'all': all.length}), style: Theme.of(context).textTheme.titleMedium),
-              Text(tr('eggs.count', '{n} of {all} Easter eggs found', {'n': Feats.eggs().length, 'all': EggsData.all.length}), style: TextStyle(color: sg.muted)),
+              Text('${tr('eggs.count', '{n} of {all} Easter eggs found', {'n': Feats.eggs().length, 'all': EggsData.all.length})} · ${_eventCount()}', style: TextStyle(color: sg.muted)),
               const SizedBox(height: 8),
               for (final a in all)
                 Padding(

@@ -958,7 +958,8 @@
                     <p id="coinNeed" class="mode-note" hidden></p>
                     <p id="coinResult" class="mode-note coinResult" role="status" hidden></p>
                     <p class="mode-note" data-i18n="coins.how">Every spin wins something: an Easter egg you haven&rsquo;t found, with a secret or a colour preset, or more coins. Coins come from trips taken with the Get Off Alert to the end: more for longer trips, changes, and each bus and train operator and line you ride with. Each feat gives 100 more.</p>
-                    <p id="coinGta6" class="mode-note" data-i18n="coins.gta6Due" hidden>The egg slice wins GTA VI’s colours first.</p>
+                    <!-- Which event's colours the egg slice wins first: its words set by js/coins.js -->
+                    <p id="coinGta6" class="mode-note" hidden></p>
                     <p id="coinFeats" class="mode-note"></p>
                     <button id="coinAchievements" class="iconBtn settingsWide" type="button"><span data-icon="star"></span> <span data-i18n="achievements.see">See your achievements</span></button>
                     <details id="coinHistory" class="coinHistory">
@@ -1452,6 +1453,26 @@
             <div class="tripActions">
                 <button id="gta6Set" class="btn" type="button" data-i18n="gta6.set">Set it</button>
                 <button id="gta6Later" class="iconBtn" type="button" data-i18n="gta6.later">Not now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The IKEA shuttle's colours, offered once: js/gta6.js -->
+    <div id="ikeaModal" class="modal-backdrop hidden">
+        <div class="modal glass" role="dialog" aria-modal="true" aria-labelledby="ikeaTitle" aria-describedby="ikeaText">
+            <div class="modal-head">
+                <h2 id="ikeaTitle" data-i18n="ikea.title">The IKEA shuttle’s colours</h2>
+                <button class="icon-btn small" type="button" data-close-modal="ikeaModal" data-i18n-aria-label="donate.close" aria-label="Close">
+                    <span data-icon="close"></span>
+                </button>
+            </div>
+            <div class="ikeaStrip" aria-hidden="true"></div>
+            <p id="ikeaText" class="mode-note donateText" data-i18n="ikea.text">The free shuttle bus to IKEA Tampines runs for the last time on 31 December. To see it off, there’s a new theme in IKEA’s blue and yellow.</p>
+            <p class="mode-note donateText" data-i18n="ikea.keep">Set it by 31 December and it’s yours to keep, even if you change colours later. After that, you’ll have to win it on the uwuCoins wheel.</p>
+            <p id="ikeaReplace" class="mode-note donateText" data-i18n="gta6.replace" hidden>This replaces Your colours. You can pick them again any time.</p>
+            <div class="tripActions">
+                <button id="ikeaSet" class="btn" type="button" data-i18n="gta6.set">Set it</button>
+                <button id="ikeaLater" class="iconBtn" type="button" data-i18n="gta6.later">Not now</button>
             </div>
         </div>
     </div>

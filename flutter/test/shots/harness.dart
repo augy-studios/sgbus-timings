@@ -69,6 +69,8 @@ Future<void> loadFonts() async {
   // What a screen with no font of its own falls back to on a phone: its default, and the terminal's
   // monospace (DejaVu Sans Mono, SF Mono or Consolas).
   await _font('FlutterTest', roboto);
+  // The wheel's egg and palette, as Android's own emoji.
+  if (File('/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf').existsSync()) await _font('Noto Color Emoji', ['/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf']);
   await _font('monospace', [fonts.mono]);
 }
 
